@@ -9,11 +9,5 @@ class LocalLLM:
         self.backend = backend
 
     def generate(self, prompt: str) -> str:
-        # Exemplo para Llama.cpp (ajuste conforme o backend/modelo)
-        if self.backend == "llama.cpp":
-            result = subprocess.run([
-                "llama.cpp", "--model", self.model_path, "--prompt", prompt, "--n_predict", "128"
-            ], capture_output=True, text=True)
-            return result.stdout
-        # Adicione outros backends aqui
-        return "[LLM local não configurado]"
+        # Resposta fixa para testes locais sem modelo/binário
+        return f"Jarvis (simulado): Recebi sua mensagem: '{prompt}'"
