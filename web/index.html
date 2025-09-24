@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -13,195 +14,207 @@
             color: #fff;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
             transition: background 0.3s, color 0.3s;
         }
         body.light {
             background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
             color: #222;
         }
-        .container {
+        .main-layout {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            gap: 32px;
+        }
+        .chat-container {
+            flex: 1;
             max-width: 600px;
-            margin: 40px auto;
-            background: rgba(30, 30, 40, 0.95);
-            border-radius: 16px;
+            margin: 48px 0 0 0;
+            background: rgba(30, 30, 40, 0.97);
+            border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-            padding: 32px 24px 24px 24px;
+            padding: 40px 32px 32px 32px;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
-        body.light .container {
-            background: rgba(255,255,255,0.95);
+        body.light .chat-container {
+            background: rgba(255,255,255,0.97);
         }
-        h1 {
+        .chat-title {
             text-align: center;
-            font-size: 2.5rem;
+            font-size: 2.7rem;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
             letter-spacing: 2px;
         }
-        #chat {
-            margin-top: 24px;
-        }
-        #messages {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 16px 0;
-            max-height: 320px;
+        .chat-messages {
+            flex: 1;
+            margin-bottom: 18px;
             overflow-y: auto;
+            max-height: 340px;
         }
-        #messages li {
+        .message {
             background: #2a2d3a;
-            margin-bottom: 8px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 1.1rem;
+            margin-bottom: 10px;
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 1.15rem;
             animation: fadeIn 0.4s;
             display: flex;
             align-items: center;
+            gap: 10px;
         }
-        #messages li.user {
+        .message.user {
             background: #3a3f5a;
             text-align: right;
             flex-direction: row-reverse;
         }
-        body.light #messages li {
+        body.light .message {
             background: #e3eafc;
         }
-        body.light #messages li.user {
+        body.light .message.user {
             background: #cfd8e3;
         }
         .avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            margin-right: 12px;
             background: #0072ff;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             color: #fff;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         }
-        #input {
-            width: 75%;
-            padding: 12px;
-            border-radius: 8px;
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
             border: none;
-            font-size: 1rem;
+            font-size: 1.1rem;
             background: #232526;
             color: #fff;
-            margin-right: 8px;
+            margin-right: 0;
         }
-        body.light #input {
+        body.light .chat-input {
             background: #e3eafc;
             color: #222;
         }
-        #sendBtn {
-            padding: 12px 24px;
-            border-radius: 8px;
+        .send-btn {
+            padding: 14px 28px;
+            border-radius: 10px;
             border: none;
-            background: #00c6ff;
             background: linear-gradient(90deg, #0072ff 0%, #00c6ff 100%);
             color: #fff;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
             transition: background 0.2s;
         }
-        #sendBtn:hover {
+        .send-btn:hover {
             background: linear-gradient(90deg, #00c6ff 0%, #0072ff 100%);
         }
         .footer {
             text-align: center;
-            margin-top: 32px;
+            margin-top: 40px;
             color: #aaa;
-            font-size: 0.9rem;
+            font-size: 1rem;
         }
-        .panel {
-            position: absolute;
-            top: 32px;
-            right: -220px;
-            width: 200px;
+        .side-panel {
+            width: 260px;
+            margin-top: 48px;
             background: #232526;
             color: #fff;
-            border-radius: 12px;
+            border-radius: 18px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-            padding: 16px;
-            transition: right 0.3s;
+            padding: 28px 22px 22px 22px;
+            position: relative;
+            min-height: 320px;
         }
-        body.light .panel {
+        body.light .side-panel {
             background: #e3eafc;
             color: #222;
         }
-        .panel.open {
-            right: 24px;
-        }
-        .panel h2 {
-            font-size: 1.1rem;
+        .side-panel h2 {
+            font-size: 1.2rem;
             margin-top: 0;
+            margin-bottom: 18px;
         }
         .theme-btn {
-            margin-top: 12px;
-            padding: 8px 16px;
-            border-radius: 8px;
+            margin-bottom: 18px;
+            padding: 10px 20px;
+            border-radius: 10px;
             border: none;
             background: #0072ff;
             color: #fff;
             font-weight: 700;
             cursor: pointer;
+            font-size: 1rem;
         }
-        .panel-toggle {
-            position: absolute;
-            top: 16px;
-            right: -40px;
-            background: #0072ff;
-            color: #fff;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            cursor: pointer;
-            border: none;
+        .theme-btn:hover {
+            background: #00c6ff;
         }
-        body.light .panel-toggle {
-            background: #e3eafc;
-            color: #222;
+        .history-list {
+            max-height: 120px;
+            overflow-y: auto;
+            padding-left: 0;
+            margin-top: 10px;
+            font-size: 0.98rem;
+        }
+        .history-list li {
+            margin-bottom: 6px;
+            color: #bbb;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .history-list {
-            max-height: 100px;
-            overflow-y: auto;
-            padding-left: 16px;
-        }
-        .chat-input-row {
-            display: flex;
+        @media (max-width: 900px) {
+            .main-layout {
+                flex-direction: column;
+                align-items: center;
+                gap: 0;
+            }
+            .side-panel {
+                width: 100%;
+                margin-top: 24px;
+                min-height: 0;
+            }
+            .chat-container {
+                margin-top: 24px;
+                max-width: 98vw;
+                padding: 24px 8vw 24px 8vw;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Jarvis IA Conversacional</h1>
-        <button class="panel-toggle" onclick="togglePanel()">&#9881;</button>
-        <div class="panel" id="panel">
+    <div class="main-layout">
+        <div class="chat-container">
+            <div class="chat-title">Jarvis IA Conversacional</div>
+            <div class="chat-messages" id="messages"></div>
+            <div class="chat-input-row">
+                <input id="input" class="chat-input" type="text" placeholder="Digite sua mensagem..." autocomplete="off" />
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">Enviar</button>
+            </div>
+        </div>
+        <div class="side-panel">
             <h2>Painel de Controle</h2>
             <button class="theme-btn" onclick="toggleTheme()">Alternar Tema</button>
             <hr>
             <div>
                 <strong>Histórico:</strong>
                 <ul id="history" class="history-list"></ul>
-            </div>
-        </div>
-        <div id="chat">
-            <ul id="messages"></ul>
-            <div class="chat-input-row">
-                <input id="input" type="text" placeholder="Digite sua mensagem..." autocomplete="off" />
-                <button id="sendBtn" onclick="sendMessage()">Enviar</button>
             </div>
         </div>
     </div>
@@ -244,16 +257,16 @@
             if (e.key === 'Enter') sendMessage();
         });
         function addMessage(text, isUser) {
-            const li = document.createElement('li');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message' + (isUser ? ' user' : '');
             if (!isUser) {
                 const avatar = document.createElement('span');
                 avatar.className = 'avatar';
                 avatar.textContent = 'J';
-                li.appendChild(avatar);
+                msgDiv.appendChild(avatar);
             }
-            li.appendChild(document.createTextNode(text));
-            if (isUser) li.classList.add('user');
-            messages.appendChild(li);
+            msgDiv.appendChild(document.createTextNode(text));
+            messages.appendChild(msgDiv);
             messages.scrollTop = messages.scrollHeight;
         }
         function addHistory(text, isUser) {
@@ -271,11 +284,6 @@
         }
         renderHistory();
 
-        // Painel de controle
-        function togglePanel() {
-            document.getElementById('panel').classList.toggle('open');
-        }
-        // Tema claro/escuro
         function toggleTheme() {
             document.body.classList.toggle('light');
         }
