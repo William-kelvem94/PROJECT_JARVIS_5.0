@@ -1,6 +1,0 @@
-{
-  "llm_provider": "openai|deepseek|local",
-  "voice_api": "alexa|google|local",
-  "web_interface": true,
-  "plugin_support": true
-}
