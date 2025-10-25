@@ -2,6 +2,7 @@
 Advanced Plugin Management System with Hot-Reload
 """
 import importlib
+import importlib.util
 import inspect
 import os
 from abc import ABC, abstractmethod
@@ -119,13 +120,17 @@ class PluginFileHandler(FileSystemEventHandler):
         
         logger.info(f"Plugin file modified: {event.src_path}")
         
-        # Debounce reload
-        if self.debounce_timer:
-            self.debounce_timer.cancel()
-        
-        self.debounce_timer = asyncio.create_task(
-            self._debounced_reload(event.src_path)
-        )
+        # Create task in a thread-safe way
+        try:
+            loop = asyncio.get_event_loop()
+            if self.debounce_timer:
+                self.debounce_timer.cancel()
+            self.debounce_timer = loop.create_task(
+                self._debounced_reload(event.src_path)
+            )
+        except RuntimeError:
+            # No event loop in current thread
+            pass
     
     async def _debounced_reload(self, file_path: str):
         await asyncio.sleep(1)  # Wait for file writes to complete
@@ -183,6 +188,12 @@ class PluginManager(LoggerMixin):
         try:
             # Import the module
             spec = importlib.util.spec_from_file_location(module_name, file_path)
+            if spec is None or spec.loader is None:
+                raise PluginException(
+                    f"Cannot load spec for {file_path}",
+                    plugin_name=module_name
+                )
+            
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             
@@ -395,4 +406,3 @@ class PluginManager(LoggerMixin):
         if plugin_name in self.plugins:
             self.plugins[plugin_name].enabled = False
             self.logger.info(f"Disabled plugin: {plugin_name}")
-

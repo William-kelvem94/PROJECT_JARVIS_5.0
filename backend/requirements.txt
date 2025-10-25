@@ -11,7 +11,6 @@ psycopg2-binary==2.9.9
 
 # Redis
 redis==5.0.1
-aioredis==2.0.1
 
 # Authentication & Security
 python-jose[cryptography]==3.3.0
@@ -35,7 +34,6 @@ librosa==0.10.1
 
 # WebSocket
 websockets==12.0
-python-socketio==5.10.0
 
 # HTTP Client
 httpx==0.25.2
@@ -44,21 +42,16 @@ aiohttp==3.9.1
 # Utilities
 python-json-logger==2.0.7
 colorlog==6.8.0
-prometheus-client==0.19.0
 pydantic-extra-types==2.1.0
+watchdog==3.0.0
 
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
-httpx==0.25.2
+aiosqlite==0.19.0
 
 # Development
 black==23.12.0
 flake8==6.1.0
 mypy==1.7.1
-pre-commit==3.6.0
-
-# Monitoring
-sentry-sdk==1.39.1
-

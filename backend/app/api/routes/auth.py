@@ -9,7 +9,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.core.security import security_manager
 from app.core.redis_client import RedisCache
-from app.api.dependencies import get_redis_cache
+from app.api.dependencies import get_redis_cache, get_current_user
 from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, Token, UserResponse
 
@@ -166,7 +166,7 @@ async def refresh_token(
 
 @router.post("/logout")
 async def logout(
-    current_user: User = Depends(get_redis_cache),
+    current_user: User = Depends(get_current_user),
     cache: RedisCache = Depends(get_redis_cache)
 ):
     """
@@ -176,4 +176,3 @@ async def logout(
     await cache.delete(f"user_session:{current_user.id}")
     
     return {"message": "Successfully logged out"}
-
