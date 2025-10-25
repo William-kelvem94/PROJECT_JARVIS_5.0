@@ -71,12 +71,14 @@ const SettingsPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="label">Nome de Usuário</label>
+              <label htmlFor="username" className="label">Nome de Usuário</label>
               <input
+                id="username"
                 type="text"
                 value={user?.username || ''}
                 className="input"
                 disabled
+                title="Nome de usuário (não pode ser alterado)"
               />
               <p className="text-sm text-gray-500 mt-1">
                 O nome de usuário não pode ser alterado
@@ -84,23 +86,27 @@ const SettingsPage = () => {
             </div>
 
             <div>
-              <label className="label">Email</label>
+              <label htmlFor="email" className="label">Email</label>
               <input
+                id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="input"
                 required
+                title="Seu endereço de email"
               />
             </div>
 
             <div>
-              <label className="label">Nome Completo</label>
+              <label htmlFor="fullname" className="label">Nome Completo</label>
               <input
+                id="fullname"
                 type="text"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 className="input"
+                title="Seu nome completo"
               />
             </div>
 
@@ -113,13 +119,15 @@ const SettingsPage = () => {
               </div>
 
               <div>
-                <label className="label">Nova Senha</label>
+                <label htmlFor="password" className="label">Nova Senha</label>
                 <input
+                  id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="input"
                   placeholder="Deixe em branco para não alterar"
+                  title="Nova senha (mínimo 8 caracteres)"
                   minLength={8}
                 />
                 <p className="text-sm text-gray-500 mt-1">

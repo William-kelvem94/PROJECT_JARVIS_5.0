@@ -1,0 +1,113 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: jarvis_postgres
+    environment:
+      POSTGRES_USER: jarvis
+      POSTGRES_PASSWORD: jarvis123
+      POSTGRES_DB: jarvis_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jarvis"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jarvis_network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: jarvis_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jarvis_network
+
+  # Ollama (LLM Local Real!)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis_ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - jarvis_network
+    # Se tiver GPU NVIDIA, descomente:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.simple
+    container_name: jarvis_backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://jarvis:jarvis123@postgres:5432/jarvis_db
+      - REDIS_URL=redis://redis:6379/0
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_DEFAULT_MODEL=llama2
+      - SECRET_KEY=super-secret-key-change-in-production-abc123xyz
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:80,http://localhost
+      - DEBUG=True
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - jarvis_network
+    command: sh -c "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.simple
+    container_name: jarvis_frontend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - jarvis_network
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  jarvis_network:
+    driver: bridge
+
