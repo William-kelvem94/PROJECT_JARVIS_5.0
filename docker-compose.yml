@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Serviço Ollama - Modelos LLM Locais Gratuitos
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    networks:
+      - jarvis_network
+
+  # Serviço JARVIS - Assistente IA
+  jarvis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jarvis_ai
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+      - ./plugins:/app/plugins
+      - ./web:/app/web
+      - jarvis_logs:/app/logs
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=codellama:7b
+      - LLM_PROVIDER=ollama
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    networks:
+      - jarvis_network
+
+volumes:
+  ollama_data:
+    driver: local
+  jarvis_logs:
+    driver: local
+
+networks:
+  jarvis_network:
+    driver: bridge
+

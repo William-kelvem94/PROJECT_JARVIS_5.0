@@ -1,6 +1,13 @@
 {
-  "llm_provider": "openai|deepseek|local",
-  "voice_api": "alexa|google|local",
+  "llm_provider": "ollama",
+  "ollama_base_url": "http://localhost:11434",
+  "ollama_model": "codellama:7b",
+  "voice_api": "local",
   "web_interface": true,
-  "plugin_support": true
+  "plugin_support": true,
+  "default_models": {
+    "code": "codellama:7b",
+    "general": "llama2:7b",
+    "conversational": "mistral:7b"
+  }
 }
