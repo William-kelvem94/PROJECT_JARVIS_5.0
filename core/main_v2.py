@@ -14,10 +14,13 @@ import os
 import json
 import asyncio
 
+# Configuração otimizada do FastAPI
 app = FastAPI(
     title="JARVIS IA v2",
     description="Assistente IA Local Modular com Ollama",
-    version="5.0"
+    version="5.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc"
 )
 
 # CORS para permitir acesso da interface web
@@ -216,16 +219,60 @@ async def websocket_endpoint(websocket: WebSocket):
             
             logger.info(f"Mensagem recebida ({message_type.value}): {message[:50]}...")
             
-            # Processar mensagem
+            # Verificar se há comandos/skills primeiro
             result = await jarvis.process(message, message_type)
             
-            # Enviar resposta
-            await websocket.send_json({
-                "type": "message",
-                "content": result.get("response", ""),
-                "intent": result.get("intent", {}),
-                "actions": result.get("actions", [])
-            })
+            # Se houver ações, enviar primeiro
+            if result.get("actions"):
+                await websocket.send_json({
+                    "type": "action",
+                    "actions": result.get("actions", [])
+                })
+            
+            # Gerar resposta do LLM com STREAMING REAL
+            if jarvis.llm:
+                system_prompt = """Você é JARVIS, um assistente de IA inteligente e útil.
+Você pode controlar o computador do usuário, abrir aplicativos, organizar arquivos e muito mais.
+Seja direto, útil e amigável. Use emojis quando apropriado.
+Mantenha respostas concisas e objetivas."""
+                
+                # Enviar indicador de início
+                await websocket.send_json({
+                    "type": "stream_start",
+                    "content": ""
+                })
+                
+                # Stream tokens em tempo real
+                full_response = ""
+                try:
+                    for token in jarvis.llm.generate_stream(message, system=system_prompt):
+                        full_response += token
+                        # Enviar cada token conforme é gerado
+                        await websocket.send_json({
+                            "type": "stream",
+                            "content": token
+                        })
+                    
+                    # Enviar finalização
+                    await websocket.send_json({
+                        "type": "stream_end",
+                        "content": full_response,
+                        "intent": result.get("intent", {})
+                    })
+                except Exception as e:
+                    logger.error(f"Erro no streaming: {e}")
+                    await websocket.send_json({
+                        "type": "error",
+                        "content": f"Erro ao gerar resposta: {str(e)}"
+                    })
+            else:
+                # Fallback se LLM não disponível
+                await websocket.send_json({
+                    "type": "message",
+                    "content": result.get("response", "Desculpe, o sistema de IA não está disponível."),
+                    "intent": result.get("intent", {}),
+                    "actions": result.get("actions", [])
+                })
             
     except Exception as e:
         logger.error(f"Erro no WebSocket: {e}")

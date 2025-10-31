@@ -11,6 +11,7 @@ from core.config import Config
 from core.logger import logger
 from core.local_llm import LocalLLM
 from core.llm_optimizer import LLMOptimizer
+from core.response_cache import ResponseCache
 
 # Módulos de Entrada
 from modules.input.voice_module import VoiceModule
@@ -93,6 +94,14 @@ class JarvisV2:
         except Exception as e:
             logger.error(f"Erro ao inicializar LLM: {e}")
             self.llm = None
+        
+        # Inicializar cache de respostas
+        try:
+            self.response_cache = ResponseCache(ttl_seconds=3600, max_size=500)
+            logger.info("ResponseCache inicializado")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar cache: {e}")
+            self.response_cache = None
         
         # Inicializar módulos de entrada
         self.voice_module = VoiceModule()

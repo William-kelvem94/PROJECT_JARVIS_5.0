@@ -177,8 +177,11 @@ docker-compose down
 # Ver logs
 docker-compose logs -f jarvis
 
-# Reconstruir
-docker-compose up --build -d
+# Reconstruir com otimizações
+.\docker-rebuild.ps1
+
+# Monitorar performance
+.\docker-monitor.ps1
 ```
 
 ### Ollama
@@ -250,6 +253,7 @@ docker-compose up --build -d
 ## 📚 Documentação
 
 - [Guia Completo de Instalação](INSTALL.md)
+- [Otimizações de Performance](PERFORMANCE.md)
 - [API Documentation](http://localhost:8000/docs) (após iniciar)
 - [Modelos Disponíveis](README_MODELS.md)
 

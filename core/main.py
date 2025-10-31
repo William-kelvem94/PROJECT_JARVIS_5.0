@@ -8,6 +8,7 @@ from core.logger import logger
 from core.command_processor import CommandProcessor
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
+from modules.llm.streaming_llm import StreamingLLM
 import os
 import json
 import asyncio
@@ -36,10 +37,21 @@ except Exception as e:
 # Inicializar LLM com Ollama
 try:
     llm = LocalLLM(model=ollama_model)
+    streaming_llm = StreamingLLM(llm)
     logger.info(f"JARVIS inicializado com modelo: {ollama_model}")
+    
+    # Pré-carregar o modelo para evitar demora na primeira requisição
+    logger.info("Pré-carregando modelo (isso pode levar 20-30 segundos)...")
+    try:
+        # Fazer uma requisição de teste para forçar o carregamento do modelo
+        test_response = llm.generate("test", max_tokens=5)
+        logger.info("✅ Modelo pré-carregado com sucesso!")
+    except Exception as preload_error:
+        logger.warning(f"Modelo não pôde ser pré-carregado: {preload_error}. Será carregado na primeira requisição.")
 except Exception as e:
     logger.error(f"Erro ao inicializar LLM: {e}")
     llm = None
+    streaming_llm = None
 
 # Inicializar plugins
 system_plugin = SystemPlugin()
@@ -194,7 +206,7 @@ async def websocket_endpoint(websocket: WebSocket):
             
             logger.info(f"Mensagem recebida: {message}")
             
-            if not llm:
+            if not llm or not streaming_llm:
                 await websocket.send_json({
                     "type": "message",
                     "content": "Erro: LLM não disponível. Verifique a conexão com Ollama."
@@ -207,22 +219,107 @@ async def websocket_endpoint(websocket: WebSocket):
                 result = await execute_command(command)
                 if result:
                     await websocket.send_json(result)
-                    # Continuar com resposta do LLM também
-                else:
-                    continue
+                    # Continuar com resposta do LLM também (não fazer continue)
             
-            # Gerar resposta do LLM com streaming
+            # Gerar resposta do LLM com STREAMING REAL
             system_prompt = """Você é JARVIS, um assistente de IA inteligente e útil.
 Você pode controlar o computador do usuário, abrir aplicativos, organizar arquivos e muito mais.
 Seja direto, útil e amigável. Use emojis quando apropriado."""
             
-            # Resposta rápida otimizada
-            resposta = llm.generate(message, system=system_prompt, max_tokens=200, temperature=0.7)
+            stream_started = False
+            accumulated_response = ""
             
-            await websocket.send_json({
-                "type": "message",
-                "content": resposta
-            })
+            try:
+                # Enviar início do streaming (frontend já mostra indicador de typing)
+                await websocket.send_json({
+                    "type": "stream_start",
+                    "content": ""
+                })
+                stream_started = True
+                
+                # Stream tokens conforme são gerados com timeout de segurança
+                try:
+                    # Usar wait_for para compatibilidade com Python < 3.11
+                    async def stream_tokens():
+                        nonlocal accumulated_response
+                        async for token in streaming_llm.generate_stream_async(
+                            message, 
+                            system=system_prompt, 
+                            max_tokens=200, 
+                            temperature=0.7
+                        ):
+                            accumulated_response += token
+                            # Enviar token incremental usando tipo que frontend espera
+                            await websocket.send_json({
+                                "type": "stream",
+                                "content": token
+                            })
+                    
+                    await asyncio.wait_for(stream_tokens(), timeout=120.0)  # Timeout de 120 segundos para dar tempo do modelo carregar
+                    
+                except asyncio.TimeoutError:
+                    logger.error("Timeout no streaming de tokens")
+                    if accumulated_response:
+                        # Se já tiver algum conteúdo, enviar o que foi gerado
+                        accumulated_response += "\n\n⏱️ Tempo limite atingido durante a geração."
+                    else:
+                        accumulated_response = "⏱️ A resposta está demorando muito. O modelo pode estar processando... Tente novamente."
+                
+                # Garantir que stream_end sempre seja enviado
+                await websocket.send_json({
+                    "type": "stream_end",
+                    "content": accumulated_response if accumulated_response else "❌ Erro: Nenhuma resposta foi gerada."
+                })
+                
+            except asyncio.TimeoutError:
+                logger.error("Timeout ao gerar resposta")
+                if stream_started:
+                    # Se streaming já começou, finalizar
+                    await websocket.send_json({
+                        "type": "stream_end",
+                        "content": accumulated_response if accumulated_response else "⏱️ A resposta está demorando muito. Tente novamente em alguns segundos."
+                    })
+                else:
+                    await websocket.send_json({
+                        "type": "message",
+                        "content": "⏱️ A resposta está demorando muito. O modelo pode estar processando... Tente novamente em alguns segundos."
+                    })
+            except Exception as stream_error:
+                logger.error(f"Erro no streaming: {stream_error}")
+                
+                # Garantir que stream_end seja enviado se streaming começou
+                if stream_started:
+                    error_msg = str(stream_error)
+                    if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
+                        error_content = "⏱️ O modelo está demorando muito para responder. Na primeira vez, o modelo precisa ser carregado (leva ~20-30 segundos). Tente novamente em alguns segundos."
+                    else:
+                        error_content = accumulated_response if accumulated_response else f"❌ Erro ao processar: {error_msg}"
+                    
+                    await websocket.send_json({
+                        "type": "stream_end",
+                        "content": error_content
+                    })
+                else:
+                    # Fallback para método não-streaming apenas se streaming não começou
+                    try:
+                        resposta = llm.generate(message, system=system_prompt, max_tokens=200, temperature=0.7)
+                        await websocket.send_json({
+                            "type": "message",
+                            "content": resposta
+                        })
+                    except Exception as fallback_error:
+                        logger.error(f"Erro no fallback: {fallback_error}")
+                        error_msg = str(fallback_error)
+                        if "timeout" in error_msg.lower():
+                            await websocket.send_json({
+                                "type": "message",
+                                "content": "⏱️ O modelo está demorando muito. Na primeira requisição, o modelo precisa ser carregado (leva ~20-30 segundos). Aguarde alguns segundos e tente novamente."
+                            })
+                        else:
+                            await websocket.send_json({
+                                "type": "message",
+                                "content": "❌ Erro ao processar sua mensagem. Verifique se o Ollama está rodando corretamente."
+                            })
             
     except Exception as e:
         logger.error(f"Erro no WebSocket: {e}")

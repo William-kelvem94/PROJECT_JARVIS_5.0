@@ -553,33 +553,72 @@
         };
 
         ws.onmessage = (event) => {
-            // Limpar timeout ao receber resposta
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-                timeoutId = null;
-            }
-            
-            hideTypingIndicator();
-            sendBtn.disabled = false;
-            isStreaming = false;
-            
             try {
                 const data = JSON.parse(event.data);
                 
-                if (data.type === 'stream') {
+                if (data.type === 'stream_start') {
+                    // Iniciar streaming - criar nova mensagem
+                    hideTypingIndicator();
+                    currentMessageDiv = addMessage('', false);
+                    isStreaming = true;
+                    sendBtn.disabled = true;
+                    // Limpar timeout pois streaming começou
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                } else if (data.type === 'stream') {
+                    // Token de streaming - adicionar ao conteúdo
                     handleStreaming(data.content);
+                } else if (data.type === 'stream_end') {
+                    // Finalizar streaming
+                    isStreaming = false;
+                    sendBtn.disabled = false;
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
                 } else if (data.type === 'action') {
                     handleAction(data);
                 } else if (data.type === 'message') {
+                    // Limpar timeout ao receber resposta completa
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
                     addMessage(data.content, false);
                 } else if (data.type === 'error') {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
                     addMessage('❌ ' + (data.content || 'Erro desconhecido'), false);
                 } else {
-                    // Fallback para mensagens antigas
+                    // Fallback
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
                     addMessage(data.content || event.data, false);
                 }
             } catch (e) {
                 // Se não for JSON, tratar como texto simples
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                hideTypingIndicator();
+                sendBtn.disabled = false;
+                isStreaming = false;
                 addMessage(event.data, false);
             }
         };

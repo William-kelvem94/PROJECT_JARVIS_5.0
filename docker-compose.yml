@@ -14,6 +14,25 @@ services:
     restart: unless-stopped
     networks:
       - jarvis_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Serviço JARVIS - Assistente IA
   jarvis:
@@ -33,11 +52,34 @@ services:
       - OLLAMA_MODEL=codellama:7b
       - LLM_PROVIDER=ollama
       - DISPLAY=:99
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - jarvis_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 10s
 
 volumes:
   ollama_data:
