@@ -550,14 +550,22 @@
         };
 
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            if (data.type === 'stream') {
-                handleStreaming(data.content);
-            } else if (data.type === 'action') {
-                handleAction(data);
-            } else {
-                addMessage(data.content || event.data, false);
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'stream') {
+                    handleStreaming(data.content);
+                } else if (data.type === 'action') {
+                    handleAction(data);
+                } else if (data.type === 'message') {
+                    addMessage(data.content, false);
+                } else {
+                    // Fallback para mensagens antigas
+                    addMessage(data.content || event.data, false);
+                }
+            } catch (e) {
+                // Se não for JSON, tratar como texto simples
+                addMessage(event.data, false);
             }
         };
 
@@ -652,10 +660,15 @@ Como posso ajudá-lo hoje?`;
             input.value = '';
             autoResize(input);
             
-            ws.send(JSON.stringify({
-                type: 'message',
-                content: text
-            }));
+            try {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    content: text
+                }));
+            } catch (e) {
+                // Fallback para formato antigo
+                ws.send(text);
+            }
         }
 
         function sendQuickAction(text) {
