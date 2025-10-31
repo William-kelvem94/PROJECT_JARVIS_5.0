@@ -6,7 +6,14 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    build-essential \
+    portaudio19-dev \
+    python3-dev \
+    libasound2-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Criar diretórios para dados
+RUN mkdir -p /app/data /app/logs
 
 # Copiar requirements e instalar dependências Python
 COPY requirements.txt .
@@ -18,6 +25,8 @@ COPY . .
 # Expor porta
 EXPOSE 8000
 
-# Comando para iniciar o JARVIS
-CMD ["python", "-m", "uvicorn", "core.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Comando para iniciar o JARVIS v2
+# Use core.main_v2 para a nova arquitetura modular
+# ou core.main para a versão original
+CMD ["python", "-m", "uvicorn", "core.main_v2:app", "--host", "0.0.0.0", "--port", "8000"]
 
