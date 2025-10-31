@@ -12,20 +12,24 @@ from pathlib import Path
 from core.logger import logger
 
 try:
+    # Configurar DISPLAY se não estiver definido (para Docker)
+    if 'DISPLAY' not in os.environ:
+        os.environ['DISPLAY'] = ':99'
+    
     import pyautogui
     PYAUTOGUI_AVAILABLE = True
-except ImportError:
+except (ImportError, KeyError, Exception) as e:
     PYAUTOGUI_AVAILABLE = False
     pyautogui = None
-    logger.warning("pyautogui não disponível. Instale com: pip install pyautogui")
+    logger.warning(f"pyautogui não disponível: {e}. Funcionalidade RPA desabilitada.")
 
 try:
     import pygetwindow as gw
     PYGETWINDOW_AVAILABLE = True
-except ImportError:
+except (ImportError, Exception) as e:
     PYGETWINDOW_AVAILABLE = False
     gw = None
-    logger.warning("pygetwindow não disponível. Instale com: pip install pygetwindow")
+    logger.warning(f"pygetwindow não disponível: {e}")
 
 class RPAModule:
     """

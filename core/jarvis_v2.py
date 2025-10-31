@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 from core.config import Config
 from core.logger import logger
 from core.local_llm import LocalLLM
+from core.llm_optimizer import LLMOptimizer
 
 # Módulos de Entrada
 from modules.input.voice_module import VoiceModule
@@ -19,7 +20,15 @@ from modules.input.text_module import TextModule
 from modules.processing.orchestrator import Orchestrator, MessageType
 
 # Módulos de Ação
-from modules.action.rpa_module import RPAModule
+# Importação lazy do RPAModule para evitar erros de DISPLAY no Docker
+try:
+    from modules.action.rpa_module import RPAModule
+    RPA_AVAILABLE = True
+except (ImportError, KeyError) as e:
+    logger.warning(f"RPAModule não disponível: {e}")
+    RPAModule = None
+    RPA_AVAILABLE = False
+
 from modules.action.file_manager import FileManager
 from modules.action.task_manager import TaskManager
 
@@ -55,18 +64,32 @@ class JarvisV2:
             capabilities = self.capability_detector.get_capabilities()
             logger.info(self.capability_detector.get_summary())
             
-            # Ajustar modelo recomendado
+            # Criar otimizador baseado em capacidades
+            try:
+                self.llm_optimizer = LLMOptimizer(capabilities)
+                logger.info("LLMOptimizer criado com sucesso")
+            except Exception as e:
+                logger.error(f"Erro ao criar LLMOptimizer: {e}")
+                self.llm_optimizer = None
+            
+            # Ajustar modelo recomendado (mas manter o escolhido pelo usuário se especificado)
             recommended = capabilities.get("recommended_model", {})
-            model_name = recommended.get("model", "llama3:8b")
-            logger.info(f"Modelo recomendado: {model_name}")
+            env_model = os.getenv('OLLAMA_MODEL')
+            if env_model:
+                model_name = env_model
+                logger.info(f"Modelo do ambiente: {model_name}")
+            else:
+                model_name = recommended.get("model", os.getenv('OLLAMA_MODEL', "codellama:7b"))
+                logger.info(f"Modelo recomendado: {model_name}")
         else:
             self.capability_detector = None
-            model_name = os.getenv('OLLAMA_MODEL', self.config.get("ollama_model", "llama3:8b"))
+            self.llm_optimizer = None
+            model_name = os.getenv('OLLAMA_MODEL', self.config.get("ollama_model", "codellama:7b"))
         
-        # Inicializar LLM
+        # Inicializar LLM com otimizador
         try:
-            self.llm = LocalLLM(model=model_name)
-            logger.info(f"LLM inicializado: {model_name}")
+            self.llm = LocalLLM(model=model_name, optimizer=self.llm_optimizer if hasattr(self, 'llm_optimizer') else None)
+            logger.info(f"LLM inicializado: {model_name} (com otimização automática)")
         except Exception as e:
             logger.error(f"Erro ao inicializar LLM: {e}")
             self.llm = None
@@ -79,7 +102,15 @@ class JarvisV2:
         self.orchestrator = Orchestrator(llm=self.llm)
         
         # Inicializar módulos de ação
-        self.rpa_module = RPAModule()
+        if RPA_AVAILABLE and RPAModule:
+            try:
+                self.rpa_module = RPAModule()
+            except Exception as e:
+                logger.warning(f"Erro ao inicializar RPAModule: {e}")
+                self.rpa_module = None
+        else:
+            self.rpa_module = None
+            
         self.file_manager = FileManager()
         self.task_manager = TaskManager()
         
@@ -103,6 +134,11 @@ class JarvisV2:
         
         # Skill: Abrir aplicativo
         async def open_app_skill(message: str, params: Dict[str, Any], context: Optional[Dict] = None):
+            if not self.rpa_module:
+                return {
+                    "response": "Módulo RPA não disponível. Funcionalidade de automação desktop desabilitada.",
+                    "actions": []
+                }
             app_name = params.get("app_name") or message.split()[-1]
             result = self.rpa_module.open_application(app_name)
             return {
@@ -110,7 +146,8 @@ class JarvisV2:
                 "actions": [result]
             }
         
-        self.orchestrator.register_skill("open_app", open_app_skill)
+        if self.rpa_module:
+            self.orchestrator.register_skill("open_app", open_app_skill)
         
         # Skill: Ler arquivo
         async def read_file_skill(message: str, params: Dict[str, Any], context: Optional[Dict] = None):
@@ -282,7 +319,7 @@ class JarvisV2:
             "version": "2.0",
             "llm_available": self.llm is not None,
             "voice_available": self.voice_module.is_available(),
-            "rpa_available": self.rpa_module.is_available(),
+            "rpa_available": self.rpa_module.is_available() if self.rpa_module else False,
             "skills_count": len(self.orchestrator.skills),
             "vector_store_stats": self.vector_store.get_stats(),
             "capabilities": self.capability_detector.get_capabilities() if self.capability_detector else None

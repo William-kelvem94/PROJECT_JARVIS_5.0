@@ -150,7 +150,7 @@ Resposta (apenas JSON):"""
             response = self.llm.generate(
                 intent_prompt,
                 system="Você é um analisador de intenções preciso. Retorne apenas JSON válido.",
-                max_tokens=200,
+                max_tokens=100,  # Reduzido para resposta mais rápida
                 temperature=0.3
             )
             
@@ -243,11 +243,12 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
         full_prompt = f"{context_prompt}\nuser: {message}\nassistant:"
         
         try:
+            # Usar parâmetros otimizados automaticamente (se LLM tiver optimizer)
             response = self.llm.generate(
                 full_prompt,
                 system=system_prompt,
-                max_tokens=500,
-                temperature=0.7
+                max_tokens=250,  # Mantém qualidade mas otimizado
+                temperature=0.65  # Balanceado para velocidade e qualidade
             )
             return response
         except Exception as e:

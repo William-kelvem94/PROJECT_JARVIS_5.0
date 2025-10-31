@@ -20,6 +20,8 @@ PyPDF2==3.0.1
 python-docx==1.1.0
 
 # Sistema RAG - Banco Vetorial
+# ChromaDB requer NumPy < 2.0
+numpy<2.0.0
 chromadb==0.4.22
 sentence-transformers==2.2.2
 
@@ -28,3 +30,10 @@ gputil==1.4.0
 
 # PyTorch (para CUDA/GPU) - opcional, instalar conforme necessidade
 # torch>=2.0.0
+
+# Enterprise AI - Sistema Cognitivo
+httpx==0.25.2  # Para chamadas async HTTP
+networkx==3.2.1  # Para Knowledge Graph (opcional)
+
+# Redis para Event Bus (opcional, para arquitetura enterprise)
+redis==5.0.1

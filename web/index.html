@@ -257,8 +257,9 @@
 
         .typing-indicator {
             display: flex;
-            gap: 4px;
-            padding: 1rem;
+            gap: 6px;
+            padding: 0.5rem 0;
+            align-items: center;
         }
 
         .typing-dot {
@@ -532,6 +533,8 @@
         
         let isStreaming = false;
         let currentMessageDiv = null;
+        let timeoutId = null;
+        const MESSAGE_TIMEOUT = 35000; // 35 segundos
 
         ws.onopen = () => {
             status.textContent = 'Conectado';
@@ -550,6 +553,16 @@
         };
 
         ws.onmessage = (event) => {
+            // Limpar timeout ao receber resposta
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            
+            hideTypingIndicator();
+            sendBtn.disabled = false;
+            isStreaming = false;
+            
             try {
                 const data = JSON.parse(event.data);
                 
@@ -559,6 +572,8 @@
                     handleAction(data);
                 } else if (data.type === 'message') {
                     addMessage(data.content, false);
+                } else if (data.type === 'error') {
+                    addMessage('❌ ' + (data.content || 'Erro desconhecido'), false);
                 } else {
                     // Fallback para mensagens antigas
                     addMessage(data.content || event.data, false);
@@ -660,14 +675,33 @@ Como posso ajudá-lo hoje?`;
             input.value = '';
             autoResize(input);
             
+            // Mostrar indicador de loading
+            showTypingIndicator();
+            sendBtn.disabled = true;
+            
+            // Limpar timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            
+            // Configurar timeout
+            timeoutId = setTimeout(() => {
+                hideTypingIndicator();
+                addMessage('⏱️ A resposta está demorando muito. Verificando conexão...', false);
+                sendBtn.disabled = false;
+                isStreaming = false;
+            }, MESSAGE_TIMEOUT);
+            
             try {
                 ws.send(JSON.stringify({
                     type: 'message',
                     content: text
                 }));
             } catch (e) {
-                // Fallback para formato antigo
-                ws.send(text);
+                hideTypingIndicator();
+                addMessage('❌ Erro ao enviar mensagem. Verifique a conexão.', false);
+                sendBtn.disabled = false;
+                if (timeoutId) clearTimeout(timeoutId);
             }
         }
 
@@ -686,6 +720,32 @@ Como posso ajudá-lo hoje?`;
         function autoResize(textarea) {
             textarea.style.height = 'auto';
             textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message assistant';
+            indicator.id = 'typing-indicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = 'J';
+            indicator.appendChild(avatar);
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            indicator.appendChild(content);
+            
+            messages.appendChild(indicator);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
         }
 
         function newChat() {

@@ -3,7 +3,10 @@
 import requests
 import json
 import os
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.llm_optimizer import LLMOptimizer
 from core.logger import logger
 
 class LocalLLM:
@@ -15,22 +18,34 @@ class LocalLLM:
     def __init__(self, 
                  base_url: str = None, 
                  model: str = "codellama:7b",
-                 timeout: int = 120):
+                 timeout: int = None,
+                 optimizer: Optional['LLMOptimizer'] = None):
         """
         Inicializa a conexão com Ollama.
         
         Args:
             base_url: URL base do Ollama (padrão: http://localhost:11434 ou http://ollama:11434 no Docker)
             model: Nome do modelo a ser usado
-            timeout: Timeout para requisições em segundos
+            timeout: Timeout para requisições em segundos (auto-ajustado se None)
+            optimizer: Instância de LLMOptimizer para auto-ajuste (opcional)
         """
         # Configuração automática baseada no ambiente
         self.base_url = base_url or os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.model = os.getenv('OLLAMA_MODEL', model)
-        self.timeout = timeout
+        self.optimizer = optimizer
+        
+        # Timeout baseado em recursos se optimizer disponível
+        if timeout is None:
+            if optimizer:
+                self.timeout = optimizer.get_timeout()
+            else:
+                self.timeout = 45  # Default médio
+        else:
+            self.timeout = timeout
+            
         self.api_url = f"{self.base_url}/api"
         
-        logger.info(f"LocalLLM inicializado: {self.base_url} | Modelo: {self.model}")
+        logger.info(f"LocalLLM inicializado: {self.base_url} | Modelo: {self.model} | Timeout: {self.timeout}s")
         
         # Verificar conexão com Ollama
         self._check_connection()
@@ -56,7 +71,7 @@ class LocalLLM:
     
     def generate(self, prompt: str, system: Optional[str] = None, **kwargs) -> str:
         """
-        Gera uma resposta do modelo LLM.
+        Gera uma resposta do modelo LLM com otimização automática.
         
         Args:
             prompt: Prompt do usuário
@@ -67,18 +82,38 @@ class LocalLLM:
             Resposta gerada pelo modelo
         """
         try:
+            # Usar otimizador se disponível
+            if self.optimizer:
+                optimal = self.optimizer.get_optimal_params()
+                # Mesclar com kwargs (kwargs têm prioridade)
+                final_params = {**optimal, **kwargs}
+                # Garantir que max_tokens não seja muito alto
+                final_params['max_tokens'] = min(final_params.get('max_tokens', 200), 300)
+            else:
+                final_params = {
+                    "temperature": kwargs.get('temperature', 0.65),
+                    "top_p": kwargs.get('top_p', 0.9),
+                    "top_k": kwargs.get('top_k', 40),
+                    "num_predict": kwargs.get('max_tokens', 200)
+                }
+            
             # Preparar payload
             payload = {
                 "model": self.model,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": kwargs.get('temperature', 0.7),
-                    "top_p": kwargs.get('top_p', 0.9),
-                    "top_k": kwargs.get('top_k', 40),
-                    "num_predict": kwargs.get('max_tokens', 256)
+                    "temperature": final_params.get('temperature', 0.65),
+                    "top_p": final_params.get('top_p', 0.9),
+                    "top_k": final_params.get('top_k', 40),
+                    "num_predict": final_params.get('max_tokens', final_params.get('num_predict', 200)),
+                    "repeat_penalty": final_params.get('repeat_penalty', 1.1),
+                    "num_thread": final_params.get('num_threads', None)
                 }
             }
+            
+            # Remover None values
+            payload["options"] = {k: v for k, v in payload["options"].items() if v is not None}
             
             # Adicionar contexto de sistema se fornecido
             if system:
@@ -100,8 +135,18 @@ class LocalLLM:
                 return f"Erro ao gerar resposta: {error_msg}"
                 
         except requests.exceptions.Timeout:
-            logger.error("Timeout ao gerar resposta. Modelo pode estar ocupado.")
-            return "Timeout: O modelo está demorando muito para responder. Tente novamente."
+            logger.error(f"Timeout ao gerar resposta com modelo {self.model}. Aumentando timeout ou otimizando parâmetros...")
+            # Tentar novamente com parâmetros mais otimizados para velocidade
+            try:
+                optimized_kwargs = {
+                    **kwargs,
+                    'max_tokens': kwargs.get('max_tokens', 150) // 2,  # Metade dos tokens
+                    'temperature': kwargs.get('temperature', 0.6) * 0.9  # Mais determinístico
+                }
+                logger.info("Tentando com parâmetros otimizados para velocidade...")
+                return self.generate(prompt, system, **optimized_kwargs)
+            except:
+                return "⏱️ O modelo está processando, mas demorou muito. Tente simplificar a pergunta ou aguarde alguns segundos."
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro na requisição: {e}")
             return f"Erro de conexão: Verifique se o Ollama está rodando."
@@ -126,10 +171,10 @@ class LocalLLM:
                 "messages": messages,
                 "stream": False,
                 "options": {
-                    "temperature": kwargs.get('temperature', 0.7),
+                    "temperature": kwargs.get('temperature', 0.65),
                     "top_p": kwargs.get('top_p', 0.9),
                     "top_k": kwargs.get('top_k', 40),
-                    "num_predict": kwargs.get('max_tokens', 256)
+                    "num_predict": kwargs.get('max_tokens', 200)
                 }
             }
             
