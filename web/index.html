@@ -79,7 +79,131 @@
 
         .header-right {
             display: flex;
+            align-items: center;
             gap: 0.5rem;
+        }
+
+        .training-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .training-status:hover {
+            background: var(--bg-primary);
+            border: 1px solid var(--accent);
+        }
+
+        .training-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        .training-indicator.active {
+            background: var(--success);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .train-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .train-btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .train-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .icon-btn {
@@ -450,6 +574,10 @@
             <span id="status" style="font-size: 0.85rem; color: var(--text-secondary);">Conectado</span>
         </div>
         <div class="header-right">
+            <div class="training-status" onclick="showTrainingModal()" title="Status do Treinamento">
+                <div class="training-indicator" id="trainingIndicator"></div>
+                <span id="trainingStatus">Treinamento</span>
+            </div>
             <button class="icon-btn" onclick="toggleSidebar()" title="Menu">
                 <i class="fas fa-bars"></i>
             </button>
@@ -520,6 +648,44 @@
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Treinamento -->
+    <div class="modal" id="trainingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📊 Dashboard de Treinamento</div>
+                <button class="close-btn" onclick="closeTrainingModal()">&times;</button>
+            </div>
+            <div id="trainingContent">
+                <div class="stat-item">
+                    <span class="stat-label">Status:</span>
+                    <span class="stat-value" id="trainingStatusValue">Carregando...</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Interações Coletadas:</span>
+                    <span class="stat-value" id="interactionsCount">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Qualidade Atual:</span>
+                    <span class="stat-value" id="currentQuality">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Último Treinamento:</span>
+                    <span class="stat-value" id="lastTraining">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Próximo Treinamento:</span>
+                    <span class="stat-value" id="nextTraining">-</span>
+                </div>
+                <button class="train-btn" id="startTrainingBtn" onclick="startTraining()">
+                    🚀 Iniciar Treinamento
+                </button>
+                <button class="train-btn" id="startIncrementalBtn" onclick="startIncrementalTraining()" style="background: var(--warning); margin-top: 0.5rem;">
+                    🔄 Treinamento Incremental
+                </button>
             </div>
         </div>
     </div>
@@ -807,6 +973,134 @@ Como posso ajudá-lo hoje?`;
             this.style.height = 'auto';
             this.style.height = Math.min(this.scrollHeight, 200) + 'px';
         });
+
+        // Sistema de Treinamento
+        async function loadTrainingStatus() {
+            try {
+                const response = await fetch('/api/training/status');
+                const data = await response.json();
+                
+                if (data.training_status) {
+                    const status = data.training_status;
+                    const auto = data.auto_trainer || {};
+                    
+                    // Atualizar indicador
+                    const indicator = document.getElementById('trainingIndicator');
+                    const statusText = document.getElementById('trainingStatus');
+                    
+                    if (status.can_train) {
+                        indicator.classList.add('active');
+                        statusText.textContent = 'Pronto para Treinar';
+                    } else {
+                        indicator.classList.remove('active');
+                        statusText.textContent = 'Coletando Dados';
+                    }
+                    
+                    // Atualizar modal se aberto
+                    if (document.getElementById('trainingModal').classList.contains('show')) {
+                        updateTrainingModal(data);
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao carregar status:', e);
+            }
+        }
+
+        function showTrainingModal() {
+            document.getElementById('trainingModal').classList.add('show');
+            loadTrainingStatus().then(() => {
+                const response = fetch('/api/training/status').then(r => r.json());
+                response.then(data => updateTrainingModal(data));
+            });
+        }
+
+        function closeTrainingModal() {
+            document.getElementById('trainingModal').classList.remove('show');
+        }
+
+        function updateTrainingModal(data) {
+            const status = data.training_status || {};
+            const auto = data.auto_trainer || {};
+            
+            document.getElementById('trainingStatusValue').textContent = 
+                status.status === 'ready' ? '✅ Pronto' : '⏳ Coletando Dados';
+            document.getElementById('interactionsCount').textContent = 
+                status.pairs_available || 0;
+            document.getElementById('currentQuality').textContent = 
+                auto.current_quality ? `${(auto.current_quality * 100).toFixed(1)}%` : '-';
+            document.getElementById('lastTraining').textContent = 
+                auto.last_training ? new Date(auto.last_training).toLocaleString('pt-BR') : 'Nunca';
+            document.getElementById('nextTraining').textContent = 
+                auto.next_scheduled_training ? new Date(auto.next_scheduled_training).toLocaleString('pt-BR') : '-';
+            
+            // Habilitar/desabilitar botões
+            const startBtn = document.getElementById('startTrainingBtn');
+            const incBtn = document.getElementById('startIncrementalBtn');
+            
+            startBtn.disabled = !status.can_train;
+            incBtn.disabled = !status.can_train || status.pairs_available < 20;
+        }
+
+        async function startTraining() {
+            const btn = document.getElementById('startTrainingBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Treinando...';
+            
+            try {
+                const response = await fetch('/api/training/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        base_model: 'codellama:7b',
+                        custom_name: 'jarvis-custom'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Treinamento iniciado com sucesso!\n' + result.message);
+                    loadTrainingStatus();
+                } else {
+                    alert('❌ Erro: ' + result.message);
+                }
+            } catch (e) {
+                alert('❌ Erro ao iniciar treinamento: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Iniciar Treinamento';
+            }
+        }
+
+        async function startIncrementalTraining() {
+            const btn = document.getElementById('startIncrementalBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Treinando...';
+            
+            try {
+                const response = await fetch('/api/training/incremental', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Treinamento incremental iniciado!\n' + result.message);
+                    loadTrainingStatus();
+                } else {
+                    alert('❌ Erro: ' + result.message);
+                }
+            } catch (e) {
+                alert('❌ Erro ao iniciar treinamento: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Treinamento Incremental';
+            }
+        }
+
+        // Atualizar status a cada 30 segundos
+        setInterval(loadTrainingStatus, 30000);
+        loadTrainingStatus(); // Carregar imediatamente
     </script>
 </body>
 </html>

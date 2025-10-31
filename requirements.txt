@@ -37,3 +37,6 @@ networkx==3.2.1  # Para Knowledge Graph (opcional)
 
 # Redis para Event Bus (opcional, para arquitetura enterprise)
 redis==5.0.1
+
+# HuggingFace Integration
+huggingface_hub==0.20.0

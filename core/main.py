@@ -6,14 +6,26 @@ from core.local_llm import LocalLLM
 from core.config import Config
 from core.logger import logger
 from core.command_processor import CommandProcessor
+from core.training_manager import TrainingManager
+from core.auto_trainer import AutoTrainer
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
 from modules.llm.streaming_llm import StreamingLLM
+from modules.memory.persistent_memory import PersistentMemory
+from enterprise.ai.continuous_learning import ContinuousLearningLoop
+from core.knowledge_base import KnowledgeBase
+from core.huggingface_integration import HuggingFaceIntegration
+from modules.rag.vector_store import VectorStore
 import os
 import json
 import asyncio
 
 app = FastAPI(title="JARVIS IA", description="Assistente IA Local com Ollama", version="5.0")
+
+# Variáveis globais para treinamento
+training_manager = None
+auto_trainer = None
+memory = None
 
 # CORS para permitir acesso da interface web
 app.add_middleware(
@@ -57,6 +69,50 @@ except Exception as e:
 system_plugin = SystemPlugin()
 file_plugin = FilePlugin()
 command_processor = CommandProcessor()
+
+# Inicializar sistema de memória e aprendizado
+memory = PersistentMemory()
+learning_loop = ContinuousLearningLoop()
+
+# Inicializar Knowledge Base (sistema de conhecimento persistente)
+try:
+    vector_store = VectorStore()
+    knowledge_base = KnowledgeBase(vector_store=vector_store, memory=memory)
+    logger.info("✅ Knowledge Base inicializada")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar Knowledge Base: {e}")
+    knowledge_base = None
+
+# Inicializar integração com HuggingFace
+try:
+    hf_integration = HuggingFaceIntegration()
+    logger.info("✅ Integração HuggingFace inicializada")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar HuggingFace: {e}")
+    hf_integration = None
+
+# Inicializar sistema de treinamento
+try:
+    training_manager = TrainingManager(memory=memory)
+    auto_trainer = AutoTrainer(
+        training_manager=training_manager,
+        learning_loop=learning_loop,
+        memory=memory,
+        base_model=ollama_model
+    )
+    logger.info("✅ Sistema de treinamento inicializado")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar sistema de treinamento: {e}")
+    training_manager = None
+    auto_trainer = None
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicia tarefas em background na inicialização."""
+    if auto_trainer:
+        # Iniciar monitoramento periódico em background
+        asyncio.create_task(auto_trainer.start_periodic_training(check_interval_minutes=60))
+        logger.info("🔄 Monitoramento periódico de treinamento iniciado")
 
 # Servir arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
@@ -112,6 +168,145 @@ async def pull_model(model_name: str):
     else:
         raise HTTPException(status_code=500, detail=f"Erro ao baixar modelo {model_name}")
 
+# API de treinamento
+@app.get("/api/training/status")
+async def get_training_status():
+    """Retorna status do sistema de treinamento."""
+    if not training_manager:
+        return JSONResponse({"status": "disabled", "message": "Sistema de treinamento não disponível"})
+    
+    status = training_manager.get_training_status()
+    auto_status = auto_trainer.get_status() if auto_trainer else None
+    
+    return JSONResponse({
+        "training_status": status,
+        "auto_trainer": auto_status
+    })
+
+@app.post("/api/training/start")
+async def start_training(request: Request):
+    """Inicia treinamento do modelo."""
+    if not training_manager:
+        raise HTTPException(status_code=503, detail="Sistema de treinamento não disponível")
+    
+    try:
+        data = await request.json()
+        base_model = data.get("base_model", ollama_model)
+        custom_name = data.get("custom_name", "jarvis-custom")
+        force = data.get("force", False)
+        
+        # Executar em background
+        result = await asyncio.to_thread(
+            training_manager.train_model,
+            base_model=base_model,
+            custom_model_name=custom_name,
+            force_retrain=force
+        )
+        
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao iniciar treinamento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training/incremental")
+async def start_incremental_training(request: Request):
+    """Inicia treinamento incremental."""
+    if not training_manager or not auto_trainer:
+        raise HTTPException(status_code=503, detail="Sistema de treinamento não disponível")
+    
+    try:
+        result = await auto_trainer.schedule_training(
+            reason="manual",
+            incremental=True
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro no treinamento incremental: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# API de Knowledge Base
+@app.get("/api/knowledge/stats")
+async def get_knowledge_stats():
+    """Retorna estatísticas da base de conhecimento."""
+    if not knowledge_base:
+        return JSONResponse({"status": "disabled", "message": "Knowledge Base não disponível"})
+    
+    stats = knowledge_base.get_stats()
+    return JSONResponse(stats)
+
+@app.post("/api/knowledge/learn")
+async def trigger_learning(request: Request):
+    """Dispara aprendizado automático das interações."""
+    if not knowledge_base:
+        raise HTTPException(status_code=503, detail="Knowledge Base não disponível")
+    
+    try:
+        data = await request.json()
+        limit = data.get("limit", 100)
+        
+        result = await asyncio.to_thread(
+            knowledge_base.auto_learn_from_interactions,
+            limit=limit
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao aprender: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/knowledge/search")
+async def search_knowledge(query: str, limit: int = 5):
+    """Busca conhecimento armazenado."""
+    if not knowledge_base:
+        raise HTTPException(status_code=503, detail="Knowledge Base não disponível")
+    
+    results = knowledge_base.search_knowledge(query, n_results=limit)
+    return JSONResponse({"query": query, "results": results})
+
+# API de HuggingFace
+@app.get("/api/huggingface/models/search")
+async def search_hf_models(query: str, task: str = None, limit: int = 10):
+    """Busca modelos no HuggingFace."""
+    if not hf_integration:
+        raise HTTPException(status_code=503, detail="Integração HuggingFace não disponível")
+    
+    models = hf_integration.search_models(query, task, limit)
+    return JSONResponse({"query": query, "models": models})
+
+@app.get("/api/huggingface/models/ollama-compatible")
+async def get_ollama_compatible_models(query: str = "llm", limit: int = 20):
+    """Busca modelos compatíveis com Ollama."""
+    if not hf_integration:
+        raise HTTPException(status_code=503, detail="Integração HuggingFace não disponível")
+    
+    models = hf_integration.get_ollama_compatible_models(query, limit)
+    return JSONResponse({"models": models})
+
+@app.get("/api/huggingface/models/{model_id}")
+async def get_hf_model_info(model_id: str):
+    """Obtém informações de um modelo do HuggingFace."""
+    if not hf_integration:
+        raise HTTPException(status_code=503, detail="Integração HuggingFace não disponível")
+    
+    info = hf_integration.get_model_info(model_id)
+    download_info = hf_integration.download_model_info(model_id)
+    return JSONResponse({"info": info, "download": download_info})
+
+@app.post("/api/huggingface/models/suggest")
+async def suggest_models(request: Request):
+    """Sugere modelos baseado em descrição de tarefa."""
+    if not hf_integration:
+        raise HTTPException(status_code=503, detail="Integração HuggingFace não disponível")
+    
+    try:
+        data = await request.json()
+        task_description = data.get("task", "")
+        
+        suggestions = hf_integration.suggest_model_for_task(task_description)
+        return JSONResponse({"suggestions": suggestions})
+    except Exception as e:
+        logger.error(f"Erro ao sugerir modelos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # API de chat
 @app.post("/api/chat")
 async def chat(request: Request):
@@ -130,8 +325,26 @@ async def chat(request: Request):
             if result:
                 return JSONResponse(result)
         
+        # Salvar mensagem do usuário
+        if memory:
+            memory.save_conversation("user", prompt)
+        
         system = data.get("system", "Você é JARVIS, um assistente de IA inteligente e útil.")
         response = llm.generate(prompt, system=system)
+        
+        # Salvar resposta do assistente
+        if memory:
+            memory.save_conversation("assistant", response, metadata={
+                "model_used": ollama_model
+            })
+        
+        # Monitorar qualidade
+        if auto_trainer:
+            await auto_trainer.monitor_interaction(
+                user_query=prompt,
+                assistant_response=response
+            )
+        
         return JSONResponse({"response": response})
     except Exception as e:
         logger.error(f"Erro no chat: {e}")
@@ -213,6 +426,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 })
                 continue
             
+            # Salvar mensagem do usuário na memória persistente
+            if memory:
+                memory.save_conversation("user", message)
+            
             # Processar comandos primeiro
             command = command_processor.process(message)
             if command:
@@ -221,10 +438,19 @@ async def websocket_endpoint(websocket: WebSocket):
                     await websocket.send_json(result)
                     # Continuar com resposta do LLM também (não fazer continue)
             
+            # Buscar conhecimento relevante da base de conhecimento
+            context = ""
+            if knowledge_base:
+                context = knowledge_base.get_context_for_query(message, max_results=3)
+            
             # Gerar resposta do LLM com STREAMING REAL
             system_prompt = """Você é JARVIS, um assistente de IA inteligente e útil.
 Você pode controlar o computador do usuário, abrir aplicativos, organizar arquivos e muito mais.
 Seja direto, útil e amigável. Use emojis quando apropriado."""
+            
+            # Adicionar contexto se disponível
+            if context:
+                system_prompt += f"\n\nContexto relevante do conhecimento aprendido:\n{context}"
             
             stream_started = False
             accumulated_response = ""
@@ -266,9 +492,32 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
                         accumulated_response = "⏱️ A resposta está demorando muito. O modelo pode estar processando... Tente novamente."
                 
                 # Garantir que stream_end sempre seja enviado
+                final_response = accumulated_response if accumulated_response else "❌ Erro: Nenhuma resposta foi gerada."
+                
+                # Salvar resposta do assistente na memória
+                if memory:
+                    memory.save_conversation("assistant", final_response, metadata={
+                        "model_used": ollama_model,
+                        "streaming": True
+                    })
+                
+                # Monitorar qualidade e disparar auto-treinamento se necessário
+                if auto_trainer and accumulated_response:
+                    await auto_trainer.monitor_interaction(
+                        user_query=message,
+                        assistant_response=final_response
+                    )
+                
+                # Extrair e armazenar conhecimento aprendido
+                if knowledge_base and accumulated_response:
+                    knowledge_base.extract_and_store_knowledge(
+                        user_query=message,
+                        assistant_response=final_response
+                    )
+                
                 await websocket.send_json({
                     "type": "stream_end",
-                    "content": accumulated_response if accumulated_response else "❌ Erro: Nenhuma resposta foi gerada."
+                    "content": final_response
                 })
                 
             except asyncio.TimeoutError:
