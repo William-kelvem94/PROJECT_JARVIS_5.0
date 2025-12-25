@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  jarvis:
+    build: .
+    container_name: jarvis-5.0
+    restart: unless-stopped
+    
+    # Variáveis de ambiente
+    environment:
+      - PYTHONUNBUFFERED=1
+      - JARVIS_ENV=docker
+      - PULSE_RUNTIME_PATH=/run/user/1000/pulse
+    
+    # Volumes para persistência
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - ./.cursor:/app/.cursor
+      - ./config.json:/app/config.json
+      # Áudio (Linux)
+      - /run/user/1000/pulse:/run/user/1000/pulse:ro
+      - ~/.config/pulse/cookie:/root/.config/pulse/cookie:ro
+    
+    # Dispositivos (câmera e áudio)
+    devices:
+      - /dev/video0:/dev/video0  # Câmera
+      - /dev/snd:/dev/snd        # Áudio
+    
+    # Rede
+    network_mode: host
+    
+    # Privilégios para áudio/vídeo
+    privileged: false
+    
+    # Comando personalizado
+    command: python main.py
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "python", "-c", "import jarvis; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Serviço opcional para desenvolvimento
+  jarvis-dev:
+    build: .
+    container_name: jarvis-dev
+    profiles: ["dev"]
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - JARVIS_ENV=development
+    
+    volumes:
+      - .:/app
+      - ./models:/app/models
+      - ./logs:/app/logs
+    
+    devices:
+      - /dev/video0:/dev/video0
+      - /dev/snd:/dev/snd
+    
+    network_mode: host
+    
+    # Modo interativo para desenvolvimento
+    stdin_open: true
+    tty: true
+    
+    command: python main.py --debug
+
+# Volumes nomeados para persistência
+volumes:
+  jarvis_models:
+    driver: local
+  jarvis_logs:
+    driver: local

@@ -143,7 +143,7 @@ def test_natural_conversation():
                     "CONVERSATION"
                 )
                 
-                print(f"Processamento: {'✅ Sucesso' if result else '❌ Falha'}")
+                print(f"Processamento: {'[OK] Sucesso' if result else '[ERRO] Falha'}")
                 print(f"Duração: {end_time - start_time:.2f}s")
                 
                 if result:
@@ -193,10 +193,10 @@ def test_natural_conversation():
         print(f"\n=== Teste de Recursos de IA ===")
         
         if hasattr(assistant.command_processor, 'ai_enabled') and assistant.command_processor.ai_enabled:
-            print("✅ IA Conversacional: ATIVA")
-            print("✅ Processamento NLP: DISPONÍVEL")
-            print("✅ Motor de Decisão: FUNCIONANDO")
-            print("✅ Base de Conhecimento: CARREGADA")
+            print("[OK] IA Conversacional: ATIVA")
+            print("[OK] Processamento NLP: DISPONIVEL")
+            print("[OK] Motor de Decisao: FUNCIONANDO")
+            print("[OK] Base de Conhecimento: CARREGADA")
         else:
             print("⚠️ IA Conversacional: MODO BÁSICO")
             print("ℹ️ Para ativar IA completa, instale: pip install spacy nltk scikit-learn")
