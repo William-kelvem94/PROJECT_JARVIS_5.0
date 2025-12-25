@@ -110,72 +110,115 @@ class VideoProcessor:
         try:
             ret, frame = self.camera.read()
             if not ret:
+                time.sleep(0.01)  # Pequena pausa se não conseguir ler frame
                 return None
+            
+            # Redimensionar frame para otimizar processamento
+            if frame.shape[1] > 640:
+                scale_factor = 640 / frame.shape[1]
+                new_width = 640
+                new_height = int(frame.shape[0] * scale_factor)
+                frame = cv2.resize(frame, (new_width, new_height))
             
             self.current_frame = frame
             self.stats['frames_processed'] += 1
             
-            # Processar detecções
-            results = self._analyze_frame(frame)
+            # Processar detecções apenas a cada 3 frames para otimizar
+            results = None
+            if self.stats['frames_processed'] % 3 == 0:
+                results = self._analyze_frame(frame)
+            else:
+                # Frame básico sem análise pesada
+                results = {
+                    'timestamp': time.time(),
+                    'faces': [],
+                    'eyes': 0,
+                    'motion': 0,
+                    'gestures': [],
+                    'skip_analysis': True
+                }
             
-            # Atualizar frame anterior
-            self.prev_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # Atualizar frame anterior apenas quando necessário
+            if self.stats['frames_processed'] % 2 == 0:
+                self.prev_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
             return results
             
         except Exception as e:
             self.logger.error(f"Erro no processamento de frame: {e}")
+            time.sleep(0.1)  # Pausa maior em caso de erro
             return None
     
     def _analyze_frame(self, frame: np.ndarray) -> Dict[str, Any]:
-        """Analisa um frame e extrai informações"""
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        results = {
-            'timestamp': time.time(),
-            'faces': [],
-            'eyes': 0,
-            'motion': 0,
-            'gestures': []
-        }
-        
-        # Detecção facial
-        if self.face_cascade and not self.face_cascade.empty():
-            faces = self.face_cascade.detectMultiScale(
-                gray, scaleFactor=1.1, minNeighbors=5, minSize=(50, 50)
-            )
+        """Analisa um frame e extrai informações (otimizado)"""
+        try:
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            results = {
+                'timestamp': time.time(),
+                'faces': [],
+                'eyes': 0,
+                'motion': 0,
+                'gestures': []
+            }
             
-            for (x, y, w, h) in faces:
-                face_info = {
-                    'x': int(x), 'y': int(y),
-                    'width': int(w), 'height': int(h),
-                    'center': (int(x + w/2), int(y + h/2))
-                }
-                results['faces'].append(face_info)
+            # Detecção facial otimizada
+            if self.face_cascade and not self.face_cascade.empty():
+                # Parâmetros otimizados para melhor performance
+                faces = self.face_cascade.detectMultiScale(
+                    gray, 
+                    scaleFactor=1.2,  # Aumentado para menos detecções
+                    minNeighbors=3,   # Reduzido para melhor performance
+                    minSize=(60, 60), # Aumentado o tamanho mínimo
+                    maxSize=(300, 300)  # Limitado o tamanho máximo
+                )
                 
-                # Detectar olhos na região facial
-                roi_gray = gray[y:y+h, x:x+w]
-                if self.eye_cascade and not self.eye_cascade.empty():
-                    eyes = self.eye_cascade.detectMultiScale(roi_gray)
-                    results['eyes'] += len(eyes)
+                # Limitar número de faces processadas
+                for i, (x, y, w, h) in enumerate(faces[:3]):  # Máximo 3 faces
+                    face_info = {
+                        'x': int(x), 'y': int(y),
+                        'width': int(w), 'height': int(h),
+                        'center': (int(x + w/2), int(y + h/2))
+                    }
+                    results['faces'].append(face_info)
+                    
+                    # Detectar olhos apenas na primeira face para otimizar
+                    if i == 0 and self.eye_cascade and not self.eye_cascade.empty():
+                        roi_gray = gray[y:y+h, x:x+w]
+                        eyes = self.eye_cascade.detectMultiScale(
+                            roi_gray, scaleFactor=1.1, minNeighbors=3
+                        )
+                        results['eyes'] = len(eyes)
+                
+                if len(faces) > 0:
+                    self.stats['faces_detected'] += len(faces)
             
-            if len(faces) > 0:
-                self.stats['faces_detected'] += len(faces)
-        
-        # Detecção de movimento
-        if self.prev_frame is not None:
-            motion = self._detect_motion(gray)
-            results['motion'] = motion
+            # Detecção de movimento otimizada
+            if self.prev_frame is not None:
+                motion = self._detect_motion(gray)
+                results['motion'] = motion
+                
+                if motion > 2000:  # Threshold aumentado
+                    self.stats['motion_events'] += 1
             
-            if motion > 1000:  # Threshold para movimento significativo
-                self.stats['motion_events'] += 1
-        
-        # Detecção de gestos (simplificada)
-        gestures = self._detect_gestures(frame)
-        results['gestures'] = gestures
-        if gestures:
-            self.stats['gestures_detected'] += len(gestures)
-        
-        return results
+            # Detecção de gestos apenas se houver movimento significativo
+            if results['motion'] > 1500:
+                gestures = self._detect_gestures_optimized(frame)
+                results['gestures'] = gestures
+                if gestures:
+                    self.stats['gestures_detected'] += len(gestures)
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Erro na análise de frame: {e}")
+            return {
+                'timestamp': time.time(),
+                'faces': [],
+                'eyes': 0,
+                'motion': 0,
+                'gestures': [],
+                'error': str(e)
+            }
     
     def _detect_motion(self, current_gray: np.ndarray) -> int:
         """Detecta movimento entre frames"""
@@ -192,37 +235,44 @@ class VideoProcessor:
             self.logger.error(f"Erro na detecção de movimento: {e}")
             return 0
     
-    def _detect_gestures(self, frame: np.ndarray) -> List[str]:
-        """Detecta gestos básicos (implementação simplificada)"""
+    def _detect_gestures_optimized(self, frame: np.ndarray) -> List[str]:
+        """Detecta gestos básicos (versão otimizada)"""
         gestures = []
         
-        # Esta é uma implementação básica
-        # Em uma versão completa, usaríamos MediaPipe ou similar
         try:
-            # Análise básica de contornos para gestos
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY)[1]
+            # Reduzir resolução para análise de gestos
+            h, w = frame.shape[:2]
+            small_frame = cv2.resize(frame, (w//2, h//2))
+            
+            # Análise básica otimizada
+            gray = cv2.cvtColor(small_frame, cv2.COLOR_BGR2GRAY)
+            blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+            thresh = cv2.threshold(blurred, 80, 255, cv2.THRESH_BINARY)[1]
             
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             
+            # Processar apenas os 3 maiores contornos
+            contours = sorted(contours, key=cv2.contourArea, reverse=True)[:3]
+            
             for contour in contours:
                 area = cv2.contourArea(contour)
-                if 1000 < area < 10000:  # Área típica de uma mão
-                    # Análise básica da forma
-                    hull = cv2.convexHull(contour)
-                    hull_area = cv2.contourArea(hull)
-                    
-                    if hull_area > 0:
-                        solidity = area / hull_area
+                if 500 < area < 5000:  # Área ajustada para frame menor
+                    # Análise simplificada da forma
+                    perimeter = cv2.arcLength(contour, True)
+                    if perimeter > 0:
+                        circularity = 4 * np.pi * area / (perimeter * perimeter)
                         
-                        # Classificação básica baseada na solidez
-                        if solidity > 0.9:
+                        # Classificação baseada na circularidade
+                        if circularity > 0.7:
                             gestures.append('closed_fist')
-                        elif solidity > 0.7:
+                        elif circularity > 0.4:
                             gestures.append('open_palm')
                         else:
                             gestures.append('pointing')
+                        
+                        # Limitar a 2 gestos para performance
+                        if len(gestures) >= 2:
+                            break
             
         except Exception as e:
             self.logger.error(f"Erro na detecção de gestos: {e}")
