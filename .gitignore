@@ -1,0 +1,150 @@
+# 🚫 JARVIS 5.0 - Arquivos Ignorados
+
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 🧪 Testes e Coverage
+.coverage
+.pytest_cache/
+cover/
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# 🔧 Ambientes Virtuais
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 💻 IDEs e Editores
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 📊 Logs e Debug
+*.log
+.cursor/debug.log
+logs/
+debug/
+
+# 🎵 Arquivos de Áudio Temporários
+*.wav
+*.mp3
+*.ogg
+temp_audio/
+audio_cache/
+
+# 🔐 Configurações Sensíveis
+.env.local
+.env.production
+secrets.json
+api_keys.json
+
+# 📦 Dependências
+node_modules/
+.npm
+.yarn/
+
+# 🏗️ Build e Deploy
+.build/
+.deploy/
+.docker/
+
+# 📱 Sistema Operacional
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 🔄 Temporários
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# 📈 Métricas e Analytics
+.analytics/
+metrics/
+stats/
+
+# 🎯 Específicos do JARVIS
+voice_cache/
+tts_cache/
+recognition_cache/
+model_cache/
+
+# 🧠 Modelos de IA (se houver)
+models/
+*.model
+*.pkl
+*.joblib
+
+# 📋 Configurações Locais
+config.local.json
+settings.local.json
+user_preferences.json
+
+# 🔊 Calibração de Áudio
+audio_calibration/
+mic_settings.json
+
+# 📸 Screenshots e Demos
+screenshots/
+demos/
+recordings/
+
+# 🚀 Deploy e CI/CD
+.github/workflows/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+deployment/
+
+# 📚 Documentação Gerada
+docs/_build/
+site/
+_site/
+
+# 🎨 Assets Temporários
+assets/temp/
+images/temp/
+icons/temp/
