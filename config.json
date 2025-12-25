@@ -1,0 +1,14 @@
+{
+  "voice": {
+    "rate": 180,
+    "volume": 0.9,
+    "language": "pt-BR"
+  },
+  "recognition": {
+    "timeout": 5,
+    "phrase_limit": 10
+  },
+  "system": {
+    "os": "auto"
+  }
+}
