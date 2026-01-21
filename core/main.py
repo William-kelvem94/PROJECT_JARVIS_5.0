@@ -125,14 +125,12 @@ except Exception as e:
     auto_trainer = None
     training_orchestrator = None
 
-# Inicializar Web Search e Research Assistant
+# Inicializar Web Search e Research Assistant com Google SEGURO
 try:
-    web_search = WebSearchIntegration(
-        enable_duckduckgo=True,
-        enable_wikipedia=True
-    )
+    web_search = WebSearchIntegration()
     research_assistant = ResearchAssistant(web_search)
-    logger.info("✅ Web Search e Research Assistant inicializados")
+    logger.info("✅ Web Search (Google Seguro) e Research Assistant inicializados")
+    logger.info("🔒 Medidas de segurança ativas contra vazamento e ataques")
 except Exception as e:
     logger.warning(f"Erro ao inicializar web search: {e}")
     web_search = None
@@ -504,7 +502,14 @@ async def research_status():
     return JSONResponse({
         "web_search_available": web_search is not None and web_search.is_available(),
         "research_assistant_available": research_assistant is not None,
-        "providers": [p.__class__.__name__ for p in web_search.providers] if web_search else []
+        "search_engine": "Google Search (Secure)",
+        "security_features": [
+            "Query sanitization",
+            "Rate limiting (10 req/min)",
+            "Sensitive data blocking",
+            "Result anonymization",
+            "Rotating safe headers"
+        ]
     })
 
 # API de Controle de Sistema
