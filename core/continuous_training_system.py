@@ -180,7 +180,7 @@ class ContinuousTrainingSystem:
                 logger.error(f"Erro no loop de treinamento contínuo: {e}")
                 await asyncio.sleep(60)  # Aguardar 1 minuto antes de retry
     
-    async def _check_and_train(self):
+    def _check_and_train(self):
         """Verifica se deve treinar e executa treinamento."""
         try:
             # Verificar se há dados novos suficientes
@@ -194,10 +194,11 @@ class ContinuousTrainingSystem:
             auto_trainer_status = self.orchestrator.auto_trainer.get_status()
             current_quality = auto_trainer_status.get('current_quality', 0.5)
             
-            # Decidir se deve treinar
+            # Decidir se deve treinar - FIX: use total_seconds() ao invés de seconds
+            time_since_check = (datetime.now() - self.last_training_check).total_seconds()
             should_train = (
                 dataset_stats['total_interactions'] >= self.min_new_interactions and
-                (datetime.now() - self.last_training_check).seconds >= self.training_interval_minutes * 60
+                time_since_check >= self.training_interval_minutes * 60
             )
             
             if should_train:

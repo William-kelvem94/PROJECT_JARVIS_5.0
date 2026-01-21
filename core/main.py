@@ -611,13 +611,27 @@ async def take_screenshot(request: Request):
     
     try:
         data = await request.json()
-        path = data.get("path", f"./screenshots/screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        requested_path = data.get("path", f"./screenshots/screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
         target = data.get("target", "local")
         
-        # Criar diretório se não existir
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        # Validar e sanitizar caminho para prevenir directory traversal
+        screenshots_dir = Path("./screenshots").resolve()
+        screenshots_dir.mkdir(parents=True, exist_ok=True)
         
-        result = system_controller.take_screenshot(path, target)
+        # Resolver caminho completo e verificar se está dentro do diretório permitido
+        try:
+            full_path = Path(requested_path).resolve()
+            # Verificar se o caminho está dentro do diretório de screenshots
+            if not str(full_path).startswith(str(screenshots_dir)):
+                # Se não, usar caminho seguro padrão
+                full_path = screenshots_dir / f"screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                logger.warning(f"Path validation failed, using safe path: {full_path}")
+        except Exception as e:
+            # Em caso de erro, usar caminho seguro
+            full_path = screenshots_dir / f"screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            logger.warning(f"Path resolution failed: {e}, using safe path: {full_path}")
+        
+        result = system_controller.take_screenshot(str(full_path), target)
         return JSONResponse(result)
     except HTTPException:
         raise
