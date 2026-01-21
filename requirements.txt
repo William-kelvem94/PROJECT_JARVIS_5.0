@@ -7,6 +7,10 @@ SpeechRecognition==3.10.0
 python-dotenv==1.0.0
 psutil==5.9.6
 
+# Web Scraping (para Google Search seguro)
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
 # Módulos de Voz (STT/TTS)
 # VOSK (opcional - melhor STT offline)
 # vosk==0.3.45
