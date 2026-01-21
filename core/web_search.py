@@ -9,9 +9,9 @@ import os
 import requests
 import re
 import time
-import hashlib
+import random
 from datetime import datetime, timedelta
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote_plus, urljoin, urlparse, parse_qs
 from bs4 import BeautifulSoup
 from core.logger import logger
 
@@ -30,14 +30,14 @@ class SearchSecurityManager:
             # Padrões que podem vazar informações sensíveis
             r'senha', r'password', r'token', r'api[_-]?key',
             r'secret', r'credential', r'auth',
-            r'\d{3}[-.]?\d{3}[-.]?\d{3}[-.]?\d{2}',  # CPF
-            r'\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}',  # Cartão
-            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',  # Email pessoal
+            r'\d{3}[-.]?\d{3}[-.]?\d{3}[-.]?\d{2}',  # CPF brasileiro
+            # Cartão: mais específico para evitar falsos positivos
+            r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b',
         ]
         self.safe_user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ]
         logger.info("🔒 Security Manager inicializado")
     
@@ -95,7 +95,6 @@ class SearchSecurityManager:
     
     def get_safe_headers(self) -> Dict[str, str]:
         """Retorna headers seguros para requisições."""
-        import random
         return {
             'User-Agent': random.choice(self.safe_user_agents),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -112,9 +111,27 @@ class SearchSecurityManager:
             # Remover tracking parameters de URLs
             if 'url' in result:
                 url = result['url']
-                # Remover parâmetros de tracking comuns
-                url = re.sub(r'[?&](utm_|fbclid|gclid|ref=)', '', url)
-                result['url'] = url
+                try:
+                    # Parse URL para manipulação segura
+                    parsed = urlparse(url)
+                    if parsed.query:
+                        # Remover parâmetros de tracking usando parse_qs
+                        params = parse_qs(parsed.query)
+                        clean_params = {
+                            k: v for k, v in params.items()
+                            if not any(k.startswith(prefix) for prefix in ['utm_', 'fbclid', 'gclid', 'ref'])
+                        }
+                        # Reconstruir URL limpa
+                        from urllib.parse import urlencode, urlunparse
+                        clean_query = urlencode(clean_params, doseq=True)
+                        result['url'] = urlunparse((
+                            parsed.scheme, parsed.netloc, parsed.path,
+                            parsed.params, clean_query, parsed.fragment
+                        ))
+                except Exception as e:
+                    logger.debug(f"Erro ao limpar URL: {e}")
+                    # Fallback: regex simples
+                    result['url'] = re.sub(r'[?&](utm_|fbclid|gclid|ref=)[^&]*&?', '', url).rstrip('?&')
         
         return results
 
@@ -236,17 +253,22 @@ class GoogleSearch:
                 for link in soup.find_all('a', href=True)[:num_results]:
                     href = link.get('href', '')
                     if href.startswith('/url?q='):
-                        # Extrair URL real
-                        url = href.split('/url?q=')[1].split('&')[0]
-                        title = link.get_text().strip()
-                        
-                        if title and url:
-                            results.append({
-                                'title': title,
-                                'snippet': '',
-                                'url': url,
-                                'source': 'Google Search'
-                            })
+                        try:
+                            # Extrair URL real de forma segura
+                            parsed = parse_qs(href[5:])  # Remove '/url?'
+                            url = parsed.get('q', [''])[0] if 'q' in parsed else ''
+                            title = link.get_text().strip()
+                            
+                            if title and url:
+                                results.append({
+                                    'title': title,
+                                    'snippet': '',
+                                    'url': url,
+                                    'source': 'Google Search'
+                                })
+                        except Exception as e:
+                            logger.debug(f"Erro ao parse URL alternativa: {e}")
+                            continue
             
         except Exception as e:
             logger.error(f"Erro ao parse Google results: {e}")
