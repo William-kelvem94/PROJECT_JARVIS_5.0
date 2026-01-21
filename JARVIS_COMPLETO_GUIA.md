@@ -484,7 +484,7 @@ curl http://localhost:8000/api/models/registry
 
 # O JARVIS:
 # 1. Detecta necessidade de pesquisa
-# 2. Busca em DuckDuckGo e Wikipedia
+# 2. Busca em Google Search Seguro
 # 3. Agrega informações
 # 4. Responde com contexto e fontes
 ```

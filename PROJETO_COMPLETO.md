@@ -332,7 +332,7 @@ curl "http://localhost:8000/api/research/search?query=Python+AI"
 - **Plataformas**: 3 (Windows, Linux, Android)
 - **Tipos de Treinamento**: 3 (full, incremental, quick)
 - **Fontes de Dados**: 3 (conversations, code, documents)
-- **Provedores de Busca**: 2 (DuckDuckGo, Wikipedia)
+- **Provedores de Busca**: 2 (Google Search (seguro))
 - **Modos de Operação**: 2 (offline, online)
 
 ---
@@ -432,7 +432,7 @@ JARVIS 5.0
 ├── WebSocket (Real-time)
 ├── Ollama (LLM Local)
 ├── ChromaDB (Vector Store)
-├── DuckDuckGo + Wikipedia (Search)
+├── Google Search com proteção total (Search)
 ├── ADB (Android Control)
 └── PowerShell/Bash (System Control)
 ```
