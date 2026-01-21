@@ -8,6 +8,7 @@ from core.logger import logger
 from core.command_processor import CommandProcessor
 from core.training_manager import TrainingManager
 from core.auto_trainer import AutoTrainer
+from core.training_orchestrator import TrainingOrchestrator
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
 from modules.llm.streaming_llm import StreamingLLM
@@ -25,6 +26,7 @@ app = FastAPI(title="JARVIS IA", description="Assistente IA Local com Ollama", v
 # Variáveis globais para treinamento
 training_manager = None
 auto_trainer = None
+training_orchestrator = None
 memory = None
 
 # CORS para permitir acesso da interface web
@@ -100,19 +102,25 @@ try:
         memory=memory,
         base_model=ollama_model
     )
+    # Inicializar Training Orchestrator
+    training_orchestrator = TrainingOrchestrator(
+        memory=memory,
+        ollama_base_url=os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+    )
     logger.info("✅ Sistema de treinamento inicializado")
 except Exception as e:
     logger.warning(f"Erro ao inicializar sistema de treinamento: {e}")
     training_manager = None
     auto_trainer = None
+    training_orchestrator = None
 
 @app.on_event("startup")
 async def startup_event():
     """Inicia tarefas em background na inicialização."""
-    if auto_trainer:
-        # Iniciar monitoramento periódico em background
-        asyncio.create_task(auto_trainer.start_periodic_training(check_interval_minutes=60))
-        logger.info("🔄 Monitoramento periódico de treinamento iniciado")
+    if training_orchestrator:
+        # Iniciar auto-treinamento via orchestrator
+        await training_orchestrator.start_auto_training()
+        logger.info("🔄 Training Orchestrator e auto-treinamento iniciados")
 
 # Servir arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
@@ -223,6 +231,107 @@ async def start_incremental_training(request: Request):
     except Exception as e:
         logger.error(f"Erro no treinamento incremental: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# Novos endpoints do Training Orchestrator
+@app.post("/api/training/workflow")
+async def start_training_workflow(request: Request):
+    """Inicia workflow completo de treinamento (full, incremental, quick)."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        training_type = data.get("type", "full")  # full, incremental, quick
+        custom_config = data.get("config", None)
+        
+        result = await training_orchestrator.start_training_workflow(
+            training_type=training_type,
+            custom_config=custom_config
+        )
+        
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro no workflow de treinamento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/training/comprehensive-status")
+async def get_comprehensive_training_status():
+    """Retorna status completo e detalhado do sistema de treinamento."""
+    if not training_orchestrator:
+        return JSONResponse({"status": "disabled", "message": "Training Orchestrator não disponível"})
+    
+    status = training_orchestrator.get_comprehensive_status()
+    return JSONResponse(status)
+
+@app.get("/api/training/configs")
+async def list_training_configs():
+    """Lista todas as configurações de treinamento disponíveis."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    configs = training_orchestrator.list_available_configs()
+    return JSONResponse({"configs": configs})
+
+@app.post("/api/training/config/load")
+async def load_training_config(request: Request):
+    """Carrega uma configuração de treinamento específica."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        config_name = data.get("name", "default")
+        
+        result = training_orchestrator.load_configuration(config_name)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao carregar configuração: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training/config/update")
+async def update_training_config(request: Request):
+    """Atualiza configuração de treinamento."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        config_updates = data.get("updates", {})
+        save_as = data.get("save_as", "default")
+        
+        result = training_orchestrator.update_configuration(config_updates, save_as)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao atualizar configuração: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training/dataset/prepare")
+async def prepare_training_dataset(request: Request):
+    """Prepara dataset para treinamento."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        include_new_only = data.get("include_new_only", False)
+        
+        result = training_orchestrator.dataset_preparation.prepare_dataset(
+            include_new_only=include_new_only
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao preparar dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/training/dataset/stats")
+async def get_dataset_stats():
+    """Retorna estatísticas do dataset disponível."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    stats = training_orchestrator.dataset_preparation.get_statistics()
+    return JSONResponse(stats)
+
 
 # API de Knowledge Base
 @app.get("/api/knowledge/stats")
