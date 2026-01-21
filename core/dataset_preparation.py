@@ -87,7 +87,8 @@ class DataQualityFilter:
         
         # 4. Completude da resposta
         # Respostas completas geralmente terminam com pontuação
-        completeness_score = 1.0 if sample.output.rstrip()[-1] in '.!?' else 0.7
+        output_stripped = sample.output.rstrip()
+        completeness_score = 1.0 if output_stripped and output_stripped[-1] in '.!?' else 0.7
         scores.append(completeness_score)
         
         # Score final é a média ponderada
@@ -471,6 +472,8 @@ class DatasetPreparation:
     ) -> Tuple[List[TrainingSample], List[TrainingSample], List[TrainingSample]]:
         """Divide dataset em train/validation/test."""
         import random
+        # Set seed for reproducibility
+        random.seed(42)
         random.shuffle(samples)
         
         train_size = int(len(samples) * self.config.train_test_split)
