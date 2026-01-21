@@ -9,6 +9,7 @@ from core.command_processor import CommandProcessor
 from core.training_manager import TrainingManager
 from core.auto_trainer import AutoTrainer
 from core.training_orchestrator import TrainingOrchestrator
+from core.web_search import WebSearchIntegration, ResearchAssistant
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
 from modules.llm.streaming_llm import StreamingLLM
@@ -28,6 +29,10 @@ training_manager = None
 auto_trainer = None
 training_orchestrator = None
 memory = None
+
+# Variáveis globais para pesquisa web
+web_search = None
+research_assistant = None
 
 # CORS para permitir acesso da interface web
 app.add_middleware(
@@ -113,6 +118,19 @@ except Exception as e:
     training_manager = None
     auto_trainer = None
     training_orchestrator = None
+
+# Inicializar Web Search e Research Assistant
+try:
+    web_search = WebSearchIntegration(
+        enable_duckduckgo=True,
+        enable_wikipedia=True
+    )
+    research_assistant = ResearchAssistant(web_search)
+    logger.info("✅ Web Search e Research Assistant inicializados")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar web search: {e}")
+    web_search = None
+    research_assistant = None
 
 @app.on_event("startup")
 async def startup_event():
@@ -416,6 +434,51 @@ async def suggest_models(request: Request):
         logger.error(f"Erro ao sugerir modelos: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# API de Web Search e Research
+@app.get("/api/research/search")
+async def web_search_endpoint(query: str, num_results: int = 5):
+    """Realiza busca na web."""
+    if not web_search:
+        raise HTTPException(status_code=503, detail="Web search não disponível")
+    
+    try:
+        results = web_search.search(query, num_results)
+        return JSONResponse(results)
+    except Exception as e:
+        logger.error(f"Erro na busca web: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/research/query")
+async def research_query(request: Request):
+    """Realiza pesquisa completa sobre um tópico."""
+    if not research_assistant:
+        raise HTTPException(status_code=503, detail="Research assistant não disponível")
+    
+    try:
+        data = await request.json()
+        query = data.get("query")
+        deep_search = data.get("deep_search", False)
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query é obrigatório")
+        
+        results = research_assistant.research(query, deep_search)
+        return JSONResponse(results)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro na pesquisa: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/research/status")
+async def research_status():
+    """Retorna status do sistema de pesquisa."""
+    return JSONResponse({
+        "web_search_available": web_search is not None and web_search.is_available(),
+        "research_assistant_available": research_assistant is not None,
+        "providers": [p.__class__.__name__ for p in web_search.providers] if web_search else []
+    })
+
 # API de chat
 @app.post("/api/chat")
 async def chat(request: Request):
@@ -552,6 +615,18 @@ async def websocket_endpoint(websocket: WebSocket):
             if knowledge_base:
                 context = knowledge_base.get_context_for_query(message, max_results=3)
             
+            # Verificar se deve usar pesquisa web
+            web_context = ""
+            if research_assistant and research_assistant.should_use_web_search(message):
+                try:
+                    web_context = research_assistant.generate_research_context(
+                        message,
+                        include_sources=True
+                    )
+                    logger.info("Adicionando contexto de pesquisa web")
+                except Exception as e:
+                    logger.error(f"Erro ao buscar na web: {e}")
+            
             # Gerar resposta do LLM com STREAMING REAL
             system_prompt = """Você é JARVIS, um assistente de IA inteligente e útil.
 Você pode controlar o computador do usuário, abrir aplicativos, organizar arquivos e muito mais.
@@ -560,6 +635,10 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
             # Adicionar contexto se disponível
             if context:
                 system_prompt += f"\n\nContexto relevante do conhecimento aprendido:\n{context}"
+            
+            # Adicionar contexto da web se disponível
+            if web_context:
+                system_prompt += f"\n\n{web_context}"
             
             stream_started = False
             accumulated_response = ""
