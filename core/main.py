@@ -10,6 +10,8 @@ from core.training_manager import TrainingManager
 from core.auto_trainer import AutoTrainer
 from core.training_orchestrator import TrainingOrchestrator
 from core.web_search import WebSearchIntegration, ResearchAssistant
+from core.system_controller import UniversalSystemController, get_system_controller
+from core.continuous_training_system import ContinuousTrainingSystem, get_continuous_training_system
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
 from modules.llm.streaming_llm import StreamingLLM
@@ -33,6 +35,10 @@ memory = None
 # Variáveis globais para pesquisa web
 web_search = None
 research_assistant = None
+
+# Variáveis globais para controle de sistema e treinamento contínuo
+system_controller = None
+continuous_training = None
 
 # CORS para permitir acesso da interface web
 app.add_middleware(
@@ -132,6 +138,23 @@ except Exception as e:
     web_search = None
     research_assistant = None
 
+# Inicializar System Controller
+try:
+    system_controller = get_system_controller()
+    logger.info("✅ System Controller inicializado")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar system controller: {e}")
+    system_controller = None
+
+# Inicializar Continuous Training System
+try:
+    if training_orchestrator and memory:
+        continuous_training = get_continuous_training_system(training_orchestrator, memory)
+        logger.info("✅ Continuous Training System inicializado")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar continuous training: {e}")
+    continuous_training = None
+
 @app.on_event("startup")
 async def startup_event():
     """Inicia tarefas em background na inicialização."""
@@ -139,6 +162,11 @@ async def startup_event():
         # Iniciar auto-treinamento via orchestrator
         await training_orchestrator.start_auto_training()
         logger.info("🔄 Training Orchestrator e auto-treinamento iniciados")
+    
+    # Iniciar continuous training loop
+    if continuous_training:
+        asyncio.create_task(continuous_training.start_continuous_training_loop())
+        logger.info("🔄 Continuous Training Loop iniciado")
 
 # Servir arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
@@ -478,6 +506,205 @@ async def research_status():
         "research_assistant_available": research_assistant is not None,
         "providers": [p.__class__.__name__ for p in web_search.providers] if web_search else []
     })
+
+# API de Controle de Sistema
+@app.get("/api/system/info")
+async def get_system_info(target: str = 'local'):
+    """Retorna informações do sistema (local ou android)."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        if target == 'all':
+            info = system_controller.get_all_system_info()
+        else:
+            info = system_controller.get_system_info(target)
+        return JSONResponse(info)
+    except Exception as e:
+        logger.error(f"Erro ao obter info do sistema: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/command")
+async def execute_system_command(request: Request):
+    """Executa comando no sistema."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        command = data.get("command")
+        target = data.get("target", "local")
+        
+        if not command:
+            raise HTTPException(status_code=400, detail="Comando é obrigatório")
+        
+        result = system_controller.execute_command(command, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao executar comando: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/open-app")
+async def open_application(request: Request):
+    """Abre aplicativo."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        app_name = data.get("app_name")
+        target = data.get("target", "local")
+        
+        if not app_name:
+            raise HTTPException(status_code=400, detail="app_name é obrigatório")
+        
+        result = system_controller.open_application(app_name, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao abrir aplicativo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/system/processes")
+async def list_processes(target: str = 'local'):
+    """Lista processos em execução."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        processes = system_controller.get_running_processes(target)
+        return JSONResponse({"processes": processes})
+    except Exception as e:
+        logger.error(f"Erro ao listar processos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/kill-process")
+async def kill_process(request: Request):
+    """Encerra processo."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        process_name = data.get("process_name")
+        target = data.get("target", "local")
+        
+        if not process_name:
+            raise HTTPException(status_code=400, detail="process_name é obrigatório")
+        
+        result = system_controller.kill_process(process_name, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao encerrar processo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/screenshot")
+async def take_screenshot(request: Request):
+    """Tira screenshot."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        path = data.get("path", f"./screenshots/screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        target = data.get("target", "local")
+        
+        # Criar diretório se não existir
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        
+        result = system_controller.take_screenshot(path, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao tirar screenshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# API de Treinamento Contínuo
+@app.get("/api/continuous-training/status")
+async def get_continuous_training_status():
+    """Retorna status do sistema de treinamento contínuo."""
+    if not continuous_training:
+        return JSONResponse({"status": "disabled", "message": "Continuous training não disponível"})
+    
+    status = continuous_training.get_status()
+    return JSONResponse(status)
+
+@app.post("/api/continuous-training/force")
+async def force_continuous_training(request: Request):
+    """Força treinamento imediato."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    try:
+        data = await request.json()
+        training_type = data.get("type", "incremental")
+        
+        result = await continuous_training.force_training(training_type)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao forçar treinamento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/continuous-training/enable")
+async def enable_continuous_training():
+    """Habilita treinamento contínuo."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    continuous_training.enable()
+    return JSONResponse({"success": True, "message": "Treinamento contínuo habilitado"})
+
+@app.post("/api/continuous-training/disable")
+async def disable_continuous_training():
+    """Desabilita treinamento contínuo."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    continuous_training.disable()
+    return JSONResponse({"success": True, "message": "Treinamento contínuo desabilitado"})
+
+@app.get("/api/models/registry")
+async def get_model_registry():
+    """Lista todos os modelos registrados."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    models = continuous_training.model_registry.list_models()
+    return JSONResponse({
+        "models": models,
+        "best_model": continuous_training.model_registry.get_best_model(),
+        "active_model": continuous_training.model_registry.get_active_model()
+    })
+
+@app.post("/api/models/compare")
+async def compare_models(request: Request):
+    """Compara dois modelos."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    try:
+        data = await request.json()
+        model_a = data.get("model_a")
+        model_b = data.get("model_b")
+        
+        if not model_a or not model_b:
+            raise HTTPException(status_code=400, detail="model_a e model_b são obrigatórios")
+        
+        comparison = continuous_training.model_registry.compare_models(model_a, model_b)
+        return JSONResponse(comparison)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao comparar modelos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # API de chat
 @app.post("/api/chat")
