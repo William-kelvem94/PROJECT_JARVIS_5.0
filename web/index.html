@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS IA - Assistente Pessoal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #16213e;
+            --accent: #00d4ff;
+            --accent-hover: #00b8e6;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8b8;
+            --border: #2a2a3e;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #0099cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .training-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .training-status:hover {
+            background: var(--bg-primary);
+            border: 1px solid var(--accent);
+        }
+
+        .training-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--warning);
+            animation: pulse 2s infinite;
+        }
+
+        .training-indicator.active {
+            background: var(--success);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .train-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.2s;
+        }
+
+        .train-btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .train-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .feature-item {
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .feature-item:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .feature-icon {
+            width: 20px;
+            color: var(--accent);
+        }
+
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 1rem;
+            animation: fadeIn 0.3s ease-in;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent);
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message-content {
+            flex: 1;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+        }
+
+        .message.assistant .message-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 6px;
+            padding: 0.5rem 0;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .input-container {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+        }
+
+        .input-box {
+            flex: 1;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            max-height: 200px;
+            transition: all 0.2s;
+        }
+
+        .input-box:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .send-button {
+            width: 44px;
+            height: 44px;
+            background: var(--accent);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+        }
+
+        .code-block pre {
+            margin: 0;
+            color: #d4d4d4;
+        }
+
+        .action-result {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .action-result.error {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: -260px;
+                height: 100%;
+                z-index: 1000;
+                transition: left 0.3s;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <span>JARVIS</span>
+            </div>
+            <div class="status-indicator"></div>
+            <span id="status" style="font-size: 0.85rem; color: var(--text-secondary);">Conectado</span>
+        </div>
+        <div class="header-right">
+            <div class="training-status" onclick="showTrainingModal()" title="Status do Treinamento">
+                <div class="training-indicator" id="trainingIndicator"></div>
+                <span id="trainingStatus">Treinamento</span>
+            </div>
+            <button class="icon-btn" onclick="toggleSidebar()" title="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="icon-btn" onclick="clearChat()" title="Limpar">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar" id="sidebar">
+            <button class="new-chat-btn" onclick="newChat()">
+                <i class="fas fa-plus"></i>
+                <span>Nova Conversa</span>
+            </button>
+
+            <div>
+                <div class="section-title">Ações Rápidas</div>
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="sendQuickAction('Abrir Calculadora')">
+                        <i class="fas fa-calculator"></i> Apps
+                    </button>
+                    <button class="quick-action-btn" onclick="sendQuickAction('Listar arquivos na área de trabalho')">
+                        <i class="fas fa-folder"></i> Arquivos
+                    </button>
+                    <button class="quick-action-btn" onclick="sendQuickAction('Qual é a hora atual?')">
+                        <i class="fas fa-clock"></i> Hora
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <div class="section-title">Funcionalidades</div>
+                <div class="features-grid">
+                    <div class="feature-item" onclick="sendQuickAction('Abrir aplicativo')">
+                        <i class="fas fa-desktop feature-icon"></i>
+                        <span>Abrir Apps</span>
+                    </div>
+                    <div class="feature-item" onclick="sendQuickAction('Organizar arquivos')">
+                        <i class="fas fa-sitemap feature-icon"></i>
+                        <span>Organizar</span>
+                    </div>
+                    <div class="feature-item" onclick="sendQuickAction('Ler arquivo')">
+                        <i class="fas fa-file-alt feature-icon"></i>
+                        <span>Ler Arquivo</span>
+                    </div>
+                    <div class="feature-item" onclick="sendQuickAction('Status do sistema')">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                        <span>Status PC</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-area">
+            <div class="messages-container" id="messages"></div>
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="input" 
+                        class="input-box" 
+                        placeholder="Digite sua mensagem ou comando para o JARVIS..."
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button id="sendBtn" class="send-button" onclick="sendMessage()" title="Enviar (Enter)">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Treinamento -->
+    <div class="modal" id="trainingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📊 Dashboard de Treinamento</div>
+                <button class="close-btn" onclick="closeTrainingModal()">&times;</button>
+            </div>
+            <div id="trainingContent">
+                <div class="stat-item">
+                    <span class="stat-label">Status:</span>
+                    <span class="stat-value" id="trainingStatusValue">Carregando...</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Interações Coletadas:</span>
+                    <span class="stat-value" id="interactionsCount">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Qualidade Atual:</span>
+                    <span class="stat-value" id="currentQuality">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Último Treinamento:</span>
+                    <span class="stat-value" id="lastTraining">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Próximo Treinamento:</span>
+                    <span class="stat-value" id="nextTraining">-</span>
+                </div>
+                <button class="train-btn" id="startTrainingBtn" onclick="startTraining()">
+                    🚀 Iniciar Treinamento
+                </button>
+                <button class="train-btn" id="startIncrementalBtn" onclick="startIncrementalTraining()" style="background: var(--warning); margin-top: 0.5rem;">
+                    🔄 Treinamento Incremental
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8000/ws');
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const sendBtn = document.getElementById('sendBtn');
+        const status = document.getElementById('status');
+        
+        let isStreaming = false;
+        let currentMessageDiv = null;
+        let timeoutId = null;
+        const MESSAGE_TIMEOUT = 35000; // 35 segundos
+
+        ws.onopen = () => {
+            status.textContent = 'Conectado';
+            status.style.color = 'var(--success)';
+            addWelcomeMessage();
+        };
+
+        ws.onclose = () => {
+            status.textContent = 'Desconectado';
+            status.style.color = 'var(--error)';
+        };
+
+        ws.onerror = () => {
+            status.textContent = 'Erro de conexão';
+            status.style.color = 'var(--error)';
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'stream_start') {
+                    // Iniciar streaming - criar nova mensagem
+                    hideTypingIndicator();
+                    currentMessageDiv = addMessage('', false);
+                    isStreaming = true;
+                    sendBtn.disabled = true;
+                    // Limpar timeout pois streaming começou
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                } else if (data.type === 'stream') {
+                    // Token de streaming - adicionar ao conteúdo
+                    handleStreaming(data.content);
+                } else if (data.type === 'stream_end') {
+                    // Finalizar streaming
+                    isStreaming = false;
+                    sendBtn.disabled = false;
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                } else if (data.type === 'action') {
+                    handleAction(data);
+                } else if (data.type === 'message') {
+                    // Limpar timeout ao receber resposta completa
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
+                    addMessage(data.content, false);
+                } else if (data.type === 'error') {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
+                    addMessage('❌ ' + (data.content || 'Erro desconhecido'), false);
+                } else {
+                    // Fallback
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                        timeoutId = null;
+                    }
+                    hideTypingIndicator();
+                    sendBtn.disabled = false;
+                    isStreaming = false;
+                    addMessage(data.content || event.data, false);
+                }
+            } catch (e) {
+                // Se não for JSON, tratar como texto simples
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                hideTypingIndicator();
+                sendBtn.disabled = false;
+                isStreaming = false;
+                addMessage(event.data, false);
+            }
+        };
+
+        function addWelcomeMessage() {
+            const welcome = `Olá! Sou o JARVIS, seu assistente pessoal inteligente. 
+
+Posso ajudá-lo com:
+• Abrir aplicativos e programas
+• Organizar e gerenciar arquivos
+• Ler arquivos de qualquer tipo
+• Executar comandos do sistema
+• E muito mais!
+
+Como posso ajudá-lo hoje?`;
+            addMessage(welcome, false);
+        }
+
+        function addMessage(text, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'assistant'}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = isUser ? 'Você' : 'J';
+            messageDiv.appendChild(avatar);
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            if (!isUser && text.includes('```')) {
+                content.innerHTML = formatMessage(text);
+            } else {
+                content.textContent = text;
+            }
+            
+            messageDiv.appendChild(content);
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            
+            return messageDiv;
+        }
+
+        function formatMessage(text) {
+            // Simple markdown-like formatting
+            let formatted = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<div class="code-block"><pre>${escapeHtml(code)}</pre></div>`;
+            });
+            
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\n/g, '<br>');
+            
+            return formatted;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function handleStreaming(content) {
+            if (!isStreaming) {
+                isStreaming = true;
+                currentMessageDiv = addMessage('', false);
+                sendBtn.disabled = true;
+            }
+            
+            const contentDiv = currentMessageDiv.querySelector('.message-content');
+            if (contentDiv) {
+                contentDiv.textContent += content;
+                messages.scrollTop = messages.scrollHeight;
+            }
+        }
+
+        function handleAction(data) {
+            const actionDiv = document.createElement('div');
+            actionDiv.className = `action-result ${data.success ? '' : 'error'}`;
+            actionDiv.innerHTML = `<strong>${data.action}:</strong> ${data.result}`;
+            
+            if (currentMessageDiv) {
+                currentMessageDiv.querySelector('.message-content').appendChild(actionDiv);
+            }
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const text = input.value.trim();
+            if (!text || isStreaming) return;
+            
+            addMessage(text, true);
+            input.value = '';
+            autoResize(input);
+            
+            // Mostrar indicador de loading
+            showTypingIndicator();
+            sendBtn.disabled = true;
+            
+            // Limpar timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            
+            // Configurar timeout
+            timeoutId = setTimeout(() => {
+                hideTypingIndicator();
+                addMessage('⏱️ A resposta está demorando muito. Verificando conexão...', false);
+                sendBtn.disabled = false;
+                isStreaming = false;
+            }, MESSAGE_TIMEOUT);
+            
+            try {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    content: text
+                }));
+            } catch (e) {
+                hideTypingIndicator();
+                addMessage('❌ Erro ao enviar mensagem. Verifique a conexão.', false);
+                sendBtn.disabled = false;
+                if (timeoutId) clearTimeout(timeoutId);
+            }
+        }
+
+        function sendQuickAction(text) {
+            input.value = text;
+            sendMessage();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message assistant';
+            indicator.id = 'typing-indicator';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = 'J';
+            indicator.appendChild(avatar);
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            indicator.appendChild(content);
+            
+            messages.appendChild(indicator);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function newChat() {
+            messages.innerHTML = '';
+            addWelcomeMessage();
+        }
+
+        function clearChat() {
+            if (confirm('Limpar toda a conversa?')) {
+                newChat();
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Auto-resize textarea
+        input.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        });
+
+        // Sistema de Treinamento
+        async function loadTrainingStatus() {
+            try {
+                const response = await fetch('/api/training/status');
+                const data = await response.json();
+                
+                if (data.training_status) {
+                    const status = data.training_status;
+                    const auto = data.auto_trainer || {};
+                    
+                    // Atualizar indicador
+                    const indicator = document.getElementById('trainingIndicator');
+                    const statusText = document.getElementById('trainingStatus');
+                    
+                    if (status.can_train) {
+                        indicator.classList.add('active');
+                        statusText.textContent = 'Pronto para Treinar';
+                    } else {
+                        indicator.classList.remove('active');
+                        statusText.textContent = 'Coletando Dados';
+                    }
+                    
+                    // Atualizar modal se aberto
+                    if (document.getElementById('trainingModal').classList.contains('show')) {
+                        updateTrainingModal(data);
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao carregar status:', e);
+            }
+        }
+
+        function showTrainingModal() {
+            document.getElementById('trainingModal').classList.add('show');
+            loadTrainingStatus().then(() => {
+                const response = fetch('/api/training/status').then(r => r.json());
+                response.then(data => updateTrainingModal(data));
+            });
+        }
+
+        function closeTrainingModal() {
+            document.getElementById('trainingModal').classList.remove('show');
+        }
+
+        function updateTrainingModal(data) {
+            const status = data.training_status || {};
+            const auto = data.auto_trainer || {};
+            
+            document.getElementById('trainingStatusValue').textContent = 
+                status.status === 'ready' ? '✅ Pronto' : '⏳ Coletando Dados';
+            document.getElementById('interactionsCount').textContent = 
+                status.pairs_available || 0;
+            document.getElementById('currentQuality').textContent = 
+                auto.current_quality ? `${(auto.current_quality * 100).toFixed(1)}%` : '-';
+            document.getElementById('lastTraining').textContent = 
+                auto.last_training ? new Date(auto.last_training).toLocaleString('pt-BR') : 'Nunca';
+            document.getElementById('nextTraining').textContent = 
+                auto.next_scheduled_training ? new Date(auto.next_scheduled_training).toLocaleString('pt-BR') : '-';
+            
+            // Habilitar/desabilitar botões
+            const startBtn = document.getElementById('startTrainingBtn');
+            const incBtn = document.getElementById('startIncrementalBtn');
+            
+            startBtn.disabled = !status.can_train;
+            incBtn.disabled = !status.can_train || status.pairs_available < 20;
+        }
+
+        async function startTraining() {
+            const btn = document.getElementById('startTrainingBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Treinando...';
+            
+            try {
+                const response = await fetch('/api/training/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        base_model: 'codellama:7b',
+                        custom_name: 'jarvis-custom'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Treinamento iniciado com sucesso!\n' + result.message);
+                    loadTrainingStatus();
+                } else {
+                    alert('❌ Erro: ' + result.message);
+                }
+            } catch (e) {
+                alert('❌ Erro ao iniciar treinamento: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Iniciar Treinamento';
+            }
+        }
+
+        async function startIncrementalTraining() {
+            const btn = document.getElementById('startIncrementalBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Treinando...';
+            
+            try {
+                const response = await fetch('/api/training/incremental', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Treinamento incremental iniciado!\n' + result.message);
+                    loadTrainingStatus();
+                } else {
+                    alert('❌ Erro: ' + result.message);
+                }
+            } catch (e) {
+                alert('❌ Erro ao iniciar treinamento: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Treinamento Incremental';
+            }
+        }
+
+        // Atualizar status a cada 30 segundos
+        setInterval(loadTrainingStatus, 30000);
+        loadTrainingStatus(); // Carregar imediatamente
+    </script>
+</body>
+</html>
