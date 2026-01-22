@@ -20,7 +20,11 @@ function Show-Logs {
         [string]$Service = "jarvis"
     )
     Write-Host "`n📝 Últimos $Lines linhas de log ($Service):" -ForegroundColor Cyan
-    docker-compose logs --tail=$Lines $Service
+    # Mudar para diretório raiz do projeto
+    $projectRoot = Split-Path -Parent $PSScriptRoot
+    Push-Location $projectRoot
+    docker-compose -f docker/docker-compose.yml logs --tail=$Lines $Service
+    Pop-Location
 }
 
 function Test-Endpoints {

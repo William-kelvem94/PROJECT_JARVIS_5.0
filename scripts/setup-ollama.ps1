@@ -53,5 +53,5 @@ ollama list
 
 Write-Host "`n=== CONFIGURAÇÃO CONCLUÍDA! ===" -ForegroundColor Green
 Write-Host "Agora você pode iniciar o JARVIS com Docker:" -ForegroundColor Yellow
-Write-Host "  docker-compose up -d" -ForegroundColor Cyan
+Write-Host "  docker-compose -f docker/docker-compose.yml up -d" -ForegroundColor Cyan
 

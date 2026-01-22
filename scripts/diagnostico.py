@@ -78,7 +78,11 @@ def check_containers():
     """1. Verifica se os containers estão em execução"""
     print_header("1. VERIFICANDO CONTAINERS")
     
-    success, output, error = run_command("docker compose ps", shell=True)
+    # Obter diretório raiz do projeto (um nível acima de scripts/)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(project_root)
+    
+    success, output, error = run_command("docker compose -f docker/docker-compose.yml ps", shell=True)
     if not success:
         print_error(f"Erro ao verificar containers: {error}")
         return False
@@ -151,7 +155,11 @@ def validate_docker_compose():
     """4. Valida o arquivo docker-compose.yml"""
     print_header("4. VALIDANDO DOCKER-COMPOSE.YML")
     
-    success, output, error = run_command("docker compose config", shell=True)
+    # Obter diretório raiz do projeto (um nível acima de scripts/)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(project_root)
+    
+    success, output, error = run_command("docker compose -f docker/docker-compose.yml config", shell=True)
     
     if success:
         print_success("Arquivo docker-compose.yml está válido!")
@@ -169,10 +177,14 @@ def check_logs():
     containers = ["jarvis", "ollama"]
     all_ok = True
     
+    # Obter diretório raiz do projeto (um nível acima de scripts/)
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(project_root)
+    
     for container in containers:
         print_info(f"\nÚltimas 10 linhas de log do container '{container}':")
         success, output, error = run_command(
-            f"docker compose logs --tail=10 {container}",
+            f"docker compose -f docker/docker-compose.yml logs --tail=10 {container}",
             shell=True
         )
         
