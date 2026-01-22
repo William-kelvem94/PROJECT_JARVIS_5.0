@@ -21,6 +21,7 @@ try:
     AUDIO_CAPTURE_AVAILABLE = True
 except ImportError:
     AUDIO_CAPTURE_AVAILABLE = False
+    np = None  # Prevent name error
     logger.warning("sounddevice/soundfile não disponíveis. Instale com: pip install sounddevice soundfile")
 
 
@@ -79,7 +80,7 @@ class WhisperModule:
             logger.error(f"Erro ao carregar modelo Whisper: {e}")
             raise
     
-    def record_audio(self, duration: float = 5.0, auto_stop: bool = True) -> Optional[np.ndarray]:
+    def record_audio(self, duration: float = 5.0, auto_stop: bool = True):
         """
         Grava áudio do microfone.
         
@@ -90,6 +91,10 @@ class WhisperModule:
         Returns:
             Array numpy com os dados de áudio ou None em caso de erro
         """
+        if not AUDIO_CAPTURE_AVAILABLE:
+            logger.error("sounddevice não disponível")
+            return None
+            
         try:
             logger.info(f"Gravando áudio por até {duration}s...")
             
@@ -111,7 +116,7 @@ class WhisperModule:
     
     def transcribe_audio(
         self, 
-        audio_data: Optional[np.ndarray] = None,
+        audio_data = None,
         audio_file: Optional[str] = None,
         task: Literal["transcribe", "translate"] = "transcribe"
     ) -> Optional[str]:
@@ -131,6 +136,10 @@ class WhisperModule:
             logger.error("Modelo Whisper não está carregado")
             return None
         
+        if not AUDIO_CAPTURE_AVAILABLE and audio_data is not None:
+            logger.error("numpy não disponível para processar audio_data")
+            return None
+        
         try:
             # Determinar fonte de áudio
             if audio_file:
@@ -143,7 +152,7 @@ class WhisperModule:
             elif audio_data is not None:
                 logger.info("Transcrevendo áudio gravado")
                 # Whisper espera float32 normalizado entre -1 e 1
-                if audio_data.dtype != np.float32:
+                if hasattr(audio_data, 'dtype') and audio_data.dtype != np.float32:
                     audio_data = audio_data.astype(np.float32)
                 
                 result = self.model.transcribe(

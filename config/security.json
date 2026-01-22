@@ -1,0 +1,58 @@
+{
+  "require_authentication": false,
+  "enable_command_whitelist": true,
+  "enable_sandboxing": true,
+  "require_confirmation_for_critical": true,
+  "max_failed_auth_attempts": 3,
+  "session_timeout_minutes": 60,
+  "allowed_commands": {
+    "0": [
+      "search",
+      "calculate",
+      "weather",
+      "time",
+      "help",
+      "info"
+    ],
+    "1": [
+      "search",
+      "calculate",
+      "weather",
+      "time",
+      "help",
+      "info",
+      "open_app",
+      "play_music",
+      "set_reminder",
+      "send_message"
+    ],
+    "2": [
+      "file_operations",
+      "system_info",
+      "process_list",
+      "network_info"
+    ],
+    "3": [
+      "*"
+    ]
+  },
+  "critical_commands": [
+    "delete_file",
+    "delete_folder",
+    "format",
+    "shutdown",
+    "reboot",
+    "install_package",
+    "uninstall_package",
+    "kill_process",
+    "registry_edit",
+    "system_command"
+  ],
+  "blacklisted_patterns": [
+    "rm\\s+-rf\\s+/",
+    "del\\s+/f\\s+/q",
+    "format\\s+c:",
+    "dd\\s+if=",
+    "mkfs\\."
+  ]
+}
