@@ -8,6 +8,10 @@ from core.logger import logger
 from core.command_processor import CommandProcessor
 from core.training_manager import TrainingManager
 from core.auto_trainer import AutoTrainer
+from core.training_orchestrator import TrainingOrchestrator
+from core.web_search import WebSearchIntegration, ResearchAssistant
+from core.system_controller import UniversalSystemController, get_system_controller
+from core.continuous_training_system import ContinuousTrainingSystem, get_continuous_training_system
 from plugins.system_plugin import SystemPlugin
 from plugins.file_plugin import FilePlugin
 from modules.llm.streaming_llm import StreamingLLM
@@ -25,7 +29,16 @@ app = FastAPI(title="JARVIS IA", description="Assistente IA Local com Ollama", v
 # Variáveis globais para treinamento
 training_manager = None
 auto_trainer = None
+training_orchestrator = None
 memory = None
+
+# Variáveis globais para pesquisa web
+web_search = None
+research_assistant = None
+
+# Variáveis globais para controle de sistema e treinamento contínuo
+system_controller = None
+continuous_training = None
 
 # CORS para permitir acesso da interface web
 app.add_middleware(
@@ -100,19 +113,58 @@ try:
         memory=memory,
         base_model=ollama_model
     )
+    # Inicializar Training Orchestrator
+    training_orchestrator = TrainingOrchestrator(
+        memory=memory,
+        ollama_base_url=os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+    )
     logger.info("✅ Sistema de treinamento inicializado")
 except Exception as e:
     logger.warning(f"Erro ao inicializar sistema de treinamento: {e}")
     training_manager = None
     auto_trainer = None
+    training_orchestrator = None
+
+# Inicializar Web Search e Research Assistant com Google SEGURO
+try:
+    web_search = WebSearchIntegration()
+    research_assistant = ResearchAssistant(web_search)
+    logger.info("✅ Web Search (Google Seguro) e Research Assistant inicializados")
+    logger.info("🔒 Medidas de segurança ativas contra vazamento e ataques")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar web search: {e}")
+    web_search = None
+    research_assistant = None
+
+# Inicializar System Controller
+try:
+    system_controller = get_system_controller()
+    logger.info("✅ System Controller inicializado")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar system controller: {e}")
+    system_controller = None
+
+# Inicializar Continuous Training System
+try:
+    if training_orchestrator and memory:
+        continuous_training = get_continuous_training_system(training_orchestrator, memory)
+        logger.info("✅ Continuous Training System inicializado")
+except Exception as e:
+    logger.warning(f"Erro ao inicializar continuous training: {e}")
+    continuous_training = None
 
 @app.on_event("startup")
 async def startup_event():
     """Inicia tarefas em background na inicialização."""
-    if auto_trainer:
-        # Iniciar monitoramento periódico em background
-        asyncio.create_task(auto_trainer.start_periodic_training(check_interval_minutes=60))
-        logger.info("🔄 Monitoramento periódico de treinamento iniciado")
+    if training_orchestrator:
+        # Iniciar auto-treinamento via orchestrator
+        await training_orchestrator.start_auto_training()
+        logger.info("🔄 Training Orchestrator e auto-treinamento iniciados")
+    
+    # Iniciar continuous training loop
+    if continuous_training:
+        asyncio.create_task(continuous_training.start_continuous_training_loop())
+        logger.info("🔄 Continuous Training Loop iniciado")
 
 # Servir arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
@@ -224,6 +276,107 @@ async def start_incremental_training(request: Request):
         logger.error(f"Erro no treinamento incremental: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Novos endpoints do Training Orchestrator
+@app.post("/api/training/workflow")
+async def start_training_workflow(request: Request):
+    """Inicia workflow completo de treinamento (full, incremental, quick)."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        training_type = data.get("type", "full")  # full, incremental, quick
+        custom_config = data.get("config", None)
+        
+        result = await training_orchestrator.start_training_workflow(
+            training_type=training_type,
+            custom_config=custom_config
+        )
+        
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro no workflow de treinamento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/training/comprehensive-status")
+async def get_comprehensive_training_status():
+    """Retorna status completo e detalhado do sistema de treinamento."""
+    if not training_orchestrator:
+        return JSONResponse({"status": "disabled", "message": "Training Orchestrator não disponível"})
+    
+    status = training_orchestrator.get_comprehensive_status()
+    return JSONResponse(status)
+
+@app.get("/api/training/configs")
+async def list_training_configs():
+    """Lista todas as configurações de treinamento disponíveis."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    configs = training_orchestrator.list_available_configs()
+    return JSONResponse({"configs": configs})
+
+@app.post("/api/training/config/load")
+async def load_training_config(request: Request):
+    """Carrega uma configuração de treinamento específica."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        config_name = data.get("name", "default")
+        
+        result = training_orchestrator.load_configuration(config_name)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao carregar configuração: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training/config/update")
+async def update_training_config(request: Request):
+    """Atualiza configuração de treinamento."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        config_updates = data.get("updates", {})
+        save_as = data.get("save_as", "default")
+        
+        result = training_orchestrator.update_configuration(config_updates, save_as)
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao atualizar configuração: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/training/dataset/prepare")
+async def prepare_training_dataset(request: Request):
+    """Prepara dataset para treinamento."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    try:
+        data = await request.json()
+        include_new_only = data.get("include_new_only", False)
+        
+        result = training_orchestrator.dataset_preparation.prepare_dataset(
+            include_new_only=include_new_only
+        )
+        return JSONResponse(result)
+    except Exception as e:
+        logger.error(f"Erro ao preparar dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/training/dataset/stats")
+async def get_dataset_stats():
+    """Retorna estatísticas do dataset disponível."""
+    if not training_orchestrator:
+        raise HTTPException(status_code=503, detail="Training Orchestrator não disponível")
+    
+    stats = training_orchestrator.dataset_preparation.get_statistics()
+    return JSONResponse(stats)
+
+
 # API de Knowledge Base
 @app.get("/api/knowledge/stats")
 async def get_knowledge_stats():
@@ -305,6 +458,271 @@ async def suggest_models(request: Request):
         return JSONResponse({"suggestions": suggestions})
     except Exception as e:
         logger.error(f"Erro ao sugerir modelos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# API de Web Search e Research
+@app.get("/api/research/search")
+async def web_search_endpoint(query: str, num_results: int = 5):
+    """Realiza busca na web."""
+    if not web_search:
+        raise HTTPException(status_code=503, detail="Web search não disponível")
+    
+    try:
+        results = web_search.search(query, num_results)
+        return JSONResponse(results)
+    except Exception as e:
+        logger.error(f"Erro na busca web: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/research/query")
+async def research_query(request: Request):
+    """Realiza pesquisa completa sobre um tópico."""
+    if not research_assistant:
+        raise HTTPException(status_code=503, detail="Research assistant não disponível")
+    
+    try:
+        data = await request.json()
+        query = data.get("query")
+        deep_search = data.get("deep_search", False)
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query é obrigatório")
+        
+        results = research_assistant.research(query, deep_search)
+        return JSONResponse(results)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro na pesquisa: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/research/status")
+async def research_status():
+    """Retorna status do sistema de pesquisa."""
+    return JSONResponse({
+        "web_search_available": web_search is not None and web_search.is_available(),
+        "research_assistant_available": research_assistant is not None,
+        "search_engine": "Google Search (Secure)",
+        "security_features": [
+            "Query sanitization",
+            "Rate limiting (10 req/min)",
+            "Sensitive data blocking",
+            "Result anonymization",
+            "Rotating safe headers"
+        ]
+    })
+
+# API de Controle de Sistema
+@app.get("/api/system/info")
+async def get_system_info(target: str = 'local'):
+    """Retorna informações do sistema (local ou android)."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        if target == 'all':
+            info = system_controller.get_all_system_info()
+        else:
+            info = system_controller.get_system_info(target)
+        return JSONResponse(info)
+    except Exception as e:
+        logger.error(f"Erro ao obter info do sistema: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/command")
+async def execute_system_command(request: Request):
+    """Executa comando no sistema."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        command = data.get("command")
+        target = data.get("target", "local")
+        
+        if not command:
+            raise HTTPException(status_code=400, detail="Comando é obrigatório")
+        
+        result = system_controller.execute_command(command, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao executar comando: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/open-app")
+async def open_application(request: Request):
+    """Abre aplicativo."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        app_name = data.get("app_name")
+        target = data.get("target", "local")
+        
+        if not app_name:
+            raise HTTPException(status_code=400, detail="app_name é obrigatório")
+        
+        result = system_controller.open_application(app_name, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao abrir aplicativo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/system/processes")
+async def list_processes(target: str = 'local'):
+    """Lista processos em execução."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        processes = system_controller.get_running_processes(target)
+        return JSONResponse({"processes": processes})
+    except Exception as e:
+        logger.error(f"Erro ao listar processos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/kill-process")
+async def kill_process(request: Request):
+    """Encerra processo."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        process_name = data.get("process_name")
+        target = data.get("target", "local")
+        
+        if not process_name:
+            raise HTTPException(status_code=400, detail="process_name é obrigatório")
+        
+        result = system_controller.kill_process(process_name, target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao encerrar processo: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/system/screenshot")
+async def take_screenshot(request: Request):
+    """Tira screenshot."""
+    if not system_controller:
+        raise HTTPException(status_code=503, detail="System controller não disponível")
+    
+    try:
+        data = await request.json()
+        requested_path = data.get("path", f"./screenshots/screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+        target = data.get("target", "local")
+        
+        # Validar e sanitizar caminho para prevenir directory traversal
+        screenshots_dir = Path("./screenshots").resolve()
+        screenshots_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Resolver caminho completo e verificar se está dentro do diretório permitido
+        try:
+            full_path = Path(requested_path).resolve()
+            # Verificar se o caminho está dentro do diretório de screenshots
+            if not str(full_path).startswith(str(screenshots_dir)):
+                # Se não, usar caminho seguro padrão
+                full_path = screenshots_dir / f"screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                logger.warning(f"Path validation failed, using safe path: {full_path}")
+        except Exception as e:
+            # Em caso de erro, usar caminho seguro
+            full_path = screenshots_dir / f"screen_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+            logger.warning(f"Path resolution failed: {e}, using safe path: {full_path}")
+        
+        result = system_controller.take_screenshot(str(full_path), target)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao tirar screenshot: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# API de Treinamento Contínuo
+@app.get("/api/continuous-training/status")
+async def get_continuous_training_status():
+    """Retorna status do sistema de treinamento contínuo."""
+    if not continuous_training:
+        return JSONResponse({"status": "disabled", "message": "Continuous training não disponível"})
+    
+    status = continuous_training.get_status()
+    return JSONResponse(status)
+
+@app.post("/api/continuous-training/force")
+async def force_continuous_training(request: Request):
+    """Força treinamento imediato."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    try:
+        data = await request.json()
+        training_type = data.get("type", "incremental")
+        
+        result = await continuous_training.force_training(training_type)
+        return JSONResponse(result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao forçar treinamento: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/continuous-training/enable")
+async def enable_continuous_training():
+    """Habilita treinamento contínuo."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    continuous_training.enable()
+    return JSONResponse({"success": True, "message": "Treinamento contínuo habilitado"})
+
+@app.post("/api/continuous-training/disable")
+async def disable_continuous_training():
+    """Desabilita treinamento contínuo."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    continuous_training.disable()
+    return JSONResponse({"success": True, "message": "Treinamento contínuo desabilitado"})
+
+@app.get("/api/models/registry")
+async def get_model_registry():
+    """Lista todos os modelos registrados."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    models = continuous_training.model_registry.list_models()
+    return JSONResponse({
+        "models": models,
+        "best_model": continuous_training.model_registry.get_best_model(),
+        "active_model": continuous_training.model_registry.get_active_model()
+    })
+
+@app.post("/api/models/compare")
+async def compare_models(request: Request):
+    """Compara dois modelos."""
+    if not continuous_training:
+        raise HTTPException(status_code=503, detail="Continuous training não disponível")
+    
+    try:
+        data = await request.json()
+        model_a = data.get("model_a")
+        model_b = data.get("model_b")
+        
+        if not model_a or not model_b:
+            raise HTTPException(status_code=400, detail="model_a e model_b são obrigatórios")
+        
+        comparison = continuous_training.model_registry.compare_models(model_a, model_b)
+        return JSONResponse(comparison)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao comparar modelos: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # API de chat
@@ -443,6 +861,18 @@ async def websocket_endpoint(websocket: WebSocket):
             if knowledge_base:
                 context = knowledge_base.get_context_for_query(message, max_results=3)
             
+            # Verificar se deve usar pesquisa web
+            web_context = ""
+            if research_assistant and research_assistant.should_use_web_search(message):
+                try:
+                    web_context = research_assistant.generate_research_context(
+                        message,
+                        include_sources=True
+                    )
+                    logger.info("Adicionando contexto de pesquisa web")
+                except Exception as e:
+                    logger.error(f"Erro ao buscar na web: {e}")
+            
             # Gerar resposta do LLM com STREAMING REAL
             system_prompt = """Você é JARVIS, um assistente de IA inteligente e útil.
 Você pode controlar o computador do usuário, abrir aplicativos, organizar arquivos e muito mais.
@@ -451,6 +881,10 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
             # Adicionar contexto se disponível
             if context:
                 system_prompt += f"\n\nContexto relevante do conhecimento aprendido:\n{context}"
+            
+            # Adicionar contexto da web se disponível
+            if web_context:
+                system_prompt += f"\n\n{web_context}"
             
             stream_started = False
             accumulated_response = ""
