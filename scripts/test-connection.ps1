@@ -32,7 +32,7 @@ try {
     }
 } catch {
     Write-Host "✗ JARVIS não está rodando ou não está acessível" -ForegroundColor Red
-    Write-Host "  Inicie com: docker-compose up -d" -ForegroundColor Yellow
+    Write-Host "  Inicie com: docker-compose -f docker/docker-compose.yml up -d" -ForegroundColor Yellow
 }
 
 # Testar WebSocket (básico)

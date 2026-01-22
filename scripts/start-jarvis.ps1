@@ -2,6 +2,10 @@
 
 Write-Host "=== INICIANDO JARVIS IA ===" -ForegroundColor Green
 
+# Mudar para diretório raiz do projeto
+$projectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location $projectRoot
+
 # Verificar Docker
 if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
     Write-Host "ERRO: Docker não encontrado!" -ForegroundColor Red
@@ -16,17 +20,17 @@ if (-not (Get-Command "docker-compose" -ErrorAction SilentlyContinue)) {
 }
 
 Write-Host "Parando containers existentes..." -ForegroundColor Yellow
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 
 Write-Host "Construindo e iniciando containers..." -ForegroundColor Cyan
-docker-compose up --build -d
+docker-compose -f docker/docker-compose.yml up --build -d
 
 Write-Host "Aguardando serviços iniciarem..." -ForegroundColor Yellow
 Start-Sleep 15
 
 # Verificar status
 Write-Host "`n=== STATUS DOS SERVIÇOS ===" -ForegroundColor Green
-docker-compose ps
+docker-compose -f docker/docker-compose.yml ps
 
 # Verificar se JARVIS está respondendo
 try {
@@ -35,11 +39,11 @@ try {
     Write-Host "`nAcesse: http://localhost:8000" -ForegroundColor Cyan
 } catch {
     Write-Host "`nAguardando JARVIS iniciar completamente..." -ForegroundColor Yellow
-    Write-Host "Verifique os logs: docker-compose logs jarvis" -ForegroundColor Yellow
+    Write-Host "Verifique os logs: docker-compose -f docker/docker-compose.yml logs jarvis" -ForegroundColor Yellow
 }
 
 Write-Host "`n=== COMANDOS ÚTEIS ===" -ForegroundColor Green
-Write-Host "Ver logs: docker-compose logs -f" -ForegroundColor Cyan
-Write-Host "Parar: docker-compose down" -ForegroundColor Cyan
-Write-Host "Reiniciar: docker-compose restart" -ForegroundColor Cyan
+Write-Host "Ver logs: docker-compose -f docker/docker-compose.yml logs -f" -ForegroundColor Cyan
+Write-Host "Parar: docker-compose -f docker/docker-compose.yml down" -ForegroundColor Cyan
+Write-Host "Reiniciar: docker-compose -f docker/docker-compose.yml restart" -ForegroundColor Cyan
 

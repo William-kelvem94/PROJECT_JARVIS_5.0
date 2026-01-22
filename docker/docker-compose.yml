@@ -37,15 +37,15 @@ services:
   # Serviço JARVIS - Assistente IA
   jarvis:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: jarvis_ai
     ports:
       - "8000:8000"
     volumes:
-      - ./config:/app/config
-      - ./plugins:/app/plugins
-      - ./web:/app/web
+      - ../config:/app/config
+      - ../plugins:/app/plugins
+      - ../web:/app/web
       - jarvis_logs:/app/logs
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434

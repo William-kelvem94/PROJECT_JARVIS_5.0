@@ -9,7 +9,7 @@
 
 **Assistente de IA 100% Local, Gratuito e Profissional**
 
-[🚀 Instalação Rápida](#-instalação-rápida) • [📖 Documentação](INSTALL.md) • [🎯 Uso](#-como-usar)
+[🚀 Instalação Rápida](#-instalação-rápida) • [📖 Documentação](docs/INSTALL.md) • [🎯 Uso](#-como-usar)
 
 </div>
 
@@ -42,7 +42,7 @@
 git clone <seu-repositorio>
 
 # Iniciar tudo
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Acessar interface
 # http://localhost:8000
@@ -65,7 +65,7 @@ pip install -r requirements.txt
 python -m uvicorn core.main:app --reload
 ```
 
-**📖 Veja o [Guia Completo de Instalação](INSTALL.md)**
+**📖 Veja o [Guia Completo de Instalação](docs/INSTALL.md)**
 
 ---
 
@@ -132,8 +132,10 @@ PROJECT_JARVIS_5.0/
 ├── web/                # Interface web
 ├── config/             # Arquivos de configuração
 ├── scripts/            # Scripts utilitários
-├── docker-compose.yml  # Configuração Docker
-├── Dockerfile          # Imagem Docker
+├── docs/               # Documentação
+├── docker/             # Arquivos Docker
+│   ├── docker-compose.yml
+│   └── Dockerfile
 └── requirements.txt    # Dependências Python
 ```
 
@@ -169,19 +171,19 @@ LLM_PROVIDER=ollama
 
 ```powershell
 # Iniciar
-docker-compose up -d
+docker-compose -f docker/docker-compose.yml up -d
 
 # Parar
-docker-compose down
+docker-compose -f docker/docker-compose.yml down
 
 # Ver logs
-docker-compose logs -f jarvis
+docker-compose -f docker/docker-compose.yml logs -f jarvis
 
 # Reconstruir com otimizações
-.\docker-rebuild.ps1
+.\scripts\docker-rebuild.ps1
 
 # Monitorar performance
-.\docker-monitor.ps1
+.\scripts\docker-monitor.ps1
 ```
 
 ### Ollama
@@ -243,19 +245,19 @@ ollama serve
 docker-compose logs -f
 
 # Reconstruir
-docker-compose up --build -d
+docker-compose -f docker/docker-compose.yml up --build -d
 ```
 
-**Veja mais em [INSTALL.md](INSTALL.md#-troubleshooting)**
+**Veja mais em [INSTALL.md](docs/INSTALL.md#-troubleshooting)**
 
 ---
 
 ## 📚 Documentação
 
-- [Guia Completo de Instalação](INSTALL.md)
-- [Otimizações de Performance](PERFORMANCE.md)
+- [Guia Completo de Instalação](docs/INSTALL.md)
+- [Otimizações de Performance](docs/PERFORMANCE.md)
 - [API Documentation](http://localhost:8000/docs) (após iniciar)
-- [Modelos Disponíveis](README_MODELS.md)
+- [Modelos Disponíveis](docs/README_MODELS.md)
 
 ---
 
