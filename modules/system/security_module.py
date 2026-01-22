@@ -162,7 +162,9 @@ class SecurityManager:
         
         # Verificar whitelist do nível atual
         allowed = self.config.get("allowed_commands", {})
-        level_commands = allowed.get(self.current_permission_level, [])
+        # Converter nível para string para buscar no config (JSON usa strings como keys)
+        level_key = str(self.current_permission_level)
+        level_commands = allowed.get(level_key, [])
         
         # Verificar se comando está na lista permitida
         if "*" in level_commands or command in level_commands:
