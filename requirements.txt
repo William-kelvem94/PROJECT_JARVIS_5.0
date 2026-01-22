@@ -44,3 +44,31 @@ redis==5.0.1
 
 # HuggingFace Integration
 huggingface_hub==0.20.0
+
+# ============================================
+# JARVIS 5.0 - Novos Módulos de IA Avançada
+# ============================================
+
+# Fase 1: Voz e Interação Natural
+# --------------------------------
+# Whisper - STT de alta qualidade offline
+openai-whisper>=20231117
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# Coqui TTS - Voz natural de alta qualidade
+TTS>=0.22.0
+
+# Wake Word Detection
+pvporcupine>=3.0.0
+
+# Fase 2: Memória e Personalização (já incluído - SQLite nativo)
+# ---------------------------------------------------------------
+
+# Fase 3: Integrações (Calendar, Email)
+# --------------------------------------
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.110.0
+
+# Fase 4: Segurança (já incluído - bibliotecas nativas)
+# ------------------------------------------------------
