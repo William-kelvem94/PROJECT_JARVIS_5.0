@@ -79,7 +79,7 @@ class KnowledgeBase:
                 if result.get("success"):
                     stored_count += 1
             
-            logger.info(f"✅ {stored_count} itens de conhecimento armazenados")
+            logger.info(f" {stored_count} itens de conhecimento armazenados")
             
             # Salvar estatísticas
             stats = self.get_stats()
@@ -287,7 +287,7 @@ class KnowledgeBase:
                 if result.get("success"):
                     learned_count += result.get("stored_count", 0)
             
-            logger.info(f"✅ Aprendizado automático: {learned_count} itens extraídos de {len(pairs)} interações")
+            logger.info(f" Aprendizado automático: {learned_count} itens extraídos de {len(pairs)} interações")
             
             return {
                 "success": True,
@@ -325,7 +325,7 @@ class KnowledgeBase:
         try:
             # Limpar vector store (criar nova coleção)
             self.vector_store = VectorStore()
-            logger.info("✅ Base de conhecimento limpa")
+            logger.info(" Base de conhecimento limpa")
             return {"success": True}
         except Exception as e:
             logger.error(f"Erro ao limpar conhecimento: {e}")

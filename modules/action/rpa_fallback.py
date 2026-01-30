@@ -92,7 +92,7 @@ class MultiStrategyAutomation:
                 result = cb.call(strategy, action, target, **kwargs)
                 
                 if result and result.get("success"):
-                    logger.info(f"✅ Estratégia {strategy_name} funcionou!")
+                    logger.info(f" Estratégia {strategy_name} funcionou!")
                     return {
                         "success": True,
                         "strategy": strategy_name,
@@ -104,7 +104,7 @@ class MultiStrategyAutomation:
                 continue
         
         # Nenhuma estratégia funcionou
-        logger.error(f"❌ Todas as estratégias falharam para {action} -> {target}")
+        logger.error(f" Todas as estratégias falharam para {action} -> {target}")
         return {
             "success": False,
             "error": "Todas as estratégias de automação falharam",

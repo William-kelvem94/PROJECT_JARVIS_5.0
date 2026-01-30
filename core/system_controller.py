@@ -456,7 +456,7 @@ class UniversalSystemController:
         # Android controller sempre disponível via ADB
         self.android_controller = AndroidController()
         
-        logger.info(f"✅ Universal System Controller inicializado para {self.system}")
+        logger.info(f" Universal System Controller inicializado para {self.system}")
     
     def execute_command(self, command: str, target: str = 'local') -> Dict[str, Any]:
         """

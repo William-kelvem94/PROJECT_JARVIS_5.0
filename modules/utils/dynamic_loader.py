@@ -55,10 +55,10 @@ class DynamicSkillLoader:
                 if skill_info:
                     skill_name = skill_info["name"]
                     self.loaded_skills[skill_name] = skill_info
-                    logger.info(f"✅ Skill carregada: {skill_name}")
+                    logger.info(f" Skill carregada: {skill_name}")
                     
             except Exception as e:
-                logger.error(f"❌ Erro ao carregar skill {skill_file.name}: {e}")
+                logger.error(f" Erro ao carregar skill {skill_file.name}: {e}")
         
         logger.info(f"Total de skills carregadas: {len(self.loaded_skills)}")
         return self.loaded_skills
