@@ -113,7 +113,7 @@ class FilePlugin:
             
             items = []
             for item in sorted(path.iterdir())[:limit]:
-                item_type = "📁" if item.is_dir() else "📄"
+                item_type = "" if item.is_dir() else ""
                 size = ""
                 if item.is_file():
                     try:

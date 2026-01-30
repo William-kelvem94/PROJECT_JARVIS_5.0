@@ -70,7 +70,7 @@ try:
     try:
         # Fazer uma requisição de teste para forçar o carregamento do modelo
         test_response = llm.generate("test", max_tokens=5)
-        logger.info("✅ Modelo pré-carregado com sucesso!")
+        logger.info(" Modelo pré-carregado com sucesso!")
     except Exception as preload_error:
         logger.warning(f"Modelo não pôde ser pré-carregado: {preload_error}. Será carregado na primeira requisição.")
 except Exception as e:
@@ -91,7 +91,7 @@ learning_loop = ContinuousLearningLoop()
 try:
     vector_store = VectorStore()
     knowledge_base = KnowledgeBase(vector_store=vector_store, memory=memory)
-    logger.info("✅ Knowledge Base inicializada")
+    logger.info(" Knowledge Base inicializada")
 except Exception as e:
     logger.warning(f"Erro ao inicializar Knowledge Base: {e}")
     knowledge_base = None
@@ -99,7 +99,7 @@ except Exception as e:
 # Inicializar integração com HuggingFace
 try:
     hf_integration = HuggingFaceIntegration()
-    logger.info("✅ Integração HuggingFace inicializada")
+    logger.info(" Integração HuggingFace inicializada")
 except Exception as e:
     logger.warning(f"Erro ao inicializar HuggingFace: {e}")
     hf_integration = None
@@ -118,7 +118,7 @@ try:
         memory=memory,
         ollama_base_url=os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
     )
-    logger.info("✅ Sistema de treinamento inicializado")
+    logger.info(" Sistema de treinamento inicializado")
 except Exception as e:
     logger.warning(f"Erro ao inicializar sistema de treinamento: {e}")
     training_manager = None
@@ -129,8 +129,8 @@ except Exception as e:
 try:
     web_search = WebSearchIntegration()
     research_assistant = ResearchAssistant(web_search)
-    logger.info("✅ Web Search (Google Seguro) e Research Assistant inicializados")
-    logger.info("🔒 Medidas de segurança ativas contra vazamento e ataques")
+    logger.info(" Web Search (Google Seguro) e Research Assistant inicializados")
+    logger.info(" Medidas de segurança ativas contra vazamento e ataques")
 except Exception as e:
     logger.warning(f"Erro ao inicializar web search: {e}")
     web_search = None
@@ -139,7 +139,7 @@ except Exception as e:
 # Inicializar System Controller
 try:
     system_controller = get_system_controller()
-    logger.info("✅ System Controller inicializado")
+    logger.info(" System Controller inicializado")
 except Exception as e:
     logger.warning(f"Erro ao inicializar system controller: {e}")
     system_controller = None
@@ -148,7 +148,7 @@ except Exception as e:
 try:
     if training_orchestrator and memory:
         continuous_training = get_continuous_training_system(training_orchestrator, memory)
-        logger.info("✅ Continuous Training System inicializado")
+        logger.info(" Continuous Training System inicializado")
 except Exception as e:
     logger.warning(f"Erro ao inicializar continuous training: {e}")
     continuous_training = None
@@ -159,12 +159,12 @@ async def startup_event():
     if training_orchestrator:
         # Iniciar auto-treinamento via orchestrator
         await training_orchestrator.start_auto_training()
-        logger.info("🔄 Training Orchestrator e auto-treinamento iniciados")
+        logger.info(" Training Orchestrator e auto-treinamento iniciados")
     
     # Iniciar continuous training loop
     if continuous_training:
         asyncio.create_task(continuous_training.start_continuous_training_loop())
-        logger.info("🔄 Continuous Training Loop iniciado")
+        logger.info(" Continuous Training Loop iniciado")
 
 # Servir arquivos estáticos
 static_dir = os.path.join(os.path.dirname(__file__), '..', 'web')
@@ -926,7 +926,7 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
                         accumulated_response = "⏱️ A resposta está demorando muito. O modelo pode estar processando... Tente novamente."
                 
                 # Garantir que stream_end sempre seja enviado
-                final_response = accumulated_response if accumulated_response else "❌ Erro: Nenhuma resposta foi gerada."
+                final_response = accumulated_response if accumulated_response else " Erro: Nenhuma resposta foi gerada."
                 
                 # Salvar resposta do assistente na memória
                 if memory:
@@ -976,7 +976,7 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
                     if "timeout" in error_msg.lower() or "timed out" in error_msg.lower():
                         error_content = "⏱️ O modelo está demorando muito para responder. Na primeira vez, o modelo precisa ser carregado (leva ~20-30 segundos). Tente novamente em alguns segundos."
                     else:
-                        error_content = accumulated_response if accumulated_response else f"❌ Erro ao processar: {error_msg}"
+                        error_content = accumulated_response if accumulated_response else f" Erro ao processar: {error_msg}"
                     
                     await websocket.send_json({
                         "type": "stream_end",
@@ -1001,7 +1001,7 @@ Seja direto, útil e amigável. Use emojis quando apropriado."""
                         else:
                             await websocket.send_json({
                                 "type": "message",
-                                "content": "❌ Erro ao processar sua mensagem. Verifique se o Ollama está rodando corretamente."
+                                "content": " Erro ao processar sua mensagem. Verifique se o Ollama está rodando corretamente."
                             })
             
     except Exception as e:

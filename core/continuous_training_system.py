@@ -167,7 +167,7 @@ class ContinuousTrainingSystem:
     
     async def start_continuous_training_loop(self):
         """Inicia loop de treinamento contínuo."""
-        logger.info("🔄 Iniciando loop de treinamento contínuo...")
+        logger.info(" Iniciando loop de treinamento contínuo...")
         
         while self.continuous_training_enabled:
             try:
@@ -202,7 +202,7 @@ class ContinuousTrainingSystem:
             )
             
             if should_train:
-                logger.info("📚 Iniciando treinamento contínuo...")
+                logger.info(" Iniciando treinamento contínuo...")
                 self.training_in_progress = True
                 
                 # Executar treinamento incremental
@@ -227,7 +227,7 @@ class ContinuousTrainingSystem:
                     await self._evaluate_and_switch_model()
                     
                     self.stats['total_continuous_trainings'] += 1
-                    logger.info("✅ Treinamento contínuo concluído")
+                    logger.info(" Treinamento contínuo concluído")
                 
                 self.training_in_progress = False
                 self.last_training_check = datetime.now()
@@ -251,7 +251,7 @@ class ContinuousTrainingSystem:
             improvement = best_quality - current_quality
             
             if improvement >= self.quality_improvement_threshold:
-                logger.info(f"🔄 Trocando modelo: {current_active} -> {best_model} (melhoria: {improvement:.2%})")
+                logger.info(f" Trocando modelo: {current_active} -> {best_model} (melhoria: {improvement:.2%})")
                 self.model_registry.set_active_model(best_model)
                 self.stats['model_switches'] += 1
                 self.stats['last_model_switch'] = datetime.now().isoformat()

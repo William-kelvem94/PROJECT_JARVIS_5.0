@@ -1,93 +1,88 @@
 version: '3.8'
 
 services:
-  # Serviço Ollama - Modelos LLM Locais Gratuitos
-  ollama:
-    image: ollama/ollama:latest
-    container_name: jarvis_ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    restart: unless-stopped
-    networks:
-      - jarvis_network
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # Serviço JARVIS - Assistente IA
-  jarvis:
+  jarvis-ultimate:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: jarvis_ai
+    container_name: jarvis-ultimate
     ports:
-      - "8000:8000"
+      - "8000:8000"  # API web
+      - "8001:8001"  # WebSocket
     volumes:
-      - ../config:/app/config
-      - ../plugins:/app/plugins
-      - ../web:/app/web
-      - jarvis_logs:/app/logs
+      # Dados persistentes
+      - ./data:/app/data
+      # Acesso ao Ollama no host (se estiver rodando no host)
+      - /tmp/ollama:/tmp/ollama
+      # Configuração
+      - ./config:/app/config:ro
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_MODEL=codellama:7b
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - LLM_PROVIDER=ollama
-      - DISPLAY=:99
-      - PYTHONUNBUFFERED=1
-      - PYTHONDONTWRITEBYTECODE=1
-    depends_on:
-      ollama:
-        condition: service_healthy
-    restart: unless-stopped
+      - PYTHONPATH=/app
+      # Configurações de voz (limitadas no Docker)
+      - VOICE_MODE=text  # Docker sem acesso direto ao microfone
     networks:
-      - jarvis_network
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
+      - jarvis-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/status')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    stop_grace_period: 10s
+    # Para acesso ao host (experimental)
+    # network_mode: host  # Descomente para acesso direto ao host
+    # privileged: true   # Acesso a dispositivos do host
 
-volumes:
-  ollama_data:
-    driver: local
-  jarvis_logs:
-    driver: local
+  # Ollama service (opcional - rodar Ollama no container)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: jarvis-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+    profiles:
+      - with-ollama  # Só inicia se especificado: docker-compose --profile with-ollama up
+
+  # Redis para cache avançado (opcional)
+  redis:
+    image: redis:7-alpine
+    container_name: jarvis-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+    profiles:
+      - with-redis
+
+  # ChromaDB separado (opcional para melhor performance)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: jarvis-chromadb
+    ports:
+      - "8002:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    networks:
+      - jarvis-network
+    restart: unless-stopped
+    profiles:
+      - with-chromadb
 
 networks:
-  jarvis_network:
+  jarvis-network:
     driver: bridge
 
+volumes:
+  ollama-data:
+  redis-data:
+  chroma-data:

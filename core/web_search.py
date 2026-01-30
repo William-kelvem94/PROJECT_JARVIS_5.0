@@ -39,7 +39,7 @@ class SearchSecurityManager:
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         ]
-        logger.info("🔒 Security Manager inicializado")
+        logger.info(" Security Manager inicializado")
     
     def sanitize_query(self, query: str) -> str:
         """
@@ -56,7 +56,7 @@ class SearchSecurityManager:
         # Verificar padrões bloqueados
         for pattern in self.blocked_patterns:
             if re.search(pattern, query_lower):
-                logger.warning(f"🚨 Query bloqueada por conter informação sensível: {pattern}")
+                logger.warning(f" Query bloqueada por conter informação sensível: {pattern}")
                 raise ValueError("Query contém informação sensível e foi bloqueada por segurança")
         
         # Limitar tamanho
@@ -86,7 +86,7 @@ class SearchSecurityManager:
         
         # Verificar limite
         if len(self.request_history) >= self.max_requests_per_window:
-            logger.warning(f"🚨 Rate limit atingido: {len(self.request_history)}/{self.max_requests_per_window}")
+            logger.warning(f" Rate limit atingido: {len(self.request_history)}/{self.max_requests_per_window}")
             return False
         
         # Adicionar nova requisição
@@ -147,7 +147,7 @@ class GoogleSearch:
         self.security = security_manager or SearchSecurityManager()
         self.base_url = "https://www.google.com/search"
         self.session = requests.Session()
-        logger.info("🔍 Google Search inicializado (modo seguro)")
+        logger.info(" Google Search inicializado (modo seguro)")
     
     def search(self, query: str, num_results: int = 5) -> List[Dict[str, Any]]:
         """
@@ -197,12 +197,12 @@ class GoogleSearch:
             # 5. SEGURANÇA: Anonimizar resultados
             results = self.security.anonymize_results(results)
             
-            logger.info(f"✅ Google search: {len(results)} resultados seguros")
+            logger.info(f" Google search: {len(results)} resultados seguros")
             return results
             
         except ValueError as e:
             # Query bloqueada por segurança
-            logger.error(f"❌ {str(e)}")
+            logger.error(f" {str(e)}")
             return []
         except Exception as e:
             logger.error(f"Error in Google search: {e}")
@@ -288,8 +288,8 @@ class WebSearchIntegration:
         self.security = SearchSecurityManager()
         self.google_search = GoogleSearch(self.security)
         
-        logger.info("✅ WebSearchIntegration inicializada (Google Search + Segurança)")
-        logger.info("🔒 Medidas de segurança ativas:")
+        logger.info(" WebSearchIntegration inicializada (Google Search + Segurança)")
+        logger.info(" Medidas de segurança ativas:")
         logger.info("  - Sanitização de queries")
         logger.info("  - Rate limiting (10 req/min)")
         logger.info("  - Bloqueio de dados sensíveis")
@@ -312,12 +312,12 @@ class WebSearchIntegration:
             Resultados seguros da busca
         """
         try:
-            logger.info(f"🔍 Buscando (seguro): {query}")
+            logger.info(f" Buscando (seguro): {query}")
             
             # Buscar no Google com segurança
             results = self.google_search.search(query, num_results)
             
-            logger.info(f"✅ {len(results)} resultados seguros encontrados")
+            logger.info(f" {len(results)} resultados seguros encontrados")
             
             return {
                 'query': query,
@@ -370,7 +370,7 @@ class WebSearchIntegration:
                 formatted += f"   Fonte: {result.get('url')}\n"
             formatted += "\n"
         
-        formatted += "\n🔒 Busca realizada com segurança: dados protegidos, sem vazamentos.\n"
+        formatted += "\n Busca realizada com segurança: dados protegidos, sem vazamentos.\n"
         
         return formatted
     
@@ -436,7 +436,7 @@ class ResearchAssistant:
         """
         num_results = 10 if deep_search else 5
         
-        logger.info(f"📚 Pesquisando (seguro): {query} (deep={deep_search})")
+        logger.info(f" Pesquisando (seguro): {query} (deep={deep_search})")
         
         # Buscar na web com segurança
         web_results = self.web_search.search(query, num_results)
@@ -500,7 +500,7 @@ class ResearchAssistant:
             for source in research_results['sources'][:3]:
                 context += f"- {source}\n"
         
-        context += "\n🔒 Busca protegida: sem vazamento de dados\n"
+        context += "\n Busca protegida: sem vazamento de dados\n"
         context += "=== FIM DAS INFORMAÇÕES DA WEB ===\n\n"
         
         return context

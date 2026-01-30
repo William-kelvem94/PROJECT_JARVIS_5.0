@@ -137,7 +137,7 @@ class TrainingOrchestrator:
             self.training_status["current_stage"] = "initializing"
             self.training_status["progress"] = 0.0
             
-            logger.info(f"🚀 Iniciando workflow de treinamento: {training_type}")
+            logger.info(f" Iniciando workflow de treinamento: {training_type}")
             
             # Aplicar configuração customizada se fornecida
             if custom_config:
@@ -351,7 +351,7 @@ class TrainingOrchestrator:
     
     async def start_auto_training(self):
         """Inicia sistema de auto-treinamento."""
-        logger.info("🔄 Iniciando sistema de auto-treinamento...")
+        logger.info(" Iniciando sistema de auto-treinamento...")
         
         # Habilitar auto-trainer
         self.auto_trainer.enable()
@@ -361,7 +361,7 @@ class TrainingOrchestrator:
             check_interval_minutes=60
         ))
         
-        logger.info("✅ Auto-treinamento ativo")
+        logger.info(" Auto-treinamento ativo")
     
     def stop_auto_training(self):
         """Para sistema de auto-treinamento."""

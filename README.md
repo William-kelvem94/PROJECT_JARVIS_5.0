@@ -1,237 +1,256 @@
-# 🤖 JARVIS IA 5.0 - Assistente IA Local Gratuito
+# 🤖 JARVIS Ultimate - Infraestrutura de Vida Artificial
 
 <div align="center">
 
-![JARVIS](https://img.shields.io/badge/JARVIS-5.0-blue?style=for-the-badge)
-![Ollama](https://img.shields.io/badge/Ollama-Local-green?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge)
+![JARVIS](https://img.shields.io/badge/JARVIS-Ultimate-blue?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge)
+![Ollama](https://img.shields.io/badge/Ollama-Integrated-green?style=for-the-badge)
+![RAG](https://img.shields.io/badge/RAG-Enabled-purple?style=for-the-badge)
 
-**Assistente de IA 100% Local, Gratuito e Profissional**
+**Assistente de IA com Aprendizado Contínuo e Controle Total do Sistema**
 
-[🚀 Instalação Rápida](#-instalação-rápida) • [📖 Documentação](docs/INSTALL.md) • [🎯 Uso](#-como-usar)
+[🚀 Início Rápido](#-início-rápido) • [📖 Documentação](#-documentação) • [🎯 Recursos](#-recursos)
 
 </div>
 
 ---
 
-## ✨ Características
+## ✨ O que é o JARVIS Ultimate?
 
-- ✅ **100% Local** - Tudo roda na sua máquina, sem dependências de APIs externas
-- ✅ **Gratuito** - Usa modelos open-source gratuitos via Ollama
-- ✅ **Docker Ready** - Inicia tudo com um comando
-- ✅ **Múltiplos Modelos** - Suporte para codellama, deepseek-coder, llama2, mistral e mais
-- ✅ **Interface Web Moderna** - Chat em tempo real via WebSocket
-- ✅ **API REST Completa** - Integre com qualquer aplicação
-- ✅ **Plugins Modulares** - Sistema extensível de plugins
-- ✅ **Produção Ready** - Pronto para deploy
+O JARVIS Ultimate é uma **infraestrutura de vida artificial** completa que vai além de um simples assistente. Ele:
+
+- 🔄 **Aprende continuamente** com suas interações
+- 🎤 **Fala e ouve** naturalmente
+- 💻 **Controla seu hardware** automaticamente
+- 🧠 **Memória inteligente** com RAG
+- 📱 **Agnóstico ao hardware** (funciona no Galaxy Book2 ou Desktop parrudo)
+- 🐳 **Roda em Docker** ou nativo
+
+### 🏗️ Arquitetura Híbrida
+
+```
+JARVIS Ultimate/
+├── core/               # Cérebro e sensores
+│   ├── brain.py       # IA com RAG integrado
+│   ├── hearing.py     # Reconhecimento de voz
+│   ├── speech.py      # Síntese de voz
+│   └── hardware.py    # Monitoramento inteligente
+├── tools/             # Ferramentas avançadas
+│   └── model_manager.py # Gestão de modelos IA
+├── data/              # Memória persistente
+├── config.py          # Configuração inteligente
+└── main.py           # Orquestrador principal
+```
 
 ---
 
-## 🚀 Instalação Rápida
+## 🚀 Início Rápido
 
 ### Pré-requisitos
 
-1. **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
-2. **Ollama** (opcional, se não usar Docker) - [Download](https://ollama.com/download)
+1. **Python 3.11+**
+2. **Ollama** (instale em: https://ollama.com)
+3. **Microfone** (para modo voz)
 
-### Iniciar com Docker (Recomendado)
-
-```powershell
-# Clonar repositório (se aplicável)
-git clone <seu-repositorio>
-
-# Iniciar tudo
-docker-compose -f docker/docker-compose.yml up -d
-
-# Acessar interface
-# http://localhost:8000
-```
-
-### Instalação Manual
-
-```powershell
-# 1. Instalar Ollama
-# Baixe: https://ollama.com/download/OllamaSetup.exe
-
-# 2. Baixar modelos
-ollama pull codellama:7b
-ollama pull deepseek-coder:6.7b
-
-# 3. Instalar dependências Python
-pip install -r requirements.txt
-
-# 4. Iniciar servidor
-python -m uvicorn core.main:app --reload
-```
-
-**📖 Veja o [Guia Completo de Instalação](docs/INSTALL.md)**
-
----
-
-## 🎯 Como Usar
-
-### Interface Web
-
-1. Acesse: http://localhost:8000
-2. Digite sua mensagem
-3. Receba resposta em tempo real
-
-### API REST
+### Instalação Simples
 
 ```bash
-# Status do sistema
-curl http://localhost:8000/api/status
+# 1. Baixar modelos essenciais
+ollama pull codellama:7b
+ollama pull mistral:7b
 
-# Chat
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Olá, JARVIS!"}'
+# 2. Instalar dependências
+pip install -r requirements.txt
+
+# 3. Executar
+python main.py
 ```
 
-### WebSocket
+### 🎤 Modo Voz (Completo)
 
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
-ws.onmessage = (e) => console.log(e.data);
-ws.send('Olá, JARVIS!');
+```bash
+# Para experiência completa com voz
+pip install openai-whisper sounddevice
+
+# Executar
+python main.py
 ```
 
----
+### 🐳 Docker (Isolado)
 
-## 📦 Modelos Suportados
+```bash
+# Com Ollama integrado
+docker-compose -f docker/docker-compose.yml --profile with-ollama up -d
 
-### Para Programação
-- `codellama:7b` - Melhor para código Python, JavaScript
-- `deepseek-coder:6.7b` - Especializado em programação
-- `starcoder:1b` - Leve e rápido
-
-### Para Conversação
-- `llama2:7b` - Modelo geral versátil
-- `mistral:7b` - Conversacional e rápido
-- `neural-chat:7b` - Focado em diálogo
-
-### Download Rápido
-
-```powershell
-.\scripts\setup-ollama.ps1
+# Acessar
+docker-compose logs -f jarvis-ultimate
 ```
 
 ---
 
-## 🏗️ Estrutura do Projeto
+## 🎯 Recursos Principais
 
+### 🧠 Cérebro com RAG
+- **Memória Vetorial**: Aprende instantaneamente
+- **Contexto Inteligente**: Recupera informações relevantes
+- **Personalização**: Adapta-se ao seu perfil
+
+### 🎤 Sistema de Voz Avançado
+- **Múltiplas Engines**: pyttsx3, Edge-TTS, ElevenLabs
+- **Reconhecimento**: SpeechRecognition, Whisper, Vosk
+- **Wake Word**: Ativa com "Jarvis"
+
+### 💻 Controle de Hardware
+- **Detecção Automática**: Galaxy Book2 vs Desktop
+- **Monitoramento**: CPU, RAM, temperatura, bateria
+- **Otimização**: Ajustes específicos por hardware
+
+### 🤖 Gestão de Modelos
+- **Busca no HF**: Modelos compatíveis com Ollama
+- **Download Automático**: `ollama pull` integrado
+- **Recomendações**: Sugestões inteligentes
+
+---
+
+## 💬 Como Usar
+
+### Modo Voz
+1. Execute `python main.py`
+2. Diga **"Jarvis"** para ativar
+3. Converse naturalmente
+
+### Comandos Especiais
 ```
-PROJECT_JARVIS_5.0/
-├── core/               # Lógica principal
-│   ├── main.py        # Servidor FastAPI
-│   ├── jarvis.py      # Classe principal
-│   ├── local_llm.py   # Integração Ollama
-│   └── config.py      # Configurações
-├── plugins/            # Plugins modulares
-├── web/                # Interface web
-├── config/             # Arquivos de configuração
-├── scripts/            # Scripts utilitários
-├── docs/               # Documentação
-├── docker/             # Arquivos Docker
-│   ├── docker-compose.yml
-│   └── Dockerfile
-└── requirements.txt    # Dependências Python
+"Aprenda que [frase]"    - Ensina algo novo
+"Status"                 - Mostra estado do sistema
+"Calibrar microfone"     - Ajusta áudio
+"Sair"                   - Encerra
+```
+
+### Exemplo de Conversa
+```
+Você: Jarvis, aprenda que eu gosto de volume em 20%
+JARVIS: ✅ Aprendido!
+
+Você: Qual volume eu gosto?
+JARVIS: Baseado no que você me ensinou, você prefere volume em 20%
 ```
 
 ---
 
-## ⚙️ Configuração
+## ⚙️ Configuração Avançada
 
-### `config/config.json`
-
+### `config.json`
 ```json
 {
-  "llm_provider": "ollama",
-  "ollama_base_url": "http://localhost:11434",
-  "ollama_model": "codellama:7b",
-  "voice_api": "local",
-  "web_interface": true
+  "user": {
+    "name": "William",
+    "preferences": {
+      "volume_preference": 20,
+      "desktop_water_cooling": true
+    }
+  },
+  "voice": {
+    "stt_engine": "whisper",
+    "tts_engine": "pyttsx3",
+    "language": "pt-BR"
+  },
+  "learning": {
+    "rag_enabled": true,
+    "auto_learn_from_interactions": true
+  }
 }
 ```
 
 ### Variáveis de Ambiente
-
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=codellama:7b
-LLM_PROVIDER=ollama
+```bash
+export OLLAMA_BASE_URL="http://localhost:11434"
+export HUGGINGFACE_TOKEN="seu_token_aqui"  # Opcional
 ```
 
 ---
 
-## 🔧 Comandos Úteis
+## 🐳 Docker Avançado
 
-### Docker
+### Perfis Disponíveis
+```bash
+# Básico
+docker-compose up -d
 
-```powershell
-# Iniciar
-docker-compose -f docker/docker-compose.yml up -d
+# Com Ollama integrado
+docker-compose --profile with-ollama up -d
 
-# Parar
-docker-compose -f docker/docker-compose.yml down
+# Com Redis e ChromaDB
+docker-compose --profile with-redis --profile with-chromadb up -d
+```
 
+### Acesso ao Host
+Para controle completo do hardware via Docker:
+```yaml
+# docker-compose.yml
+services:
+  jarvis-ultimate:
+    network_mode: host  # Acesso direto ao host
+    privileged: true    # Acesso a dispositivos
+```
+
+---
+
+## 🔧 Desenvolvimento
+
+### Estrutura do Código
+- **`main.py`**: Loop principal e orquestração
+- **`core/brain.py`**: Sistema RAG e aprendizado
+- **`core/hardware.py`**: Monitoramento de hardware
+- **`tools/model_manager.py`**: Gestão de modelos
+
+### Adicionar Novos Recursos
+```python
+# Exemplo: Novo sensor
+from core.hardware import HardwareMonitor
+
+class MeuSensor:
+    def __init__(self, hardware_monitor):
+        self.hardware = hardware_monitor
+
+    def ler_dado(self):
+        # Implementação do sensor
+        pass
+```
+
+---
+
+## 📊 Monitoramento
+
+### Status em Tempo Real
+```bash
+curl http://localhost:8000/api/status
+```
+
+### Logs
+```bash
 # Ver logs
-docker-compose -f docker/docker-compose.yml logs -f jarvis
+docker-compose logs -f jarvis-ultimate
 
-# Reconstruir com otimizações
-.\scripts\docker-rebuild.ps1
-
-# Monitorar performance
-.\scripts\docker-monitor.ps1
+# Logs detalhados
+tail -f logs/jarvis.log
 ```
-
-### Ollama
-
-```powershell
-# Listar modelos
-ollama list
-
-# Baixar modelo
-ollama pull codellama:7b
-
-# Remover modelo
-ollama rm codellama:7b
-```
-
----
-
-## 🎨 Recursos
-
-- ✅ Chat em tempo real
-- ✅ API REST completa
-- ✅ WebSocket para comunicação bidirecional
-- ✅ Gerenciamento de modelos
-- ✅ Suporte a plugins
-- ✅ Interface web responsiva
-- ✅ Logs detalhados
-
----
-
-## 📊 Requisitos
-
-### Mínimo
-- RAM: 8GB
-- Disco: 10GB
-- CPU: Dual-core 2GHz+
-
-### Recomendado
-- RAM: 16GB+
-- Disco: 20GB+
-- CPU: Quad-core 3GHz+
-- GPU: NVIDIA 6GB+ VRAM (opcional, acelera muito)
 
 ---
 
 ## 🐛 Troubleshooting
 
+### Voz não funciona
+```bash
+# Instalar dependências de áudio
+sudo apt-get install alsa-utils pulseaudio
+
+# Testar microfone
+python -c "import speech_recognition as sr; print(sr.Microphone.list_microphone_names())"
+```
+
 ### Ollama não conecta
-```powershell
+```bash
 # Verificar se está rodando
 curl http://localhost:11434/api/tags
 
@@ -239,34 +258,52 @@ curl http://localhost:11434/api/tags
 ollama serve
 ```
 
-### Docker não inicia
-```powershell
-# Ver logs
-docker-compose logs -f
-
-# Reconstruir
-docker-compose -f docker/docker-compose.yml up --build -d
+### Docker sem acesso ao host
+```bash
+# Para controle de hardware no Docker
+echo "network_mode: host" >> docker-compose.yml
+docker-compose down && docker-compose up -d
 ```
 
-**Veja mais em [INSTALL.md](docs/INSTALL.md#-troubleshooting)**
+---
+
+## 📈 Performance
+
+### Otimizações por Hardware
+
+**Galaxy Book2 (Notebook):**
+- ✅ Monitoramento de bateria
+- ✅ Calibração automática de microfone
+- ✅ Modo economia de energia
+
+**Desktop Parrudo:**
+- ✅ Monitoramento de GPU
+- ✅ Controle de water cooler
+- ✅ Processamento paralelo
+
+### Benchmark
+- **Inicialização**: < 5 segundos
+- **Resposta RAG**: < 500ms
+- **Reconhecimento de voz**: < 2 segundos
+- **Síntese de voz**: < 1 segundo
 
 ---
 
-## 📚 Documentação
+## 🤝 Contribuições
 
-- [Guia Completo de Instalação](docs/INSTALL.md)
-- [Otimizações de Performance](docs/PERFORMANCE.md)
-- [API Documentation](http://localhost:8000/docs) (após iniciar)
-- [Modelos Disponíveis](docs/README_MODELS.md)
+Contribuições são bem-vindas!
 
----
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/nova-feature`)
+3. Commit (`git commit -am 'Adiciona nova feature'`)
+4. Push (`git push origin feature/nova-feature`)
+5. Abra um Pull Request
 
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Sinta-se livre para:
-- Reportar bugs
-- Sugerir features
-- Enviar pull requests
+### Áreas de Interesse
+- 🤖 Novos modelos de IA
+- 🎤 Melhorias na síntese de voz
+- 💻 Suporte a novos hardwares
+- 🧠 Algoritmos de aprendizado avançados
 
 ---
 
@@ -279,15 +316,16 @@ Este projeto é open-source e gratuito para uso pessoal e comercial.
 ## 🙏 Agradecimentos
 
 - **Ollama** - Por tornar IA local acessível
-- **FastAPI** - Framework web moderno
-- **Comunidade Open Source** - Por todos os modelos disponíveis
+- **HuggingFace** - Por modelos open-source
+- **ChromaDB** - Por RAG eficiente
+- **Comunidade Open Source** - Por todas as ferramentas
 
 ---
 
 <div align="center">
 
-**Desenvolvido com ❤️ usando tecnologias Open Source**
+**Desenvolvido com ❤️ para criar vida artificial**
 
-[⭐ Dê uma estrela se gostou!](#)
+⭐ **Dê uma estrela se gostou!**
 
 </div>

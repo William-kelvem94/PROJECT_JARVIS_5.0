@@ -91,7 +91,7 @@ class HuggingFaceIntegration:
                     "pipeline_tag": getattr(model, 'pipeline_tag', None)
                 })
             
-            logger.info(f"✅ {len(results)} modelos encontrados para '{query}'")
+            logger.info(f" {len(results)} modelos encontrados para '{query}'")
             return results
             
         except Exception as e:
@@ -219,7 +219,7 @@ class HuggingFaceIntegration:
                         "ollama_format": self._detect_ollama_format(model.get("id", ""))
                     })
             
-            logger.info(f"✅ {len(compatible)} modelos compatíveis com Ollama encontrados")
+            logger.info(f" {len(compatible)} modelos compatíveis com Ollama encontrados")
             return compatible[:limit]
             
         except Exception as e:

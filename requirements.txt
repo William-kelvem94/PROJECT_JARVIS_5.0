@@ -1,46 +1,59 @@
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-websockets==12.0
-requests==2.31.0
-pyttsx3==2.90
-SpeechRecognition==3.10.0
-python-dotenv==1.0.0
-psutil==5.9.6
+# JARVIS Ultimate - Dependências Completas
 
-# Web Scraping (para Google Search seguro)
-beautifulsoup4==4.12.2
-lxml==4.9.3
+# Core AI & LLM
+ollama>=0.2.0
+langchain>=0.1.0
+sentence-transformers>=2.2.0
+numpy<2.0.0  # Compatibilidade com ChromaDB
 
-# Módulos de Voz (STT/TTS)
-# VOSK (opcional - melhor STT offline)
-# vosk==0.3.45
-
-# Automação Desktop (RPA)
-pyautogui==0.9.54
-pygetwindow==0.0.9
-
-# Gerenciamento de Arquivos
-PyPDF2==3.0.1
-python-docx==1.1.0
-
-# Sistema RAG - Banco Vetorial
-# ChromaDB requer NumPy < 2.0
-numpy<2.0.0
+# RAG & Vector Store
 chromadb==0.4.22
-sentence-transformers==2.2.2
 
-# Detecção de GPU (opcional)
-gputil==1.4.0
+# Speech & Voice
+pyttsx3>=2.90
+SpeechRecognition>=3.10.0
+# openai-whisper>=20231117  # Para Whisper (opcional - pesado)
 
-# PyTorch (para CUDA/GPU) - opcional, instalar conforme necessidade
+# Audio processing (para Whisper avançado)
 # torch>=2.0.0
+# sounddevice>=0.4.6
 
-# Enterprise AI - Sistema Cognitivo
-httpx==0.25.2  # Para chamadas async HTTP
-networkx==3.2.1  # Para Knowledge Graph (opcional)
+# Web & API
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+websockets>=12.0
+requests>=2.31.0
+httpx>=0.25.2
 
-# Redis para Event Bus (opcional, para arquitetura enterprise)
-redis==5.0.1
+# Hardware monitoring
+psutil>=5.9.6
+GPUtil>=1.4.0
 
-# HuggingFace Integration
-huggingface_hub==0.20.0
+# Windows specific
+wmi>=1.5.1; sys_platform == "win32"
+
+# Web scraping (para pesquisa)
+beautifulsoup4>=4.12.2
+lxml>=4.9.3
+
+# HuggingFace integration
+huggingface_hub>=0.20.0
+
+# Configuration & Utils
+python-dotenv>=1.0.0
+pyyaml>=6.0.1
+
+# Logging & Monitoring
+networkx>=3.2.1
+
+# Docker & Deployment (opcional)
+# redis>=5.0.1
+
+# Edge TTS (TTS premium)
+# edge-tts>=6.1.0
+
+# ElevenLabs TTS (premium)
+# elevenlabs>=1.0.0
+
+# Vosk STT (offline)
+# vosk>=0.3.45

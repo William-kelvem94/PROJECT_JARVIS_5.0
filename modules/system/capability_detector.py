@@ -247,12 +247,12 @@ class CapabilityDetector:
         recommended = self.capabilities.get("recommended_model", {})
         
         summary = f"""
-📊 Capabilities Detected:
+ Capabilities Detected:
 
-💻 CPU: {cpu.get('cores', 'N/A')} cores
+ CPU: {cpu.get('cores', 'N/A')} cores
 🧠 RAM: {memory.get('total_gb', 0):.1f} GB total, {memory.get('available_gb', 0):.1f} GB disponível
-🎮 GPU: {'✅ CUDA disponível' if gpu.get('cuda_available') else '❌ Sem GPU'}
-📈 Score: {self.capabilities.get('overall_score', 0):.1%}
+ GPU: {' CUDA disponível' if gpu.get('cuda_available') else ' Sem GPU'}
+ Score: {self.capabilities.get('overall_score', 0):.1%}
 🤖 Modelo Recomendado: {recommended.get('model', 'N/A')} ({recommended.get('reason', '')})
         """
         return summary.strip()
