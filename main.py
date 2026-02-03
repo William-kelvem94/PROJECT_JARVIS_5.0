@@ -1,373 +1,506 @@
+#!/usr/bin/env python3
 """
-JARVIS Ultimate - Assistente de IA com Vida Artificial
-Sistema agnóstico ao hardware, aprendizado contínuo e controle total
+Leitor de Tela Inteligente - Ponto de entrada principal
+Aplicação completa para captura, processamento e análise de dados da tela
 """
 
-import os
-import time
-import signal
 import sys
-from typing import Optional
+import os
+import logging
 from pathlib import Path
+import argparse
+import signal
+import atexit
 
-from core.brain import Brain
-from core.hearing import Hearing
-from core.speech import Speech
-from core.hardware import HardwareMonitor
-from tools.model_manager import ModelManager
-from config import config
+# Adicionar diretório src ao path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-class JarvisUltimate:
-    """
-    JARVIS Ultimate - A infraestrutura de vida artificial completa.
+# Imports dos módulos da aplicação
+from utils.config import config
+from utils.helpers import system_helper
+from database.models import db_manager
+from core.screen_capture import screen_capture
+from core.ocr_processor import ocr_processor
+from core.data_analyzer import data_analyzer
+from core.data_organizer import data_organizer
+# Jarvis Components
+from core.voice_controller import voice_controller
+from core.neural_memory import neural_memory
+from core.ai_agent import ai_agent
+from gui.main_window import main_window
 
-    Capacidades:
-    - Aprendizado contínuo com RAG
-    - Reconhecimento e síntese de voz
-    - Controle total do hardware
-    - Gerenciamento inteligente de modelos
-    - Adaptação automática ao ambiente
-    """
+# Configuração de logging global
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('leitor_tela.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+logger = logging.getLogger(__name__)
+
+class LeitorTelaApp:
+    """Classe principal da aplicação Leitor de Tela Inteligente"""
 
     def __init__(self):
-        print("JARVIS Ultimate - Inicializando...")
-        print(f"Usuario detectado: {config.get_user_name()}")
-        print(f"Hardware: {config.get_system_info()}")
-
-        # Componentes principais
-        self.brain = Brain()
-        self.hearing = Hearing()
-        self.speech = Speech()
-        self.hardware = HardwareMonitor()
-        self.model_manager = ModelManager()
-
-        # Estado do sistema
-        self.running = False
-        self.voice_mode = config.get("voice.stt_engine") != "none"
-
-        # Estatísticas
-        self.stats = {
-            "start_time": time.time(),
-            "interactions": 0,
-            "learned_items": 0,
-            "commands_executed": 0
-        }
-
-        # Configurar handlers de sinal
-        signal.signal(signal.SIGINT, self._signal_handler)
-        signal.signal(signal.SIGTERM, self._signal_handler)
-
-    def _signal_handler(self, signum, frame):
-        """Handler para sinais de interrupção."""
-        print("\n Sinal de interrupção recebido. Encerrando JARVIS...")
-        self.stop()
-
-    def start(self):
-        """Inicia o JARVIS Ultimate."""
-        if self.running:
-            print("AVISO: JARVIS ja esta rodando")
-            return
-
-        self.running = True
-        print(" JARVIS Ultimate iniciado!")
-        print("=" * 50)
-
-        # Saudação inicial
-        self._initial_greeting()
-
-        # Loop principal
-        try:
-            if self.voice_mode:
-                self._voice_loop()
-            else:
-                self._text_loop()
-        except KeyboardInterrupt:
-            print("\n Encerramento solicitado pelo usuário")
-        except Exception as e:
-            print(f" Erro crítico: {e}")
-        finally:
-            self.stop()
-
-    def stop(self):
-        """Para o JARVIS Ultimate."""
-        if not self.running:
-            return
-
+        self.initialized = False
         self.running = False
 
-        # Parar componentes
-        if self.hearing:
-            self.hearing.stop_listening()
-
-        if self.speech:
-            self.speech.stop_speaking()
-
-        # Salvar estatísticas
-        self._save_stats()
-
-        print(" JARVIS Ultimate encerrado")
-        print(f" Estatísticas finais: {self.stats}")
-
-    def _initial_greeting(self):
-        """Saudação inicial personalizada."""
-        user_name = config.get_user_name()
-        hardware_info = self.hardware.get_system_info()
-
-        greeting = f"Ola {user_name}! Sou JARVIS, seu assistente de IA pessoal."
-
-        if hardware_info["is_laptop"]:
-            greeting += f" Detectei que voce esta usando seu {hardware_info['device_type'].replace('_', ' ')}."
-        elif hardware_info["is_desktop"]:
-            greeting += " Detectei que voce esta no seu desktop parrudo."
-
-        greeting += " Estou pronto para ajudar com qualquer coisa!"
-
-        print(f"JARVIS: {greeting}")
-
-        if self.voice_mode and self.speech:
-            self.speech.speak(greeting)
-
-    def _voice_loop(self):
-        """Loop principal no modo voz."""
-        print(" Modo voz ativado. Diga 'Jarvis' para começar...")
-
-        def voice_callback(text: str):
-            """Callback para quando voz é detectada."""
-            if not self.running:
-                return
-
-            print(f" Você disse: {text}")
-            self._process_input(text, voice_response=True)
-
-        # Iniciar escuta
-        self.hearing.start_listening(callback=voice_callback)
-
-        # Manter vivo
-        while self.running:
-            time.sleep(0.1)
-            self._periodic_checks()
-
-    def _text_loop(self):
-        """Loop principal no modo texto."""
-        print(" Modo texto ativado. Digite suas mensagens:")
-
-        while self.running:
-            try:
-                user_input = input(" Você: ").strip()
-                if user_input:
-                    self._process_input(user_input, voice_response=False)
-            except EOFError:
-                break
-
-            self._periodic_checks()
-
-    def _process_input(self, user_input: str, voice_response: bool = False):
-        """Processa entrada do usuário."""
-        try:
-            self.stats["interactions"] += 1
-
-            # Verificar comandos especiais
-            if self._handle_special_commands(user_input):
-                return
-
-            # Processar com o cérebro
-            print("🧠 Pensando...")
-            response = self.brain.think(user_input)
-
-            # Resposta
-            print(f"🤖 JARVIS: {response}")
-
-            # Falar resposta se estiver no modo voz
-            if voice_response and self.speech:
-                self.speech.speak(response)
-
-        except Exception as e:
-            error_msg = f"Desculpe, ocorreu um erro: {str(e)}"
-            print(f" {error_msg}")
-
-            if voice_response and self.speech:
-                self.speech.speak(error_msg)
-
-    def _handle_special_commands(self, user_input: str) -> bool:
+    def initialize(self) -> bool:
         """
-        Trata comandos especiais que não passam pelo cérebro.
+        Inicializa todos os componentes da aplicação
 
         Returns:
-            True se foi um comando especial tratado
+            True se inicialização foi bem-sucedida
         """
-        input_lower = user_input.lower()
+        try:
+            logger.info("Iniciando Jarvis 5.0...")
+            logger.info(f"Versão: {config.get_setting('app.version')}")
+            logger.info(f"Sistema: {config.SYSTEM_INFO}")
 
-        # Comando de status
-        if input_lower in ["status", "como você está", "status do sistema"]:
-            self._show_status()
+            # Verificar requisitos do sistema
+            if not self._check_system_requirements():
+                return False
+
+            # Inicializar banco de dados
+            logger.info("Inicializando banco de dados...")
+            # Banco já é inicializado automaticamente no import
+
+            # Verificar engines OCR
+            logger.info("Verificando engines OCR...")
+            available_engines = ocr_processor.get_available_engines()
+            if not available_engines:
+                logger.warning("Nenhum engine OCR disponível. Alguns recursos estarão limitados.")
+            else:
+                logger.info(f"Engines OCR disponíveis: {', '.join(available_engines)}")
+
+            # Inicializar Memória Neural
+            logger.info("Inicializando Memória Neural Jarvis...")
+            # Já inicializado no import, mas podemos forçar verificação se necessário
+            
+            # Inicializar Agente de IA
+            logger.info("Verificando Agente de IA...")
+            if not ai_agent.api_key and ai_agent.provider == 'gemini':
+                logger.warning("Google API Key não detectada. O modo online do Jarvis estará limitado.")
+
+            # Verificar modelo NLP
+            if not hasattr(data_analyzer, 'nlp') or data_analyzer.nlp is None:
+                logger.warning("Modelo de linguagem natural não disponível. Análise de sentimento desabilitada.")
+            else:
+                logger.info("Modelo de linguagem natural carregado.")
+
+            # Registrar função de limpeza
+            atexit.register(self.cleanup)
+
+            self.initialized = True
+            logger.info("Aplicação inicializada com sucesso!")
+
             return True
 
-        # Comando de aprendizado
-        if input_lower.startswith("aprenda que") or input_lower.startswith("lembre que"):
-            self._handle_learning_command(user_input)
+        except Exception as e:
+            logger.error(f"Erro na inicialização: {e}")
+            return False
+
+    def _check_system_requirements(self) -> bool:
+        """
+        Verifica se os requisitos mínimos do sistema estão atendidos
+
+        Returns:
+            True se requisitos estão OK
+        """
+        try:
+            # Verificar Python
+            python_version = sys.version_info
+            if python_version < (3, 9):
+                logger.error(f"Python 3.9+ requerido. Versão atual: {python_version}")
+                return False
+
+            # Verificar espaço em disco
+            system_info = system_helper.get_system_info()
+            disk_free_gb = system_info.get('disk_free', 0)
+
+            if disk_free_gb < 0.5:  # 500MB mínimo
+                logger.warning(f"Espaço em disco baixo: {disk_free_gb:.2f}GB livre")
+
+            # Verificar memória
+            memory_total_gb = system_info.get('memory_total', 0)
+            if memory_total_gb < 4:  # 4GB recomendado
+                logger.warning(f"Memória RAM baixa: {memory_total_gb:.1f}GB total")
+
+            # Verificar permissões de escrita
+            test_file = config.DATA_DIR / "test_write.tmp"
+            try:
+                test_file.write_text("test")
+                test_file.unlink()
+            except Exception as e:
+                logger.error(f"Sem permissões de escrita no diretório de dados: {e}")
+                return False
+
+            logger.info("Requisitos do sistema verificados com sucesso")
             return True
 
-        # Comando de voz
-        if input_lower in ["calar", "ficar quieto", "parar de falar"]:
-            if self.speech:
-                self.speech.stop_speaking()
-                print(" Ok, ficando quieto")
-            return True
+        except Exception as e:
+            logger.error(f"Erro na verificação de requisitos: {e}")
+            return False
 
-        # Comando de calibração
-        if input_lower in ["calibrar microfone", "calibrar voz"]:
-            if self.hearing:
-                self.hearing.calibrate_microphone()
-                print(" Microfone calibrado")
-            return True
-
-        # Comando de sair
-        if input_lower in ["sair", "encerrar", "fechar", "tchau"]:
-            print(" Até logo!")
-            self.stop()
-            return True
-
-        return False
-
-    def _handle_learning_command(self, user_input: str):
-        """Trata comandos de aprendizado."""
-        # Extrair o que aprender
-        learn_text = user_input.replace("aprenda que", "").replace("lembre que", "").strip()
-
-        if not learn_text:
-            print(" O que você quer que eu aprenda?")
+    def run_gui(self):
+        """Executa a interface gráfica"""
+        if not self.initialized:
+            logger.error("Aplicação não inicializada. Execute initialize() primeiro.")
             return
 
-        # Aprender
-        result = self.brain.learn(learn_text, "user_teaching")
-
-        if result.get("success"):
-            print(" Aprendido!")
-            self.stats["learned_items"] += 1
-        else:
-            print(f" Erro ao aprender: {result.get('error', 'Erro desconhecido')}")
-
-    def _show_status(self):
-        """Mostra status completo do sistema."""
-        print("\n STATUS DO JARVIS ULTIMATE")
-        print("=" * 40)
-
-        # Hardware
-        hw_info = self.hardware.get_system_info()
-        print(f" Hardware: {hw_info['device_type']} ({hw_info['system']})")
-
-        # CPU e memória
-        if hw_info.get('cpu', {}).get('available'):
-            print(f"️ CPU: {hw_info['cpu']['usage_percent']:.1f}% usado")
-        if hw_info.get('memory', {}).get('available'):
-            print(f"🧠 RAM: {hw_info['memory']['usage_percent']:.1f}% usado")
-
-        # Temperatura
-        if hw_info.get('temperature', {}).get('available'):
-            sensors = hw_info['temperature'].get('sensors', [])
-            if sensors:
-                temp = sensors[0]['temperature_c']
-                print(f"️ Temperatura: {temp:.1f}°C")
-
-        # Bateria (se laptop)
-        if hw_info.get('battery', {}).get('available'):
-            battery = hw_info['battery']
-            print(f" Bateria: {battery['percent']:.1f}% {'(carregando)' if battery['is_plugged'] else ''}")
-
-        # Cérebro
-        brain_stats = self.brain.get_stats()
-        print(f"🧠 Conhecimento: {brain_stats['knowledge_items']} itens aprendidos")
-
-        # Voz
-        if self.hearing:
-            hearing_status = self.hearing.get_status()
-            print(f" STT: {hearing_status['engine']} ({'ativo' if hearing_status['is_listening'] else 'inativo'})")
-
-        if self.speech:
-            speech_status = self.speech.get_status()
-            print(f"️ TTS: {speech_status['engine']} (volume: {speech_status['volume']}%)")
-
-        # Modelos
-        if self.model_manager:
-            model_status = self.model_manager.get_status()
-            print(f"🤖 Modelos: {model_status['installed_models_count']} instalados")
-
-        # Estatísticas de uso
-        uptime = time.time() - self.stats["start_time"]
-        hours = int(uptime // 3600)
-        minutes = int((uptime % 3600) // 60)
-
-        print(f"⏱️ Tempo ativo: {hours}h {minutes}m")
-        print(f" Interações: {self.stats['interactions']}")
-        print(f" Itens aprendidos: {self.stats['learned_items']}")
-
-        print("=" * 40)
-
-    def _periodic_checks(self):
-        """Verificações periódicas durante o loop."""
-        # Verificar saúde do hardware a cada 30 segundos
-        current_time = time.time()
-        if not hasattr(self, '_last_health_check'):
-            self._last_health_check = 0
-
-        if current_time - self._last_health_check > 30:
-            self._health_check()
-            self._last_health_check = current_time
-
-    def _health_check(self):
-        """Verificação de saúde do sistema."""
         try:
-            health = self.hardware.get_health_status()
+            self.running = True
+            logger.info("Iniciando interface gráfica...")
 
-            if health["overall"] == "critical":
-                warning_msg = "⚠️ Sistema com problemas críticos!"
-                print(warning_msg)
-                if self.voice_mode and self.speech:
-                    self.speech.speak(warning_msg)
+            # Executar interface
+            main_window.run()
 
-            elif health["overall"] == "warning":
-                print("⚠️ Atenção: sistema com avisos")
+        except KeyboardInterrupt:
+            logger.info("Aplicação interrompida pelo usuário")
+        except Exception as e:
+            logger.error(f"Erro na execução da interface: {e}")
+        finally:
+            self.running = False
+
+    def run_cli(self, args):
+        """Executa em modo linha de comando"""
+        if not self.initialized:
+            logger.error("Aplicação não inicializada. Execute initialize() primeiro.")
+            return
+
+        try:
+            logger.info("Executando em modo CLI...")
+
+            if args.command == 'capture':
+                self._cli_capture(args)
+            elif args.command == 'process':
+                self._cli_process(args)
+            elif args.command == 'analyze':
+                self._cli_analyze(args)
+            elif args.command == 'export':
+                self._cli_export(args)
+            elif args.command == 'batch':
+                self._cli_batch(args)
+            else:
+                logger.error(f"Comando desconhecido: {args.command}")
 
         except Exception as e:
-            print(f"Erro na verificação de saúde: {e}")
+            logger.error(f"Erro no modo CLI: {e}")
 
-    def _save_stats(self):
-        """Salva estatísticas da sessão."""
+    def _cli_capture(self, args):
+        """Captura de tela via CLI"""
+        logger.info("Iniciando captura via CLI...")
+
         try:
-            stats_file = Path("./data/session_stats.json")
-            stats_file.parent.mkdir(parents=True, exist_ok=True)
+            if args.area:
+                # Captura de área específica
+                x, y, w, h = map(int, args.area.split(','))
+                capture_path = screen_capture.capture_region((x, y, w, h))
+            elif args.window:
+                # Captura de janela específica
+                capture_path = screen_capture.capture_window(args.window)
+            else:
+                # Captura de tela completa
+                capture_path = screen_capture.capture_fullscreen()
 
-            session_data = {
-                "timestamp": time.time(),
-                "duration_seconds": time.time() - self.stats["start_time"],
-                **self.stats
+            if capture_path:
+                logger.info(f"Captura salva: {capture_path}")
+
+                # Processar automaticamente se solicitado
+                if args.process:
+                    logger.info("Processando captura...")
+                    ocr_result = ocr_processor.process_image(capture_path)
+                    if ocr_result:
+                        logger.info("OCR concluído")
+
+                        if args.analyze:
+                            logger.info("Analisando dados...")
+                            analysis = data_analyzer.analyze_text(ocr_result.get('cleaned_text', ''))
+                            logger.info(f"Análise concluída: {len(analysis.get('extracted_data', []))} dados extraídos")
+
+                            if args.export:
+                                logger.info("Exportando dados...")
+                                # Obter ID da captura
+                                capture_hash = ocr_processor.file_helper.get_file_hash(capture_path)
+                                capture_record = db_manager.get_capture_by_hash(capture_hash)
+                                if capture_record:
+                                    organized_data = data_organizer.organize_capture_data(capture_record.id)
+                                    export_path = data_organizer.export_data(organized_data, args.format or 'json')
+                                    if export_path:
+                                        logger.info(f"Dados exportados: {export_path}")
+            else:
+                logger.error("Falha na captura")
+
+        except Exception as e:
+            logger.error(f"Erro na captura CLI: {e}")
+
+    def _cli_process(self, args):
+        """Processamento de imagem via CLI"""
+        if not args.input:
+            logger.error("Arquivo de entrada não especificado")
+            return
+
+        try:
+            logger.info(f"Processando arquivo: {args.input}")
+
+            ocr_result = ocr_processor.process_image(args.input)
+            if ocr_result:
+                logger.info("Processamento OCR concluído")
+
+                if args.analyze:
+                    analysis = data_analyzer.analyze_text(ocr_result.get('cleaned_text', ''))
+                    logger.info(f"Análise concluída: {len(analysis.get('extracted_data', []))} dados extraídos")
+
+                    if args.export:
+                        # Para arquivos externos, criar estrutura básica
+                        organized_data = {
+                            'file_path': args.input,
+                            'ocr_result': ocr_result,
+                            'analysis': analysis
+                        }
+                        export_path = data_organizer.export_data(organized_data, args.format or 'json')
+                        if export_path:
+                            logger.info(f"Dados exportados: {export_path}")
+                else:
+                    # Apenas mostrar resultado OCR
+                    print("\n=== RESULTADO OCR ===")
+                    print(ocr_result.get('cleaned_text', ''))
+            else:
+                logger.error("Falha no processamento")
+
+        except Exception as e:
+            logger.error(f"Erro no processamento CLI: {e}")
+
+    def _cli_analyze(self, args):
+        """Análise de texto via CLI"""
+        if not args.text and not args.file:
+            logger.error("Texto ou arquivo não especificado")
+            return
+
+        try:
+            if args.file:
+                with open(args.file, 'r', encoding='utf-8') as f:
+                    text = f.read()
+            else:
+                text = args.text
+
+            logger.info("Analisando texto...")
+            analysis = data_analyzer.analyze_text(text)
+
+            print("\n=== RESULTADO DA ANÁLISE ===")
+            print(f"Dados extraídos: {len(analysis.get('extracted_data', []))}")
+            print(f"Categorias identificadas: {analysis.get('categories', [])}")
+            print(f"Confiança geral: {analysis.get('confidence', 0):.2f}")
+
+            for data_item in analysis.get('extracted_data', []):
+                print(f"- {data_item['field_name']}: {data_item['field_value']} "
+                      f"(tipo: {data_item['data_type']}, confiança: {data_item['confidence']:.2f})")
+
+            if args.export:
+                export_path = data_organizer.export_data(analysis, args.format or 'json')
+                if export_path:
+                    logger.info(f"Análise exportada: {export_path}")
+
+        except Exception as e:
+            logger.error(f"Erro na análise CLI: {e}")
+
+    def _cli_export(self, args):
+        """Exportação de dados via CLI"""
+        if not args.input:
+            logger.error("Arquivo de entrada não especificado")
+            return
+
+        try:
+            # Carregar dados do arquivo
+            with open(args.input, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            export_path = data_organizer.export_data(data, args.format or 'json')
+            if export_path:
+                logger.info(f"Dados exportados: {export_path}")
+            else:
+                logger.error("Falha na exportação")
+
+        except Exception as e:
+            logger.error(f"Erro na exportação CLI: {e}")
+
+    def _cli_batch(self, args):
+        """Processamento em lote via CLI"""
+        if not args.input_dir:
+            logger.error("Diretório de entrada não especificado")
+            return
+
+        try:
+            input_dir = Path(args.input_dir)
+            if not input_dir.exists():
+                logger.error(f"Diretório não existe: {input_dir}")
+                return
+
+            # Encontrar arquivos de imagem
+            image_extensions = {'.png', '.jpg', '.jpeg', '.bmp', '.tiff'}
+            image_files = [
+                f for f in input_dir.glob("*")
+                if f.is_file() and f.suffix.lower() in image_extensions
+            ]
+
+            if not image_files:
+                logger.warning(f"Nenhum arquivo de imagem encontrado em: {input_dir}")
+                return
+
+            logger.info(f"Processando {len(image_files)} imagens...")
+
+            # Processar em lote
+            results = ocr_processor.process_batch([str(f) for f in image_files])
+
+            # Agregar resultados
+            batch_summary = {
+                'total_files': len(image_files),
+                'processed_files': len(results),
+                'successful_processes': sum(1 for r in results.values() if r is not None),
+                'results': results
             }
 
-            with open(stats_file, 'w', encoding='utf-8') as f:
-                import json
-                json.dump(session_data, f, indent=2, ensure_ascii=False)
+            # Salvar resumo
+            summary_file = input_dir / "batch_summary.json"
+            with open(summary_file, 'w', encoding='utf-8') as f:
+                json.dump(batch_summary, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"Processamento em lote concluído. Resumo salvo em: {summary_file}")
 
         except Exception as e:
-            print(f"Erro ao salvar estatísticas: {e}")
+            logger.error(f"Erro no processamento em lote: {e}")
+
+    def cleanup(self):
+        """Limpa recursos da aplicação"""
+        try:
+            logger.info("Executando limpeza...")
+
+            # Parar gravações ativas
+            if hasattr(screen_capture, 'recording_active') and screen_capture.recording_active:
+                screen_capture.stop_screen_recording()
+
+            # Fechar conexões de banco
+            # SQLAlchemy gerencia automaticamente
+
+            # Limpar arquivos temporários
+            temp_dir = config.DATA_DIR / "temp"
+            if temp_dir.exists():
+                for temp_file in temp_dir.glob("*"):
+                    try:
+                        temp_file.unlink()
+                    except Exception:
+                        pass
+
+            logger.info("Limpeza concluída")
+
+        except Exception as e:
+            logger.error(f"Erro na limpeza: {e}")
+
+def create_argument_parser():
+    """Cria parser de argumentos para modo CLI"""
+    parser = argparse.ArgumentParser(
+        description="Leitor de Tela Inteligente - CLI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemplos de uso:
+
+  # Captura de tela completa
+  python main.py capture
+
+  # Captura de área específica e processamento automático
+  python main.py capture --area 100,100,800,600 --process --analyze --export --format json
+
+  # Processamento de imagem existente
+  python main.py process --input imagem.png --analyze --export --format pdf
+
+  # Análise de texto
+  python main.py analyze --text "CPF: 123.456.789-00" --export --format csv
+
+  # Processamento em lote
+  python main.py batch --input-dir ./imagens/
+        """
+    )
+
+    subparsers = parser.add_subparsers(dest='command', help='Comandos disponíveis')
+
+    # Comando capture
+    capture_parser = subparsers.add_parser('capture', help='Capturar tela')
+    capture_parser.add_argument('--area', help='Área para capturar (x,y,width,height)')
+    capture_parser.add_argument('--window', help='Título da janela para capturar')
+    capture_parser.add_argument('--process', action='store_true', help='Processar após capturar')
+    capture_parser.add_argument('--analyze', action='store_true', help='Analisar dados após processar')
+    capture_parser.add_argument('--export', action='store_true', help='Exportar dados após analisar')
+    capture_parser.add_argument('--format', choices=['json', 'csv', 'excel', 'pdf', 'txt'],
+                               default='json', help='Formato de exportação')
+
+    # Comando process
+    process_parser = subparsers.add_parser('process', help='Processar imagem')
+    process_parser.add_argument('--input', required=True, help='Arquivo de imagem para processar')
+    process_parser.add_argument('--analyze', action='store_true', help='Analisar dados após processar')
+    process_parser.add_argument('--export', action='store_true', help='Exportar dados após analisar')
+    process_parser.add_argument('--format', choices=['json', 'csv', 'excel', 'pdf', 'txt'],
+                               default='json', help='Formato de exportação')
+
+    # Comando analyze
+    analyze_parser = subparsers.add_parser('analyze', help='Analisar texto')
+    group = analyze_parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--text', help='Texto para analisar')
+    group.add_argument('--file', help='Arquivo de texto para analisar')
+    analyze_parser.add_argument('--export', action='store_true', help='Exportar resultado')
+    analyze_parser.add_argument('--format', choices=['json', 'csv', 'excel', 'pdf', 'txt'],
+                               default='json', help='Formato de exportação')
+
+    # Comando export
+    export_parser = subparsers.add_parser('export', help='Exportar dados')
+    export_parser.add_argument('--input', required=True, help='Arquivo JSON com dados para exportar')
+    export_parser.add_argument('--format', choices=['json', 'csv', 'excel', 'pdf', 'txt'],
+                              default='json', help='Formato de exportação')
+
+    # Comando batch
+    batch_parser = subparsers.add_parser('batch', help='Processamento em lote')
+    batch_parser.add_argument('--input-dir', required=True, help='Diretório com imagens para processar')
+
+    return parser
 
 def main():
-    """Função principal."""
-    try:
-        # Verificar se é Docker
-        if config.is_docker_environment():
-            print(" Executando em ambiente Docker")
+    """Função principal"""
+    # Tratamento de sinais
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
-        # Inicializar JARVIS
-        jarvis = JarvisUltimate()
+    # Parser de argumentos
+    parser = create_argument_parser()
+    args = parser.parse_args()
 
-        # Iniciar
-        jarvis.start()
+    # Inicializar aplicação
+    app = LeitorTelaApp()
 
-    except KeyboardInterrupt:
-        print("\n Programa interrompido pelo usuário")
-    except Exception as e:
-        print(f"ERRO FATAL: {e}")
+    if not app.initialize():
+        logger.error("Falha na inicialização da aplicação")
         sys.exit(1)
 
+    # Executar modo apropriado
+    if args.command:
+        # Modo CLI
+        app.run_cli(args)
+    else:
+        # Modo GUI
+        app.run_gui()
+
+def signal_handler(signum, frame):
+    """Tratador de sinais do sistema"""
+    logger.info(f"Sinal {signum} recebido. Encerrando...")
+    sys.exit(0)
+
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("Aplicação interrompida pelo usuário")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Erro fatal: {e}")
+        sys.exit(1)
