@@ -21,7 +21,7 @@ class DatasetCollector:
         self.logs_file = self.dataset_dir / 'history.jsonl'
 
     def collect(self, screenshot_path: str, prompt: str, response: str, provider: str):
-        """Salva uma entrada no dataset de treinamento"""
+        """Salva uma entrada no dataset de treinamento padrão"""
         try:
             entry = {
                 'timestamp': datetime.now().isoformat(),
@@ -32,13 +32,34 @@ class DatasetCollector:
                 'system_status': 'online' if provider != 'ollama' else 'offline'
             }
 
-            # Escreve no arquivo JSONL (JSON Lines) para facilitar o streaming futuro
             with open(self.logs_file, 'a', encoding='utf-8') as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + '\n')
             
             logger.info(f"Dados coletados para treinamento: {len(prompt)} chars")
         except Exception as e:
             logger.error(f"Erro ao coletar dados para dataset: {e}")
+
+    def collect_correction(self, prompt: str, rejected_response: str, chosen_correction: str):
+        """
+        Salva uma correção explícita no formato DPO (Direct Preference Optimization)
+        Ideal para treinar a IA a evitar erros específicos.
+        """
+        try:
+            correction_file = self.dataset_dir / 'corrections.jsonl'
+            entry = {
+                'timestamp': datetime.now().isoformat(),
+                'prompt': prompt,
+                'rejected': rejected_response,
+                'chosen': chosen_correction,
+                'type': 'human_correction'
+            }
+
+            with open(correction_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + '\n')
+            
+            logger.info("Correção de usuário salva no dataset DPO.")
+        except Exception as e:
+            logger.error(f"Erro ao salvar correção: {e}")
 
 # Instância global
 dataset_collector = DatasetCollector()

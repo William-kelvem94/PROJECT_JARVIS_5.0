@@ -1,5 +1,5 @@
 """
-Funções auxiliares e utilitários para o Leitor de Tela Inteligente
+Funções auxiliares e utilitários para o Jarvis 5.0
 Contém funções comuns usadas em todo o sistema
 """
 
@@ -321,14 +321,44 @@ class SystemHelper:
                 "os_version": platform.version(),
                 "python_version": platform.python_version(),
                 "cpu_count": psutil.cpu_count(),
-                "memory_total": psutil.virtual_memory().total / (1024**3),  # GB
-                "memory_available": psutil.virtual_memory().available / (1024**3),  # GB
                 "disk_total": psutil.disk_usage('/').total / (1024**3),  # GB
-                "disk_free": psutil.disk_usage('/').free / (1024**3)  # GB
+                "disk_free": psutil.disk_usage('/').free / (1024**3),  # GB
+                "gpu": SystemHelper.get_gpu_info()
             }
         except Exception as e:
             logger.error(f"Erro ao obter informações do sistema: {e}")
             return {}
+
+    @staticmethod
+    def get_gpu_info() -> Dict[str, Any]:
+        """Detecta disponibilidade de GPU (NVIDIA/CUDA)"""
+        info = {"available": False, "name": "None", "driver": "None"}
+        
+        # Tentar via torch se disponível (mais confiável para IA)
+        try:
+            import torch
+            if torch.cuda.is_available():
+                info["available"] = True
+                info["name"] = torch.cuda.get_device_name(0)
+                info["driver"] = "CUDA (torch)"
+                return info
+        except ImportError:
+            pass
+
+        # Tentar via linha de comando (nvidia-smi)
+        try:
+            import subprocess
+            output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], 
+                                          stderr=subprocess.DEVNULL, universal_newlines=True)
+            if output:
+                info["available"] = True
+                info["name"] = output.strip()
+                info["driver"] = "NVIDIA-SMI"
+                return info
+        except (Exception, FileNotFoundError):
+            pass
+
+        return info
 
     @staticmethod
     def is_admin() -> bool:

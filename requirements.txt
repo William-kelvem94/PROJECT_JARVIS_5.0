@@ -37,3 +37,15 @@ pygame>=2.5.0
 # Neural & AI Evolution
 sentence-transformers>=2.2.2
 chromadb>=0.4.15
+torch>=2.0.0
+transformers>=4.30.0
+accelerate>=0.20.0
+
+# Sensory Expansion (Eyes & Ears)
+face_recognition>=1.3.0
+dlib>=19.24.0  # Requires C++ Build Tools on Windows
+# opencv-python-headless>=4.8.0  # Already included above as opencv-python
+# vosk>=0.3.45   # Already included above
+# pyaudio>=0.2.13 # Already included above
+mediapipe>=0.10.9 # Hand/Face Gesture Tracking
+mnn>=2.0.0 # Fast inference (optional, if mediapipe is heavy)

@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('leitor_tela.log', encoding='utf-8'),
+        logging.FileHandler('jarvis.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -51,7 +51,7 @@ class Config:
         # Diretórios de dados
         self.CAPTURES_DIR = self.DATA_DIR / "captures"
         self.PROCESSED_DIR = self.DATA_DIR / "processed"
-        self.DATABASE_FILE = self.DATA_DIR / "leitor_tela.db"
+        self.DATABASE_FILE = self.DATA_DIR / "jarvis.db"
 
         # Arquivos de configuração
         self.SETTINGS_FILE = self.CONFIG_DIR / "settings.json"
@@ -110,6 +110,11 @@ class Config:
                 "show_notifications": True,
                 "auto_start": False,
                 "check_updates": True
+            },
+            "vision": {
+                "yolo_enabled": True,
+                "yolo_model": "yolov8n.pt",
+                "yolo_confidence": 0.25
             }
         }
 
@@ -121,7 +126,7 @@ class Config:
                 "timeout": 30
             },
             "easyocr": {
-                "gpu": False,
+                "gpu": self._has_gpu(),
                 "model_storage_directory": str(self.DATA_DIR / "models"),
                 "user_network_directory": str(self.DATA_DIR / "models"),
                 "detect_network": "craft",
@@ -131,6 +136,12 @@ class Config:
                 "recognizer": True
             }
         }
+
+        # Sugestão de motor baseada em hardware
+        if self._has_gpu():
+            self.DEFAULT_SETTINGS["ocr"]["engine"] = "easyocr"
+        else:
+            self.DEFAULT_SETTINGS["ocr"]["engine"] = "tesseract"
 
         # Tipos de documento suportados
         self.SUPPORTED_DOCUMENT_TYPES = {
@@ -207,6 +218,20 @@ class Config:
             return tesseract_path
 
         return None
+
+    def _has_gpu(self) -> bool:
+        """Verifica se há uma GPU NVIDIA disponível (sem circular import)"""
+        try:
+            import subprocess
+            subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
+            return True
+        except:
+            # Fallback para torch se já estiver carregado em algum lugar
+            try:
+                import torch
+                return torch.cuda.is_available()
+            except:
+                return False
 
     def _create_directories(self):
         """Cria diretórios necessários se não existirem"""

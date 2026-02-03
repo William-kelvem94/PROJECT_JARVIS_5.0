@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Leitor de Tela Inteligente - Ponto de entrada principal
-Aplicação completa para captura, processamento e análise de dados da tela
+Jarvis 5.0 - Ponto de entrada principal
+Assistente Virtual com Visão, Audição e Aprendizado Evolutivo
 """
 
 import sys
@@ -11,6 +11,7 @@ from pathlib import Path
 import argparse
 import signal
 import atexit
+import threading
 
 # Adicionar diretório src ao path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -18,6 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 # Imports dos módulos da aplicação
 from utils.config import config
 from utils.helpers import system_helper
+from core.hardware_manager import hardware_manager
+from core.local_brain import local_brain
 from database.models import db_manager
 from core.screen_capture import screen_capture
 from core.ocr_processor import ocr_processor
@@ -27,6 +30,8 @@ from core.data_organizer import data_organizer
 from core.voice_controller import voice_controller
 from core.neural_memory import neural_memory
 from core.ai_agent import ai_agent
+from core.camera_controller import camera_controller
+from core.proactive_monitor import proactive_monitor
 from gui.main_window import main_window
 
 # Configuração de logging global
@@ -34,15 +39,15 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('leitor_tela.log', encoding='utf-8'),
+        logging.FileHandler('jarvis.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
 
 logger = logging.getLogger(__name__)
 
-class LeitorTelaApp:
-    """Classe principal da aplicação Leitor de Tela Inteligente"""
+class JarvisApp:
+    """Núcleo Principal do Jarvis 5.0"""
 
     def __init__(self):
         self.initialized = False
@@ -59,6 +64,10 @@ class LeitorTelaApp:
             logger.info("Iniciando Jarvis 5.0...")
             logger.info(f"Versão: {config.get_setting('app.version')}")
             logger.info(f"Sistema: {config.SYSTEM_INFO}")
+            
+            # Log de Hardware
+            hw_status = hardware_manager.get_status()
+            logger.info(f"Hardware Detectado: {hw_status['gpu_name']} ({hw_status['device']})")
 
             # Verificar requisitos do sistema
             if not self._check_system_requirements():
@@ -78,12 +87,17 @@ class LeitorTelaApp:
 
             # Inicializar Memória Neural
             logger.info("Inicializando Memória Neural Jarvis...")
-            # Já inicializado no import, mas podemos forçar verificação se necessário
+            from core.memory_seed import seed_jarvis
+            seed_jarvis()
             
             # Inicializar Agente de IA
             logger.info("Verificando Agente de IA...")
             if not ai_agent.api_key and ai_agent.provider == 'gemini':
                 logger.warning("Google API Key não detectada. O modo online do Jarvis estará limitado.")
+            
+            # Carregar Cérebro Local (Background)
+            logger.info("Preparando Cérebro Local (Transformers)...")
+            threading.Thread(target=local_brain.load, daemon=True).start()
 
             # Verificar modelo NLP
             if not hasattr(data_analyzer, 'nlp') or data_analyzer.nlp is None:
@@ -93,6 +107,18 @@ class LeitorTelaApp:
 
             # Registrar função de limpeza
             atexit.register(self.cleanup)
+
+            # Inicializar Câmera (FaceID)
+            logger.info("Iniciando sistema de visão (FaceID)...")
+            camera_controller.start_monitoring()
+
+            # Inicializar Monitor Proativo (Stark Phase 1)
+            logger.info("Iniciando Monitor Proativo (Iniciativa Stark)...")
+            proactive_monitor.start()
+
+            # Inicializar Wake Word
+            logger.info("Iniciando escuta ativa (Wake Word)...")
+            voice_controller.listen_for_wake_word(on_wake=self._on_wake_detected)
 
             self.initialized = True
             logger.info("Aplicação inicializada com sucesso!")
@@ -144,6 +170,24 @@ class LeitorTelaApp:
         except Exception as e:
             logger.error(f"Erro na verificação de requisitos: {e}")
             return False
+
+    def _on_wake_detected(self):
+        """Callback acionado quando o Wake Word é detectado"""
+        logger.info("Wake Word detectado! Ativando modo comando...")
+        
+        # Obter usuário da câmera para saudação personalizada (opcional)
+        user_name = camera_controller.last_seen_user
+        if user_name:
+            logger.info(f"Interagindo com {user_name}")
+
+        # Iniciar escuta de comando único
+        # O VoiceController já fará o feedback de voz ("Pois não?")
+        voice_controller.listen_once(on_command=self._process_voice_command)
+
+    def _process_voice_command(self, text: str):
+        """Processa o comando de voz recebido"""
+        logger.info(f"Processando voz: {text}")
+        ai_agent.process_command(text)
 
     def run_gui(self):
         """Executa a interface gráfica"""
@@ -402,7 +446,7 @@ class LeitorTelaApp:
 def create_argument_parser():
     """Cria parser de argumentos para modo CLI"""
     parser = argparse.ArgumentParser(
-        description="Leitor de Tela Inteligente - CLI",
+        description="Jarvis 5.0 - Command Line Interface",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Exemplos de uso:
@@ -476,7 +520,7 @@ def main():
     args = parser.parse_args()
 
     # Inicializar aplicação
-    app = LeitorTelaApp()
+    app = JarvisApp()
 
     if not app.initialize():
         logger.error("Falha na inicialização da aplicação")

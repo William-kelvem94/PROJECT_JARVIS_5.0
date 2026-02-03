@@ -1,4 +1,4 @@
-# PROJECT JARVIS 5.0 (Powered by Intelligent Screen Reader)
+# JARVIS 5.0 - Inteligência Artificial de Elite
 
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,15 +6,11 @@
 
 O núcleo do **Jarvis 5.0**, integrando um sistema avançado para **captura**, **processamento** e **análise inteligente** de dados da tela. Esta é a base para a "Visão Computacional" do Jarvis.
 
-## 🎯 **Visão Geral**
-
-O **Leitor de Tela Inteligente** é uma ferramenta desktop que roda localmente no Windows e permite:
-
-- 📸 **Capturar** screenshots e gravações de tela
-- 🔍 **Extrair** texto via OCR multilíngue (Tesseract + EasyOCR)
-- 🧠 **Analisar** dados com IA e regras inteligentes
-- 📊 **Organizar** informações em formatos estruturados
-- 💾 **Exportar** dados para JSON, CSV, Excel, PDF e TXT
+O **Jarvis 5.0** é um assistente virtual autônomo projetado para Windows que integra:
+- 👁️ **Visão Computacional**: Reconhecimento facial (FaceID) e detecção de gestos (Hand Landmarks).
+- 👂 **Audição Inteligente**: Wake Word "Jarvis" e processamento de fala offline/online.
+- 🧠 **Cérebro Evolutivo**: Memória neural semântica e aprendizado por feedback ("Ensinar Modo").
+- 🤖 **Agente de Ação**: Controle real de mouse/teclado para automação de tarefas.
 
 **Ideal para:** extrair dados de sistemas legados, aplicações web que bloqueiam APIs, documentos digitalizados, formulários e qualquer conteúdo visual.
 

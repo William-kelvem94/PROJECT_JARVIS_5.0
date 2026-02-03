@@ -66,5 +66,58 @@ class ActionController:
             logger.error(f"Erro ao mover mouse: {e}")
             return False
 
+    def click_text(self, target_text: str, ocr_regions: List[Dict[str, Any]]) -> bool:
+        """
+        Encontra um texto nas regiões OCR e clica no centro dele.
+        Suporta busca parcial (case-insensitive).
+        """
+        try:
+            target_lower = target_text.lower()
+            for region in ocr_regions:
+                text = region.get('text', '').lower()
+                if target_lower in text:
+                    # Calcular centro da região
+                    x = region['x'] + (region['width'] // 2)
+                    y = region['y'] + (region['height'] // 2)
+                    
+                    logger.info(f"Texto '{target_text}' encontrado em ({x}, {y}). Clicando...")
+                    self.click_at(x, y)
+                    return True
+            
+            logger.warning(f"Texto '{target_text}' não encontrado nas regiões OCR.")
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao clicar no texto: {e}")
+            return False
+
+    def fill_field(self, field_label: str, value: str, ocr_regions: List[Dict[str, Any]]) -> bool:
+        """
+        Tenta encontrar um rótulo (ex: 'Email') e clica no campo à direita ou abaixo para preencher.
+        """
+        try:
+            target_lower = field_label.lower()
+            label_region = None
+            
+            for region in ocr_regions:
+                if target_lower in region.get('text', '').lower():
+                    label_region = region
+                    break
+            
+            if label_region:
+                # Estratégia: Clicar 100 pixels à direita do centro do label (comum para inputs)
+                x = label_region['x'] + label_region['width'] + 50
+                y = label_region['y'] + (label_region['height'] // 2)
+                
+                logger.info(f"Campo para '{field_label}' estimado em ({x}, {y}). Preenchendo...")
+                self.click_at(x, y)
+                time.sleep(0.2)
+                self.type_text(value)
+                return True
+                
+            return False
+        except Exception as e:
+            logger.error(f"Erro ao preencher campo: {e}")
+            return False
+
 # Instância global
 action_controller = ActionController()

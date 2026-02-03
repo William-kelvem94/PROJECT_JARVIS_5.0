@@ -65,7 +65,7 @@ echo ===========================================
 echo.
 echo DICAS:
 echo - Execute sem argumentos para modo automático
-echo - Use "LeitorTela.bat check" para verificar sistema
-echo - Use "LeitorTela.bat menu" para menu interativo
+echo - Use "Jarvis.bat check" para verificar sistema
+echo - Use "Jarvis.bat menu" para menu interativo
 echo.
 pause
