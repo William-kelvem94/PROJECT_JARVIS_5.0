@@ -20,10 +20,13 @@ echo ==========================================================
 echo    J.A.R.V.I.S.  5.0  -  STARK  EVOLUTION  INITIATIVE
 echo ==========================================================
 echo.
-echo [1] Iniciando Sistema Neural...
-echo [2] Verificando Sensores (Visao/Voz)...
-echo [3] Conectando ao Nucleo Gemini...
+echo [1] Iniciando Sistema Neural..echo.
+echo [1] Verificando e Instalando Dependencias (Auto-Heal)...
+py setup.py
+
 echo.
+echo [2] Iniciando Nucleo JARVIS...
+py main.py
 
 :: Executar Jarvis
 py main.py

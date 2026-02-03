@@ -7,7 +7,7 @@ import re
 import logging
 from typing import Dict, List, Any, Optional, Tuple, Set
 from datetime import datetime
-import spacy
+from datetime import datetime
 from src.utils.config import config
 from src.utils.helpers import TextHelper, DataHelper
 from src.database.models import db_manager, ExtractedData, DocumentCategory
@@ -42,7 +42,7 @@ class DataAnalyzer:
             # Tentar carregar modelo para português
             self.nlp = spacy.load("pt_core_news_sm")
             logger.info("Modelo spaCy carregado com sucesso")
-        except OSError:
+        except (OSError, ImportError):
             logger.warning("Modelo spaCy não encontrado. Alguns recursos estarão limitados.")
             try:
                 # Fallback para modelo básico

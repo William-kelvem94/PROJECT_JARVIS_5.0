@@ -8,8 +8,15 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from PIL import Image
-import pytesseract
-import easyocr
+try:
+    import pytesseract
+except ImportError:
+    pytesseract = None
+
+try:
+    import easyocr
+except ImportError:
+    easyocr = None
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.utils.config import config
 from src.utils.helpers import ImageHelper, TextHelper
