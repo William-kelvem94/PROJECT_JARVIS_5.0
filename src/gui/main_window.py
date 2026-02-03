@@ -1,6 +1,6 @@
 """
 Janela principal da interface gráfica
-Interface principal do Leitor de Tela Inteligente
+Interface principal do Jarvis 5.0
 """
 
 import tkinter as tk
@@ -18,6 +18,9 @@ from src.core.data_analyzer import data_analyzer
 from src.core.data_organizer import data_organizer
 from src.core.ai_agent import ai_agent
 from src.core.voice_controller import voice_controller
+from src.core.camera_controller import camera_controller
+from src.core.gesture_controller import gesture_controller
+from src.core.neural_memory import neural_memory
 from src.database.models import db_manager
 
 logger = logging.getLogger(__name__)
@@ -26,13 +29,17 @@ class MainWindow:
     """Janela principal da aplicação"""
 
     def __init__(self):
-        # Configurar aparência
-        ctk.set_appearance_mode(config.get_setting('interface.theme', 'dark'))
-        ctk.set_default_color_theme("blue")
+        # Configurar aparência - Midnight Jarvis Theme
+        ctk.set_appearance_mode("dark")
+        # Custom colors for Jarvis 5.0
+        self.PRIMARY_COLOR = "#00d2ff"  # Neon Blue
+        self.DARK_BG = "#101010"
+        self.CARD_BG = "#1a1a1b"
+        ctk.set_default_color_theme("blue")  # Base 
 
         # Criar janela principal
         self.root = ctk.CTk()
-        self.root.title("Leitor de Tela Inteligente")
+        self.root.title("JARVIS 5.0")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
 
@@ -52,89 +59,195 @@ class MainWindow:
         logger.info("Janela principal inicializada")
 
     def _setup_ui(self):
-        """Configura a interface do usuário"""
-        # Container principal
-        self.main_container = ctk.CTkFrame(self.root)
-        self.main_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Sidebar Navigation Panel
+        self._create_sidebar()
 
-        # Barra de ferramentas superior
+        # Container principal de conteúdo (lado direito)
+        self.main_container = ctk.CTkFrame(self.root, fg_color="transparent")
+        self.main_container.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(0, 10), pady=10)
+
+        # Barra de ferramentas superior (compacta)
         self._create_toolbar()
 
-        # Área principal dividida
+        # Área principal de exibição
         self._create_main_area()
 
         # Barra de status inferior
         self._create_status_bar()
 
+    def _create_sidebar(self):
+        """Cria barra lateral de navegação premium"""
+        self.sidebar = ctk.CTkFrame(self.root, width=200, corner_radius=0, fg_color="#0a0a0a")
+        self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        self.sidebar.pack_propagate(False)
+
+        # Logo / Título
+        self.logo_label = ctk.CTkLabel(
+            self.sidebar, text="JARVIS 5.0", 
+            font=ctk.CTkFont(size=24, weight="bold", family="Segoe UI Variable"),
+            text_color=self.PRIMARY_COLOR
+        )
+        self.logo_label.pack(pady=(30, 40))
+
+        # Botões da Sidebar
+        self.nav_buttons = {}
+        nav_items = [
+            ("📸 Capturas", "preview"),
+            ("🤖 IA Agent", "ai"),
+            ("🖖 Gestos", "gestures"),
+            ("🧠 Memórias", "memories"),
+            ("⚙️ Settings", "settings")
+        ]
+
+        for text, key in nav_items:
+            btn = ctk.CTkButton(
+                self.sidebar, text=text,
+                fg_color="transparent",
+                text_color="white",
+                hover_color="#1a1a1b",
+                anchor="w",
+                font=ctk.CTkFont(size=14),
+                height=45,
+                command=lambda k=key: self._on_nav_click(k)
+            )
+            btn.pack(fill=tk.X, padx=10, pady=5)
+            self.nav_buttons[key] = btn
+
+        # Versão no rodapé
+        self.version_label = ctk.CTkLabel(
+            self.sidebar, text="JARVIS v5.0.0",
+            font=ctk.CTkFont(size=10, weight="bold"),
+            text_color="#404040"
+        )
+        self.version_label.pack(side=tk.BOTTOM, pady=(0, 20))
+
+        # System Health Monitor (Novo)
+        self._create_sidebar_health_monitor()
+
+    def _create_sidebar_health_monitor(self):
+        """Cria monitor de saúde do sistema na sidebar"""
+        self.health_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.health_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=20)
+        
+        ctk.CTkLabel(self.health_frame, text="SYSTEM HEALTH", font=ctk.CTkFont(size=9, weight="bold", tracking=1), text_color="#303030").pack(anchor="w", padx=5)
+        
+        self.lbl_cpu = ctk.CTkLabel(self.health_frame, text="CPU: --%", font=ctk.CTkFont(size=10), text_color="#606060")
+        self.lbl_cpu.pack(anchor="w", padx=5)
+        
+        self.lbl_gpu = ctk.CTkLabel(self.health_frame, text="GPU: --", font=ctk.CTkFont(size=10), text_color="#606060")
+        self.lbl_gpu.pack(anchor="w", padx=5)
+        
+        self.lbl_brain = ctk.CTkLabel(self.health_frame, text="BRAIN: ONLINE", font=ctk.CTkFont(size=10), text_color=self.PRIMARY_COLOR)
+        self.lbl_brain.pack(anchor="w", padx=5)
+        
+        # Iniciar atualização periódica
+        self._update_health_stats()
+
+    def _update_health_stats(self):
+        """Atualiza estatísticas de hardware em tempo real"""
+        try:
+            import psutil
+            cpu_usage = psutil.cpu_percent()
+            self.lbl_cpu.configure(text=f"CPU: {cpu_usage}%")
+            
+            # RAM Usage
+            ram = psutil.virtual_memory()
+            ram_usage = ram.percent
+            
+            hw_status = hardware_manager.get_status()
+            self.lbl_gpu.configure(text=f"GPU: {hw_status['device'].upper()} | RAM: {ram_usage}%")
+            
+            # Provider Status
+            provider = "Local" if not ai_agent.gemini_handler else "Gemini"
+            self.lbl_brain.configure(text=f"BRAIN: {provider}")
+            
+            # Agendar próxima atualização
+            self.root.after(5000, self._update_health_stats)
+        except Exception:
+            pass
+
+    def _on_nav_click(self, key):
+        """Gerencia clique na navegação lateral com feedback do Orb"""
+        # Resetar estilos
+        for k, btn in self.nav_buttons.items():
+            btn.configure(fg_color="transparent", text_color="white")
+        
+        # Destacar selecionado
+        self.nav_buttons[key].configure(fg_color="#1a1a1b", text_color=self.PRIMARY_COLOR)
+        
+        # Mudar estado do orb se for IA
+        if key == "ai":
+            self._set_orb_state("idle")
+        
+        # Mudar aba
+        tab_map = {
+            "preview": 0,
+            "ai": 3,
+            "gestures": 4,
+            "memories": 5
+        }
+        
+        if key == "settings":
+            self._on_open_settings()
+        elif key in tab_map:
+            self.results_notebook.select(tab_map[key])
+
     def _create_toolbar(self):
-        """Cria barra de ferramentas"""
-        toolbar = ctk.CTkFrame(self.main_container, height=50)
+        """Cria barra de ferramentas futurista"""
+        toolbar = ctk.CTkFrame(self.main_container, height=60, fg_color="transparent")
         toolbar.pack(fill=tk.X, padx=5, pady=5)
+
+        # Dashboard Label
+        dash_label = ctk.CTkLabel(toolbar, text="DASHBOARD", font=ctk.CTkFont(size=12, weight="bold", tracking=2), text_color="#404040")
+        dash_label.pack(side=tk.LEFT, padx=10)
 
         # Botões principais
         button_frame = ctk.CTkFrame(toolbar, fg_color="transparent")
         button_frame.pack(side=tk.LEFT, padx=10)
 
-        # Botão Capturar Tela
+        # Botão Capturar Tela - Estilo Premium
         self.btn_capture = ctk.CTkButton(
-            button_frame, text="📸 Capturar Tela",
+            button_frame, text="⚡ CAPTURAR AGORA",
             command=self._on_capture_screen,
-            font=ctk.CTkFont(size=12, weight="bold")
+            font=ctk.CTkFont(size=12, weight="bold"),
+            fg_color=self.PRIMARY_COLOR,
+            text_color="black",
+            hover_color="#00b8e6",
+            width=160, height=35
         )
         self.btn_capture.pack(side=tk.LEFT, padx=5)
 
-        # Botão Selecionar Área
-        self.btn_select_area = ctk.CTkButton(
-            button_frame, text="🎯 Selecionar Área",
-            command=self._on_select_area,
-            font=ctk.CTkFont(size=12)
-        )
-        self.btn_select_area.pack(side=tk.LEFT, padx=5)
-
-        # Botão Gravar Tela
         self.btn_record = ctk.CTkButton(
-            button_frame, text="🎬 Gravar Tela",
+            button_frame, text="🔴 GRAVAR",
             command=self._on_toggle_recording,
-            fg_color="red",
-            font=ctk.CTkFont(size=12)
+            fg_color="#1a1a1b",
+            text_color="red",
+            hover_color="#2b2b2b",
+            width=100, height=35
         )
         self.btn_record.pack(side=tk.LEFT, padx=5)
 
-        # Separador
-        ttk.Separator(toolbar, orient='vertical').pack(side=tk.LEFT, fill=tk.Y, padx=10)
-
-        # Botões de processamento
-        process_frame = ctk.CTkFrame(toolbar, fg_color="transparent")
-        process_frame.pack(side=tk.LEFT, padx=10)
-
-        self.btn_process = ctk.CTkButton(
-            process_frame, text="⚙️ Processar",
-            command=self._on_process_capture,
-            state="disabled",
-            font=ctk.CTkFont(size=12)
-        )
-        self.btn_process.pack(side=tk.LEFT, padx=5)
-
-        # Botão Exportar
+        # Botões de processamento (Lado Direito)
         self.btn_export = ctk.CTkButton(
-            process_frame, text="💾 Exportar",
+            toolbar, text="EXPORTAR",
             command=self._on_export_data,
             state="disabled",
-            font=ctk.CTkFont(size=12)
+            fg_color="transparent",
+            border_width=1,
+            border_color="#404040",
+            width=100, height=35
         )
-        self.btn_export.pack(side=tk.LEFT, padx=5)
+        self.btn_export.pack(side=tk.RIGHT, padx=5)
 
-        # Configurações (lado direito)
-        config_frame = ctk.CTkFrame(toolbar, fg_color="transparent")
-        config_frame.pack(side=tk.RIGHT, padx=10)
-
-        self.btn_settings = ctk.CTkButton(
-            config_frame, text="⚙️ Configurações",
-            command=self._on_open_settings,
-            width=120,
-            font=ctk.CTkFont(size=11)
+        self.btn_process = ctk.CTkButton(
+            toolbar, text="PROCESSAR IA",
+            command=self._on_process_capture,
+            state="disabled",
+            fg_color="#1a1a1b",
+            hover_color="#2b2b2b",
+            width=120, height=35
         )
-        self.btn_settings.pack(side=tk.LEFT, padx=5)
+        self.btn_process.pack(side=tk.RIGHT, padx=5)
 
     def _create_main_area(self):
         """Cria área principal da interface"""
@@ -156,47 +269,45 @@ class MainWindow:
 
         # Título
         title_label = ctk.CTkLabel(
-            left_panel, text="📁 Capturas Recentes",
-            font=ctk.CTkFont(size=16, weight="bold")
+            left_panel, text="📁 CAPTURAS",
+            font=ctk.CTkFont(size=14, weight="bold", family="Segoe UI Variable"),
+            text_color="#808080"
         )
-        title_label.pack(pady=10)
+        title_label.pack(pady=(10, 5), padx=10, anchor="w")
 
-        # Lista de capturas
-        self.captures_listbox = tk.Listbox(
+        # Container de Capturas (Scrollable)
+        self.captures_scroll = ctk.CTkScrollableFrame(
             left_panel,
-            bg="#2b2b2b",
-            fg="white",
-            selectbackground="#1f538d",
-            font=("Arial", 10)
+            fg_color="transparent",
+            label_text=None
         )
-        self.captures_listbox.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        self.captures_scroll.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Mapeamento para guardar referências aos widgets de card
+        self.capture_cards = {}
 
-        # Scrollbar para lista
-        scrollbar = ttk.Scrollbar(left_panel, orient="vertical", command=self.captures_listbox.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.captures_listbox.config(yscrollcommand=scrollbar.set)
-
-        # Botões de ação
+        # Botões de ação (Compactos)
         buttons_frame = ctk.CTkFrame(left_panel, fg_color="transparent")
-        buttons_frame.pack(fill=tk.X, padx=10, pady=5)
+        buttons_frame.pack(fill=tk.X, padx=10, pady=10)
 
         self.btn_refresh_captures = ctk.CTkButton(
-            buttons_frame, text="🔄 Atualizar",
+            buttons_frame, text="🔄",
             command=self._refresh_captures_list,
-            width=120
+            width=40, height=30,
+            fg_color="#1a1a1b",
+            hover_color="#2b2b2b"
         )
         self.btn_refresh_captures.pack(side=tk.LEFT, padx=2)
 
         self.btn_delete_capture = ctk.CTkButton(
-            buttons_frame, text="🗑️ Excluir",
+            buttons_frame, text="Excluir Seleção",
             command=self._on_delete_capture,
-            fg_color="red",
-            width=80
+            fg_color="#2b1010",
+            hover_color="#501010",
+            height=30,
+            state="disabled"
         )
-        self.btn_delete_capture.pack(side=tk.RIGHT, padx=2)
-
-        # Vincular evento de seleção
-        self.captures_listbox.bind('<<ListboxSelect>>', self._on_capture_selected)
+        self.btn_delete_capture.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=2)
 
     def _create_results_panel(self, parent):
         """Cria painel de visualização de resultados"""
@@ -219,6 +330,12 @@ class MainWindow:
         # Aba de IA Agent (NOVO)
         self._create_ai_agent_tab()
 
+        # Aba de Gestos (NOVO)
+        self._create_gesture_tab()
+
+        # Aba de Memórias (EVOLUÇÃO)
+        self._create_memories_tab()
+    
     def _create_preview_tab(self):
         """Cria aba de visualização da captura"""
         preview_frame = ctk.CTkFrame(self.results_notebook)
@@ -322,13 +439,29 @@ class MainWindow:
         self.btn_save_ocr.pack(side=tk.LEFT, padx=5)
 
     def _create_ai_agent_tab(self):
-        """Cria aba de interação com o Agente de IA"""
-        ai_frame = ctk.CTkFrame(self.results_notebook)
+        """Cria aba de interação com o Agente de IA com o Orb Pulsante"""
+        ai_frame = ctk.CTkFrame(self.results_notebook, fg_color="#0a0a0a")
         self.results_notebook.add(ai_frame, text="🤖 IA Agent")
 
-        # Histórico de Chat
-        self.chat_history = ctk.CTkTextbox(ai_frame, wrap="word", state="disabled")
-        self.chat_history.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Top Section: Jarvis Orb
+        orb_container = ctk.CTkFrame(ai_frame, fg_color="transparent", height=200)
+        orb_container.pack(fill=tk.X, pady=20)
+        
+        self.orb_canvas = tk.Canvas(orb_container, width=150, height=150, bg="#0a0a0a", highlightthickness=0)
+        self.orb_canvas.pack(pady=10)
+        
+        # Desenhar Orb Inicial
+        self.orb_color = self.PRIMARY_COLOR
+        self.orb_radius = 50
+        self.orb_growth = 1
+        self.orb_id = self.orb_canvas.create_oval(25, 25, 125, 125, fill="", outline=self.PRIMARY_COLOR, width=2)
+        self.glow_id = self.orb_canvas.create_oval(10, 10, 140, 140, fill="", outline=self.PRIMARY_COLOR, width=1, dash=(4, 4))
+        
+        self._animate_orb()
+
+        # Histórico de Chat (Estilo futurista)
+        self.chat_history = ctk.CTkTextbox(ai_frame, wrap="word", state="disabled", fg_color="#101010", border_width=1, border_color="#1a1a1b", font=ctk.CTkFont(size=13))
+        self.chat_history.pack(fill=tk.BOTH, expand=True, padx=30, pady=(10, 20))
 
         # Container de Entrada
         input_frame = ctk.CTkFrame(ai_frame, fg_color="transparent")
@@ -347,6 +480,111 @@ class MainWindow:
         
         # Registrar callback de voz
         voice_controller.on_speech_recognized = self._on_voice_recognized
+
+    def _animate_orb(self):
+        """Animação pulsante do Orb do Jarvis"""
+        if not hasattr(self, 'orb_canvas'): return
+        
+        # Pulsação do Radius
+        self.orb_radius += self.orb_growth
+        if self.orb_radius > 55 or self.orb_radius < 45:
+            self.orb_growth *= -1
+            
+        r = self.orb_radius
+        self.orb_canvas.coords(self.orb_id, 75-r, 75-r, 75+r, 75+r)
+        
+        # Rotação do Glow Circle
+        self.orb_canvas.itemconfig(self.orb_id, outline=self.orb_color)
+        self.orb_canvas.itemconfig(self.glow_id, outline=self.orb_color)
+        
+        # Agendar próximo frame
+        self.root.after(50, self._animate_orb)
+
+    def _set_orb_state(self, state):
+        """Muda a cor do orb baseado no estado (idle, thinking, alert)"""
+        if state == "thinking":
+            self.orb_color = "#00ffff" # Cyan
+        elif state == "alert":
+            self.orb_color = "#ff4b4b" # Red
+        else:
+            self.orb_color = self.PRIMARY_COLOR # Blue
+
+    def _create_gesture_tab(self):
+        """Cria aba de treinamento e visualização de gestos"""
+        gesture_frame = ctk.CTkFrame(self.results_notebook)
+        self.results_notebook.add(gesture_frame, text="🖖 Gestos")
+
+        # Container principal
+        container = ctk.CTkFrame(gesture_frame, fg_color="transparent")
+        container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Lado Esquerdo: Vídeo
+        video_frame = ctk.CTkFrame(container)
+        video_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+
+        self.gesture_video_label = ctk.CTkLabel(video_frame, text="Câmera Desativada", font=ctk.CTkFont(size=16))
+        self.gesture_video_label.pack(fill=tk.BOTH, expand=True)
+
+        # Lado Direito: Controles e Info
+        controls_frame = ctk.CTkFrame(container, width=250)
+        controls_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=5)
+        
+        ctk.CTkLabel(controls_frame, text="Status do Sistema", font=ctk.CTkFont(weight="bold")).pack(pady=10)
+        
+        self.lbl_gesture_status = ctk.CTkLabel(controls_frame, text="Último Gesto: Nenhum", font=ctk.CTkFont(size=14, weight="bold"))
+        self.lbl_gesture_status.pack(pady=5)
+
+        ctk.CTkLabel(controls_frame, text="Gestos Ativos:", font=ctk.CTkFont(size=12)).pack(pady=(20, 5))
+        gestures_info = [
+            "👍 Joinha: Enter / Confirmar",
+            "✋ Palma Aberta: Pause / Parar",
+            "✊ Punho: Scroll (Em breve)"
+        ]
+        text_info = "\n".join(gestures_info)
+        ctk.CTkTextbox(controls_frame, height=100).insert("0.0", text_info) # Apenas visual
+        
+        # Switch para ativar visualização
+        self.switch_camera_view = ctk.CTkSwitch(
+            controls_frame, 
+            text="Ver Câmera (Debug)",
+            command=self._toggle_camera_view
+        )
+        self.switch_camera_view.pack(pady=20)
+        self.switch_camera_view.select() # Já inicia ativado se possível
+        self._toggle_camera_view()
+
+    def _toggle_camera_view(self):
+        """Ativa/Desativa feed de vídeo na GUI"""
+        if self.switch_camera_view.get():
+            camera_controller.on_frame_ready = self._update_video_feed
+            if not camera_controller.is_monitoring:
+                 camera_controller.start_monitoring()
+        else:
+            camera_controller.on_frame_ready = None
+            self.gesture_video_label.configure(image=None, text="Visualização Pausada")
+
+    def _update_video_feed(self, frame_rgb):
+        """Atualiza label de vídeo com frame processado (vem da thread da câmera)"""
+        try:
+            # Redimensionar para caber na label (fixo por enquanto para performance)
+            # Ideal seria redimensionar dinamicamente
+            img = Image.fromarray(frame_rgb)
+            img = img.resize((640, 480)) 
+            photo = ImageTk.PhotoImage(image=img)
+            
+            # Atualizar GUI na thread principal
+            self.root.after(0, lambda: self._update_gui_image(photo))
+            
+            # Atualizar label de gesto
+            current_gesture = gesture_controller.last_gesture
+            self.root.after(0, lambda: self.lbl_gesture_status.configure(text=f"Gesto: {current_gesture}"))
+            
+        except Exception as e:
+            logger.error(f"Erro ao atualizar feed de vídeo: {e}")
+
+    def _update_gui_image(self, photo):
+        self.gesture_video_label.configure(image=photo, text="")
+        self.gesture_video_label.image = photo 
 
     def _on_toggle_voice(self):
         """Alterna o reconhecimento de voz"""
@@ -374,19 +612,65 @@ class MainWindow:
         self.chat_input.delete(0, tk.END)
         self._add_to_chat(f"Você: {command}")
         
+        # Verificar comandos de UI (Navegação por Voz)
+        if self._process_ui_voice_command(command):
+            self._add_to_chat("Sistema: Comando de interface executado.")
+            return
+
         # Processar em thread para não travar a GUI
         threading.Thread(target=self._process_ai_command, args=(command,), daemon=True).start()
 
+    def _process_ui_voice_command(self, command: str) -> bool:
+        """Processa comandos de voz para controle da UI"""
+        cmd = command.lower()
+        
+        if "configura" in cmd: # configurações
+            self.root.after(0, self._on_open_settings)
+            return True
+        elif "capturar" in cmd or "tira foto" in cmd or "screenshot" in cmd:
+            self.root.after(0, self._on_capture_screen)
+            return True
+        elif "gravar" in cmd and "tela" in cmd:
+            self.root.after(0, self._on_toggle_recording)
+            return True
+        elif "exportar" in cmd:
+            self.root.after(0, self._on_export_data)
+            return True
+        elif "atualizar" in cmd:
+            self.root.after(0, self._refresh_captures_list)
+            return True
+        elif "sair" in cmd or "fechar" in cmd:
+            self.root.after(0, self._on_exit)
+            return True
+            
+        return False
+
     def _process_ai_command(self, command: str):
         """Processa o comando usando o AIAgent"""
+        self.root.after(0, lambda: self._set_orb_state("thinking"))
         self._add_to_chat("IA: Pensando...")
+        
         response = ai_agent.process_command(command)
+        
+        self.root.after(0, lambda: self._set_orb_state("idle"))
         self.root.after(0, lambda: self._add_to_chat(f"IA: {response}"))
 
     def _add_to_chat(self, text: str):
-        """Adiciona mensagem ao histórico do chat"""
+        """Adiciona mensagem ao histórico do chat com estilo futurista"""
         self.chat_history.configure(state="normal")
-        self.chat_history.insert(tk.END, text + "\n\n")
+        
+        # Separar quem está falando
+        if text.startswith("Você:"):
+            msg = text.replace("Você:", "👤 VOCÊ >")
+            tag_color = self.PRIMARY_COLOR
+        elif text.startswith("IA:"):
+            msg = text.replace("IA:", "🤖 JARVIS >")
+            tag_color = "#00ffff"
+        else:
+            msg = f"⚙️ {text}"
+            tag_color = "#606060"
+
+        self.chat_history.insert(tk.END, msg + "\n\n")
         self.chat_history.see(tk.END)
         self.chat_history.configure(state="disabled")
 
@@ -681,59 +965,89 @@ class MainWindow:
         messagebox.showinfo("Configurações", "Janela de configurações será implementada em breve")
 
     def _refresh_captures_list(self):
-        """Atualiza lista de capturas"""
+        """Atualiza lista de capturas com Cards Premium"""
         try:
-            self.captures_listbox.delete(0, tk.END)
+            # Limpar cards antigos
+            for widget in self.captures_scroll.winfo_children():
+                widget.destroy()
+            self.capture_cards = {}
 
             # Buscar capturas recentes
             captures = db_manager.get_recent_captures(50)
 
+            if not captures:
+                lbl = ctk.CTkLabel(self.captures_scroll, text="Nenhuma captura", font=ctk.CTkFont(slant="italic"))
+                lbl.pack(pady=20)
+                return
+
             for capture in captures:
-                # Formatar texto para lista
-                timestamp = capture.created_at.strftime("%d/%m/%Y %H:%M") if capture.created_at else "N/A"
-                status = capture.processing_status
-                filename = capture.filename
+                card = ctk.CTkFrame(self.captures_scroll, fg_color=self.CARD_BG, height=60, corner_radius=8)
+                card.pack(fill=tk.X, pady=5, padx=5)
+                
+                # Timestamp formatado
+                ts = capture.created_at.strftime("%H:%M - %d/%m") if capture.created_at else "N/A"
+                
+                # Info Principal
+                lbl_title = ctk.CTkLabel(card, text=capture.filename, font=ctk.CTkFont(size=12, weight="bold"), anchor="w")
+                lbl_title.pack(fill=tk.X, padx=10, pady=(8, 0))
+                
+                lbl_info = ctk.CTkLabel(card, text=f"{ts} • {capture.processing_status}", font=ctk.CTkFont(size=10), text_color="#606060", anchor="w")
+                lbl_info.pack(fill=tk.X, padx=10, pady=(0, 8))
 
-                display_text = f"{timestamp} - {filename} ({status})"
-                self.captures_listbox.insert(tk.END, display_text)
+                # Bind de clique no card e nos filhos
+                card.bind("<Button-1>", lambda e, c=capture, f=card: self._on_card_click(c, f))
+                lbl_title.bind("<Button-1>", lambda e, c=capture, f=card: self._on_card_click(c, f))
+                lbl_info.bind("<Button-1>", lambda e, c=capture, f=card: self._on_card_click(c, f))
+                
+                # Hover effect
+                card.bind("<Enter>", lambda e, f=card: f.configure(fg_color="#222224"))
+                card.bind("<Leave>", lambda e, f=card: f.configure(fg_color=self.CARD_BG if self.current_capture_path != f.capture_path else "#2a2a2b"))
+                
+                # Guardar referência do path no frame para facilidade
+                card.capture_path = capture.file_path
+                card.capture_id = capture.id
+                self.capture_cards[capture.id] = card
 
-                # Armazenar ID da captura como metadata
-                self.captures_listbox.itemconfig(tk.END, {'tags': (str(capture.id),)})
-
-            # Atualizar contador de status
             self._update_status_bar()
 
         except Exception as e:
             logger.error(f"Erro ao atualizar lista de capturas: {e}")
 
-    def _on_capture_selected(self, event):
-        """Callback quando uma captura é selecionada"""
+    def _on_card_click(self, capture, frame):
+        """Gerencia seleção de um Card de captura"""
+        # Limpar seleção visual anterior
+        for f in self.capture_cards.values():
+            f.configure(fg_color=self.CARD_BG, border_width=0)
+        
+        # Destacar selecionado
+        frame.configure(fg_color="#2a2a2b", border_width=1, border_color=self.PRIMARY_COLOR)
+        
+        # Atualizar estado
+        self.current_capture_path = capture.file_path
+        self._on_capture_selected_by_id(capture.id)
+        
+        # Habilitar botões
+        self.btn_process.configure(state="normal")
+        self.btn_export.configure(state="normal")
+        self.btn_delete_capture.configure(state="normal")
+
+    def _on_capture_selected_by_id(self, capture_id):
+        """Lógica de carregamento quando uma captura é escolhida"""
         try:
-            selection = self.captures_listbox.curselection()
-            if not selection:
-                return
-
-            # Obter ID da captura da tag
-            item_tags = self.captures_listbox.itemcget(selection[0], 'tags')
-            if item_tags:
-                capture_id = int(item_tags.split()[0])
-
-                # Buscar captura no banco
-                session = db_manager.get_session()
-                capture = session.query(db_manager.Capture).filter(db_manager.Capture.id == capture_id).first()
-                db_manager.close_session(session)
-
-                if capture:
-                    self.current_capture_path = capture.file_path
-                    self._display_capture(capture)
-                    self._load_capture_data(capture_id)
-
-                    # Habilitar botões
-                    self.btn_process.configure(state="normal")
-                    self.btn_export.configure(state="normal")
-
+            # Buscar detalhes no banco
+            session = db_manager.get_session()
+            capture = session.query(Capture).filter(Capture.id == capture_id).first()
+            
+            if capture:
+                # 1. Carregar Pré-visualização
+                self._load_preview_image(capture.file_path)
+                
+                # 2. Carregar OCR e Dados se existirem
+                self._load_capture_results(capture)
+            
+            session.close()
         except Exception as e:
-            logger.error(f"Erro ao selecionar captura: {e}")
+            logger.error(f"Erro ao carregar detalhes da captura {capture_id}: {e}")
 
     def _display_capture(self, capture):
         """Exibe captura no preview"""
@@ -1021,7 +1335,7 @@ class MainWindow:
     def _on_show_about(self):
         """Mostra janela Sobre"""
         about_text = """
-        Leitor de Tela Inteligente v1.0.0
+        JARVIS 5.0 - Inteligência de Elite
 
         Uma ferramenta avançada para captura, processamento
         e análise de dados da tela do computador.

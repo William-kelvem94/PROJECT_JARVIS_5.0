@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('launcher.log', encoding='utf-8'),
+        logging.FileHandler('jarvis_launcher.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -249,4 +249,6 @@ def main():
         sys.exit(1)
 
 if __name__ == '__main__':
+    # Branding Update
+    print("Jarvis 5.0 - Inicializando...")
     main()

@@ -14,9 +14,9 @@ import setuptools
 PROJECT_DIR = Path(__file__).parent
 
 # Metadados da aplicação
-APP_NAME = "Leitor de Tela Inteligente"
-APP_VERSION = "1.0.0"
-APP_DESCRIPTION = "Sistema avançado para captura, processamento e análise inteligente de dados da tela"
+APP_NAME = "Jarvis 5.0"
+APP_VERSION = "5.0.0"
+APP_DESCRIPTION = "Assistente Virtual Avançado com Visão, Audição e Aprendizado Evolutivo"
 APP_AUTHOR = "Desenvolvedor"
 APP_AUTHOR_EMAIL = "contato@exemplo.com"
 APP_URL = "https://github.com/username/leitor-tela"

@@ -42,20 +42,29 @@ class ScreenCapture:
         logger.info("Módulo de captura de tela inicializado")
 
     def capture_fullscreen(self, save_path: Optional[str] = None,
-                          capture_type: str = 'manual') -> Optional[str]:
+                          capture_type: str = 'manual',
+                          monitor_index: Optional[int] = None) -> Optional[str]:
         """
-        Captura tela completa
+        Captura tela completa ou de um monitor específico
 
         Args:
             save_path: Caminho personalizado para salvar (opcional)
-            capture_type: Tipo da captura (manual, auto, timer)
+            capture_type: Tipo da captura (manual, auto, timer, monitor)
+            monitor_index: Índice do monitor (1 a N). Se None e capture_type for 'monitor', captura todos.
 
         Returns:
             Caminho do arquivo salvo ou None se erro
         """
         try:
-            # Capturar tela usando mss (mais rápido)
-            monitor = self.sct.monitors[0]  # Monitor principal
+            # Selecionar monitor
+            if monitor_index is not None and monitor_index < len(self.sct.monitors):
+                monitor = self.sct.monitors[monitor_index]
+            elif capture_type == 'monitor' or capture_type == 'agent':
+                # Capturar monitor onde está o cursor (assume-se que é onde o usuário está focando)
+                monitor = self._get_monitor_under_cursor()
+            else:
+                monitor = self.sct.monitors[0]  # Todos os monitores (virtual)
+
             screenshot = self.sct.grab(monitor)
 
             # Converter para PIL Image
@@ -67,6 +76,27 @@ class ScreenCapture:
         except Exception as e:
             logger.error(f"Erro na captura de tela completa: {e}")
             return None
+
+    def capture_all_monitors(self) -> List[str]:
+        """Captura cada monitor individualmente e retorna lista de caminhos"""
+        paths = []
+        for i in range(1, len(self.sct.monitors)):
+            path = self.capture_fullscreen(monitor_index=i, capture_type='monitor_batch')
+            if path:
+                paths.append(path)
+        return paths
+
+    def _get_monitor_under_cursor(self) -> Dict[str, Any]:
+        """Identifica qual monitor contém o cursor do mouse atualmente"""
+        try:
+            x, y = pyautogui.position()
+            for monitor in self.sct.monitors[1:]:
+                if (monitor['left'] <= x < monitor['left'] + monitor['width'] and
+                    monitor['top'] <= y < monitor['top'] + monitor['height']):
+                    return monitor
+            return self.sct.monitors[1] # Fallback para o primeiro se falhar
+        except:
+            return self.sct.monitors[1]
 
     def capture_region(self, region: Tuple[int, int, int, int],
                       save_path: Optional[str] = None,
