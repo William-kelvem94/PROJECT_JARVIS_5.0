@@ -6,7 +6,7 @@ Habilita interação com mouse e teclado via PyAutoGUI
 import pyautogui
 import time
 import logging
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List, Dict, Any
 
 logger = logging.getLogger(__name__)
 

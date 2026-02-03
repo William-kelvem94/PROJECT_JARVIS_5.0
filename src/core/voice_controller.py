@@ -24,6 +24,8 @@ try:
 except ImportError:
     VOSK_AVAILABLE = False
 
+from src.utils.config import config
+
 logger = logging.getLogger(__name__)
 
 class VoiceController:
