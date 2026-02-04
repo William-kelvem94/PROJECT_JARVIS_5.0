@@ -72,28 +72,39 @@ class LocalBrain:
             if not self.is_loaded: return "Erro ao carregar cérebro local."
 
         try:
+            # Construir mensagens formatadas
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
             ]
             
-            # Formatando para o modelo específico (Qwen usa ChatML)
-            full_prompt = self.tokenizer.apply_chat_template(
+            # Preparar inputs
+            text = self.tokenizer.apply_chat_template(
                 messages, 
                 tokenize=False, 
                 add_generation_prompt=True
             )
             
-            outputs = self.pipe(
-                full_prompt, 
-                max_new_tokens=max_new_tokens,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                pad_token_id=self.tokenizer.eos_token_id
-            )
+            model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+
+            # Gerar sem autocast explícito (deixar o PyTorch/Transformers gerenciar)
+            # ou usar torch.no_grad()
+            with torch.no_grad():
+                generated_ids = self.model.generate(
+                    model_inputs.input_ids,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9,
+                    pad_token_id=self.tokenizer.eos_token_id
+                )
             
-            response = outputs[0]["generated_text"].split(self.tokenizer.apply_chat_template([{"role": "user", "content": ""}], tokenize=False, add_generation_prompt=True))[-1]
+            # Decodificar
+            generated_ids = [
+                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+            ]
+            response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            
             return response.strip()
             
         except Exception as e:

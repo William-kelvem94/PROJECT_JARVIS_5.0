@@ -43,34 +43,40 @@ def run_simulation():
     failures = []
 
     # 1. Core Utils
-    if not test_module('utils.config', 'Config'): failures.append('utils.config')
+    if not test_module('src.utils.config', 'Config'): failures.append('src.utils.config')
     
     # 2. Database
-    if not test_module('database.models', 'DatabaseManager'): failures.append('database.models')
+    if not test_module('src.database.models', 'DatabaseManager'): failures.append('src.database.models')
     
     # 3. Hardware Manager
-    if not test_module('core.hardware_manager', 'HardwareManager'): failures.append('core.hardware_manager')
+    if not test_module('src.core.hardware_manager', 'HardwareManager'): failures.append('src.core.hardware_manager')
 
     # 4. Neural Memory (Critical)
-    if not test_module('core.neural_memory', 'NeuralMemory'): failures.append('core.neural_memory')
+    if not test_module('src.core.neural_memory', 'NeuralMemory'): failures.append('src.core.neural_memory')
 
     # 5. Controllers (The sources of recent crashes)
-    if not test_module('core.action_controller', 'ActionController'): failures.append('core.action_controller')
+    if not test_module('src.core.action_controller', 'ActionController'): failures.append('src.core.action_controller')
     
     # Gesture Controller (MediaPipe issue)
-    if not test_module('core.gesture_controller', 'GestureController'): failures.append('core.gesture_controller')
+    if not test_module('src.core.gesture_controller', 'GestureController'): failures.append('src.core.gesture_controller')
     
     # Voice Controller (Common crash point)
-    if not test_module('core.voice_controller', 'VoiceController'): failures.append('core.voice_controller')
+    if not test_module('src.core.voice_controller', 'VoiceController'): failures.append('src.core.voice_controller')
 
     # Camera Controller (CV2/FaceRec)
-    if not test_module('core.camera_controller', 'CameraController'): failures.append('core.camera_controller')
+    if not test_module('src.core.camera_controller', 'CameraController'): failures.append('src.core.camera_controller')
 
     # UI Detector (YOLO)
-    if not test_module('core.ui_detector', 'UIDetector'): failures.append('core.ui_detector')
+    if not test_module('src.core.ui_detector', 'UIDetector'): failures.append('src.core.ui_detector')
 
     # 6. AI Agent (Orchestrator)
-    if not test_module('core.ai_agent', 'AIAgent'): failures.append('core.ai_agent')
+    if not test_module('src.core.ai_agent', 'AIAgent'): failures.append('src.core.ai_agent')
+    
+    # 7. GUI (Main Window) - verifies init logic
+    try:
+        if not test_module('src.gui.main_window', 'MainWindow'): failures.append('src.gui.main_window')
+    except Exception as e:
+        print(f"Skipping GUI test due to environment issues: {e}")
 
     print("\n==========================================")
     if failures:

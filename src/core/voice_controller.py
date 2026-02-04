@@ -309,15 +309,22 @@ class VoiceController:
     def _listen_for_wake_word_thread(self, wake_word: str, on_wake: Optional[Callable[[], None]]):
         """Thread de background para Wake Word"""
         if not VOSK_AVAILABLE:
-            logger.warning("Vosk não disponível. Wake Word desativado.")
+            logger.warning("Vosk (biblioteca) não disponível. Wake Word desativado.")
             return
 
         # Carregar modelo leve se necessário
         if not self.vosk_model:
             model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.22')
             if not os.path.exists(model_path):
-                 logger.error(f"Modelo Vosk não encontrado em {model_path}")
-                 return
+                 
+                 # Tentar caminho relativo se o absoluto falhar
+                 abs_model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', model_path))
+                 if os.path.exists(abs_model_path):
+                     model_path = abs_model_path
+                 else:
+                     logger.warning(f"Modelo Vosk não encontrado em {model_path}. Wake Word Offline desativado.")
+                     return
+
             try:
                 self.vosk_model = Model(model_path)
                 self.vosk_recognizer = KaldiRecognizer(self.vosk_model, 16000)

@@ -27,6 +27,7 @@ class GestureController:
     """Detecta gestos e comanda ações"""
 
     def __init__(self):
+        global MEDIAPIPE_AVAILABLE
         self.is_running = False
         self.last_gesture = "None"
         self.last_gesture_time = 0
@@ -44,13 +45,11 @@ class GestureController:
                 self.mp_draw = mp.solutions.drawing_utils
             except AttributeError as e:
                 logger.error(f"Erro ao inicializar MediaPipe (Atributo não encontrado): {e}")
-                global MEDIAPIPE_AVAILABLE
                 MEDIAPIPE_AVAILABLE = False
                 self.mp_hands = None
                 self.hands = None
             except Exception as e:
                 logger.error(f"Erro desconhecido no MediaPipe: {e}")
-                global MEDIAPIPE_AVAILABLE
                 MEDIAPIPE_AVAILABLE = False
         
         # Suavização de gestos
