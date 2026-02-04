@@ -38,39 +38,50 @@ class GestureController:
 
         if MEDIAPIPE_AVAILABLE:
             try:
-                # Tentativa 1: Import padrão
-                logger.info("Tentando carregar MediaPipe (Método 1: mp.solutions)...")
-                if hasattr(mp, 'solutions'):
+                # Tentativa 1: Import padrão (Legacy Solutions)
+                if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'hands'):
+                    logger.info("Usando MediaPipe Legacy Solutions.")
                     self.mp_hands = mp.solutions.hands
                     self.mp_draw = mp.solutions.drawing_utils
-                
-                # Tentativa 2: Import direto (Fallback)
-                if self.mp_hands is None:
-                    logger.info("Tentando carregar MediaPipe (Método 2: import direto)...")
-                    import mediapipe.python.solutions.hands as mp_hands_module
-                    import mediapipe.python.solutions.drawing_utils as mp_draw_module
-                    self.mp_hands = mp_hands_module
-                    self.mp_draw = mp_draw_module
-
-                # Inicializar Detector
-                if self.mp_hands:
                     self.hands = self.mp_hands.Hands(
                         static_image_mode=False,
                         max_num_hands=1,
                         min_detection_confidence=0.7,
                         min_tracking_confidence=0.5
                     )
-                    logger.info("MediaPipe Hands carregado com SUCESSO.")
+                
+                # Tentativa 2: MediaPipe Tasks (Modern API)
                 else:
-                    raise ImportError("Não foi possível carregar o módulo 'hands' do MediaPipe.")
+                    logger.info("Legacy Solutions indisponível. Tentando MediaPipe Tasks (Modern API)...")
+                    from mediapipe.tasks import python
+                    from mediapipe.tasks.python import vision
+                    
+                    # Carregar modelo (precisa baixar o arquivo .task se não existir)
+                    model_path = config.get_setting('sensory.hand_landmarker_path', 'models/hand_landmarker.task')
+                    
+                    if not os.path.exists(model_path):
+                         logger.warning(f"Modelo Task não encontrado em {model_path}. Tentando baixar/localizar...")
+                         # Link para download: https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+                         # Como não podemos baixar facilmente agora, marcamos como indisponível se falhar
+                    
+                    base_options = python.BaseOptions(model_asset_path=model_path)
+                    options = vision.HandLandmarkerOptions(
+                        base_options=base_options,
+                        num_hands=1,
+                        min_hand_detection_confidence=0.7,
+                        min_hand_presence_confidence=0.7,
+                        min_tracking_confidence=0.5
+                    )
+                    self.landmarker = vision.HandLandmarker.create_from_options(options)
+                    self.use_tasks_api = True
+                    logger.info("MediaPipe Tasks (Landmarker) carregado com SUCESSO.")
 
             except Exception as e:
                 logger.error(f"FALHA CRÍTICA ao carregar MediaPipe: {e}")
-                logger.warning("O controle por gestos será DESATIVADO para evitar crashes.")
+                logger.warning("O controle por gestos será DESATIVADO.")
                 MEDIAPIPE_AVAILABLE = False
                 self.mp_hands = None
                 self.hands = None
-                self.mp_draw = None
         
         # Suavização de gestos
         self.gesture_buffer = deque(maxlen=5)

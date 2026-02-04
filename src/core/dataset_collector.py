@@ -39,6 +39,16 @@ class DatasetCollector:
         except Exception as e:
             logger.error(f"Erro ao coletar dados para dataset: {e}")
 
+    def save_sample(self, **kwargs):
+        """Alias para o método collect, suportando argumentos nomeados"""
+        # Mapeamento de argumentos se necessário
+        image_path = kwargs.get('image_path', kwargs.get('screenshot_path'))
+        prompt = kwargs.get('prompt')
+        response = kwargs.get('response')
+        source = kwargs.get('source', 'unknown')
+        
+        self.collect(image_path, prompt, response, source)
+
     def collect_correction(self, prompt: str, rejected_response: str, chosen_correction: str):
         """
         Salva uma correção explícita no formato DPO (Direct Preference Optimization)

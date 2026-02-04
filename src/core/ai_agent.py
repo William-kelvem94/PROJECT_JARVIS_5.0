@@ -65,12 +65,9 @@ class AIAgent:
         logger.info(f"Agente processando comando: {user_command}")
         
         # ... (Steps 1-3 unchanged) ...
-        # 1. Verificar conexão para fallback automático
-        is_online = voice_controller.check_internet()
-        current_provider = self.provider if is_online else 'ollama'
-        
-        if is_online:
-            voice_controller.speak("Analisando...", wait=False)
+        # 1. Definir Provedor Primário (LOCAL FIRST)
+        # O Jarvis deve pensar localmente primeiro. A nuvem é auxílio.
+        primary_provider = 'ollama' if self._check_ollama_alive() else 'local_brain'
         
         # 3. Capturar estado atual da tela
         screenshot_path = screen_capture.capture_fullscreen(capture_type='agent')
@@ -88,31 +85,41 @@ class AIAgent:
         
         # 5. Loop de Pensamento e Ação (ReAct)
         response = ""
-        max_turns = 5 # Aumentado para permitir sequencias de ações
+        max_turns = 5 
         current_turn = 0
         
         while current_turn < max_turns:
-             # Enviar para a IA
-            if current_provider == 'gemini' and self.api_key:
-                response = self._call_gemini(enriched_command, screenshot_path)
-            elif current_provider == 'ollama' and self._check_ollama_alive():
-                response = self._call_ollama(enriched_command, screenshot_path)
-            else:
-                # Tentativa Local
-                response = local_brain.generate_response(enriched_command, self.system_prompt)
+            logger.info(f"Ciclo de Pensamento {current_turn+1}/{max_turns} | Provedor: {primary_provider}")
+            
+            # --- TENTATIVA LOCAL ---
+            try:
+                if primary_provider == 'ollama':
+                    response = self._call_ollama(enriched_command, screenshot_path)
+                else:
+                    response = local_brain.generate_response(enriched_command, self.system_prompt)
+            except Exception as e:
+                logger.error(f"Falha no cérebro local ({primary_provider}): {e}")
+                response = "ERRO_LOCAL"
+
+            # --- ESCALONAMENTO PARA NUVEM (SUPLEMENTO) ---
+            # Se o local falhar, não souber, ou for complexo demais
+            triggers_cloud = ["não sei", "i don't know", "desculpe", "erro_local", "complexo"]
+            needs_cloud = any(t in response.lower() for t in triggers_cloud) or len(response) < 5
+            
+            if needs_cloud and self.api_key and voice_controller.check_internet():
+                logger.info("Cérebro Local incerto. Consultando a Nuvem (Gemini) para auxílio...")
+                voice_controller.speak("Consultando minha base de conhecimento na nuvem...", wait=False)
                 
-                # Emergency Fallback if Local Brain fails too (e.g., missing libraries)
-                if "Erro" in response or "Transformers não instalado" in response:
-                    logger.warning("All AI Brains failed. Engaging Emergency Protocol.")
-                    response = (
-                        "Protocolo de Emergência Ativado.\n"
-                        "Meus processadores neurais primários e secundários (Nuvem/Local) estão inacessíveis.\n"
-                        "Por favor, verifique se:\n"
-                        "1. O servidor Ollama está rodando.\n"
-                        "2. A biblioteca 'transformers' e 'torch' estão instaladas para processamento local.\n"
-                        "3. A chave API do Gemini está configurada.\n\n"
-                        "No momento, estou operando em modo de diagnóstico limitado."
-                    )
+                cloud_response = self._call_gemini(enriched_command, screenshot_path)
+                
+                if "Erro" not in cloud_response:
+                    response = cloud_response
+                    # APRENDIZADO (Distillation): Salvar resposta da nuvem para treino futuro
+                    neural_memory.store_interaction(user_command, cloud_response, source="cloud_teacher")
+            
+            # Fallback final se tudo falhar
+            if "ERRO_LOCAL" in response and "Erro" in response:
+                 response = "Senhor, meus sistemas locais e remotos estão inacessíveis no momento."
             
             # --- PARSER DE AÇÕES ---
             action_executed = False
@@ -166,26 +173,19 @@ class AIAgent:
                                         enriched_command += f"\n\n[SISTEMA] Erro ao ler '{p}': {e}"
                         
                         elif "write_file" in action_str:
-                            # Formato: write_file('path', 'content')
-                            # Nota: Conteúdo complexo pode falhar no regex simples.
-                            # Recomendado para pequenos ajustes ou configs.
                             args = re.search(r"write_file\('(.+?)',\s*'(.+?)'\)", action_str)
                             if args:
                                 p, content = args.group(1), args.group(2)
-                                # Desescapar newlines se o LLM usar \n literal
                                 content = content.replace('\\n', '\n') 
                                 if security_manager.validate_file_action(p, 'write'):
                                     try:
-                                        # Garantir diretório
                                         os.makedirs(os.path.dirname(p), exist_ok=True)
                                         with open(p, 'w', encoding='utf-8') as f:
                                             f.write(content)
                                         enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
                                     except Exception as e:
                                         enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
-                            
-                                    except Exception as e:
-                                        enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
+
                         
                         elif "list_dir" in action_str:
                              path_match = re.search(r"list_dir\('(.+?)'\)", action_str)
@@ -250,41 +250,119 @@ class AIAgent:
         except Exception:
             pass
 
-    def process_proactive_analysis(self, screenshot_path: str):
-        """Analisa a tela de forma autônoma e decide se deve falar"""
-        logger.info("Executando análise proativa da tela...")
-        
-        # 1. Enriquecer proatividade com YOLO (Phase 2 Stark)
-        ui_elements = ui_detector.detect_elements(screenshot_path)
-        ui_context = f"Elementos detectados no momento: {ui_detector.get_summary(ui_elements)}" if ui_elements else ""
+    def process_hybrid_vision(self, screenshot_path: str) -> Dict[str, Any]:
+        """
+        [VISÃO HÍBRIDA - STARK EVOLUTION]
+        Nível 1 (Local): Filtro rápido com UIdetector/YOLO (CPU).
+        Nível 2 (Nuvem): Análise profunda com Gemini PRO se houver complexidade.
+        Nível 3 (Feedback): Resposta da nuvem treina o banco local.
+        """
+        result = {"source": "local", "action": "none", "analysis": ""}
+        logger.info("[HYBRID VISION] Iniciando ciclo de análise...")
 
-        proactive_prompt = (
-            "Você está em modo PROATIVO. Analise a imagem da tela atual. "
-            f"{ui_context}\n"
-            "Se houver algo importante (erro de sistema, notificação urgente, algo novo e relevante), "
-            "mande uma mensagem breve para o William. "
-            "Se NÃO houver nada urgente ou novo, responda APENAS com a palavra: NO_ACTION. "
-            "Se for falar, comece de forma educada como Jarvis (ex: 'Perdoe-me, Senhor, mas notei...')."
-        )
-        
-        # 1. Chamar a IA (usando Flash para ser rápido e econômico)
-        response = ""
-        if self.api_key:
-            response = self._call_gemini(proactive_prompt, screenshot_path)
-        else:
-            response = local_brain.generate_response(proactive_prompt, self.system_prompt)
+        try:
+            # --- NÍVEL 1: SENTINELA LOCAL (YOLO/CPU) ---
+            # Custo: $0.00 | Tempo: <500ms
+            ui_elements = ui_detector.detect_elements(screenshot_path)
+            element_count = len(ui_elements)
             
-        # 2. Avaliar se deve interromper o usuário
-        if "no_action" in response.lower() or len(response.strip()) < 5:
-            logger.info("Análise proativa concluída: Nenhuma ação necessária.")
-            return
+            # Heurística de Complexidade Visual
+            # Se tiver muitos elementos, texto denso (implícito), ou padrões de erro
+            is_complex_context = element_count > 3 
+            
+            summary = ui_detector.get_summary(ui_elements)
+            logger.info(f"[HYBRID VISION] Nível 1 (Local): {summary} | Complexo? {is_complex_context}")
 
-        # 3. Falar se for algo relevante
-        logger.info(f"Jarvis tomando iniciativa: {response[:50]}...")
-        voice_controller.speak(response)
+            if not is_complex_context:
+                # Tela simples/estática. Nada a fazer.
+                return result
+
+            # --- NÍVEL 2: ANÁLISE PROFUNDA LOCAL (LLAVA) ---
+            # Tentamos resolver localmente primeiro se houver GPU ou LLaVA rodando.
+            logger.info("[HYBRID VISION] Nível 2 (Local AI)...")
+            
+            vision_prompt = (
+                "VISÃO TOTAL ATIVADA.\n"
+                f"Contexto: {summary}\n"
+                "Analise esta imagem. Se houver erro crítico ou algo notável para o usuário, explique.\n"
+                "Caso contrário, responda APENAS 'NO_ACTION'."
+            )
+            
+            local_response = ""
+            if self._check_ollama_alive():
+                try:
+                    local_response = self._call_ollama(vision_prompt, screenshot_path)
+                except:
+                    local_response = "incerto"
+
+            # Se o local resolver (e não for erro/incerto), usamos ele.
+            if local_response and len(local_response) > 5 and "incerto" not in local_response.lower():
+                result["source"] = "local_llm"
+                result["analysis"] = local_response
+                if "no_action" not in local_response.lower():
+                     voice_controller.speak(local_response)
+                     result["action"] = "spoke_local"
+                return result
+
+            # --- NÍVEL 3: OBSERVADOR DA NUVEM (GEMINI - SUPLEMENTO) ---
+            # Só acionamos se o Local falhar ou estiver incerto.
+            
+            logger.info("[HYBRID VISION] Local incerto. Escalando para Nível 3 (Nuvem)...")
+            
+            # Usar Gemini Flash (Rápido) ou Pro (Inteligente)
+            cloud_response = self._call_gemini(vision_prompt, screenshot_path)
+            
+            result["source"] = "cloud"
+            result["analysis"] = cloud_response
+            
+            # --- FEEDBACK / APRENDIZADO (DISTILLATION) ---
+            if "NO_ACTION" not in cloud_response:
+                dataset_collector.save_sample(
+                    image_path=screenshot_path,
+                    prompt=vision_prompt,
+                    response=cloud_response,
+                    source="hybrid_vision_auto"
+                )
+                
+                logger.info(f"[HYBRID VISION] Jarvis React (Cloud): {cloud_response}")
+                voice_controller.speak(cloud_response)
+                result["action"] = "spoke_cloud"
+            else:
+                logger.info("[HYBRID VISION] Nuvem analisou e decidiu não interromper.")
+
+        except Exception as e:
+            logger.error(f"[HYBRID VISION] Erro crítico: {e}")
         
-        # Salvar na memória para não repetir
-        neural_memory.store_interaction("PROACTIVE_EVENT", response)
+        return result
+
+    def process_proactive_analysis(self, change_data: Dict[str, Any]):
+        """
+        [SENTINELA PROATIVO]
+        Analisa mudanças detectadas na tela e decide se deve intervir.
+        """
+        try:
+            diff_percent = change_data.get('diff_percent', 0)
+            screenshot_path = change_data.get('screenshot_path')
+            
+            if not screenshot_path or not os.path.exists(screenshot_path):
+                return
+            
+            logger.info(f"Iniciando análise proativa ({diff_percent:.1f}% de mudança)...")
+            
+            # Usar visão híbrida para analisar
+            result = self.process_hybrid_vision(screenshot_path)
+            analysis = result.get("analysis", "")
+            
+            if analysis and "NO_ACTION" not in analysis.upper():
+                logger.info(f"Intervenção proativa bem sucedida: {analysis}")
+                return analysis
+            
+            return None
+
+        except Exception as e:
+            logger.error(f"Erro na análise proativa: {e}")
+            return None
+
 
     def _call_gemini(self, prompt: str, image_path: str):
         """Integração real com Gemini Pro Vision (Free Tier)"""

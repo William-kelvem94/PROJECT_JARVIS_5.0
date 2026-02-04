@@ -153,14 +153,76 @@ class ScreenCapture:
             logger.error(f"Erro na captura de janela '{window_title}': {e}")
             return None
 
-    # Skipping methods that don't need changes... but I need to replace them to keep file consistent or valid?
-    # No, I can replace up to capture_window and then assuming the rest is fine if I don't break indentation.
-    # But wait, self._save_capture is called.
-    # The previous code had `start_screen_recording`. I need to make sure `_record_screen_thread` uses `_get_sct` too.
-    
-    # Let's replace the whole class methods chunk to be safe or use multi-replace.
-    # I'll replace __init__ to capture_window first.
-    pass
+    def _save_capture(self, image: Any, save_path: Optional[str], 
+                     capture_type: str, capture_method: str) -> Optional[str]:
+        """
+        Salva a imagem capturada e registra no banco de dados
+        """
+        try:
+            # Gerar caminho se não fornecido
+            if not save_path:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:18]
+                filename = f"capture_{timestamp}.{self.default_format.lower()}"
+                save_path = str(config.CAPTURES_DIR / filename)
+
+            # Garantir diretório
+            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+
+            # Salvar imagem
+            if isinstance(image, Image.Image):
+                image.save(save_path, quality=self.quality, optimize=True)
+                width, height = image.size
+            else:
+                # Assumindo que pode ser outro formato se necessário no futuro
+                logger.warning("Formato de imagem desconhecido para salvar")
+                return None
+
+            # Calcular hash e tamanho
+            file_hash = FileHelper.get_file_hash(save_path)
+            file_size_mb = Path(save_path).stat().st_size / (1024 * 1024)
+
+            # Registrar no banco de dados
+            session = db_manager.get_session()
+            try:
+                new_capture = Capture(
+                    filename=Path(save_path).name,
+                    file_path=str(save_path),
+                    file_hash=file_hash,
+                    file_size_mb=file_size_mb,
+                    capture_type=capture_type,
+                    capture_method=capture_method,
+                    width=width,
+                    height=height,
+                    format=self.default_format,
+                    quality=self.quality,
+                    processing_status='pending'
+                )
+                session.add(new_capture)
+                session.commit()
+                
+                logger.info(f"Captura salva: {save_path} (ID: {new_capture.id})")
+                
+                # Notificar callback
+                if self.on_capture_complete:
+                    self.on_capture_complete(str(save_path))
+                    
+            except Exception as db_error:
+                session.rollback()
+                # Se for erro de hash duplicado, apenas logar como debug (não é crítico)
+                if "UNIQUE constraint failed" in str(db_error) and "file_hash" in str(db_error):
+                    logger.debug(f"Captura duplicada ignorada (hash já existe): {save_path}")
+                    # Retornar o path mesmo assim pois a imagem foi salva
+                else:
+                    logger.error(f"Erro ao registrar captura no banco: {db_error}")
+            finally:
+                session.close()
+                
+            return str(save_path)
+
+        except Exception as e:
+            logger.error(f"Erro ao salvar captura: {e}")
+            return None
+
 
 
             

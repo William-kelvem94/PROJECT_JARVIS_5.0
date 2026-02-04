@@ -80,7 +80,8 @@ class ProactiveMonitor:
                 
                 if change_percent > self.sensitivity:
                     logger.info(f"Mudança significativa detectada: {change_percent:.2%}")
-                    self._handle_change(screenshot)
+                    self._handle_change(screenshot, change_percent * 100)
+
 
                 self.last_frame = gray
                 
@@ -89,7 +90,7 @@ class ProactiveMonitor:
             
             time.sleep(self.check_interval)
 
-    def _handle_change(self, screenshot_path: str):
+    def _handle_change(self, screenshot_path: str, diff_percent: float):
         """Decide se deve ou não acionar a IA baseada no cooldown e estado"""
         current_time = time.time()
         
@@ -99,14 +100,19 @@ class ProactiveMonitor:
 
         # Acionar o Agente de IA para análise proativa
         self.last_trigger_time = current_time
-        threading.Thread(target=self._trigger_ai_analysis, args=(screenshot_path,), daemon=True).start()
+        threading.Thread(target=self._trigger_ai_analysis, args=(screenshot_path, diff_percent), daemon=True).start()
 
-    def _trigger_ai_analysis(self, screenshot_path: str):
+
+    def _trigger_ai_analysis(self, screenshot_path: str, diff_percent: float):
         """Analisa a mudança via IA de forma assíncrona"""
         try:
             logger.info("Solicitando análise proativa ao Agente de IA...")
             # O Agente decide se fala ou não após ver a imagem
-            ai_agent.process_proactive_analysis(screenshot_path)
+            ai_agent.process_proactive_analysis({
+                "screenshot_path": screenshot_path,
+                "diff_percent": diff_percent
+            })
+
         except Exception as e:
             logger.error(f"Erro ao disparar análise proativa: {e}")
 

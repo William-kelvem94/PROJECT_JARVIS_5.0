@@ -275,17 +275,86 @@ class MainWindow:
         button_frame.pack(side=tk.LEFT, padx=10)
 
         # Botão Capturar Tela - Estilo Premium
-        self.btn_capture = ctk.CTkButton(
-            button_frame, text="⚡ INITIALIZE CAPTURE",
-            command=self._on_capture_screen,
+        # Botão Visão Híbrida (Substitui Captura Manual como destaque)
+        self.vision_active = False
+        
+        self.btn_vision = ctk.CTkSwitch(
+            button_frame, text="👁️ HYBRID VISION",
+            command=self._on_toggle_vision,
             font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY, weight="bold"),
-            fg_color=COLORS.PRIMARY,
-            text_color=COLORS.BG_MAIN,
-            hover_color=COLORS.PRIMARY_HOVER,
-            width=180, height=DIMENSIONS.BUTTON_HEIGHT,
+            progress_color=COLORS.PRIMARY,
+            button_color="#FFFFFF",
+            button_hover_color="#EEEEEE",
+            height=DIMENSIONS.BUTTON_HEIGHT
+        )
+        self.btn_vision.pack(side=tk.LEFT, padx=15)
+        
+        # Atalho manual discreto (se necessário)
+        self.btn_capture = ctk.CTkButton(
+            button_frame, text="📸",
+            command=self._on_capture_screen,
+            width=40, height=DIMENSIONS.BUTTON_HEIGHT,
+            fg_color=COLORS.BG_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
             corner_radius=DIMENSIONS.CORNER_RADIUS
         )
-        self.btn_capture.pack(side=tk.LEFT, padx=5)
+        self.btn_capture.pack(side=tk.LEFT, padx=2)
+
+    def _on_toggle_vision(self):
+        """Ativa/Desativa o monitoramento contínuo (Híbrido)"""
+        if self.btn_vision.get():
+            self.vision_active = True
+            self._set_processing_status("👁️ Visão Híbrida Ativa")
+            self._vision_loop()
+        else:
+            self.vision_active = False
+            self._set_processing_status("Modo Standby")
+            self._set_orb_state("idle")
+
+    def _vision_loop(self):
+        """Loop de monitoramento da visão"""
+        if not self.vision_active:
+            return
+
+        try:
+            # Captura silenciosa para análise
+            capture_path = screen_capture.capture_fullscreen(capture_type='auto_vision')
+            
+            if capture_path:
+                # Processar em thread para não travar GUI
+                threading.Thread(
+                    target=self._process_vision_thread, 
+                    args=(capture_path,), 
+                    daemon=True
+                ).start()
+                
+            # Agendar próximo ciclo (5 segundos)
+            self.root.after(5000, self._vision_loop)
+            
+        except Exception as e:
+            logger.error(f"Erro no loop de visão: {e}")
+            self.vision_active = False
+            self.btn_vision.deselect()
+
+    def _process_vision_thread(self, capture_path):
+        """Thread de análise híbrida"""
+        try:
+            # Feedback visual: Local Analysis (Verde)
+            self.root.after(0, lambda: self._set_orb_state("local_analysis"))
+            
+            # Processar
+            result = ai_agent.process_hybrid_vision(capture_path)
+            
+            # Feedback: Se foi para nuvem (Azul)
+            if result.get("source") == "cloud":
+                 self.root.after(0, lambda: self._set_orb_state("cloud_analysis"))
+                 # Manter azul por um tempo
+                 self.root.after(2000, lambda: self._set_orb_state("idle") if self.vision_active else None)
+            else:
+                 self.root.after(500, lambda: self._set_orb_state("idle") if self.vision_active else None)
+
+        except Exception as e:
+            logger.error(f"Erro na thread de visão: {e}")
 
         self.btn_record = ctk.CTkButton(
             button_frame, text="🔴 REC BUFFER",
@@ -627,13 +696,17 @@ class MainWindow:
         self.root.after(50, self._animate_orb)
 
     def _set_orb_state(self, state):
-        """Muda a cor do orb baseado no estado (idle, thinking, alert)"""
+        """Muda a cor do orb baseado no estado (idle, thinking, alert, local_analysis, cloud_analysis)"""
         if state == "thinking":
             self.orb_color = "#00ffff" # Cyan
         elif state == "alert":
             self.orb_color = "#ff4b4b" # Red
+        elif state == "local_analysis":
+            self.orb_color = "#00E676" # Green (Local/Safe)
+        elif state == "cloud_analysis":
+            self.orb_color = "#2979FF" # Blue (Cloud/Processing)
         else:
-            self.orb_color = COLORS.PRIMARY # Blue
+            self.orb_color = COLORS.PRIMARY # Default Blue
 
     def _create_gesture_tab(self, parent):
         """Cria aba de treinamento e visualização de gestos"""
@@ -826,10 +899,11 @@ class MainWindow:
         # Separar quem está falando
         if text.startswith("Você:"):
             msg = text.replace("Você:", "👤 VOCÊ >")
-            tag_color = self.PRIMARY_COLOR
+            tag_color = COLORS.PRIMARY
         elif text.startswith("IA:"):
             msg = text.replace("IA:", "🤖 JARVIS >")
             tag_color = "#00ffff"
+
         else:
             msg = f"⚙️ {text}"
             tag_color = "#606060"
@@ -864,6 +938,36 @@ class MainWindow:
             font=ctk.CTkFont(size=10)
         )
         self.status_memory.pack(side=tk.RIGHT, padx=10)
+        
+        # Iniciar atualização da barra de status
+        self._update_status_bar()
+
+    def _set_processing_status(self, message: str):
+        """Atualiza a label de status de processamento"""
+        if hasattr(self, 'status_label'):
+            self.status_label.configure(text=message.upper())
+        logger.debug(f"Status: {message}")
+
+    def _update_status_bar(self):
+        """Atualiza informações técnicas na barra de status"""
+        try:
+            # Atualizar contagem de capturas
+            from src.database.models import db_manager, Capture
+            session = db_manager.get_session()
+            count = session.query(Capture).count()
+            self.status_captures.configure(text=f"Capturas: {count}")
+            session.close()
+
+            # Hardware info
+            from src.core.hardware_manager import hardware_manager
+            hw = hardware_manager.get_status()
+            self.status_engine.configure(text=f"Engine: {hw['device'].upper()}")
+
+            # Agendar próxima atualização (não precisa ser muito frequente)
+            self.root.after(30000, self._update_status_bar)
+        except Exception as e:
+            logger.error(f"Erro ao atualizar barra de status: {e}")
+
 
     def _setup_menu(self):
         """Configura menu da aplicação"""
@@ -917,8 +1021,44 @@ class MainWindow:
 
     def _setup_callbacks(self):
         """Configura callbacks dos módulos core"""
-        screen_capture.on_capture_complete = self._on_capture_completed
+        screen_capture.on_capture_complete = self._on_capture_success
         screen_capture.on_recording_complete = self._on_recording_completed
+
+    def _on_capture_success(self, capture_path: str):
+        """Callback de sucesso na captura"""
+        try:
+            self._set_processing_status("Captura salva!")
+            self.current_capture_path = capture_path
+            
+            # Atualizar GUI
+            self._refresh_captures_list()
+            self._display_image_from_path(capture_path)
+            self._reset_capture_button()
+            
+            # Se tiver aba OCR/Dados visível, carregar nela?
+            # Por enquanto apenas visualização
+            
+            logger.info(f"Captura salva com sucesso: {capture_path}")
+        except Exception as e:
+            logger.error(f"Erro no callback de sucesso: {e}")
+
+    def _on_capture_error(self, error=None):
+        """Callback de erro na captura"""
+        self._set_processing_status("Erro na captura")
+        msg = f"Falha ao capturar tela: {error}" if error else "Falha ao capturar tela"
+        messagebox.showerror("Erro", msg)
+        self._reset_capture_button()
+
+    def _on_recording_completed(self, output_path: str):
+        """Callback de conclusão de gravação"""
+        self._set_processing_status("Gravação salva!")
+        messagebox.showinfo("Gravação Concluída", f"Vídeo salvo com sucesso!")
+        logger.info(f"Gravação salva: {output_path}")
+
+    def _reset_capture_button(self):
+        """Reseta estado do botão de captura"""
+        if hasattr(self, 'btn_capture'):
+            self.btn_capture.configure(state="normal")
 
     def _on_capture_screen(self):
         """Callback para captura de tela completa"""
@@ -1149,7 +1289,7 @@ class MainWindow:
                 return
 
             for capture in captures:
-                card = ctk.CTkFrame(self.captures_scroll, fg_color=self.CARD_BG, height=60, corner_radius=8)
+                card = ctk.CTkFrame(self.captures_scroll, fg_color=COLORS.BG_CARD, height=60, corner_radius=8)
                 card.pack(fill=tk.X, pady=5, padx=5)
                 
                 # Timestamp formatado
@@ -1169,7 +1309,7 @@ class MainWindow:
                 
                 # Hover effect
                 card.bind("<Enter>", lambda e, f=card: f.configure(fg_color="#222224"))
-                card.bind("<Leave>", lambda e, f=card: f.configure(fg_color=self.CARD_BG if self.current_capture_path != f.capture_path else "#2a2a2b"))
+                card.bind("<Leave>", lambda e, f=card: f.configure(fg_color=COLORS.BG_CARD if self.current_capture_path != f.capture_path else "#2a2a2b"))
                 
                 # Guardar referência do path no frame para facilidade
                 card.capture_path = capture.file_path
@@ -1185,10 +1325,10 @@ class MainWindow:
         """Gerencia seleção de um Card de captura"""
         # Limpar seleção visual anterior
         for f in self.capture_cards.values():
-            f.configure(fg_color=self.CARD_BG, border_width=0)
+            f.configure(fg_color=COLORS.BG_CARD, border_width=0)
         
         # Destacar selecionado
-        frame.configure(fg_color="#2a2a2b", border_width=1, border_color=self.PRIMARY_COLOR)
+        frame.configure(fg_color="#2a2a2b", border_width=1, border_color=COLORS.PRIMARY)
         
         # Atualizar estado
         self.current_capture_path = capture.file_path
@@ -1727,7 +1867,7 @@ class SettingsWindow(ctk.CTkToplevel):
         from src.core.hardware_manager import hardware_manager
         status = hardware_manager.get_status()
         
-        lbl_device = ctk.CTkLabel(self.content_frame, text=f"Dispositivo de Compute: {status['device'].upper()}", text_color=self.master.PRIMARY_COLOR)
+        lbl_device = ctk.CTkLabel(self.content_frame, text=f"Dispositivo de Compute: {status['device'].upper()}", text_color=COLORS.PRIMARY)
         lbl_device.pack(anchor="w")
         
         self._create_save_button()
