@@ -71,9 +71,36 @@ class SecurityManager:
         """Valida edição de arquivo"""
         return self.request_permission("FILE_EDIT", f"Editar arquivo: {file_path}\nMotivo: {reason}")
 
-    def validate_shell_command(self, command: str) -> bool:
-        """Valida execução de comando shell"""
-        return self.request_permission("SHELL_EXEC", f"Executar comando: '{command}'")
+    def validate_file_action(self, file_path: str, action_type: str) -> bool:
+        """
+        Valida ações de arquivo (leitura/escrita).
+        Protege arquivos críticos do sistema.
+        """
+        file_path = file_path.lower()
+        
+        # Arquivos Críticos (Proteção de Auto-Preservação)
+        critical_files = ["main.py", "ai_agent.py", "security_manager.py", "config.py"]
+        
+        # Se for escrita em arquivo crítico: BLOQUEAR ou EXIGIR ADMIN
+        if action_type == "write":
+            for crit in critical_files:
+                if crit in file_path:
+                    logger.warning(f"Tentativa de modificação em arquivo CRÍTICO: {file_path}")
+                    return self.request_permission(
+                        "CRITICAL_FILE_EDIT", 
+                        f"ATENÇÃO: Este é um arquivo do núcleo do sistema!\nModificar '{file_path}' pode quebrar o Jarvis.\nAutorizar?"
+                    )
+        
+        # Permitir leitura livremente (para aprendizado)
+        if action_type == "read":
+            return True
+            
+        # Permitir escrita livre em diretórios seguros
+        if "extensions" in file_path or "data" in file_path or "logs" in file_path:
+            return True
+
+        # Padrão: Perguntar
+        return self.request_permission("FILE_ACTION", f"Ação: {action_type}\nArquivo: {file_path}")
 
 # Instância global
 security_manager = SecurityManager()

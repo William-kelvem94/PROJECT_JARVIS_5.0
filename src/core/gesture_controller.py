@@ -32,25 +32,45 @@ class GestureController:
         self.last_gesture = "None"
         self.last_gesture_time = 0
         self.gesture_cooldown = 1.0 # Segundos entre ações
+        self.mp_hands = None
+        self.hands = None
+        self.mp_draw = None
 
         if MEDIAPIPE_AVAILABLE:
             try:
-                self.mp_hands = mp.solutions.hands
-                self.hands = self.mp_hands.Hands(
-                    static_image_mode=False,
-                    max_num_hands=1,
-                    min_detection_confidence=0.7,
-                    min_tracking_confidence=0.5
-                )
-                self.mp_draw = mp.solutions.drawing_utils
-            except AttributeError as e:
-                logger.error(f"Erro ao inicializar MediaPipe (Atributo não encontrado): {e}")
+                # Tentativa 1: Import padrão
+                logger.info("Tentando carregar MediaPipe (Método 1: mp.solutions)...")
+                if hasattr(mp, 'solutions'):
+                    self.mp_hands = mp.solutions.hands
+                    self.mp_draw = mp.solutions.drawing_utils
+                
+                # Tentativa 2: Import direto (Fallback)
+                if self.mp_hands is None:
+                    logger.info("Tentando carregar MediaPipe (Método 2: import direto)...")
+                    import mediapipe.python.solutions.hands as mp_hands_module
+                    import mediapipe.python.solutions.drawing_utils as mp_draw_module
+                    self.mp_hands = mp_hands_module
+                    self.mp_draw = mp_draw_module
+
+                # Inicializar Detector
+                if self.mp_hands:
+                    self.hands = self.mp_hands.Hands(
+                        static_image_mode=False,
+                        max_num_hands=1,
+                        min_detection_confidence=0.7,
+                        min_tracking_confidence=0.5
+                    )
+                    logger.info("MediaPipe Hands carregado com SUCESSO.")
+                else:
+                    raise ImportError("Não foi possível carregar o módulo 'hands' do MediaPipe.")
+
+            except Exception as e:
+                logger.error(f"FALHA CRÍTICA ao carregar MediaPipe: {e}")
+                logger.warning("O controle por gestos será DESATIVADO para evitar crashes.")
                 MEDIAPIPE_AVAILABLE = False
                 self.mp_hands = None
                 self.hands = None
-            except Exception as e:
-                logger.error(f"Erro desconhecido no MediaPipe: {e}")
-                MEDIAPIPE_AVAILABLE = False
+                self.mp_draw = None
         
         # Suavização de gestos
         self.gesture_buffer = deque(maxlen=5)
