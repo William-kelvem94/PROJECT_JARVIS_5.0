@@ -16,23 +16,8 @@ import threading
 # Adicionar diretório src ao path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-# Imports dos módulos da aplicação
 from utils.config import config
-from utils.helpers import system_helper
-from core.hardware_manager import hardware_manager
-from core.local_brain import local_brain
-from database.models import db_manager
-from core.screen_capture import screen_capture
-from core.ocr_processor import ocr_processor
-from core.data_analyzer import data_analyzer
-from core.data_organizer import data_organizer
-# Jarvis Components
-from core.voice_controller import voice_controller
-from core.neural_memory import neural_memory
-from core.ai_agent import ai_agent
-from core.camera_controller import camera_controller
-from core.proactive_monitor import proactive_monitor
-from gui.main_window import main_window
+from core.maintenance_manager import maintenance_manager
 
 # Configuração de logging global
 logging.basicConfig(
@@ -56,78 +41,67 @@ class JarvisApp:
     def initialize(self) -> bool:
         """
         Inicializa todos os componentes da aplicação
-
-        Returns:
-            True se inicialização foi bem-sucedida
         """
         try:
             logger.info("Iniciando Jarvis 5.0...")
+            
+            # --- PROTOCOLO DE AUTO-REPARO (Phase 0) ---
+            # Verificamos e reparamos o sistema antes de qualquer import pesado
+            maintenance_manager.check_and_repair_all()
+            
+            # --- CARREGAMENTO ADIADO (Lazy Loading) ---
+            from utils.helpers import system_helper
+            from core.hardware_manager import hardware_manager
+            from core.local_brain import local_brain
+            from database.models import db_manager
+            from core.screen_capture import screen_capture
+            from core.ocr_processor import ocr_processor
+            from core.data_analyzer import data_analyzer
+            from core.data_organizer import data_organizer
+            from core.voice_controller import voice_controller
+            from core.neural_memory import neural_memory
+            from core.ai_agent import ai_agent
+            from core.camera_controller import camera_controller
+            from core.proactive_monitor import proactive_monitor
+
             logger.info(f"Versão: {config.get_setting('app.version')}")
-            logger.info(f"Sistema: {config.SYSTEM_INFO}")
             
             # Log de Hardware
             hw_status = hardware_manager.get_status()
             logger.info(f"Hardware Detectado: {hw_status['gpu_name']} ({hw_status['device']})")
 
-            # Verificar requisitos do sistema
-            if not self._check_system_requirements():
-                return False
-
             # Inicializar banco de dados
-            logger.info("Inicializando banco de dados...")
-            # Banco já é inicializado automaticamente no import
-
-            # Verificar engines OCR
-            logger.info("Verificando engines OCR...")
-            available_engines = ocr_processor.get_available_engines()
-            if not available_engines:
-                logger.warning("Nenhum engine OCR disponível. Alguns recursos estarão limitados.")
-            else:
-                logger.info(f"Engines OCR disponíveis: {', '.join(available_engines)}")
-
+            logger.info("Sincronizando Banco de Dados...")
+            
             # Inicializar Memória Neural
-            logger.info("Inicializando Memória Neural Jarvis...")
+            logger.info("Ativando Córtex Neural...")
             from core.memory_seed import seed_jarvis
             seed_jarvis()
             
-            # Inicializar Agente de IA
-            logger.info("Verificando Agente de IA...")
-            if not ai_agent.api_key and ai_agent.provider == 'gemini':
-                logger.warning("Google API Key não detectada. O modo online do Jarvis estará limitado.")
-            
             # Carregar Cérebro Local (Background)
-            logger.info("Preparando Cérebro Local (Transformers)...")
+            logger.info("Sensibilizando Micro-LLM Local...")
             threading.Thread(target=local_brain.load, daemon=True).start()
 
-            # Verificar modelo NLP
-            if not hasattr(data_analyzer, 'nlp') or data_analyzer.nlp is None:
-                logger.warning("Modelo de linguagem natural não disponível. Análise de sentimento desabilitada.")
-            else:
-                logger.info("Modelo de linguagem natural carregado.")
-
-            # Registrar função de limpeza
-            atexit.register(self.cleanup)
-
             # Inicializar Câmera (FaceID)
-            logger.info("Iniciando sistema de visão (FaceID)...")
+            logger.info("Ativando Protocolos de Visão...")
             camera_controller.start_monitoring()
 
-            # Inicializar Monitor Proativo (Stark Phase 1)
-            logger.info("Iniciando Monitor Proativo (Iniciativa Stark)...")
+            # Inicializar Monitor Proativo
+            logger.info("Ativando Sentinela Proativo...")
             proactive_monitor.start()
 
             # Inicializar Wake Word
-            logger.info("Iniciando escuta ativa (Wake Word)...")
+            logger.info("Calibrando Reconhecimento de Voz...")
             voice_controller.listen_for_wake_word(on_wake=self._on_wake_detected)
 
             self.initialized = True
-            logger.info("Aplicação inicializada com sucesso!")
-
+            logger.info("JARVIS 5.0 ONLINE.")
             return True
 
         except Exception as e:
-            logger.error(f"Erro na inicialização: {e}")
+            logger.error(f"FALHA NA INICIALIZAÇÃO CRÍTICA: {e}")
             return False
+
 
     def _check_system_requirements(self) -> bool:
         """
@@ -186,6 +160,7 @@ class JarvisApp:
 
     def _process_voice_command(self, text: str):
         """Processa o comando de voz recebido"""
+        from core.ai_agent import ai_agent
         logger.info(f"Processando voz: {text}")
         ai_agent.process_command(text)
 
@@ -200,10 +175,12 @@ class JarvisApp:
             logger.info("Iniciando interface gráfica...")
 
             # Executar interface
+            from gui.main_window import main_window
             main_window.run()
 
         except KeyboardInterrupt:
             logger.info("Aplicação interrompida pelo usuário")
+
         except Exception as e:
             logger.error(f"Erro na execução da interface: {e}")
         finally:

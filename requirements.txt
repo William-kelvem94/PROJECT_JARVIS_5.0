@@ -26,6 +26,7 @@ pandas
 openpyxl
 ultralytics
 mediapipe
+face_recognition
 watchdog
 keyboard
 mouse
