@@ -48,6 +48,56 @@ O **Jarvis 5.0** é um assistente virtual autônomo projetado para Windows que i
 ### 🖥️ **Interface Moderna**
 - ✅ Interface gráfica intuitiva (CustomTkinter)
 - ✅ Ícone na bandeja do sistema
+
+### 🚀 **JARVIS Evolution - Novos Recursos**
+
+#### 🧠 **Sistema de Decisão Inteligente (Brain Router)**
+- ✅ Roteamento automático entre processamento local e nuvem
+- ✅ Análise de complexidade, privacidade e latência
+- ✅ Suporte a múltiplos modelos (Qwen local, Gemini Flash/Pro, Claude)
+- ✅ Otimização de custos e performance
+
+#### 👁️ **Visão Computacional Multi-Nível**
+- ✅ **Nível 1** (< 100ms): YOLO v8 + UI Detector + Tesseract
+- ✅ **Nível 2** (500ms-2s): EasyOCR multilíngue + detecção de tabelas
+- ✅ **Nível 3** (2-5s): Gemini Vision para compreensão profunda
+- ✅ Extração automática de tabelas de imagens
+- ✅ Análise de documentos (invoices, contracts, receipts)
+
+#### 🗣️ **Processamento de Voz Neural**
+- ✅ **Whisper STT**: 5 modelos (tiny → large) para transcrição precisa
+- ✅ **TTS Neural**: Síntese de fala com controle de velocidade
+- ✅ Suporte a português e inglês
+- ✅ Modo assíncrono para não bloquear interface
+- ✅ Preparado para diarização e análise de emoção
+
+#### 🎮 **Controle Total do PC**
+- ✅ Descoberta automática de aplicações instaladas
+- ✅ Controle avançado de mouse e teclado (PyAutoGUI)
+- ✅ Sistema de macros gravadas e reproduzíveis
+- ✅ Localização visual de elementos na tela
+- ✅ Monitoramento de recursos do sistema (CPU, RAM, disco)
+
+#### 🤖 **Workflow Engine**
+- ✅ Criação de workflows complexos
+- ✅ Gravação e reprodução de sequências de ações
+- ✅ Persistência em JSON
+- ✅ Execução com callback de progresso
+- ✅ Biblioteca de workflows pré-definidos
+
+#### 🔒 **Segurança Avançada**
+- ✅ Criptografia AES-256 (via Fernet)
+- ✅ Hashing seguro (SHA-256, SHA-512, MD5)
+- ✅ Sistema de permissões granular
+- ✅ Modo privado (sem gravação, apenas local)
+- ✅ Audit log completo de todas as ações
+- ✅ Proteção de caminhos sensíveis do sistema
+
+#### 🔧 **Auto-Reparo Total**
+- ✅ Instalação automática de CMake (via Chocolatey/Winget)
+- ✅ Download automático de modelos de IA (Vosk PT-BR)
+- ✅ Reinstalação inteligente de dependências
+- ✅ Validação de integridade do sistema
 - ✅ Modo escuro/claro
 - ✅ Notificações inteligentes
 - ✅ Configurações avançadas
