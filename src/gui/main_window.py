@@ -22,6 +22,7 @@ from src.core.camera_controller import camera_controller
 from src.core.gesture_controller import gesture_controller
 from src.core.neural_memory import neural_memory
 from src.database.models import db_manager, Capture
+from src.gui.theme import COLORS, FONTS, DIMENSIONS 
 
 logger = logging.getLogger(__name__)
 
@@ -31,17 +32,21 @@ class MainWindow:
     def __init__(self):
         # Configurar aparência - Midnight Jarvis Theme
         ctk.set_appearance_mode("dark")
-        # Custom colors for Jarvis 5.0
-        self.PRIMARY_COLOR = "#00d2ff"  # Neon Blue
-        self.DARK_BG = "#101010"
-        self.CARD_BG = "#1a1a1b"
-        ctk.set_default_color_theme("blue")  # Base 
+        ctk.set_default_color_theme("blue")
 
         # Criar janela principal
         self.root = ctk.CTk()
         self.root.title("JARVIS 5.0")
         self.root.geometry("1200x800")
         self.root.minsize(800, 600)
+        
+        # --- FRAMELESS CONFIGURATION (STARK STYLE) ---
+        self.root.overrideredirect(True) # Remove borda padrão do Windows
+        self.root.configure(fg_color=COLORS.BG_MAIN)
+        
+        # Variáveis de controle de movimento da janela
+        self._offsetx = 0
+        self._offsety = 0
 
         # Variáveis de controle
         self.current_capture_path = None
@@ -59,11 +64,18 @@ class MainWindow:
         logger.info("Janela principal inicializada")
 
     def _setup_ui(self):
+        # 1. Custom Title Bar (Essential for Frameless)
+        self._create_title_bar()
+        
+        # Container para o resto da interface (abaixo da title bar)
+        self.body_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        self.body_frame.pack(fill=tk.BOTH, expand=True)
+
         # Sidebar Navigation Panel
-        self._create_sidebar()
+        self._create_sidebar(self.body_frame)
 
         # Container principal de conteúdo (lado direito)
-        self.main_container = ctk.CTkFrame(self.root, fg_color="transparent")
+        self.main_container = ctk.CTkFrame(self.body_frame, fg_color="transparent")
         self.main_container.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(0, 10), pady=10)
 
         # Barra de ferramentas superior (compacta)
@@ -74,40 +86,87 @@ class MainWindow:
 
         # Barra de status inferior
         self._create_status_bar()
+        
+    def _create_title_bar(self):
+        """Cria barra de título personalizada estilo Stark"""
+        self.title_bar = ctk.CTkFrame(self.root, height=DIMENSIONS.TITLE_BAR_HEIGHT, corner_radius=0, fg_color=COLORS.BG_SIDEBAR)
+        self.title_bar.pack(side=tk.TOP, fill=tk.X)
+        self.title_bar.pack_propagate(False)
+        
+        # Eventos de arrastar janela
+        self.title_bar.bind("<Button-1>", self._start_move)
+        self.title_bar.bind("<B1-Motion>", self._do_move)
 
-    def _create_sidebar(self):
+        # Título da Janela
+        title_lbl = ctk.CTkLabel(
+            self.title_bar, text="JARVIS 5.0 | MARK V PROTOCOL",
+            font=ctk.CTkFont(family=FONTS.FAMILY_DISPLAY, size=12, weight="bold"),
+            text_color=COLORS.TEXT_SUB
+        )
+        title_lbl.pack(side=tk.LEFT, padx=15)
+        title_lbl.bind("<Button-1>", self._start_move)
+        title_lbl.bind("<B1-Motion>", self._do_move)
+
+        # Botões da Janela (Fechar, Minimizar)
+        close_btn = ctk.CTkButton(
+            self.title_bar, text="✕", width=40, height=DIMENSIONS.TITLE_BAR_HEIGHT,
+            fg_color="transparent", hover_color=COLORS.ERROR,
+            command=self._on_exit, corner_radius=0
+        )
+        close_btn.pack(side=tk.RIGHT)
+        
+        min_btn = ctk.CTkButton(
+            self.title_bar, text="─", width=40, height=DIMENSIONS.TITLE_BAR_HEIGHT,
+            fg_color="transparent", hover_color=COLORS.BG_CARD_HOVER,
+            command=self.root.iconify, corner_radius=0
+        )
+        min_btn.pack(side=tk.RIGHT)
+
+    def _start_move(self, event):
+        self._offsetx = event.x
+        self._offsety = event.y
+
+    def _do_move(self, event):
+        x = self.root.winfo_x() + (event.x - self._offsetx)
+        y = self.root.winfo_y() + (event.y - self._offsety)
+        self.root.geometry(f"+{x}+{y}")
+
+    def _create_sidebar(self, parent):
         """Cria barra lateral de navegação premium"""
-        self.sidebar = ctk.CTkFrame(self.root, width=200, corner_radius=0, fg_color="#0a0a0a")
+        self.sidebar = ctk.CTkFrame(parent, width=DIMENSIONS.SIDEBAR_WIDTH, corner_radius=0, fg_color=COLORS.BG_SIDEBAR)
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
         self.sidebar.pack_propagate(False)
 
         # Logo / Título
         self.logo_label = ctk.CTkLabel(
-            self.sidebar, text="JARVIS 5.0", 
-            font=ctk.CTkFont(size=24, weight="bold", family="Segoe UI Variable"),
-            text_color=self.PRIMARY_COLOR
+            self.sidebar, text="J.A.R.V.I.S.", 
+            font=ctk.CTkFont(size=28, weight="bold", family=FONTS.FAMILY_DISPLAY),
+            text_color=COLORS.PRIMARY
         )
-        self.logo_label.pack(pady=(30, 40))
+        self.logo_label.pack(pady=(30, 10))
+        
+        ctk.CTkLabel(self.sidebar, text="STARK INDUSTRIES", 
+                     font=ctk.CTkFont(size=10), text_color=COLORS.TEXT_SUB).pack(pady=(0, 30))
 
         # Botões da Sidebar
         self.nav_buttons = {}
         nav_items = [
-            ("📸 Capturas", "preview"),
-            ("🤖 IA Agent", "ai"),
-            ("🖖 Gestos", "gestures"),
-            ("🧠 Memórias", "memories"),
-            ("⚙️ Settings", "settings")
+            ("📸 CAPTURAS", "preview"),
+            ("🤖 IA AGENT", "ai"),
+            ("🖖 GESTOS", "gestures"),
+            ("🧠 MEMÓRIA", "memories"),
+            ("⚙️ SISTEMA", "settings")
         ]
 
         for text, key in nav_items:
             btn = ctk.CTkButton(
                 self.sidebar, text=text,
                 fg_color="transparent",
-                text_color="white",
-                hover_color="#1a1a1b",
+                text_color=COLORS.TEXT_MAIN,
+                hover_color=COLORS.BG_CARD_HOVER,
                 anchor="w",
-                font=ctk.CTkFont(size=14),
-                height=45,
+                font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY),
+                height=DIMENSIONS.BUTTON_HEIGHT,
                 command=lambda k=key: self._on_nav_click(k)
             )
             btn.pack(fill=tk.X, padx=10, pady=5)
@@ -115,9 +174,9 @@ class MainWindow:
 
         # Versão no rodapé
         self.version_label = ctk.CTkLabel(
-            self.sidebar, text="JARVIS v5.0.0",
-            font=ctk.CTkFont(size=10, weight="bold"),
-            text_color="#404040"
+            self.sidebar, text="MARK V | v5.0.0",
+            font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=10),
+            text_color=COLORS.TEXT_SUB
         )
         self.version_label.pack(side=tk.BOTTOM, pady=(0, 20))
 
@@ -129,15 +188,23 @@ class MainWindow:
         self.health_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         self.health_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=20)
         
-        ctk.CTkLabel(self.health_frame, text="SYSTEM HEALTH", font=ctk.CTkFont(size=9, weight="bold"), text_color="#303030").pack(anchor="w", padx=5)
+        ctk.CTkLabel(self.health_frame, text="SYSTEM DIAGNOSTICS", 
+                     font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=9, weight="bold"), 
+                     text_color=COLORS.TEXT_SUB).pack(anchor="w", padx=5)
         
-        self.lbl_cpu = ctk.CTkLabel(self.health_frame, text="CPU: --%", font=ctk.CTkFont(size=10), text_color="#606060")
+        self.lbl_cpu = ctk.CTkLabel(self.health_frame, text="CPU: --%", 
+                                  font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=10), 
+                                  text_color=COLORS.TEXT_MAIN)
         self.lbl_cpu.pack(anchor="w", padx=5)
         
-        self.lbl_gpu = ctk.CTkLabel(self.health_frame, text="GPU: --", font=ctk.CTkFont(size=10), text_color="#606060")
+        self.lbl_gpu = ctk.CTkLabel(self.health_frame, text="GPU: --", 
+                                  font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=10), 
+                                  text_color=COLORS.TEXT_MAIN)
         self.lbl_gpu.pack(anchor="w", padx=5)
         
-        self.lbl_brain = ctk.CTkLabel(self.health_frame, text="BRAIN: ONLINE", font=ctk.CTkFont(size=10), text_color=self.PRIMARY_COLOR)
+        self.lbl_brain = ctk.CTkLabel(self.health_frame, text="BRAIN: ONLINE", 
+                                    font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=10), 
+                                    text_color=COLORS.SUCCESS)
         self.lbl_brain.pack(anchor="w", padx=5)
         
         # Iniciar atualização periódica
@@ -170,36 +237,38 @@ class MainWindow:
         """Gerencia clique na navegação lateral com feedback do Orb"""
         # Resetar estilos
         for k, btn in self.nav_buttons.items():
-            btn.configure(fg_color="transparent", text_color="white")
+            btn.configure(fg_color="transparent", text_color=COLORS.TEXT_MAIN)
         
         # Destacar selecionado
-        self.nav_buttons[key].configure(fg_color="#1a1a1b", text_color=self.PRIMARY_COLOR)
+        self.nav_buttons[key].configure(fg_color=COLORS.BG_CARD_HOVER, text_color=COLORS.PRIMARY)
         
         # Mudar estado do orb se for IA
         if key == "ai":
             self._set_orb_state("idle")
         
-        # Mudar aba
+        # Mudar aba (Map keys to Tab Names defined in _create_results_panel)
         tab_map = {
-            "preview": 0,
-            "ai": 3,
-            "gestures": 4,
-            "memories": 5
+            "preview": "PREVIEW",
+            "ai": "AI AGENT",
+            "gestures": "GESTURES",
+            "memories": "MEMORY"
         }
         
         if key == "settings":
             self._on_open_settings()
         elif key in tab_map:
-            self.results_notebook.select(tab_map[key])
+            self.results_notebook.set(tab_map[key])
 
     def _create_toolbar(self):
         """Cria barra de ferramentas futurista"""
-        toolbar = ctk.CTkFrame(self.main_container, height=60, fg_color="transparent")
+        toolbar = ctk.CTkFrame(self.main_container, height=60, fg_color=COLORS.BG_CARD, corner_radius=DIMENSIONS.CORNER_RADIUS)
         toolbar.pack(fill=tk.X, padx=5, pady=5)
 
         # Dashboard Label
-        dash_label = ctk.CTkLabel(toolbar, text="DASHBOARD", font=ctk.CTkFont(size=12, weight="bold"), text_color="#404040")
-        dash_label.pack(side=tk.LEFT, padx=10)
+        dash_label = ctk.CTkLabel(toolbar, text="COMMAND CENTER", 
+                                font=ctk.CTkFont(family=FONTS.FAMILY_DISPLAY, size=FONTS.H3, weight="bold"), 
+                                text_color=COLORS.TEXT_MAIN)
+        dash_label.pack(side=tk.LEFT, padx=20)
 
         # Botões principais
         button_frame = ctk.CTkFrame(toolbar, fg_color="transparent")
@@ -207,52 +276,65 @@ class MainWindow:
 
         # Botão Capturar Tela - Estilo Premium
         self.btn_capture = ctk.CTkButton(
-            button_frame, text="⚡ CAPTURAR AGORA",
+            button_frame, text="⚡ INITIALIZE CAPTURE",
             command=self._on_capture_screen,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            fg_color=self.PRIMARY_COLOR,
-            text_color="black",
-            hover_color="#00b8e6",
-            width=160, height=35
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY, weight="bold"),
+            fg_color=COLORS.PRIMARY,
+            text_color=COLORS.BG_MAIN,
+            hover_color=COLORS.PRIMARY_HOVER,
+            width=180, height=DIMENSIONS.BUTTON_HEIGHT,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_capture.pack(side=tk.LEFT, padx=5)
 
         self.btn_record = ctk.CTkButton(
-            button_frame, text="🔴 GRAVAR",
+            button_frame, text="🔴 REC BUFFER",
             command=self._on_toggle_recording,
-            fg_color="#1a1a1b",
-            text_color="red",
-            hover_color="#2b2b2b",
-            width=100, height=35
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY, weight="bold"),
+            fg_color=COLORS.BG_MAIN,
+            text_color=COLORS.ERROR,
+            hover_color=COLORS.BG_CARD_HOVER,
+            border_width=1,
+            border_color=COLORS.ERROR,
+            width=120, height=DIMENSIONS.BUTTON_HEIGHT,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_record.pack(side=tk.LEFT, padx=5)
 
         # Botões de processamento (Lado Direito)
         self.btn_export = ctk.CTkButton(
-            toolbar, text="EXPORTAR",
+            toolbar, text="EXPORT DATA",
             command=self._on_export_data,
             state="disabled",
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY),
             fg_color="transparent",
             border_width=1,
-            border_color="#404040",
-            width=100, height=35
+            border_color=COLORS.BORDER_SUBTLE,
+            text_color=COLORS.TEXT_SUB,
+            width=120, height=DIMENSIONS.BUTTON_HEIGHT,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_export.pack(side=tk.RIGHT, padx=5)
 
         self.btn_process = ctk.CTkButton(
-            toolbar, text="PROCESSAR IA",
+            toolbar, text="RUN NEURAL NET",
             command=self._on_process_capture,
             state="disabled",
-            fg_color="#1a1a1b",
-            hover_color="#2b2b2b",
-            width=120, height=35
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.BODY, weight="bold"),
+            fg_color=COLORS.BG_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
+            text_color=COLORS.PRIMARY,
+            border_width=1,
+            border_color=COLORS.PRIMARY,
+            width=140, height=DIMENSIONS.BUTTON_HEIGHT,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_process.pack(side=tk.RIGHT, padx=5)
 
     def _create_main_area(self):
         """Cria área principal da interface"""
         # Frame principal
-        main_frame = ctk.CTkFrame(self.main_container)
+        main_frame = ctk.CTkFrame(self.main_container, fg_color="transparent")
         main_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
         # Painel esquerdo - Lista de capturas
@@ -263,17 +345,17 @@ class MainWindow:
 
     def _create_captures_panel(self, parent):
         """Cria painel de lista de capturas"""
-        left_panel = ctk.CTkFrame(parent, width=300)
+        left_panel = ctk.CTkFrame(parent, width=320, fg_color=COLORS.BG_CARD, corner_radius=DIMENSIONS.CORNER_RADIUS)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
         left_panel.pack_propagate(False)
 
         # Título
         title_label = ctk.CTkLabel(
-            left_panel, text="📁 CAPTURAS",
-            font=ctk.CTkFont(size=14, weight="bold", family="Segoe UI Variable"),
-            text_color="#808080"
+            left_panel, text="DATA FEED",
+            font=ctk.CTkFont(family=FONTS.FAMILY_DISPLAY, size=14, weight="bold"),
+            text_color=COLORS.TEXT_SUB
         )
-        title_label.pack(pady=(10, 5), padx=10, anchor="w")
+        title_label.pack(pady=(15, 10), padx=15, anchor="w")
 
         # Container de Capturas (Scrollable)
         self.captures_scroll = ctk.CTkScrollableFrame(
@@ -294,91 +376,101 @@ class MainWindow:
             buttons_frame, text="🔄",
             command=self._refresh_captures_list,
             width=40, height=30,
-            fg_color="#1a1a1b",
-            hover_color="#2b2b2b"
+            fg_color=COLORS.BG_MAIN,
+            text_color=COLORS.TEXT_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_refresh_captures.pack(side=tk.LEFT, padx=2)
 
         self.btn_delete_capture = ctk.CTkButton(
-            buttons_frame, text="Excluir Seleção",
+            buttons_frame, text="DELETE",
             command=self._on_delete_capture,
-            fg_color="#2b1010",
-            hover_color="#501010",
+            fg_color=COLORS.ERROR,
+            text_color=COLORS.TEXT_MAIN,
+            hover_color="#B00020",
             height=30,
-            state="disabled"
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=FONTS.SMALL, weight="bold"),
+            state="disabled",
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_delete_capture.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=2)
 
     def _create_results_panel(self, parent):
         """Cria painel de visualização de resultados"""
-        right_panel = ctk.CTkFrame(parent)
+        right_panel = ctk.CTkFrame(parent, fg_color="transparent")
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Notebook para abas
-        self.results_notebook = ttk.Notebook(right_panel)
-        self.results_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Notebook para abas (TODO: Custom Tabview for complete Stark Look)
+        # Using basic ttk Notebook for now but styled dark via theme
+        self.results_notebook = ctk.CTkTabview(right_panel, corner_radius=DIMENSIONS.CORNER_RADIUS, fg_color=COLORS.BG_CARD)
+        self.results_notebook.pack(fill=tk.BOTH, expand=True, padx=0, pady=0)
+        
+        # Tabs
+        self.results_notebook.add("PREVIEW")
+        self.results_notebook.add("DATA")
+        self.results_notebook.add("OCR")
+        self.results_notebook.add("AI AGENT")
+        self.results_notebook.add("GESTURES")
+        self.results_notebook.add("MEMORY")
 
         # Aba de Visualização
-        self._create_preview_tab()
+        self._create_preview_tab(self.results_notebook.tab("PREVIEW"))
 
         # Aba de Dados Extraídos
-        self._create_data_tab()
+        self._create_data_tab(self.results_notebook.tab("DATA"))
 
         # Aba de OCR
-        self._create_ocr_tab()
+        self._create_ocr_tab(self.results_notebook.tab("OCR"))
 
         # Aba de IA Agent (NOVO)
-        self._create_ai_agent_tab()
+        self._create_ai_agent_tab(self.results_notebook.tab("AI AGENT")) # Ajustado para passar parent
 
         # Aba de Gestos (NOVO)
-        self._create_gesture_tab()
+        self._create_gesture_tab(self.results_notebook.tab("GESTURES"))
 
         # Aba de Memórias (EVOLUÇÃO)
-        self._create_memories_tab()
+        self._create_memories_tab(self.results_notebook.tab("MEMORY"))
     
-    def _create_preview_tab(self):
+    def _create_preview_tab(self, parent):
         """Cria aba de visualização da captura"""
-        preview_frame = ctk.CTkFrame(self.results_notebook)
-        self.results_notebook.add(preview_frame, text="📸 Visualização")
-
         # Área de imagem
         self.preview_canvas = tk.Canvas(
-            preview_frame,
-            bg="#1a1a1a",
-            highlightthickness=1,
-            highlightbackground="#404040"
+            parent,
+            bg=COLORS.BG_MAIN,
+            highlightthickness=0,
+            bd=0
         )
         self.preview_canvas.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Label para quando não há imagem
         self.preview_label = ctk.CTkLabel(
             self.preview_canvas,
-            text="Nenhuma captura selecionada\n\nClique em 'Capturar Tela' para começar",
-            font=ctk.CTkFont(size=14)
+            text="NO SIGNAL INPUT\n\nINITIALIZE CAPTURE PROTOCOL",
+            font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=12),
+            text_color=COLORS.TEXT_SUB
         )
         self.preview_label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
         # Barra de progresso para processamento
-        self.progress_bar = ctk.CTkProgressBar(preview_frame, width=400)
+        self.progress_bar = ctk.CTkProgressBar(parent, width=400, progress_color=COLORS.PRIMARY)
         self.progress_bar.pack(pady=10)
         self.progress_bar.set(0)
 
         # Label de status
         self.status_label = ctk.CTkLabel(
-            preview_frame,
-            text="Pronto para capturar",
-            font=ctk.CTkFont(size=12)
+            parent,
+            text="SYSTEM READY",
+            font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=10),
+            text_color=COLORS.SUCCESS
         )
         self.status_label.pack(pady=5)
 
-    def _create_data_tab(self):
+    def _create_data_tab(self, parent):
         """Cria aba de dados extraídos"""
-        data_frame = ctk.CTkFrame(self.results_notebook)
-        self.results_notebook.add(data_frame, text="📊 Dados Extraídos")
-
         # Treeview para dados
         columns = ("Campo", "Valor", "Tipo", "Confiança")
-        self.data_tree = ttk.Treeview(data_frame, columns=columns, show="headings", height=20)
+        self.data_tree = ttk.Treeview(parent, columns=columns, show="headings", height=20)
 
         # Configurar colunas
         for col in columns:
@@ -386,7 +478,7 @@ class MainWindow:
             self.data_tree.column(col, width=150)
 
         # Scrollbar
-        scrollbar = ttk.Scrollbar(data_frame, orient="vertical", command=self.data_tree.yview)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.data_tree.yview)
         self.data_tree.configure(yscrollcommand=scrollbar.set)
 
         # Pack
@@ -394,88 +486,122 @@ class MainWindow:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, pady=10)
 
         # Botões de ação
-        buttons_frame = ctk.CTkFrame(data_frame, fg_color="transparent")
+        buttons_frame = ctk.CTkFrame(parent, fg_color="transparent")
         buttons_frame.pack(fill=tk.X, padx=10, pady=10)
 
         self.btn_edit_data = ctk.CTkButton(
-            buttons_frame, text="✏️ Editar",
+            buttons_frame, text="✏️ EDIT ENTRY",
             command=self._on_edit_data,
-            width=100
+            width=100,
+            fg_color=COLORS.BG_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS,
+            border_width=1,
+            border_color=COLORS.BORDER_SUBTLE
         )
         self.btn_edit_data.pack(side=tk.LEFT, padx=5)
 
         self.btn_validate_data = ctk.CTkButton(
-            buttons_frame, text="✅ Validar",
+            buttons_frame, text="✅ VALIDATE",
             command=self._on_validate_data,
-            width=100
+            width=100,
+            fg_color=COLORS.SUCCESS,
+            text_color="#000000",
+            hover_color="#00C853",
+            corner_radius=DIMENSIONS.CORNER_RADIUS
         )
         self.btn_validate_data.pack(side=tk.LEFT, padx=5)
 
-    def _create_ocr_tab(self):
+    def _create_ocr_tab(self, parent=None):
         """Cria aba de resultados OCR"""
-        ocr_frame = ctk.CTkFrame(self.results_notebook)
-        self.results_notebook.add(ocr_frame, text="📝 OCR")
+        if parent is None:
+             parent = ctk.CTkFrame(self.results_notebook)
+             self.results_notebook.add(parent, text="📝 OCR")
 
         # Área de texto para OCR
-        self.ocr_text = ctk.CTkTextbox(ocr_frame, wrap="word")
+        self.ocr_text = ctk.CTkTextbox(parent, wrap="word", fg_color=COLORS.BG_MAIN, text_color=COLORS.TEXT_MAIN, font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=12))
         self.ocr_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Botões de controle
-        controls_frame = ctk.CTkFrame(ocr_frame, fg_color="transparent")
+        controls_frame = ctk.CTkFrame(parent, fg_color="transparent")
         controls_frame.pack(fill=tk.X, padx=10, pady=5)
 
         self.btn_copy_ocr = ctk.CTkButton(
-            controls_frame, text="📋 Copiar Texto",
+            controls_frame, text="📋 COPY",
             command=self._on_copy_ocr_text,
-            width=120
+            width=120,
+            fg_color=COLORS.BG_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS,
+            border_width=1,
+            border_color=COLORS.BORDER_SUBTLE
         )
         self.btn_copy_ocr.pack(side=tk.LEFT, padx=5)
 
         self.btn_save_ocr = ctk.CTkButton(
-            controls_frame, text="💾 Salvar TXT",
+            controls_frame, text="💾 SAVE LOG",
             command=self._on_save_ocr_text,
-            width=120
+            width=120,
+            fg_color=COLORS.BG_MAIN,
+            hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS,
+            border_width=1,
+            border_color=COLORS.BORDER_SUBTLE
         )
         self.btn_save_ocr.pack(side=tk.LEFT, padx=5)
 
-    def _create_ai_agent_tab(self):
+    def _create_ai_agent_tab(self, parent):
         """Cria aba de interação com o Agente de IA com o Orb Pulsante"""
-        ai_frame = ctk.CTkFrame(self.results_notebook, fg_color="#0a0a0a")
-        self.results_notebook.add(ai_frame, text="🤖 IA Agent")
-
         # Top Section: Jarvis Orb
-        orb_container = ctk.CTkFrame(ai_frame, fg_color="transparent", height=200)
+        orb_container = ctk.CTkFrame(parent, fg_color="transparent", height=200)
         orb_container.pack(fill=tk.X, pady=20)
         
-        self.orb_canvas = tk.Canvas(orb_container, width=150, height=150, bg="#0a0a0a", highlightthickness=0)
+        self.orb_canvas = tk.Canvas(orb_container, width=150, height=150, bg=COLORS.BG_CARD, highlightthickness=0)
         self.orb_canvas.pack(pady=10)
         
         # Desenhar Orb Inicial
-        self.orb_color = self.PRIMARY_COLOR
+        self.orb_color = COLORS.PRIMARY
         self.orb_radius = 50
         self.orb_growth = 1
-        self.orb_id = self.orb_canvas.create_oval(25, 25, 125, 125, fill="", outline=self.PRIMARY_COLOR, width=2)
-        self.glow_id = self.orb_canvas.create_oval(10, 10, 140, 140, fill="", outline=self.PRIMARY_COLOR, width=1, dash=(4, 4))
+        self.orb_id = self.orb_canvas.create_oval(25, 25, 125, 125, fill="", outline=COLORS.PRIMARY, width=2)
+        self.glow_id = self.orb_canvas.create_oval(10, 10, 140, 140, fill="", outline=COLORS.PRIMARY, width=1, dash=(4, 4))
         
         self._animate_orb()
 
         # Histórico de Chat (Estilo futurista)
-        self.chat_history = ctk.CTkTextbox(ai_frame, wrap="word", state="disabled", fg_color="#101010", border_width=1, border_color="#1a1a1b", font=ctk.CTkFont(size=13))
+        self.chat_history = ctk.CTkTextbox(
+            parent, wrap="word", state="disabled", 
+            fg_color=COLORS.BG_MAIN, 
+            border_width=1, border_color=COLORS.BORDER_SUBTLE, 
+            font=ctk.CTkFont(family=FONTS.FAMILY, size=13)
+        )
         self.chat_history.pack(fill=tk.BOTH, expand=True, padx=30, pady=(10, 20))
 
         # Container de Entrada
-        input_frame = ctk.CTkFrame(ai_frame, fg_color="transparent")
+        input_frame = ctk.CTkFrame(parent, fg_color="transparent")
         input_frame.pack(fill=tk.X, padx=10, pady=5)
 
-        self.chat_input = ctk.CTkEntry(input_frame, placeholder_text="Digite um comando ou clique no microfone...")
+        self.chat_input = ctk.CTkEntry(
+            input_frame, placeholder_text="Awaiting command...",
+            fg_color=COLORS.BG_MAIN, border_color=COLORS.BORDER_SUBTLE,
+            text_color=COLORS.TEXT_MAIN
+        )
         self.chat_input.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         self.chat_input.bind("<Return>", lambda e: self._on_send_command())
 
         # Botão de Microfone (Jarvis)
-        self.btn_mic = ctk.CTkButton(input_frame, text="🎤", width=40, command=self._on_toggle_voice)
+        self.btn_mic = ctk.CTkButton(
+            input_frame, text="🎤", width=40, command=self._on_toggle_voice,
+            fg_color=COLORS.BG_MAIN, hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS, border_width=1, border_color=COLORS.BORDER_SUBTLE
+        )
         self.btn_mic.pack(side=tk.LEFT, padx=5)
 
-        self.btn_send = ctk.CTkButton(input_frame, text="Enviar", width=80, command=self._on_send_command)
+        self.btn_send = ctk.CTkButton(
+            input_frame, text="SEND", width=80, command=self._on_send_command,
+            fg_color=COLORS.PRIMARY, text_color=COLORS.BG_MAIN, hover_color=COLORS.PRIMARY_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS
+        )
         self.btn_send.pack(side=tk.RIGHT)
         
         # Registrar callback de voz
@@ -507,47 +633,47 @@ class MainWindow:
         elif state == "alert":
             self.orb_color = "#ff4b4b" # Red
         else:
-            self.orb_color = self.PRIMARY_COLOR # Blue
+            self.orb_color = COLORS.PRIMARY # Blue
 
-    def _create_gesture_tab(self):
+    def _create_gesture_tab(self, parent):
         """Cria aba de treinamento e visualização de gestos"""
-        gesture_frame = ctk.CTkFrame(self.results_notebook)
-        self.results_notebook.add(gesture_frame, text="🖖 Gestos")
-
         # Container principal
-        container = ctk.CTkFrame(gesture_frame, fg_color="transparent")
+        container = ctk.CTkFrame(parent, fg_color="transparent")
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Lado Esquerdo: Vídeo
-        video_frame = ctk.CTkFrame(container)
+        video_frame = ctk.CTkFrame(container, fg_color=COLORS.BG_MAIN, corner_radius=DIMENSIONS.CORNER_RADIUS)
         video_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
 
-        self.gesture_video_label = ctk.CTkLabel(video_frame, text="Câmera Desativada", font=ctk.CTkFont(size=16))
+        self.gesture_video_label = ctk.CTkLabel(video_frame, text="VISUAL SENSORS OFFLINE", font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=14), text_color=COLORS.TEXT_SUB)
         self.gesture_video_label.pack(fill=tk.BOTH, expand=True)
 
         # Lado Direito: Controles e Info
-        controls_frame = ctk.CTkFrame(container, width=250)
+        controls_frame = ctk.CTkFrame(container, width=250, fg_color="transparent")
         controls_frame.pack(side=tk.RIGHT, fill=tk.Y, padx=5)
         
-        ctk.CTkLabel(controls_frame, text="Status do Sistema", font=ctk.CTkFont(weight="bold")).pack(pady=10)
+        ctk.CTkLabel(controls_frame, text="SENSOR STATUS", font=ctk.CTkFont(family=FONTS.FAMILY_MONO, weight="bold"), text_color=COLORS.TEXT_MAIN).pack(pady=10)
         
-        self.lbl_gesture_status = ctk.CTkLabel(controls_frame, text="Último Gesto: Nenhum", font=ctk.CTkFont(size=14, weight="bold"))
+        self.lbl_gesture_status = ctk.CTkLabel(controls_frame, text="LAST INPUT: NONE", font=ctk.CTkFont(family=FONTS.FAMILY, size=14, weight="bold"), text_color=COLORS.PRIMARY)
         self.lbl_gesture_status.pack(pady=5)
 
-        ctk.CTkLabel(controls_frame, text="Gestos Ativos:", font=ctk.CTkFont(size=12)).pack(pady=(20, 5))
+        ctk.CTkLabel(controls_frame, text="ACTIVE GESTURES:", font=ctk.CTkFont(family=FONTS.FAMILY_MONO, size=12), text_color=COLORS.TEXT_SUB).pack(pady=(20, 5))
         gestures_info = [
-            "👍 Joinha: Enter / Confirmar",
-            "✋ Palma Aberta: Pause / Parar",
-            "✊ Punho: Scroll (Em breve)"
+            "👍 THUMB_UP: CONFIRM",
+            "✋ OPEN_PALM: HALT",
+            "✊ FIST: SCROLL (WIP)"
         ]
         text_info = "\n".join(gestures_info)
-        ctk.CTkTextbox(controls_frame, height=100).insert("0.0", text_info) # Apenas visual
+        ctk.CTkTextbox(controls_frame, height=100, fg_color=COLORS.BG_MAIN, text_color=COLORS.TEXT_SUB).insert("0.0", text_info) # Apenas visual
         
         # Switch para ativar visualização
         self.switch_camera_view = ctk.CTkSwitch(
             controls_frame, 
-            text="Ver Câmera (Debug)",
-            command=self._toggle_camera_view
+            text="Visual Debug",
+            command=self._toggle_camera_view,
+            progress_color=COLORS.PRIMARY,
+            button_color=COLORS.PRIMARY_HOVER,
+            button_hover_color=COLORS.PRIMARY_HOVER
         )
         self.switch_camera_view.pack(pady=20)
         self.switch_camera_view.select() # Já inicia ativado se possível
@@ -585,21 +711,18 @@ class MainWindow:
     def _update_gui_image(self, photo):
         self.gesture_video_label.configure(image=photo, text="")
         self.gesture_video_label.image = photo 
-
-    def _create_memories_tab(self):
+    
+    def _create_memories_tab(self, parent):
         """Cria aba de memórias neurais"""
-        memories_frame = ctk.CTkFrame(self.results_notebook)
-        self.results_notebook.add(memories_frame, text="🧠 Memórias")
-
         # Container
-        container = ctk.CTkFrame(memories_frame, fg_color="transparent")
+        container = ctk.CTkFrame(parent, fg_color="transparent")
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Title
-        ctk.CTkLabel(container, text="Memória Neural Semântica", font=ctk.CTkFont(size=16, weight="bold")).pack(pady=10)
+        ctk.CTkLabel(container, text="NEURAL SEMANTIC MEMORY", font=ctk.CTkFont(family=FONTS.FAMILY_DISPLAY, size=16, weight="bold"), text_color=COLORS.TEXT_MAIN).pack(pady=10)
 
         # Treeview para lições
-        columns = ("Gatilho", "Ação", "Data")
+        columns = ("TRIGGER", "ACTION", "TIMESTAMP")
         self.memories_tree = ttk.Treeview(container, columns=columns, show="headings", height=15)
         
         for col in columns:
@@ -609,7 +732,11 @@ class MainWindow:
         self.memories_tree.pack(fill=tk.BOTH, expand=True, pady=10)
         
         # Botão atualizar
-        ctk.CTkButton(container, text="Atualizar Memórias", command=self._refresh_memories).pack(pady=10)
+        ctk.CTkButton(
+            container, text="REFRESH KNOWLEDGE BASE", command=self._refresh_memories,
+            fg_color=COLORS.BG_MAIN, hover_color=COLORS.BG_CARD_HOVER,
+            corner_radius=DIMENSIONS.CORNER_RADIUS, border_width=1, border_color=COLORS.BORDER_SUBTLE
+        ).pack(pady=10)
         
     def _refresh_memories(self):
         """Atualiza lista de memórias"""

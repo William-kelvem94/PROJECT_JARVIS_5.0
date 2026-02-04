@@ -41,6 +41,7 @@ class AIAgent:
         # Persona Jarvis 2.0 (Elite Assistant)
         self.system_prompt = (
             "Você é o Jarvis, o assistente virtual de elite do William. "
+            f"Você está rodando em: {config.PROJECT_ROOT}. "
             "Você tem acesso total à visão dele (tela e câmera) e pode atuar fisicamente no sistema. "
             "Para executar ações físicas, VOCÊ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
             "Ações disponíveis: "
@@ -48,8 +49,11 @@ class AIAgent:
             "2. [ACTION: type_text('texto')] - Digita texto. "
             "3. [ACTION: press_key('tecla')] - Pressiona tecla (enter, esc, win). "
             "4. [ACTION: hotkey('ctrl', 'c')] - Atalho de teclado. "
-            "5. [ACTION: open_program('nome')] - Abre programa (via Win+R). "
-            "Sempre trate o William com respeito. Mantenha a imersão."
+            "5. [ACTION: open_program('nome')] - Abre programa. "
+            "6. [ACTION: read_file('path')] - Lê conteúdo de arquivo. "
+            "7. [ACTION: write_file('path', 'content')] - Cria/Edita arquivo (Use com cuidado!). "
+            "8. [ACTION: list_dir('path')] - Lista arquivos na pasta. "
+            "Sempre trate o William com respeito. Você agora tem permissão para se auto-desenvolver."
         )
         
         # ... (unchanged)
@@ -94,7 +98,21 @@ class AIAgent:
             elif current_provider == 'ollama' and self._check_ollama_alive():
                 response = self._call_ollama(enriched_command, screenshot_path)
             else:
+                # Tentativa Local
                 response = local_brain.generate_response(enriched_command, self.system_prompt)
+                
+                # Emergency Fallback if Local Brain fails too (e.g., missing libraries)
+                if "Erro" in response or "Transformers não instalado" in response:
+                    logger.warning("All AI Brains failed. Engaging Emergency Protocol.")
+                    response = (
+                        "Protocolo de Emergência Ativado.\n"
+                        "Meus processadores neurais primários e secundários (Nuvem/Local) estão inacessíveis.\n"
+                        "Por favor, verifique se:\n"
+                        "1. O servidor Ollama está rodando.\n"
+                        "2. A biblioteca 'transformers' e 'torch' estão instaladas para processamento local.\n"
+                        "3. A chave API do Gemini está configurada.\n\n"
+                        "No momento, estou operando em modo de diagnóstico limitado."
+                    )
             
             # --- PARSER DE AÇÕES ---
             action_executed = False
@@ -128,7 +146,60 @@ class AIAgent:
                         elif "hotkey" in action_str:
                             keys = re.findall(r"'(.*?)'", action_str)
                             if keys: action_controller.hotkey(*keys)
+                        
+                        # --- SELF-PROGRAMMING ACTIONS (Phase 31) ---
+                        elif "read_file" in action_str:
+                            path_match = re.search(r"read_file\('(.+?)'\)", action_str)
+                            if path_match:
+                                p = path_match.group(1)
+                                if security_manager.validate_file_action(p, 'read'):
+                                    try:
+                                        if os.path.exists(p):
+                                            with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+                                                content = f.read()
+                                            limit = 3000
+                                            snippet = content[:limit] + ("\n... (truncado)" if len(content) > limit else "")
+                                            enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}':\n```\n{snippet}\n```"
+                                        else:
+                                            enriched_command += f"\n\n[SISTEMA] Arquivo não encontrado: {p}"
+                                    except Exception as e:
+                                        enriched_command += f"\n\n[SISTEMA] Erro ao ler '{p}': {e}"
+                        
+                        elif "write_file" in action_str:
+                            # Formato: write_file('path', 'content')
+                            # Nota: Conteúdo complexo pode falhar no regex simples.
+                            # Recomendado para pequenos ajustes ou configs.
+                            args = re.search(r"write_file\('(.+?)',\s*'(.+?)'\)", action_str)
+                            if args:
+                                p, content = args.group(1), args.group(2)
+                                # Desescapar newlines se o LLM usar \n literal
+                                content = content.replace('\\n', '\n') 
+                                if security_manager.validate_file_action(p, 'write'):
+                                    try:
+                                        # Garantir diretório
+                                        os.makedirs(os.path.dirname(p), exist_ok=True)
+                                        with open(p, 'w', encoding='utf-8') as f:
+                                            f.write(content)
+                                        enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
+                                    except Exception as e:
+                                        enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
                             
+                                    except Exception as e:
+                                        enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
+                        
+                        elif "list_dir" in action_str:
+                             path_match = re.search(r"list_dir\('(.+?)'\)", action_str)
+                             if path_match:
+                                 p = path_match.group(1)
+                                 try:
+                                     if os.path.isdir(p):
+                                         items = os.listdir(p)
+                                         enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}': {items[:50]}"
+                                     else:
+                                         enriched_command += f"\n\n[SISTEMA] Diretório não encontrado: {p}"
+                                 except Exception as e:
+                                     enriched_command += f"\n\n[SISTEMA] Erro ao listar: {e}"
+
                         elif "open_program" in action_str:
                             prog = re.search(r"'(.*?)'", action_str)
                             if prog:

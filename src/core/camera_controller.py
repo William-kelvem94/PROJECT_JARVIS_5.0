@@ -51,6 +51,13 @@ class CameraController:
                 logger.warning("Modelo CNN solicitado mas rodando em CPU. Isso será LENTO. Recomendo HOG para CPU.")
                 self.face_detection_model = 'hog'
         
+        # Fallback mechanism: Load Haar Cascade
+        try:
+            self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        except Exception as e:
+            logger.warning(f"Erro ao carregar Haar Cascade: {e}")
+            self.face_cascade = None
+        
         # Callback para enviar vídeo para GUI (se necessário)
         self.on_frame_ready: Optional[Callable[[Any], None]] = None
         
@@ -97,10 +104,6 @@ class CameraController:
 
     def _monitor_loop(self):
         """Loop principal de visão"""
-        if not FACE_REC_AVAILABLE:
-            logger.error("FaceID indisponível. Encerrando thread de visão.")
-            return
-
         video_capture = cv2.VideoCapture(self.camera_index)
         
         if not video_capture.isOpened():
@@ -115,35 +118,69 @@ class CameraController:
                 time.sleep(1)
                 continue
 
-            # Processar apenas 1 a cada 5 frames para economizar CPU
-            if process_this_frame:
-                # Redimensionar para 1/4 para processamento rápido
-                small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                rgb_small_frame = small_frame[:, :, ::-1] # BGR to RGB
+            if not FACE_REC_AVAILABLE:
+                # Fallback: Haar Cascade Detection
+                if self.face_cascade:
+                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
+                    for (x, y, w, h) in faces:
+                        # Draw simple box
+                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                        cv2.putText(frame, "Human", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        
+                        if time.time() - self.last_seen_time > 60:
+                             logger.info("Presença humana detectada (Visual Básico)")
+                        
+                        self.last_seen_time = time.time()
+                        self.last_seen_user = "Human"
+                
+            else:
+                # Full Face Recognition logic
+                # Processar apenas 1 a cada 5 frames para economizar CPU
+                if process_this_frame:
+                    try:
+                        # Redimensionar para 1/4 para processamento rápido
+                        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+                        rgb_small_frame = small_frame[:, :, ::-1] # BGR to RGB
 
-                # Buscar faces
-                face_locations = face_recognition.face_locations(rgb_small_frame, model=self.face_detection_model)
-                face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                        # Buscar faces
+                        face_locations = face_recognition.face_locations(rgb_small_frame, model=self.face_detection_model)
+                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-                for face_encoding in face_encodings:
-                    matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                    name = "Desconhecido"
+                        for face_encoding, face_location in zip(face_encodings, face_locations):
+                            matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
+                            name = "Desconhecido"
 
-                    if True in matches:
-                        first_match_index = matches.index(True)
-                        name = self.known_face_names[first_match_index]
+                            if True in matches:
+                                first_match_index = matches.index(True)
+                                name = self.known_face_names[first_match_index]
 
-                    # Atualizar estado
-                    if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
-                        logger.info(f"Usuário visto: {name}")
-                        self.last_seen_user = name
-                    
-                    self.last_seen_time = time.time()
-                    
-                    # Detecção de Emoção (Phase 14)
-                    emotion_data = emotion_detector.detect_emotion_from_frame(frame)
-                    self.current_emotion = emotion_data['emotion']
-                    logger.debug(f"Emoção detectada para {name}: {self.current_emotion}")
+                            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
+                            top, right, bottom, left = face_location
+                            top *= 4
+                            right *= 4
+                            bottom *= 4
+                            left *= 4
+
+                            # Draw a box around the face
+                            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                            cv2.putText(frame, name, (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+
+                            # Atualizar estado
+                            if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
+                                logger.info(f"Usuário visto: {name}")
+                                self.last_seen_user = name
+                            
+                            self.last_seen_time = time.time()
+                            
+                            # Detecção de Emoção (Phase 14)
+                            emotion_data = emotion_detector.detect_emotion_from_frame(frame)
+                            self.current_emotion = emotion_data['emotion']
+                            logger.debug(f"Emoção detectada para {name}: {self.current_emotion}")
+                    except Exception as e:
+                        logger.error(f"Erro no processamento FaceID: {e}")
+
+            process_this_frame = not process_this_frame
             
             # Processamento de Gestos (Todo frame ou intercalado)
             try:
