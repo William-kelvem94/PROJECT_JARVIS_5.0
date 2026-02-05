@@ -1,0 +1,93 @@
+# Dados e arquivos temporários
+data/
+*.log
+*.tmp
+*.cache
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Configuração sensível
+.env
+config/secrets.yaml
+*.key
+*.pem
+
+# Modelos grandes
+models/*.pt
+!models/yolov8n.pt
+
+# Backup
+_backup_legacy/
+*.bak
+
+# Logs
+*.log
+jarvis.log
+jarvis_singularity.log
+
+# ChromaDB
+data/memory/chroma.sqlite3
+data/memory/*.parquet
+
+# Rclone
+data/sync/
+
+# Temporários
+data/temp/
+*.wav
+*.mp3
+*.png
+*.jpg
+*.jpeg
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Migration reports
+migration_report.json
