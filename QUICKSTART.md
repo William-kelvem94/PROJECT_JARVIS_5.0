@@ -1,157 +1,88 @@
-# 🚀 JARVIS SINGULARITY - Guia de Início Rápido
+# 🚀 JARVIS SINGULARITY - GUIA RÁPIDO
 
-## ⚡ Início em 3 Passos
+## ⚡ INÍCIO RÁPIDO
 
-### 1. Instalar Dependências
-```bash
-python -m pip install PyQt6
+### Duplo clique aqui:
 ```
-
-### 2. Executar JARVIS
-```bash
-python main_singularity.py
-```
-
-OU use o launcher:
-```bash
-JARVIS.bat
-```
-
-### 3. Usar
-- **HUD aparece**: Reator pulsante no canto inferior direito
-- **Diga "Jarvis"**: Wake word ativa o sistema
-- **Dê seu comando**: Sistema processa e responde
-- **HUD muda de cor**:
-  - 🟢 Verde = Escutando
-  - 🔵 Azul = Pensando
-  - 🟠 Laranja = Falando
-  - 🔴 Vermelho = Erro
-  - 🔵 Ciano = Idle
-
----
-
-## 🎯 O Que Foi Implementado
-
-### ✅ HUD Transparente
-- Overlay click-through (você pode clicar através dele)
-- Reator pulsante estilo Iron Man
-- Animação 60 FPS
-- Estados visuais dinâmicos
-
-### ✅ Integração com Código Existente
-- **AI Agent** (`src/core/ai_agent.py`) - Cérebro funcional
-- **Voice Controller** (`src/core/voice_controller.py`) - Wake word + comandos
-- **Camera Controller** (`src/core/camera_controller.py`) - FaceID (opcional)
-
-### ✅ Arquitetura Moderna
-- Threading para GUI + Brain separados
-- Asyncio para processamento assíncrono
-- Callbacks para eventos de voz
-- Logging completo
-
----
-
-## 📁 Estrutura
-
-```
-PROJECT_JARVIS_5.0/
-├── src/
-│   ├── interface/
-│   │   ├── hud.py              # HUD transparente ⭐ NOVO
-│   │   └── __init__.py
-│   ├── core/
-│   │   ├── ai_agent.py         # Cérebro (existente)
-│   │   ├── voice_controller.py # Voz (existente)
-│   │   └── ...
-│   └── ...
-│
-├── main_singularity.py         # Orquestrador ⭐ NOVO
-├── JARVIS.bat                  # Launcher
-└── config.yaml                 # Configuração
+JARVIS_SINGULARITY.bat
 ```
 
 ---
 
-## 🔧 Configuração (Opcional)
+## 🎤 MODO DE VOZ
 
-Edite `config.yaml` para adicionar API keys:
+1. **Aguarde** a mensagem: `🔊 Aguardando wake word 'Jarvis'...`
+2. **Diga**: "Jarvis"
+3. **HUD fica VERDE** (listening)
+4. **Fale seu comando**: Ex: "Qual é a capital do Brasil?"
+5. **HUD fica AZUL** (thinking)
+6. **Aguarde resposta** (5-30s)
+7. **Repita!**
 
-```yaml
-brain:
-  groq_api_key: "gsk_..."      # https://console.groq.com
-  gemini_api_key: "AI..."      # https://makersuite.google.com
-```
-
----
-
-## 🐛 Troubleshooting
-
-### "PyQt6 não encontrado"
-```bash
-python -m pip install PyQt6
-```
-
-### "Voice Controller não disponível"
-Verifique se as dependências de voz estão instaladas:
-```bash
-pip install SpeechRecognition pyaudio
-```
-
-### "HUD não aparece"
-1. Verifique se PyQt6 está instalado
-2. Execute com `python main_singularity.py`
-3. Veja logs em `jarvis_singularity.log`
-
-### "Wake word não funciona"
-1. Verifique microfone
-2. Veja logs para erros de áudio
-3. Teste com `python -c "import speech_recognition"`
+### Comandos de Teste
+- "Jarvis, que horas são?"
+- "Jarvis, abra o navegador"
+- "Jarvis, tire um screenshot"
 
 ---
 
-## 📊 Fluxo de Execução
+## 🎨 HUD - ESTADOS VISUAIS
 
-```
-1. main_singularity.py inicia
-   ↓
-2. HUD aparece (Thread Principal)
-   ↓
-3. Brain Loop inicia (Thread Secundária)
-   ↓
-4. Voice Controller inicia (Thread de Voz)
-   ↓
-5. Sistema escuta wake word
-   ↓
-6. Wake word detectado → HUD verde
-   ↓
-7. Comando recebido → HUD azul
-   ↓
-8. AI Agent processa → HUD laranja
-   ↓
-9. Resposta completa → HUD ciano
-```
+| Cor | Estado | Quando |
+|-----|--------|--------|
+| **CINZA** (pulsando) | IDLE | Aguardando wake word |
+| **VERDE** (sólido) | LISTENING | Capturando voz |
+| **AZUL** (pulsando) | THINKING | Processando AI |
+| **VERDE** (sólido) | SPEAKING | Falando resposta |
+| **VERMELHO** | ERROR | Erro detectado |
 
 ---
 
-## 🎮 Próximos Passos
+## 📹 VISÃO (Camera)
 
-1. ✅ **Testar HUD**: Execute e veja o reator
-2. ✅ **Testar Voice**: Diga "Jarvis" e dê um comando
-3. ⏭️ **Adicionar TTS**: Resposta falada
-4. ⏭️ **Integrar Hive Mind**: Sync entre dispositivos
-5. ⏭️ **Adicionar mais features**: Gestos, automação, etc.
+**SIM!** O JARVIS pode te ver se você tiver webcam:
+- ✅ Detecção de presença
+- ✅ Reconhecimento facial (se `face_recognition` instalado)
+- ✅ Análise de contexto visual
 
----
-
-## 💡 Dicas
-
-- **HUD sempre visível**: Fica por cima de todas as janelas
-- **Click-through**: Você pode clicar através do HUD
-- **Performance**: Animação otimizada para 60 FPS
-- **Logs**: Veja `jarvis_singularity.log` para debug
+**Ativar visão em comandos:**
+- "Jarvis, o que você está vendo?"
+- "Jarvis, descreva a tela"
+- "Jarvis, tire uma foto"
 
 ---
 
-**Sistema pronto para uso!** 🎉
+## 🛑 ENCERRAR
 
-Execute `python main_singularity.py` e comece a interagir com JARVIS!
+- **Ctrl+C** no terminal
+- **Fechar janela** do HUD
+- **Dizer**: "sair" (modo texto)
+
+**NOTA**: Agora encerra em 2-3 segundos (corrigido!)
+
+---
+
+## ❌ TROUBLESHOOTING
+
+### "Voice mode não implementado"
+→ Você rodou o arquivo ANTIGO
+→ **SOLUÇÃO**: Execute `JARVIS_SINGULARITY.bat` ou `py main_singularity.py`
+
+### Processo trava ao encerrar
+→ **CORRIGIDO!** Agora força exit após 2-3s
+
+### Sem resposta de voz
+→ Verifique microfone
+→ Diga "Jarvis" mais alto
+→ Fallback: use modo texto (digite comandos)
+
+### HUD não aparece
+→ Verifique se PyQt6 está instalado: `py -m pip install PyQt6`
+
+---
+
+## 📊 LOGS
+
+Verifique erros em:
+- `jarvis_singularity.log`
+- Console do terminal

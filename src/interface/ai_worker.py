@@ -106,11 +106,20 @@ class AIWorker(QThread):
         """
         Solicita parada da thread (graceful shutdown).
         
-        NOTA: ai_agent.process_command() não tem mecanismo de cancelamento.
-        Esta flag apenas previne novos comandos.
+        IMPORTANTE: Força terminação se thread não parar em 2s
         """
+        print("🛑 Parando AIWorker...")
         self._is_running = False
-        self.wait(5000)  # Aguarda até 5s para thread terminar
+        
+        # Aguardar thread terminar (máximo 2s)
+        if self.isRunning():
+            print("   Aguardando thread terminar...")
+            if not self.wait(2000):  # 2 segundos
+                print("   ⚠️ Thread não parou, forçando terminação...")
+                self.terminate()  # Força terminação
+                self.wait(500)  # Aguarda mais 500ms
+        
+        print("   ✅ AIWorker parado")
     
     # -------------------------------------------------------------------------
     # THREAD EXECUTION
