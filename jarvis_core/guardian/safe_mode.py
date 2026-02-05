@@ -1,11 +1,12 @@
 """
-Guardian - Safe Mode
-Modo de recuperação sem GUI/voz
+Safe Mode - Modo de recuperação do JARVIS
+Executa diagnósticos e tenta recuperar o sistema
 """
 
 import logging
 import sys
 from pathlib import Path
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -120,8 +121,6 @@ class SafeMode:
         
         logger.error(f"💥 Crash #{self.crash_count} registrado")
 
-
-from typing import Dict
 
 # Instância global
 safe_mode = SafeMode()

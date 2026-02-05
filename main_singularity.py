@@ -1,326 +1,251 @@
 """
-JARVIS SINGULARITY - Main Orchestrator
-Entry point único do sistema
+JARVIS SINGULARITY - Orquestrador Completo
+Integra HUD Transparente + AI Agent + Voice Controller
 """
 
-import asyncio
-import logging
 import sys
-import signal
+import asyncio
+import threading
+import logging
 from pathlib import Path
-import yaml
 
-# Setup logging
+# Adicionar src ao path
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+from PyQt6.QtWidgets import QApplication
+from src.interface.hud import JarvisHUD
+
+# Importar componentes existentes
+try:
+    from src.core.ai_agent import AIAgent
+    AI_AGENT_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"AI Agent não disponível: {e}")
+    AI_AGENT_AVAILABLE = False
+
+try:
+    from src.core.voice_controller import voice_controller
+    VOICE_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Voice Controller não disponível: {e}")
+    VOICE_AVAILABLE = False
+
+try:
+    from src.core.camera_controller import camera_controller
+    CAMERA_AVAILABLE = True
+except ImportError as e:
+    logging.warning(f"Camera Controller não disponível: {e}")
+    CAMERA_AVAILABLE = False
+
+# Configuração de Logs
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('jarvis_singularity.log'),
-        logging.StreamHandler()
+        logging.FileHandler('jarvis_singularity.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
+logger = logging.getLogger("JARVIS_SINGULARITY")
 
-logger = logging.getLogger(__name__)
 
-class JarvisSingularity:
-    """Orquestrador principal"""
+class SingularityCore:
+    """
+    Núcleo do JARVIS Singularity
+    Gerencia HUD + AI Agent + Voice em threads separadas
+    """
     
-    def __init__(self, config_path: str = "config.yaml"):
-        self.config = self._load_config(config_path)
-        self.running = False
-        self.modules = {}
+    def __init__(self):
+        logger.info("🚀 Inicializando JARVIS Singularity...")
         
-        logger.info("="*60)
-        logger.info("  JARVIS SINGULARITY - INICIANDO")
-        logger.info("="*60)
-    
-    def _load_config(self, config_path: str) -> dict:
-        """Carrega configuração"""
-        try:
-            with open(config_path) as f:
-                config = yaml.safe_load(f)
-            logger.info(f"✅ Config carregado: {config_path}")
-            return config
-        except Exception as e:
-            logger.error(f"❌ Erro ao carregar config: {e}")
-            return {}
-    
-    async def initialize(self):
-        """Inicializa todos os módulos"""
-        logger.info("\n🚀 INICIALIZANDO MÓDULOS...")
+        # GUI (Thread Principal - obrigatório no Windows)
+        self.app = QApplication(sys.argv)
+        self.hud = JarvisHUD()
         
-        # 1. Hive Mind
-        if self.config.get('hive_mind', {}).get('enabled', True):
-            await self._init_hive_mind()
+        # Cérebro (AI Agent existente)
+        if AI_AGENT_AVAILABLE:
+            try:
+                self.brain = AIAgent(provider='gemini')
+                logger.info("✅ AI Agent carregado")
+            except Exception as e:
+                logger.error(f"❌ Erro ao carregar AI Agent: {e}")
+                self.brain = None
+        else:
+            self.brain = None
+            logger.warning("⚠️ Rodando sem AI Agent")
         
-        # 2. Brain
-        await self._init_brain()
+        # Voice Controller
+        self.voice = voice_controller if VOICE_AVAILABLE else None
         
-        # 3. Senses
-        await self._init_senses()
+        # Camera Controller
+        self.camera = camera_controller if CAMERA_AVAILABLE else None
         
-        # 4. Mouth
-        await self._init_mouth()
-        
-        # 5. World
-        if self.config.get('world', {}).get('fauxmo_enabled', False):
-            await self._init_world()
-        
-        # 6. Interface
-        if self.config.get('interface', {}).get('hud_enabled', True):
-            await self._init_interface()
-        
-        # 7. Guardian
-        if self.config.get('guardian', {}).get('watchdog_enabled', True):
-            await self._init_guardian()
-        
-        logger.info("\n✅ TODOS OS MÓDULOS INICIALIZADOS!\n")
-    
-    async def _init_hive_mind(self):
-        """Inicializa Hive Mind"""
-        logger.info("🌐 Inicializando Hive Mind...")
-        
-        try:
-            from jarvis_core.hive_mind import rclone_sync, hybrid_memory, LockfileManager
-            
-            # Sync inicial
-            await rclone_sync.startup_sync()
-            
-            # Lockfile
-            device_id = self.config.get('device_id', 'unknown')
-            lockfile = LockfileManager(device_id)
-            await lockfile.acquire_lock()
-            
-            self.modules['hive_mind'] = {
-                'rclone': rclone_sync,
-                'memory': hybrid_memory,
-                'lockfile': lockfile
-            }
-            
-            logger.info("  ✅ Hive Mind pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Hive Mind: {e}")
-    
-    async def _init_brain(self):
-        """Inicializa Brain"""
-        logger.info("🧠 Inicializando Brain...")
-        
-        try:
-            from jarvis_core.brain import get_router, context_manager, dev_buddy
-            
-            # Neural Router
-            groq_key = self.config.get('brain', {}).get('groq_api_key')
-            gemini_key = self.config.get('brain', {}).get('gemini_api_key')
-            
-            router = get_router(groq_key, gemini_key)
-            
-            self.modules['brain'] = {
-                'router': router,
-                'context': context_manager,
-                'dev_buddy': dev_buddy
-            }
-            
-            logger.info("  ✅ Brain pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Brain: {e}")
-    
-    async def _init_senses(self):
-        """Inicializa Senses"""
-        logger.info("👁️ Inicializando Senses...")
-        
-        try:
-            from jarvis_core.senses import neural_touch, action_dispatcher
-            from jarvis_core.senses.vision_hybrid import vision_system
-            from jarvis_core.senses.hearing import hearing
-            from jarvis_core.senses.screen_monitor import screen_monitor
-            
-            self.modules['senses'] = {
-                'touch': neural_touch,
-                'dispatcher': action_dispatcher,
-                'vision': vision_system,
-                'hearing': hearing,
-                'monitor': screen_monitor
-            }
-            
-            logger.info("  ✅ Senses pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Senses: {e}")
-    
-    async def _init_mouth(self):
-        """Inicializa Mouth"""
-        logger.info("🗣️ Inicializando Mouth...")
-        
-        try:
-            from jarvis_core.mouth import get_tts, BargeIn
-            from jarvis_core.mouth.voice_modulation import voice_modulation
-            
-            # TTS
-            engine = self.config.get('mouth', {}).get('tts_engine', 'edge')
-            voice = self.config.get('mouth', {}).get('voice', 'pt-BR-FranciscaNeural')
-            
-            tts = get_tts(engine, voice)
-            
-            # Barge-in
-            barge_in = BargeIn(tts)
-            
-            self.modules['mouth'] = {
-                'tts': tts,
-                'barge_in': barge_in,
-                'modulation': voice_modulation
-            }
-            
-            logger.info("  ✅ Mouth pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Mouth: {e}")
-    
-    async def _init_world(self):
-        """Inicializa World"""
-        logger.info("🏠 Inicializando World...")
-        
-        try:
-            from jarvis_core.world import alexa_bridge
-            from jarvis_core.world.tuya_control import smart_home
-            from jarvis_core.world.automation_scenes import automation_scenes
-            
-            # Fauxmo
-            alexa_bridge.start_server()
-            
-            self.modules['world'] = {
-                'alexa': alexa_bridge,
-                'smart_home': smart_home,
-                'scenes': automation_scenes
-            }
-            
-            logger.info("  ✅ World pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro World: {e}")
-    
-    async def _init_interface(self):
-        """Inicializa Interface"""
-        logger.info("🖥️ Inicializando Interface...")
-        
-        try:
-            from jarvis_core.interface import get_hud
-            from jarvis_core.interface.orb_animation import orb_animation
-            from jarvis_core.interface.targeting_system import targeting_system
-            from jarvis_core.interface.notification_system import notification_system
-            from jarvis_core.interface.theme_manager import theme_manager
-            
-            # HUD
-            transparency = self.config.get('interface', {}).get('transparency', 0.9)
-            hud = get_hud(transparency)
-            
-            self.modules['interface'] = {
-                'hud': hud,
-                'orb': orb_animation,
-                'targeting': targeting_system,
-                'notifications': notification_system,
-                'themes': theme_manager
-            }
-            
-            logger.info("  ✅ Interface pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Interface: {e}")
-    
-    async def _init_guardian(self):
-        """Inicializa Guardian"""
-        logger.info("🛡️ Inicializando Guardian...")
-        
-        try:
-            from jarvis_core.guardian import system_watchdog, privacy_filter
-            from jarvis_core.guardian.safe_mode import safe_mode
-            from jarvis_core.guardian.health_monitor import health_monitor
-            from jarvis_core.guardian.error_recovery import error_recovery
-            
-            self.modules['guardian'] = {
-                'watchdog': system_watchdog,
-                'privacy': privacy_filter,
-                'safe_mode': safe_mode,
-                'health': health_monitor,
-                'recovery': error_recovery
-            }
-            
-            logger.info("  ✅ Guardian pronto")
-        except Exception as e:
-            logger.error(f"  ❌ Erro Guardian: {e}")
-    
-    async def run(self):
-        """Loop principal"""
         self.running = True
+        self.wake_word_active = False
+
+    def on_wake_detected(self):
+        """Callback quando wake word é detectado"""
+        logger.info("🎤 Wake Word detectado!")
+        self.hud.update_state("listening")
         
-        logger.info("\n" + "="*60)
-        logger.info("  JARVIS SINGULARITY ONLINE")
-        logger.info("="*60 + "\n")
+        # Obter usuário da câmera (se disponível)
+        if self.camera:
+            user_name = self.camera.last_seen_user
+            if user_name:
+                logger.info(f"👤 Usuário identificado: {user_name}")
         
-        # Notificação de startup
-        if 'interface' in self.modules:
-            self.modules['interface']['notifications'].success("JARVIS Singularity Online!")
+        # Escutar comando
+        if self.voice:
+            self.voice.listen_once(on_command=self.on_command_received)
+
+    def on_command_received(self, command_text: str):
+        """Callback quando comando de voz é recebido"""
+        logger.info(f"💬 Comando recebido: {command_text}")
+        self.hud.update_state("thinking")
+        
+        # Processar com AI Agent
+        if self.brain:
+            try:
+                # Executar em thread separada para não bloquear
+                threading.Thread(
+                    target=self._process_command,
+                    args=(command_text,),
+                    daemon=True
+                ).start()
+            except Exception as e:
+                logger.error(f"❌ Erro ao processar comando: {e}")
+                self.hud.update_state("error")
+        else:
+            logger.warning("⚠️ AI Agent não disponível")
+            self.hud.update_state("error")
+
+    def _process_command(self, command_text: str):
+        """Processa comando em thread separada"""
+        try:
+            # Processar com AI Agent
+            self.brain.process_command(command_text)
+            
+            # Voltar para idle
+            self.hud.update_state("idle")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro no processamento: {e}")
+            self.hud.update_state("error")
+
+    async def brain_loop(self):
+        """
+        Loop de processamento assíncrono do Cérebro
+        """
+        logger.info("🧠 Cérebro Iniciado (Loop Assíncrono)")
+        
+        # Inicialização
+        self.hud.update_state("thinking")
+        await asyncio.sleep(2)
+        
+        # Iniciar câmera (se disponível)
+        if self.camera:
+            try:
+                logger.info("📷 Iniciando Camera Controller...")
+                self.camera.start_monitoring()
+                logger.info("✅ Camera Controller ativo")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao iniciar câmera: {e}")
+        
+        # Iniciar voice controller (se disponível)
+        if self.voice:
+            try:
+                logger.info("🎤 Iniciando Voice Controller...")
+                self.hud.update_state("listening")
+                
+                # Iniciar escuta de wake word em thread separada
+                voice_thread = threading.Thread(
+                    target=self._start_voice_listening,
+                    daemon=True,
+                    name="VoiceThread"
+                )
+                voice_thread.start()
+                logger.info("✅ Voice Controller ativo")
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao iniciar voz: {e}")
+        
+        self.hud.update_state("idle")
+        logger.info("✅ Sistema ONLINE")
         
         # Loop principal
+        while self.running:
+            try:
+                # Manter loop vivo
+                await asyncio.sleep(0.1)
+                
+            except Exception as e:
+                logger.error(f"❌ Erro no loop neural: {e}")
+                self.hud.update_state("error")
+                await asyncio.sleep(1)
+
+    def _start_voice_listening(self):
+        """Inicia escuta de wake word em thread separada"""
         try:
-            while self.running:
-                # Heartbeat sync
-                if 'hive_mind' in self.modules:
-                    await self.modules['hive_mind']['rclone'].heartbeat_sync()
-                
-                # Health check
-                if 'guardian' in self.modules:
-                    health = self.modules['guardian']['health'].get_full_status()
-                    if health['health_score'] < 50:
-                        logger.warning(f"⚠️ Saúde baixa: {health['health_score']}/100")
-                
-                await asyncio.sleep(300)  # 5 minutos
-                
-        except KeyboardInterrupt:
-            logger.info("\n⚠️ Interrupção detectada...")
+            if self.voice:
+                logger.info("👂 Escutando wake word...")
+                self.voice.listen_for_wake_word(on_wake=self.on_wake_detected)
+        except Exception as e:
+            logger.error(f"❌ Erro na escuta de voz: {e}")
+
+    def start(self):
+        """
+        Inicia o sistema completo
+        - GUI na Thread Principal
+        - Cérebro em Thread Secundária (asyncio)
+        """
+        logger.info("🎯 Iniciando Protocolo Singularity...")
+        
+        # Criar loop de eventos para o cérebro numa thread separada
+        brain_thread = threading.Thread(
+            target=self._run_async_loop,
+            daemon=True,
+            name="BrainThread"
+        )
+        brain_thread.start()
+        logger.info("🧵 Brain Thread iniciada")
+        
+        # GUI assume o controle da Thread Principal (Obrigatório no Windows)
+        logger.info("🖥️ Iniciando HUD...")
+        sys.exit(self.app.exec())
+
+    def _run_async_loop(self):
+        """Executa loop assíncrono em thread separada"""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            loop.run_until_complete(self.brain_loop())
+        except Exception as e:
+            logger.error(f"❌ Erro fatal no brain loop: {e}")
         finally:
-            await self.shutdown()
-    
-    async def shutdown(self):
-        """Desligamento gracioso"""
-        logger.info("\n🛑 DESLIGANDO JARVIS SINGULARITY...")
-        
+            loop.close()
+
+    def shutdown(self):
+        """Desliga o sistema gracefully"""
+        logger.info("🛑 Desligando JARVIS...")
         self.running = False
-        
-        # Sync final
-        if 'hive_mind' in self.modules:
-            await self.modules['hive_mind']['rclone'].shutdown_sync()
-            await self.modules['hive_mind']['lockfile'].release_lock()
-        
-        logger.info("✅ Shutdown completo\n")
+        self.app.quit()
 
 
-async def main():
-    """Entry point"""
-    # Verificar argumentos
-    safe_mode_arg = "--safe-mode" in sys.argv
-    
-    if safe_mode_arg:
-        logger.warning("🛡️ INICIANDO EM SAFE MODE")
-        from jarvis_core.guardian.safe_mode import safe_mode
-        safe_mode.enter_safe_mode()
-    
-    # Criar e executar
-    jarvis = JarvisSingularity()
-    
-    # Signal handlers
-    def signal_handler(sig, frame):
-        logger.info("\n⚠️ Signal recebido, desligando...")
-        asyncio.create_task(jarvis.shutdown())
-    
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    # Inicializar e executar
-    await jarvis.initialize()
-    await jarvis.run()
-
-
-if __name__ == "__main__":
+def main():
+    """Entry point principal"""
     try:
-        asyncio.run(main())
+        core = SingularityCore()
+        core.start()
+    except KeyboardInterrupt:
+        logger.info("⚠️ Interrompido pelo usuário")
+        sys.exit(0)
     except Exception as e:
-        logger.error(f"💥 ERRO FATAL: {e}")
+        logger.error(f"❌ Erro fatal: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
