@@ -117,20 +117,21 @@ class NeuralRouter:
             return "Groq API key não configurada"
         
         try:
-            from groq import Groq
+            from jarvis_core.brain.groq_client import get_groq_client
             
-            if not self._groq_client:
-                self._groq_client = Groq(api_key=self.groq_key)
+            client = get_groq_client(self.groq_key)
             
-            response = self._groq_client.chat.completions.create(
-                model="llama3-70b-8192",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-                max_tokens=1024
-            )
+            if not client.client:
+                return "Groq client não disponível"
             
-            self.metrics["groq_calls"] += 1
-            return response.choices[0].message.content
+            response = client.chat([{"role": "user", "content": prompt}])
+            
+            if response:
+                self.metrics["groq_calls"] += 1
+                return response
+            else:
+                return "Erro ao chamar Groq"
+                
         except Exception as e:
             logger.error(f"❌ Erro Groq: {e}")
             return f"Erro Groq: {str(e)}"
@@ -141,17 +142,22 @@ class NeuralRouter:
             return "Gemini API key não configurada"
         
         try:
-            import google.generativeai as genai
+            from jarvis_core.brain.gemini_client import get_gemini_client
             
-            genai.configure(api_key=self.gemini_key)
+            client = get_gemini_client(self.gemini_key)
+            
+            if not client.genai:
+                return "Gemini client não disponível"
             
             model_name = "gemini-1.5-flash" if model_type == ModelType.GEMINI_FLASH else "gemini-1.5-pro"
-            model = genai.GenerativeModel(model_name)
+            response = client.chat(prompt, model_name)
             
-            response = model.generate_content(prompt)
-            
-            self.metrics["gemini_calls"] += 1
-            return response.text
+            if response:
+                self.metrics["gemini_calls"] += 1
+                return response
+            else:
+                return "Erro ao chamar Gemini"
+                
         except Exception as e:
             logger.error(f"❌ Erro Gemini: {e}")
             return f"Erro Gemini: {str(e)}"
@@ -162,18 +168,21 @@ class NeuralRouter:
             return "Gemini API key não configurada"
         
         try:
-            import google.generativeai as genai
-            from PIL import Image
+            from jarvis_core.brain.gemini_client import get_gemini_client
             
-            genai.configure(api_key=self.gemini_key)
+            client = get_gemini_client(self.gemini_key)
             
-            model = genai.GenerativeModel('gemini-1.5-pro')
-            image = Image.open(image_path)
+            if not client.genai:
+                return "Gemini client não disponível"
             
-            response = model.generate_content([prompt, image])
+            response = client.vision(prompt, image_path)
             
-            self.metrics["gemini_calls"] += 1
-            return response.text
+            if response:
+                self.metrics["gemini_calls"] += 1
+                return response
+            else:
+                return "Erro ao chamar Gemini Vision"
+                
         except Exception as e:
             logger.error(f"❌ Erro Gemini Vision: {e}")
             return f"Erro Gemini Vision: {str(e)}"
