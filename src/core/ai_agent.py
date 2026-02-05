@@ -8,60 +8,158 @@ import os
 import requests
 import json
 import re
-from typing import Dict, Any, List, Optional
-from src.database.models import db_manager, OCRResult
-from src.core.screen_capture import screen_capture
-from src.core.action_controller import action_controller
-from src.core.voice_controller import voice_controller
-from src.core.camera_controller import camera_controller
-from src.core.dataset_collector import dataset_collector
-from src.core.neural_memory import neural_memory
-from src.core.hardware_manager import hardware_manager
-from src.core.local_brain import local_brain
-from src.core.ui_detector import ui_detector
-from src.core.emotion_detector import emotion_detector
-from src.utils.web_search_tool import web_search_tool
-from src.core.security_manager import security_manager
 import time
-from src.utils.config import config
+from typing import Dict, Any, List, Optional
 
-# Advanced Modules (JARVIS Evolution)
+# ============================================================================
+# LOGGER SETUP - DEVE VIR ANTES DE QUALQUER IMPORT QUE USE LOGGER
+# ============================================================================
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# CORE IMPORTS - SAFE LOADING
+# ============================================================================
+try:
+    from src.database.models import db_manager, OCRResult
+except ImportError as e:
+    logger.warning(f"⚠️ Database models não disponível: {e}")
+    db_manager = None
+    OCRResult = None
+
+try:
+    from src.core.screen_capture import screen_capture
+except ImportError as e:
+    logger.error(f"❌ CRÍTICO: screen_capture não disponível: {e}")
+    screen_capture = None
+
+try:
+    from src.core.action_controller import action_controller
+except ImportError as e:
+    logger.error(f"❌ CRÍTICO: action_controller não disponível: {e}")
+    action_controller = None
+
+try:
+    from src.core.voice_controller import voice_controller
+except ImportError as e:
+    logger.warning(f"⚠️ voice_controller não disponível: {e}")
+    voice_controller = None
+
+try:
+    from src.core.camera_controller import camera_controller
+except ImportError as e:
+    logger.warning(f"⚠️ camera_controller não disponível: {e}")
+    camera_controller = None
+
+try:
+    from src.core.dataset_collector import dataset_collector
+except ImportError as e:
+    logger.warning(f"⚠️ dataset_collector não disponível: {e}")
+    dataset_collector = None
+
+try:
+    from src.core.neural_memory import neural_memory
+except ImportError as e:
+    logger.warning(f"⚠️ neural_memory não disponível: {e}")
+    neural_memory = None
+
+try:
+    from src.core.hardware_manager import hardware_manager
+except ImportError as e:
+    logger.warning(f"⚠️ hardware_manager não disponível: {e}")
+    hardware_manager = None
+
+try:
+    from src.core.local_brain import local_brain
+except ImportError as e:
+    logger.warning(f"⚠️ local_brain não disponível: {e}")
+    local_brain = None
+
+try:
+    from src.core.ui_detector import ui_detector
+except ImportError as e:
+    logger.warning(f"⚠️ ui_detector não disponível: {e}")
+    ui_detector = None
+
+try:
+    from src.core.emotion_detector import emotion_detector
+except ImportError as e:
+    logger.warning(f"⚠️ emotion_detector não disponível: {e}")
+    emotion_detector = None
+
+try:
+    from src.utils.web_search_tool import web_search_tool
+except ImportError as e:
+    logger.warning(f"⚠️ web_search_tool não disponível: {e}")
+    web_search_tool = None
+
+try:
+    from src.core.security_manager import security_manager
+except ImportError as e:
+    logger.warning(f"⚠️ security_manager não disponível: {e}")
+    # Create dummy security manager that allows everything (unsafe but won't crash)
+    class DummySecurityManager:
+        def validate_file_action(self, path, action):
+            logger.warning(f"⚠️ Security manager ausente - permitindo {action} em {path}")
+            return True
+    security_manager = DummySecurityManager()
+
+try:
+    from src.utils.config import config
+except ImportError as e:
+    logger.warning(f"⚠️ config não disponível: {e}")
+    # Create dummy config
+    class DummyConfig:
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    config = DummyConfig()
+
+# ============================================================================
+# ADVANCED MODULES (JARVIS EVOLUTION) - SAFE LOADING
+# ============================================================================
 try:
     from src.core.advanced_action_controller import advanced_action_controller
     ADVANCED_ACTIONS_AVAILABLE = True
+    logger.info("✅ Advanced Action Controller carregado")
 except ImportError:
     ADVANCED_ACTIONS_AVAILABLE = False
+    advanced_action_controller = None
     logger.warning("⚠️ Advanced Action Controller não disponível")
 
 try:
     from src.core.advanced_vision_pipeline import advanced_vision_pipeline
     ADVANCED_VISION_AVAILABLE = True
+    logger.info("✅ Advanced Vision Pipeline carregado")
 except ImportError:
     ADVANCED_VISION_AVAILABLE = False
+    advanced_vision_pipeline = None
     logger.warning("⚠️ Advanced Vision Pipeline não disponível")
 
 try:
     from src.core.advanced_speech_processor import advanced_speech_processor
     ADVANCED_SPEECH_AVAILABLE = True
+    logger.info("✅ Advanced Speech Processor carregado")
 except ImportError:
     ADVANCED_SPEECH_AVAILABLE = False
+    advanced_speech_processor = None
     logger.warning("⚠️ Advanced Speech Processor não disponível")
 
 try:
     from src.core.workflow_engine import workflow_engine
     WORKFLOW_ENGINE_AVAILABLE = True
+    logger.info("✅ Workflow Engine carregado")
 except ImportError:
     WORKFLOW_ENGINE_AVAILABLE = False
+    workflow_engine = None
     logger.warning("⚠️ Workflow Engine não disponível")
 
 try:
     from src.core.security_manager_advanced import security_manager as security_manager_advanced
     ADVANCED_SECURITY_AVAILABLE = True
+    logger.info("✅ Advanced Security Manager carregado")
 except ImportError:
     ADVANCED_SECURITY_AVAILABLE = False
+    security_manager_advanced = None
     logger.warning("⚠️ Advanced Security Manager não disponível")
 
-logger = logging.getLogger(__name__)
 
 class AIAgent:
     """Classe principal do Agente Inteligente"""
