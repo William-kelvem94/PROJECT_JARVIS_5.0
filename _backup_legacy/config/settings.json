@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Jarvis 5.0",
+    "version": "5.0.0",
+    "language": "pt-BR",
+    "theme": "dark"
+  },
+  "capture": {
+    "default_format": "PNG",
+    "quality": 95,
+    "hotkey": "ctrl+shift+s",
+    "auto_save": true,
+    "capture_delay": 0.5
+  },
+  "ocr": {
+    "engine": "tesseract",
+    "languages": [
+      "por",
+      "eng"
+    ],
+    "confidence_threshold": 60,
+    "preprocessing": true,
+    "post_correction": true
+  },
+  "processing": {
+    "max_workers": 4,
+    "batch_size": 10,
+    "timeout": 30,
+    "retry_attempts": 3
+  },
+  "storage": {
+    "auto_organize": true,
+    "compression": true,
+    "encryption": false,
+    "retention_days": 365
+  },
+  "analysis": {
+    "enable_ai": true,
+    "categorization": true,
+    "entity_extraction": true,
+    "sentiment_analysis": false
+  },
+  "interface": {
+    "minimize_to_tray": true,
+    "show_notifications": true,
+    "auto_start": false,
+    "check_updates": true
+  }
+}

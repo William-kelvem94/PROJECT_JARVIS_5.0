@@ -1,293 +1,345 @@
-# 🤖 JARVIS IA 5.0 - Assistente IA Local Gratuito
+# 🤖 JARVIS 5.0 - Just A Rather Very Intelligent System
 
-<div align="center">
+> Assistente de IA avançado com visão computacional, reconhecimento de voz e automação inteligente
 
-![JARVIS](https://img.shields.io/badge/JARVIS-5.0-blue?style=for-the-badge)
-![Ollama](https://img.shields.io/badge/Ollama-Local-green?style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge)
-
-**Assistente de IA 100% Local, Gratuito e Profissional**
-
-[🚀 Instalação Rápida](#-instalação-rápida) • [📖 Documentação](docs/INSTALL.md) • [🎯 Uso](#-como-usar)
-
-</div>
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Active-success.svg)]()
 
 ---
 
-## ✨ Características
+## ⚡ Início Rápido
 
-- ✅ **100% Local** - Tudo roda na sua máquina, sem dependências de APIs externas
-- ✅ **Gratuito** - Usa modelos open-source gratuitos via Ollama
-- ✅ **Docker Ready** - Inicia tudo com um comando
-- ✅ **Múltiplos Modelos** - Suporte para codellama, deepseek-coder, llama2, mistral e mais
-- ✅ **Interface Web Moderna** - Chat em tempo real via WebSocket
-- ✅ **API REST Completa** - Integre com qualquer aplicação
-- ✅ **Plugins Modulares** - Sistema extensível de plugins
-- ✅ **Produção Ready** - Pronto para deploy
-
----
-
-## 🚀 Instalação Rápida
-
-### Pré-requisitos
-
-1. **Docker Desktop** - [Download](https://www.docker.com/products/docker-desktop)
-2. **Ollama** (opcional, se não usar Docker) - [Download](https://ollama.com/download)
-
-### Iniciar com Docker (Recomendado)
-
-```powershell
-# Clonar repositório (se aplicável)
-git clone <seu-repositorio>
-
-# Iniciar tudo
-docker-compose -f docker/docker-compose.yml up -d
-
-# Acessar interface
-# http://localhost:8000
-```
-
-### Instalação Manual
-
-```powershell
-# 1. Instalar Ollama
-# Baixe: https://ollama.com/download/OllamaSetup.exe
-
-# 2. Baixar modelos
-ollama pull codellama:7b
-ollama pull deepseek-coder:6.7b
-
-# 3. Instalar dependências Python
-pip install -r requirements.txt
-
-# 4. Iniciar servidor
-python -m uvicorn core.main:app --reload
-```
-
-**📖 Veja o [Guia Completo de Instalação](docs/INSTALL.md)**
-
----
-
-## 🎯 Como Usar
-
-### Interface Web
-
-1. Acesse: http://localhost:8000
-2. Digite sua mensagem
-3. Receba resposta em tempo real
-
-### API REST
+### Windows
 
 ```bash
-# Status do sistema
-curl http://localhost:8000/api/status
+# Clique duplo no arquivo:
+JARVIS.bat
 
-# Chat
-curl -X POST http://localhost:8000/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Olá, JARVIS!"}'
+# OU execute no terminal:
+.\JARVIS.bat
 ```
 
-### WebSocket
+### Modo Automático (Recomendado)
 
-```javascript
-const ws = new WebSocket('ws://localhost:8000/ws');
-ws.onmessage = (e) => console.log(e.data);
-ws.send('Olá, JARVIS!');
+O launcher detecta e resolve automaticamente:
+- ✅ Verifica Python instalado
+- ✅ Instala PyQt6 se necessário
+- ✅ Inicia HUD transparente
+- ✅ Ativa reconhecimento de voz
+
+---
+
+## 🎯 O Que é JARVIS?
+
+JARVIS é um assistente de IA inspirado no sistema da Marvel, com:
+
+- 🧠 **Cérebro Híbrido**: Groq (Llama 3) + Gemini (Google)
+- 👁️ **Visão Computacional**: OCR, detecção de objetos, análise de tela
+- 🎤 **Reconhecimento de Voz**: Wake word + comandos naturais
+- 🗣️ **Síntese de Voz**: Respostas faladas naturais
+- 🖥️ **HUD Transparente**: Interface estilo Iron Man
+- 🤖 **Automação**: Controle de sistema e aplicativos
+- 📷 **FaceID**: Reconhecimento facial
+- 🌐 **Hive Mind**: Sincronização entre dispositivos (opcional)
+
+---
+
+## 🚀 Funcionalidades
+
+### Interface Visual
+- **HUD Transparente**: Overlay estilo Iron Man com reator pulsante
+- **Estados Visuais**: Verde (escutando), Azul (pensando), Laranja (falando)
+- **Click-Through**: Você pode clicar através do HUD
+
+### Interação por Voz
+```
+Você: "Jarvis"
+JARVIS: [HUD fica verde] "Pois não?"
+Você: "Abra o Chrome"
+JARVIS: [HUD fica azul, processa, abre Chrome]
+```
+
+### Visão Computacional
+- Captura de tela inteligente
+- OCR (Tesseract + EasyOCR)
+- Detecção de objetos (YOLO)
+- Análise de interface
+
+### Automação
+- Controle de mouse e teclado
+- Abertura de programas
+- Manipulação de arquivos
+- Execução de workflows
+
+---
+
+## 📋 Pré-requisitos
+
+- **Python 3.10+**
+- **Windows 10/11** (para UI Automation)
+- **Microfone** (para comandos de voz)
+- **Webcam** (opcional, para FaceID)
+
+---
+
+## 🔧 Instalação
+
+### 1. Clone o Repositório
+```bash
+git clone https://github.com/seu-usuario/PROJECT_JARVIS_5.0.git
+cd PROJECT_JARVIS_5.0
+```
+
+### 2. Execute o Launcher
+```bash
+JARVIS.bat
+```
+
+O launcher instala automaticamente todas as dependências necessárias.
+
+### 3. Configure (Opcional)
+
+Edite `config.yaml` para adicionar suas API keys:
+
+```yaml
+brain:
+  groq_api_key: "gsk_..."      # https://console.groq.com
+  gemini_api_key: "AI..."      # https://makersuite.google.com
 ```
 
 ---
 
-## 📦 Modelos Suportados
+## 💻 Como Usar
 
-### Para Programação
-- `codellama:7b` - Melhor para código Python, JavaScript
-- `deepseek-coder:6.7b` - Especializado em programação
-- `starcoder:1b` - Leve e rápido
+### Interface Gráfica (HUD)
+```bash
+python main_singularity.py
+```
 
-### Para Conversação
-- `llama2:7b` - Modelo geral versátil
-- `mistral:7b` - Conversacional e rápido
-- `neural-chat:7b` - Focado em diálogo
+**O que acontece:**
+1. HUD transparente aparece no canto inferior direito
+2. Reator pulsante indica status do sistema
+3. Sistema escuta "Jarvis" como wake word
+4. Dê seu comando e veja o HUD reagir
 
-### Download Rápido
+### Comandos de Voz
 
-```powershell
-.\scripts\setup-ollama.ps1
+```
+"Jarvis, abra o navegador"
+"Jarvis, qual é a hora?"
+"Jarvis, tire uma screenshot"
+"Jarvis, leia o que está na tela"
+"Jarvis, execute o código"
+```
+
+### Linha de Comando (Avançado)
+
+```bash
+# Captura de tela completa
+python legacy/main.py capture
+
+# Captura de área específica
+python legacy/main.py capture --area 100,100,800,600 --process
+
+# Processar imagem existente
+python legacy/main.py process --input imagem.png --analyze
+
+# Processamento em lote
+python legacy/main.py batch --input-dir ./imagens/
 ```
 
 ---
 
-## 🏗️ Estrutura do Projeto
+## 🏗️ Arquitetura
 
 ```
 PROJECT_JARVIS_5.0/
-├── core/               # Lógica principal
-│   ├── main.py        # Servidor FastAPI
-│   ├── jarvis.py      # Classe principal
-│   ├── local_llm.py   # Integração Ollama
-│   └── config.py      # Configurações
-├── plugins/            # Plugins modulares
-├── web/                # Interface web
-├── config/             # Arquivos de configuração
-├── scripts/            # Scripts utilitários
-├── docs/               # Documentação
-├── docker/             # Arquivos Docker
-│   ├── docker-compose.yml
-│   └── Dockerfile
-└── requirements.txt    # Dependências Python
+├── src/                        # Código fonte
+│   ├── interface/             # HUD e interface visual
+│   │   └── hud.py            # HUD transparente ⭐
+│   ├── core/                  # Módulos principais
+│   │   ├── ai_agent.py       # Cérebro (Groq + Gemini)
+│   │   ├── voice_controller.py # Reconhecimento de voz
+│   │   ├── screen_capture.py  # Captura de tela
+│   │   ├── ocr_processor.py   # OCR
+│   │   ├── action_controller.py # Automação
+│   │   └── camera_controller.py # FaceID
+│   ├── database/              # Persistência
+│   └── utils/                 # Utilitários
+│
+├── jarvis_core/               # Sistema modular (Singularity)
+│   ├── brain/                # Cérebro híbrido
+│   ├── senses/               # Visão + Audição
+│   ├── mouth/                # TTS
+│   ├── hive_mind/            # Sync distribuído
+│   ├── world/                # IoT
+│   ├── interface/            # HUD
+│   └── guardian/             # Segurança
+│
+├── legacy/                    # Sistema antigo (preservado)
+├── data/                      # Dados e cache
+├── config.yaml               # Configuração
+├── main_singularity.py       # Entry point ⭐
+└── JARVIS.bat                # Launcher ⭐
 ```
 
 ---
 
-## ⚙️ Configuração
+## 🎨 Estados do HUD
 
-### `config/config.json`
+| Cor | Estado | Significado |
+|-----|--------|-------------|
+| 🔵 Ciano | Idle | Sistema online, aguardando |
+| 🟢 Verde | Listening | Escutando comando |
+| 🔵 Azul | Thinking | Processando |
+| 🟠 Laranja | Speaking | Falando |
+| 🔴 Vermelho | Error | Erro detectado |
 
-```json
-{
-  "llm_provider": "ollama",
-  "ollama_base_url": "http://localhost:11434",
-  "ollama_model": "codellama:7b",
-  "voice_api": "local",
-  "web_interface": true
-}
-```
+---
 
-### Variáveis de Ambiente
+## ⚙️ Configuração Avançada
 
-```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=codellama:7b
-LLM_PROVIDER=ollama
+### API Keys
+
+```yaml
+brain:
+  router: "auto"              # auto, groq, gemini
+  groq_api_key: ""           # Groq API
+  gemini_api_key: ""         # Gemini API
+
+hive_mind:
+  enabled: false             # Sync entre dispositivos
+  remote_name: "gdrive"
+  remote_path: "JARVIS_Hive"
+
+interface:
+  hud_enabled: true
+  transparency: 0.9
+  orb_color: "#00D9FF"
+
+guardian:
+  watchdog_enabled: true
+  safe_mode_threshold: 3
+  privacy_filter: true
 ```
 
 ---
 
-## 🔧 Comandos Úteis
+## 🧪 Testes
 
-### Docker
+```bash
+# Testar HUD
+python src/interface/hud.py
 
-```powershell
-# Iniciar
-docker-compose -f docker/docker-compose.yml up -d
+# Testar Voice Controller
+python -c "from src.core.voice_controller import voice_controller; voice_controller.speak('Teste')"
 
-# Parar
-docker-compose -f docker/docker-compose.yml down
-
-# Ver logs
-docker-compose -f docker/docker-compose.yml logs -f jarvis
-
-# Reconstruir com otimizações
-.\scripts\docker-rebuild.ps1
-
-# Monitorar performance
-.\scripts\docker-monitor.ps1
+# Testar AI Agent
+python -c "from src.core.ai_agent import ai_agent; ai_agent.process_command('Olá')"
 ```
-
-### Ollama
-
-```powershell
-# Listar modelos
-ollama list
-
-# Baixar modelo
-ollama pull codellama:7b
-
-# Remover modelo
-ollama rm codellama:7b
-```
-
----
-
-## 🎨 Recursos
-
-- ✅ Chat em tempo real
-- ✅ API REST completa
-- ✅ WebSocket para comunicação bidirecional
-- ✅ Gerenciamento de modelos
-- ✅ Suporte a plugins
-- ✅ Interface web responsiva
-- ✅ Logs detalhados
-
----
-
-## 📊 Requisitos
-
-### Mínimo
-- RAM: 8GB
-- Disco: 10GB
-- CPU: Dual-core 2GHz+
-
-### Recomendado
-- RAM: 16GB+
-- Disco: 20GB+
-- CPU: Quad-core 3GHz+
-- GPU: NVIDIA 6GB+ VRAM (opcional, acelera muito)
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Ollama não conecta
-```powershell
-# Verificar se está rodando
-curl http://localhost:11434/api/tags
-
-# Reiniciar
-ollama serve
+### PyQt6 não encontrado
+```bash
+python -m pip install PyQt6
 ```
 
-### Docker não inicia
-```powershell
-# Ver logs
-docker-compose logs -f
-
-# Reconstruir
-docker-compose -f docker/docker-compose.yml up --build -d
+### Voice não funciona
+```bash
+pip install SpeechRecognition pyaudio
 ```
 
-**Veja mais em [INSTALL.md](docs/INSTALL.md#-troubleshooting)**
+### HUD não aparece
+1. Verifique se PyQt6 está instalado
+2. Veja logs em `jarvis_singularity.log`
+3. Execute com privilégios de administrador
+
+### Wake word não detecta
+1. Verifique microfone
+2. Ajuste sensibilidade em `config.yaml`
+3. Teste com `python -c "import speech_recognition"`
 
 ---
 
 ## 📚 Documentação
 
-- [Guia Completo de Instalação](docs/INSTALL.md)
-- [Otimizações de Performance](docs/PERFORMANCE.md)
-- [API Documentation](http://localhost:8000/docs) (após iniciar)
-- [Modelos Disponíveis](docs/README_MODELS.md)
+- [**QUICKSTART.md**](QUICKSTART.md) - Guia de início rápido
+- [**HOW_TO_START.md**](HOW_TO_START.md) - Instruções detalhadas
+- [**Walkthrough**](file:///C:/Users/willi/.gemini/antigravity/brain/9976850e-9bb7-4c9e-b7f2-cf4ba8a4e2b7/walkthrough.md) - Implementação completa
 
 ---
 
-## 🤝 Contribuindo
+## 🤝 Contribuição
 
-Contribuições são bem-vindas! Sinta-se livre para:
-- Reportar bugs
-- Sugerir features
-- Enviar pull requests
+Contribuições são bem-vindas!
+
+1. Fork o projeto
+2. Crie uma branch (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
+5. Abra um Pull Request
 
 ---
 
-## 📄 Licença
+## 📝 Licença
 
-Este projeto é open-source e gratuito para uso pessoal e comercial.
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ---
 
 ## 🙏 Agradecimentos
 
-- **Ollama** - Por tornar IA local acessível
-- **FastAPI** - Framework web moderno
-- **Comunidade Open Source** - Por todos os modelos disponíveis
+- **Tesseract OCR** - Engine OCR
+- **Google Gemini** - IA avançada
+- **Groq** - Inferência rápida
+- **PyQt6** - Interface gráfica
+- **OpenCV** - Processamento de imagens
+- **spaCy** - NLP
+- **Whisper** - Transcrição de voz
 
 ---
 
-<div align="center">
+## 🔄 Roadmap
 
-**Desenvolvido com ❤️ usando tecnologias Open Source**
+### ✅ Implementado
+- [x] HUD transparente estilo Iron Man
+- [x] Reconhecimento de voz (wake word)
+- [x] AI Agent (Groq + Gemini)
+- [x] Visão computacional
+- [x] Automação de sistema
+- [x] FaceID
+- [x] Arquitetura modular
 
-[⭐ Dê uma estrela se gostou!](#)
+### 🚧 Em Desenvolvimento
+- [ ] TTS aprimorado
+- [ ] Hive Mind (sync entre dispositivos)
+- [ ] Controle por gestos
+- [ ] Workflows complexos
+- [ ] Integração com IoT
 
-</div>
+### 🔮 Futuro
+- [ ] Suporte Linux/macOS
+- [ ] App móvel
+- [ ] Interface web
+- [ ] Plugins de terceiros
+- [ ] Marketplace de skills
+
+---
+
+## 📞 Suporte
+
+- 🐛 **Issues**: [GitHub Issues](https://github.com/seu-usuario/PROJECT_JARVIS_5.0/issues)
+- 💬 **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/PROJECT_JARVIS_5.0/discussions)
+- 📖 **Wiki**: [Documentação Completa](https://github.com/seu-usuario/PROJECT_JARVIS_5.0/wiki)
+
+---
+
+## ⭐ Star este repositório se achou útil!
+
+**JARVIS 5.0** - Seu assistente de IA pessoal está pronto para uso! 🚀
+
+Execute `JARVIS.bat` e comece a interagir!
