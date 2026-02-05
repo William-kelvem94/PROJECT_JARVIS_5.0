@@ -1,295 +1,257 @@
-# 📦 Guia de Instalação - Leitor de Tela Inteligente
+# 🚀 JARVIS 5.0 - Guia de Instalação
 
-Este guia fornece instruções detalhadas para instalar e configurar o Leitor de Tela Inteligente no Windows.
+## 📋 Requisitos do Sistema
 
-## 📋 Pré-requisitos do Sistema
+### Mínimo
+- **SO**: Windows 10/11 (64-bit)
+- **Python**: 3.10 ou superior
+- **RAM**: 4 GB
+- **Espaço**: 2 GB livre
+- **Microfone**: Para comandos de voz
+- **Webcam**: Opcional (para FaceID)
 
-### Requisitos Mínimos
-- **Sistema Operacional:** Windows 10 ou superior
-- **Processador:** Dual-core 2.5GHz ou superior
-- **Memória RAM:** 4GB (8GB recomendado)
-- **Espaço em Disco:** 500MB para instalação + espaço para dados
-- **Python:** 3.9 ou superior
+### Recomendado
+- **SO**: Windows 11
+- **Python**: 3.11+
+- **RAM**: 8 GB ou mais
+- **GPU**: NVIDIA (para aceleração)
+- **SSD**: Para melhor performance
 
-### Requisitos Recomendados
-- **Sistema Operacional:** Windows 11
-- **Processador:** Quad-core ou superior
-- **Memória RAM:** 8GB ou mais
-- **Espaço em Disco:** 2GB ou mais
-- **GPU:** Para aceleração de OCR (opcional)
+---
 
-## 🔧 Instalação do Python
+## 🔧 Instalação Rápida
 
-### Verificar Python Instalado
+### Método 1: Launcher Automático (Recomendado)
+
+1. **Clone o repositório**
 ```bash
-python --version
-# ou
-python3 --version
+git clone https://github.com/seu-usuario/PROJECT_JARVIS_5.0.git
+cd PROJECT_JARVIS_5.0
 ```
 
-Se Python não estiver instalado ou for uma versão inferior a 3.9, faça o download em:
-https://www.python.org/downloads/
-
-### Durante a Instalação do Python
-✅ **Marque a opção:** "Add Python to PATH"
-✅ **Selecione:** "Install for all users" (recomendado)
-✅ **Marque:** "Install launcher for all users"
-
-## 📥 Instalação do Leitor de Tela
-
-### Método 1: Instalação Automática (Recomendado)
-
+2. **Execute o launcher**
 ```bash
-# 1. Clonar ou baixar o repositório
-git clone https://github.com/username/leitor-tela.git
-cd leitor-tela
-
-# 2. Criar ambiente virtual (recomendado)
-python -m venv venv
-venv\Scripts\activate
-
-# 3. Instalar dependências
-pip install -r requirements.txt
-
-# 4. Instalar aplicação
-pip install -e .
+JARVIS.bat
 ```
+
+Pronto! O launcher instala tudo automaticamente.
+
+---
 
 ### Método 2: Instalação Manual
 
+1. **Clone o repositório**
 ```bash
-# 1. Baixar e extrair o código fonte
-
-# 2. Instalar dependências básicas
-pip install pillow mss pyautogui sqlalchemy customtkinter
-
-# 3. Instalar dependências de OCR
-pip install pytesseract easyocr opencv-python
-
-# 4. Instalar dependências de processamento
-pip install pandas numpy spacy
+git clone https://github.com/seu-usuario/PROJECT_JARVIS_5.0.git
+cd PROJECT_JARVIS_5.0
 ```
 
-## 🔍 Instalação de Dependências Opcionais
+2. **Instale Python 3.10+**
+- Download: https://www.python.org/downloads/
+- ⚠️ Marque "Add Python to PATH"
 
-### Tesseract OCR (Altamente Recomendado)
-
-O Tesseract é o engine OCR principal e fornece melhor qualidade de extração de texto.
-
+3. **Instale dependências**
 ```bash
-# 1. Baixar instalador do Tesseract
-# Acesse: https://github.com/UB-Mannheim/tesseract/wiki
+# Dependências essenciais
+python -m pip install PyQt6
 
-# 2. Durante instalação, selecione:
-# - Linguagem: Portuguese
-# - Instalar no caminho padrão
-
-# 3. Verificar instalação
-tesseract --version
-```
-
-### Modelo de Linguagem Portuguesa (spaCy)
-
-Melhora o processamento de linguagem natural em português.
-
-```bash
-# Instalar modelo
-python -m spacy download pt_core_news_sm
-
-# Verificar instalação
-python -c "import spacy; nlp = spacy.load('pt_core_news_sm'); print('Modelo carregado com sucesso!')"
-```
-
-### PyTorch com CUDA (GPU)
-
-Para aceleração de OCR com GPU (opcional, requer GPU NVIDIA).
-
-```bash
-# Instalar PyTorch com CUDA
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-
-# Verificar instalação
-python -c "import torch; print('CUDA disponível:', torch.cuda.is_available())"
-```
-
-## 🧪 Verificação da Instalação
-
-Execute os testes para verificar se tudo está funcionando:
-
-```bash
-# Executar testes básicos
-python -m pytest tests/ -v
-
-# Ou testar manualmente
-python -c "
-from src.utils.config import config
-from src.core.ocr_processor import ocr_processor
-print('Configuração:', config.get_setting('app.name'))
-print('Engines OCR disponíveis:', ocr_processor.get_available_engines())
-print('Instalação OK!')
-"
-```
-
-## 🚀 Primeiro Uso
-
-### Interface Gráfica
-```bash
-# Executar aplicação
-python main.py
-
-# Ou após instalação completa:
-leitor-tela
-```
-
-### Linha de Comando
-```bash
-# Testar captura básica
-python main.py capture
-
-# Ver ajuda
-python main.py --help
-```
-
-## ⚙️ Configuração Inicial
-
-### Arquivo de Configurações
-
-Após primeira execução, o arquivo `config/settings.json` será criado. Principais configurações:
-
-```json
-{
-  "app": {
-    "theme": "dark",
-    "language": "pt-BR"
-  },
-  "capture": {
-    "hotkey": "ctrl+shift+s",
-    "default_format": "PNG",
-    "quality": 95
-  },
-  "ocr": {
-    "engine": "tesseract",
-    "languages": ["por", "eng"],
-    "confidence_threshold": 60
-  }
-}
-```
-
-### Atalhos de Teclado
-
-- **Ctrl+N:** Nova captura
-- **Ctrl+O:** Abrir imagem
-- **Ctrl+E:** Exportar dados
-- **Ctrl+S:** Salvar
-- **F5:** Atualizar lista
-
-## 🔧 Solução de Problemas
-
-### Problema: "ModuleNotFoundError"
-```
+# Dependências completas
 pip install -r requirements.txt
 ```
 
-### Problema: "Tesseract not found"
+4. **Execute JARVIS**
 ```bash
-# Instalar Tesseract e verificar PATH
-tesseract --version
-
-# Ou especificar caminho manualmente em config/settings.json
-"tesseract": {
-  "path": "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-}
+python main_singularity.py
 ```
 
-### Problema: "CUDA not available"
+---
+
+## 📦 Dependências
+
+### Essenciais (Auto-instaladas)
+```
+PyQt6>=6.0.0          # Interface HUD
+```
+
+### Core (requirements.txt)
+```
+numpy<2
+opencv-python
+SpeechRecognition
+pyttsx3
+edge-tts
+pygame
+psutil
+pyaudio
+mss
+sqlalchemy
+pillow
+pytesseract
+vosk
+```
+
+### Avançadas (requirements_advanced.txt)
+```
+torch>=2.0.0
+transformers>=4.30.0
+easyocr>=1.7.0
+openai-whisper>=20231117
+google-generativeai>=0.3.0
+ultralytics>=8.0.0
+```
+
+---
+
+## ⚙️ Configuração
+
+### 1. API Keys (Opcional)
+
+Edite `config.yaml`:
+
+```yaml
+brain:
+  groq_api_key: "gsk_..."      # https://console.groq.com
+  gemini_api_key: "AI..."      # https://makersuite.google.com
+```
+
+### 2. Configurações de Voz
+
+```yaml
+senses:
+  hearing_model: "base"        # tiny, base, small, medium, large
+
+mouth:
+  tts_engine: "edge"          # edge, xtts
+  voice: "pt-BR-FranciscaNeural"
+```
+
+### 3. Interface
+
+```yaml
+interface:
+  hud_enabled: true
+  transparency: 0.9
+  orb_color: "#00D9FF"
+```
+
+---
+
+## 🐛 Solução de Problemas
+
+### Python não encontrado
 ```bash
-# Instalar versão CPU do PyTorch
-pip uninstall torch torchvision
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+# Verifique instalação
+python --version
+
+# Se não funcionar, tente:
+py --version
+
+# Reinstale Python de python.org
 ```
 
-### Problema: "Permission denied"
+### PyQt6 falha ao instalar
 ```bash
-# Executar como administrador ou verificar permissões das pastas
-# data/, config/, docs/
+# Atualize pip
+python -m pip install --upgrade pip
+
+# Instale PyQt6
+python -m pip install PyQt6
+
+# Se falhar, instale wheel primeiro
+python -m pip install wheel
+python -m pip install PyQt6
 ```
 
-### Problema: Interface não abre
+### PyAudio falha (Windows)
 ```bash
-# Verificar se todas as dependências de GUI estão instaladas
-pip install customtkinter pystray
+# Baixe wheel pré-compilado:
+# https://www.lfd.uci.edu/~gohlke/pythonlibs/#pyaudio
 
-# Verificar se há erros no console
-python main.py 2>&1
+# Instale o arquivo .whl baixado:
+pip install PyAudio‑0.2.11‑cp310‑cp310‑win_amd64.whl
 ```
 
-## 📁 Estrutura de Diretórios Após Instalação
-
-```
-LEITOR-TELA/
-├── src/                    # Código fonte
-├── data/                   # Dados da aplicação (criado automaticamente)
-│   ├── captures/          # Screenshots
-│   ├── processed/         # Dados processados
-│   ├── exports/           # Arquivos exportados
-│   └── database.db        # Banco de dados
-├── config/                 # Configurações (criado automaticamente)
-│   └── settings.json      # Configurações do usuário
-├── venv/                   # Ambiente virtual (se criado)
-├── __pycache__/           # Cache Python
-└── ...                    # Outros arquivos
-```
-
-## 🔄 Atualização
-
-Para atualizar para uma nova versão:
-
+### Face Recognition falha
 ```bash
-# Parar aplicação se estiver rodando
+# Requer CMake e dlib
+# Veja: docs/install_face_recognition.md
 
-# Fazer backup de dados importantes
-cp config/settings.json config/settings.json.backup
-cp data/database.db data/database.db.backup
-
-# Atualizar código
-git pull origin main
-
-# Atualizar dependências
-pip install -r requirements.txt --upgrade
-
-# Testar
-python -m pytest tests/
+# Ou desabilite em config.yaml:
+# (Face recognition é opcional)
 ```
 
-## 🆘 Suporte
+### Erro de encoding (emojis)
+✅ Já corrigido em `main_singularity.py`
+- UTF-8 configurado automaticamente
 
-Se encontrar problemas durante a instalação:
+---
 
-1. Verifique os logs em `leitor_tela.log`
-2. Execute `python main.py --debug` para mais informações
-3. Abra uma issue no GitHub com:
-   - Versão do Python
-   - Sistema operacional
-   - Logs de erro completos
-   - Passos para reproduzir o problema
+## 🧪 Verificação da Instalação
 
-## ✅ Verificação Final
-
-Para confirmar que tudo está funcionando:
-
+### Teste 1: Python
 ```bash
-# 1. Executar aplicação
-python main.py
-
-# 2. Testar captura básica
-# Pressione o botão "Capturar Tela"
-
-# 3. Verificar se arquivo foi criado em data/captures/
-
-# 4. Testar processamento
-# Selecione a captura e clique em "Processar"
-
-# 5. Verificar dados extraídos na aba "Dados Extraídos"
+python --version
+# Deve mostrar: Python 3.10.x ou superior
 ```
 
-🎉 **Instalação concluída! O Leitor de Tela Inteligente está pronto para uso.**
+### Teste 2: PyQt6
+```bash
+python -c "from PyQt6.QtWidgets import QApplication; print('PyQt6 OK')"
+```
+
+### Teste 3: Voice
+```bash
+python -c "import speech_recognition; print('Voice OK')"
+```
+
+### Teste 4: HUD
+```bash
+python src/interface/hud.py
+# Deve aparecer reator pulsante
+```
+
+### Teste 5: Sistema Completo
+```bash
+python main_singularity.py
+# Deve iniciar HUD + Voice + AI
+```
+
+---
+
+## 📁 Estrutura Pós-Instalação
+
+```
+PROJECT_JARVIS_5.0/
+├── data/                   # Criado automaticamente
+│   ├── captures/
+│   ├── processed/
+│   └── database.db
+├── logs/                   # Criado automaticamente
+│   └── jarvis_singularity.log
+└── config.yaml            # Suas configurações
+```
+
+---
+
+## 🚀 Próximos Passos
+
+1. ✅ Instalação completa
+2. ⏭️ Configure API keys (opcional)
+3. ⏭️ Execute `JARVIS.bat`
+4. ⏭️ Teste dizendo "Jarvis"
+5. ⏭️ Leia [HOW_TO_START.md](../HOW_TO_START.md)
+
+---
+
+## 💡 Dicas
+
+- **Primeira execução**: Pode demorar (download de modelos)
+- **GPU**: Detectada automaticamente se disponível
+- **Offline**: Funciona sem API keys (IA local)
+- **Logs**: Veja `jarvis_singularity.log` para debug
+
+---
+
+**Instalação concluída!** 🎉
+
+Execute `JARVIS.bat` para começar!

@@ -1,236 +1,246 @@
-# 🚀 Primeiros Passos - Leitor de Tela Inteligente
+# 🎯 JARVIS 5.0 - Primeiros Passos
 
-Bem-vindo ao Leitor de Tela Inteligente! Este guia irá ajudá-lo a começar a usar a ferramenta rapidamente.
+## 🚀 Início em 30 Segundos
 
-## 📋 O que é o Leitor de Tela?
-
-O Leitor de Tela é uma ferramenta que **lê a tela do seu computador** e **extrai dados inteligentes** de qualquer conteúdo visual. Ideal para:
-
-- 📄 **Digitalizar documentos** sem scanner
-- 📊 **Extrair dados** de sistemas antigos
-- 🧾 **Ler notas fiscais** e recibos
-- 📝 **Capturar formulários** preenchidos
-- 📈 **Analisar relatórios** automaticamente
-
-**Funciona 100% local** - seus dados nunca saem do seu computador!
-
-## 🎯 Seu Primeiro Uso
-
-### 1. Iniciar a Aplicação
-
+1. **Execute o launcher**
 ```bash
-# Interface gráfica (recomendado)
-python main.py
-
-# Ou linha de comando
-python main.py --help
+JARVIS.bat
 ```
 
-### 2. Fazer Primeira Captura
+2. **Aguarde HUD aparecer**
+- Reator pulsante ciano no canto inferior direito
 
-1. **Abra a aplicação**
-2. **Clique no botão** 📸 **"Capturar Tela"**
-3. **Selecione a área** da tela que contém dados
-4. **Aguarde** o processamento automático
+3. **Diga "Jarvis"**
+- HUD fica verde
 
-### 3. Ver Resultados
-
-Após a captura, você verá:
-- **Imagem capturada** na aba "Visualização"
-- **Texto extraído** na aba "OCR"
-- **Dados organizados** na aba "Dados Extraídos"
-
-## 📸 Como Capturar Dados
-
-### Captura Básica
-
-1. **Posicione** o conteúdo na tela
-2. **Clique** 📸 **"Capturar Tela"**
-3. **Aguarde** o processamento (alguns segundos)
-
-### Captura de Área Específica
-
-1. **Clique** 🎯 **"Selecionar Área"**
-2. **Clique e arraste** para selecionar a região
-3. **Solte** para confirmar
-
-### Captura Automática
-
-```bash
-# Captura a cada 30 segundos por 5 minutos
-python main.py capture --timer 30 --max-captures 10 --process
+4. **Dê um comando**
+```
+"Abra o navegador"
+"Qual é a hora?"
+"Tire uma screenshot"
 ```
 
-## 🔍 Entendendo os Resultados
-
-### Aba "Visualização"
-- Mostra a **imagem capturada**
-- Permite **visualizar** o que foi lido
-
-### Aba "OCR"
-- Contém o **texto bruto** extraído
-- Permite **copiar** ou **salvar** o texto
-- Mostra **qualidade** da extração
-
-### Aba "Dados Extraídos"
-- **Dados inteligentes** encontrados
-- **Campos estruturados** (CPF, valores, datas)
-- **Categoria** do documento
-- **Confiança** de cada extração
-
-## 💾 Exportando Dados
-
-### Formatos Disponíveis
-
-1. **JSON** - Dados estruturados completos
-2. **CSV** - Planilha simples
-3. **Excel** - Planilha avançada
-4. **PDF** - Relatório formatado
-5. **TXT** - Texto puro
-
-### Como Exportar
-
-1. **Selecione** uma captura processada
-2. **Clique** 💾 **"Exportar"**
-3. **Escolha** o formato desejado
-4. **Salve** no local preferido
-
-## 🛠️ Exemplos Práticos
-
-### Exemplo 1: Extrair dados de uma nota fiscal
-
-```bash
-# 1. Abra o PDF da NF na tela
-# 2. Capture a área da NF
-python main.py capture --process --analyze
-
-# Resultado: Dados estruturados da nota fiscal
-```
-
-### Exemplo 2: Digitalizar formulários
-
-```bash
-# Processar múltiplos formulários
-python main.py batch --input-dir ./formularios/ --analyze --export --format excel
-```
-
-### Exemplo 3: Monitorar dados em tempo real
-
-```bash
-# Captura automática para dashboards
-python main.py capture --timer 60 --window "Dashboard" --process --export --format json
-```
-
-## ⚙️ Configurações Essenciais
-
-### Tema da Interface
-```json
-{
-  "interface": {
-    "theme": "dark"
-  }
-}
-```
-
-### Qualidade de Captura
-```json
-{
-  "capture": {
-    "quality": 95,
-    "format": "PNG"
-  }
-}
-```
-
-### Engine OCR
-```json
-{
-  "ocr": {
-    "engine": "tesseract",
-    "languages": ["por", "eng"]
-  }
-}
-```
-
-## 🔧 Solução de Problemas Comuns
-
-### "Texto não foi extraído corretamente"
-- ✅ Verifique se a imagem está nítida
-- ✅ Aumente o zoom da tela
-- ✅ Use o engine EasyOCR: `"ocr": {"engine": "easyocr"}`
-
-### "Captura não funcionou"
-- ✅ Feche outras aplicações que usam captura de tela
-- ✅ Execute como administrador
-- ✅ Verifique se há antivírus bloqueando
-
-### "Aplicação não abre"
-- ✅ Verifique se Python está no PATH
-- ✅ Instale dependências: `pip install -r requirements.txt`
-- ✅ Execute: `python main.py`
-
-### "Dados não foram organizados"
-- ✅ Certifique-se de que o texto foi extraído
-- ✅ Verifique configurações de análise
-- ✅ Reinicie a aplicação
-
-## 📚 Próximos Passos
-
-### Aprenda Mais
-- [Funcionalidades Avançadas](advanced_features.md)
-- [Configurações Avançadas](configuration.md)
-- [API de Integração](api.md)
-
-### Exemplos Avançados
-- **Automação:** Scripts para processamento contínuo
-- **Integração:** Conectar com outros sistemas
-- **Personalização:** Criar padrões customizados
-
-### Dicas Profissionais
-- Use **atalhos de teclado** para agilidade
-- Configure **captura automática** para tarefas repetitivas
-- **Categorize** seus documentos para melhor organização
-- **Exporte regularmente** para backup
-
-## 🎯 Casos de Uso Recomendados
-
-### Para Empresas
-- ✅ Extração de dados de ERPs antigos
-- ✅ Digitalização de documentos físicos
-- ✅ Automação de entrada de dados
-- ✅ Validação de formulários
-
-### Para Profissionais
-- ✅ Organização de recibos e notas fiscais
-- ✅ Extração de dados de contratos
-- ✅ Análise de relatórios financeiros
-- ✅ Captura de informações de sistemas web
-
-### Para Pessoal
-- ✅ Organização de documentos pessoais
-- ✅ Backup de informações importantes
-- ✅ Extração de dados de emails
-- ✅ Digitalização rápida de recibos
-
-## 💡 Dicas de Produtividade
-
-1. **Configure atalhos:** `Ctrl+Shift+S` para captura rápida
-2. **Use modo batch:** Processe múltiplas imagens de uma vez
-3. **Categorize automaticamente:** Deixe a IA classificar seus documentos
-4. **Exporte regularmente:** Mantenha backups organizados
-5. **Monitore janelas específicas:** Automatize captura de aplicações importantes
-
-## 🚀 Indo Além
-
-Pronto para funcionalidades avançadas?
-
-- [Análise Inteligente](advanced_features.md#análise-inteligente)
-- [Integração com APIs](api.md)
-- [Criação de Plugins](plugins.md)
-- [Automação Avançada](automation.md)
+Pronto! Você está usando JARVIS! 🎉
 
 ---
 
-**🎉 Parabéns! Você já sabe o básico do Leitor de Tela Inteligente.**
+## 🎨 Entendendo o HUD
 
-**Explore as funcionalidades avançadas e torne-se um especialista em extração de dados visuais!**
+### Estados Visuais
+
+| Cor | Estado | O Que Significa |
+|-----|--------|-----------------|
+| 🔵 Ciano | Idle | Aguardando comando |
+| 🟢 Verde | Listening | Escutando você |
+| 🔵 Azul | Thinking | Processando |
+| 🟠 Laranja | Speaking | Falando |
+| 🔴 Vermelho | Error | Erro detectado |
+
+### Características
+- **Transparente**: Você vê através dele
+- **Click-through**: Não atrapalha cliques
+- **Always on top**: Sempre visível
+- **60 FPS**: Animação suave
+
+---
+
+## 🎤 Comandos de Voz
+
+### Wake Word
+```
+"Jarvis"
+```
+→ Sistema ativa e aguarda comando
+
+### Comandos Básicos
+```
+"Abra o Chrome"
+"Feche a janela"
+"Qual é a hora?"
+"Tire uma screenshot"
+"Leia o que está na tela"
+```
+
+### Comandos Avançados
+```
+"Execute o código Python"
+"Analise esta imagem"
+"Organize meus arquivos"
+"Pesquise sobre [assunto]"
+```
+
+---
+
+## ⚙️ Configuração Inicial
+
+### 1. API Keys (Opcional)
+
+Para IA avançada, edite `config.yaml`:
+
+```yaml
+brain:
+  groq_api_key: "gsk_..."      # https://console.groq.com
+  gemini_api_key: "AI..."      # https://makersuite.google.com
+```
+
+**Sem API keys?**
+- Sistema funciona com IA local
+- Mais lento, mas totalmente offline
+
+### 2. Ajustar Microfone
+
+```yaml
+senses:
+  hearing_model: "base"        # tiny, base, small, medium, large
+```
+
+- `tiny`: Mais rápido, menos preciso
+- `base`: Balanceado (padrão)
+- `large`: Mais preciso, mais lento
+
+### 3. Personalizar Voz
+
+```yaml
+mouth:
+  tts_engine: "edge"
+  voice: "pt-BR-FranciscaNeural"  # Voz feminina
+  # voice: "pt-BR-AntonioNeural"  # Voz masculina
+```
+
+---
+
+## 🎮 Modos de Uso
+
+### Modo 1: Interface Gráfica (HUD)
+```bash
+python main_singularity.py
+```
+- HUD transparente
+- Comandos de voz
+- Interação visual
+
+### Modo 2: Linha de Comando
+```bash
+python legacy/main.py
+```
+- Sem HUD
+- Apenas terminal
+- Scripts e automação
+
+### Modo 3: GUI Antiga (Legacy)
+```bash
+python legacy/main.py
+```
+- Interface CustomTkinter
+- Mais recursos visuais
+- Sistema antigo preservado
+
+---
+
+## 📚 Exemplos Práticos
+
+### Exemplo 1: Captura e Análise
+```
+Você: "Jarvis"
+JARVIS: [Verde] "Pois não?"
+Você: "Tire uma screenshot e analise"
+JARVIS: [Azul] "Capturando e analisando..."
+JARVIS: [Ciano] "Detectei um formulário com 5 campos..."
+```
+
+### Exemplo 2: Automação
+```
+Você: "Jarvis"
+JARVIS: [Verde]
+Você: "Abra o Chrome e pesquise Python tutorial"
+JARVIS: [Azul] "Abrindo Chrome e pesquisando..."
+JARVIS: [Ciano] "Concluído"
+```
+
+### Exemplo 3: Informação
+```
+Você: "Jarvis"
+JARVIS: [Verde]
+Você: "Qual é o uso de CPU?"
+JARVIS: [Azul] "Verificando..."
+JARVIS: [Laranja] "CPU está em 23%"
+```
+
+---
+
+## 🐛 Problemas Comuns
+
+### HUD não aparece
+1. Verifique se PyQt6 está instalado
+```bash
+python -m pip install PyQt6
+```
+
+2. Veja logs
+```bash
+type jarvis_singularity.log
+```
+
+3. Execute com admin
+```bash
+# Clique direito em JARVIS.bat > Executar como administrador
+```
+
+### Wake word não detecta
+1. Teste microfone
+```bash
+python -c "import speech_recognition as sr; print(sr.Microphone.list_microphone_names())"
+```
+
+2. Ajuste volume do microfone no Windows
+
+3. Fale mais alto e claro
+
+### Sistema lento
+1. Use API keys (Groq/Gemini)
+2. Reduza modelo de voz (`tiny` em vez de `base`)
+3. Feche programas pesados
+
+---
+
+## 🎯 Próximos Passos
+
+### Nível 1: Básico
+- ✅ Executar JARVIS
+- ✅ Testar wake word
+- ✅ Comandos simples
+
+### Nível 2: Intermediário
+- ⏭️ Configurar API keys
+- ⏭️ Personalizar voz
+- ⏭️ Criar workflows
+
+### Nível 3: Avançado
+- ⏭️ Integrar com IoT
+- ⏭️ Criar plugins
+- ⏭️ Hive Mind (sync)
+
+---
+
+## 📖 Documentação Completa
+
+- [README.md](../README.md) - Visão geral
+- [installation.md](installation.md) - Instalação detalhada
+- [QUICKSTART.md](../QUICKSTART.md) - Guia rápido
+- [advanced_features.md](advanced_features.md) - Recursos avançados
+
+---
+
+## 💡 Dicas Pro
+
+1. **Fale naturalmente**: JARVIS entende linguagem natural
+2. **Use wake word sempre**: Garante que ele está escutando
+3. **Veja logs**: `jarvis_singularity.log` tem tudo
+4. **Experimente**: Teste diferentes comandos
+5. **Configure**: Personalize em `config.yaml`
+
+---
+
+**Você está pronto para usar JARVIS!** 🚀
+
+Diga "Jarvis" e comece a interagir!
