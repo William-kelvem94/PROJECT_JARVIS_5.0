@@ -173,6 +173,41 @@ def step_4_install_dependencies():
         return False
     
     print_info(f"Usando: {REQUIREMENTS_FILE.name}")
+    
+    # -------------------------------------------------------------------------
+    # PASSO 4.1: DESINSTALAR NUMPY AGRESSIVAMENTE
+    # -------------------------------------------------------------------------
+    print_info("\n[4.1] Removendo NumPy existente (se houver)...")
+    try:
+        uninstall_cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "uninstall",
+            "numpy",
+            "-y"
+        ]
+        
+        print_info(f"Comando: {' '.join(uninstall_cmd)}")
+        result = subprocess.run(
+            uninstall_cmd,
+            capture_output=True,
+            text=True,
+            cwd=str(PROJECT_ROOT)
+        )
+        
+        if result.returncode == 0:
+            print_success("NumPy removido com sucesso")
+        else:
+            print_info("NumPy não estava instalado (OK)")
+    except Exception as e:
+        print_warning(f"Erro ao desinstalar numpy: {e}")
+        print_info("Continuando mesmo assim...")
+    
+    # -------------------------------------------------------------------------
+    # PASSO 4.2: INSTALAR REQUIREMENTS COM FORCE-REINSTALL
+    # -------------------------------------------------------------------------
+    print_info("\n[4.2] Instalando dependências com versões travadas...")
     print_info("Forçando reinstalação para garantir versões corretas...")
     
     try:
@@ -188,7 +223,7 @@ def step_4_install_dependencies():
         ]
         
         print_info(f"Comando: {' '.join(cmd)}")
-        print_info("Aguarde...")
+        print_info("Aguarde (pode demorar 5-10 minutos)...")
         
         result = subprocess.run(
             cmd,
@@ -202,12 +237,17 @@ def step_4_install_dependencies():
             
             # Verificar numpy version
             try:
+                # Reimportar numpy para pegar versão atualizada
+                import importlib
+                if 'numpy' in sys.modules:
+                    importlib.reload(sys.modules['numpy'])
                 import numpy
                 numpy_version = numpy.__version__
                 if numpy_version.startswith("1."):
                     print_success(f"NumPy versão correta: {numpy_version}")
                 else:
                     print_warning(f"NumPy versão: {numpy_version} (esperado: 1.x)")
+                    print_warning("Execute novamente: pip install --force-reinstall numpy==1.26.4")
             except ImportError:
                 print_warning("NumPy não pôde ser verificado")
             
@@ -223,6 +263,7 @@ def step_4_install_dependencies():
     except Exception as e:
         print_error(f"Exceção durante instalação: {e}")
         return False
+
 
 
 def step_5_verify_critical_files():
