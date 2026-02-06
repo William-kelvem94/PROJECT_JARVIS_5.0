@@ -1,6 +1,44 @@
 # JARVIS Singularity - Changelog
 
-## [Unreleased] - 2026-02-06
+## [2.0.0] - 2026-02-06
+
+### 🧹 MAJOR PROJECT REORGANIZATION
+
+#### Complete Hybrid Version
+Project reorganized to keep only the **complete hybrid Singularity version**:
+- ✅ **Single entry point**: `main.py` (previously `main_singularity_integrated.py`)
+- ✅ **Single launcher**: `JARVIS.bat` (previously `JARVIS_SINGULARITY.bat`)
+- ✅ **Single setup**: `setup.py` (previously `setup_singularity_auto.py`)
+- ✅ **Single validator**: `validate.py` (previously `validate_implementation.py`)
+- ✅ **Unified requirements**: `requirements.txt` (previously `requirements_singularity.txt`)
+- ✅ **Optional ML deps**: `requirements_ml.txt` (for machine learning features)
+
+#### Files Removed
+- ❌ Removed `_backup_legacy/` (redundant backup directory)
+- ❌ Removed `main.py`, `main_singularity.py` (old versions)
+- ❌ Removed `INICIAR.bat`, `INICIAR_ADAPTATIVO.bat`, `check_setup.bat` (old launchers)
+- ❌ Removed `requirements_lite.txt`, `requirements_hybrid.txt`, `requirements_advanced.txt`, `requirements_god_mode.txt`, `requirements_ultimate.txt` (redundant requirements)
+- ❌ Removed `setup_adaptive.py`, `setup_manager.py`, `setup_singularity.py` (old setup scripts)
+- ❌ Removed `validate_project.py`, `check_setup.py` (old validators)
+- ❌ Removed duplicate `yolov8n.pt` in root (kept in models/)
+
+#### Files Archived
+- 📦 Moved `legacy/` → `archive/legacy/` (old entry points for reference)
+- 📦 Moved `jarvis_core/legacy_src/` → `archive/legacy_src/` (old core modules for reference)
+
+#### Documentation Updated
+- 📝 Updated all documentation to reference new file names
+- 📝 Updated README with simplified instructions
+- 📝 Added project organization section
+
+#### Benefits
+- ✨ **Simpler structure** - No confusion about which version to use
+- ✨ **Easier maintenance** - Single source of truth
+- ✨ **Cleaner codebase** - Removed ~3GB of redundant backups
+- ✨ **Better onboarding** - Clear entry points for new users
+- ✨ **Preserved history** - Old versions archived for reference
+
+## [1.0.0] - 2026-02-06
 
 ### 🔒 CRITICAL SECURITY FIXES
 
