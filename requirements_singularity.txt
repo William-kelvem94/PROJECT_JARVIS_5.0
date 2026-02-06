@@ -24,34 +24,40 @@ torchaudio==2.6.0
 cryptography==42.0.5
 
 # -------------------------------------------------------------------------
-# INTERFACE GRÁFICA - PyQt6
+# INTERFACE GRÁFICA - PyQt6 (Dual Mode: HUD + Dashboard)
 # -------------------------------------------------------------------------
 PyQt6==6.6.1
 PyQt6-Qt6==6.6.1
 PyQt6-sip==13.6.0
+pyqtgraph==0.13.3  # Advanced plotting for Control Dashboard
 
 # -------------------------------------------------------------------------
-# VISÃO COMPUTACIONAL
+# VISÃO COMPUTACIONAL (Omni-Vision System)
 # -------------------------------------------------------------------------
 opencv-python==4.9.0.80
 Pillow==10.3.0  # Atualizado de 10.2.0 para corrigir buffer overflow (CVE)
 easyocr==1.7.1
 pytesseract==0.3.10
+ultralytics==8.1.0  # YOLOv8 para detecção de objetos/UI
 
-# Captura de tela (para screen_capture module)
+# Captura de tela ultra-rápida (multi-monitor)
 mss==9.0.1
 
-# Reconhecimento facial (opcional mas recomendado)
+# Reconhecimento facial (FaceID biométrico)
 face-recognition==1.3.0
+dlib==19.24.2  # Dependência do face-recognition
 
 # MediaPipe para detecção de gestos
 mediapipe==0.10.9
 
 # -------------------------------------------------------------------------
-# PROCESSAMENTO DE VOZ
+# PROCESSAMENTO DE VOZ AVANÇADO (Local + Biometria)
 # -------------------------------------------------------------------------
 # Whisper (OpenAI) - Requer numpy < 2.0
 openai-whisper==20231117
+
+# Faster-Whisper para STT ultra-rápido (GPU/CPU)
+faster-whisper==1.0.0
 
 # TTS/STT
 pyttsx3==2.90
@@ -63,14 +69,24 @@ vosk==0.3.45
 # Edge TTS para síntese de voz de alta qualidade
 edge-tts==6.1.9
 
+# Voice Activity Detection (Silero-VAD)
+silero-vad==4.0.0
+
+# Audio processing
+librosa==0.10.1
+soundfile==0.12.1
+
 # -------------------------------------------------------------------------
-# AUTOMAÇÃO DE UI
+# AUTOMAÇÃO DE UI & GOD MODE (Deep Windows Control)
 # -------------------------------------------------------------------------
 pyautogui==0.9.54
 pyperclip==1.8.2
 
-# Windows-specific (condicional)
+# Windows API (God Mode)
 pywin32==306; sys_platform == 'win32'
+pycaw==20231129; sys_platform == 'win32'  # Per-app audio control
+comtypes==1.2.0; sys_platform == 'win32'  # COM interface
+WMI==1.5.1; sys_platform == 'win32'  # Windows Management Instrumentation
 
 # -------------------------------------------------------------------------
 # LLM & AI
@@ -94,12 +110,13 @@ chromadb==0.4.22
 sentence-transformers==2.2.2
 
 # -------------------------------------------------------------------------
-# WEB & HTTP
+# WEB & HTTP (Web Fallback quando conhecimento local falhar)
 # -------------------------------------------------------------------------
 requests==2.31.0
 aiohttp==3.13.3  # Atualizado de 3.9.3 para corrigir TODAS vulnerabilidades (DoS e zip bomb CVEs)
 beautifulsoup4==4.12.3
 lxml==5.1.0
+googlesearch-python==1.2.3  # Google Search API para busca web
 
 # FastAPI (para servidor web - opcional)
 fastapi==0.109.2
