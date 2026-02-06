@@ -23,10 +23,11 @@ logger = logging.getLogger(__name__)
 
 class AutonomyMode(Enum):
     """Operating modes for the autonomy system."""
-    ACTIVE = "active"          # Proactively suggests and acts
-    PASSIVE = "passive"        # Only responds to direct requests
-    LEARNING = "learning"      # Observes and learns without acting
-    EXPLORATION = "exploration"  # Actively explores new behaviors
+    ADAPTIVE = "adaptive"      # All-in-one: Dinamicamente combina todos os comportamentos
+    ACTIVE = "active"          # [Legacy] Proactively suggests and acts
+    PASSIVE = "passive"        # [Legacy] Only responds to direct requests
+    LEARNING = "learning"      # [Legacy] Observes and learns without acting
+    EXPLORATION = "exploration"  # [Legacy] Actively explores new behaviors
     SLEEP = "sleep"           # Minimal activity, background only
 
 
@@ -205,6 +206,7 @@ class DecisionEngine:
         
         # Decision strategies for each mode
         self.mode_strategies = {
+            AutonomyMode.ADAPTIVE: self._adaptive_strategy,  # NEW: All-in-one mode
             AutonomyMode.ACTIVE: self._active_strategy,
             AutonomyMode.PASSIVE: self._passive_strategy,
             AutonomyMode.LEARNING: self._learning_strategy,
@@ -240,6 +242,124 @@ class DecisionEngine:
         )
         
         return decision
+    
+    def _adaptive_strategy(self, context: DecisionContext) -> Decision:
+        """
+        ADAPTIVE MODE - Tudo em 1: Combina todos os comportamentos dinamicamente.
+        
+        Este modo integra automaticamente:
+        - Modo Ativo: Responde imediatamente com alta confiança
+        - Modo Passivo: Observa e aprende padrões
+        - Modo Aprendizagem: Busca ativamente melhorar
+        - Modo Exploração: Tenta novas abordagens quando seguro
+        - Modo Seguro: Apenas ações comprovadas em situações críticas
+        
+        A decisão é baseada em múltiplos fatores contextuais.
+        """
+        # Avaliar confiança para diferentes ações
+        respond_confidence = self.confidence_assessor.assess_confidence(
+            context, "respond"
+        )
+        suggest_confidence = self.confidence_assessor.assess_confidence(
+            context, "suggest"
+        )
+        explore_confidence = self.confidence_assessor.assess_confidence(
+            context, "explore"
+        )
+        
+        # Determinar urgência da situação
+        is_urgent = context.user_input is not None and any(
+            word in context.user_input.lower()
+            for word in ['urgente', 'rápido', 'agora', 'imediato', 'urgent', 'now', 'quick']
+        )
+        
+        # Determinar se é situação crítica (erros, problemas)
+        is_critical = context.user_input is not None and any(
+            word in context.user_input.lower()
+            for word in ['erro', 'error', 'problema', 'problem', 'crítico', 'critical', 'falha', 'failure']
+        )
+        
+        # === DECISÃO ADAPTATIVA ===
+        
+        # 1. MODO SEGURO: Situação crítica + baixa confiança = só ações comprovadas
+        if is_critical and respond_confidence < 0.7:
+            return Decision(
+                decision_id=self._generate_decision_id(),
+                decision_type=DecisionType.DEFER,
+                action="request_clarification",
+                confidence=respond_confidence,
+                reasoning="[ADAPTIVE-SAFE] Situação crítica com baixa confiança - pedindo esclarecimento",
+                context=context
+            )
+        
+        # 2. MODO ATIVO: Alta confiança + input do usuário = responder imediatamente
+        if context.user_input and respond_confidence >= 0.8:
+            return Decision(
+                decision_id=self._generate_decision_id(),
+                decision_type=DecisionType.RESPOND,
+                action="generate_response",
+                confidence=respond_confidence,
+                reasoning="[ADAPTIVE-ACTIVE] Alta confiança - respondendo imediatamente",
+                context=context
+            )
+        
+        # 3. MODO EXPLORAÇÃO: Confiança média + não urgente = tentar nova abordagem
+        if not is_urgent and not is_critical and 0.5 <= respond_confidence < 0.8:
+            # 30% de chance de explorar
+            if random.random() < 0.3:
+                return Decision(
+                    decision_id=self._generate_decision_id(),
+                    decision_type=DecisionType.RESPOND,
+                    action="experimental_response",
+                    confidence=respond_confidence,
+                    reasoning="[ADAPTIVE-EXPLORE] Confiança média - tentando abordagem exploratória",
+                    context=context
+                )
+        
+        # 4. MODO ATIVO: Input do usuário + confiança adequada = responder
+        if context.user_input and respond_confidence >= self.confidence_threshold:
+            return Decision(
+                decision_id=self._generate_decision_id(),
+                decision_type=DecisionType.RESPOND,
+                action="generate_response",
+                confidence=respond_confidence,
+                reasoning="[ADAPTIVE-ACTIVE] Confiança adequada - respondendo",
+                context=context
+            )
+        
+        # 5. MODO APRENDIZAGEM: Input do usuário + baixa confiança = aprender
+        if context.user_input and respond_confidence < self.confidence_threshold:
+            return Decision(
+                decision_id=self._generate_decision_id(),
+                decision_type=DecisionType.LEARN,
+                action="observe_and_ask",
+                confidence=respond_confidence,
+                reasoning="[ADAPTIVE-LEARNING] Baixa confiança - aprendendo e pedindo orientação",
+                context=context
+            )
+        
+        # 6. MODO ATIVO: Sem input mas alta confiança para sugestão = sugerir proativamente
+        if not context.user_input and suggest_confidence >= 0.7:
+            # 20% de chance de sugerir proativamente
+            if random.random() < 0.2:
+                return Decision(
+                    decision_id=self._generate_decision_id(),
+                    decision_type=DecisionType.SUGGEST,
+                    action="proactive_suggestion",
+                    confidence=suggest_confidence,
+                    reasoning="[ADAPTIVE-ACTIVE] Alta confiança - sugerindo proativamente",
+                    context=context
+                )
+        
+        # 7. MODO PASSIVO: Sem input = observar e aprender padrões
+        return Decision(
+            decision_id=self._generate_decision_id(),
+            decision_type=DecisionType.OBSERVE,
+            action="monitor_and_learn",
+            confidence=1.0,
+            reasoning="[ADAPTIVE-PASSIVE] Observando e aprendendo padrões",
+            context=context
+        )
     
     def _active_strategy(self, context: DecisionContext) -> Decision:
         """Strategy for active mode."""
@@ -609,7 +729,7 @@ class AutonomyCore:
     def __init__(
         self,
         data_dir: Path,
-        initial_mode: AutonomyMode = AutonomyMode.PASSIVE,
+        initial_mode: AutonomyMode = AutonomyMode.ADAPTIVE,  # Changed to ADAPTIVE
         confidence_threshold: float = 0.6
     ):
         """
@@ -617,7 +737,7 @@ class AutonomyCore:
         
         Args:
             data_dir: Directory for storing autonomy data
-            initial_mode: Initial operating mode
+            initial_mode: Initial operating mode (default: ADAPTIVE - all-in-one)
             confidence_threshold: Confidence threshold for actions
         """
         self.data_dir = Path(data_dir)
