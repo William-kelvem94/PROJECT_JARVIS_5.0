@@ -157,7 +157,18 @@ class WakeWordDetector:
         return False
     
     def _recognize_offline(self, audio) -> Optional[str]:
-        """Recognize speech offline if VOSK available."""
+        """
+        Recognize speech offline if VOSK available.
+        
+        Note: This is a placeholder implementation. To enable offline recognition:
+        1. Install VOSK: pip install vosk
+        2. Download a VOSK model from https://alphacephei.com/vosk/models
+        3. Set VOSK_MODEL_PATH environment variable
+        4. Implement VOSK recognition logic here
+        
+        Returns:
+            Recognized text or None if not implemented
+        """
         # Placeholder for offline recognition
         # Would require VOSK or similar offline STT
         return None
