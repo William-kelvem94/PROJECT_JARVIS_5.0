@@ -20,7 +20,6 @@ import logging
 import threading
 import queue
 import time
-import numpy as np
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple, Callable
 from dataclasses import dataclass
@@ -32,6 +31,23 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONDITIONAL IMPORTS (Graceful Degradation)
 # ============================================================================
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    # Mock numpy
+    class np:
+        class ndarray:
+            pass
+        @staticmethod
+        def array(x):
+            return x
+        @staticmethod
+        def frombuffer(*args, **kwargs):
+            return []
+    logger.warning("⚠️ numpy not available - audio processing limited")
+
 try:
     from faster_whisper import WhisperModel
     FASTER_WHISPER_AVAILABLE = True

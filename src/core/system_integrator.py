@@ -21,7 +21,6 @@ Philosophy:
 import os
 import sys
 import subprocess
-import psutil
 import logging
 import time
 from typing import Optional, List, Dict, Any, Tuple
@@ -35,6 +34,14 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONDITIONAL IMPORTS (Platform-specific)
 # ============================================================================
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
+    logger.warning("⚠️ psutil not available - system monitoring disabled")
+
 WINDOWS = sys.platform == 'win32'
 
 if WINDOWS:
