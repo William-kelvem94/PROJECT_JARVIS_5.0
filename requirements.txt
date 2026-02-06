@@ -13,12 +13,8 @@
 numpy==1.26.4
 
 # PyTorch CPU (versão segura compatível com numpy 1.x e register_pytree_node)
-# Torch 2.6.0 corrige vulnerabilidades de segurança críticas:
-# - CVE: torch.load RCE (remote code execution)
-# - Heap buffer overflow
-# - Use-after-free
-torch==2.6.0
-torchaudio==2.6.0
+torch==2.0.1
+torchvision==0.15.2
 
 # Cryptography (versão estável que resolve erro PBKDF2)
 cryptography==42.0.5
@@ -36,8 +32,7 @@ pyqtgraph==0.13.3  # Advanced plotting for Control Dashboard
 # -------------------------------------------------------------------------
 opencv-python==4.9.0.80
 Pillow==10.3.0  # Atualizado de 10.2.0 para corrigir buffer overflow (CVE)
-easyocr==1.7.1
-pytesseract==0.3.10
+transformers==4.30.2
 ultralytics==8.1.0  # YOLOv8 para detecção de objetos/UI
 
 # Captura de tela ultra-rápida (multi-monitor)

@@ -1,0 +1,41 @@
+# JARVIS 5.0 - CONFIGURAÇÃO DE AUTO-CURA
+# =======================================
+
+system:
+  name: "JARVIS_Singularity_v5"
+  version: "5.0.0"
+  auto_healing: true
+  max_restart_attempts: 3
+  health_check_interval: 60  # segundos
+  
+diagnostics:
+  enabled: true
+  log_level: "INFO"
+  save_reports: true
+  report_location: "data/diagnostics/"
+  
+dependencies:
+  auto_update: true
+  check_frequency: "daily"
+  critical_modules:
+    - "torch"
+    - "transformers"
+    - "PyQt6"
+    - "cv2"
+  
+environment:
+  required_python: "3.10"
+  required_ram_gb: 4
+  recommended_ram_gb: 8
+  
+  gpu:
+    enabled: true
+    min_vram_gb: 2
+    
+  folders:
+    required:
+      - "src/"
+      - "src/core/"
+      - "src/interface/"
+      - "data/"
+      - "config/"
