@@ -17,6 +17,7 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont
 # Import the modern HUD as default
 try:
     from .modern_hud import ModernHUD as JarvisHUD
+    from .modern_hud import ModernReactorCore as ReactorWidget
     print("✅ Using enhanced Modern HUD")
 except ImportError:
     print("⚠️ Modern HUD not available, using legacy HUD")
