@@ -23,6 +23,11 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
     torch = None
+    # Mock Dataset class for when torch is not available
+    class Dataset:
+        """Mock Dataset class."""
+        pass
+    DataLoader = None
 
 try:
     from transformers import (
@@ -36,6 +41,19 @@ try:
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
+    # Mock classes
+    class AutoModelForCausalLM:
+        pass
+    class AutoTokenizer:
+        pass
+    class TrainingArguments:
+        pass
+    class Trainer:
+        pass
+    class DataCollatorForLanguageModeling:
+        pass
+    class EarlyStoppingCallback:
+        pass
 
 try:
     from peft import (
@@ -47,12 +65,23 @@ try:
     PEFT_AVAILABLE = True
 except ImportError:
     PEFT_AVAILABLE = False
+    # Mock classes
+    class LoraConfig:
+        pass
+    def get_peft_model(*args, **kwargs):
+        return None
+    def prepare_model_for_kbit_training(*args, **kwargs):
+        return None
+    class PeftModel:
+        pass
 
 try:
     from bitsandbytes import BitsAndBytesConfig
     BNB_AVAILABLE = True
 except ImportError:
     BNB_AVAILABLE = False
+    class BitsAndBytesConfig:
+        pass
 
 try:
     from unsloth import FastLanguageModel
