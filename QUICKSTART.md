@@ -4,7 +4,7 @@
 
 ### Duplo clique aqui:
 ```
-JARVIS_SINGULARITY.bat
+JARVIS.bat
 ```
 
 ---
@@ -66,7 +66,7 @@ JARVIS_SINGULARITY.bat
 
 ### "Voice mode não implementado"
 → Você rodou o arquivo ANTIGO
-→ **SOLUÇÃO**: Execute `JARVIS_SINGULARITY.bat` ou `py main_singularity.py`
+→ **SOLUÇÃO**: Execute `JARVIS.bat` ou `py main.py`
 
 ### Processo trava ao encerrar
 → **CORRIGIDO!** Agora força exit após 2-3s
