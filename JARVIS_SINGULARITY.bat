@@ -241,11 +241,12 @@ goto :eof
 where winget >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     call :log_message "    Instalando Python via winget..."
-    winget install Python.Python.3.11 --silent
+    :: Install Python 3.10 or later - let winget choose the latest stable
+    winget install Python.Python.3.10 --silent
     if !ERRORLEVEL! EQU 0 (
         call :log_message "    Python instalado com sucesso"
-        :: Adicionar ao PATH
-        set "PATH=%PATH%;%LOCALAPPDATA%\Programs\Python\Python311;%LOCALAPPDATA%\Programs\Python\Python311\Scripts"
+        :: Refresh PATH - let Windows find Python automatically
+        call refreshenv >nul 2>&1
         exit /b 0
     )
 )
@@ -254,7 +255,7 @@ if %ERRORLEVEL% EQU 0 (
 where choco >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     call :log_message "    Instalando Python via chocolatey..."
-    choco install python -y
+    choco install python --version=3.10 -y
     if !ERRORLEVEL! EQU 0 (
         call :log_message "    Python instalado com sucesso"
         exit /b 0
