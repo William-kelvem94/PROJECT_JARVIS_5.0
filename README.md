@@ -89,6 +89,8 @@ JARVIS: [HUD fica azul, processa, abre Chrome]
 - **Microfone** (para comandos de voz)
 - **Webcam** (opcional, para FaceID)
 
+**Nota para Windows:** Algumas dependências (como dlib) podem falhar - isto é normal! O sistema funcionará sem elas. Veja [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) para mais detalhes.
+
 ---
 
 ## 🔧 Instalação
@@ -275,6 +277,15 @@ O launcher tentará instalar automaticamente. Se falhar:
 2. Marque "Add to PATH" durante instalação
 3. Reinicie o terminal
 
+#### Erro "dlib failed to build"
+**Isto é normal!** O dlib é opcional e usado apenas para reconhecimento facial.
+O sistema funciona perfeitamente sem ele. Veja [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) para detalhes.
+
+#### JARVIS.bat abre e fecha
+1. Abra cmd.exe ou PowerShell no diretório do projeto
+2. Execute: `python main.py`
+3. Veja os erros completos e verifique [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)
+
 #### PyQt6 não encontrado
 ```bash
 pip install PyQt6==6.6.1
@@ -307,7 +318,9 @@ voice:
 ### 📖 Documentação Completa
 
 Para guia completo de troubleshooting, veja:
+- **[WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)** - 🆕 Guia específico para Windows
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guia completo de solução de problemas
+- **[ORGANIZATION_GUIDE.md](ORGANIZATION_GUIDE.md)** - Guia de organização do projeto
 
 ---
 

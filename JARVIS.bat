@@ -124,8 +124,8 @@ call :log_message "    Pip atualizado"
 call :log_message ""
 call :log_message "[4/7] Verificando dependencias..."
 
-if not exist "requirements_singularity.txt" (
-    call :log_error "requirements_singularity.txt nao encontrado!"
+if not exist "requirements.txt" (
+    call :log_error "requirements.txt nao encontrado!"
     pause
     exit /b 1
 )
@@ -134,14 +134,26 @@ if not exist "requirements_singularity.txt" (
 python -c "import PyQt6" >nul 2>&1
 if !ERRORLEVEL! NEQ 0 (
     call :log_message "    Instalando dependencias (isso pode demorar varios minutos)..."
-    python setup_manager.py
+    call :log_message "    NOTA: Algumas dependencias podem falhar (ex: dlib) - isto e normal"
+    call :log_message "    O sistema funcionara mesmo sem todas as dependencias opcionais"
+    python setup.py
     set SETUP_EXIT_CODE=!ERRORLEVEL!
     
     if !SETUP_EXIT_CODE! NEQ 0 (
         if !SETUP_EXIT_CODE! EQU 1 (
             :: Exit code 1 = parcial (arquivos OK, deps podem ter falhado)
             call :log_message "    Setup parcial. Tentando instalacao alternativa de deps..."
-            python -m pip install -r requirements_singularity.txt
+            call :log_message "    Instalando pacotes criticos primeiro..."
+            
+            :: Install critical packages first
+            python -m pip install --upgrade pip
+            python -m pip install numpy==1.26.4
+            python -m pip install PyQt6==6.6.1
+            python -m pip install opencv-python
+            
+            :: Then try full requirements (some may fail - that's OK)
+            python -m pip install -r requirements.txt --no-deps
+            python -m pip install -r requirements.txt
             if !ERRORLEVEL! NEQ 0 (
                 call :log_error "Falha na instalacao de dependencias"
                 pause
@@ -302,13 +314,13 @@ if not exist "config.yaml" (
     set "VALIDATION_FAILED=1"
 )
 
-if not exist "requirements_singularity.txt" (
-    call :log_error "    requirements_singularity.txt nao encontrado"
+if not exist "requirements.txt" (
+    call :log_error "    requirements.txt nao encontrado"
     set "VALIDATION_FAILED=1"
 )
 
-if not exist "setup_manager.py" (
-    call :log_error "    setup_manager.py nao encontrado"
+if not exist "setup.py" (
+    call :log_error "    setup.py nao encontrado"
     set "VALIDATION_FAILED=1"
 )
 
