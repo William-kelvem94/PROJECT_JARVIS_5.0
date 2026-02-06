@@ -8,7 +8,7 @@
 # CORE AI (Existing)
 # -------------------------------------------------------------------------
 numpy<2.0.0,>=1.26.4
-torch==2.1.2+cpu
+torch==2.6.0  # SECURITY: Upgraded from 2.1.2 to patch CVEs (RCE, heap overflow, use-after-free)
 openai-whisper>=20231117
 sentence-transformers>=2.2.2
 
