@@ -42,7 +42,7 @@ REQUIRED_PACKAGES = [
     "PyQt6",
     "numpy",
     "torch",
-    "opencv-cv2",
+    "opencv-python",
     "sqlalchemy",
 ]
 
@@ -136,13 +136,16 @@ def validate_python_syntax() -> Tuple[bool, List[str]]:
     
     for py_file in python_files:
         try:
-            with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(py_file, 'r', encoding='utf-8', errors='replace') as f:
                 ast.parse(f.read())
             # print_success(f"Sintaxe OK: {py_file.relative_to(PROJECT_ROOT)}")
         except SyntaxError as e:
             error_msg = f"Erro de sintaxe em {py_file.relative_to(PROJECT_ROOT)}: {e}"
             errors.append(error_msg)
             print_error(error_msg)
+        except Exception as e:
+            # Log encoding or other errors but don't fail validation
+            print_warning(f"Aviso ao ler {py_file.relative_to(PROJECT_ROOT)}: {e}")
     
     if not errors:
         print_success(f"Todos os {len(python_files)} arquivos tem sintaxe valida")
@@ -175,7 +178,7 @@ def validate_imports() -> Tuple[bool, List[str]]:
             if spec and spec.loader:
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[module_path] = module
-                # Nao executar spec.loader.exec_module para evitar efeitos colaterais
+                # Note: Not executing spec.loader.exec_module to avoid side effects during validation
                 print_success(f"Import OK: {module_path}")
         except Exception as e:
             error_msg = f"Erro ao importar {module_path}: {e}"

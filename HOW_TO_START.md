@@ -1,20 +1,49 @@
 # 🚀 JARVIS 5.0 - Como Iniciar
 
-## ⚡ Método Mais Rápido
+## ⚡ Método Mais Rápido (Recomendado)
 
-### Windows
+### 🤖 Launcher Autônomo
 
-**Clique duplo em:**
+**Execute com um único clique!**
+
 ```
-JARVIS.bat
+# Windows - Clique duplo ou execute:
+JARVIS_SINGULARITY.bat
 ```
 
-**OU execute no terminal:**
+### ✅ O que o Launcher Autônomo faz?
+
+1. ✅ **Solicita privilégios de administrador**
+2. ✅ **Detecta Python** - Instala automaticamente se necessário
+3. ✅ **Cria ambiente virtual** - Isolamento de dependências
+4. ✅ **Instala dependências** - Todos os pacotes necessários
+5. ✅ **Valida estrutura** - Verifica integridade do projeto
+6. ✅ **Inicia JARVIS** - Sistema pronto para uso
+7. ✅ **Auto-restart** - Recuperação automática de falhas
+8. ✅ **Logs detalhados** - Tudo em `jarvis_launcher.log`
+
+**Não precisa fazer NADA manualmente!** O launcher é 100% autônomo.
+
+---
+
+## 🔍 Verificação Rápida
+
+### Antes de iniciar, verifique se está tudo OK:
+
 ```bash
-.\JARVIS.bat
+# Windows:
+check_setup.bat
+
+# Python (qualquer plataforma):
+python check_setup.py
 ```
 
-Pronto! O sistema faz tudo automaticamente.
+Este script verifica:
+- ✅ Python instalado e versão correta
+- ✅ Ambiente virtual configurado
+- ✅ Arquivos críticos presentes
+- ✅ Estrutura de pastas OK
+- ✅ Sistema pronto para executar
 
 ---
 
@@ -83,27 +112,99 @@ brain:
 
 ---
 
+## 🛠️ Ferramentas de Diagnóstico
+
+### Verificação Rápida
+
+Execute antes de reportar problemas:
+
+```bash
+# Windows:
+check_setup.bat
+
+# Python (qualquer plataforma):
+python check_setup.py
+```
+
+### Validação Completa
+
+Para diagnóstico detalhado:
+
+```bash
+python validate_project.py
+```
+
+**O que valida:**
+- ✅ Estrutura de diretórios (7 pastas essenciais)
+- ✅ Arquivos críticos (7 arquivos)
+- ✅ Sintaxe Python (todos os .py)
+- ✅ Imports e dependências (37 pacotes)
+- ✅ Configurações (config.yaml)
+- ✅ Entry points (main.py)
+- ✅ Testes (se existirem)
+
+### Logs
+
+**Onde encontrar:**
+- `jarvis_launcher.log` - Log do launcher
+- `jarvis_singularity.log` - Log da aplicação
+
+**Como ver:**
+```bash
+# Windows:
+type jarvis_launcher.log
+
+# Unix/Linux:
+cat jarvis_launcher.log
+```
+
+---
+
 ## 🐛 Problemas Comuns
 
 ### "Python não encontrado"
+O launcher tentará instalar automaticamente. Se falhar:
 1. Instale Python 3.10+ de [python.org](https://www.python.org/downloads/)
 2. Marque "Add to PATH" durante instalação
 3. Reinicie o terminal
+4. Execute novamente `JARVIS_SINGULARITY.bat`
 
 ### "PyQt6 não instalado"
 ```bash
-python -m pip install PyQt6
+pip install PyQt6==6.6.1
+```
+
+### "NumPy incompatível"
+```bash
+pip uninstall numpy -y
+pip install numpy==1.26.4
 ```
 
 ### "HUD não aparece"
-1. Verifique logs em `jarvis_singularity.log`
-2. Execute como administrador
-3. Teste: `python main_singularity.py`
+1. Execute `check_setup.py` para diagnosticar
+2. Verifique logs em `jarvis_launcher.log`
+3. Execute como administrador
+4. Teste isoladamente: `python src/interface/hud.py`
 
 ### "Wake word não funciona"
-1. Verifique microfone
-2. Teste: `python -c "import speech_recognition"`
-3. Ajuste volume do microfone
+1. Verifique microfone em Configurações do Windows
+2. Execute `check_setup.py` para verificar dependências
+3. Ajuste sensibilidade em `config.yaml`:
+```yaml
+voice:
+  energy_threshold: 300  # Diminuir = mais sensível
+```
+
+### Para problemas complexos:
+
+Veja o **[Guia Completo de Troubleshooting](TROUBLESHOOTING.md)** com:
+- 📖 Problemas de instalação
+- 📦 Problemas de dependências
+- 🎮 Problemas de execução
+- 🖥️ Problemas de interface
+- 🎤 Problemas de voz
+- 🤖 Problemas de IA
+- 📊 Códigos de erro
 
 ---
 
