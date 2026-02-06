@@ -16,15 +16,15 @@
 
 ```bash
 # Clique duplo no arquivo:
-JARVIS_SINGULARITY.bat
+JARVIS.bat
 
 # OU execute no terminal:
-.\JARVIS_SINGULARITY.bat
+.\JARVIS.bat
 ```
 
 ### 🎯 O que o Launcher Autônomo faz?
 
-O `JARVIS_SINGULARITY.bat` é **100% autônomo** e não requer configuração prévia:
+O `JARVIS.bat` é **100% autônomo** e não requer configuração prévia:
 
 1. ✅ **Auto-detecta Python** - Instala automaticamente se não encontrado
 2. ✅ **Cria ambiente virtual** - Isolamento de dependências
@@ -122,7 +122,7 @@ brain:
 
 ### Interface Gráfica (HUD)
 ```bash
-python main_singularity.py
+python main.py
 ```
 
 **O que acontece:**
@@ -145,16 +145,16 @@ python main_singularity.py
 
 ```bash
 # Captura de tela completa
-python legacy/main.py capture
+python archive/legacy/main.py capture
 
 # Captura de área específica
-python legacy/main.py capture --area 100,100,800,600 --process
+python archive/legacy/main.py capture --area 100,100,800,600 --process
 
 # Processar imagem existente
-python legacy/main.py process --input imagem.png --analyze
+python archive/legacy/main.py process --input imagem.png --analyze
 
 # Processamento em lote
-python legacy/main.py batch --input-dir ./imagens/
+python archive/legacy/main.py batch --input-dir ./imagens/
 ```
 
 ---
@@ -185,10 +185,10 @@ PROJECT_JARVIS_5.0/
 │   ├── interface/            # HUD
 │   └── guardian/             # Segurança
 │
-├── legacy/                    # Sistema antigo (preservado)
+├── archive/                   # Versões antigas (arquivadas para referência)
 ├── data/                      # Dados e cache
 ├── config.yaml               # Configuração
-├── main_singularity.py       # Entry point ⭐
+├── main.py                   # Entry point ⭐
 └── JARVIS.bat                # Launcher ⭐
 ```
 
@@ -256,7 +256,7 @@ python -c "from src.core.ai_agent import ai_agent; ai_agent.process_command('Ol�
 Execute o validador automático para diagnosticar problemas:
 
 ```bash
-python validate_project.py
+python validate.py
 ```
 
 O validador verifica:
@@ -390,3 +390,15 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 **JARVIS 5.0** - Seu assistente de IA pessoal está pronto para uso! 🚀
 
 Execute `JARVIS.bat` e comece a interagir!
+
+---
+
+## 🧹 Organização do Projeto
+
+Este projeto foi organizado para manter apenas a **versão completa e híbrida**:
+- **main.py** - Entry point único e integrado
+- **requirements.txt** - Dependências completas (Singularity)
+- **requirements_ml.txt** - Dependências opcionais de Machine Learning
+- **JARVIS.bat** - Launcher autônomo
+- **setup.py** - Instalador inteligente
+- **archive/** - Versões antigas arquivadas para referência

@@ -8,7 +8,7 @@
 
 ```
 # Windows - Clique duplo ou execute:
-JARVIS_SINGULARITY.bat
+JARVIS.bat
 ```
 
 ### ✅ O que o Launcher Autônomo faz?
@@ -167,7 +167,7 @@ O launcher tentará instalar automaticamente. Se falhar:
 1. Instale Python 3.10+ de [python.org](https://www.python.org/downloads/)
 2. Marque "Add to PATH" durante instalação
 3. Reinicie o terminal
-4. Execute novamente `JARVIS_SINGULARITY.bat`
+4. Execute novamente `JARVIS.bat`
 
 ### "PyQt6 não instalado"
 ```bash
@@ -213,7 +213,7 @@ Veja o **[Guia Completo de Troubleshooting](TROUBLESHOOTING.md)** com:
 ```
 PROJECT_JARVIS_5.0/
 ├── JARVIS.bat              ← Execute este arquivo
-├── main_singularity.py     ← Entry point
+├── main.py     ← Entry point
 ├── config.yaml             ← Configurações
 ├── src/
 │   ├── interface/hud.py   ← HUD transparente
@@ -229,7 +229,7 @@ PROJECT_JARVIS_5.0/
 
 ```bash
 # Executar com logs detalhados
-python main_singularity.py --verbose
+python main.py --verbose
 
 # Modo CLI (sem HUD)
 python legacy/main.py
