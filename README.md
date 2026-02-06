@@ -17,6 +17,7 @@
 
 ## ✨ Características
 
+### Core Features
 - ✅ **100% Local** - Tudo roda na sua máquina, sem dependências de APIs externas
 - ✅ **Gratuito** - Usa modelos open-source gratuitos via Ollama
 - ✅ **Docker Ready** - Inicia tudo com um comando
@@ -25,6 +26,17 @@
 - ✅ **API REST Completa** - Integre com qualquer aplicação
 - ✅ **Plugins Modulares** - Sistema extensível de plugins
 - ✅ **Produção Ready** - Pronto para deploy
+
+### 🆕 Enhanced Features (New!)
+- 🎤 **Wake Word Detection** - Ativação por voz com "Jarvis"
+- 📅 **Google Calendar** - Integração completa com agenda
+- 🌤️ **Weather Service** - Informações meteorológicas em tempo real
+- 📰 **News Headlines** - Notícias atualizadas
+- 📚 **Wikipedia Integration** - Consultas de conhecimento geral
+- 📧 **Email Service** - Envio de emails por comando
+- 🎭 **Entertainment** - Piadas, curiosidades e frases inspiradoras
+
+**[📖 Ver Documentação Completa das Novas Features](docs/ENHANCED_FEATURES.md)**
 
 ---
 
@@ -70,6 +82,20 @@ python -m uvicorn core.main:app --reload
 ---
 
 ## 🎯 Como Usar
+
+### 🆕 Demo das Novas Features
+
+Teste todas as novas funcionalidades interativamente:
+
+```bash
+# Demo interativo com todas as features
+python demo_enhanced_features.py
+```
+
+Modos disponíveis:
+- **Modo Texto** - Entrada por teclado (não precisa de microfone)
+- **Modo Voz** - Ativação por wake word "Jarvis"
+- **Testes Rápidos** - Teste automático de todas as features
 
 ### Interface Web
 
@@ -255,6 +281,7 @@ docker-compose -f docker/docker-compose.yml up --build -d
 ## 📚 Documentação
 
 - [Guia Completo de Instalação](docs/INSTALL.md)
+- [🆕 Enhanced Features - Novas Funcionalidades](docs/ENHANCED_FEATURES.md)
 - [Otimizações de Performance](docs/PERFORMANCE.md)
 - [API Documentation](http://localhost:8000/docs) (após iniciar)
 - [Modelos Disponíveis](docs/README_MODELS.md)
@@ -278,9 +305,21 @@ Este projeto é open-source e gratuito para uso pessoal e comercial.
 
 ## 🙏 Agradecimentos
 
+### Core Technologies
 - **Ollama** - Por tornar IA local acessível
 - **FastAPI** - Framework web moderno
 - **Comunidade Open Source** - Por todos os modelos disponíveis
+
+### 🆕 Inspirado Pelos Melhores JARVIS Projects
+As novas features foram inspiradas e combinadas dos melhores projetos JARVIS open-source:
+- **[llm-guy/jarvis](https://github.com/llm-guy/jarvis)** - Wake word detection & conversation management
+- **[Gladiator07/JARVIS](https://github.com/Gladiator07/JARVIS)** - Comprehensive integrations (Calendar, Weather, News, Wikipedia)
+- **[kishanrajput23/Jarvis-Desktop-Voice-Assistant](https://github.com/kishanrajput23/Jarvis-Desktop-Voice-Assistant)** - Voice control patterns
+- **[danilofalcao/jarvis](https://github.com/danilofalcao/jarvis)** - Multi-model AI concepts
+- **[Code-A2Z/jarvis](https://github.com/Code-A2Z/jarvis)** - Security & authentication patterns
+- **[projectswithdigambar/jarvis](https://github.com/projectswithdigambar/jarvis)** - Desktop automation ideas
+
+Um agradecimento especial a todos os desenvolvedores desses projetos por suas contribuições inovadoras! 🙏
 
 ---
 
