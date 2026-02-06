@@ -16,14 +16,52 @@ import pickle
 
 try:
     import torch
-    import torch.nn as nn
     import torch.optim as optim
     from torch.utils.data import Dataset, DataLoader
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    torch = None
-    nn = None
+    optim = None
+    # Mock classes for when torch is not available
+    class torch:
+        """Mock torch module."""
+        class Tensor:
+            """Mock Tensor class."""
+            pass
+        @staticmethod
+        def randn(*args, **kwargs):
+            return None
+        @staticmethod
+        def zeros(*args, **kwargs):
+            return None
+        @staticmethod
+        def tensor(*args, **kwargs):
+            return None
+        @staticmethod
+        def save(*args, **kwargs):
+            pass
+        @staticmethod
+        def load(*args, **kwargs):
+            return None
+    
+    class nn:
+        """Mock nn module."""
+        class Module:
+            """Mock Module class."""
+            pass
+        class LSTM:
+            """Mock LSTM class."""
+            pass
+        class Linear:
+            """Mock Linear class."""
+            pass
+        class MultiheadAttention:
+            """Mock MultiheadAttention class."""
+            pass
+    class Dataset:
+        """Mock Dataset class."""
+        pass
+    DataLoader = None
 
 try:
     import psutil

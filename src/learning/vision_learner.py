@@ -28,7 +28,21 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
     cv2 = None
-    np = None
+    # Mock numpy for type hints
+    class np:
+        """Mock numpy module."""
+        class ndarray:
+            """Mock ndarray class."""
+            pass
+        @staticmethod
+        def array(x):
+            return x
+        @staticmethod
+        def zeros(shape):
+            return []
+        @staticmethod
+        def concatenate(arrays):
+            return []
 
 try:
     from ultralytics import YOLO
