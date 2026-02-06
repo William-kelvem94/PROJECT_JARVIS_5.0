@@ -16,15 +16,15 @@
 
 ```bash
 # Clique duplo no arquivo:
-JARVIS_SINGULARITY.bat
+JARVIS.bat
 
 # OU execute no terminal:
-.\JARVIS_SINGULARITY.bat
+.\JARVIS.bat
 ```
 
 ### 🎯 O que o Launcher Autônomo faz?
 
-O `JARVIS_SINGULARITY.bat` é **100% autônomo** e não requer configuração prévia:
+O `JARVIS.bat` é **100% autônomo** e não requer configuração prévia:
 
 1. ✅ **Auto-detecta Python** - Instala automaticamente se não encontrado
 2. ✅ **Cria ambiente virtual** - Isolamento de dependências
@@ -89,6 +89,8 @@ JARVIS: [HUD fica azul, processa, abre Chrome]
 - **Microfone** (para comandos de voz)
 - **Webcam** (opcional, para FaceID)
 
+**Nota para Windows:** Algumas dependências (como dlib) podem falhar - isto é normal! O sistema funcionará sem elas. Veja [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) para mais detalhes.
+
 ---
 
 ## 🔧 Instalação
@@ -122,7 +124,7 @@ brain:
 
 ### Interface Gráfica (HUD)
 ```bash
-python main_singularity.py
+python main.py
 ```
 
 **O que acontece:**
@@ -145,16 +147,16 @@ python main_singularity.py
 
 ```bash
 # Captura de tela completa
-python legacy/main.py capture
+python archive/legacy/main.py capture
 
 # Captura de área específica
-python legacy/main.py capture --area 100,100,800,600 --process
+python archive/legacy/main.py capture --area 100,100,800,600 --process
 
 # Processar imagem existente
-python legacy/main.py process --input imagem.png --analyze
+python archive/legacy/main.py process --input imagem.png --analyze
 
 # Processamento em lote
-python legacy/main.py batch --input-dir ./imagens/
+python archive/legacy/main.py batch --input-dir ./imagens/
 ```
 
 ---
@@ -185,10 +187,10 @@ PROJECT_JARVIS_5.0/
 │   ├── interface/            # HUD
 │   └── guardian/             # Segurança
 │
-├── legacy/                    # Sistema antigo (preservado)
+├── archive/                   # Versões antigas (arquivadas para referência)
 ├── data/                      # Dados e cache
 ├── config.yaml               # Configuração
-├── main_singularity.py       # Entry point ⭐
+├── main.py                   # Entry point ⭐
 └── JARVIS.bat                # Launcher ⭐
 ```
 
@@ -256,7 +258,7 @@ python -c "from src.core.ai_agent import ai_agent; ai_agent.process_command('Ol�
 Execute o validador automático para diagnosticar problemas:
 
 ```bash
-python validate_project.py
+python validate.py
 ```
 
 O validador verifica:
@@ -274,6 +276,15 @@ O launcher tentará instalar automaticamente. Se falhar:
 1. Instale Python 3.10+ de [python.org](https://www.python.org/downloads/)
 2. Marque "Add to PATH" durante instalação
 3. Reinicie o terminal
+
+#### Erro "dlib failed to build"
+**Isto é normal!** O dlib é opcional e usado apenas para reconhecimento facial.
+O sistema funciona perfeitamente sem ele. Veja [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) para detalhes.
+
+#### JARVIS.bat abre e fecha
+1. Abra cmd.exe ou PowerShell no diretório do projeto
+2. Execute: `python main.py`
+3. Veja os erros completos e verifique [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)
 
 #### PyQt6 não encontrado
 ```bash
@@ -307,7 +318,9 @@ voice:
 ### 📖 Documentação Completa
 
 Para guia completo de troubleshooting, veja:
+- **[WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)** - 🆕 Guia específico para Windows
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guia completo de solução de problemas
+- **[ORGANIZATION_GUIDE.md](ORGANIZATION_GUIDE.md)** - Guia de organização do projeto
 
 ---
 
@@ -390,3 +403,15 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 **JARVIS 5.0** - Seu assistente de IA pessoal está pronto para uso! 🚀
 
 Execute `JARVIS.bat` e comece a interagir!
+
+---
+
+## 🧹 Organização do Projeto
+
+Este projeto foi organizado para manter apenas a **versão completa e híbrida**:
+- **main.py** - Entry point único e integrado
+- **requirements.txt** - Dependências completas (Singularity)
+- **requirements_ml.txt** - Dependências opcionais de Machine Learning
+- **JARVIS.bat** - Launcher autônomo
+- **setup.py** - Instalador inteligente
+- **archive/** - Versões antigas arquivadas para referência

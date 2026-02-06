@@ -63,7 +63,7 @@ This launches the complete integrated system with:
 ### Legacy Mode
 
 ```bash
-python main_singularity.py
+python main.py
 ```
 
 ---
@@ -131,9 +131,9 @@ The Control Dashboard provides full configuration and monitoring across 6 tabs:
 ```
 PROJECT_JARVIS_5.0/
 ├── main_singularity_integrated.py  # Integrated entry point ⭐
-├── main_singularity.py             # Legacy entry point
+├── main.py             # Legacy entry point
 ├── setup_singularity_auto.py       # Auto-installer ⭐
-├── requirements_singularity.txt    # Dependencies
+├── requirements.txt    # Dependencies
 │
 ├── src/
 │   ├── interface/
@@ -318,7 +318,7 @@ python -c "import face_recognition; print('✅ OK')"
 
 ### Update Dependencies
 ```bash
-pip install -r requirements_singularity.txt --upgrade
+pip install -r requirements.txt --upgrade
 ```
 
 ### Clear Logs

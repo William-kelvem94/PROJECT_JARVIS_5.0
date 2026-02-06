@@ -176,7 +176,7 @@
 - Signal handlers
 - Graceful shutdown
 
-**4. Auto-Installer** (`setup_singularity_auto.py` - 543 lines)
+**4. Auto-Installer** (`setup.py` - 543 lines)
 - Intelligent auto-installer
 - Platform detection
 - GPU/CPU capability detection
