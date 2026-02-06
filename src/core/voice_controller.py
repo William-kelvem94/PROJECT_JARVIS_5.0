@@ -1,8 +1,36 @@
-"""
-Controlador de Voz (STT & TTS)
-Responsável por ouvir comandos e falar com o usuário
-"""
+import os
+import sys
+import logging
 
+# ============================================================================
+# CRITICAL SYSTEM PATCHES (MUST BE AT THE VERY TOP)
+# ============================================================================
+
+# 1. COMTYPES FIX: Resolves AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
+# This occurs on Windows 11 due to cache generation issues.
+try:
+    import comtypes.client
+    import comtypes.client._code_cache
+    import shutil
+    from pathlib import Path
+    
+    # Nuke cache programmatically on every init to ensure stability
+    gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
+    if gen_dir.exists():
+        shutil.rmtree(gen_dir, ignore_errors=True)
+    os.makedirs(gen_dir, exist_ok=True)
+    
+    comtypes.client._code_cache._enable_cache = False
+    logging.getLogger('comtypes').setLevel(logging.ERROR)
+except Exception:
+    pass
+
+# 2. QT DPI AWARENESS FIX: Suppresses "Access Denied" warnings in terminal
+os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
+
+# ============================================================================
+# STANDARD IMPORTS
+# ============================================================================
 import speech_recognition as sr
 import pyttsx3
 import asyncio
@@ -10,14 +38,14 @@ import edge_tts
 from gtts import gTTS
 import pygame
 import threading
-import logging
-import os
 import tempfile
 import json
+import numpy as np
 import socket
 import random
 import re
 from typing import Optional, Callable
+
 try:
     from vosk import Model, KaldiRecognizer
     VOSK_AVAILABLE = True
@@ -32,8 +60,15 @@ class VoiceController:
     """Classe para processamento de voz (Jarvis Style)"""
 
     def __init__(self):
+        # Configurar microfone com index opcional do config
+        mic_index = config.get_setting('voice.mic_index', None)
         self.recognizer = sr.Recognizer()
-        self.microphone = sr.Microphone()
+        try:
+            self.microphone = sr.Microphone(device_index=mic_index)
+            logger.info(f"✅ Microfone inicializado (Index: {mic_index or 'Padrão'})")
+        except Exception as e:
+            logger.error(f"❌ Erro ao acessar microfone: {e}")
+            self.microphone = None
         
         # TTS Offline (fallback)
         self.engine = pyttsx3.init()
@@ -224,7 +259,7 @@ class VoiceController:
         """Reconhecimento via Vosk (Offline)"""
         try:
             if not self.vosk_model:
-                model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.22')
+                model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.3')
                 if not os.path.exists(model_path):
                     logger.warning(f"Modelo Vosk não encontrado em {model_path}. Fala offline desabilitada.")
                     return ""
@@ -314,7 +349,7 @@ class VoiceController:
 
         # Carregar modelo leve se necessário
         if not self.vosk_model:
-            model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.22')
+            model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.3')
             if not os.path.exists(model_path):
                  
                  # Tentar caminho relativo se o absoluto falhar

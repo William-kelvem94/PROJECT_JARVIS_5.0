@@ -64,14 +64,19 @@ class ReactorWidget(QWidget):
         
         self.update()
 
+    def set_response(self, text):
+        """Atualiza o texto da resposta no HUD"""
+        self.response_text = text
+        self.update()
+
     def paintEvent(self, event):
         """Desenha o reator na tela"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Centro da tela (canto inferior direito)
-        center_x = self.width() - 100
-        center_y = self.height() - 100
+        # Centro do reator (canto inferior direito)
+        center_x = self.width() - 150
+        center_y = self.height() - 150
         
         # Desenhar o Reator (Anel Externo Pulsante)
         painter.setPen(QPen(self.status_color, 3))
@@ -104,13 +109,30 @@ class ReactorWidget(QWidget):
         )
         
         # Texto de Status
-        painter.setPen(QPen(self.status_color, 1))
-        painter.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
+        painter.setPen(QPen(self.status_color, 2))
+        painter.setFont(QFont("Consolas", 12, QFont.Weight.Bold))
         painter.drawText(
-            int(center_x - 50),
+            int(center_x - 60),
             int(center_y + 80),
             self.status_text
         )
+
+        # Texto da Resposta (Se houver)
+        if hasattr(self, 'response_text') and self.response_text:
+            painter.setPen(QPen(QColor(0, 255, 255, 220), 1))
+            painter.setFont(QFont("Consolas", 14, QFont.Weight.Normal))
+            
+            # Caixa de texto centralizada na parte inferior
+            rect_x = 100
+            rect_y = self.height() - 250
+            rect_w = self.width() - 350
+            rect_h = 100
+            
+            painter.drawText(
+                rect_x, rect_y, rect_w, rect_h,
+                Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
+                self.response_text
+            )
 
 
 class JarvisHUD(QMainWindow):
@@ -118,6 +140,7 @@ class JarvisHUD(QMainWindow):
     
     # Sinais para comunicação thread-safe
     status_changed = pyqtSignal(str)
+    response_ready = pyqtSignal(str)
     
     def __init__(self):
         super().__init__()
@@ -139,19 +162,19 @@ class JarvisHUD(QMainWindow):
         self.reactor = ReactorWidget(self)
         self.reactor.resize(screen.width(), screen.height())
         
-        # Conectar sinal
+        # Conectar sinais
         self.status_changed.connect(self.reactor.set_status)
+        self.response_ready.connect(self.reactor.set_response)
         
         self.show()
 
     def update_state(self, state_text):
-        """
-        Atualiza estado do HUD (thread-safe)
-        
-        Args:
-            state_text: 'listening', 'thinking', 'speaking', 'error', 'idle'
-        """
+        """Atualiza estado do HUD (thread-safe)"""
         self.status_changed.emit(state_text)
+
+    def show_response(self, text):
+        """Exibe texto de resposta no HUD (thread-safe)"""
+        self.response_ready.emit(text)
 
 
 # Para testar sozinho: python src/interface/hud.py

@@ -19,20 +19,35 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 # -------------------------------------------------------------------------
-# IMPORTS DO CÓDIGO LEGADO
-# -------------------------------------------------------------------------
-try:
-    from core.ai_agent import ai_agent  # Singleton global (linha 513)
-except ImportError as e:
-    print(f"⚠️ ERRO: Não foi possível importar ai_agent: {e}")
-    print(f"   Certifique-se de que src/core/ai_agent.py existe em: {PROJECT_ROOT}")
-    ai_agent = None
-
-
-# ============================================================================
 # AI WORKER - QThread Wrapper
-# ============================================================================
+# -------------------------------------------------------------------------
 class AIWorker(QThread):
+    """
+    Thread worker que encapsula o ai_agent.process_command() bloqueante.
+    """
+    
+    # Singleton internal reference
+    _ai_agent = None
+    _ai_agent_lock = threading.Lock()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._command: Optional[str] = None
+        self._is_running = False
+        
+        # Lazy load ai_agent
+        self._ensure_agent()
+
+    def _ensure_agent(self):
+        """Garante que o ai_agent seja carregado sem travar o import inicial"""
+        if AIWorker._ai_agent is None:
+            with AIWorker._ai_agent_lock:
+                if AIWorker._ai_agent is None:
+                    try:
+                        from core.ai_agent import ai_agent
+                        AIWorker._ai_agent = ai_agent
+                    except Exception as e:
+                        print(f"❌ Erro ao carregar ai_agent: {e}")
     """
     Thread worker que encapsula o ai_agent.process_command() bloqueante.
     
@@ -153,8 +168,11 @@ class AIWorker(QThread):
             # ----------------------------------------------------------------
             with self._ai_agent_lock:
                 # Chamada bloqueante (30-150s potencial)
-                # Localização: ai_agent.py linhas 154-285
-                response = ai_agent.process_command(self._command)
+                self._ensure_agent()
+                if self._ai_agent:
+                    response = self._ai_agent.process_command(self._command)
+                else:
+                    response = "Erro: AI Agent não disponível."
             
             # ----------------------------------------------------------------
             # FASE 3: Falando (Verde no HUD - presumindo que TTS já ocorreu)
