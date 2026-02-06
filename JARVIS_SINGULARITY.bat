@@ -222,8 +222,8 @@ if %JARVIS_EXIT_CODE% EQU 0 (
     goto :end_launcher
 ) else if %JARVIS_EXIT_CODE% EQU 130 (
     :: Nota: em scripts .bat do Windows, Ctrl+C normalmente encerra o processo sem retornar aqui.
-    :: Este código 130 pode ser apenas um código de saída definido pelo processo filho (ex: interrupcao).
-    call :log_message "  Encerrado com codigo 130 (possivel interrupcao pelo usuario ou sinal do processo filho)"
+    :: Este código 130 pode ser apenas um código de saída definido pelo processo filho (ex: interrupção).
+    call :log_message "  Encerrado com codigo 130 (possível interrupção pelo usuario ou sinal do processo filho)"
     goto :end_launcher
 ) else (
     set /a RETRY_COUNT+=1
@@ -258,12 +258,12 @@ echo    [ERRO] %~1 >> "%LOG_FILE%"
 goto :eof
 
 :install_python
-:: Tentar instalar Python via winget (instala a versão mais recente estável do Python 3)
+:: Tentar instalar Python via winget (instala Python 3.11 - versão estável compatível)
 where winget >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     call :log_message "    Instalando Python via winget..."
-    :: Instala Python 3.x (última versão estável disponível)
-    winget install Python.Python.3 --silent
+    :: Instala Python 3.11 (compatível com numpy 1.26.4 e requisitos do projeto)
+    winget install Python.Python.3.11 --silent
     if !ERRORLEVEL! EQU 0 (
         call :log_message "    Python instalado com sucesso"
         call :log_message "    IMPORTANTE: Feche e reabra o terminal para que o Python seja reconhecido no PATH"
