@@ -5,9 +5,9 @@
 ```
 PROJECT_JARVIS_5.0/
 ├── 🎯 ENTRY POINTS
-│   ├── main_singularity.py          # ✅ Orquestrador principal (HUD + Voice + AI)
+│   ├── main.py          # ✅ Orquestrador principal (HUD + Voice + AI)
 │   ├── JARVIS.bat                   # ✅ Launcher Windows
-│   └── legacy/main.py               # ✅ Sistema antigo (preservado)
+│   └── archive/legacy/main.py               # ✅ Sistema antigo (preservado)
 │
 ├── 🖥️ INTERFACE (Nova - Singularity)
 │   └── src/interface/
@@ -88,7 +88,7 @@ PROJECT_JARVIS_5.0/
 │   └── requirements*.txt           # ✅ Dependências
 │
 └── 📚 LEGACY
-    └── legacy/
+    └── archive/legacy/
         ├── main.py                 # Sistema antigo
         ├── Jarvis.bat             # Launcher antigo
         └── START_JARVIS.bat       # Launcher antigo
@@ -103,7 +103,7 @@ PROJECT_JARVIS_5.0/
 ```
 JARVIS.bat
     ↓
-main_singularity.py
+main.py
     ↓
 ┌─────────────────────────────────────┐
 │   SingularityCore                   │
@@ -163,7 +163,7 @@ main_singularity.py
   - Arquivos
 
 ### Orquestrador
-- [x] **main_singularity.py**
+- [x] **main.py**
   - Threading (GUI + Brain + Voice)
   - Asyncio
   - Callbacks
@@ -216,7 +216,7 @@ main_singularity.py
 
 ### 1. Brain Router → AI Agent
 ```python
-# Em main_singularity.py
+# Em main.py
 from jarvis_core.brain.neural_router import neural_router
 
 # Substituir:
@@ -338,7 +338,7 @@ face-recognition   # FaceID
 - `jarvis_core/senses/` - Aguardando implementação
 
 ### Código Legacy (Preservado)
-- `legacy/main.py` - Sistema antigo completo
+- `archive/legacy/main.py` - Sistema antigo completo
 - Mantido para referência e fallback
 
 ---
@@ -349,7 +349,7 @@ face-recognition   # FaceID
 1. Criar em `jarvis_core/[modulo]/`
 2. Implementar interface padrão
 3. Adicionar testes
-4. Integrar em `main_singularity.py`
+4. Integrar em `main.py`
 5. Atualizar documentação
 
 ### Modificar Existente

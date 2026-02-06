@@ -77,7 +77,7 @@
 **Componentes:**
 - ✅ **setup_adaptive.py** (400+ linhas) - Detecção de hardware
 - ✅ **dependency_manager.py** (473 linhas) - Imports seguros
-- ✅ **INICIAR_ADAPTATIVO.bat** (78 linhas) - Launcher inteligente
+- ✅ **JARVIS.bat** (78 linhas) - Launcher inteligente
 - ✅ **requirements_lite.txt** (30 pacotes) - CPU apenas
 - ✅ **requirements_hybrid.txt** (42 pacotes) - GPU leve
 - ✅ **requirements_ultimate.txt** (56 pacotes) - Stack ML completo
@@ -95,7 +95,7 @@
 **Componentes:**
 - ✅ **main_singularity_integrated.py** (404 linhas) - Entry point integrado
 - ✅ **setup_singularity_auto.py** (543 linhas) - Auto-instalador
-- ✅ **validate_implementation.py** (238 linhas) - Script de validação
+- ✅ **validate.py** (238 linhas) - Script de validação
 
 **Resultados da Validação:**
 ```
@@ -225,7 +225,7 @@ Taxa de Sucesso: 100.0%
 
 ```bash
 # Windows (Recomendado)
-INICIAR_ADAPTATIVO.bat
+JARVIS.bat
 
 # Multi-plataforma
 python setup_adaptive.py
@@ -243,7 +243,7 @@ Ctrl+Shift+X - Ocultar Tudo
 ### Validação Manual
 
 ```bash
-python validate_implementation.py
+python validate.py
 ```
 
 ---
@@ -422,7 +422,7 @@ python validate_implementation.py
 
 ```bash
 # 1. Instalar (auto-detecta hardware)
-INICIAR_ADAPTATIVO.bat
+JARVIS.bat
 
 # 2. JARVIS inicia automaticamente
 
@@ -453,7 +453,7 @@ Ctrl+Shift+X - Ocultar
 
 ### Validação
 ```bash
-python validate_implementation.py
+python validate.py
 ```
 
 ### Debug
