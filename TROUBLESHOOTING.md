@@ -108,7 +108,7 @@ python -m pip install --upgrade pip
 ```bash
 pip install PyQt6
 pip install numpy==1.26.4
-pip install torch==2.1.2
+pip install torch==2.6.0  # SECURITY: Use 2.6.0+ to avoid CVEs
 pip install opencv-python
 ```
 
@@ -188,13 +188,15 @@ No module named 'torch'
 
 **Solução (CPU version):**
 ```bash
-pip install torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cpu
+pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 ```
 
 **Solução (GPU version - NVIDIA):**
 ```bash
-pip install torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cu118
+pip install torch==2.6.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu118
 ```
+
+**IMPORTANTE:** Sempre use torch 2.6.0 ou superior para evitar vulnerabilidades de segurança (RCE, heap overflow, use-after-free).
 
 ---
 
