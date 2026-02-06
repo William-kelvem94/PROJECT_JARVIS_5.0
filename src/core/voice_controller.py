@@ -34,17 +34,42 @@ os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
 import speech_recognition as sr
 import pyttsx3
 import asyncio
-import edge_tts
-from gtts import gTTS
-import pygame
 import threading
 import tempfile
 import json
-import numpy as np
 import socket
 import random
 import re
 from typing import Optional, Callable
+
+# Imports opcionais
+try:
+    import edge_tts
+    EDGE_TTS_AVAILABLE = True
+except ImportError:
+    EDGE_TTS_AVAILABLE = False
+    logging.warning("edge-tts não disponível. Instale com: pip install edge-tts")
+
+try:
+    from gtts import gTTS
+    GTTS_AVAILABLE = True
+except ImportError:
+    GTTS_AVAILABLE = False
+    logging.warning("gTTS não disponível")
+
+try:
+    import pygame
+    PYGAME_AVAILABLE = True
+except ImportError:
+    PYGAME_AVAILABLE = False
+    logging.warning("pygame não disponível")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    logging.warning("numpy não disponível")
 
 try:
     from vosk import Model, KaldiRecognizer
@@ -148,10 +173,12 @@ class VoiceController:
         
         if (mode == 'online' or mode == 'auto') and is_online:
             try:
-                if self.tts_provider == 'edge':
+                if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
                     asyncio.run(self._speak_edge(text))
-                else:
+                elif GTTS_AVAILABLE:
                     self._speak_google(text)
+                else:
+                    logger.warning("Nenhum TTS online disponível, usando fallback offline")
                 return
             except Exception as e:
                 logger.warning(f"TTS Online ({self.tts_provider}) falhou: {e}")
@@ -165,6 +192,10 @@ class VoiceController:
 
     async def _speak_edge(self, text: str):
         """Usa a API do Microsoft Edge para fala natural gratuita"""
+        if not EDGE_TTS_AVAILABLE:
+            logger.warning("edge-tts não disponível")
+            return
+            
         voice = "pt-BR-AntonioNeural" # Voz masculina estilo assistente
         communicate = edge_tts.Communicate(text, voice)
         
@@ -176,6 +207,10 @@ class VoiceController:
             
             if self.stop_requested: return
             
+            if not PYGAME_AVAILABLE:
+                logger.warning("pygame não disponível para reproduzir áudio")
+                return
+                
             self._is_speaking = True
             pygame.mixer.music.load(tmp_path)
             pygame.mixer.music.play()

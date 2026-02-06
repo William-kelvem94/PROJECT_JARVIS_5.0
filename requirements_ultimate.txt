@@ -1,0 +1,119 @@
+# ============================================================================
+# JARVIS CHAMELEON - ULTIMATE Profile Requirements (Full ML Stack)
+# ============================================================================
+# For: RTX 3060+, RTX 4000 series, 8GB+ VRAM
+# Features: ALL + Full training capability + Fast fine-tuning
+# Training: Full (LoRA, Unsloth, DeepSpeed, DPO, RLHF)
+# ============================================================================
+
+# CRITICAL: numpy < 2.0 for compatibility
+numpy==1.26.4
+
+# -------------------------------------------------------------------------
+# EVERYTHING FROM HYBRID PROFILE
+# -------------------------------------------------------------------------
+
+# Interface
+PyQt6==6.6.1
+PyQt6-Qt6==6.6.1
+pyqtgraph==0.13.3
+
+# System
+psutil==5.9.8
+pywin32==306; sys_platform == 'win32'
+pyautogui==0.9.54
+keyboard==0.13.5
+mouse==0.7.1
+
+# Vision
+opencv-python==4.9.0.80
+Pillow==10.3.0
+mss==9.0.1
+face-recognition==1.3.0
+dlib==19.24.2
+
+# Audio
+pyaudio==0.2.14
+sounddevice==0.4.6
+soundfile==0.12.1
+librosa==0.10.1
+pyttsx3==2.90
+gtts==2.5.0
+edge-tts==6.1.9
+
+# Utilities
+requests==2.31.0
+aiohttp==3.13.3
+python-dotenv==1.0.1
+PyYAML==6.0.1
+jsonlines==4.0.0
+pandas==2.1.4
+h5py==3.10.0
+
+# Database
+chromadb==0.4.22
+
+# Logging
+colorama==0.4.6
+tqdm==4.66.1
+
+# PyTorch
+torch==2.6.0
+torchaudio==2.6.0
+torchvision==0.21.0
+
+# Quantization
+bitsandbytes==0.42.0
+
+# Transformers
+transformers==4.37.2
+accelerate==0.26.1
+sentencepiece==0.1.99
+
+# YOLO
+ultralytics==8.1.0
+
+# Training support
+datasets==2.16.1
+evaluate==0.4.1
+scikit-learn==1.4.0
+
+# -------------------------------------------------------------------------
+# ULTIMATE-SPECIFIC: Advanced ML Training Stack
+# -------------------------------------------------------------------------
+
+# 2x faster fine-tuning with less memory
+unsloth==2024.1
+
+# Parameter-Efficient Fine-Tuning (LoRA, QLoRA)
+peft==0.8.2
+
+# Reinforcement Learning (DPO, PPO, RLHF)
+trl==0.7.10
+
+# Distributed training
+deepspeed==0.12.6
+
+# Advanced training utilities
+xformers==0.0.23
+
+# Optimization
+optimum==1.16.1
+flash-attn==2.5.0; sys_platform == 'linux'
+
+# Speaker verification (voice biometrics)
+resemblyzer==0.1.1.dev0
+
+# Advanced ML
+xgboost==2.0.3
+lightgbm==4.3.0
+
+# Time series prediction
+prophet==1.1.5
+statsmodels==0.14.1
+
+# Monitoring (optional)
+wandb==0.16.2
+tensorboard==2.15.1
+
+# Total: 70 packages (full ML stack with advanced training)

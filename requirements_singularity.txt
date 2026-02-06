@@ -12,33 +12,52 @@
 # NumPy < 2.0 - OBRIGATÓRIO para compatibilidade com Torch/Whisper
 numpy==1.26.4
 
-# PyTorch CPU (compatível com numpy 1.x)
-torch==2.1.2
-torchaudio==2.1.2
+# PyTorch CPU (versão segura compatível com numpy 1.x e register_pytree_node)
+# Torch 2.6.0 corrige vulnerabilidades de segurança críticas:
+# - CVE: torch.load RCE (remote code execution)
+# - Heap buffer overflow
+# - Use-after-free
+torch==2.6.0
+torchaudio==2.6.0
 
 # Cryptography (versão estável que resolve erro PBKDF2)
 cryptography==42.0.5
 
 # -------------------------------------------------------------------------
-# INTERFACE GRÁFICA - PyQt6
+# INTERFACE GRÁFICA - PyQt6 (Dual Mode: HUD + Dashboard)
 # -------------------------------------------------------------------------
 PyQt6==6.6.1
 PyQt6-Qt6==6.6.1
 PyQt6-sip==13.6.0
+pyqtgraph==0.13.3  # Advanced plotting for Control Dashboard
 
 # -------------------------------------------------------------------------
-# VISÃO COMPUTACIONAL
+# VISÃO COMPUTACIONAL (Omni-Vision System)
 # -------------------------------------------------------------------------
 opencv-python==4.9.0.80
-Pillow==10.2.0
+Pillow==10.3.0  # Atualizado de 10.2.0 para corrigir buffer overflow (CVE)
 easyocr==1.7.1
 pytesseract==0.3.10
+ultralytics==8.1.0  # YOLOv8 para detecção de objetos/UI
+
+# Captura de tela ultra-rápida (multi-monitor)
+mss==9.0.1
+
+# Reconhecimento facial (FaceID biométrico)
+face-recognition==1.3.0
+dlib==19.24.2  # Dependência do face-recognition
+
+# MediaPipe para detecção de gestos
+mediapipe==0.10.9
 
 # -------------------------------------------------------------------------
-# PROCESSAMENTO DE VOZ
+# PROCESSAMENTO DE VOZ AVANÇADO (Local + Biometria)
 # -------------------------------------------------------------------------
 # Whisper (OpenAI) - Requer numpy < 2.0
 openai-whisper==20231117
+
+# Faster-Whisper para STT ultra-rápido (GPU/CPU)
+faster-whisper==1.0.3
 
 # TTS/STT
 pyttsx3==2.90
@@ -47,14 +66,28 @@ SpeechRecognition==3.10.4
 # Vosk (alternativa offline)
 vosk==0.3.45
 
+# Edge TTS para síntese de voz de alta qualidade
+edge-tts==6.1.9
+
+# Audio processing
+librosa==0.10.1
+soundfile==0.12.1
+pyaudio==0.2.14
+
+# Speaker verification
+resemblyzer==0.1.1.dev0
+
 # -------------------------------------------------------------------------
-# AUTOMAÇÃO DE UI
+# AUTOMAÇÃO DE UI & GOD MODE (Deep Windows Control)
 # -------------------------------------------------------------------------
 pyautogui==0.9.54
 pyperclip==1.8.2
 
-# Windows-specific (condicional)
+# Windows API (God Mode)
 pywin32==306; sys_platform == 'win32'
+pycaw==20231129; sys_platform == 'win32'  # Per-app audio control
+comtypes==1.2.0; sys_platform == 'win32'  # COM interface
+WMI==1.5.1; sys_platform == 'win32'  # Windows Management Instrumentation
 
 # -------------------------------------------------------------------------
 # LLM & AI
@@ -78,12 +111,13 @@ chromadb==0.4.22
 sentence-transformers==2.2.2
 
 # -------------------------------------------------------------------------
-# WEB & HTTP
+# WEB & HTTP (Web Fallback quando conhecimento local falhar)
 # -------------------------------------------------------------------------
 requests==2.31.0
-aiohttp==3.9.3
+aiohttp==3.13.3  # Atualizado de 3.9.3 para corrigir TODAS vulnerabilidades (DoS e zip bomb CVEs)
 beautifulsoup4==4.12.3
 lxml==5.1.0
+googlesearch-python==1.2.3  # Google Search API para busca web
 
 # FastAPI (para servidor web - opcional)
 fastapi==0.109.2
@@ -102,6 +136,9 @@ psutil==5.9.8
 colorlog==6.8.2
 tqdm==4.66.2
 
+# PyYAML para validação de config.yaml (CRÍTICO para validator)
+PyYAML==6.0.1
+
 # -------------------------------------------------------------------------
 # DEVELOPMENT & TESTING
 # -------------------------------------------------------------------------
@@ -112,11 +149,13 @@ pytest-asyncio==0.21.1
 # NOTAS IMPORTANTES
 # -------------------------------------------------------------------------
 # 1. NumPy 2.x QUEBRA torch e whisper - NUNCA atualize para 2.x
-# 2. Se pip tentar instalar numpy 2.x, force reinstall:
+# 2. Torch 2.6.0+ corrige erro register_pytree_node E vulnerabilidades de segurança
+# 3. Se pip tentar instalar numpy 2.x, force reinstall:
 #    pip install --force-reinstall numpy==1.26.4
-# 3. Cryptography 42.0.5 resolve erro de importação PBKDF2
-# 4. PyQt6 6.6.1 é a última versão estável testada
-# 5. Para instalar tudo: pip install -r requirements_singularity.txt
+# 4. Cryptography 42.0.5 resolve erro de importação PBKDF2
+# 5. PyQt6 6.6.1 é a última versão estável testada
+# 6. Total de 42 dependências incluindo mss, edge-tts, mediapipe, face-recognition
+# 7. Para instalar tudo: pip install -r requirements_singularity.txt
 # -------------------------------------------------------------------------
 
 # ============================================================================
@@ -126,12 +165,36 @@ pytest-asyncio==0.21.1
 # ERRO: "numpy 2.0 is not compatible with this version of torch"
 # SOLUÇÃO: pip uninstall numpy && pip install numpy==1.26.4
 #
+# ERRO: "module 'torch.utils._pytree' has no attribute 'register_pytree_node'"
+# SOLUÇÃO: pip install --upgrade torch==2.6.0 torchaudio==2.6.0
+#
+# ERRO (SEGURANÇA): "PyTorch torch.load RCE vulnerability"
+# SOLUÇÃO: pip install --upgrade torch==2.6.0 (versão 2.6.0+ corrige vulnerabilidade crítica)
+#
+# ERRO (SEGURANÇA): "Pillow buffer overflow"
+# SOLUÇÃO: pip install --upgrade Pillow==10.3.0
+#
+# ERRO (SEGURANÇA): "aiohttp DoS vulnerability"
+# SOLUÇÃO: pip install --upgrade aiohttp==3.13.3
+#
 # ERRO: "cannot import name 'PBKDF2' from 'cryptography'"
 # SOLUÇÃO: pip install --upgrade cryptography==42.0.5
 #
 # ERRO: "No module named 'PyQt6'"
 # SOLUÇÃO: pip install PyQt6==6.6.1
 #
+# ERRO: "No module named 'mss'" (screen capture)
+# SOLUÇÃO: pip install mss==9.0.1
+#
+# ERRO: "No module named 'edge_tts'" (voice controller)
+# SOLUÇÃO: pip install edge-tts==6.1.9
+#
+# ERRO: "No module named 'mediapipe'" (gesture controller)
+# SOLUÇÃO: pip install mediapipe==0.10.9
+#
+# ERRO: "No module named 'face_recognition'" (camera controller)
+# SOLUÇÃO: pip install face-recognition==1.3.0
+#
 # ERRO: "torch not found"
-# SOLUÇÃO: pip install torch==2.1.2 --index-url https://download.pytorch.org/whl/cpu
+# SOLUÇÃO: pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 # ============================================================================

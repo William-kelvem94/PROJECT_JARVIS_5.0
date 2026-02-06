@@ -10,7 +10,7 @@ python-dotenv>=1.0.0
 
 # === AI & ML ===
 # Processamento Local
-torch>=2.0.0
+torch>=2.6.0  # SECURITY: Minimum 2.6.0 required to avoid CVEs (RCE, heap overflow, use-after-free)
 transformers>=4.30.0
 sentence-transformers>=2.2.0
 
