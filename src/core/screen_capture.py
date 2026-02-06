@@ -9,21 +9,53 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Callable
-import mss
-import pyautogui
-from PIL import Image, ImageDraw
-import cv2
-import numpy as np
+
+logger = logging.getLogger(__name__)
+
+# Imports opcionais com graceful fallback
+try:
+    import mss
+    MSS_AVAILABLE = True
+except ImportError:
+    MSS_AVAILABLE = False
+    logger.warning("mss não disponível. Instale com: pip install mss")
+
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except ImportError:
+    PYAUTOGUI_AVAILABLE = False
+    logger.warning("pyautogui não disponível")
+
+try:
+    from PIL import Image, ImageDraw
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    logger.warning("PIL/Pillow não disponível")
+
+try:
+    import cv2
+    import numpy as np
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    logger.warning("opencv não disponível")
+
 from src.utils.config import config
 from src.utils.helpers import FileHelper, ImageHelper
 from src.database.models import db_manager, Capture
-
-logger = logging.getLogger(__name__)
 
 class ScreenCapture:
     """Classe principal para captura de tela"""
 
     def __init__(self):
+        if not MSS_AVAILABLE:
+            logger.error("ScreenCapture: mss não disponível. Módulo desativado.")
+            self.enabled = False
+            return
+            
+        self.enabled = True
         self.capture_active = False
         self.recording_active = False
         self.capture_thread = None
@@ -45,6 +77,8 @@ class ScreenCapture:
 
     def _get_sct(self):
         """Retorna instância de mss específica para a thread atual"""
+        if not self.enabled or not MSS_AVAILABLE:
+            return None
         if not hasattr(self.thread_local, "sct"):
             self.thread_local.sct = mss.mss()
         return self.thread_local.sct
@@ -55,8 +89,14 @@ class ScreenCapture:
         """
         Captura tela completa ou de um monitor específico
         """
+        if not self.enabled or not MSS_AVAILABLE:
+            logger.warning("Screen capture não disponível (mss não instalado)")
+            return None
+            
         try:
             sct = self._get_sct()
+            if not sct:
+                return None
             
             # Selecionar monitor
             if monitor_index is not None and monitor_index < len(sct.monitors):
@@ -70,6 +110,9 @@ class ScreenCapture:
             screenshot = sct.grab(monitor)
 
             # Converter para PIL Image
+            if not PIL_AVAILABLE:
+                logger.error("PIL não disponível para salvar imagem")
+                return None
             img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
 
             # Salvar captura
