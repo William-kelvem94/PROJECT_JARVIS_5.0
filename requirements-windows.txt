@@ -44,11 +44,7 @@ ultralytics==8.1.0  # YOLOv8 para detecção de objetos/UI
 mss==9.0.1
 
 # Reconhecimento facial (FaceID biométrico)
-# NOTA: face-recognition e dlib podem falhar no Windows sem Visual C++ build tools
-# Se a instalação falhar, pule estas dependências - o sistema funcionará sem FaceID
-# Para instalar depois: pip install dlib face-recognition
 face-recognition==1.3.0
-# dlib==19.24.2  # OPCIONAL - Comentado por padrão (requer compilação C++)
 
 # MediaPipe para detecção de gestos
 mediapipe==0.10.9
@@ -201,3 +197,5 @@ pytest-asyncio==0.21.1
 # ERRO: "torch not found"
 # SOLUÇÃO: pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 # ============================================================================
+# Note: dlib removed - requires Visual C++ build tools
+# Install it separately if you need face recognition: pip install dlib
