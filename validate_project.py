@@ -136,18 +136,17 @@ def validate_python_syntax() -> Tuple[bool, List[str]]:
     
     for py_file in python_files:
         try:
-            # Primeiro, tentar ler com UTF-8 estrito para detectar problemas de codificacao
-            try:
-                with open(py_file, 'r', encoding='utf-8', errors='strict') as f:
-                    source = f.read()
-            except UnicodeDecodeError as ude:
-                # Se houver problema de codificacao, registrar aviso e reler com substituicao
+            # Ler com UTF-8 e substituir caracteres invalidos
+            # (se necessario, validacao estrita de encoding pode ser feita separadamente)
+            with open(py_file, 'r', encoding='utf-8', errors='replace') as f:
+                source = f.read()
+            
+            # Detectar se houve substituição de caracteres
+            if '\ufffd' in source:  # Caractere de substituição Unicode
                 print_warning(
-                    f"Problema de codificacao em {py_file.relative_to(PROJECT_ROOT)}: "
-                    f"linha ~{ude.start}. Caracteres invalidos foram substituidos durante a validacao."
+                    f"Problema de codificacao detectado em {py_file.relative_to(PROJECT_ROOT)}. "
+                    f"Recomenda-se salvar o arquivo em UTF-8."
                 )
-                with open(py_file, 'r', encoding='utf-8', errors='replace') as f:
-                    source = f.read()
             
             ast.parse(source)
             # print_success(f"Sintaxe OK: {py_file.relative_to(PROJECT_ROOT)}")
@@ -233,7 +232,7 @@ def validate_dependencies() -> Tuple[bool, List[str]]:
             [sys.executable, "-m", "pip", "list", "--format=json"],
             capture_output=True,
             text=True,
-            timeout=60  # Aumentar timeout de 30 para 60 segundos
+            timeout=60  # Aumentar timeout de 30 para 60 segundos em sistemas lentos
         )
         
         if result.returncode == 0:
@@ -385,7 +384,7 @@ def run_tests() -> Tuple[bool, List[str]]:
             [sys.executable, "-m", "pytest", str(test_dir), "-v", "--tb=short"],
             capture_output=True,
             text=True,
-            timeout=300  # 5 minutos para testes completos (aumentado de 60s)
+            timeout=300  # 5 minutos para testes completos (aumentado de 60s para suites maiores)
         )
         
         if result.returncode == 0:
