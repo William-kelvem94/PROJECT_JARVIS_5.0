@@ -1,11 +1,23 @@
-# ============================================================================
-# JARVIS SINGULARITY V2 - Main Entry Point (QThread Architecture)
-# ============================================================================
-# Versão melhorada usando AIWorker (QThread) ao invés de threading.Thread
-# Solução cirúrgica conforme auditoria forense
-# ============================================================================
+try:
+    import comtypes.client
+    import comtypes.client._code_cache
+    import shutil
+    from pathlib import Path
+    
+    # Nuke cache programático
+    gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
+    if gen_dir.exists():
+        shutil.rmtree(gen_dir)
+    os.makedirs(gen_dir, exist_ok=True)
+    
+    comtypes.client._code_cache._enable_cache = False
+    logging.getLogger('comtypes').setLevel(logging.ERROR)
+except Exception as e:
+    print(f"⚠️ Erro ao limpar cache comtypes: {e}")
 
-import sys
+# --- SUPRESSÃO DE AVISOS DE DPI DO QT (Acesso Negado) ---
+os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
+
 import signal
 from pathlib import Path
 
@@ -461,10 +473,26 @@ class JarvisSingularityV2(QObject):
         def _listen_for_command_impl():
             """Captura comando de voz"""
             try:
+                # Definir callback para o comando
+                def process_captured_command(cmd_text):
+                    if cmd_text:
+                        print(f"   ✅ Comando capturado: '{cmd_text}'\n")
+                        self.ai_worker.process_command(cmd_text)
+                        # Reiniciar wake word após o processamento (AIWorker emitirá idle)
+                        QTimer.singleShot(5000, self._restart_wake_word_detection)
+                    else:
+                        print("   ⚠️ Nenhum comando detectado")
+                        self.hud.update_state("idle")
+                        self._restart_wake_word_detection()
+
                 # Usar método do voice_controller para capturar áudio
                 if hasattr(voice_controller, 'listen_once'):
-                    command = voice_controller.listen_once()
-                elif hasattr(voice_controller, 'listen'):
+                    voice_controller.listen_once(on_command=process_captured_command)
+                    return # O callback acima cuidará do resto
+                
+                # Fallback legado se listen_once não existir (improvável aqui)
+                command = None
+                if hasattr(voice_controller, 'listen'):
                     command = voice_controller.listen()
                 else:
                     # Fallback: usar SpeechRecognition diretamente
@@ -488,11 +516,15 @@ class JarvisSingularityV2(QObject):
                 if command:
                     print(f"   ✅ Comando capturado: '{command}'\n")
                     
-                    # Processar comando
+                    # Processar comando via AIWorker (que emite status_changed("thinking"))
                     self.ai_worker.process_command(command)
                     
-                    # Aguardar resposta e voltar para listening
-                    QTimer.singleShot(2000, self._restart_wake_word_detection)
+                    # O AIWorker emitirá status_changed("idle") ao terminar,
+                    # então precisamos monitorar esse sinal para reiniciar a wake word.
+                    # Por enquanto, reiniciamos após um tempo estimado ou via sinal.
+                    # Melhor: conectar ao sinal finished da thread se necessário, 
+                    # mas o ai_agent já fala. Reiniciamos após 5s para dar tempo.
+                    QTimer.singleShot(5000, self._restart_wake_word_detection)
                 else:
                     print("   ⚠️ Nenhum comando detectado")
                     self.hud.update_state("idle")
@@ -515,8 +547,8 @@ class JarvisSingularityV2(QObject):
             
             # Reiniciar loop de wake word
             QTimer.singleShot(100, lambda: voice_controller.listen_for_wake_word(
-                callback=on_wake_word_detected,
-                wake_word="jarvis"
+                wake_word="jarvis",
+                on_wake=on_wake_word_detected
             ))
         
         self._restart_wake_word_detection = _restart_wake_word_impl
@@ -524,8 +556,8 @@ class JarvisSingularityV2(QObject):
         # Iniciar detecção de wake word
         try:
             voice_controller.listen_for_wake_word(
-                callback=on_wake_word_detected,
-                wake_word="jarvis"
+                wake_word="jarvis",
+                on_wake=on_wake_word_detected
             )
         except Exception as e:
             print(f"   ❌ Erro ao iniciar wake word detection: {e}")

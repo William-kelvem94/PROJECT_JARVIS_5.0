@@ -43,3 +43,20 @@ guardian:
   watchdog_enabled: true
   safe_mode_threshold: 3  # Crashes antes de entrar em modo seguro
   privacy_filter: true  # Filtrar dados sensíveis
+
+# Módulo 8: Configurações de Voz (ADICIONADO)
+voice:
+  vosk_model_path: "models/vosk-model-small-pt-0.3"
+  stt_provider: "auto"  # auto, google, vosk
+  tts_provider: "edge"  # edge, google, local
+  mic_index: null       # Índice do microfone (null = padrão)
+  energy_threshold: 300 # Sensibilidade (menor = mais sensível)
+  dynamic_energy: true  # Ajuste automático de ruído
+
+# Módulo 9: Visão Avançada (ADICIONADO)
+vision:
+  enabled: true
+  ocr_provider: "easyocr"
+  object_detection: "yolo"
+  face_recognition: true
+  gesture_control: true
