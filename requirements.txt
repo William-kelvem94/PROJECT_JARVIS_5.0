@@ -44,3 +44,24 @@ redis==5.0.1
 
 # HuggingFace Integration
 huggingface_hub==0.20.0
+
+# ========================================
+# NEW INTEGRATIONS - Best Features
+# ========================================
+
+# Google Calendar Integration
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
+google-api-python-client==2.108.0
+
+# Wikipedia Integration
+wikipedia-api==0.6.0
+
+# News Service (RSS fallback)
+feedparser==6.0.10
+
+# Optional: OpenCV for face authentication
+# opencv-python==4.8.1.78
+
+# Optional: PyAudio for better audio handling
+# pyaudio==0.2.14
