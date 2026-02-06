@@ -12,9 +12,10 @@
 # NumPy < 2.0 - OBRIGATÓRIO para compatibilidade com Torch/Whisper
 numpy==1.26.4
 
-# PyTorch CPU (compatível com numpy 1.x)
-torch==2.1.2
-torchaudio==2.1.2
+# PyTorch CPU (versão compatível com numpy 1.x e register_pytree_node)
+# Torch 2.5.1 corrige o erro: "module 'torch.utils._pytree' has no attribute 'register_pytree_node'"
+torch==2.5.1
+torchaudio==2.5.1
 
 # Cryptography (versão estável que resolve erro PBKDF2)
 cryptography==42.0.5
@@ -34,6 +35,15 @@ Pillow==10.2.0
 easyocr==1.7.1
 pytesseract==0.3.10
 
+# Captura de tela (para screen_capture module)
+mss==9.0.1
+
+# Reconhecimento facial (opcional mas recomendado)
+face-recognition==1.3.0
+
+# MediaPipe para detecção de gestos
+mediapipe==0.10.9
+
 # -------------------------------------------------------------------------
 # PROCESSAMENTO DE VOZ
 # -------------------------------------------------------------------------
@@ -46,6 +56,9 @@ SpeechRecognition==3.10.4
 
 # Vosk (alternativa offline)
 vosk==0.3.45
+
+# Edge TTS para síntese de voz de alta qualidade
+edge-tts==6.1.9
 
 # -------------------------------------------------------------------------
 # AUTOMAÇÃO DE UI
@@ -102,6 +115,9 @@ psutil==5.9.8
 colorlog==6.8.2
 tqdm==4.66.2
 
+# PyYAML para validação de config.yaml (CRÍTICO para validator)
+PyYAML==6.0.1
+
 # -------------------------------------------------------------------------
 # DEVELOPMENT & TESTING
 # -------------------------------------------------------------------------
@@ -112,11 +128,13 @@ pytest-asyncio==0.21.1
 # NOTAS IMPORTANTES
 # -------------------------------------------------------------------------
 # 1. NumPy 2.x QUEBRA torch e whisper - NUNCA atualize para 2.x
-# 2. Se pip tentar instalar numpy 2.x, force reinstall:
+# 2. Torch 2.5.1+ corrige erro register_pytree_node
+# 3. Se pip tentar instalar numpy 2.x, force reinstall:
 #    pip install --force-reinstall numpy==1.26.4
-# 3. Cryptography 42.0.5 resolve erro de importação PBKDF2
-# 4. PyQt6 6.6.1 é a última versão estável testada
-# 5. Para instalar tudo: pip install -r requirements_singularity.txt
+# 4. Cryptography 42.0.5 resolve erro de importação PBKDF2
+# 5. PyQt6 6.6.1 é a última versão estável testada
+# 6. Total de 42 dependências incluindo mss, edge-tts, mediapipe, face-recognition
+# 7. Para instalar tudo: pip install -r requirements_singularity.txt
 # -------------------------------------------------------------------------
 
 # ============================================================================
@@ -126,12 +144,27 @@ pytest-asyncio==0.21.1
 # ERRO: "numpy 2.0 is not compatible with this version of torch"
 # SOLUÇÃO: pip uninstall numpy && pip install numpy==1.26.4
 #
+# ERRO: "module 'torch.utils._pytree' has no attribute 'register_pytree_node'"
+# SOLUÇÃO: pip install --upgrade torch==2.5.1 torchaudio==2.5.1
+#
 # ERRO: "cannot import name 'PBKDF2' from 'cryptography'"
 # SOLUÇÃO: pip install --upgrade cryptography==42.0.5
 #
 # ERRO: "No module named 'PyQt6'"
 # SOLUÇÃO: pip install PyQt6==6.6.1
 #
+# ERRO: "No module named 'mss'" (screen capture)
+# SOLUÇÃO: pip install mss==9.0.1
+#
+# ERRO: "No module named 'edge_tts'" (voice controller)
+# SOLUÇÃO: pip install edge-tts==6.1.9
+#
+# ERRO: "No module named 'mediapipe'" (gesture controller)
+# SOLUÇÃO: pip install mediapipe==0.10.9
+#
+# ERRO: "No module named 'face_recognition'" (camera controller)
+# SOLUÇÃO: pip install face-recognition==1.3.0
+#
 # ERRO: "torch not found"
-# SOLUÇÃO: pip install torch==2.1.2 --index-url https://download.pytorch.org/whl/cpu
+# SOLUÇÃO: pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
 # ============================================================================
