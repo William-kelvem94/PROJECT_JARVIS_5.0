@@ -16,8 +16,6 @@ Architecture:
 - Security: FaceID validation for commands
 """
 
-import cv2
-import numpy as np
 import threading
 import time
 import logging
@@ -32,6 +30,28 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONDITIONAL IMPORTS (Graceful Degradation)
 # ============================================================================
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logger.warning("⚠️ cv2 not available - video features disabled")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    # Mock numpy
+    class np:
+        class ndarray:
+            pass
+        @staticmethod
+        def array(x):
+            return x
+    logger.warning("⚠️ numpy not available - array operations disabled")
+
 try:
     import mss
     MSS_AVAILABLE = True
