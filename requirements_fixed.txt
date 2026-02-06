@@ -1,0 +1,53 @@
+# JARVIS 5.0 - REQUIREMENTS CORRIGIDOS E OTIMIZADOS
+# =================================================
+
+# 1. PYTORCH (VERSÕES ESTÁVEIS PARA WINDOWS)
+torch==2.0.1
+torchvision==0.15.2
+torchaudio==2.0.2
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# 2. CORE
+numpy==1.26.4
+PyQt6==6.6.1
+PyQt6-Qt6==6.6.1
+PyQt6-sip==13.6.0
+pyyaml==6.0.1
+psutil==5.9.8
+
+# 3. VISÃO E IA
+opencv-python==4.9.0.80
+Pillow==10.3.0
+mss==9.0.1
+transformers==4.30.2
+ultralytics==8.1.0
+sentence-transformers==2.2.2
+chromadb==0.4.22
+
+# 4. VOZ E ÁUDIO
+SpeechRecognition==3.10.4
+pyaudio==0.2.14
+pyttsx3==2.90
+edge-tts==6.1.9
+librosa==0.10.1
+soundfile==0.12.1
+faster-whisper>=0.9.0
+torchaudio>=2.1.0
+resemblyzer>=0.1.1
+
+# 5. AUTOMAÇÃO E CONTROLE
+pyautogui==0.9.54
+keyboard==0.13.5
+mouse==0.7.1
+pywin32==306; sys_platform == 'win32'
+
+# 6. EXTERNAL APIS
+google-generativeai==0.3.2
+requests==2.31.0
+beautifulsoup4==4.12.3
+
+# 7. UTILS
+python-dotenv==1.0.1
+colorlog==6.8.2
+tqdm==4.66.2
+sqlalchemy==2.0.25

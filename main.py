@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import sys
+import io
+
+# Fix encoding for Windows console
+if sys.stdout and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr and sys.stderr.encoding.lower() != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 """
 JARVIS SINGULARITY - Integrated Main Entry Point
 =================================================
@@ -51,21 +60,38 @@ warnings.filterwarnings('ignore', category=UserWarning)
 Path('data/logs').mkdir(parents=True, exist_ok=True)
 
 # Setup logging BEFORE other imports
+import sys
+import io
+
+# FORÇAR UTF-8 NO WINDOWS
+if sys.platform == "win32":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+import logging
+
+# Configurar logging com UTF-8
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('data/logs/jarvis_singularity.log'),
-        logging.StreamHandler()
+        logging.FileHandler('data/logs/jarvis_singularity.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
 
-# Reduce noise from libraries
-logging.getLogger('matplotlib').setLevel(logging.WARNING)
-logging.getLogger('PIL').setLevel(logging.WARNING)
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-
 logger = logging.getLogger(__name__)
+
+# Start System Monitor
+try:
+    from src.utils.system_monitor import system_monitor
+    system_monitor.start_monitoring()
+except ImportError:
+    try:
+        from utils.system_monitor import system_monitor
+        system_monitor.start_monitoring()
+    except ImportError:
+        logger.warning("⚠️ System Monitor not found, starting without telemetry")
 
 # ============================================================================
 # PATH SETUP
@@ -324,6 +350,16 @@ class JarvisSingularity:
 # ============================================================================
 def main():
     """Main entry point"""
+    # Auto-healing entry point
+    if "--auto-heal" in sys.argv:
+        try:
+            from install_system import JarvisAutoSystem
+            system = JarvisAutoSystem()
+            system.auto_fix()
+            print("✅ Auto-healing check complete.")
+        except Exception as e:
+            print(f"⚠️ Auto-healing failed: {e}")
+
     try:
         # Create application
         app = QApplication(sys.argv)
@@ -353,6 +389,10 @@ def main():
         return 130
     except Exception as e:
         logger.error(f"\n❌ Fatal error: {e}")
+        try:
+            from utils.system_monitor import system_monitor
+            system_monitor.log_error(str(e))
+        except: pass
         import traceback
         logger.error(traceback.format_exc())
         return 1
