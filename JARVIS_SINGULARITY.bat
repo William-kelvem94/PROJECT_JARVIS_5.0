@@ -22,24 +22,36 @@ set "PYTHON_MIN_VERSION=3.10"
 set "MAX_RETRIES=3"
 set "RETRY_COUNT=0"
 
-:: Limpar log anterior
-if exist "%LOG_FILE%" del "%LOG_FILE%"
+:: Rotacionar log anterior (preservar log da execucao anterior para diagnostico)
+if exist "%LOG_FILE%.old" del "%LOG_FILE%.old"
+if exist "%LOG_FILE%" move /Y "%LOG_FILE%" "%LOG_FILE%.old" >nul 2>&1
 
 :: -------------------------------------------------------------------------
-:: SOLICITAR ELEVACAO DE PRIVILEGIO (ADM)
+:: VERIFICAR SE PRECISA DE ELEVACAO (ADM)
 :: -------------------------------------------------------------------------
+:: Nota: Admin só é necessário se precisar instalar Python via winget/chocolatey
+:: Primeiro tentamos sem admin, só pedimos se realmente necessário
 :check_Privileges
-NET SESSION >nul 2>&1
-if %ERRORLEVEL% == 0 (
-    goto :gotAdmin
-) else (
-    echo.
-    echo ========================================================================
-    echo   SOLICITANDO PERMISSAO DE ADMINISTRADOR...
-    echo ========================================================================
-    echo.
-    powershell -Command "Start-Process '%~f0' -Verb RunAs"
-    exit /b
+set "NEEDS_ADMIN=0"
+
+:: Se Python já está instalado, provavelmente não precisa de admin
+where python >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    set "NEEDS_ADMIN=1"
+)
+
+if "%NEEDS_ADMIN%"=="1" (
+    NET SESSION >nul 2>&1
+    if %ERRORLEVEL% NEQ 0 (
+        echo.
+        echo ========================================================================
+        echo   SOLICITANDO PERMISSAO DE ADMINISTRADOR...
+        echo   (Necessario para instalacao automatica do Python)
+        echo ========================================================================
+        echo.
+        powershell -Command "Start-Process '%~f0' -Verb RunAs"
+        exit /b
+    )
 )
 
 :gotAdmin
@@ -123,16 +135,23 @@ python -c "import PyQt6" >nul 2>&1
 if !ERRORLEVEL! NEQ 0 (
     call :log_message "    Instalando dependencias (isso pode demorar varios minutos)..."
     python setup_manager.py
-    if !ERRORLEVEL! NEQ 0 (
-        if !ERRORLEVEL! NEQ 1 (
-            call :log_error "Erro ao instalar dependencias"
-            call :log_message "    Tentando instalacao alternativa..."
+    set SETUP_EXIT_CODE=!ERRORLEVEL!
+    
+    if !SETUP_EXIT_CODE! NEQ 0 (
+        if !SETUP_EXIT_CODE! EQU 1 (
+            :: Exit code 1 = parcial (arquivos OK, deps podem ter falhado)
+            call :log_message "    Setup parcial. Tentando instalacao alternativa de deps..."
             python -m pip install -r requirements_singularity.txt
             if !ERRORLEVEL! NEQ 0 (
                 call :log_error "Falha na instalacao de dependencias"
                 pause
                 exit /b 1
             )
+        ) else (
+            :: Exit code 2+ = falha crítica
+            call :log_error "Erro critico no setup (codigo !SETUP_EXIT_CODE!)"
+            pause
+            exit /b 1
         )
     )
     call :log_message "    Dependencias instaladas"
@@ -202,7 +221,9 @@ if %JARVIS_EXIT_CODE% EQU 0 (
     call :log_message "  Encerramento normal"
     goto :end_launcher
 ) else if %JARVIS_EXIT_CODE% EQU 130 (
-    call :log_message "  Interrompido pelo usuario (Ctrl+C)"
+    :: Nota: em scripts .bat do Windows, Ctrl+C normalmente encerra o processo sem retornar aqui.
+    :: Este código 130 pode ser apenas um código de saída definido pelo processo filho (ex: interrupção).
+    call :log_message "  Encerrado com codigo 130 (possível interrupção pelo usuario ou sinal do processo filho)"
     goto :end_launcher
 ) else (
     set /a RETRY_COUNT+=1
@@ -237,27 +258,31 @@ echo    [ERRO] %~1 >> "%LOG_FILE%"
 goto :eof
 
 :install_python
-:: Tentar instalar Python via winget
+:: Tentar instalar Python via winget (instala Python 3.11 - versão estável compatível)
 where winget >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     call :log_message "    Instalando Python via winget..."
-    :: Install Python 3.10 or later - let winget choose the latest stable
-    winget install Python.Python.3.10 --silent
+    :: Instala Python 3.11 (compatível com numpy 1.26.4 e requisitos do projeto)
+    winget install Python.Python.3.11 --silent
     if !ERRORLEVEL! EQU 0 (
         call :log_message "    Python instalado com sucesso"
-        :: Refresh PATH - let Windows find Python automatically
-        call refreshenv >nul 2>&1
+        call :log_message "    IMPORTANTE: Feche e reabra o terminal para que o Python seja reconhecido no PATH"
+        call :log_message "    Ou reinicie este script apos o fechamento."
+        pause
         exit /b 0
     )
 )
 
-:: Tentar via chocolatey
+:: Tentar via chocolatey (instala última versão do Python 3)
 where choco >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     call :log_message "    Instalando Python via chocolatey..."
-    choco install python --version=3.10 -y
+    choco install python -y
     if !ERRORLEVEL! EQU 0 (
         call :log_message "    Python instalado com sucesso"
+        call :log_message "    IMPORTANTE: Feche e reabra o terminal para que o Python seja reconhecido no PATH"
+        call :log_message "    Ou reinicie este script apos o fechamento."
+        pause
         exit /b 0
     )
 )
@@ -266,8 +291,28 @@ if %ERRORLEVEL% EQU 0 (
 exit /b 1
 
 :validate_structure
-:: Verificar arquivos criticos
+:: Verificar todos os 7 arquivos criticos (alinhado com validate_project.py)
 set "VALIDATION_FAILED=0"
+
+if not exist "main_singularity.py" (
+    call :log_error "    main_singularity.py nao encontrado"
+    set "VALIDATION_FAILED=1"
+)
+
+if not exist "config.yaml" (
+    call :log_error "    config.yaml nao encontrado"
+    set "VALIDATION_FAILED=1"
+)
+
+if not exist "requirements_singularity.txt" (
+    call :log_error "    requirements_singularity.txt nao encontrado"
+    set "VALIDATION_FAILED=1"
+)
+
+if not exist "setup_manager.py" (
+    call :log_error "    setup_manager.py nao encontrado"
+    set "VALIDATION_FAILED=1"
+)
 
 if not exist "src\core\ai_agent.py" (
     call :log_error "    src\core\ai_agent.py nao encontrado"
@@ -279,8 +324,8 @@ if not exist "src\interface\ai_worker.py" (
     set "VALIDATION_FAILED=1"
 )
 
-if not exist "config.yaml" (
-    call :log_error "    config.yaml nao encontrado"
+if not exist "src\interface\hud.py" (
+    call :log_error "    src\interface\hud.py nao encontrado"
     set "VALIDATION_FAILED=1"
 )
 
