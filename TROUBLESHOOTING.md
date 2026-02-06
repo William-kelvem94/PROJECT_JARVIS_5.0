@@ -234,7 +234,7 @@ python validate_project.py
 
 # 2. Se estrutura OK, problema pode ser PYTHONPATH
 # Executar do diretório raiz:
-cd C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0
+cd C:\Path\To\PROJECT_JARVIS_5.0
 python main.py
 ```
 
