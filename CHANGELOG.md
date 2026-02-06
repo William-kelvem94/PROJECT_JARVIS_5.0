@@ -10,7 +10,7 @@
   - ✅ PyTorch heap buffer overflow
   - ✅ PyTorch use-after-free vulnerability
 - **Pillow 10.2.0 → 10.3.0** - Fixes buffer overflow vulnerability
-- **aiohttp 3.9.3 → 3.9.4** - Fixes:
+- **aiohttp 3.9.3 → 3.13.3** - Fixes:
   - ✅ Zip bomb vulnerability in HTTP parser auto_decompress
   - ✅ Denial of Service when parsing malformed POST requests
 
@@ -118,7 +118,7 @@ All modules now warn but don't crash when optional dependencies are missing.
 | Dependencies | 37 | 42 (+5 critical) |
 | Torch Version | 2.1.2 (3 CVEs) | 2.6.0 (secure) |
 | Pillow Version | 10.2.0 (1 CVE) | 10.3.0 (secure) |
-| aiohttp Version | 3.9.3 (2 CVEs) | 3.9.4 (secure) |
+| aiohttp Version | 3.9.3 (2 CVEs) | 3.13.3 (secure) |
 | Security Vulnerabilities | 6 | 0 |
 | Critical Errors | 5 | 0 |
 | Security Alerts | 0 | 0 |
@@ -151,7 +151,7 @@ Erro na inicialização: module 'torch.utils._pytree' has no attribute 'register
 
 1. **Update dependencies with security patches**:
    ```bash
-   pip install --upgrade torch==2.6.0 torchaudio==2.6.0 Pillow==10.3.0 aiohttp==3.9.4
+   pip install --upgrade torch==2.6.0 torchaudio==2.6.0 Pillow==10.3.0 aiohttp==3.13.3
    pip install mss==9.0.1 edge-tts==6.1.9 mediapipe==0.10.9 face-recognition==1.3.0 PyYAML==6.0.1
    ```
 
