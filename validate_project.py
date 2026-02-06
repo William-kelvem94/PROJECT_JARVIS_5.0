@@ -136,8 +136,20 @@ def validate_python_syntax() -> Tuple[bool, List[str]]:
     
     for py_file in python_files:
         try:
-            with open(py_file, 'r', encoding='utf-8', errors='replace') as f:
-                ast.parse(f.read())
+            # Primeiro, tentar ler com UTF-8 estrito para detectar problemas de codificacao
+            try:
+                with open(py_file, 'r', encoding='utf-8', errors='strict') as f:
+                    source = f.read()
+            except UnicodeDecodeError as ude:
+                # Se houver problema de codificacao, registrar aviso e reler com substituicao
+                print_warning(
+                    f"Problema de codificacao em {py_file.relative_to(PROJECT_ROOT)}: "
+                    f"linha ~{ude.start}. Caracteres invalidos foram substituidos durante a validacao."
+                )
+                with open(py_file, 'r', encoding='utf-8', errors='replace') as f:
+                    source = f.read()
+            
+            ast.parse(source)
             # print_success(f"Sintaxe OK: {py_file.relative_to(PROJECT_ROOT)}")
         except SyntaxError as e:
             error_msg = f"Erro de sintaxe em {py_file.relative_to(PROJECT_ROOT)}: {e}"
@@ -202,11 +214,16 @@ def validate_dependencies() -> Tuple[bool, List[str]]:
         return False, errors
     
     with open(req_file, 'r') as f:
-        requirements = [
-            line.strip().split("==")[0].split(">=")[0].split(";")[0]
-            for line in f
-            if line.strip() and not line.startswith("#")
-        ]
+        requirements = []
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                # Remove version operators: ==, >=, <=, ~=, !=, <, >
+                pkg_name = line.split("==")[0].split(">=")[0].split("<=")[0]
+                pkg_name = pkg_name.split("~=")[0].split("!=")[0].split("<")[0].split(">")[0]
+                pkg_name = pkg_name.split(";")[0].strip()  # Remove platform specifiers
+                if pkg_name:
+                    requirements.append(pkg_name)
     
     print_info(f"Verificando {len(requirements)} pacotes...")
     
@@ -216,7 +233,7 @@ def validate_dependencies() -> Tuple[bool, List[str]]:
             [sys.executable, "-m", "pip", "list", "--format=json"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=60  # Aumentar timeout de 30 para 60 segundos
         )
         
         if result.returncode == 0:
@@ -225,28 +242,46 @@ def validate_dependencies() -> Tuple[bool, List[str]]:
                 for pkg in json.loads(result.stdout)
             }
             
+            # Mapeamento de nomes conhecidos de pacotes (PyPI name -> import name)
+            PACKAGE_ALIASES = {
+                "opencv_python": ["opencv", "cv2"],
+                "pyyaml": ["yaml"],
+                "pillow": ["pil"],
+                "scikit_learn": ["sklearn"],
+            }
+            
             missing = []
             for pkg in requirements:
                 pkg_normalized = pkg.lower().replace("-", "_")
-                if pkg_normalized not in installed_packages:
+                
+                # Verificar nome normalizado e aliases
+                found = pkg_normalized in installed_packages
+                if not found and pkg_normalized in PACKAGE_ALIASES:
+                    # Verificar aliases
+                    for alias in PACKAGE_ALIASES[pkg_normalized]:
+                        if alias in installed_packages:
+                            found = True
+                            break
+                
+                if not found:
                     missing.append(pkg)
             
             if missing:
-                print_warning(f"Pacotes faltando ({len(missing)}):")
-                for pkg in missing[:10]:  # Mostrar apenas primeiros 10
+                print_error(f"Pacotes faltando ({len(missing)}):")
+                for pkg in missing[:15]:  # Mostrar até 15 pacotes
                     print(f"  - {pkg}")
-                    warnings.append(f"Pacote faltando: {pkg}")
+                    errors.append(f"Pacote faltando: {pkg}")  # Tratado como erro, não warning
             else:
                 print_success(f"Todos os {len(requirements)} pacotes estao instalados")
         else:
-            warnings.append("Nao foi possivel verificar pacotes instalados")
-            print_warning("Nao foi possivel verificar pacotes instalados")
+            errors.append("Nao foi possivel verificar pacotes instalados")
+            print_error("Nao foi possivel verificar pacotes instalados")
             
     except Exception as e:
-        warnings.append(f"Erro ao verificar dependencias: {e}")
-        print_warning(f"Erro ao verificar dependencias: {e}")
+        errors.append(f"Erro ao verificar dependencias: {e}")
+        print_error(f"Erro ao verificar dependencias: {e}")
     
-    return len(errors) == 0, errors + warnings
+    return len(errors) == 0, errors
 
 
 def validate_config_file() -> Tuple[bool, List[str]]:
@@ -279,7 +314,12 @@ def validate_config_file() -> Tuple[bool, List[str]]:
         print_success("config.yaml valido")
         
     except ImportError:
-        print_warning("PyYAML nao instalado, pulando validacao detalhada")
+        error_msg = (
+            "PyYAML nao instalado; instale o pacote 'pyyaml' para validar config.yaml "
+            "(ex.: pip install pyyaml)"
+        )
+        errors.append(error_msg)
+        print_error(error_msg)
     except Exception as e:
         error_msg = f"Erro ao validar config.yaml: {e}"
         errors.append(error_msg)
@@ -340,12 +380,12 @@ def run_tests() -> Tuple[bool, List[str]]:
             return True, []
         
         # Executar testes
-        print_info("Executando testes...")
+        print_info("Executando testes (pode demorar alguns minutos)...")
         result = subprocess.run(
             [sys.executable, "-m", "pytest", str(test_dir), "-v", "--tb=short"],
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=300  # 5 minutos para testes completos (aumentado de 60s)
         )
         
         if result.returncode == 0:
