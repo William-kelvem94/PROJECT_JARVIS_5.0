@@ -1,347 +1,589 @@
 @echo off
 setlocal enabledelayedexpansion
+chcp 65001 >nul 2>&1
 
 :: ============================================================================
-:: JARVIS SINGULARITY - AUTONOMOUS LAUNCHER
+:: JARVIS SINGULARITY - LAUNCHER AUTÔNOMO v2.0
 :: ============================================================================
-:: Sistema de inicializacao totalmente autonomo com:
-:: - Auto-deteccao e instalacao de Python
-:: - Auto-configuracao de ambiente virtual
-:: - Auto-instalacao de dependencias
-:: - Auto-configuracao de API keys
-:: - Auto-start e auto-restart em caso de falha
+:: Sistema de inicialização inteligente e robusto:
+:: ✓ Auto-detecção e instalação de Python
+:: ✓ Ambiente virtual isolado e gerenciado
+:: ✓ Instalação inteligente de dependências
+:: ✓ Validação completa do projeto
+:: ✓ Auto-restart em caso de falhas
+:: ✓ Logs detalhados para diagnóstico
 :: ============================================================================
 
 :: -------------------------------------------------------------------------
-:: CONFIGURACOES
+:: CONFIGURAÇÕES GLOBAIS
 :: -------------------------------------------------------------------------
 set "PROJECT_DIR=%~dp0"
 set "VENV_DIR=%PROJECT_DIR%venv"
 set "LOG_FILE=%PROJECT_DIR%jarvis_launcher.log"
+set "ERROR_LOG=%PROJECT_DIR%jarvis_errors.log"
 set "PYTHON_MIN_VERSION=3.10"
 set "MAX_RETRIES=3"
 set "RETRY_COUNT=0"
+set "STARTUP_TIMESTAMP=%date:~-4%%date:~3,2%%date:~0,2%_%time:~0,2%%time:~3,2%%time:~6,2%"
+set "STARTUP_TIMESTAMP=%STARTUP_TIMESTAMP: =0%"
 
-:: Rotacionar log anterior (preservar log da execucao anterior para diagnostico)
-if exist "%LOG_FILE%.old" del "%LOG_FILE%.old"
-if exist "%LOG_FILE%" move /Y "%LOG_FILE%" "%LOG_FILE%.old" >nul 2>&1
+:: Cores para output (se disponível)
+set "COLOR_RESET=[0m"
+set "COLOR_GREEN=[92m"
+set "COLOR_YELLOW=[93m"
+set "COLOR_RED=[91m"
+set "COLOR_BLUE=[94m"
+set "COLOR_CYAN=[96m"
 
 :: -------------------------------------------------------------------------
-:: VERIFICAR SE PRECISA DE ELEVACAO (ADM)
+:: ROTACIONAR LOGS
 :: -------------------------------------------------------------------------
-:: Nota: Admin só é necessário se precisar instalar Python via winget/chocolatey
-:: Primeiro tentamos sem admin, só pedimos se realmente necessário
-:check_Privileges
+if exist "%LOG_FILE%.3" del "%LOG_FILE%.3" >nul 2>&1
+if exist "%LOG_FILE%.2" ren "%LOG_FILE%.2" "jarvis_launcher.log.3" >nul 2>&1
+if exist "%LOG_FILE%.1" ren "%LOG_FILE%.1" "jarvis_launcher.log.2" >nul 2>&1
+if exist "%LOG_FILE%" ren "%LOG_FILE%" "jarvis_launcher.log.1" >nul 2>&1
+
+:: Iniciar novo log
+call :log_header "JARVIS SINGULARITY LAUNCHER - INICIANDO"
+call :log_info "Timestamp: %STARTUP_TIMESTAMP%"
+call :log_info "Diretorio: %PROJECT_DIR%"
+call :log_separator
+
+:: -------------------------------------------------------------------------
+:: VERIFICAR PRIVILÉGIOS (SE NECESSÁRIO)
+:: -------------------------------------------------------------------------
+:: Admin só é necessário para instalar Python automaticamente
 set "NEEDS_ADMIN=0"
+set "RUNNING_AS_ADMIN=0"
 
-:: Se Python já está instalado, provavelmente não precisa de admin
+:: Verificar se já está rodando como admin
+net session >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    set "RUNNING_AS_ADMIN=1"
+    call :log_info "Executando com privilegios de administrador"
+)
+
+:: Verificar se Python existe
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     set "NEEDS_ADMIN=1"
-)
-
-if "%NEEDS_ADMIN%"=="1" (
-    NET SESSION >nul 2>&1
-    if %ERRORLEVEL% NEQ 0 (
-        echo.
-        echo ========================================================================
-        echo   SOLICITANDO PERMISSAO DE ADMINISTRADOR...
-        echo   (Necessario para instalacao automatica do Python)
-        echo ========================================================================
-        echo.
-        powershell -Command "Start-Process '%~f0' -Verb RunAs"
-        exit /b
+    if "!RUNNING_AS_ADMIN!"=="0" (
+        call :log_warning "Python nao encontrado - pode ser necessario privilegios de admin"
+        call :log_info "Tentando solicitar elevacao..."
+        powershell -Command "Start-Process '%~f0' -Verb RunAs" >nul 2>&1
+        if !ERRORLEVEL! EQU 0 (
+            call :log_info "Relancando com privilegios de administrador..."
+            exit /b 0
+        ) else (
+            call :log_warning "Falha ao elevar privilegios - continuando sem admin"
+        )
     )
 )
-
-:gotAdmin
-pushd "%CD%"
-CD /D "%~dp0"
 
 cls
-call :log_message "================================================================================"
-call :log_message "  JARVIS SINGULARITY - AUTONOMOUS LAUNCHER v2.0"
-call :log_message "================================================================================"
-call :log_message ""
+echo.
+echo %COLOR_CYAN%╔════════════════════════════════════════════════════════════════════════╗%COLOR_RESET%
+echo %COLOR_CYAN%║              JARVIS SINGULARITY - LAUNCHER v2.0                        ║%COLOR_RESET%
+echo %COLOR_CYAN%║                 Inicializador Autônomo e Inteligente                   ║%COLOR_RESET%
+echo %COLOR_CYAN%╚════════════════════════════════════════════════════════════════════════╝%COLOR_RESET%
+echo.
 
-:: -------------------------------------------------------------------------
+:: ============================================================================
 :: ETAPA 1: VERIFICAR/INSTALAR PYTHON
-:: -------------------------------------------------------------------------
-call :log_message "[1/7] Verificando Python..."
+:: ============================================================================
+call :log_step "1" "7" "Verificando Python"
 
-:: Verificar se Python esta instalado
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    call :log_message "    Python nao encontrado. Tentando instalacao automatica..."
-    call :install_python
-    if !ERRORLEVEL! NEQ 0 (
-        call :log_error "Falha ao instalar Python automaticamente"
-        call :log_message "Por favor, instale Python %PYTHON_MIN_VERSION%+ manualmente:"
-        call :log_message "https://www.python.org/downloads/"
-        pause
-        exit /b 1
-    )
-) else (
-    :: Obter versao do Python
-    for /f "tokens=2 delims= " %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-    call :log_message "    Python !PYTHON_VERSION! encontrado"
-)
-
-:: -------------------------------------------------------------------------
-:: ETAPA 2: CRIAR/ATIVAR AMBIENTE VIRTUAL
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[2/7] Configurando ambiente virtual..."
-
-if not exist "%VENV_DIR%" (
-    call :log_message "    Criando ambiente virtual..."
-    python -m venv "%VENV_DIR%"
-    if !ERRORLEVEL! NEQ 0 (
-        call :log_error "Falha ao criar ambiente virtual"
-        pause
-        exit /b 1
-    )
-    call :log_message "    Ambiente virtual criado com sucesso"
-) else (
-    call :log_message "    Ambiente virtual existente encontrado"
-)
-
-:: Ativar ambiente virtual
-call :log_message "    Ativando ambiente virtual..."
-call "%VENV_DIR%\Scripts\activate.bat"
-
-:: -------------------------------------------------------------------------
-:: ETAPA 3: ATUALIZAR PIP
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[3/7] Atualizando pip..."
-python -m pip install --upgrade pip >nul 2>&1
-call :log_message "    Pip atualizado"
-
-:: -------------------------------------------------------------------------
-:: ETAPA 4: VERIFICAR E INSTALAR DEPENDENCIAS
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[4/7] Verificando dependencias..."
-
-if not exist "requirements.txt" (
-    call :log_error "requirements.txt nao encontrado!"
-    pause
-    exit /b 1
-)
-
-:: Verificar se precisa instalar dependencias
-python -c "import PyQt6" >nul 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    call :log_message "    Instalando dependencias (isso pode demorar varios minutos)..."
-    call :log_message "    NOTA: Algumas dependencias podem falhar (ex: dlib) - isto e normal"
-    call :log_message "    O sistema funcionara mesmo sem todas as dependencias opcionais"
-    python setup.py
-    set SETUP_EXIT_CODE=!ERRORLEVEL!
+    call :log_warning "Python nao encontrado no PATH"
+    call :log_info "Tentando localizar Python instalado..."
     
-    if !SETUP_EXIT_CODE! NEQ 0 (
-        if !SETUP_EXIT_CODE! EQU 1 (
-            :: Exit code 1 = parcial (arquivos OK, deps podem ter falhado)
-            call :log_message "    Setup parcial. Tentando instalacao alternativa de deps..."
-            call :log_message "    Instalando pacotes criticos primeiro..."
-            
-            :: Install critical packages first
-            python -m pip install --upgrade pip
-            python -m pip install numpy==1.26.4
-            python -m pip install PyQt6==6.6.1
-            python -m pip install opencv-python
-            
-            :: Then try full requirements (some may fail - that's OK)
-            python -m pip install -r requirements.txt --no-deps
-            python -m pip install -r requirements.txt
-            if !ERRORLEVEL! NEQ 0 (
-                call :log_error "Falha na instalacao de dependencias"
-                pause
-                exit /b 1
-            )
-        ) else (
-            :: Exit code 2+ = falha crítica
-            call :log_error "Erro critico no setup (codigo !SETUP_EXIT_CODE!)"
+    :: Tentar localizar Python em locais comuns
+    set "PYTHON_FOUND=0"
+    for %%P in (
+        "C:\Python311\python.exe"
+        "C:\Python310\python.exe"
+        "C:\Python312\python.exe"
+        "%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
+        "%LOCALAPPDATA%\Programs\Python\Python310\python.exe"
+        "%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+    ) do (
+        if exist %%P (
+            call :log_success "Python encontrado em %%P"
+            set "PYTHON_CMD=%%P"
+            set "PYTHON_FOUND=1"
+            goto :python_found
+        )
+    )
+    
+    :python_not_found
+    if "!PYTHON_FOUND!"=="0" (
+        call :log_error "Python nao encontrado em locais padroes"
+        call :install_python
+        if !ERRORLEVEL! NEQ 0 (
+            call :log_error "Falha ao instalar Python"
+            call :log_info "Instale manualmente: https://www.python.org/downloads/"
+            call :log_info "IMPORTANTE: Marque 'Add Python to PATH' durante instalacao"
+            pause
+            exit /b 1
+        )
+        :: Tentar novamente após instalação
+        where python >nul 2>&1
+        if !ERRORLEVEL! NEQ 0 (
+            call :log_error "Python ainda nao encontrado apos instalacao"
+            call :log_info "Por favor, feche e reabra o terminal"
             pause
             exit /b 1
         )
     )
-    call :log_message "    Dependencias instaladas"
+    
+    :python_found
+    if not defined PYTHON_CMD set "PYTHON_CMD=python"
 ) else (
-    call :log_message "    Dependencias ja instaladas"
+    set "PYTHON_CMD=python"
 )
 
-:: -------------------------------------------------------------------------
-:: ETAPA 5: VALIDAR ESTRUTURA DO PROJETO
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[5/7] Validando estrutura do projeto..."
+:: Verificar versão do Python
+for /f "tokens=2" %%V in ('%PYTHON_CMD% --version 2^>^&1') do set "PYTHON_VERSION=%%V"
+call :log_success "Python %PYTHON_VERSION% disponivel"
 
-call :validate_structure
-if !ERRORLEVEL! NEQ 0 (
-    call :log_error "Estrutura do projeto invalida"
+:: Validar versão mínima
+%PYTHON_CMD% -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "Python %PYTHON_VERSION% e muito antigo (minimo: %PYTHON_MIN_VERSION%)"
+    call :log_info "Atualize em: https://www.python.org/downloads/"
     pause
     exit /b 1
 )
 
-:: -------------------------------------------------------------------------
-:: ETAPA 6: CONFIGURAR API KEYS (SE NECESSARIO)
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[6/7] Verificando configuracao..."
+:: ============================================================================
+:: ETAPA 2: AMBIENTE VIRTUAL
+:: ============================================================================
+call :log_step "2" "7" "Configurando Ambiente Virtual"
 
-if "%GOOGLE_API_KEY%"=="" (
-    call :log_message "    API Key nao configurada. Sistema funcionara em modo local."
-    call :log_message "    Para melhor desempenho, configure GOOGLE_API_KEY no config.yaml"
+if exist "%VENV_DIR%\Scripts\python.exe" (
+    call :log_info "Ambiente virtual existente encontrado"
+    :: Verificar integridade
+    "%VENV_DIR%\Scripts\python.exe" --version >nul 2>&1
+    if !ERRORLEVEL! NEQ 0 (
+        call :log_warning "Ambiente virtual corrompido - recriando..."
+        rmdir /s /q "%VENV_DIR%" >nul 2>&1
+        goto :create_venv
+    )
+    call :log_success "Ambiente virtual validado"
 ) else (
-    call :log_message "    API Key configurada"
+    :create_venv
+    call :log_info "Criando novo ambiente virtual..."
+    %PYTHON_CMD% -m venv "%VENV_DIR%" --clear
+    if !ERRORLEVEL! NEQ 0 (
+        call :log_error "Falha ao criar ambiente virtual"
+        call :log_info "Verifique se o modulo venv esta instalado"
+        pause
+        exit /b 1
+    )
+    call :log_success "Ambiente virtual criado"
 )
 
-:: -------------------------------------------------------------------------
-:: ETAPA 7: INICIAR JARVIS COM AUTO-RESTART
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "[7/7] Iniciando JARVIS Singularity..."
-call :log_message ""
-call :log_message "================================================================================"
-call :log_message "  JARVIS ONLINE - Sistema Operacional"
-call :log_message "================================================================================"
-call :log_message ""
-
-:start_jarvis
-if exist main.py (
-    python main.py
-) else (
-    call :log_error "Entry point nao encontrado!"
+:: Ativar ambiente virtual
+call :log_info "Ativando ambiente virtual..."
+if not exist "%VENV_DIR%\Scripts\activate.bat" (
+    call :log_error "Script de ativacao nao encontrado"
     pause
     exit /b 1
 )
 
-set JARVIS_EXIT_CODE=%ERRORLEVEL%
+call "%VENV_DIR%\Scripts\activate.bat"
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "Falha ao ativar ambiente virtual"
+    pause
+    exit /b 1
+)
+call :log_success "Ambiente virtual ativado"
 
-:: -------------------------------------------------------------------------
-:: TRATAMENTO DE ERRO E AUTO-RESTART
-:: -------------------------------------------------------------------------
-call :log_message ""
-call :log_message "================================================================================"
-call :log_message "  JARVIS ENCERRADO (codigo: %JARVIS_EXIT_CODE%)"
-call :log_message "================================================================================"
+:: Verificar que estamos usando o Python do venv
+where python | findstr /i "venv" >nul
+if %ERRORLEVEL% NEQ 0 (
+    call :log_warning "Ambiente virtual pode nao estar ativo corretamente"
+)
 
-if %JARVIS_EXIT_CODE% EQU 0 (
-    call :log_message "  Encerramento normal"
-    goto :end_launcher
-) else if %JARVIS_EXIT_CODE% EQU 130 (
-    :: Nota: em scripts .bat do Windows, Ctrl+C normalmente encerra o processo sem retornar aqui.
-    :: Este código 130 pode ser apenas um código de saída definido pelo processo filho (ex: interrupção).
-    call :log_message "  Encerrado com codigo 130 (possível interrupção pelo usuario ou sinal do processo filho)"
-    goto :end_launcher
+:: ============================================================================
+:: ETAPA 3: ATUALIZAR PIP
+:: ============================================================================
+call :log_step "3" "7" "Atualizando pip"
+
+python -m pip --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "pip nao encontrado"
+    pause
+    exit /b 1
+)
+
+call :log_info "Atualizando pip para ultima versao..."
+python -m pip install --upgrade pip --quiet
+if %ERRORLEVEL% EQU 0 (
+    call :log_success "pip atualizado"
 ) else (
-    set /a RETRY_COUNT+=1
-    if !RETRY_COUNT! LEQ %MAX_RETRIES% (
-        call :log_message "  Erro detectado. Tentativa !RETRY_COUNT! de %MAX_RETRIES%..."
-        call :log_message "  Reiniciando em 5 segundos..."
-        timeout /t 5 >nul
-        goto :start_jarvis
+    call :log_warning "Falha ao atualizar pip - continuando com versao atual"
+)
+
+:: ============================================================================
+:: ETAPA 4: VALIDAR ARQUIVOS DO PROJETO
+:: ============================================================================
+call :log_step "4" "7" "Validando Arquivos do Projeto"
+
+call :validate_project_files
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "Arquivos criticos do projeto nao encontrados"
+    call :log_info "Verifique se voce esta no diretorio correto"
+    pause
+    exit /b 1
+)
+call :log_success "Todos os arquivos criticos presentes"
+
+:: ============================================================================
+:: ETAPA 5: INSTALAR DEPENDÊNCIAS
+:: ============================================================================
+call :log_step "5" "7" "Instalando Dependencias"
+
+:: Verificar se já tem dependências instaladas
+python -c "import PyQt6; import torch; import cv2" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    call :log_success "Dependencias principais ja instaladas"
+    goto :skip_install
+)
+
+call :log_info "Instalando dependencias (pode demorar 5-15 minutos)..."
+call :log_warning "NOTA: Alguns pacotes podem falhar (ex: dlib) - isto e NORMAL"
+call :log_info "O sistema funcionara mesmo sem dependencias opcionais"
+echo.
+
+:: Tentar instalação via setup.py primeiro
+if exist "setup.py" (
+    call :log_info "Executando setup.py..."
+    python setup.py
+    set "SETUP_CODE=!ERRORLEVEL!"
+    
+    if !SETUP_CODE! EQU 0 (
+        call :log_success "Setup concluido com sucesso"
+        goto :verify_install
     ) else (
-        call :log_error "Numero maximo de tentativas excedido"
-        call :log_message "  Verifique os logs em: %LOG_FILE%"
+        call :log_warning "Setup retornou codigo !SETUP_CODE! - tentando instalacao manual"
     )
 )
 
+:: Instalação manual em etapas
+call :log_info "Instalando pacotes criticos em ordem..."
+
+:: Pacote 1: NumPy (DEVE ser 1.26.4 para compatibilidade)
+call :log_info "[1/8] Instalando numpy==1.26.4..."
+python -m pip install numpy==1.26.4 --quiet
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "Falha ao instalar numpy - CRITICO"
+    goto :install_error
+)
+
+:: Pacote 2: PyQt6 (Interface gráfica)
+call :log_info "[2/8] Instalando PyQt6..."
+python -m pip install PyQt6==6.6.1 --quiet
+if %ERRORLEVEL% NEQ 0 (
+    call :log_error "Falha ao instalar PyQt6 - CRITICO"
+    goto :install_error
+)
+
+:: Pacote 3: OpenCV (Visão computacional)
+call :log_info "[3/8] Instalando opencv-python..."
+python -m pip install opencv-python --quiet
+if %ERRORLEVEL% NEQ 0 (
+    call :log_warning "Falha ao instalar opencv - continuando"
+)
+
+:: Pacote 4: PyTorch (IA/ML)
+call :log_info "[4/8] Instalando torch (pode demorar)..."
+python -m pip install torch==2.6.0 --quiet
+if %ERRORLEVEL% NEQ 0 (
+    call :log_warning "Falha ao instalar torch - continuando"
+)
+
+:: Pacote 5: Pillow (Processamento de imagens)
+call :log_info "[5/8] Instalando Pillow..."
+python -m pip install Pillow==10.3.0 --quiet
+
+:: Pacote 6: Requests (HTTP/Web)
+call :log_info "[6/8] Instalando requests..."
+python -m pip install requests --quiet
+
+:: Pacote 7: Outras dependências do requirements.txt
+call :log_info "[7/8] Instalando dependencias restantes..."
+if exist "requirements.txt" (
+    python -m pip install -r requirements.txt --quiet 2>>"%ERROR_LOG%"
+    if %ERRORLEVEL% NEQ 0 (
+        call :log_warning "Algumas dependencias falharam - veja %ERROR_LOG%"
+        call :log_info "Isto e normal para pacotes que requerem compilacao (dlib, etc)"
+    )
+)
+
+:: Pacote 8: Dependências ML opcionais
+call :log_info "[8/8] Instalando dependencias ML opcionais..."
+if exist "requirements_ml.txt" (
+    python -m pip install -r requirements_ml.txt --quiet 2>>"%ERROR_LOG%"
+    if %ERRORLEVEL% NEQ 0 (
+        call :log_info "Dependencias ML opcionais falharam - OK, nao sao obrigatorias"
+    )
+)
+
+call :log_success "Instalacao de dependencias concluida"
+
+:verify_install
+call :log_info "Verificando instalacao..."
+python -c "import PyQt6; print('✓ PyQt6')" 2>nul
+python -c "import cv2; print('✓ OpenCV')" 2>nul
+python -c "import torch; print('✓ PyTorch')" 2>nul
+python -c "import numpy; print('✓ NumPy')" 2>nul
+call :log_success "Verificacao concluida"
+
+:skip_install
+
+:: ============================================================================
+:: ETAPA 6: CONFIGURAÇÃO
+:: ============================================================================
+call :log_step "6" "7" "Verificando Configuracao"
+
+if exist "config.yaml" (
+    call :log_success "Arquivo de configuracao encontrado"
+) else (
+    call :log_warning "config.yaml nao encontrado - usando configuracao padrao"
+)
+
+:: Verificar API keys (opcional)
+if defined GROQ_API_KEY (
+    call :log_info "API Key Groq configurada"
+)
+if defined GEMINI_API_KEY (
+    call :log_info "API Key Gemini configurada"
+)
+
+:: ============================================================================
+:: ETAPA 7: INICIAR JARVIS
+:: ============================================================================
+call :log_step "7" "7" "Iniciando JARVIS Singularity"
+
+if not exist "main.py" (
+    call :log_error "main.py nao encontrado!"
+    pause
+    exit /b 1
+)
+
+echo.
+echo %COLOR_GREEN%╔════════════════════════════════════════════════════════════════════════╗%COLOR_RESET%
+echo %COLOR_GREEN%║                        JARVIS ONLINE                                   ║%COLOR_RESET%
+echo %COLOR_GREEN%║                   Sistema Operacional e Pronto                         ║%COLOR_RESET%
+echo %COLOR_GREEN%╚════════════════════════════════════════════════════════════════════════╝%COLOR_RESET%
+echo.
+call :log_success "Lancando JARVIS..."
+echo.
+
+:: ============================================================================
+:: LOOP DE EXECUÇÃO COM AUTO-RESTART
+:: ============================================================================
+:start_jarvis
+set /a RETRY_COUNT+=1
+
+:: Executar JARVIS
+python main.py
+set "EXIT_CODE=%ERRORLEVEL%"
+
+:: Registrar saída
+call :log_separator
+call :log_info "JARVIS encerrado com codigo: %EXIT_CODE%"
+
+:: Analisar código de saída
+if %EXIT_CODE% EQU 0 (
+    call :log_success "Encerramento normal solicitado pelo usuario"
+    goto :end_launcher
+)
+
+if %EXIT_CODE% EQU 130 (
+    call :log_info "Interrompido pelo usuario (Ctrl+C)"
+    goto :end_launcher
+)
+
+if %EXIT_CODE% EQU 1 (
+    call :log_warning "Erro durante execucao"
+    if !RETRY_COUNT! LEQ %MAX_RETRIES% (
+        call :log_info "Reiniciando (tentativa !RETRY_COUNT!/%MAX_RETRIES%)..."
+        timeout /t 5 /nobreak >nul
+        goto :start_jarvis
+    ) else (
+        call :log_error "Numero maximo de tentativas (%MAX_RETRIES%) excedido"
+        goto :show_help
+    )
+)
+
+:: Outros códigos de erro
+call :log_error "Erro inesperado (codigo: %EXIT_CODE%)"
+if !RETRY_COUNT! LEQ %MAX_RETRIES% (
+    call :log_info "Tentando reiniciar..."
+    timeout /t 3 /nobreak >nul
+    goto :start_jarvis
+) else (
+    goto :show_help
+)
+
+:: ============================================================================
+:: FIM DO LAUNCHER
+:: ============================================================================
 :end_launcher
-call :log_message ""
+call :log_separator
+call :log_info "Launcher finalizado"
+echo.
+echo Pressione qualquer tecla para sair...
+pause >nul
+exit /b %EXIT_CODE%
+
+:show_help
+call :log_separator
+echo.
+echo %COLOR_YELLOW%AJUDA E DIAGNOSTICO:%COLOR_RESET%
+echo.
+echo 1. Verifique os logs:
+echo    - %LOG_FILE%
+echo    - %ERROR_LOG%
+echo.
+echo 2. Execute o validador:
+echo    python validate.py
+echo.
+echo 3. Teste manualmente:
+echo    python main.py
+echo.
+echo 4. Consulte a documentacao:
+echo    - WINDOWS_INSTALL.md
+echo    - TROUBLESHOOTING.md
+echo.
+echo 5. Se o problema persistir:
+echo    - Verifique que Python %PYTHON_MIN_VERSION%+ esta instalado
+echo    - Reinstale as dependencias: pip install -r requirements.txt
+echo    - Abra uma issue no GitHub
+echo.
 pause
-exit /b %JARVIS_EXIT_CODE%
+exit /b %EXIT_CODE%
+
+:install_error
+call :log_error "Falha critica na instalacao de dependencias"
+call :log_info "Tente instalar manualmente:"
+echo.
+echo    pip install numpy==1.26.4
+echo    pip install PyQt6==6.6.1
+echo    pip install -r requirements.txt
+echo.
+pause
+exit /b 1
 
 :: ============================================================================
-:: FUNCOES AUXILIARES
+:: FUNÇÕES AUXILIARES
 :: ============================================================================
 
-:log_message
-echo %~1
-echo %~1 >> "%LOG_FILE%"
+:log_header
+echo.
+echo ═══════════════════════════════════════════════════════════════════════
+echo   %~1
+echo ═══════════════════════════════════════════════════════════════════════
+echo.
+echo [%date% %time%] ========== %~1 ========== >> "%LOG_FILE%"
+goto :eof
+
+:log_separator
+echo ───────────────────────────────────────────────────────────────────────
+echo [%date% %time%] ───────────────────────────────── >> "%LOG_FILE%"
+goto :eof
+
+:log_step
+echo.
+echo %COLOR_CYAN%[%~1/%~2]%COLOR_RESET% %~3...
+echo [%date% %time%] [%~1/%~2] %~3 >> "%LOG_FILE%"
+goto :eof
+
+:log_success
+echo    %COLOR_GREEN%✓%COLOR_RESET% %~1
+echo [%date% %time%] [SUCCESS] %~1 >> "%LOG_FILE%"
+goto :eof
+
+:log_info
+echo    %COLOR_BLUE%ℹ%COLOR_RESET% %~1
+echo [%date% %time%] [INFO] %~1 >> "%LOG_FILE%"
+goto :eof
+
+:log_warning
+echo    %COLOR_YELLOW%⚠%COLOR_RESET% %~1
+echo [%date% %time%] [WARNING] %~1 >> "%LOG_FILE%"
 goto :eof
 
 :log_error
-echo    [ERRO] %~1
-echo    [ERRO] %~1 >> "%LOG_FILE%"
+echo    %COLOR_RED%✗%COLOR_RESET% %~1
+echo [%date% %time%] [ERROR] %~1 >> "%LOG_FILE%"
+echo [%date% %time%] [ERROR] %~1 >> "%ERROR_LOG%"
 goto :eof
 
 :install_python
-:: Tentar instalar Python via winget (instala Python 3.11 - versão estável compatível)
+call :log_info "Tentando instalar Python automaticamente..."
+
+:: Método 1: winget (Windows 11 / Windows 10 atualizado)
 where winget >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    call :log_message "    Instalando Python via winget..."
-    :: Instala Python 3.11 (compatível com numpy 1.26.4 e requisitos do projeto)
-    winget install Python.Python.3.11 --silent
+    call :log_info "Instalando Python 3.11 via winget..."
+    winget install Python.Python.3.11 --silent --accept-package-agreements --accept-source-agreements
     if !ERRORLEVEL! EQU 0 (
-        call :log_message "    Python instalado com sucesso"
-        call :log_message "    IMPORTANTE: Feche e reabra o terminal para que o Python seja reconhecido no PATH"
-        call :log_message "    Ou reinicie este script apos o fechamento."
-        pause
+        call :log_success "Python instalado via winget"
+        call :log_warning "IMPORTANTE: Feche e reabra o terminal!"
+        timeout /t 5
         exit /b 0
     )
 )
 
-:: Tentar via chocolatey (instala última versão do Python 3)
+:: Método 2: chocolatey
 where choco >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
-    call :log_message "    Instalando Python via chocolatey..."
-    choco install python -y
+    call :log_info "Instalando Python via chocolatey..."
+    choco install python --version=3.11 -y
     if !ERRORLEVEL! EQU 0 (
-        call :log_message "    Python instalado com sucesso"
-        call :log_message "    IMPORTANTE: Feche e reabra o terminal para que o Python seja reconhecido no PATH"
-        call :log_message "    Ou reinicie este script apos o fechamento."
-        pause
+        call :log_success "Python instalado via chocolatey"
+        call :log_warning "IMPORTANTE: Feche e reabra o terminal!"
+        timeout /t 5
         exit /b 0
     )
 )
 
 :: Se chegou aqui, falhou
+call :log_error "Nenhum gerenciador de pacotes disponivel"
 exit /b 1
 
-:validate_structure
-:: Verificar todos os arquivos criticos (alinhado com validate.py)
+:validate_project_files
+:: Arquivos críticos que DEVEM existir
 set "VALIDATION_FAILED=0"
 
-if not exist "main.py" (
-    call :log_error "    main.py nao encontrado"
-    set "VALIDATION_FAILED=1"
+set "CRITICAL_FILES=main.py config.yaml requirements.txt setup.py"
+
+for %%F in (%CRITICAL_FILES%) do (
+    if not exist "%%F" (
+        call :log_error "Arquivo critico nao encontrado: %%F"
+        set "VALIDATION_FAILED=1"
+    ) else (
+        call :log_info "✓ %%F"
+    )
 )
 
-if not exist "config.yaml" (
-    call :log_error "    config.yaml nao encontrado"
-    set "VALIDATION_FAILED=1"
-)
+:: Diretórios críticos
+set "CRITICAL_DIRS=src jarvis_core data"
 
-if not exist "requirements.txt" (
-    call :log_error "    requirements.txt nao encontrado"
-    set "VALIDATION_FAILED=1"
-)
-
-if not exist "setup.py" (
-    call :log_error "    setup.py nao encontrado"
-    set "VALIDATION_FAILED=1"
-)
-
-if not exist "src\core\ai_agent.py" (
-    call :log_error "    src\core\ai_agent.py nao encontrado"
-    set "VALIDATION_FAILED=1"
-)
-
-if not exist "src\interface\ai_worker.py" (
-    call :log_error "    src\interface\ai_worker.py nao encontrado"
-    set "VALIDATION_FAILED=1"
-)
-
-if not exist "src\interface\hud.py" (
-    call :log_error "    src\interface\hud.py nao encontrado"
-    set "VALIDATION_FAILED=1"
+for %%D in (%CRITICAL_DIRS%) do (
+    if not exist "%%D\" (
+        call :log_error "Diretorio critico nao encontrado: %%D"
+        set "VALIDATION_FAILED=1"
+    ) else (
+        call :log_info "✓ %%D\"
+    )
 )
 
 if "%VALIDATION_FAILED%"=="1" (
     exit /b 1
 )
-
-call :log_message "    Estrutura validada com sucesso"
 exit /b 0
