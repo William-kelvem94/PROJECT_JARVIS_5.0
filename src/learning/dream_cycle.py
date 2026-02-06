@@ -15,13 +15,20 @@ from datetime import datetime, time as dt_time
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field, asdict
 from queue import Queue, Empty
-import schedule
+
+try:
+    import schedule
+    SCHEDULE_AVAILABLE = True
+except ImportError:
+    SCHEDULE_AVAILABLE = False
+    schedule = None
 
 try:
     import psutil
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
+    psutil = None
 
 logger = logging.getLogger(__name__)
 
