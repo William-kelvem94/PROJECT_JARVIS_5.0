@@ -1,13 +1,28 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+JARVIS SINGULARITY - Main Entry Point
+Advanced AI Assistant with Modern HUD Interface
+"""
+
+import os
+import sys
+import logging
+import signal
+import shutil
+from pathlib import Path
+
+# ============================================================================
+# CRITICAL SYSTEM PATCHES (BEFORE ANY IMPORTS)
+# ============================================================================
 try:
     import comtypes.client
     import comtypes.client._code_cache
-    import shutil
-    from pathlib import Path
     
     # Nuke cache programático
     gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
     if gen_dir.exists():
-        shutil.rmtree(gen_dir)
+        shutil.rmtree(gen_dir, ignore_errors=True)
     os.makedirs(gen_dir, exist_ok=True)
     
     comtypes.client._code_cache._enable_cache = False
@@ -17,9 +32,6 @@ except Exception as e:
 
 # --- SUPRESSÃO DE AVISOS DE DPI DO QT (Acesso Negado) ---
 os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
-
-import signal
-from pathlib import Path
 
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot, QObject

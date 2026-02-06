@@ -1,6 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 JARVIS HUD - Interface Transparente Estilo Iron Man
 Overlay click-through com reator pulsante
+
+This file now serves as a compatibility wrapper for the ModernHUD
+For the enhanced version, see modern_hud.py
 """
 
 import sys
@@ -9,7 +14,15 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QThread
 from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont
 
-class ReactorWidget(QWidget):
+# Import the modern HUD as default
+try:
+    from .modern_hud import ModernHUD as JarvisHUD
+    print("✅ Using enhanced Modern HUD")
+except ImportError:
+    print("⚠️ Modern HUD not available, using legacy HUD")
+    
+    # Legacy HUD implementation follows...
+    class ReactorWidget(QWidget):
     """Widget do Reator Arc - Núcleo Visual do JARVIS"""
     
     def __init__(self, parent=None):
