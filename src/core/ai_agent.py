@@ -98,10 +98,61 @@ except ImportError as e:
     logger.warning(f"⚠️ security_manager não disponível: {e}")
     # Create dummy security manager that allows everything (unsafe but won't crash)
     class DummySecurityManager:
-        def validate_file_action(self, path, action):
-            logger.warning(f"⚠️ Security manager ausente - permitindo {action} em {path}")
+        def validate_file_action(self, *args, **kwargs):
+            return True
+        def validate_network_action(self, *args, **kwargs):
             return True
     security_manager = DummySecurityManager()
+
+# ============================================================================
+# GOD MODE - SYSTEM CONTROLLER (NEW)
+# ============================================================================
+try:
+    from src.core.system_controller import system_controller
+    logger.info("✅ System Controller carregado (God Mode)")
+except ImportError as e:
+    logger.warning(f"⚠️ system_controller não disponível: {e}")
+    system_controller = None
+
+# ============================================================================
+# PHASE 2 - CODE GENERATOR (AUTO-PROGRAMMING)
+# ============================================================================
+try:
+    from src.core.code_generator import code_generator
+    logger.info("✅ Code Generator carregado (Auto-Programming)")
+except ImportError as e:
+    logger.warning(f"⚠️ code_generator não disponível: {e}")
+    code_generator = None
+
+# ============================================================================
+# PHASE 3 - MEMORY MANAGER (AUTO-LEARNING / RAG)
+# ============================================================================
+try:
+    from src.core.memory_manager import memory_manager
+    logger.info("✅ Memory Manager carregado (Auto-Learning)")
+except ImportError as e:
+    logger.warning(f"⚠️ memory_manager não disponível: {e}")
+    memory_manager = None
+
+# ============================================================================
+# PHASE 4 - VISION ENHANCER (ADVANCED UI DETECTION)
+# ============================================================================
+try:
+    from src.core.vision_enhancer import vision_enhancer
+    logger.info("✅ Vision Enhancer carregado (YOLO + OCR)")
+except ImportError as e:
+    logger.warning(f"⚠️ vision_enhancer não disponível: {e}")
+    vision_enhancer = None
+
+# ============================================================================
+# PHASE 5 - PERFORMANCE OPTIMIZER (FINAL PHASE)
+# ============================================================================
+try:
+    from src.core.performance_optimizer import performance_optimizer
+    logger.info("✅ Performance Optimizer carregado (Cache + Metrics)")
+except ImportError as e:
+    logger.warning(f"⚠️ performance_optimizer não disponível: {e}")
+    performance_optimizer = None
 
 try:
     from src.utils.config import config
@@ -222,8 +273,35 @@ class AIAgent:
     def process_command(self, user_command: str):
         """
         Recebe um comando (texto ou voz), captura a tela e decide o que fazer
+        
+        ENHANCED WITH:
+        - Phase 3: RAG (recall memories)
+        - Phase 5: Performance (cache responses)
         """
         logger.info(f"Agente processando comando: {user_command}")
+        
+        # =====================================================================
+        # PHASE 5: PERFORMANCE - CHECK CACHE FIRST
+        # =====================================================================
+        if performance_optimizer:
+            cached_response = performance_optimizer.get_cached_response(user_command)
+            if cached_response:
+                logger.info("⚡ Usando resposta em cache (ultra-rápido)")
+                if voice_controller:
+                    voice_controller.speak(cached_response)
+                return cached_response
+        
+        # =====================================================================
+        # PHASE 3: RAG - RECALL MEMORIES
+        # =====================================================================
+        memory_context = ""
+        if memory_manager and memory_manager.collection:
+            try:
+                memory_context = memory_manager.get_context(user_command, max_memories=3)
+                if memory_context:
+                    logger.info("🧠 Contexto de memórias adicionado ao prompt")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao buscar memórias: {e}")
         
         # ... (Steps 1-3 unchanged) ...
         # 1. Definir Provedor Primário (LOCAL FIRST)
@@ -242,7 +320,10 @@ class AIAgent:
         
         camera_context = f"\n[VISÃO] Usuário identificado: {camera_controller.last_seen_user}"
         
-        enriched_command = f"{camera_context}\nComando atual: {user_command}"
+        # =====================================================================
+        # PHASE 3: RAG - INCLUDE MEMORY CONTEXT
+        # =====================================================================
+        enriched_command = f"{camera_context}\n{memory_context}\nComando atual: {user_command}"
         
         # 5. Loop de Pensamento e Ação (ReAct)
         response = ""

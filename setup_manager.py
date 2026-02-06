@@ -35,6 +35,10 @@ ESSENTIAL_DIRS = [
     "data",
     "data/screenshots",
     "data/temp",
+    "data/logs",
+    "models",
+    "tests",
+    "tools",
     "_backup_legacy",
 ]
 
@@ -47,6 +51,8 @@ SACRED_DIRS = [
     ".git",
     "docs",
     "legacy",
+    "tests",
+    "tools",
 ]
 
 
@@ -147,20 +153,25 @@ def step_3_promote_main():
     source = PROJECT_ROOT / "main_singularity_v2.py"
     dest = PROJECT_ROOT / "main.py"
     
+    # Verificar se main.py já tem a assinatura do Singularity V2
+    already_promoted = False
+    if dest.exists():
+        with open(dest, 'r', encoding='utf-8', errors='ignore') as f:
+            if "JarvisSingularityV2" in f.read():
+                already_promoted = True
+
     if source.exists():
-        # Se main.py já existe, fazer backup primeiro
-        if dest.exists():
+        if dest.exists() and not already_promoted:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_name = f"main_old_{timestamp}.py"
-            backup_path = BACKUP_DIR / backup_name
+            backup_path = BACKUP_DIR / f"main_old_{timestamp}.py"
             shutil.move(str(dest), str(backup_path))
-            print_warning(f"main.py antigo movido para _backup_legacy/{backup_name}")
         
-        # Renomear (mover) main_singularity_v2.py para main.py
         shutil.move(str(source), str(dest))
-        print_success("main_singularity_v2.py → main.py (novo padrão oficial)")
+        print_success("main.py atualizado com sucesso!")
+    elif already_promoted:
+        print_success("main.py já está na versão Singularity V2.")
     else:
-        print_warning("main_singularity_v2.py não encontrado - pulando promoção")
+        print_warning("Entry point main_singularity_v2.py não encontrado.")
 
 
 def step_4_install_dependencies():
@@ -169,95 +180,53 @@ def step_4_install_dependencies():
     
     if not REQUIREMENTS_FILE.exists():
         print_error(f"Arquivo não encontrado: {REQUIREMENTS_FILE}")
-        print_error("Não é possível instalar dependências!")
         return False
     
-    print_info(f"Usando: {REQUIREMENTS_FILE.name}")
-    
     # -------------------------------------------------------------------------
-    # PASSO 4.1: DESINSTALAR NUMPY AGRESSIVAMENTE
+    # PASSO 4.1: VERIFICAR NUMPY EXISTENTE
     # -------------------------------------------------------------------------
-    print_info("\n[4.1] Removendo NumPy existente (se houver)...")
+    print_info("[4.1] Verificando versão do NumPy...")
+    numpy_version = None
     try:
-        uninstall_cmd = [
-            sys.executable,
-            "-m",
-            "pip",
-            "uninstall",
-            "numpy",
-            "-y"
-        ]
-        
-        print_info(f"Comando: {' '.join(uninstall_cmd)}")
-        result = subprocess.run(
-            uninstall_cmd,
-            capture_output=True,
-            text=True,
-            cwd=str(PROJECT_ROOT)
-        )
-        
-        if result.returncode == 0:
-            print_success("NumPy removido com sucesso")
-        else:
-            print_info("NumPy não estava instalado (OK)")
-    except Exception as e:
-        print_warning(f"Erro ao desinstalar numpy: {e}")
-        print_info("Continuando mesmo assim...")
+        import numpy
+        numpy_version = numpy.__version__
+    except ImportError:
+        pass
     
+    if numpy_version == "1.26.4":
+        print_success(f"NumPy já está na versão correta: {numpy_version}. Pulando desinstalação.")
+    else:
+        print_info(f"Removendo NumPy (versão atual: {numpy_version or 'nenhuma'})...")
+        subprocess.run([sys.executable, "-m", "pip", "uninstall", "numpy", "-y"], capture_output=True)
+        # Tentar instalar imediatamente a versão correta para evitar quebras de outros scripts
+        print_info("Instalando NumPy 1.26.4...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "numpy==1.26.4"], capture_output=True)
+
     # -------------------------------------------------------------------------
-    # PASSO 4.2: INSTALAR REQUIREMENTS COM FORCE-REINSTALL
+    # PASSO 4.2: INSTALAR REQUIREMENTS
     # -------------------------------------------------------------------------
-    print_info("\n[4.2] Instalando dependências com versões travadas...")
-    print_info("Forçando reinstalação para garantir versões corretas...")
+    print_info("\n[4.2] Instalando dependências completas...")
     
     try:
-        # Usar --force-reinstall para garantir que numpy 2.x seja removido
-        cmd = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--force-reinstall",
-            "-r",
-            str(REQUIREMENTS_FILE)
-        ]
+        # Usar --no-deps se estiver falhando em resolver conflitos complexos, 
+        # mas aqui tentamos o normal primeiro sem o force-reinstall agressivo
+        cmd = [sys.executable, "-m", "pip", "install", "-r", str(REQUIREMENTS_FILE)]
         
         print_info(f"Comando: {' '.join(cmd)}")
-        print_info("Aguarde (pode demorar 5-10 minutos)...")
-        
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            cwd=str(PROJECT_ROOT)
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
         
         if result.returncode == 0:
             print_success("Dependências instaladas com sucesso!")
-            
-            # Verificar numpy version
-            try:
-                # Reimportar numpy para pegar versão atualizada
-                import importlib
-                if 'numpy' in sys.modules:
-                    importlib.reload(sys.modules['numpy'])
-                import numpy
-                numpy_version = numpy.__version__
-                if numpy_version.startswith("1."):
-                    print_success(f"NumPy versão correta: {numpy_version}")
-                else:
-                    print_warning(f"NumPy versão: {numpy_version} (esperado: 1.x)")
-                    print_warning("Execute novamente: pip install --force-reinstall numpy==1.26.4")
-            except ImportError:
-                print_warning("NumPy não pôde ser verificado")
-            
             return True
         else:
-            print_error("Erro durante instalação!")
-            print_error(f"Código de saída: {result.returncode}")
-            if result.stderr:
-                print_error("Erros:")
-                print(result.stderr[:500])  # Primeiros 500 chars
+            # TENTATIVA DE RECUPERAÇÃO: Instalar os mais críticos um por um
+            print_warning("Pip falhou no bundle. Tentando instalação individual de pacotes críticos...")
+            critical_packs = ["PyQt6", "opencv-python", "torch", "whisper", "mediapipe", "face-recognition"]
+            for pkg in critical_packs:
+                print_info(f"Instalando {pkg}...")
+                subprocess.run([sys.executable, "-m", "pip", "install", pkg], capture_output=True)
+            
+            # Se chegamos aqui e arquivos críticos existem, consideramos "parcialmente ok"
             return False
             
     except Exception as e:
