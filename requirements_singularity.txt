@@ -12,10 +12,13 @@
 # NumPy < 2.0 - OBRIGATÓRIO para compatibilidade com Torch/Whisper
 numpy==1.26.4
 
-# PyTorch CPU (versão compatível com numpy 1.x e register_pytree_node)
-# Torch 2.5.1 corrige o erro: "module 'torch.utils._pytree' has no attribute 'register_pytree_node'"
-torch==2.5.1
-torchaudio==2.5.1
+# PyTorch CPU (versão segura compatível com numpy 1.x e register_pytree_node)
+# Torch 2.6.0 corrige vulnerabilidades de segurança críticas:
+# - CVE: torch.load RCE (remote code execution)
+# - Heap buffer overflow
+# - Use-after-free
+torch==2.6.0
+torchaudio==2.6.0
 
 # Cryptography (versão estável que resolve erro PBKDF2)
 cryptography==42.0.5
@@ -31,7 +34,7 @@ PyQt6-sip==13.6.0
 # VISÃO COMPUTACIONAL
 # -------------------------------------------------------------------------
 opencv-python==4.9.0.80
-Pillow==10.2.0
+Pillow==10.3.0  # Atualizado de 10.2.0 para corrigir buffer overflow (CVE)
 easyocr==1.7.1
 pytesseract==0.3.10
 
@@ -94,7 +97,7 @@ sentence-transformers==2.2.2
 # WEB & HTTP
 # -------------------------------------------------------------------------
 requests==2.31.0
-aiohttp==3.9.3
+aiohttp==3.9.4  # Atualizado de 3.9.3 para corrigir DoS e zip bomb vulnerabilities (CVE)
 beautifulsoup4==4.12.3
 lxml==5.1.0
 
@@ -128,7 +131,7 @@ pytest-asyncio==0.21.1
 # NOTAS IMPORTANTES
 # -------------------------------------------------------------------------
 # 1. NumPy 2.x QUEBRA torch e whisper - NUNCA atualize para 2.x
-# 2. Torch 2.5.1+ corrige erro register_pytree_node
+# 2. Torch 2.6.0+ corrige erro register_pytree_node E vulnerabilidades de segurança
 # 3. Se pip tentar instalar numpy 2.x, force reinstall:
 #    pip install --force-reinstall numpy==1.26.4
 # 4. Cryptography 42.0.5 resolve erro de importação PBKDF2
@@ -145,7 +148,16 @@ pytest-asyncio==0.21.1
 # SOLUÇÃO: pip uninstall numpy && pip install numpy==1.26.4
 #
 # ERRO: "module 'torch.utils._pytree' has no attribute 'register_pytree_node'"
-# SOLUÇÃO: pip install --upgrade torch==2.5.1 torchaudio==2.5.1
+# SOLUÇÃO: pip install --upgrade torch==2.6.0 torchaudio==2.6.0
+#
+# ERRO (SEGURANÇA): "PyTorch torch.load RCE vulnerability"
+# SOLUÇÃO: pip install --upgrade torch==2.6.0 (versão 2.6.0+ corrige vulnerabilidade crítica)
+#
+# ERRO (SEGURANÇA): "Pillow buffer overflow"
+# SOLUÇÃO: pip install --upgrade Pillow==10.3.0
+#
+# ERRO (SEGURANÇA): "aiohttp DoS vulnerability"
+# SOLUÇÃO: pip install --upgrade aiohttp==3.9.4
 #
 # ERRO: "cannot import name 'PBKDF2' from 'cryptography'"
 # SOLUÇÃO: pip install --upgrade cryptography==42.0.5
@@ -166,5 +178,5 @@ pytest-asyncio==0.21.1
 # SOLUÇÃO: pip install face-recognition==1.3.0
 #
 # ERRO: "torch not found"
-# SOLUÇÃO: pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+# SOLUÇÃO: pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 # ============================================================================
