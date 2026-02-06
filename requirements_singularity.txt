@@ -57,7 +57,7 @@ mediapipe==0.10.9
 openai-whisper==20231117
 
 # Faster-Whisper para STT ultra-rápido (GPU/CPU)
-faster-whisper==1.0.0
+faster-whisper==1.0.3
 
 # TTS/STT
 pyttsx3==2.90
@@ -69,12 +69,13 @@ vosk==0.3.45
 # Edge TTS para síntese de voz de alta qualidade
 edge-tts==6.1.9
 
-# Voice Activity Detection (Silero-VAD)
-silero-vad==4.0.0
-
 # Audio processing
 librosa==0.10.1
 soundfile==0.12.1
+pyaudio==0.2.14
+
+# Speaker verification
+resemblyzer==0.1.1.dev0
 
 # -------------------------------------------------------------------------
 # AUTOMAÇÃO DE UI & GOD MODE (Deep Windows Control)
