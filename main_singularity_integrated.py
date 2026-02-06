@@ -47,6 +47,9 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 
+# Ensure data directories exist
+Path('data/logs').mkdir(parents=True, exist_ok=True)
+
 # Setup logging BEFORE other imports
 logging.basicConfig(
     level=logging.INFO,
