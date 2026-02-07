@@ -31,6 +31,14 @@ except ImportError:
     EMBEDDINGS_AVAILABLE = False
     logger.warning("⚠️ sentence-transformers não disponível - usando embeddings básicos")
 
+# ============ P1: RAG RERANKING ============
+try:
+    from sentence_transformers import CrossEncoder
+    CROSSENCODER_AVAILABLE = True
+except ImportError:
+    CROSSENCODER_AVAILABLE = False
+    logger.warning("⚠️ CrossEncoder não disponível - reranking desabilitado")
+
 
 # ============================================================================
 # MEMORY MANAGER
@@ -63,6 +71,10 @@ class MemoryManager:
         self.embedding_model = None
         self.memory_cache = {}  # In-memory fallback
         self._initialized = False  # Flag para lazy init
+        
+        # ============ P1: RAG RERANKING ============
+        self.reranker = None  # CrossEncoder for reranking
+        self.reranking_enabled = True
         
         # ⚡ LAZY INITIALIZATION
         # ChromaDB será inicializado apenas no primeiro uso
@@ -211,7 +223,7 @@ class MemoryManager:
         min_similarity: float = 0.5
     ) -> List[Dict[str, Any]]:
         """
-        Busca memórias similares.
+        Busca memórias similares com reranking.
         
         Args:
             query: Consulta (comando atual)
@@ -228,6 +240,10 @@ class MemoryManager:
             return []
         
         try:
+            # ============ P1: RAG RERANKING ============
+            # Fetch more candidates for reranking (top_k * 3)
+            fetch_k = top_k * 3 if self.reranking_enabled and self.reranker else top_k
+            
             # Criar embedding da query
             query_embedding = self._create_embedding(query)
             
@@ -235,13 +251,13 @@ class MemoryManager:
             if query_embedding:
                 results = self.collection.query(
                     query_embeddings=[query_embedding],
-                    n_results=top_k
+                    n_results=fetch_k
                 )
             else:
                 # Fallback: busca por texto
                 results = self.collection.query(
                     query_texts=[query],
-                    n_results=top_k
+                    n_results=fetch_k
                 )
             
             # Processar resultados
@@ -259,6 +275,24 @@ class MemoryManager:
                             'timestamp': metadata.get('timestamp', ''),
                             'similarity': similarity
                         })
+            
+            # ============ P1: RAG RERANKING ============
+            # Rerank using CrossEncoder for better relevance
+            if self.reranking_enabled and self.reranker and len(memories) > top_k:
+                logger.debug(f"🔄 Reranking {len(memories)} results...")
+                
+                # Create query-document pairs
+                pairs = [[query, f"{mem['command']} {mem['response']}"] for mem in memories]
+                
+                # Get reranking scores
+                scores = self.reranker.predict(pairs)
+                
+                # Sort by rerank score
+                for i, mem in enumerate(memories):
+                    mem['rerank_score'] = float(scores[i])
+                
+                memories = sorted(memories, key=lambda x: x['rerank_score'], reverse=True)[:top_k]
+                logger.info(f"✅ Reranked to top {len(memories)} results")
             
             logger.info(f"🔍 Encontradas {len(memories)} memórias relevantes")
             return memories

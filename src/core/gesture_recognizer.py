@@ -4,10 +4,24 @@ Permite controle hands-free do JARVIS
 """
 
 import logging
-import cv2
-import numpy as np
 from typing import Dict, Any, Optional, List, Callable
 from enum import Enum
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"⚠️ cv2 not available in gesture_recognizer: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    np = None
+    logging.warning(f"⚠️ numpy not available in gesture_recognizer: {e}")
 
 logger = logging.getLogger(__name__)
 

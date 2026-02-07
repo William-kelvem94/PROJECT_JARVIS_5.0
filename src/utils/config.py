@@ -22,21 +22,28 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+import threading
+
 class Config:
     """Classe singleton para configurações globais"""
 
     _instance = None
+    _lock = threading.Lock()
     _initialized = False
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):
         if not self._initialized:
-            self._load_config()
-            self._initialized = True
+            with self._lock:
+                if not self._initialized:
+                    self._load_config()
+                    self._initialized = True
 
     def _load_config(self):
         """Carrega configurações do sistema"""

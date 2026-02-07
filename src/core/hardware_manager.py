@@ -4,26 +4,40 @@ Detecta e otimiza o uso de CPU/GPU para todos os módulos de IA.
 """
 
 import logging
-import torch
 import platform
 import os
 from typing import Dict, Any
 
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except (ImportError, OSError) as e:
+    TORCH_AVAILABLE = False
+    torch = None
+    logging.warning(f"⚠️ torch not available in hardware_manager: {e}")
+
 logger = logging.getLogger(__name__)
+
+import threading
 
 class HardwareManager:
     """Singleton para gerenciar recursos de hardware"""
     
     _instance = None
+    _lock = threading.Lock()
     
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._initialized = False
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
         if self._initialized: return
+        with self._lock:
+            if self._initialized: return
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.gpu_name = torch.cuda.get_device_name(0) if self.device == "cuda" else "None"

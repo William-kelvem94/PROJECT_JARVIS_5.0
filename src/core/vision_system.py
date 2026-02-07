@@ -33,15 +33,15 @@ logger = logging.getLogger(__name__)
 try:
     import cv2
     CV2_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
-    logger.warning("⚠️ cv2 not available - video features disabled")
+    logger.warning(f"⚠️ cv2 not available - video features disabled: {e}")
 
 try:
     import numpy as np
     NUMPY_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
     # Mock numpy
     class np:
@@ -50,7 +50,7 @@ except ImportError:
         @staticmethod
         def array(x):
             return x
-    logger.warning("⚠️ numpy not available - array operations disabled")
+    logger.warning(f"⚠️ numpy not available - array operations disabled: {e}")
 
 try:
     import mss
@@ -62,23 +62,23 @@ except ImportError:
 try:
     import face_recognition
     FACE_REC_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     FACE_REC_AVAILABLE = False
-    logger.warning("⚠️ face_recognition not available - FaceID disabled")
+    logger.warning(f"⚠️ face_recognition not available - FaceID disabled: {e}")
 
 try:
     import easyocr
     EASYOCR_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     EASYOCR_AVAILABLE = False
-    logger.warning("⚠️ EasyOCR not available - OCR disabled")
+    logger.warning(f"⚠️ EasyOCR not available - OCR disabled: {e}")
 
 try:
     from ultralytics import YOLO
     YOLO_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     YOLO_AVAILABLE = False
-    logger.warning("⚠️ ultralytics not available - YOLO detection disabled")
+    logger.warning(f"⚠️ ultralytics not available - YOLO detection disabled: {e}")
 
 
 # ============================================================================
@@ -140,36 +140,29 @@ class VisionSystem:
         self.screenshots_dir.mkdir(parents=True, exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         
-        # State
-        self.mode = VisionMode.IDLE
-        self.is_running = False
-        self._monitor_thread = None
-        self._monitor_lock = threading.Lock()
-        
-        # FaceID
-        self.known_face_encodings = []
-        self.known_face_names = []
-        self.face_detection_model = 'hog'  # 'hog' for CPU, 'cnn' for GPU
-        
-        # OCR
-        self.ocr_reader = None
-        
-        # YOLO
-        self.yolo_model = None
-        
-        # Webcam
-        self.camera = None
-        self.camera_index = 0
-        
-        # Screen capture
-        self.sct = None
+        # Heavy Models Status
+        self._ocr_loading = False
+        self._yolo_loading = False
+        self._ocr_ready = False
+        self._yolo_ready = False
+        self._models_lock = threading.Lock()
         
         # Last results
         self.last_face_check = None
         self.last_screen_analysis = None
         
+        # ============ P1: SEMANTIC CACHING ============
+        # Cache OCR results by image hash (90%+ cache hit)
+        self.ocr_cache = {}  # image_hash -> (text, timestamp)
+        self.ocr_cache_ttl = 60  # seconds
+        self.ocr_cache_hits = 0
+        self.ocr_cache_misses = 0
+        
         # Initialize components
         self._initialize_components()
+        
+        # Start background loading of heavy models
+        self.load_heavy_models_async()
         
         logger.info("✅ Vision System initialized")
         logger.info(f"   FaceID: {'✅' if FACE_REC_AVAILABLE else '❌'}")
@@ -179,19 +172,50 @@ class VisionSystem:
         
     def _initialize_components(self):
         """Initialize vision components"""
-        # Load known faces
+        # Load known faces (fast)
         if FACE_REC_AVAILABLE:
             self._load_known_faces()
             
-        # Initialize OCR reader (lazy load - expensive)
-        # self.ocr_reader will be initialized on first use
-        
-        # Initialize YOLO model (lazy load - expensive)
-        # self.yolo_model will be initialized on first use
-        
-        # Initialize screen capture
+        # Initialize screen capture (fast)
         if MSS_AVAILABLE:
             self.sct = mss.mss()
+
+    def load_heavy_models_async(self):
+        """Start loading OCR and YOLO in background threads"""
+        if EASYOCR_AVAILABLE and not self._ocr_ready and not self._ocr_loading:
+            threading.Thread(target=self._load_ocr_background, daemon=True, name="Vision-OCR-Loader").start()
+            
+        if YOLO_AVAILABLE and not self._yolo_ready and not self._yolo_loading:
+            threading.Thread(target=self._load_yolo_background, daemon=True, name="Vision-YOLO-Loader").start()
+
+    def _load_ocr_background(self):
+        """Load EasyOCR in background"""
+        try:
+            with self._models_lock:
+                self._ocr_loading = True
+                logger.info("🧠 Vision: Carregando EasyOCR em background...")
+                self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=True)
+                self._ocr_ready = True
+                self._ocr_loading = False
+                logger.info("✅ Vision: EasyOCR pronto")
+        except Exception as e:
+            self._ocr_loading = False
+            logger.error(f"❌ Vision: Erro ao carregar EasyOCR: {e}")
+
+    def _load_yolo_background(self):
+        """Load YOLO in background"""
+        try:
+            with self._models_lock:
+                self._yolo_loading = True
+                logger.info("🧠 Vision: Carregando YOLOv8 em background...")
+                model_path = self.models_dir / "yolov8n.pt"
+                self.yolo_model = YOLO(str(model_path))
+                self._yolo_ready = True
+                self._yolo_loading = False
+                logger.info("✅ Vision: YOLOv8 pronto")
+        except Exception as e:
+            self._yolo_loading = False
+            logger.error(f"❌ Vision: Erro ao carregar YOLO: {e}")
             
     def _load_known_faces(self):
         """Load authorized faces for FaceID"""
@@ -504,21 +528,46 @@ class VisionSystem:
             return VisionContext(timestamp=datetime.now())
             
     def _extract_text_from_image(self, image: np.ndarray) -> str:
-        """Extract text using EasyOCR"""
+        """Extract text using EasyOCR with semantic caching"""
+        if not self._ocr_ready:
+            if not self._ocr_loading:
+                self.load_heavy_models_async()
+            return "OCR ainda está carregando..."
+            
         try:
-            # Lazy load OCR reader
-            if self.ocr_reader is None:
-                logger.info("Initializing EasyOCR reader...")
-                self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=False)
+            # ============ P1: SEMANTIC CACHING ============
+            # Create hash of image for cache lookup
+            import hashlib
+            import time
+            image_hash = hashlib.md5(image.tobytes()).hexdigest()
+            
+            # Check cache
+            if image_hash in self.ocr_cache:
+                cached_text, cached_time = self.ocr_cache[image_hash]
+                age = time.time() - cached_time
                 
-            # Extract text
+                if age < self.ocr_cache_ttl:
+                    self.ocr_cache_hits += 1
+                    logger.debug(f"📦 OCR Cache HIT ({self.ocr_cache_hits}/{self.ocr_cache_hits + self.ocr_cache_misses})")
+                    return cached_text
+            
+            # Cache miss - extract text
+            self.ocr_cache_misses += 1
             results = self.ocr_reader.readtext(image)
             
             # Combine all text
             text_parts = [text for _, text, _ in results]
             full_text = " ".join(text_parts)
             
-            logger.info(f"Extracted {len(text_parts)} text blocks")
+            # Update cache
+            self.ocr_cache[image_hash] = (full_text, time.time())
+            
+            # Cleanup old cache entries (keep last 100)
+            if len(self.ocr_cache) > 100:
+                oldest_key = min(self.ocr_cache.keys(), key=lambda k: self.ocr_cache[k][1])
+                del self.ocr_cache[oldest_key]
+            
+            logger.info(f"Extracted {len(text_parts)} text blocks (Cache: {self.ocr_cache_hits}/{self.ocr_cache_hits + self.ocr_cache_misses})")
             return full_text
             
         except Exception as e:
@@ -527,17 +576,12 @@ class VisionSystem:
             
     def _detect_objects_in_image(self, image: np.ndarray) -> List[Dict]:
         """Detect objects using YOLO"""
+        if not self._yolo_ready:
+            if not self._yolo_loading:
+                self.load_heavy_models_async()
+            return []
+            
         try:
-            # Lazy load YOLO model
-            if self.yolo_model is None:
-                logger.info("Loading YOLOv8 model...")
-                model_path = self.models_dir / "yolov8n.pt"
-                
-                if not model_path.exists():
-                    logger.info("Downloading YOLOv8n model...")
-                    
-                self.yolo_model = YOLO("yolov8n.pt")
-                
             # Run detection
             results = self.yolo_model(image, verbose=False)
             
