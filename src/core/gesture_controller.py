@@ -3,14 +3,29 @@ Controlador de Gestos (Hands)
 Utiliza MediaPipe para rastreamento de mãos e reconhecimento de gestos.
 """
 
-import cv2
 import logging
 import threading
 import time
 import math
 from typing import Optional, List, Dict, Tuple, Any
 from collections import deque
-import numpy as np
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"⚠️ cv2 not available in gesture_controller: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    np = None
+    logging.warning(f"⚠️ numpy not available in gesture_controller: {e}")
+
 from src.utils.config import config
 from src.core.action_controller import action_controller
 
@@ -19,9 +34,9 @@ logger = logging.getLogger(__name__)
 try:
     import mediapipe as mp
     MEDIAPIPE_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     MEDIAPIPE_AVAILABLE = False
-    logger.warning("MediaPipe não encontrado. Controle por gestos desativado.")
+    logger.warning(f"MediaPipe não encontrado. Controle por gestos desativado: {e}")
 
 class GestureController:
     """Detecta gestos e comanda ações"""

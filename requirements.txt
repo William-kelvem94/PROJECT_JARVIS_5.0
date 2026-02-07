@@ -71,6 +71,7 @@ edge-tts==6.1.9
 librosa==0.10.1
 soundfile==0.12.1
 pyaudio==0.2.14
+pygame==2.6.1  # For response caching audio playback (P1.3)
 
 # Speaker verification
 resemblyzer==0.1.1.dev0
@@ -106,7 +107,8 @@ groq==0.4.2
 # VECTOR DATABASE & EMBEDDINGS (RAG)
 # -------------------------------------------------------------------------
 chromadb==0.4.22
-sentence-transformers==2.2.2
+# sentence-transformers with FULL extras for CrossEncoder (P1.4 RAG Reranking)
+sentence-transformers[all]>=2.3.0
 
 # -------------------------------------------------------------------------
 # WEB & HTTP (Web Fallback quando conhecimento local falhar)
@@ -136,6 +138,22 @@ tqdm==4.66.2
 
 # PyYAML para validação de config.yaml (CRÍTICO para validator)
 PyYAML==6.0.1
+
+# ============== P0/P1 AUTO-INSTALL UPGRADES ==============
+# NOTA: Estas bibliotecas são instaladas automaticamente na inicialização
+#       do JARVIS para habilitar features world-class
+
+# P0.6 Wake Word Detection (Privacy + 50% menos CPU)
+pvporcupine==3.0.0            # Porcupine - requer API key gratuita
+# openwakeword==0.5.1         # Alternativa (comentado, use porcupine)
+
+# P0.7 Voice Cloning XTTS-v2 (Personalização de voz)
+# AVISO: TTS requer Visual C++ Build Tools no Windows
+#        Se instalação falhar, o sistema funcionará com Edge-TTS/pyttsx3
+TTS==0.22.0                   # Coqui TTS - opcional mas recomendado
+
+# P1.2 Noise Reduction (Audio Enhancement)
+noisereduce==3.0.2            # Redução de ruído - +20% STT accuracy
 
 # -------------------------------------------------------------------------
 # DEVELOPMENT & TESTING
@@ -196,3 +214,44 @@ pytest-asyncio==0.21.1
 # ERRO: "torch not found"
 # SOLUÇÃO: pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
 # ============================================================================
+
+# ============================================================================
+# 🚀 P0 UPGRADES - JARVIS 5.0 WORLD-CLASS AI
+# ============================================================================
+
+# Wake Word Detection (Privacy + Performance)
+pvporcupine==3.0.0        # Porcupine wake word engine
+# openwakeword==0.5.1      # Alternative (lighter)
+
+# Voice Cloning (Personalização)
+TTS==0.22.0               # Coqui TTS com XTTS-v2
+
+# Audio Enhancement
+noisereduce==3.0.2        # Noise reduction preprocessing
+
+# ============================================================================
+# P1 OPTIMIZATIONS - Performance Enhancements
+# ============================================================================
+# The following P1 features are already included in existing dependencies:
+# - Semantic Caching: Built-in (vision_system.py)
+# - Response Caching: Built-in (voice_controller.py)
+# - RAG Reranking: Included in sentence-transformers (CrossEncoder)
+# - Jina Embeddings v3: Available via sentence-transformers
+# - UI-Specific YOLO: Built-in (vision_learner.py)
+#
+# To enable full P1 capabilities, ensure sentence-transformers is installed with:
+# pip install sentence-transformers[all]
+
+# RAG Upgrade (Better embeddings)
+# sentence-transformers>=2.3.0  # Já existe
+
+# ============================================================================
+# 🔮 NEURAL EXPANSION PHASE 1 - Advanced Senses (Sprint 1-5)
+# ============================================================================
+librosa>=0.10.0               # Advanced audio analysis (emotion, tone)
+pyannote.audio                # Speaker diarization
+onnxruntime-gpu               # Accelerated inference for ML models
+silero-vad==6.2.0             # Neural Voice Activity Detection (Sprint 1)
+networkx>=2.8                 # Knowledge Graph foundation (Sprint 2)
+matplotlib>=3.7.0             # Visualization for graphs
+pyqtgraph>=0.13.3             # Advanced plotting for Neural Dashboard (Sprint 5)

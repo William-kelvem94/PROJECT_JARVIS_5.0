@@ -4,11 +4,25 @@ Implementa pipeline de 3 níveis para análise visual progressiva
 """
 
 import logging
-import cv2
-import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"⚠️ cv2 not available in advanced_vision_pipeline: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    np = None
+    logging.warning(f"⚠️ numpy not available in advanced_vision_pipeline: {e}")
 
 logger = logging.getLogger(__name__)
 

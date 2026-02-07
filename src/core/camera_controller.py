@@ -3,7 +3,15 @@ Controlador de Câmera (Eyes)
 Responsável por detecção de presença e reconhecimento facial
 """
 
-import cv2
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    import logging
+    logging.warning(f"⚠️ cv2 not available in camera_controller: {e}")
+
 import threading
 import time
 import logging

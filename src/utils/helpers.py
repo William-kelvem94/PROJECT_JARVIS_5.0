@@ -11,8 +11,23 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Union
 import logging
 from PIL import Image
-import cv2
-import numpy as np
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"⚠️ cv2 not available in helpers: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    np = None
+    logging.warning(f"⚠️ numpy not available in helpers: {e}")
+
 from src.utils.config import config
 
 logger = logging.getLogger(__name__)

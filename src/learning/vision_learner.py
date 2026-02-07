@@ -4,6 +4,26 @@ Vision Learner for JARVIS AGI Machine Learning Core.
 This module implements few-shot learning for YOLO object detection,
 including object annotation, training data collection, incremental
 retraining, and knowledge retention.
+
+============================================================================
+P1: UI-SPECIFIC YOLO TRAINING
+============================================================================
+JARVIS can now learn UI elements incrementally for screen automation:
+- Buttons, textboxes, icons, menus
+- Adaptive dataset expansion (10+ examples per class)
+- Transfer learning from base YOLOv8n model
+- Validation with holdout UI screenshots
+
+TARGET USE CASES:
+1. "Jarvis, click the Submit button" - Vision system detects button position
+2. "Find all input fields" - Enumerate form elements for auto-fill
+3. "Is there a notification icon?" - Monitor screen for alerts
+
+IMPLEMENTATION:
+- Base model: YOLOv8n.pt (11MB, pre-trained on COCO)
+- UI dataset: Collect 20+ screenshots per element type
+- Training: 50 epochs, batch_size=8, imgsz=640
+- Metrics: mAP@0.5 > 0.85 (target)
 """
 
 import json
@@ -25,7 +45,7 @@ try:
     import cv2
     import numpy as np
     CV2_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
     # Mock numpy for type hints
@@ -559,10 +579,18 @@ class VisionLearner:
         """
         Perform incremental training on new data.
         
+        ============================================================================
+        P1: UI-SPECIFIC OPTIMIZATIONS
+        ============================================================================
+        - Smaller batch size (8) for UI screenshots (typically 1920x1080)
+        - Higher image size (640) for small UI element detection
+        - Data augmentation: rotation (±10°), scaling (0.8-1.2x), flip
+        - Mosaic augmentation: 4 UI screenshots combined for diverse contexts
+        
         Args:
-            epochs: Number of training epochs
-            batch_size: Batch size
-            img_size: Image size
+            epochs: Number of training epochs (50 for UI elements)
+            batch_size: Batch size (8 recommended for UI training)
+            img_size: Image size (640 for UI, 1280 for tiny elements)
             patience: Early stopping patience
             
         Returns:
@@ -573,36 +601,56 @@ class VisionLearner:
             return {"status": "unavailable"}
         
         try:
-            logger.info("Starting incremental training")
+            logger.info("Starting incremental training (UI-optimized)")
             
             # Create dataset config
             data_yaml = self.dataset_manager.create_yaml_config()
             
             # Check if we have enough data
             stats = self.dataset_manager.get_statistics()
-            if stats["total_examples"] < 5:
+            
+            # ============ P1: UI-SPECIFIC VALIDATION ============
+            # UI elements require at least 10 examples per class for good generalization
+            min_examples = 10
+            if stats["total_examples"] < min_examples:
                 logger.warning(
                     f"Not enough training examples ({stats['total_examples']}), "
-                    "need at least 5"
+                    f"need at least {min_examples} for UI training"
                 )
                 return {
                     "status": "insufficient_data",
-                    "examples": stats["total_examples"]
+                    "examples": stats["total_examples"],
+                    "required": min_examples
                 }
             
-            # Train model
-            results = self.current_model.train(
-                data=str(data_yaml),
-                epochs=epochs,
-                batch=batch_size,
-                imgsz=img_size,
-                patience=patience,
-                save=True,
-                project=str(self.model_dir),
-                name="training",
-                exist_ok=True,
-                pretrained=True,  # Start from existing weights
-            )
+            # ============ P1: UI-SPECIFIC TRAINING PARAMS ============
+            # Optimized hyperparameters for UI element detection
+            ui_training_params = {
+                "data": str(data_yaml),
+                "epochs": epochs,
+                "batch": min(batch_size, 8),  # Cap at 8 for UI screenshots
+                "imgsz": img_size,
+                "patience": patience,
+                "save": True,
+                "project": str(self.model_dir),
+                "name": "ui_training",
+                "exist_ok": True,
+                "pretrained": True,
+                
+                # UI-specific augmentations
+                "degrees": 10.0,  # Rotation ±10°
+                "translate": 0.1,  # Translation ±10%
+                "scale": 0.5,  # Scaling 0.5-1.5x
+                "shear": 0.0,  # No shear (UI elements are rectangular)
+                "flipud": 0.0,  # No vertical flip (breaks UI orientation)
+                "fliplr": 0.5,  # 50% horizontal flip (valid for symmetric UIs)
+                "mosaic": 1.0,  # Mosaic augmentation for context diversity
+            }
+            
+            # Train model with UI optimizations
+            logger.info(f"UI Training: {stats['total_examples']} examples, "
+                       f"{len(self.dataset_manager.classes)} classes")
+            results = self.current_model.train(**ui_training_params)
             
             # Update model to best weights
             best_model_path = self.model_dir / "training" / "weights" / "best.pt"

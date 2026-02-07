@@ -5,8 +5,16 @@ Isso remove a dependência 100% externa do Ollama/Gemini para comandos básicos.
 """
 
 import logging
-import torch
 from typing import List, Dict, Optional
+
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except (ImportError, OSError) as e:
+    TORCH_AVAILABLE = False
+    torch = None
+    logging.warning(f"⚠️ torch not available in local_brain: {e}")
+
 from src.core.hardware_manager import hardware_manager
 
 try:
@@ -17,60 +25,100 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-class LocalBrain:
-    """Classe que roda uma LLM local leve diretamente no processo do Jarvis"""
+import threading
+import asyncio
+from typing import Optional, Callable
 
-    def __init__(self, model_id: str = "Qwen/Qwen2.5-0.5B-Instruct"):
+class LocalBrain:
+    """Cérebro local com carregamento assíncrono para evitar travar a GUI"""
+    
+    def __init__(self, model_id: str = "Qwen/Qwen2.5-1.5B-Instruct"):
         self.model_id = model_id
         self.model = None
         self.tokenizer = None
         self.pipe = None
-        self.is_loaded = False
         
-        if TRANSFORMERS_AVAILABLE:
-            logger.info(f"Inicializando Cérebro Local ({model_id})...")
-            # Carregamento preguiçoso para não travar o startup da GUI
-        else:
-            logger.warning("Transformers não instalado. Cérebro Local desativado.")
-
-    def load(self):
-        """Carrega o modelo na memória/GPU"""
-        if not TRANSFORMERS_AVAILABLE or self.is_loaded: return
+        self._is_loaded = False
+        self._is_loading = False
+        self._load_lock = threading.Lock()
+        self._load_event = threading.Event()
         
+        logger.info(f"Cérebro Local configurado: {model_id} (lazy loading)")
+    
+    def load_async(self):
+        """Carrega modelo em background thread"""
+        if self._is_loaded or self._is_loading:
+            return
+        
+        self._is_loading = True
+        thread = threading.Thread(
+            target=self._load_model_background,
+            daemon=True,
+            name="ModelLoader-LocalBrain"
+        )
+        thread.start()
+    
+    def _load_model_background(self):
+        """Carrega modelo em thread separada"""
         try:
-            device = hardware_manager.get_device()
-            compute_type = torch.float16 if device == "cuda" else torch.float32
-            
-            logger.info(f"Carregando {self.model_id} em {device}...")
-            
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_id,
-                torch_dtype=compute_type,
-                device_map="auto" if device == "cuda" else None
-            )
-            
-            if device == "cpu":
-                self.model.to("cpu")
-
-            self.pipe = pipeline(
-                "text-generation",
-                model=self.model,
-                tokenizer=self.tokenizer,
-                device_map="auto" if device == "cuda" else None
-            )
-            
-            self.is_loaded = True
-            logger.info("Cérebro Local pronto para uso.")
+            with self._load_lock:
+                if self._is_loaded:
+                    return
+                
+                device = hardware_manager.get_device()
+                compute_type = torch.float16 if device == "cuda" else torch.float32
+                
+                logger.info(f"Carregando {self.model_id} em {device}...")
+                
+                # Tokenizer (rápido)
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+                
+                # Modelo (lento)
+                self.model = AutoModelForCausalLM.from_pretrained(
+                    self.model_id,
+                    torch_dtype=compute_type,
+                    device_map="auto" if device == "cuda" else None,
+                    low_cpu_mem_usage=True
+                )
+                
+                if device == "cpu":
+                    self.model.to("cpu")
+                
+                # Pipeline
+                self.pipe = pipeline(
+                    "text-generation",
+                    model=self.model,
+                    tokenizer=self.tokenizer,
+                    device_map="auto" if device == "cuda" else None
+                )
+                
+                self._is_loaded = True
+                self._is_loading = False
+                self._load_event.set()
+                logger.info("✅ Cérebro Local pronto para uso")
+                
         except Exception as e:
-            logger.error(f"Erro ao carregar Cérebro Local: {e}")
-
-    def generate_response(self, prompt: str, system_prompt: str = "", max_new_tokens: int = 128) -> str:
-        """Gera resposta localmente"""
-        if not self.is_loaded:
-            self.load()
-            if not self.is_loaded: return "Erro ao carregar cérebro local."
-
+            self._is_loading = False
+            logger.error(f"❌ Erro ao carregar Cérebro Local: {e}")
+    
+    def wait_for_load(self, timeout: float = 30.0) -> bool:
+        """Espera o carregamento completar"""
+        return self._load_event.wait(timeout)
+    
+    def generate_response(self, prompt: str, system_prompt: str = "", 
+                          max_new_tokens: int = 128) -> str:
+        """Gera resposta (carrega modelo se necessário)"""
+        
+        # Carregamento automático se necessário
+        if not self._is_loaded:
+            if not self._is_loading:
+                logger.info("Modelo não carregado. Iniciando carregamento em background...")
+                self.load_async()
+            
+            # Espera carregar (com timeout)
+            if not self.wait_for_load(timeout=10):
+                return "William, estou carregando meu cérebro local. Por favor, aguarde alguns segundos e tente novamente."
+        
         try:
             # Construir mensagens formatadas
             messages = [
@@ -78,7 +126,6 @@ class LocalBrain:
                 {"role": "user", "content": prompt}
             ]
             
-            # Preparar inputs
             text = self.tokenizer.apply_chat_template(
                 messages, 
                 tokenize=False, 
@@ -86,9 +133,7 @@ class LocalBrain:
             )
             
             model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-
-            # Gerar sem autocast explícito (deixar o PyTorch/Transformers gerenciar)
-            # ou usar torch.no_grad()
+            
             with torch.no_grad():
                 generated_ids = self.model.generate(
                     model_inputs.input_ids,
@@ -99,9 +144,9 @@ class LocalBrain:
                     pad_token_id=self.tokenizer.eos_token_id
                 )
             
-            # Decodificar
             generated_ids = [
-                output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+                output_ids[len(input_ids):] 
+                for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
             ]
             response = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
             

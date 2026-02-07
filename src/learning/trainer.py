@@ -20,7 +20,7 @@ try:
     import torch.nn as nn
     from torch.utils.data import Dataset, DataLoader
     TORCH_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
     torch = None
     # Mock Dataset class for when torch is not available
