@@ -4,9 +4,23 @@ Analisa expressões faciais (via FER) e tons de voz para ajustar a persona do Ja
 """
 
 import logging
-import cv2
-import numpy as np
 from typing import Dict, Any, Optional
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"⚠️ cv2 not available in emotion_detector: {e}")
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    np = None
+    logging.warning(f"⚠️ numpy not available in emotion_detector: {e}")
 
 try:
     from fer import FER
@@ -38,32 +52,60 @@ class EmotionDetector:
             return {"emotion": "neutral", "score": 1.0}
 
         try:
-            # Detectar emoções
             results = self.emotion_model.detect_emotions(frame)
-            
             if not results:
                 return {"emotion": self.last_emotion, "score": self.last_score}
 
-            # Pegar a emoção dominante da primeira face detectada
             emotions = results[0]['emotions']
             dominant_emotion = max(emotions, key=emotions.get)
             score = emotions[dominant_emotion]
 
             self.last_emotion = dominant_emotion
             self.last_score = score
-
+            
             return {"emotion": dominant_emotion, "score": score}
         except Exception as e:
             logger.error(f"Erro na detecção de emoção visual: {e}")
             return {"emotion": "neutral", "score": 0.0}
 
-    def analyze_voice_tone(self, audio_data: np.ndarray) -> str:
+    def analyze_voice_tone(self, audio_path: str) -> Dict[str, Any]:
         """
-        Analisa o tom de voz (Simples: intensidade e pitch)
-        (Será expandido com librosa se necessário)
+        Analisa o tom de voz usando o processador avançado
         """
-        # Por enquanto, mantemos neutral até integrar librosa no fluxo de áudio real
-        return "neutral"
+        try:
+            from core.advanced_speech_processor import advanced_speech_processor
+            voice_data = advanced_speech_processor.analyze_speech_emotion(audio_path)
+            return voice_data
+        except Exception as e:
+            logger.error(f"Erro ao analisar tom de voz: {e}")
+            return {"emotion": "neutral", "confidence": 0.0}
+
+    def get_consolidated_emotion(self, visual_data: Dict, audio_data: Dict) -> Dict[str, Any]:
+        """
+        Fusão Multimodal (Cross-Modal Fusion): Face (60%) + Voz (40%)
+        """
+        v_emo = visual_data.get("emotion", "neutral")
+        v_score = visual_data.get("score", 0.0)
+        
+        a_emo = audio_data.get("emotion", "neutral")
+        a_score = audio_data.get("confidence", 0.0)
+        
+        # Pesos da Fusão
+        fused_score = (v_score * 0.6) + (a_score * 0.4)
+        
+        # Lógica de dominância
+        if v_emo == a_emo:
+            final_emotion = v_emo
+        elif v_score > a_score + 0.2:
+            final_emotion = v_emo
+        else:
+            final_emotion = a_emo
+            
+        return {
+            "emotion": final_emotion,
+            "confidence": fused_score,
+            "is_multimodal": True
+        }
 
     def get_personality_modifier(self, emotion: str) -> Dict[str, str]:
         """Retorna parâmetros para ajustar o System Prompt do AIAgent"""

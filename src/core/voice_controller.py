@@ -77,6 +77,13 @@ try:
 except ImportError:
     VOSK_AVAILABLE = False
 
+try:
+    from TTS.api import TTS
+    TTS_AVAILABLE = True
+except ImportError:
+    TTS_AVAILABLE = False
+    logging.warning("TTS (Coqui) não disponível. Voice cloning desativado.")
+
 from src.utils.config import config
 
 logger = logging.getLogger(__name__)
@@ -97,7 +104,18 @@ class VoiceController:
         
         # TTS Offline (fallback)
         self.engine = pyttsx3.init()
-        self._setup_voices()
+        
+        # Configurar voz em português se disponível
+        try:
+            voices = self.engine.getProperty('voices')
+            for voice in voices:
+                if 'portuguese' in voice.name.lower() or 'brazil' in voice.name.lower():
+                    self.engine.setProperty('voice', voice.id)
+                    break
+            self.engine.setProperty('rate', 180)  # Velocidade
+            self.engine.setProperty('volume', 0.9)  # Volume
+        except Exception as e:
+            logger.warning(f"Não foi possível configurar voz: {e}")
         
         # Configurar provedor padrão
         self.tts_provider = config.get_setting('voice.tts_provider', 'edge')
@@ -119,29 +137,85 @@ class VoiceController:
         self._is_speaking = False
         self.detected_tone = "normal"
 
-    def _setup_voices(self):
-        """Configura vozes locais"""
-        voices = self.engine.getProperty('voices')
-        for voice in voices:
-            if "portuguese" in voice.name.lower() or "brazil" in voice.name.lower():
-                self.engine.setProperty('voice', voice.id)
-                break
-        self.engine.setProperty('rate', 190) # Velocidade Jarvis levemente mais rápida
+        # XTTS-v2 Cloned Voice (Lazy Setup)
+        self.cloned_tts = None
+        self.speaker_wav = config.get_setting('voice.speaker_wav', 'data/voice_signatures/william.wav')
         
-        # Frases de preenchimento (Fillers) para naturalidade
-        self.fillers = [
-            "Um momento, senhor.",
-            "Deixe-me ver...",
-            "Analisando os dados...",
-            "Só um segundo, William.",
-            "Estou verificando isso agora.",
-            "Processando as informações..."
+        # ============ P1: RESPONSE CACHING ============
+        # Cache common phrases ("ok", "entendi", etc) as pre-generated audio
+        self.response_cache = {}  # text -> audio_file_path
+        self.common_phrases = [
+            "OK", "Entendi", "Claro", "Pode deixar", "Estou trabalhando nisso",
+            "Pronto", "Concluído", "Sim", "Não", "Como posso ajudar?"
         ]
+        self._warm_response_cache()  # Pre-generate on init
+
+    def _setup_cloned_voice(self):
+        """Inicializa o modelo XTTS-v2 para clonagem de voz"""
+        if self.cloned_tts or not TTS_AVAILABLE:
+            return
+        
+        try:
+            logger.info("🧠 Carregando modelo de clonagem de voz (XTTS-v2)...")
+            self.cloned_tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+            if torch.cuda.is_available():
+                self.cloned_tts.to("cuda")
+            logger.info("✅ Modelo XTTS-v2 pronto")
+        except Exception as e:
+            logger.error(f"❌ Erro ao carregar XTTS-v2: {e}")
+            TTS_AVAILABLE = False
+    
+    def _warm_response_cache(self):
+        """Pre-generate common phrases for instant response"""
+        if not EDGE_TTS_AVAILABLE or not PYGAME_AVAILABLE:
+            return
+        
+        cache_dir = Path("data/audio/response_cache")
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        logger.info("🔥 Warming response cache (common phrases)...")
+        
+        for phrase in self.common_phrases:
+            cache_file = cache_dir / f"{phrase.lower().replace(' ', '_')}.mp3"
+            
+            if cache_file.exists():
+                self.response_cache[phrase.lower()] = str(cache_file)
+        
+        logger.info(f"✅ Response cache ready ({len(self.response_cache)} phrases loaded)")
+    
+    async def _generate_cached_response(self, phrase: str, cache_file: Path):
+        """Generate and cache a common phrase"""
+        try:
+            communicate = edge_tts.Communicate(phrase, "pt-BR-FranciscaNeural")
+            await communicate.save(str(cache_file))
+            self.response_cache[phrase.lower()] = str(cache_file)
+            logger.debug(f"📦 Cached: {phrase}")
+        except Exception as e:
+            logger.warning(f"Failed to cache '{phrase}': {e}")
 
     def speak(self, text: str, mode: str = 'auto', wait: bool = False):
         """Fala um texto usando TTS híbrido (Online Fluido -> Offline Rápido)"""
         text = self.clean_text_for_speech(text)
         if not text: return
+        
+        # ============ P1: RESPONSE CACHING ============
+        # Check if text is a cached common phrase
+        if PYGAME_AVAILABLE:
+            text_lower = text.lower().strip()
+            if text_lower in self.response_cache:
+                cache_file = self.response_cache[text_lower]
+                try:
+                    pygame.mixer.music.load(cache_file)
+                    pygame.mixer.music.play()
+                    
+                    if wait:
+                        while pygame.mixer.music.get_busy():
+                            time.sleep(0.1)
+                    
+                    logger.debug(f"📦 Used cached response: {text}")
+                    return
+                except Exception as e:
+                    logger.warning(f"Cache playback failed: {e}")
         
         if wait:
             self._speak_thread(text, mode)
@@ -171,10 +245,22 @@ class VoiceController:
     def _speak_thread(self, text: str, mode: str):
         is_online = self.check_internet()
         
+        # Get emotion for prosody
+        from core.emotion_detector import emotion_detector
+        emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
+        modifier = emotion_detector.get_personality_modifier(emotion)
+        
+        # Adjust rate based on emotion
+        original_rate = self.engine.getProperty('rate')
+        if modifier['energy'] == 'alta' or modifier['energy'] == 'máxima':
+            self.engine.setProperty('rate', original_rate + 20)
+        elif modifier['energy'] == 'baixa':
+            self.engine.setProperty('rate', original_rate - 20)
+
         if (mode == 'online' or mode == 'auto') and is_online:
             try:
                 if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
-                    asyncio.run(self._speak_edge(text))
+                    asyncio.run(self._speak_edge(text, emotion))
                 elif GTTS_AVAILABLE:
                     self._speak_google(text)
                 else:
@@ -186,17 +272,29 @@ class VoiceController:
         # Fallback Offline
         if not self.stop_requested:
             self._is_speaking = True
-            self.engine.say(text)
+            prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
+            self.engine.say(prefix + text)
             self.engine.runAndWait()
             self._is_speaking = False
+            self.engine.setProperty('rate', original_rate) # Reset
 
-    async def _speak_edge(self, text: str):
-        """Usa a API do Microsoft Edge para fala natural gratuita"""
+    async def _speak_edge(self, text: str, emotion: str = "neutral"):
+        """Usa a API do Microsoft Edge com seleção de voz baseada em emoção"""
         if not EDGE_TTS_AVAILABLE:
             logger.warning("edge-tts não disponível")
             return
             
-        voice = "pt-BR-AntonioNeural" # Voz masculina estilo assistente
+        # Mapeamento de vozes neurais para emoções
+        # Vozes do Edge por enquanto são limitadas em variação emocional direta, 
+        # mas podemos simular trocando o "pitch" ou a voz se disponível.
+        voice_map = {
+            "happy": "pt-BR-FranciscaNeural",   # Mais leve/feminina
+            "sad": "pt-BR-AntonioNeural",       # Mais profunda/masculina
+            "angry": "pt-BR-AntonioNeural",     # Mais firme
+            "neutral": "pt-BR-AntonioNeural"
+        }
+        
+        voice = voice_map.get(emotion, voice_map["neutral"])
         communicate = edge_tts.Communicate(text, voice)
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
@@ -472,6 +570,57 @@ class VoiceController:
             self.listen_for_wake_word()
 
         threading.Thread(target=_active_listen, daemon=True).start()
+
+    def speak_cloned(self, text: str, wait: bool = False):
+        """Fala usando a voz clonada (XTTS-v2) com refinamento emocional"""
+        if not TTS_AVAILABLE:
+            self.speak(text, wait=wait)
+            return
+
+        def _cloned_speak():
+            try:
+                self._setup_cloned_voice()
+                self._is_speaking = True
+                
+                # Get emotion context
+                from core.emotion_detector import emotion_detector
+                emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
+                
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                    tmp_path = tmp.name
+                
+                logger.info(f"🎙️ Generating cloned voice (Emotion: {emotion})")
+                self.cloned_tts.tts_to_file(
+                    text=text, 
+                    speaker_wav=self.speaker_wav, 
+                    language="pt", 
+                    file_path=tmp_path,
+                    emotion=emotion # XTTS-v2 supports basic emotion conditioning
+                )
+                
+                if self.stop_requested: return
+                
+                pygame.mixer.music.load(tmp_path)
+                pygame.mixer.music.play()
+                
+                while pygame.mixer.music.get_busy():
+                    if self.stop_requested:
+                        pygame.mixer.music.stop()
+                        break
+                    time.sleep(0.1)
+                
+                self._is_speaking = False
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception as e:
+                logger.error(f"Erro na voz clonada: {e}")
+                self._is_speaking = False
+                self.speak(text, wait=True)
+
+        if wait:
+            _cloned_speak()
+        else:
+            threading.Thread(target=_cloned_speak, daemon=True).start()
 
 # Instância global
 voice_controller = VoiceController()

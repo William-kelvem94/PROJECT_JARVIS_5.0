@@ -19,7 +19,7 @@ try:
     import torch.optim as optim
     from torch.utils.data import Dataset, DataLoader
     TORCH_AVAILABLE = True
-except ImportError:
+except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
     optim = None
     # Mock classes for when torch is not available
