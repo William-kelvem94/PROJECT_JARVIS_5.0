@@ -28,7 +28,7 @@ except (ImportError, OSError) as e:
     logging.warning(f"⚠️ numpy not available in gesture_controller: {e}")
 
 from src.utils.config import config
-from src.core.action_controller import action_controller
+from src.core.actions.action_controller import action_controller
 
 logger = logging.getLogger(__name__)
 
