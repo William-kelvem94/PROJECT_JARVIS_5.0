@@ -1,56 +1,53 @@
 @echo off
-:: ============================================================================
-::  JARVIS 5.0 - STARK INDUSTRIES UNIVERSAL INSTALLER v1.3
-::  SYSTEM STATUS: MILITARY GRADE DEPLOYMENT PROTOCOL
-:: ============================================================================
+:: JARVIS 5.0 - UNIVERSAL INSTALLER v1.4 (Pure ASCII Mode)
+:: Use this if the system closes unexpectedly.
+
+echo [DEBUG] Script started. Press any key to begin setup...
+pause
+
+echo.
+echo ==========================================================================
+echo                 JARVIS 5.0 - INSTALLATION PROTOCOL
+echo ==========================================================================
+echo.
 
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-:: Estetica Stark
-color 0E
-echo.
-echo  ##########################################################################
-echo  #                                                                        #
-echo  #             JARVIS 5.0 - PROTOCOLO DE INSTALACAO UNIVERSAL             #
-echo  #                    STARK INDUSTRIES - SECURE DEPLOY                    #
-echo  #                                                                        #
-echo  ##########################################################################
-echo.
+echo [INFO] Project Root: %ROOT%
 
-:: 1. Verificacao de Requisitos
-echo [SYSTEM] Verificando integridade do ambiente...
+:: 1. Check Python
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Python nao detectado no Windows.
-    echo [ACTION] Instale o Python 3.11 e marque a opcao "ADD TO PATH".
-    echo.
+    echo [ERROR] Python not found in PATH. 
+    echo Please install Python 3.11 and check "Add to PATH".
     pause
     exit /b 1
 )
 
-:: 2. Iniciando Ambiente Virtual
+:: 2. Create VENV
 if exist "%ROOT%venv\Scripts\python.exe" (
-    echo [SYSTEM] Ambiente Virtual (VENV) ja sincronizado.
+    echo [INFO] VENV already exists.
     goto :INSTALL_DEPS
 )
 
-echo [SYSTEM] Criando Nucleo de Ambiente Virtual (VENV)...
+echo [INFO] Creating Virtual Environment (VENV)...
 python -m venv venv
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Falha na criacao do VENV. Verifique permissoes de sistema.
+    echo [ERROR] Failed to create VENV.
     pause
     exit /b 1
 )
 
 :INSTALL_DEPS
-:: 3. Instalacao de Dependencias
-echo [SYSTEM] Iniciando Sincronizacao de Bibliotecas Neurais...
-echo [WARN] Este processo demanda alto consumo de rede e processamento.
+:: 3. Run Total Installer
+echo [INFO] Syncing neural libraries...
+echo [WARN] This may take several minutes.
 echo.
 
 if not exist "%ROOT%scripts\install\total_installer.py" (
-    echo [ERROR] Modulo de instalacao total_installer.py nao localizado.
+    echo [ERROR] total_installer.py not found at:
+    echo %ROOT%scripts\install\total_installer.py
     pause
     exit /b 1
 )
@@ -59,16 +56,16 @@ if not exist "%ROOT%scripts\install\total_installer.py" (
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [CRITICAL] Falha na sincronizacao do sistema.
-    echo Verifique sua conexao e execute novamente.
+    echo [CRITICAL] Installation failed. 
+    echo Check scripts\install\total_installer.log for details.
     pause
     exit /b 1
 )
 
 echo.
-echo ##########################################################################
-echo #             SISTEMA SINCRONIZADO: JARVIS ESTA ONLINE                   #
-echo ##########################################################################
+echo ==========================================================================
+echo    SYSTEM SYNCED: JARVIS IS ONLINE
+echo ==========================================================================
 echo.
 pause
 exit /b 0

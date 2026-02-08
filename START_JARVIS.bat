@@ -1,63 +1,54 @@
 @echo off
-:: ============================================================================
-::  JARVIS 5.0 - SINGULARITY COMMAND CENTER v9.3
-::  STARK INDUSTRIES - MILITARY GRADE SYSTEM
-:: ============================================================================
+:: JARVIS 5.0 - SINULARITY LAUNCHER v9.4 (Pure ASCII Mode)
+:: Use this if the system closes unexpectedly.
+
+echo [DEBUG] Launcher started. Press any key to engage JARVIS...
+pause
 
 setlocal enabledelayedexpansion
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-:: Estetica de Inicializacao
-color 0B
-echo.
-echo  ##########################################################################
-echo  #                                                                        #
-echo  #                 JARVIS 5.0 - SINGULARITY CORE ONLINE                   #
-echo  #                    STARK INDUSTRIES - LEVEL 9 ACCESS                   #
-echo  #                                                                        #
-echo  ##########################################################################
-echo.
-
-:: Variaveis de Ambiente Stark
+:: Environment settings
 set "KMP_DUPLICATE_LIB_OK=TRUE"
 set "PYTHONUTF8=1"
 
-:: Verificacao de Seguranca (VENV)
+:: Check VENV
 set "VENV_PYTHON=%ROOT%venv\Scripts\python.exe"
 
-if exist "%VENV_PYTHON%" goto :ENGAGE_SINGULARITY
+if exist "%VENV_PYTHON%" goto :START_CORE
 
-echo [WARNING] Nucleo de Ambiente Virtual nao detectado.
-echo [SYSTEM] Iniciando Protocolo de Auto-Recuperacao...
+echo [WARNING] Virtual Environment not detected.
+echo [SYSTEM] Starting Auto-Recovery Protocol...
 echo.
-set /p opt="Deseja iniciar a instalacao automatica agora? (S/N): "
+set /p choice="Do you want to install dependencies now? (Y/N): "
 
-if /i "%opt%"=="S" (
+if /i "%choice%"=="Y" (
     call "%ROOT%INSTALL_JARVIS.bat"
 ) else (
-    echo [ABORT] Shutdown preventivo acionado. Dependencias ausentes.
+    echo [ABORT] System cannot run without dependencies.
     pause
     exit /b 1
 )
 
-:: Validacao Final apos Instalacao
+:: Re-verify
 if not exist "%VENV_PYTHON%" (
-    echo [FATAL] Falha críitica ao configurar o ambiente.
-    echo Execute o INSTALL_JARVIS.bat individualmente.
+    echo [FATAL] Environment setup failed. 
+    echo Run INSTALL_JARVIS.bat manually to debug.
     pause
     exit /b 1
 )
 
-:ENGAGE_SINGULARITY
-echo [SYSTEM] Acionando Motores de Singularidade...
+:START_CORE
+echo.
+echo [SYSTEM] Engaging Singularity Core Engines...
 echo.
 
 "%VENV_PYTHON%" "%ROOT%SINGULARITY_LAUNCHER.py" %*
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [CRITICAL] Erro de sistema detectado (Code %ERRORLEVEL%).
+    echo [CRITICAL] System crash detected (Exit Code %ERRORLEVEL%).
     pause
     exit /b %ERRORLEVEL%
 )
