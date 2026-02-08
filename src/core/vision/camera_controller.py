@@ -59,12 +59,19 @@ class CameraController:
                 logger.warning("Modelo CNN solicitado mas rodando em CPU. Isso será LENTO. Recomendo HOG para CPU.")
                 self.face_detection_model = 'hog'
         
-        # Fallback mechanism: Load Haar Cascade
+        # 🆕 MEDIAPIPE FACE DETECTION (Stable Fallback)
+        self.mp_face_detection = None
+        self.face_detector = None
         try:
-            self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            import mediapipe as mp
+            self.mp_face_detection = mp.solutions.face_detection
+            self.face_detector = self.mp_face_detection.FaceDetection(
+                model_selection=0, # 0 for short range (2m), 1 for long range (5m)
+                min_detection_confidence=0.5
+            )
+            logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
         except Exception as e:
-            logger.warning(f"Erro ao carregar Haar Cascade: {e}")
-            self.face_cascade = None
+            logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
         
         # Callback para enviar vídeo para GUI (se necessário)
         self.on_frame_ready: Optional[Callable[[Any], None]] = None
@@ -109,21 +116,6 @@ class CameraController:
         self.is_monitoring = False
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2)
-
-        # 🆕 MEDIAPIPE FACE DETECTION (Stable Fallback)
-        self.mp_face_detection = None
-        self.face_detector = None
-        if MEDIAPIPE_AVAILABLE:
-            try:
-                import mediapipe as mp
-                self.mp_face_detection = mp.solutions.face_detection
-                self.face_detector = self.mp_face_detection.FaceDetection(
-                    model_selection=0, # 0 for short range (2m), 1 for long range (5m)
-                    min_detection_confidence=0.5
-                )
-                logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
-            except Exception as e:
-                logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
 
     def _monitor_loop(self):
         """Loop principal de visão"""

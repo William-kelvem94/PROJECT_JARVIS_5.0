@@ -62,7 +62,7 @@ class BrainRouter:
         self,
         task_complexity: float = 0.5,
         privacy_level: PrivacyLevel = PrivacyLevel.MEDIUM,
-        latency_requirement: LatencyRequirement = LatencyRequirement.MEDIUM
+        latency_requirement: LatencyRequirement = LatencyRequirement.MODERATE
     ) -> str:
         """
         Versão Stark IQ 11.2 - Escolha adaptativa baseada em Memória e Tiers
