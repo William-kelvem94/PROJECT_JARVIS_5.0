@@ -62,7 +62,7 @@ class WindowManager(QObject):
         """
         super().__init__()
         self.app = app
-        self.current_mode = InterfaceMode.HUD_OVERLAY
+        self.current_mode = InterfaceMode.HIDDEN  # Start hidden to force refresh on first switch
         
         # Interface instances (lazy loaded)
         self._hud = None
@@ -89,8 +89,17 @@ class WindowManager(QObject):
             if icon_path.exists():
                 icon = QIcon(str(icon_path))
             else:
-                # Use default icon if custom not found
-                icon = QIcon.fromTheme("computer")
+                # Use a better looking fallback or create a tiny colored bitbmap
+                from PyQt6.QtGui import QPixmap, QPainter, QColor
+                pixmap = QPixmap(64, 64)
+                pixmap.fill(Qt.GlobalColor.transparent)
+                painter = QPainter(pixmap)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+                painter.setBrush(QColor(100, 200, 255))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.drawEllipse(10, 10, 44, 44)
+                painter.end()
+                icon = QIcon(pixmap)
             
             self._tray_icon = QSystemTrayIcon(icon, self.app)
             
@@ -225,6 +234,7 @@ class WindowManager(QObject):
                 self._initialize_hud()
             self._hud.show()
             self._hud.raise_()
+            self._hud.activateWindow()
             
         elif self.current_mode == InterfaceMode.DASHBOARD:
             if not self._dashboard:

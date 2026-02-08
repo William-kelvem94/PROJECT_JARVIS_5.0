@@ -82,7 +82,16 @@ class FeedbackDatabase:
             db_path: Path to SQLite database file
         """
         self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Ensure parent directory exists with proper error handling
+        try:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to create database directory: {e}")
+            # Fallback to temp directory
+            import tempfile
+            self.db_path = Path(tempfile.gettempdir()) / "jarvis_feedback.db"
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
         
         self.conn: Optional[sqlite3.Connection] = None
         self._init_database()
@@ -90,6 +99,16 @@ class FeedbackDatabase:
     def _init_database(self) -> None:
         """Initialize database schema."""
         try:
+            # Test if we can write to this location
+            test_file = self.db_path.parent / ".write_test"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except Exception as e:
+                logger.warning(f"Cannot write to {self.db_path.parent}: {e}. Using temp directory.")
+                import tempfile
+                self.db_path = Path(tempfile.gettempdir()) / "jarvis_feedback.db"
+                
             self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
             self.conn.row_factory = sqlite3.Row
             
