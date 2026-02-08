@@ -1,40 +1,65 @@
 @echo off
-:: JARVIS 5.0 - LAUNCHER v9.2 (Extreme Compatibility)
-:: Se este script fechar sozinho, tente abrir o CMD primeiro e arrastar este arquivo para dentro.
+:: ============================================================================
+::  JARVIS 5.0 - SINGULARITY COMMAND CENTER v9.3
+::  STARK INDUSTRIES - MILITARY GRADE SYSTEM
+:: ============================================================================
 
-echo [DEBUG] Script iniciado. Pressione qualquer tecla para abrir o JARVIS...
-pause
-
+setlocal enabledelayedexpansion
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
+:: Estetica de Inicializacao
+color 0B
+echo.
+echo  ##########################################################################
+echo  #                                                                        #
+echo  #                 JARVIS 5.0 - SINGULARITY CORE ONLINE                   #
+echo  #                    STARK INDUSTRIES - LEVEL 9 ACCESS                   #
+echo  #                                                                        #
+echo  ##########################################################################
+echo.
+
+:: Variaveis de Ambiente Stark
 set "KMP_DUPLICATE_LIB_OK=TRUE"
 set "PYTHONUTF8=1"
 
+:: Verificacao de Seguranca (VENV)
 set "VENV_PYTHON=%ROOT%venv\Scripts\python.exe"
 
-if exist "%VENV_PYTHON%" goto START_SYSTEM
+if exist "%VENV_PYTHON%" goto :ENGAGE_SINGULARITY
 
+echo [WARNING] Nucleo de Ambiente Virtual nao detectado.
+echo [SYSTEM] Iniciando Protocolo de Auto-Recuperacao...
 echo.
-echo [AVISO] venv nao encontrado. Redirecionando para o instalador...
-pause
-call "%ROOT%INSTALL_JARVIS.bat"
+set /p opt="Deseja iniciar a instalacao automatica agora? (S/N): "
 
-if not exist "%VENV_PYTHON%" (
-    echo [ERRO] O ambiente venv nao foi criado. Rode o INSTALL_JARVIS.bat primeiro.
+if /i "%opt%"=="S" (
+    call "%ROOT%INSTALL_JARVIS.bat"
+) else (
+    echo [ABORT] Shutdown preventivo acionado. Dependencias ausentes.
     pause
     exit /b 1
 )
 
-:START_SYSTEM
+:: Validacao Final apos Instalacao
+if not exist "%VENV_PYTHON%" (
+    echo [FATAL] Falha críitica ao configurar o ambiente.
+    echo Execute o INSTALL_JARVIS.bat individualmente.
+    pause
+    exit /b 1
+)
+
+:ENGAGE_SINGULARITY
+echo [SYSTEM] Acionando Motores de Singularidade...
 echo.
-echo [SISTEMA] Iniciando Singularity Core...
+
 "%VENV_PYTHON%" "%ROOT%SINGULARITY_LAUNCHER.py" %*
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [ERRO] O sistema parou com codigo %ERRORLEVEL%.
+    echo [CRITICAL] Erro de sistema detectado (Code %ERRORLEVEL%).
     pause
+    exit /b %ERRORLEVEL%
 )
 
 exit /b 0
