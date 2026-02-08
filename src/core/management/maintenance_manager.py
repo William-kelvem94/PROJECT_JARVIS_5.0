@@ -31,28 +31,33 @@ class MaintenanceManager:
         logger.info("Iniciando Verificação de Integridade do Sistema...")
         if self.on_progress: self.on_progress("SISTEMA: Iniciando verificação de integridade...")
         
-        # 0. Alinhamento de bibliotecas base (NumPy)
-        self._align_numpy()
+        from src.core.management.evolution_engine import evolution_engine
+        
+        try:
+            # 0. Alinhamento de bibliotecas base (NumPy)
+            self._align_numpy()
 
-        # 1. Sincronizar versões críticas (evitar conflitos mediapipe/protobuf)
-        self._sync_critical_versions()
+            # 1. Sincronizar versões críticas
+            self._sync_critical_versions()
 
-        
-        # 2. Verificar dependências Python
-        self._repair_python_deps()
-        
-        # 3. Verificar ferramentas de sistema (Tesseract, etc)
-        self._check_system_tools()
-        
-        # 4. Verificar e instalar CMake (necessário para face_recognition)
-        self._check_and_install_cmake()
-        
-        # 5. Verificar modelos de IA
-        self._check_ai_models()
-        
-        # 6. Download de modelos offline (Vosk)
-        self._download_vosk_model()
-        
+            # 2. Verificar dependências Python
+            self._repair_python_deps()
+            
+            # 3. Verificar ferramentas de sistema
+            self._check_system_tools()
+            
+            # 5. Verificar modelos de IA
+            self._check_ai_models()
+            
+            evolution_engine.report_status("Infrastructure", "OK")
+            evolution_engine.report_status("Intelligence", "OK")
+            evolution_engine.generate_pulse_report()
+            
+        except Exception as e:
+            logger.error(f"Erro durante manutenção: {e}")
+            evolution_engine.report_status("Infrastructure", "FAIL", str(e))
+            evolution_engine.generate_pulse_report()
+
         if self.on_progress: self.on_progress("SISTEMA: Integridade verificada. Protocolos operacionais.")
         logger.info("Verificação de Integridade concluída.")
 

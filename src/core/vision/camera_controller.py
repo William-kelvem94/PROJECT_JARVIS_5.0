@@ -110,6 +110,21 @@ class CameraController:
         if self.monitor_thread:
             self.monitor_thread.join(timeout=2)
 
+        # 🆕 MEDIAPIPE FACE DETECTION (Stable Fallback)
+        self.mp_face_detection = None
+        self.face_detector = None
+        if MEDIAPIPE_AVAILABLE:
+            try:
+                import mediapipe as mp
+                self.mp_face_detection = mp.solutions.face_detection
+                self.face_detector = self.mp_face_detection.FaceDetection(
+                    model_selection=0, # 0 for short range (2m), 1 for long range (5m)
+                    min_detection_confidence=0.5
+                )
+                logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
+
     def _monitor_loop(self):
         """Loop principal de visão"""
         video_capture = cv2.VideoCapture(self.camera_index)
@@ -126,89 +141,89 @@ class CameraController:
                 time.sleep(1)
                 continue
 
-            if not FACE_REC_AVAILABLE:
-                # Fallback: Haar Cascade Detection
-                if self.face_cascade:
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
-                    for (x, y, w, h) in faces:
-                        # Draw simple box
-                        cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                        cv2.putText(frame, "Human", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        
-                        if time.time() - self.last_seen_time > 60:
-                             logger.info("Presença humana detectada (Visual Básico)")
-                        
-                        self.last_seen_time = time.time()
-                        self.last_seen_user = "Human"
-                
-            else:
-                # Full Face Recognition logic
-                # Processar apenas 1 a cada 5 frames para economizar CPU
+            # Prioridade 1: MediaPipe (Estabilidade)
+            human_detected = False
+            if self.face_detector:
+                results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                if results_mp.detections:
+                    human_detected = True
+                    for detection in results_mp.detections:
+                        # Desenhar detecção MediaPipe
+                        bbox = detection.location_data.relative_bounding_box
+                        h, w, c = frame.shape
+                        x, y, bw, bh = int(bbox.xmin * w), int(bbox.ymin * h), int(bbox.width * w), int(bbox.height * h)
+                        cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
+                        cv2.putText(frame, "HUMAN", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+
+            # Prioridade 2: Face Recognition (Identidade) - Apenas se não houver falhas consecutivas
+            if FACE_REC_AVAILABLE and getattr(self, '_faceid_failures', 0) < 5:
                 if process_this_frame:
                     try:
-                        # Redimensionar para 1/4 para processamento rápido
                         small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                        rgb_small_frame = small_frame[:, :, ::-1] # BGR to RGB
-
-                        # Buscar faces
-                        face_locations = face_recognition.face_locations(rgb_small_frame, model=self.face_detection_model)
-                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-
-                        for face_encoding, face_location in zip(face_encodings, face_locations):
-                            matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                            name = "Desconhecido"
-
-                            if True in matches:
-                                first_match_index = matches.index(True)
-                                name = self.known_face_names[first_match_index]
-
-                            # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                            top, right, bottom, left = face_location
-                            top *= 4
-                            right *= 4
-                            bottom *= 4
-                            left *= 4
-
-                            # Draw a box around the face
-                            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-                            cv2.putText(frame, name, (left, top-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-                            # Atualizar estado
-                            if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
-                                logger.info(f"Usuário visto: {name}")
-                                self.last_seen_user = name
-                            
-                            self.last_seen_time = time.time()
-                            
-                            # Detecção de Emoção (Phase 14)
-                            emotion_data = emotion_detector.detect_emotion_from_frame(frame)
-                            self.current_emotion = emotion_data['emotion']
-                            logger.debug(f"Emoção detectada para {name}: {self.current_emotion}")
+                        rgb_small_frame = small_frame[:, :, ::-1]
+                        
+                        # Buscar faces com HOG
+                        face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+                        
+                        if face_locations:
+                            try:
+                                face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                                for face_encoding in face_encodings:
+                                    match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
+                                    name = "Desconhecido"
+                                    if True in match:
+                                        name = self.known_face_names[match.index(True)]
+                                    
+                                    # Log e atualização
+                                    if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
+                                        logger.info(f"Usuário identificado: {name}")
+                                        self.last_seen_user = name
+                                    self.last_seen_time = time.time()
+                                self._faceid_failures = 0
+                            except Exception:
+                                self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
                     except Exception as e:
-                        logger.error(f"Erro no processamento FaceID: {e}")
+                        logger.debug(f"Erro FaceID: {e}")
+            
+            # Fallback se identificação falhar mas human_detected for true
+            if human_detected and (not self.last_seen_user or time.time() - self.last_seen_time > 60):
+                if not self.last_seen_user or self.last_seen_user == "Desconhecido":
+                    self.last_seen_user = "Human"
+                    self.last_seen_time = time.time()
+                    logger.info("Presença humana detectada (Estável via MediaPipe)")
+
+            # Emoção e Gestos
+            if human_detected:
+                try:
+                    emotion_data = emotion_detector.detect_emotion_from_frame(frame)
+                    self.current_emotion = emotion_data['emotion']
+                except: pass
 
             process_this_frame = not process_this_frame
             
             # Processamento de Gestos (Todo frame ou intercalado)
             try:
-                # Retorna frame desenhado se MediaPipe ativo
-                processed_frame, gesture = gesture_controller.process_frame(frame)
-                
-                if self.on_frame_ready:
-                    # Enviar para UI (converter BGR para RGB para tkinter)
-                    rgb_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                    self.on_frame_ready(rgb_frame)
+                # Safe check for gesture controller
+                if gesture_controller:
+                    # Retorna frame desenhado se MediaPipe ativo
+                    processed_frame, gesture = gesture_controller.process_frame(frame)
+                    
+                    if self.on_frame_ready:
+                        # Enviar para UI (converter BGR para RGB para tkinter)
+                        try:
+                            rgb_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+                            self.on_frame_ready(rgb_frame)
+                        except Exception:
+                            pass
 
-                if gesture != "None":
-                    logger.debug(f"Gesto: {gesture}")
+                    if gesture != "None":
+                        logger.debug(f"Gesto: {gesture}")
             except Exception as e:
-                logger.error(f"Erro no processamento de gestos: {e}")
+                # Silently ignore gesture errors to prevent log flooding
+                pass
 
             process_this_frame = not process_this_frame
             time.sleep(0.03) # Mais fluido
-
-        video_capture.release()
 
         video_capture.release()
 

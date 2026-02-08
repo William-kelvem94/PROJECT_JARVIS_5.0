@@ -66,22 +66,40 @@ class LocalBrain:
                     return
                 
                 device = hardware_manager.get_device()
-                compute_type = torch.float16 if device == "cuda" else torch.float32
+                tier = hardware_manager.get_tier()
+                compute_type = hardware_manager.get_compute_type()
                 
-                logger.info(f"Carregando {self.model_id} em {device}...")
+                logger.info(f"Carregando {self.model_id} - Tier: {tier} | Device: {device}...")
                 
-                # Tokenizer (rápido)
+                # Tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
                 
-                # Modelo (lento)
+                # Modelo (Quantizado para Máxima Velocidade)
+                quantization_config = None
+                try:
+                    # Somente ULTRA (CUDA) se beneficia massivamente de 4-bit no carregamento
+                    if tier == "ULTRA":
+                        from transformers import BitsAndBytesConfig
+                        quantization_config = BitsAndBytesConfig(
+                            load_in_4bit=True,
+                            bnb_4bit_compute_dtype=torch.float16,
+                            bnb_4bit_quant_type="nf4",
+                            bnb_4bit_use_double_quant=True
+                        )
+                        logger.info("📦 Aceleração Nuclear: 4-bit Ativo via CUDA")
+                except ImportError:
+                    logger.warning("⚠️ bitsandbytes não disponível.")
+
                 self.model = AutoModelForCausalLM.from_pretrained(
                     self.model_id,
-                    torch_dtype=compute_type,
-                    device_map="auto" if device == "cuda" else None,
-                    low_cpu_mem_usage=True
+                    torch_dtype=getattr(torch, compute_type),
+                    device_map="auto" if tier == "ULTRA" else None,
+                    quantization_config=quantization_config,
+                    low_cpu_mem_usage=True,
+                    trust_remote_code=True
                 )
                 
-                if device == "cpu":
+                if tier != "ULTRA":
                     self.model.to("cpu")
                 
                 # Pipeline
@@ -155,6 +173,48 @@ class LocalBrain:
         except Exception as e:
             logger.error(f"Erro na geração local: {e}")
             return f"Desculpe William, tive uma falha no meu processamento local: {e}"
+
+    def generate_stream(self, prompt: str, system_prompt: str = "", max_new_tokens: int = 128):
+        """Gera resposta em streaming (yield chunks)"""
+        if not self._is_loaded:
+            yield "William, estou carregando meu cérebro local..."
+            if not self.wait_for_load(timeout=10): return
+
+        try:
+            from transformers import TextIteratorStreamer
+            
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+            
+            text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+            
+            streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
+            
+            generation_kwargs = dict(
+                model_inputs,
+                streamer=streamer,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                pad_token_id=self.tokenizer.eos_token_id
+            )
+            
+            # Start generation in thread
+            thread = threading.Thread(target=self.model.generate, kwargs=generation_kwargs)
+            thread.start()
+            
+            # Yield chunks
+            for new_text in streamer:
+                if new_text:
+                    yield new_text
+                    
+        except Exception as e:
+            logger.error(f"Erro no streaming local: {e}")
+            yield f"Erro no processamento: {e}"
 
 # Instância global
 local_brain = LocalBrain()

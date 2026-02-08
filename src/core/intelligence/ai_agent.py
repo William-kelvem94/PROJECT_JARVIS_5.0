@@ -57,6 +57,13 @@ except ImportError as e:
     dataset_collector = None
 
 try:
+    from src.core.intelligence.brain_router import brain_router, PrivacyLevel, LatencyRequirement
+    logger.info("✅ Brain Router carregado (Decision Engine)")
+except ImportError as e:
+    logger.warning(f"⚠️ brain_router não disponível: {e}")
+    brain_router = None
+
+try:
     from src.core.intelligence.neural_memory import neural_memory
 except ImportError as e:
     logger.warning(f"⚠️ neural_memory não disponível: {e}")
@@ -292,6 +299,16 @@ class AIAgent:
                 return cached_response
         
         # =====================================================================
+        # PHASE: HYBRID QUICKRESPONSE ROUTER (LATENCY ZERO)
+        # =====================================================================
+        quick_response = self._get_quick_response(user_command)
+        if quick_response:
+            logger.info(f"⚡ QuickResponse Engajado: {quick_response}")
+            if voice_controller:
+                voice_controller.speak(quick_response)
+            return quick_response
+
+        # =====================================================================
         # PHASE 3: RAG - RECALL MEMORIES
         # =====================================================================
         memory_context = ""
@@ -304,12 +321,37 @@ class AIAgent:
                 logger.warning(f"⚠️ Erro ao buscar memórias: {e}")
         
         # ... (Steps 1-3 unchanged) ...
-        # 1. Definir Provedor Primário (LOCAL FIRST)
-        # O Jarvis deve pensar localmente primeiro. A nuvem é auxílio.
-        primary_provider = 'ollama' if self._check_ollama_alive() else 'local_brain'
+        # 1. BRAIN ROUTING (Intelligent Decision)
+        if self.brain_router:
+            # Decide o cérebro baseado na complexidade estimada
+            # Estimativa básica: tamanho da string + "?"
+            complexity = 0.4 if len(user_command) > 50 or "?" in user_command else 0.2
+            brain_choice = self.brain_router.choose_brain(
+                task_complexity=complexity,
+                privacy_level=PrivacyLevel.LOW,
+                latency_requirement=LatencyRequirement.LOW
+            )
+            
+            if brain_choice.startswith("ollama:"):
+                primary_provider = brain_choice
+            elif brain_choice.startswith("cloud") and self.api_key:
+                primary_provider = 'gemini'
+            else:
+                primary_provider = 'local_brain'
+        else:
+            primary_provider = 'local_brain'
         
-        # 3. Capturar estado atual da tela
-        screenshot_path = screen_capture.capture_fullscreen(capture_type='agent')
+        # 3. Capturar estado atual da tela (PARALELO)
+        import threading
+        screenshot_event = threading.Event()
+        screenshot_container = {"path": None}
+
+        def _capture_task():
+            screenshot_container["path"] = screen_capture.capture_fullscreen(capture_type='agent')
+            screenshot_event.set()
+
+        capture_thread = threading.Thread(target=_capture_task, daemon=True)
+        capture_thread.start()
         
         # ... (Step 4 Context building unchanged) ...
         
@@ -333,15 +375,48 @@ class AIAgent:
         while current_turn < max_turns:
             logger.info(f"Ciclo de Pensamento {current_turn+1}/{max_turns} | Provedor: {primary_provider}")
             
-            # --- TENTATIVA LOCAL ---
+            # Esperar captura de tela se necessário antes de chamar o modelo
+            screenshot_event.wait(timeout=5.0)
+            screenshot_path = screenshot_container["path"]
+
+            # --- TENTATIVA LOCAL COM STREAMING (Fase 1) ---
             try:
-                if primary_provider == 'ollama':
+                if primary_provider == 'gemini':
+                    response = self._call_gemini(enriched_command, screenshot_path)
+                elif primary_provider.startswith('ollama:'):
+                    model_name = primary_provider.split(':')[1]
+                    response = self._call_ollama(enriched_command, screenshot_path, model=model_name)
+                elif primary_provider == 'ollama': # Fallback legacy
                     response = self._call_ollama(enriched_command, screenshot_path)
                 else:
-                    response = local_brain.generate_response(enriched_command, self.system_prompt)
+                    # Usar streaming do cérebro local para latência mínima
+                    response = ""
+                    current_phrase = ""
+                    for chunk in local_brain.generate_stream(enriched_command, self.system_prompt):
+                        response += chunk
+                        current_phrase += chunk
+                        
+                        # Se completar uma frase ou vírgula longa, falar imediatamente
+                        if any(p in chunk for p in ['.', '!', '?', '\n', ';', ':']):
+                            if len(current_phrase.strip()) > 5:
+                                voice_controller.speak_stream(current_phrase.strip())
+                                current_phrase = ""
+                    
+                    # Falar o resto se sobrou
+                    if current_phrase.strip():
+                        voice_controller.speak_stream(current_phrase.strip())
+
             except Exception as e:
                 logger.error(f"Falha no cérebro local ({primary_provider}): {e}")
+                from src.core.management.evolution_engine import evolution_engine
+                evolution_engine.log_failure("Thought Cycle", str(e), primary_provider)
                 response = "ERRO_LOCAL"
+
+            # Destilação Neural para Ollama Tier S/A
+            if primary_provider.startswith("ollama:") and "ERRO" not in response:
+                model_used = primary_provider.split(":")[1]
+                if any(tier in model_used.lower() for tier in ["deepseek", "llama"]):
+                    self._distill_knowledge(user_command, response, provider=model_used)
 
             # --- ESCALONAMENTO PARA NUVEM (SUPLEMENTO) ---
             # Se o local falhar, não souber, ou for complexo demais
@@ -356,8 +431,10 @@ class AIAgent:
                 
                 if "Erro" not in cloud_response:
                     response = cloud_response
-                    # APRENDIZADO (Distillation): Salvar resposta da nuvem para treino futuro
-                    neural_memory.store_interaction(user_command, cloud_response, source="cloud_teacher")
+                    # =========================================================
+                    # PHASE 11.2: NEURAL DISTILLATION (Smart -> Lite)
+                    # =========================================================
+                    self._distill_knowledge(user_command, response, provider="gemini")
             
             # Fallback final se tudo falhar
             if "ERRO_LOCAL" in response and "Erro" in response:
@@ -606,7 +683,46 @@ class AIAgent:
             return None
 
 
-    def _call_gemini(self, prompt: str, image_path: str):
+    def _distill_knowledge(self, command: str, response: str, provider: str):
+        """Converte conhecimento de modelos Smart em Memórias de Ouro para o Micro-LLM"""
+        if not memory_manager: return
+        try:
+            # Filtro básico: Apenas respostas substanciais valem destilação
+            if len(response) > 50 and "erro" not in response.lower():
+                memory_manager.remember(
+                    command=command,
+                    response=response,
+                    metadata={"provider": provider, "type": "distilled_knowledge"},
+                    is_gold=True
+                )
+        except Exception as e:
+            logger.debug(f"Erro na destilação neural: {e}")
+
+    def _get_quick_response(self, text: str) -> Optional[str]:
+        """Intercepta comandos comuns para resposta instantânea (<50ms)"""
+        text = text.lower().strip()
+        import random
+
+        # Padrões de Saudações
+        greetings = ["oi jarvis", "olá jarvis", "bom dia jarvis", "boa tarde jarvis", "boa noite jarvis", "ei jarvis"]
+        if any(g in text for g in greetings) and len(text.split()) < 4:
+            return random.choice(["Sim, senhor. Como posso ajudar?", "Às suas ordens, William.", "Olá, senhor. Sistemas operacionais ativos."])
+            
+        # Padrões de Confirmação/Agradecimento
+        thanks = ["obrigado", "valeu jarvis", "obrigado jarvis", "thanks jarvis"]
+        if any(t in text for t in thanks) and len(text.split()) < 3:
+            return random.choice(["Por nada, senhor.", "Disponha sempre.", "É um prazer ser útil."])
+            
+        # Padrões de Status
+        status = ["status do sistema", "como estão os sistemas", "checkup do sistema"]
+        if any(s in text for s in status):
+            from src.core.management.hardware_manager import hardware_manager
+            cpu = hardware_manager.get_cpu_usage()
+            return f"Sistemas estáveis, senhor. Uso de CPU em {cpu}%. Todos os módulos estão operacionais."
+
+        return None
+
+    def _call_gemini(self, prompt: str, image_path: Optional[str] = None):
         """Integração real com Gemini Pro Vision (Free Tier)"""
         if not self.api_key:
             return "Erro: Variável GOOGLE_API_KEY não configurada no sistema."
@@ -653,30 +769,33 @@ class AIAgent:
             logger.error(f"Erro ao chamar Gemini: {e}")
             return f"Senhor, tive um problema técnico ao consultar meus servidores: {str(e)}"
 
-    def _call_ollama(self, prompt: str, image_path: str):
-        """Integração real com Ollama Local (Llava)"""
+    def _call_ollama(self, prompt: str, image_path: str, model: str = "llava"):
+        """Integração com Ollama Local (Multi-modelo)"""
         try:
             import base64
-            with open(image_path, "rb") as image_file:
-                image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            image_data = None
+            if image_path and os.path.exists(image_path):
+                with open(image_path, "rb") as image_file:
+                    image_data = base64.b64encode(image_file.read()).decode('utf-8')
 
-            # Tenta usar o modelo Llava para visão local
+            # Tenta usar o modelo especificado (padrão 'llava' para visão)
             payload = {
-                "model": "llava",
+                "model": model,
                 "prompt": f"{self.system_prompt}\n\nComando: {prompt}",
-                "images": [image_data],
                 "stream": False
             }
+            if image_data:
+                payload["images"] = [image_data]
 
-            response = requests.post(self.ollama_url, json=payload, timeout=30)
+            response = requests.post(self.ollama_url, json=payload, timeout=60)
             response.raise_for_status()
             
             data = response.json()
             return data.get('response', "Senhor, não obtive resposta do processador local.")
 
         except Exception as e:
-            logger.error(f"Erro ao chamar Ollama: {e}")
-            return f"Infelizmente estou com dificuldades no processamento offline: {str(e)}. Verifique se o Ollama com o modelo LLava está rodando."
+            logger.error(f"Erro ao chamar Ollama ({model}): {e}")
+            return f"Infelizmente estou com dificuldades no processamento offline: {str(e)}."
 
     def _check_ollama_alive(self) -> bool:
         """Verifica se o Ollama está rodando localmente"""

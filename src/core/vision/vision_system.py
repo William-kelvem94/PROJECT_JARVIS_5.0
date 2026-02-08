@@ -25,6 +25,8 @@ from datetime import datetime
 from dataclasses import dataclass
 from enum import Enum
 
+from src.core.management.hardware_manager import hardware_manager
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -155,6 +157,11 @@ class VisionSystem:
         self.last_face_check = None
         self.last_screen_analysis = None
         
+        # Monitor Thread Safety
+        self._monitor_thread = None
+        self.is_running = False
+        self.camera = None  # Fix AttributeError on shutdown
+        
         # ============ P1: SEMANTIC CACHING ============
         # Cache OCR results by image hash (90%+ cache hit)
         self.ocr_cache = {}  # image_hash -> (text, timestamp)
@@ -197,11 +204,14 @@ class VisionSystem:
         try:
             with self._models_lock:
                 self._ocr_loading = True
-                logger.info("🧠 Vision: Carregando EasyOCR em background...")
-                self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=True)
+                device = hardware_manager.get_device()
+                use_gpu = (device == "cuda")
+                
+                logger.info(f"🧠 Vision: Carregando EasyOCR (GPU: {use_gpu})...")
+                self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=use_gpu)
                 self._ocr_ready = True
                 self._ocr_loading = False
-                logger.info("✅ Vision: EasyOCR pronto")
+                logger.info(f"✅ Vision: EasyOCR pronto (Aceleração: {device.upper()})")
         except Exception as e:
             self._ocr_loading = False
             logger.error(f"❌ Vision: Erro ao carregar EasyOCR: {e}")
@@ -211,12 +221,16 @@ class VisionSystem:
         try:
             with self._models_lock:
                 self._yolo_loading = True
+                device = hardware_manager.get_device()
+                
                 logger.info("🧠 Vision: Carregando YOLOv8 em background...")
                 model_path = self.models_dir / "yolov8n.pt"
                 self.yolo_model = YOLO(str(model_path))
+                self.yolo_model.to(device)
+                
                 self._yolo_ready = True
                 self._yolo_loading = False
-                logger.info("✅ Vision: YOLOv8 pronto")
+                logger.info(f"✅ Vision: YOLOv8 pronto (Backend: {device.upper()})")
         except Exception as e:
             self._yolo_loading = False
             logger.error(f"❌ Vision: Erro ao carregar YOLO: {e}")
@@ -701,9 +715,15 @@ class VisionSystem:
         """Cleanup resources"""
         self.stop_monitoring()
         
-        if self.sct:
-            self.sct.close()
-            
+        if hasattr(self, 'sct') and self.sct:
+            try:
+                self.sct.close()
+            except Exception:
+                # MSS close can fail if called from a different thread
+                pass
+        
+        # Stop camera if exists
+        # self.stop_monitoring() # This line was a duplicate and is removed.
         logger.info("✅ Vision System cleaned up")
 
 
