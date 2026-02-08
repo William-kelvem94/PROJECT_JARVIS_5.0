@@ -17,8 +17,10 @@ class TotalInstaller:
     """Instala TUDO que o JARVIS precisa com as correções críticas do usuário"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent
+        # Detecção dinâmica do ROOT (scripts/install/total_installer.py -> root)
+        self.project_root = Path(__file__).parent.parent.parent
         self.setup_logging()
+        self.logger.info(f"📍 Projeto detectado em: {self.project_root}")
         
     def setup_logging(self):
         """Configura logging ultra robusto"""

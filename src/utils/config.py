@@ -206,10 +206,22 @@ class Config:
         self.user_settings = self._load_user_settings()
 
     def _find_tesseract_path(self) -> Optional[str]:
-        """Encontra o caminho do Tesseract instalado"""
+        """Encontra o caminho do Tesseract instalado com busca agressiva"""
+        # 1. Verificar variável de ambiente customizada
+        env_path = os.environ.get("TESSERACT_PATH")
+        if env_path and os.path.exists(env_path):
+            return env_path
+            
+        # 2. Verificar no próprio diretório do projeto (Portabilidade total)
+        local_path = self.PROJECT_ROOT / "tools" / "Tesseract-OCR" / "tesseract.exe"
+        if local_path.exists():
+            return str(local_path)
+
+        # 3. Caminhos padrões Windows/Linux
         possible_paths = [
             r"C:\Program Files\Tesseract-OCR\tesseract.exe",
             r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            r"D:\Program Files\Tesseract-OCR\tesseract.exe",
             "/usr/bin/tesseract",
             "/usr/local/bin/tesseract"
         ]
@@ -218,7 +230,7 @@ class Config:
             if os.path.exists(path):
                 return path
 
-        # Tentar encontrar via PATH
+        # 4. Tentar encontrar via PATH do sistema
         import shutil
         tesseract_path = shutil.which("tesseract")
         if tesseract_path:

@@ -20,16 +20,27 @@ set "PYTHONIOENCODING=utf-8"
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-:: Virtual Environment Check
+:: Virtual Environment Check (Self-Healing)
 set "VENV_PYTHON=%ROOT%venv\Scripts\python.exe"
 
 if not exist "%VENV_PYTHON%" (
     echo.
-    echo [ERROR] Virtual Environment not found at: %VENV_PYTHON%
-    echo [ACTION] Please run 'setup_environment.bat' or install requirements manually.
+    echo [ALERTA] Ambiente Virtual não detectado.
+    echo [SISTEMA] JARVIS precisa instalar as dependências antes de iniciar.
     echo.
-    pause
-    exit /b 1
+    set /p choice="Deseja iniciar o Protocolo de Instalação agora? (S/N): "
+    if /i "!choice!"=="S" (
+        call "%ROOT%INSTALL_JARVIS.bat"
+        if not exist "%VENV_PYTHON%" (
+            echo [ERRO] A instalação não concluiu corretamente.
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo [AVISO] O sistema não pode iniciar sem as dependências.
+        pause
+        exit /b 1
+    )
 )
 
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
