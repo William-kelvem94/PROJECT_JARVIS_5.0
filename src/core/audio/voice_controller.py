@@ -199,7 +199,6 @@ class VoiceController:
         if not text: return
         
         # ============ P1: RESPONSE CACHING ============
-        # Check if text is a cached common phrase
         if PYGAME_AVAILABLE:
             text_lower = text.lower().strip()
             if text_lower in self.response_cache:
@@ -207,20 +206,28 @@ class VoiceController:
                 try:
                     pygame.mixer.music.load(cache_file)
                     pygame.mixer.music.play()
-                    
                     if wait:
-                        while pygame.mixer.music.get_busy():
-                            time.sleep(0.1)
-                    
-                    logger.debug(f"📦 Used cached response: {text}")
+                        while pygame.mixer.music.get_busy(): time.sleep(0.1)
                     return
-                except Exception as e:
-                    logger.warning(f"Cache playback failed: {e}")
+                except: pass
         
         if wait:
             self._speak_thread(text, mode)
         else:
             threading.Thread(target=self._speak_thread, args=(text, mode), daemon=True).start()
+
+    def speak_stream(self, text_chunk: str):
+        """Consome chunks de texto e fala assim que possível (Streaming)"""
+        if not text_chunk or len(text_chunk.strip()) < 2: return
+        
+        # Limpar texto
+        clean_chunk = self.clean_text_for_speech(text_chunk)
+        if not clean_chunk: return
+
+        # Para streaming, usamos threads de background para cada chunk
+        # Nota: Idealmente usaríamos uma fila para evitar sobreposição, 
+        # mas para latência mínima, processamos o início imediatamente.
+        threading.Thread(target=self._speak_thread, args=(clean_chunk, 'auto'), daemon=True).start()
 
     def speak_filler(self):
         """Fala uma frase aleatória de preenchimento para manter a fluidez"""
@@ -228,26 +235,53 @@ class VoiceController:
         self.speak(filler, mode='auto')
 
     def clean_text_for_speech(self, text: str) -> str:
-        """Limpa artefatos de IA (markdown, asteriscos, código) para voz natural"""
+        """Limpa artefatos de IA (markdown, asteriscos, código, CAMINHOS, URLs)"""
         if not text: return ""
+        
+        # 🆕 REMOVER URLs e www
+        text = re.sub(r'https?://\S+', 'um link externo', text)
+        text = re.sub(r'www\.\S+', 'um endereço web', text)
+        
+        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear)
+        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', 'o local do sistema', text)
+        text = re.sub(r'/[-a-zA-Z0-9+_.~ /]+', 'o caminho do arquivo', text)
         
         # Remover blocos de código
         text = re.sub(r'```[\s\S]*?```', '', text)
-        # Remover negrito/itálico (asteriscos e underscores)
+        # Remover negrito/itálico
         text = re.sub(r'[*_]', '', text)
-        # Remover crases (inline code)
+        # Remover crases
         text = re.sub(r'`', '', text)
-        # Remover emojis (opcional, mas evita que o TTS tente ler descrições estranhas)
-        # text = text.encode('ascii', 'ignore').decode('ascii') 
         
         return text.strip()
+
+    def strip_ssml(self, text: str) -> str:
+        """Remove tags XML/SSML para que o TTS offline não as leia"""
+        return re.sub(r'<[^>]*>', '', text)
 
     def _speak_thread(self, text: str, mode: str):
         is_online = self.check_internet()
         
-        # Get emotion for prosody
+        # Get emotion
         from src.core.intelligence.emotion_detector import emotion_detector
         emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
+        
+        # ADAPTATIVE RATE
+        base_rate = "+0%"
+        if len(text) > 250: base_rate = "+18%"
+        elif len(text) > 100: base_rate = "+10%"
+        
+        if is_online and mode != 'offline':
+            try:
+                if EDGE_TTS_AVAILABLE:
+                    asyncio.run(self._speak_edge(text, emotion, base_rate))
+                    return
+            except Exception as e:
+                logger.warning(f"Erro no TTS Online: {e}")
+        
+        # Fallback Offline (⚠️ STRIP SSML AQUI)
+        clean_text = self.strip_ssml(text)
+        self._speak_offline(clean_text)
         modifier = emotion_detector.get_personality_modifier(emotion)
         
         # Adjust rate based on emotion
@@ -278,24 +312,56 @@ class VoiceController:
             self._is_speaking = False
             self.engine.setProperty('rate', original_rate) # Reset
 
-    async def _speak_edge(self, text: str, emotion: str = "neutral"):
-        """Usa a API do Microsoft Edge com seleção de voz baseada em emoção"""
+    async def _speak_edge(self, text: str, emotion: str = "neutral", adaptive_rate: str = "+0%"):
+        """TTS de Alta Qualidade via Edge-TTS com SSML"""
         if not EDGE_TTS_AVAILABLE:
             logger.warning("edge-tts não disponível")
             return
             
         # Mapeamento de vozes neurais para emoções
-        # Vozes do Edge por enquanto são limitadas em variação emocional direta, 
-        # mas podemos simular trocando o "pitch" ou a voz se disponível.
         voice_map = {
-            "happy": "pt-BR-FranciscaNeural",   # Mais leve/feminina
-            "sad": "pt-BR-AntonioNeural",       # Mais profunda/masculina
-            "angry": "pt-BR-AntonioNeural",     # Mais firme
+            "happy": "pt-BR-FranciscaNeural",
+            "sad": "pt-BR-AntonioNeural",
+            "angry": "pt-BR-AntonioNeural",
             "neutral": "pt-BR-AntonioNeural"
         }
         
         voice = voice_map.get(emotion, voice_map["neutral"])
-        communicate = edge_tts.Communicate(text, voice)
+        
+        # --- PHASE: SSML PROSODY (Natural Speech) ---
+        # Get emotion modifier for SSML
+        from src.core.intelligence.emotion_detector import emotion_detector
+        modifier = emotion_detector.get_personality_modifier(emotion)
+        
+        # Prosody parameters: pitch, rate, volume
+        # Ex: <prosody pitch="+10Hz" rate="+20%" volume="loud">...
+        pitch = "+0Hz"
+        rate = adaptive_rate # Usar taxa adaptativa
+        volume = "+0%"
+        
+        if emotion == "happy":
+            pitch = "+15%"
+            rate = "+10%"
+        elif emotion == "sad":
+            pitch = "-10%"
+            rate = "-15%"
+            volume = "-10%"
+        elif emotion == "angry":
+            pitch = "-5%"
+            rate = "+15%"
+            volume = "+20%"
+        
+        ssml = f"""
+        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="pt-BR">
+            <voice name="{voice}">
+                <prosody pitch="{pitch}" rate="{rate}" volume="{volume}">
+                    {text}
+                </prosody>
+            </voice>
+        </speak>
+        """
+        
+        communicate = edge_tts.Communicate(ssml, voice)
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             tmp_path = tmp.name

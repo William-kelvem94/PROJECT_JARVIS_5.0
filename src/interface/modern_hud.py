@@ -26,7 +26,8 @@ from PyQt6.QtCore import (
 )
 from PyQt6.QtGui import (
     QFont, QPainter, QColor, QPen, QBrush, QLinearGradient,
-    QRadialGradient, QKeySequence, QShortcut, QPolygonF
+    QRadialGradient, QKeySequence, QShortcut, QPolygonF, QPainterPath,
+    QRegion, QIcon, QAction, QColorTransform, QImage, QTransform
 )
 import math
 import time
@@ -48,20 +49,24 @@ class ModernReactorCore(QWidget):
         self.rotation = 0
         self.status = "idle"
         
-        # Color schemes for different states
+        # Orbital Data
+        self.sync_val = 0.0
+        self.nucleo_val = 0.0
+        
+        # Color schemes for different states - Elite HSL punchy colors
         self.colors = {
-            "idle": QColor(100, 200, 255, 200),      # Cyan
-            "listening": QColor(100, 255, 100, 200), # Green
-            "thinking": QColor(100, 100, 255, 200),  # Blue
-            "speaking": QColor(255, 165, 0, 200),    # Orange
-            "error": QColor(255, 50, 50, 200),       # Red
-            "success": QColor(50, 255, 150, 200),    # Bright Green
-            # Emotion Mappings
-            "happy": QColor(255, 255, 100, 200),     # Yellow
-            "sad": QColor(100, 100, 200, 200),       # Soft Blue
-            "angry": QColor(255, 0, 0, 220),         # Sharp Red
-            "surprise": QColor(255, 100, 255, 200),  # Pink
-            "fear": QColor(100, 0, 100, 200),        # Purple
+            "idle": QColor(0, 180, 255, 180),      # Electric Cyan
+            "listening": QColor(0, 255, 150, 200), # Neon Emerald
+            "thinking": QColor(130, 0, 255, 200),  # Deep Purple
+            "speaking": QColor(255, 100, 0, 200),  # Pulsing Orange
+            "error": QColor(255, 0, 80, 220),      # Cyber Red
+            "success": QColor(0, 255, 100, 200),   # Bright Green
+            # Emotion Mappings (Localized/Refined)
+            "happy": QColor(255, 220, 0, 200),    # Golden
+            "sad": QColor(100, 150, 255, 180),    # Soft Blue
+            "angry": QColor(255, 30, 0, 230),     # Aggressive Red
+            "surprise": QColor(255, 0, 255, 200), # Magenta
+            "fear": QColor(80, 0, 80, 200),       # Dark Purple
         }
         
         self.current_color = self.colors["idle"]
@@ -86,8 +91,14 @@ class ModernReactorCore(QWidget):
         self.current_color = target_color
         self.update()
         
+    def set_data(self, sync=None, nucleo=None):
+        """Update orbital data rings"""
+        if sync is not None: self.sync_val = sync
+        if nucleo is not None: self.nucleo_val = nucleo
+        self.update()
+
     def paintEvent(self, event):
-        """Paint the animated reactor core"""
+        """Paint the Stark Arc - Integrated Data Reactor"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
@@ -96,89 +107,72 @@ class ModernReactorCore(QWidget):
         center_x = width // 2
         center_y = height // 2
         
-        # Calculate pulse size
-        import math
+        # Base scale - adaptive but compact
+        base_size = min(width, height)
+        scale = base_size / 200.0
+        
         pulse_factor = (math.sin(math.radians(self.pulse_value)) + 1) / 2
         
-        # Outer glow (largest)
-        glow_radius = 80 + (pulse_factor * 20)
+        # 0. OUTER ORBITAL DATA RINGS (Sync & Nucleo)
+        # SINCRO RING (Deep Blue/Cyan)
+        ring_sync_r = 95 * scale
+        painter.setPen(QPen(QColor(0, 180, 255, 30), 2 * scale))
+        painter.drawEllipse(int(center_x - ring_sync_r), int(center_y - ring_sync_r), 
+                            int(ring_sync_r * 2), int(ring_sync_r * 2))
+        
+        painter.setPen(QPen(QColor(0, 180, 255, 200), 3 * scale))
+        span_sync = -int(self.sync_val * 3.6 * 16)
+        painter.drawArc(int(center_x - ring_sync_r), int(center_y - ring_sync_r), 
+                        int(ring_sync_r * 2), int(ring_sync_r * 2), 90 * 16, span_sync)
+        
+        # NUCLEO RING (Inner to Sync)
+        ring_nuc_r = 85 * scale
+        painter.setPen(QPen(QColor(0, 255, 150, 20), 2 * scale))
+        painter.drawEllipse(int(center_x - ring_nuc_r), int(center_y - ring_nuc_r), 
+                            int(ring_nuc_r * 2), int(ring_nuc_r * 2))
+        
+        painter.setPen(QPen(QColor(0, 255, 150, 180), 3 * scale))
+        span_nuc = -int(self.nucleo_val * 3.6 * 16)
+        painter.drawArc(int(center_x - ring_nuc_r), int(center_y - ring_nuc_r), 
+                        int(ring_nuc_r * 2), int(ring_nuc_r * 2), 90 * 16, span_nuc)
+
+        # 1. DEEP GLOW
+        glow_radius = (75 + (pulse_factor * 15)) * scale
         glow_gradient = QRadialGradient(center_x, center_y, glow_radius)
         glow_color = QColor(self.current_color)
-        glow_color.setAlpha(50 + int(pulse_factor * 100))
+        glow_color.setAlpha(40 + int(pulse_factor * 40))
         glow_gradient.setColorAt(0, glow_color)
         glow_gradient.setColorAt(1, QColor(0, 0, 0, 0))
         painter.setBrush(QBrush(glow_gradient))
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(
-            int(center_x - glow_radius),
-            int(center_y - glow_radius),
-            int(glow_radius * 2),
-            int(glow_radius * 2)
-        )
+        painter.drawEllipse(int(center_x - glow_radius), int(center_y - glow_radius), 
+                            int(glow_radius * 2), int(glow_radius * 2))
         
-        # Middle ring (rotating)
-        ring_radius = 60
-        painter.setPen(QPen(self.current_color, 3))
+        # 2. ROTATING SHARDS (Technological detail)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        
-        # Draw rotating arcs
-        for i in range(3):
-            start_angle = (self.rotation + i * 120) * 16
-            span_angle = 80 * 16
-            painter.drawArc(
-                int(center_x - ring_radius),
-                int(center_y - ring_radius),
-                int(ring_radius * 2),
-                int(ring_radius * 2),
-                start_angle,
-                span_angle
-            )
-        
-        # Inner ring (pulsing)
-        inner_radius = 40 + (pulse_factor * 5)
-        painter.setPen(QPen(self.current_color, 2))
-        painter.drawEllipse(
-            int(center_x - inner_radius),
-            int(center_y - inner_radius),
-            int(inner_radius * 2),
-            int(inner_radius * 2)
-        )
-        
-        # Sub-Core details (Holographic details)
-        core_radius = 25  # Base core radius
-        painter.setPen(QPen(glow_color, 1))
-        for i in range(12):
-            angle = (self.rotation + i * 30)
-            rad = math.radians(angle)
-            x1 = center_x + math.cos(rad) * inner_radius
-            y1 = center_y + math.sin(rad) * inner_radius
-            x2 = center_x + math.cos(rad) * core_radius
-            y2 = center_y + math.sin(rad) * core_radius
-            painter.drawLine(int(x1), int(y1), int(x2), int(y2))
-
-        # Core (solid pulsing)
-        core_radius_pulse = core_radius + (pulse_factor * 5)
-        core_gradient = QRadialGradient(center_x, center_y, core_radius_pulse)
-        core_color = QColor(self.current_color)
-        core_color.setAlpha(255)
-        core_gradient.setColorAt(0, core_color)
-        core_gradient.setColorAt(1, QColor(self.current_color.red(), 
-                                           self.current_color.green(),
-                                           self.current_color.blue(), 150))
-        painter.setBrush(QBrush(core_gradient))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawEllipse(
-            int(center_x - core_radius_pulse),
-            int(center_y - core_radius_pulse),
-            int(core_radius_pulse * 2),
-            int(core_radius_pulse * 2)
-        )
+        shard_r = 60 * scale
+        painter.setPen(QPen(self.current_color, 4 * scale))
+        for i in range(4):
+            start = (self.rotation + i * 90) * 16
+            span = 30 * 16
+            painter.drawArc(int(center_x - shard_r), int(center_y - shard_r), 
+                            int(shard_r * 2), int(shard_r * 2), start, span)
+            
+        # 3. CENTRAL CORE (Intense)
+        core_r = (30 + (pulse_factor * 5)) * scale
+        core_grad = QRadialGradient(center_x, center_y, core_r)
+        core_grad.setColorAt(0, Qt.GlobalColor.white)
+        core_grad.setColorAt(0.3, self.current_color)
+        core_grad.setColorAt(1, QColor(0,0,0,0))
+        painter.setBrush(core_grad)
+        painter.drawEllipse(int(center_x - core_r), int(center_y - core_r), 
+                            int(core_r * 2), int(core_r * 2))
 
 class EliteCircularGauge(QWidget):
     """Modern circular gauge for system metrics"""
     def __init__(self, label, parent=None):
         super().__init__(parent)
-        self.setFixedSize(60, 60)
+        self.setMinimumSize(60, 60)
         self.value = 0.0
         self.label = label
         self.color = QColor(100, 200, 255, 200)
@@ -191,7 +185,10 @@ class EliteCircularGauge(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        rect = QRectF(5, 5, 50, 50)
+        w = self.width()
+        h = self.height()
+        side = min(w, h) - 10
+        rect = QRectF((w - side) / 2, (h - side) / 2, side, side)
         
         # Background ring
         painter.setPen(QPen(QColor(100, 200, 255, 30), 2))
@@ -203,8 +200,9 @@ class EliteCircularGauge(QWidget):
         painter.drawArc(rect, 90 * 16, span_angle)
         
         # Label
-        painter.setPen(QPen(QColor(100, 200, 255, 150), 1))
-        painter.setFont(QFont("Segoe UI", 7, QFont.Weight.Bold))
+        painter.setPen(QPen(QColor(100, 200, 255, 180), 1))
+        font_size = max(6, int(side / 8))
+        painter.setFont(QFont("Segoe UI", font_size, QFont.Weight.Bold))
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, f"{int(self.value)}%\n{self.label}")
 
 class ModernTelemetryWidget(QWidget):
@@ -218,44 +216,67 @@ class ModernTelemetryWidget(QWidget):
         self.layout.setContentsMargins(15, 5, 15, 5)
         self.layout.setSpacing(20)
         
-        self.neural_gauge = EliteCircularGauge("SYNC")
-        self.system_gauge = EliteCircularGauge("CPU")
-        
-        # Emotion stays as text but with better style
+        # We handle sync/nucleo in the Reactor now, but keep this for emotion
         self.emotion_container = QWidget()
         em_layout = QVBoxLayout(self.emotion_container)
-        lbl = QLabel("USER EMOTION")
-        lbl.setStyleSheet("color: rgba(100, 200, 255, 0.7); font-size: 8px; font-weight: bold;")
+        
+        # Minimalist Data Feed
+        lbl = QLabel("ESTRUTURA NEURAL")
+        lbl.setStyleSheet("color: rgba(0, 180, 255, 0.6); font-size: 7px; font-weight: bold; letter-spacing: 2px;")
         lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.emotion_val = QLabel("NEUTRAL")
-        self.emotion_val.setStyleSheet("color: white; font-size: 11px; font-family: 'Consolas'; font-weight: bold;")
+        self.emotion_val = QLabel("NEUTRO")
+        self.emotion_val.setStyleSheet("color: white; font-size: 10px; font-family: 'Consolas'; font-weight: bold; border: 1px solid rgba(0, 180, 255, 0.2); border-radius: 4px; padding: 4px;")
         self.emotion_val.setAlignment(Qt.AlignmentFlag.AlignCenter)
         em_layout.addWidget(lbl)
         em_layout.addWidget(self.emotion_val)
         
-        self.layout.addWidget(self.neural_gauge)
+        self.layout.addStretch()
         self.layout.addWidget(self.emotion_container)
-        self.layout.addWidget(self.system_gauge)
+        self.layout.addStretch()
 
-    def update_stats(self, sync=None, emotion=None, pulse=None, cpu=None):
-        if sync:
-            try:
-                val = float(sync.replace('%',''))
-                self.neural_gauge.set_value(val)
-            except: pass
-        if emotion: self.emotion_val.setText(emotion.upper())
-        if cpu is not None:
-            self.system_gauge.set_value(cpu)
-        elif pulse:
-            # Fallback if raw CPU not sent
-            self.system_gauge.set_value(75 if pulse == "ADAPTIVE" else (95 if pulse == "CRITICAL" else 25))
+    def update_stats(self, sync=None, emotion=None, cpu=None, pulse=None):
+        if emotion:
+            em_map = {"NEUTRAL": "NEUTRO", "HAPPY": "FELIZ", "SAD": "TRISTE", 
+                      "ANGRY": "BRAVO", "SURPRISE": "SURPRESA", "FEAR": "MEDO"}
+            self.emotion_val.setText(em_map.get(emotion.upper(), emotion.upper()))
 
 
-class HUDEventTicker(QWidget):
-    """Scrolling ticker for system events"""
+class ModernWaveformWidget(QWidget):
+    """Animated waveform visualizer for voice/processing simulation"""
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(120)
+        self.setFixedHeight(40)
+        self.phase = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._animate)
+        self.timer.start(30)
+        
+    def _animate(self):
+        self.phase += 0.2
+        self.update()
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+        painter.setPen(QPen(QColor(0, 180, 255, 100), 1))
+        
+        points = QPolygonF()
+        for x in range(0, w, 2):
+            # Complex wave simulation
+            y = h/2 + math.sin(x*0.05 + self.phase) * 10 * math.sin(x*0.01)
+            points.append(QPointF(x, y))
+            
+        painter.drawPolyline(points)
+        # Add glow line
+        painter.setPen(QPen(QColor(0, 180, 255, 200), 1))
+        painter.drawPolyline(points.translated(0, 1))
+
+class HUDEventTicker(QWidget):
+    """Scrolling ticker for system events - Compact Edition"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(80)
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(10, 5, 10, 5)
         self.layout.setSpacing(2)
@@ -332,16 +353,55 @@ class ModernHUD(QMainWindow):
         self.scan_dir = 1
         self.hex_opacity = 0.1
         
-        # Neural Typewriter
+        # Status & Response State
+        self.status = "idle"
         self.full_response = ""
         self.current_display_text = ""
+        
+        # Neural Typewriter timer
         self.type_timer = QTimer()
         self.type_timer.timeout.connect(self._update_typewriter)
         
-        # Animation loop
+        # STABLE 3D STATE
+        self.perspective_angle = 12 # Deg (more subtle/stable)
+        self.particles = []
+        for _ in range(20):
+            self.particles.append({
+                'x': random.randint(0, 1000), 'y': random.randint(0, 1000),
+                'speed': random.uniform(0.3, 1.2), 'size': random.uniform(1, 2)
+            })
+            
+        self.nodes = [] # Neural synced nodes
+        for _ in range(8):
+            self.nodes.append({
+                'pos': QPointF(random.uniform(0.2, 0.8), random.uniform(0.3, 0.7)),
+                'pulse': random.uniform(0, 6.28),
+                'conn': random.sample(range(8), 2)
+            })
+        
+        # 60 FPS update loop for visual effects
         self.ui_timer = QTimer()
         self.ui_timer.timeout.connect(self.update)
-        self.ui_timer.start(33) # 30 FPS for grid/laser
+        self.ui_timer.start(16) 
+        
+    def showEvent(self, event):
+        """Fade in animation and bounds check on show"""
+        super().showEvent(event)
+        
+        # 1. ENSURE WITHIN BOUNDS
+        screen = QApplication.primaryScreen().availableGeometry()
+        if not screen.contains(self.geometry()):
+            # Move to a safe location if it was off-screen (e.g. monitor disconnected)
+            self.move(screen.right() - self.width() - 20, screen.bottom() - self.height() - 20)
+            
+        # 2. FADE IN ANIMATION
+        self.setWindowOpacity(0.0)
+        self.fade_anim = QPropertyAnimation(self, b"windowOpacity")
+        self.fade_anim.setDuration(800)
+        self.fade_anim.setStartValue(0.0)
+        self.fade_anim.setEndValue(0.95) # Premium transparent look
+        self.fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.fade_anim.start()
         
     def _setup_window(self):
         """Configure window properties"""
@@ -359,202 +419,98 @@ class ModernHUD(QMainWindow):
         # Ensure it doesn't take focus but stays on top
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         
-        # Default size
-        self.resize(400, 600)
+        # Default size based on screen (Responsive & Safe)
+        screen = QApplication.primaryScreen().availableGeometry()
+        
+        # Proportional sizing - NEVER exceeds screen limits
+        # We aim for ~20% width and ~60% height
+        safe_width = int(screen.width() * 0.20)
+        safe_height = int(screen.height() * 0.60)
+        
+        # Strict Clamp: Don't let it be taller/wider than the screen available space
+        width = min(safe_width, screen.width() - 40)
+        height = min(safe_height, screen.height() - 40)
+        
+        # Minimum usable size
+        width = max(300, width)
+        height = max(500, height)
+        
+        self.resize(width, height)
         
     def _setup_ui(self):
-        """Create UI components"""
-        # Central widget
+        """Build the Stark OS Responsive Interface"""
         central = QWidget()
         self.setCentralWidget(central)
+        central.setObjectName("main_panel")
         
-        # Apply glassmorphism style with advanced effects
+        # High-Fidelity Glassmorphism Style
         central.setStyleSheet("""
             QWidget#main_panel {
-                background: qlineargradient(
-                    x1:0, y1:0, x2:0, y2:1,
-                    stop:0 rgba(10, 15, 30, 245),
-                    stop:0.5 rgba(15, 25, 45, 240),
-                    stop:1 rgba(10, 15, 30, 245)
+                background: qradialgradient(
+                    cx:0.5, cy:0.2, radius:1.2,
+                    fx:0.5, fy:0,
+                    stop:0 rgba(10, 25, 45, 230),
+                    stop:0.7 rgba(5, 10, 20, 245),
+                    stop:1 rgba(0, 0, 0, 250)
                 );
-                border-radius: 20px;
-                border: 2px solid rgba(100, 200, 255, 0.4);
+                border: 1px solid rgba(0, 180, 255, 0.2);
+                border-radius: 15px;
             }
             QLabel {
                 background: transparent;
-                color: #64C8FF;
-                font-family: 'Segoe UI', Arial;
-            }
-            QPushButton {
-                background: rgba(100, 200, 255, 0.1);
-                border: 1px solid rgba(100, 200, 255, 0.3);
-                border-radius: 8px;
-                color: #64C8FF;
-                padding: 8px 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background: rgba(100, 200, 255, 0.2);
-                border: 1px solid rgba(100, 200, 255, 0.6);
+                color: #00B4FF;
+                font-family: 'Segoe UI Semibold', 'Outfit', Arial;
             }
         """)
-        central.setObjectName("main_panel")
         
-        # Main layout
+        # Main Layout (Structured & Responsive)
         layout = QVBoxLayout(central)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(20)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(10)
         
-        # ======================================================================
-        # HEADER - Title and drag handle
-        # ======================================================================
-        header_container = QWidget()
-        header_layout = QHBoxLayout(header_container)
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(10)
+        # 1. HEADER (Title & Stats)
+        header = QHBoxLayout()
+        title_lbl = QLabel("J.A.R.V.I.S. // STARK-OS v10.0")
+        title_lbl.setStyleSheet("font-size: 10px; letter-spacing: 5px; color: rgba(0, 180, 255, 0.7);")
+        header.addWidget(title_lbl)
+        header.addStretch()
+        layout.addLayout(header)
         
-        # Drag handle
-        drag_handle = QLabel("⋮⋮")
-        drag_handle.setStyleSheet("""
-            QLabel {
-                color: rgba(100, 200, 255, 0.6);
-                font-size: 16px;
-                padding: 5px;
-            }
-        """)
-        drag_handle.setCursor(Qt.CursorShape.SizeAllCursor)
-        header_layout.addWidget(drag_handle)
-        
-        # Title
-        title = QLabel("J.A.R.V.I.S.")
-        title.setFont(QFont("Segoe UI", 24, QFont.Weight.Bold))
-        title.setStyleSheet("""
-            QLabel {
-                color: qlineargradient(
-                    x1:0, y1:0, x2:1, y2:0,
-                    stop:0 #64C8FF,
-                    stop:0.5 #0080FF,
-                    stop:1 #64C8FF
-                );
-                letter-spacing: 4px;
-            }
-        """)
-        header_layout.addWidget(title)
-        header_layout.addStretch()
-        
-        # Close button
-        close_btn = QPushButton("×")
-        close_btn.setFixedSize(30, 30)
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(255, 100, 100, 0.2);
-                border: 1px solid rgba(255, 100, 100, 0.4);
-                border-radius: 15px;
-                font-size: 20px;
-                font-weight: bold;
-                padding: 0;
-            }
-            QPushButton:hover {
-                background: rgba(255, 100, 100, 0.4);
-            }
-        """)
-        close_btn.clicked.connect(self.close)
-        header_layout.addWidget(close_btn)
-        
-        layout.addWidget(header_container)
-        
-        # ======================================================================
-        # REACTOR CORE
-        # ======================================================================
+        # 2. CORE REACTOR (Dynamic Center)
         self.reactor = ModernReactorCore()
-        self.reactor.setFixedHeight(200)
-        layout.addWidget(self.reactor)
+        layout.addWidget(self.reactor, 3)
         
-        # ======================================================================
-        # STATUS LABEL
-        # ======================================================================
-        self.status_label = QLabel("IDLE")
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
-        self.status_label.setStyleSheet("""
-            QLabel {
-                color: #64C8FF;
-                letter-spacing: 3px;
-                padding: 10px;
-                background: rgba(100, 200, 255, 0.1);
-                border-radius: 10px;
-            }
-        """)
-        layout.addWidget(self.status_label)
-        
-        # ======================================================================
-        # RESPONSE TEXT
-        # ======================================================================
-        self.response_label = QLabel("Sistemas online...")
-        self.response_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.response_label.setFont(QFont("Segoe UI", 11))
+        # 3. RESPONSE AREA (Neural Typewriter)
+        self.response_label = QLabel("PROTOCOLO DE INTERFACE STARK-OS ATIVO...")
         self.response_label.setWordWrap(True)
+        self.response_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.response_label.setStyleSheet("""
-            QLabel {
-                color: rgba(255, 255, 255, 0.9);
-                padding: 15px;
-                background: rgba(0, 0, 0, 0.3);
-                border-radius: 10px;
-                line-height: 1.5;
-            }
+            color: rgba(255, 255, 255, 0.9); 
+            font-size: 11px; 
+            padding: 10px; 
+            background: rgba(0, 180, 255, 0.05);
+            border-left: 2px solid #00B4FF;
         """)
-        self.response_label.setMinimumHeight(120)
+        self.response_label.setMinimumHeight(80)
         layout.addWidget(self.response_label)
-
-        # ======================================================================
-        # TELEMETRY WIDGET (Quantum Core)
-        # ======================================================================
+        
+        # 4. TELEMETRY & FEED
         self.telemetry = ModernTelemetryWidget()
         layout.addWidget(self.telemetry)
         
-        # ======================================================================
-        # EVENT TICKER (Stark Grade)
-        # ======================================================================
         self.ticker = HUDEventTicker()
         layout.addWidget(self.ticker)
         
-        layout.addStretch()
+        # 5. FOOTER (Status)
+        self.status_label = QLabel("NÚCLEO ESTÁVEL")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.status_label.setStyleSheet("color: #00B4FF; font-family: 'Consolas'; font-size: 10px; font-weight: bold; letter-spacing: 3px;")
+        layout.addWidget(self.status_label)
         
-        # ======================================================================
-        # FOOTER - Quick actions
-        # ======================================================================
-        footer = QHBoxLayout()
-        footer.setSpacing(10)
-        
-        # Minimize button
-        min_btn = QPushButton("_")
-        min_btn.setFixedSize(40, 30)
-        min_btn.clicked.connect(self.showMinimized)
-        footer.addWidget(min_btn)
-        
-        footer.addStretch()
-        
-        # Info label
-        info = QLabel("Press Ctrl+H to toggle")
-        info.setStyleSheet("""
-            QLabel {
-                color: rgba(255, 255, 255, 0.5);
-                font-size: 9px;
-            }
-        """)
-        footer.addWidget(info)
-        
-        layout.addLayout(footer)
-        
-        # Size grip for resizing
+        # Size grip
         self.size_grip = QSizeGrip(central)
         self.size_grip.setFixedSize(20, 20)
-        self.size_grip.setStyleSheet("""
-            QSizeGrip {
-                background: rgba(100, 200, 255, 0.3);
-                border-radius: 5px;
-            }
-        """)
+        self.size_grip.setStyleSheet("background: rgba(0, 180, 255, 0.1); border-radius: 10px;")
         
     def _setup_shortcuts(self):
         """Setup keyboard shortcuts"""
@@ -616,44 +572,148 @@ class ModernHUD(QMainWindow):
             event.accept()
             
     def mouseReleaseEvent(self, event):
-        """Stop dragging"""
+        """Stop dragging and handle screen snapping"""
         if event.button() == Qt.MouseButton.LeftButton:
             self._is_dragging = False
+            
+            # SCREEN SNAPPING LOGIC
+            screen = QApplication.primaryScreen().availableGeometry()
+            pos = self.pos()
+            snap_margin = 30
+            
+            new_x, new_y = pos.x(), pos.y()
+            
+            # Horizontal snapping
+            if abs(pos.x() - screen.left()) < snap_margin:
+                new_x = screen.left()
+            elif abs((pos.x() + self.width()) - screen.right()) < snap_margin:
+                new_x = screen.right() - self.width()
+                
+            # Vertical snapping
+            if abs(pos.y() - screen.top()) < snap_margin:
+                new_y = screen.top()
+            elif abs((pos.y() + self.height()) - screen.bottom()) < snap_margin:
+                new_y = screen.bottom() - self.height()
+                
+            if new_x != pos.x() or new_y != pos.y():
+                self.move(new_x, new_y)
+                
             self._save_position()
             event.accept()
             
     def paintEvent(self, event):
-        """Draw advanced holographic effects"""
-        super().paintEvent(event)
+        """Stable 3D Perspective Rendering for JARVIS"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # 1. HOLOGRAPHIC HEX-GRID (Subtle)
-        self._draw_hex_grid(painter)
+        w, h = self.width(), self.height()
+        cx, cy = w // 2, h // 2
         
-        # 2. SCANNING LASER BORDER
+        # 1. APPLY SUBTLE STABLE 3D TRANSFORM
+        transform = QTransform()
+        transform.translate(cx, cy)
+        transform.rotate(self.perspective_angle, Qt.Axis.YAxis)
+        transform.translate(-cx, -cy)
+        painter.setTransform(transform)
+        
+        # 2. DRAW PREMIUM STARK-FRAME (Chamfered Glass)
+        # Use a path for strict clipping and aesthetics
+        path = QPainterPath()
+        m, c = 10, 30
+        path.moveTo(m + c, m)
+        path.lineTo(w - m - c, m)
+        path.lineTo(w - m, m + c)
+        path.lineTo(w - m, h - m - c)
+        path.lineTo(w - m - c, h - m)
+        path.lineTo(m + c, h - m)
+        path.lineTo(m, h - m - c)
+        path.lineTo(m, m + c)
+        path.closeSubpath()
+        
+        # Clip to ensure zero overflow within the widget
+        painter.setClipPath(path)
+        
+        # Glass Backdrop
+        painter.fillPath(path, QBrush(QColor(10, 20, 35, 230)))
+        
+        # Neon Border (1px Elite)
+        painter.setPen(QPen(QColor(0, 180, 255, 180), 1))
+        painter.drawPath(path)
+        
+        # 3. BACKGROUND EFFECTS (Hex Grid & Scanlines)
+        self._draw_hex_grid(painter)
         self._draw_scanning_laser(painter)
         
-        # 3. HOLOGRAPHIC SCANLINES & JITTER
-        scanline_color = QColor(100, 200, 255, 12)
-        painter.setPen(scanline_color)
+        # 4. NEURAL NODE MAP (Subtle depth)
+        self._draw_neural_nodes(painter)
         
-        offset = int(time.time() * 30) % 20
-        glitch_y = random.randint(0, self.height()) if random.random() > 0.98 else -1
+        # 5. DATA PARTICLES
+        self._draw_particles(painter)
+
+    def _clamp_to_screen(self):
+        """Strictly ensures the HUD stays within the available Windows desktop area"""
+        screen = QApplication.primaryScreen().availableGeometry()
+        geo = self.geometry()
         
-        for y in range(offset, self.height(), 4):
-            jitter = random.randint(-2, 2) if y == glitch_y else 0
-            painter.drawLine(10 + jitter, y, self.width() - 10 + jitter, y)
+        # Maintain 10px padding from screen edges
+        new_x = max(screen.left() + 10, min(geo.x(), screen.right() - geo.width() - 10))
+        new_y = max(screen.top() + 10, min(geo.y(), screen.bottom() - geo.height() - 10))
+        
+        if new_x != geo.x() or new_y != geo.y():
+            self.move(new_x, new_y)
+
+    def moveEvent(self, event):
+        """Monitor movement and prevent accidental overflow"""
+        super().moveEvent(event)
+        if not self._is_dragging:
+            self._clamp_to_screen()
+    
+    def _draw_neural_nodes(self, painter):
+        """Thinking synapse map (Optimized/Subtle)"""
+        w, h = self.width(), self.height()
+        t = time.time()
+        for node in self.nodes:
+            p = QPointF(node['pos'].x() * w, node['pos'].y() * h)
+            # Pulse
+            alpha = int(100 + 100 * math.sin(t * 2 + node['pulse']))
+            painter.setBrush(QColor(0, 180, 255, max(0, min(255, alpha))))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(p, 2, 2)
             
-        # 4. CORNER BRACKETS (Glow Effect)
-        pen = QPen(QColor(100, 200, 255, 180), 2)
-        painter.setPen(pen)
-        size = 20
-        # Corners
-        painter.drawLine(5, 5, 5 + size, 5); painter.drawLine(5, 5, 5, 5 + size)
-        painter.drawLine(self.width() - 5, 5, self.width() - 5 - size, 5); painter.drawLine(self.width() - 5, 5, self.width() - 5, 5 + size)
-        painter.drawLine(5, self.height() - 5, 5 + size, self.height() - 5); painter.drawLine(5, self.height() - 5, 5, self.height() - 5 - size)
-        painter.drawLine(self.width() - 5, self.height() - 5, self.width() - 5 - size, self.height() - 5); painter.drawLine(self.width() - 5, self.height() - 5, self.width() - 5, self.height() - 5 - size)
+    def _draw_particles(self, painter):
+        """Micro greebles"""
+        w, h = self.width(), self.height()
+        for p in self.particles:
+            p['y'] -= p['speed']
+            if p['y'] < 0: p['y'] = 1000
+            px, py = (p['x']/1000)*w, (p['y']/1000)*h
+            painter.setBrush(QColor(0, 180, 255, 60))
+            painter.drawRect(int(px), int(py), int(p['size']), int(p['size']))
+
+    def _on_telemetry_updated(self, data: dict):
+        """Update telemetry based on system signals"""
+        sync = data.get("sync", "0%")
+        cpu = data.get("cpu", 0)
+        emotion = data.get("emotion", "NEUTRAL")
+        
+        # Update Reactor
+        try:
+            sync_val = float(str(sync).replace('%',''))
+            self.reactor.set_data(sync=sync_val, nucleo=cpu)
+        except: pass
+        
+        # Update Telemetry & Feed
+        self.telemetry.update_stats(sync=sync, emotion=emotion, cpu=cpu)
+        
+        if emotion:
+            self.reactor.set_status(emotion.lower())
+        
+        self.update()
+
+    def log_event(self, message: str):
+        """Add a short system message to the event ticker"""
+        if hasattr(self, 'ticker'):
+            self.ticker.add_event(message)
 
     def _draw_hex_grid(self, painter):
         """Draws a subtle pulsating hexagonal grid overlay"""
@@ -700,21 +760,24 @@ class ModernHUD(QMainWindow):
             self.height() - self.size_grip.height() - 5
         )
         self._save_position()
-        
+
     def _on_status_changed(self, status: str):
-        """Handle status change (thread-safe)"""
-        self.reactor.set_status(status)
-        self.status_label.setText(status.upper())
+        """Handle status change (thread-safe) with PT-BR translation"""
+        self.status = status.lower()
         
-        # Animate status label
-        effect = QGraphicsOpacityEffect()
-        self.status_label.setGraphicsEffect(effect)
-        animation = QPropertyAnimation(effect, b"opacity")
-        animation.setDuration(300)
-        animation.setStartValue(0.5)
-        animation.setEndValue(1.0)
-        animation.setEasingCurve(QEasingCurve.Type.OutQuad)
-        animation.start()
+        # Omni-HUD PT-BR Technical Mapping
+        status_map = {
+            "idle": "NÚCLEO ESTÁVEL",
+            "listening": "CAPTAÇÃO BIOMÉTRICA ATIVA",
+            "thinking": "PROCESSAMENTO FRACTAL EM CURSO",
+            "speaking": "REPRODUÇÃO DE FLUXO NEURAL",
+            "error": "FALHA CRÍTICA DE PROTOCOLO",
+            "success": "SINCRO CONCLUÍDA"
+        }
+        
+        display_status = status_map.get(self.status, status.upper())
+        self.status_label.setText(display_status)
+        self.update() # Trigger 3D render update
         
     def _on_response_ready(self, text: str):
         """Handle new response with typewriter effect"""
@@ -752,23 +815,27 @@ class ModernHUD(QMainWindow):
         """Show response text (can be called from any thread)"""
         self.response_ready.emit(text)
         
+    def _on_telemetry_updated(self, data: dict):
+        """Update 3D state based on system telemetry"""
+        sync = data.get("sync", "0%")
+        cpu = data.get("cpu", 0)
+        emotion = data.get("emotion", "NEUTRAL")
+        
+        # Map telemetry to 3D effects
+        try:
+            sync_val = float(str(sync).replace('%',''))
+            # Speed up particles and perspective if sync is high
+            self.perspective_angle = 15 + (sync_val / 20.0)
+            for p in self.particles: 
+                p['speed'] = 0.5 + (cpu / 50.0)
+        except: pass
+        
+        # Repaint request
+        self.update()
+
     def update_telemetry(self, stats: dict):
         """Update telemetry stats (can be called from any thread)"""
         self.telemetry_updated.emit(stats)
-
-    def _on_telemetry_updated(self, stats: dict):
-        """Handle telemetry update (thread-safe)"""
-        if hasattr(self, 'telemetry'):
-            self.telemetry.update_stats(
-                sync=stats.get('sync'),
-                emotion=stats.get('emotion'),
-                pulse=stats.get('pulse'),
-                cpu=stats.get('cpu')
-            )
-            
-        if 'emotion' in stats:
-            # Sync reactor color with emotion
-            self.reactor.set_status(stats['emotion'].lower())
         
     def log_event(self, message: str):
         """Add a short system message to the event ticker"""

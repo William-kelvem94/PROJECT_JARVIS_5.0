@@ -10,6 +10,7 @@ import warnings
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import threading
 
 # ============================================================================
 # CRITICAL PATCHES (MUST RUN BEFORE ANY OTHER AI IMPORT)
@@ -18,8 +19,12 @@ from pathlib import Path
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["OMP_WAIT_POLICY"] = "PASSIVE"
 os.environ["MKL_THREADING_LAYER"] = "INTEL"
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
-os.environ["CHROMA_TELEMETRY_OFF"] = "TRUE"
+# Suppress ChromaDB Telemetry Bug (capture() takes 1 positional argument but 3 were given)
+try:
+    import chromadb.telemetry.product.posthog
+    def mock_capture(*args, **kwargs): pass
+    chromadb.telemetry.product.posthog.Posthog.capture = mock_capture
+except Exception: pass
 
 # Path Synchronization
 PROJECT_ROOT = Path(__file__).parent.absolute()
@@ -31,6 +36,7 @@ if str(PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(1, str(PROJECT_ROOT / "src"))
 
 # Suppress Warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
@@ -200,6 +206,17 @@ class JarvisSingularity(QObject):
                 hud.log_event("SINGULARITY CORE ENGAGED")
                 hud.log_event("INTERFACE MODE: HUD_OVERLAY")
         
+        # 👁️ START CAMERA MONITORING
+        if self.vision_system:
+             try:
+                 from src.core.vision.camera_controller import camera_controller
+                 threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
+                 logger.info("👁️ Camera Monitoring activated (Vision Core)")
+                 if self.window_manager and self.window_manager.get_hud():
+                     self.window_manager.get_hud().log_event("VISION ENGINE: MONITORING")
+             except Exception as e:
+                 logger.warning(f"⚠️ Failed to start Camera Monitoring: {e}")
+
         # 🟢 PROACTIVE MONITOR (Quantum Core)
         try:
             from src.core.intelligence.proactive_monitor import proactive_monitor
@@ -243,8 +260,11 @@ class JarvisSingularity(QObject):
         
         try:
             # 1. Fetch Emotion
-            from src.core.vision.camera_controller import camera_controller
-            emotion = camera_controller.current_emotion
+            try:
+                from src.core.vision.camera_controller import camera_controller
+                emotion = camera_controller.current_emotion if camera_controller else "neutral"
+            except (ImportError, AttributeError):
+                emotion = "neutral"
             
             # 2. System Pulse (CPU Pulse)
             cpu_usage = psutil.cpu_percent()
@@ -338,9 +358,36 @@ class JarvisSingularity(QObject):
             self._is_processing = False
 
     def shutdown(self):
+        """Finalizes all systems and exits gracefully"""
         logger.info("Initiating graceful shutdown sequence...")
-        for name, instance in [("Vision", self.vision_system), ("Audio", self.audio_system), ("Integration", self.system_integrator)]:
-            if instance: instance.cleanup()
+        
+        # 1. Stop UI updates
+        if hasattr(self, 'telemetry_timer'):
+            self.telemetry_timer.stop()
+        
+        # 2. Shutdown threads
+        self._is_processing = False
+        
+        # 3. Cleanup core systems (Audio first to stop mixer)
+        try:
+            from src.core.audio.voice_controller import voice_controller
+            if voice_controller: 
+                voice_controller.stop() # Ensure mixer is handled
+        except: pass
+        
+        for name, instance in [("Audio", self.audio_system), ("Vision", self.vision_system), ("Integration", self.system_integrator)]:
+            if instance: 
+                try:
+                    instance.cleanup()
+                    logger.info(f"✅ {name} cleaned up")
+                except Exception as e:
+                    logger.warning(f"⚠️ {name} cleanup error: {e}")
+        
+        # 4. Hide all windows before exit to avoid QPainter errors
+        if self.window_manager:
+            self.window_manager.switch_mode(InterfaceMode.HIDDEN)
+        
+        QApplication.quit()
         sys.exit(0)
 
 # ============================================================================
@@ -366,16 +413,19 @@ async def load_module_async(name: str, factory_func, *args):
 
 async def parallel_boot(app):
     """Orchestrates the parallel loading of all major systems"""
-    print_progress("Iniciando Parallel Boot", 1, 10)
+    print_progress("Iniciando Parallel Boot", 1, 12)
     
     # Delayed imports to stay parallel
     from interface.window_manager import get_window_manager
     from core.vision.vision_system import get_vision_system
     from core.audio.enhanced_audio import get_audio_system
     from core.actions.system_integrator import get_system_integrator
+    from src.core.intelligence.neural_systems import NeuralSystemsLoader
+    from src.utils.config import Config
     
+    config = Config()
     step = 1
-    total = 6
+    total = 7
     
     async def load_with_progress(name, func, *args):
         nonlocal step
@@ -389,11 +439,12 @@ async def parallel_boot(app):
         load_with_progress("Vision System", get_vision_system, PROJECT_ROOT / "data"),
         load_with_progress("Audio System", get_audio_system, PROJECT_ROOT / "data"),
         load_with_progress("System Integrator", get_system_integrator),
-        load_with_progress("AI Agent", lambda: __import__("src.core.intelligence.ai_agent", fromlist=["ai_agent"]).ai_agent)
+        load_with_progress("AI Agent", lambda: __import__("src.core.intelligence.ai_agent", fromlist=["ai_agent"]).ai_agent),
+        load_with_progress("Neural Systems", lambda: NeuralSystemsLoader(PROJECT_ROOT / "data", config))
     ]
     
     results = await asyncio.gather(*tasks)
-    print_progress("Parallel Boot Finalizado", 10, 10)
+    print_progress("Parallel Boot Finalizado", 12, 12)
     print("\n")
     return dict(results)
 
@@ -409,23 +460,17 @@ def main():
         app = QApplication(sys.argv)
         app.setStyle("Fusion")
         
-        # 🆕 PARALLEL BOOT (3x faster)
+        # 🆕 PARALLEL BOOT (Now includes Neural Systems)
         instances = asyncio.run(parallel_boot(app))
         
-        # 🆕 WAIT FOR BACKGROUND MODELS (Fix timing bug)
+        # Fetch instances
         vision_system = instances.get("Vision System")
-        if vision_system:
-            vision_system.wait_for_models(timeout=15.0)
+        neural_systems = instances.get("Neural Systems")
         
-        # 🆕 LOAD NEURAL SYSTEMS (Advanced AI)
-        neural_systems = None
-        try:
-            from src.core.intelligence.neural_systems import NeuralSystemsLoader
-            from src.utils.config import Config
-            config = Config()
-            neural_systems = NeuralSystemsLoader(PROJECT_ROOT / "data", config)
-        except Exception as e:
-            logger.warning(f"⚠️ Neural Systems unavailable: {e}")
+        # 🆕 ASYNC MODEL WAIT (Background)
+        if vision_system:
+            import threading
+            threading.Thread(target=vision_system.wait_for_models, args=(10.0,), daemon=True).start()
         
         boot_time = time.time() - start_time
         logger.info(f"⚡ Boot completed in {boot_time:.2f}s")

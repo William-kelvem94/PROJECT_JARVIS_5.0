@@ -26,8 +26,8 @@ from typing import Optional, Dict, List, Tuple, Callable
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
-import os
 
+from src.core.management.hardware_manager import hardware_manager
 from utils.config import config
 
 logger = logging.getLogger(__name__)
@@ -241,17 +241,17 @@ class EnhancedAudioSystem:
             try:
                 logger.info(f"Loading Faster-Whisper model ({self.whisper_model_size})...")
                 
-                # Use CPU or GPU based on availability
-                device = "cuda" if TORCH_AVAILABLE and torch.cuda.is_available() else "cpu"
-                compute_type = "float16" if device == "cuda" else "int8"
+                # Use Hardware Manager settings
+                device = hardware_manager.get_device()
+                compute_type = hardware_manager.get_compute_type()
                 
                 self.whisper_model = WhisperModel(
                     self.whisper_model_size,
                     device=device,
-                    compute_type=compute_type
+                    compute_type="float16" if device == "cuda" else "int8"
                 )
                 
-                logger.info(f"✅ Whisper model loaded ({device}, {compute_type})")
+                logger.info(f"✅ Whisper model loaded (Backend: {device.upper()}, Type: {compute_type})")
                 
             except Exception as e:
                 logger.error(f"Failed to load Whisper model: {e}")

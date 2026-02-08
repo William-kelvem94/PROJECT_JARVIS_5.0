@@ -265,6 +265,22 @@ class ScreenCapture:
         except Exception as e:
             logger.error(f"Erro ao salvar captura: {e}")
             return None
+        finally:
+            # 🆕 AUTO-CLEANUP (Proteção de Disco)
+            self._cleanup_old_captures()
+
+    def _cleanup_old_captures(self):
+        """Mantém apenas as 100 capturas mais recentes para evitar saturação de disco"""
+        try:
+            captures = sorted(config.CAPTURES_DIR.glob("capture_*.png"), key=lambda x: x.stat().st_mtime)
+            if len(captures) > 100:
+                for old_file in captures[:-100]:
+                     try:
+                         old_file.unlink()
+                         # logger.debug(f"Caputura antiga removida: {old_file.name}")
+                     except: pass
+        except Exception as e:
+            logger.warning(f"Falha no cleanup de capturas: {e}")
 
 
 
