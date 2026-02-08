@@ -44,7 +44,7 @@ class AIWorker(QThread):
             with AIWorker._ai_agent_lock:
                 if AIWorker._ai_agent is None:
                     try:
-                        from core.ai_agent import ai_agent
+                        from src.core.intelligence.ai_agent import ai_agent
                         AIWorker._ai_agent = ai_agent
                     except Exception as e:
                         print(f"❌ Erro ao carregar ai_agent: {e}")

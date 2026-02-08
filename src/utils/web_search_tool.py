@@ -5,7 +5,7 @@ Permite que o Jarvis busque informações no Google de forma autônoma.
 
 import logging
 from typing import List, Dict, Any
-from src.core.security_manager import security_manager
+from src.core.security.security_manager import security_manager
 
 try:
     from googlesearch import search

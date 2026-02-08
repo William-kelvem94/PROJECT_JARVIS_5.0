@@ -38,15 +38,23 @@ class ContinualLearner:
             
         try:
             from src.learning.feedback_loop import FeedbackDatabase
-            self.feedback_db = FeedbackDatabase(self.data_dir)
+            self.feedback_db = FeedbackDatabase(self.data_dir / "feedback.db")
             
             from src.learning.trainer import LocalTrainer, TrainingConfig
-            config = TrainingConfig(load_in_4bit=True, num_train_epochs=1, max_steps=50)
+            config = TrainingConfig(
+                model_name="Qwen/Qwen2.5-1.5B-Instruct",
+                load_in_4bit=True, 
+                num_train_epochs=1,
+                per_device_train_batch_size=2,
+                gradient_accumulation_steps=2,
+                save_steps=100,
+                eval_steps=50,
+                logging_steps=5
+            )
             # Targeting the 1.5B model we just upgraded to
             self.trainer = LocalTrainer(
-                "Qwen/Qwen2.5-1.5B-Instruct", 
-                str(self.data_dir / "models" / "continual"), 
-                config
+                config=config,
+                output_dir=self.data_dir / "models" / "continual"
             )
             return True
         except Exception as e:
