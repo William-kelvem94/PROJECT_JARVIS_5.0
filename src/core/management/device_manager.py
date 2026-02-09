@@ -20,6 +20,7 @@ import webbrowser
 import subprocess
 import winreg
 import ctypes
+from ctypes import cast, POINTER
 import json
 import shutil
 from pathlib import Path
@@ -915,8 +916,20 @@ class AdvancedDeviceManager:
         """Obtém interface de controle de áudio do Windows"""
         try:
             devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            return interface.QueryInterface(IAudioEndpointVolume)
+            # pycaw moderno retorna AudioDevice wrapper com .EndpointVolume
+            if hasattr(devices, 'EndpointVolume'):
+                return devices.EndpointVolume
+            # pycaw legado retorna IMMDevice COM com .Activate()
+            elif hasattr(devices, 'Activate'):
+                interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                return cast(interface, POINTER(IAudioEndpointVolume))
+            # Fallback: tentar _dev interno
+            elif hasattr(devices, '_dev') and hasattr(devices._dev, 'Activate'):
+                interface = devices._dev.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                return cast(interface, POINTER(IAudioEndpointVolume))
+            else:
+                logger.warning("⚠️ Não foi possível obter interface de volume (API pycaw desconhecida)")
+                return None
         except Exception as e:
             logger.error(f"Erro ao obter interface de áudio: {e}")
             return None

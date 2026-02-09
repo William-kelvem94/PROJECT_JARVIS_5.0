@@ -19,13 +19,11 @@ try:
 except (ImportError, OSError):
     CHROMA_AVAILABLE = False
 
-try:
-    from sentence_transformers import SentenceTransformer, CrossEncoder
-    EMBEDDINGS_AVAILABLE = True
-    CROSSENCODER_AVAILABLE = True
-except (ImportError, OSError):
-    EMBEDDINGS_AVAILABLE = False
-    CROSSENCODER_AVAILABLE = False
+# Lazy loading: imports pesados serão feitos sob demanda
+EMBEDDINGS_AVAILABLE = None  # Será verificado na primeira tentativa
+CROSSENCODER_AVAILABLE = None
+SentenceTransformer = None
+CrossEncoder = None
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +43,15 @@ class MemoryManager:
         self.embedding_model = None
         self.reranker = None
         self.reranking_enabled = True
-        self.memory_cache = {} # Fallback RAM
+        self.memory_cache = {}  # Fallback RAM
+        self._models_loaded = False  # Flag para lazy loading
         self._initialize_db()
         self._initialized = True
 
     def _initialize_db(self):
-        if not CHROMA_AVAILABLE: return
+        if not CHROMA_AVAILABLE:
+            logger.warning("ChromaDB não disponível. Memória em modo fallback (RAM).")
+            return
         
         db_path = os.path.join(os.getcwd(), "data", "memory")
         os.makedirs(db_path, exist_ok=True)
@@ -58,35 +59,49 @@ class MemoryManager:
         try:
             self.client = chromadb.PersistentClient(path=db_path)
             
-            # Tentar criar/acessar coleção
+            # Tentar criar/acessar coleção com auto-healing
             try:
                 self.collection = self.client.get_or_create_collection(
                     name="jarvis_memory",
                     metadata={"description": "JARVIS conversation memory (Singularity 11.2)"}
                 )
                 # Testar se funciona
-                _ = self.collection.count()
-                logger.info(f"✅ ChromaDB inicializado: {self.collection.count()} memórias")
+                count = self.collection.count()
+                logger.info(f"✅ ChromaDB inicializado: {count} memórias")
             except Exception as e:
-                # Se falhar, tentar deletar apenas a coleção
-                logger.warning(f"⚠️ Erro ao acessar coleção: {e}")
+                error_msg = str(e).lower()
+                is_schema_error = any(kw in error_msg for kw in ['column', 'table', 'schema', 'sqlite'])
+                
+                if is_schema_error:
+                    logger.warning(f"🔧 Schema corrompido detectado: {e}")
+                    logger.info("🔄 Resetando ChromaDB...")
+                    
+                    # Reset completo do banco
+                    try:
+                        import shutil
+                        backup_path = os.path.join(os.getcwd(), "data", f"memory_backup_{int(datetime.now().timestamp())}")
+                        if os.path.exists(db_path):
+                            shutil.move(db_path, backup_path)
+                            logger.info(f"📦 Backup criado: {backup_path}")
+                        
+                        os.makedirs(db_path, exist_ok=True)
+                        self.client = chromadb.PersistentClient(path=db_path)
+                    except:
+                        pass
+                
+                # Criar nova coleção
                 try:
                     self.client.delete_collection("jarvis_memory")
                 except:
                     pass
-                
-                # Criar nova coleção
+                    
                 self.collection = self.client.create_collection(
                     name="jarvis_memory",
-                    metadata={"description": "JARVIS conversation memory (Singularity 11.2)"}
+                    metadata={"description": "JARVIS conversation memory (Singularity 11.2 - Reset)"}
                 )
-                logger.info("✅ ChromaDB coleção recriada")
+                logger.info("✅ ChromaDB coleção recriada com sucesso")
             
-            # Carregar modelos apenas se coleção foi criada com sucesso
-            if self.collection and EMBEDDINGS_AVAILABLE:
-                self.embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-                self.reranker = CrossEncoder('cross-encoder/ms-marco-TinyBERT-L-2-v2')
-                logger.info("✅ Modelos neurais de memória carregados (Embeddings + Reranker)")
+            # Modelos serão carregados sob demanda (lazy loading)
                 
         except Exception as e:
             logger.error(f"Erro ao inicializar memória: {e}")
@@ -95,7 +110,48 @@ class MemoryManager:
     def _generate_id(self, command: str, timestamp: str) -> str:
         return hashlib.md5(f"{command}{timestamp}".encode()).hexdigest()
 
+    def _ensure_models_loaded(self) -> bool:
+        """Lazy loading: Carrega modelos de embedding apenas quando necessário"""
+        global EMBEDDINGS_AVAILABLE, CROSSENCODER_AVAILABLE, SentenceTransformer, CrossEncoder
+        
+        if self._models_loaded:
+            return True
+        
+        if EMBEDDINGS_AVAILABLE is None:
+            try:
+                logger.info("⏳ Carregando modelos de embedding (primeira vez)...")
+                from sentence_transformers import SentenceTransformer as ST, CrossEncoder as CE
+                SentenceTransformer = ST
+                CrossEncoder = CE
+                EMBEDDINGS_AVAILABLE = True
+                CROSSENCODER_AVAILABLE = True
+            except (ImportError, OSError) as e:
+                logger.warning(f"Modelos de embedding não disponíveis: {e}")
+                EMBEDDINGS_AVAILABLE = False
+                CROSSENCODER_AVAILABLE = False
+                return False
+        
+        if not EMBEDDINGS_AVAILABLE:
+            return False
+        
+        try:
+            if self.embedding_model is None:
+                self.embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+                logger.info("✅ Embedding model carregado")
+            
+            if self.reranker is None and CROSSENCODER_AVAILABLE:
+                self.reranker = CrossEncoder('cross-encoder/ms-marco-TinyBERT-L-2-v2')
+                logger.info("✅ Reranker carregado")
+            
+            self._models_loaded = True
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao carregar modelos: {e}")
+            return False
+    
     def _create_embedding(self, text: str) -> Optional[List[float]]:
+        if not self._ensure_models_loaded():
+            return None
         if self.embedding_model:
             return self.embedding_model.encode(text).tolist()
         return None

@@ -181,7 +181,7 @@ class TotalInstaller:
             "transformers", "tokenizers", "sentence-transformers", "accelerate",
             "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "faster-whisper",
             "webrtcvad-wheels", "pytesseract", "easyocr", "pyautogui", "psutil", "chromadb",
-            "fastapi", "uvicorn[standard]", "pywin32"
+            "fastapi", "uvicorn[standard]", "pywin32", "onnxruntime==1.17.0"
         ]
         
         # Resemblyzer separado (no-deps)

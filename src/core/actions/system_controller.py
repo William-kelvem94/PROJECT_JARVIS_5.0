@@ -9,6 +9,7 @@ import os
 import sys
 import subprocess
 import logging
+from ctypes import cast, POINTER
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
@@ -242,7 +243,7 @@ class SystemController:
         try:
             devices = AudioUtilities.GetSpeakers()
             interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = interface.QueryInterface(IAudioEndpointVolume)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
             volume.SetMasterVolumeLevelScalar(level, None)
             logger.info(f"🔊 Volume mestre: {int(level * 100)}%")
             return True

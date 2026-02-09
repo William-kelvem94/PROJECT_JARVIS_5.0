@@ -282,21 +282,29 @@ class EnhancedAudioSystem:
                     with self._models_lock:
                         logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
                         
+                        # CRITICAL: Import here to avoid init-time conflicts
+                        from faster_whisper import WhisperModel
+                        
                         device = hardware_manager.get_device()
                         # compute_type will now trigger the float32 force for CPU
                         compute_type = hardware_manager.get_compute_type()
                         
+                        # CRITICAL: cpu_threads=1 for Windows stability
+                        # num_workers=1 to prevent thread pool crashes
                         self.whisper_model = WhisperModel(
                             self.whisper_model_size,
                             device=device,
                             compute_type=compute_type,
-                            cpu_threads=1 # Isolation for Windows stability
+                            cpu_threads=1,  # Single-threaded for stability
+                            num_workers=1   # Single worker to prevent pool crashes
                         )
                         self._whisper_ready = True
                         logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
             except Exception as e:
                 self._whisper_ready = False
                 logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
         # 2. Silero-VAD
         if TORCH_AVAILABLE:
@@ -445,8 +453,11 @@ class EnhancedAudioSystem:
     def _audio_processing_loop(self):
         """Main audio processing loop"""
         audio_buffer = []
-        silence_threshold = 0.5  # seconds
-        silence_timer = 0
+        silence_threshold = 1.5  # 1.5s de silêncio antes de processar
+        voice_detected_in_buffer = False  # 🔒 Rastreia se houve voz REAL no buffer
+        last_voice_time = time.time()  # 🔒 Tempo real (não incremento fictício)
+        MIN_VOICE_FRAMES = 5  # 🔒 Mínimo de frames com voz para considerar válido
+        voice_frame_count = 0  # Contador de frames com voz detectada
         
         while self.is_running:
             try:
@@ -455,6 +466,15 @@ class EnhancedAudioSystem:
                     chunk = self.audio_queue.get(timeout=0.1)
                     audio_buffer.append(chunk)
                 except queue.Empty:
+                    # 🔒 Mesmo sem dados, checar timeout de silêncio para flush do buffer
+                    if voice_detected_in_buffer and (time.time() - last_voice_time) > silence_threshold:
+                        if voice_frame_count >= MIN_VOICE_FRAMES:
+                            self._process_audio_buffer(audio_buffer)
+                        else:
+                            logger.debug(f"🔇 Buffer descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
+                        audio_buffer = []
+                        voice_detected_in_buffer = False
+                        voice_frame_count = 0
                     continue
                     
                 # Check for voice activity
@@ -466,14 +486,13 @@ class EnhancedAudioSystem:
                     has_voice = self._check_voice_activity(audio)
                     
                     if has_voice:
-                        silence_timer = 0
+                        last_voice_time = time.time()  # 🔒 Tempo REAL
+                        voice_detected_in_buffer = True
+                        voice_frame_count += 1
                         
                         # Process Wake Word if enabled and sleeping
                         if self.wake_word_active and not self.is_awake and self.porcupine:
-                            # Porcupine expects specific frame length, but we'll try to process the buffer
-                            # Note: This is a simplified integration.
                             pcm = (audio * 32767).astype(np.int16)
-                            # Chunk PCM for porcupine
                             for i in range(0, len(pcm) - self.porcupine.frame_length, self.porcupine.frame_length):
                                 frame = pcm[i:i+self.porcupine.frame_length]
                                 result = self.porcupine.process(frame)
@@ -487,14 +506,27 @@ class EnhancedAudioSystem:
                         
                         if self.is_awake or not self.wake_word_active:
                             self.state = AudioState.LISTENING
-                    else:
-                        silence_timer += 0.1
-                        
-                    # Process on silence end
-                    if silence_timer > silence_threshold and len(audio_buffer) > 0:
-                        self._process_audio_buffer(audio_buffer)
+                    
+                    # 🔒 Processar quando silêncio REAL ultrapassar threshold
+                    elapsed_silence = time.time() - last_voice_time
+                    if elapsed_silence > silence_threshold and len(audio_buffer) > 0:
+                        if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
+                            self._process_audio_buffer(audio_buffer)
+                        elif len(audio_buffer) > 0:
+                            logger.debug(f"🔇 Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
                         audio_buffer = []
-                        silence_timer = 0
+                        voice_detected_in_buffer = False
+                        voice_frame_count = 0
+                    
+                    # 🔒 Limite máximo de buffer para evitar acúmulo infinito (30s)
+                    max_buffer_chunks = int(30 * self.sample_rate / 1024)  # ~30 segundos
+                    if len(audio_buffer) > max_buffer_chunks:
+                        logger.warning("⚠️ Buffer de áudio excedeu 30s, forçando flush")
+                        if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
+                            self._process_audio_buffer(audio_buffer)
+                        audio_buffer = []
+                        voice_detected_in_buffer = False
+                        voice_frame_count = 0
                         
             except Exception as e:
                 logger.error(f"Error in audio processing loop: {e}")
@@ -503,7 +535,9 @@ class EnhancedAudioSystem:
     def _check_voice_activity(self, audio: np.ndarray) -> bool:
         """Check if audio contains voice using VAD"""
         if not self.vad_model:
-            return True  # Assume voice if no VAD
+            # 🔒 Sem VAD: usar RMS energy como fallback simples
+            rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
+            return rms > 500  # Threshold de energia mínima (int16 range)
             
         try:
             # Convert to float32 and normalize

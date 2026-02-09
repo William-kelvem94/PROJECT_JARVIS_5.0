@@ -142,25 +142,32 @@ class CameraController:
 
     def _monitor_loop(self):
         """Loop principal de visão"""
-        # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
-        video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
-        
-        if not video_capture.isOpened():
-            logger.error(f"Não foi possível abrir a câmera {self.camera_index}")
-            return
+        video_capture = None
+        try:
+            # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
+            # 🆕 GLOBAL NEURAL LOCK: Prevent conflicts with model loading
+            logger.info("📹 Opening camera with DirectShow backend...")
+            with hardware_manager.neural_lock:
+                video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+            
+            if not video_capture or not video_capture.isOpened():
+                logger.error(f"Não foi possível abrir a câmera {self.camera_index}")
+                return
+                
+            logger.info("✅ Camera opened successfully")
 
-        process_this_frame = True
+            process_this_frame = True
 
-        while self.is_monitoring:
-            ret, frame = video_capture.read()
-            if not ret:
-                time.sleep(1)
-                continue
+            while self.is_monitoring:
+                ret, frame = video_capture.read()
+                if not ret:
+                    time.sleep(1)
+                    continue
 
-            # Prioridade 1: MediaPipe: DISABLED FOR STABILITY
-            human_detected = False
-            # if self.face_detector:
-            #     results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                # Prioridade 1: MediaPipe: DISABLED FOR STABILITY
+                human_detected = False
+                # if self.face_detector:
+                #     results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             #     if results_mp.detections:
             #         human_detected = True
 
@@ -238,7 +245,12 @@ class CameraController:
             process_this_frame = not process_this_frame
             time.sleep(0.03) # Mais fluido
 
-        video_capture.release()
+        except Exception as e:
+            logger.error(f"❌ Erro no loop de monitoramento: {e}")
+        finally:
+            if video_capture:
+                video_capture.release()
+                logger.info("📹 Camera released")
 
     def register_new_face(self, name: str) -> bool:
         """Tira fotos de múltiplos ângulos para mapear o usuário de forma inteligente"""
@@ -360,3 +372,6 @@ def get_camera_controller():
     if _camera_controller is None:
         _camera_controller = CameraController()
     return _camera_controller
+
+# Global instance for direct import
+camera_controller = get_camera_controller()
