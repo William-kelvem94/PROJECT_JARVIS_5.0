@@ -235,37 +235,44 @@ class VoiceController:
         """Limpa artefatos de IA (markdown, asteriscos, código, CAMINHOS, URLs)"""
         if not text: return ""
         
-        # 🆕 REMOVER URLs e www
-        text = re.sub(r'https?://\S+', 'um link', text, flags=re.IGNORECASE)
-        text = re.sub(r'www\.\S+', 'um endereço', text, flags=re.IGNORECASE)
+        # 🔥 REMOVER MENSAGENS [SISTEMA] COMPLETAS (contém paths)
+        text = re.sub(r'\[SISTEMA\].*?(?=\[|$)', '', text, flags=re.DOTALL)
         
-        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear - Melhorada v2)
-        # Windows Paths: C:\Something\... (com suporte a multiline)
-        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', '', text, flags=re.MULTILINE)
-        # C:\Users\... (Sempre silenciar)
-        text = re.sub(r'C:\\Users\\[a-zA-Z0-9.\\]+', '', text, flags=re.MULTILINE)
-        # GitHub Paths
-        text = re.sub(r'[-a-zA-Z0-9+_.~ \\]*GitHub[-a-zA-Z0-9+_.~ \\]*', '', text, flags=re.IGNORECASE)
-        # Unix-style paths: /usr/bin...
-        text = re.sub(r'/\w+/[-a-zA-Z0-9+_.~ /]+', '', text)
+        # 🔥 REMOVER BLOCOS DE CÓDIGO ANTES DE QUALQUER COISA (podem ter paths)
+        text = re.sub(r'```[\s\S]*?```', '', text, flags=re.DOTALL)
         
-        # Limpar extensões de arquivo comuns
-        text = re.sub(r'\w+\.(exe|py|txt|log|json|yaml|md|dll|bat|png|jpg|mp3|wav)', '', text, flags=re.IGNORECASE)
+        # 🔥 REMOVER URLs e www
+        text = re.sub(r'https?://\S+', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'www\.\S+', '', text, flags=re.IGNORECASE)
         
-        # 🆕 FILTRAR TERMOS TÉCNICOS IRRITANTES
-        tech_jargon = r'\b(spikes?|batch(es)?|processing|thread(s)?|worker(s)?|buffer|cache|heap|stack|node_modules)\b'
+        # 🔥 REMOVER CAMINHOS - VERSÃO ULTRA AGRESSIVA
+        # Qualquer coisa com \ (Windows paths)
+        text = re.sub(r'[A-Za-z]:\\[^\s]+', '', text)  # C:\Users\...
+        text = re.sub(r'\\[A-Za-z0-9_\.\\]+', '', text)  # \algo\path
+        # Paths com forward slash (Unix/URL)
+        text = re.sub(r'/[a-zA-Z0-9_\-\.\/]+', '', text)  # /usr/bin/...
+        # Qualquer menção a diretórios comuns
+        text = re.sub(r'\b(Users|Documents|GitHub|AppData|Program Files|Windows|System32|Desktop|Downloads)\b[^\s]*', '', text, flags=re.IGNORECASE)
+        
+        # 🔥 REMOVER EXTENSÕES DE ARQUIVO
+        text = re.sub(r'\S+\.(exe|py|txt|log|json|yaml|yml|md|dll|bat|sh|png|jpg|jpeg|gif|mp3|mp4|wav|zip|rar|pdf|doc|docx|xls|xlsx|csv|db|sqlite|ini)', '', text, flags=re.IGNORECASE)
+        
+        # 🔥 REMOVER NOMES DE ARQUIVOS TÉCNICOS
+        text = re.sub(r'\b(main\.py|config\.yaml|requirements\.txt|__init__\.py|setup\.py)\b', '', text, flags=re.IGNORECASE)
+        
+        # 🔥 FILTRAR TERMOS TÉCNICOS IRRITANTES
+        tech_jargon = r'\b(spikes?|batch(es)?|processing|thread(s)?|worker(s)?|buffer|cache|heap|stack|node_modules|venv|virtualenv|conda|pip|npm)\b'
         text = re.sub(tech_jargon, '', text, flags=re.IGNORECASE)
         
-        # Remover blocos de código
-        text = re.sub(r'```[\s\S]*?```', '', text, flags=re.DOTALL)
         # Remover negrito/itálico
         text = re.sub(r'[*_]', '', text)
         # Remover crases e código inline
         text = re.sub(r'`[^`]+`', '', text)
         text = re.sub(r'`', '', text)
         
-        # Reduzir espaços múltiplos
+        # Reduzir espaços múltiplos e ponto-vírgula órfãos
         text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\s*[,:;]\s*', ' ', text)  # Remove pontuação solta
         
         return text.strip()
 
@@ -411,6 +418,14 @@ class VoiceController:
             try:
                 await communicate.save(tmp_path)
                 
+                # 🔍 Log de confirmação do arquivo gerado
+                if os.path.exists(tmp_path):
+                    file_size = os.path.getsize(tmp_path)
+                    logger.info(f"✅ Edge-TTS: Arquivo MP3 gerado ({file_size} bytes) em {tmp_path}")
+                else:
+                    logger.error(f"❌ Edge-TTS: Arquivo MP3 NÃO foi criado em {tmp_path}")
+                    raise FileNotFoundError(f"MP3 não gerado: {tmp_path}")
+                
                 if self.stop_requested: return
                 
                 if not PYGAME_AVAILABLE:
@@ -429,14 +444,21 @@ class VoiceController:
                 self._is_speaking = True
                 
                 try:
+                    logger.debug(f"🔊 Carregando MP3 no pygame.mixer: {tmp_path}")
                     pygame.mixer.music.load(tmp_path)
+                    logger.info(f"✅ Edge-TTS: Arquivo carregado com sucesso no mixer")
+                    
                     pygame.mixer.music.play()
+                    logger.info(f"🎵 Edge-TTS: Reprodução iniciada (aguardando conclusão...)")
                     
                     while pygame.mixer.music.get_busy():
                         if self.stop_requested:
                             pygame.mixer.music.stop()
+                            logger.info("🛑 Edge-TTS: Reprodução interrompida pelo usuário")
                             break
                         await asyncio.sleep(0.1)
+                    
+                    logger.info(f"✅ Edge-TTS: Reprodução concluída com sucesso")
                 except pygame.error as pg_err:
                     logger.error(f"❌ Pygame error: {pg_err}")
                     raise  # Cair no fallback offline
@@ -475,6 +497,20 @@ class VoiceController:
 
     def _reset_stop_flag(self):
         self.stop_requested = False
+
+    def calibrate_vad_threshold(self, duration: float = 3.0):
+        """Calibra o limiar de ruído ambiente (VAD)"""
+        if not self.microphone:
+            logger.error("❌ Calibração falhou: Microfone não disponível")
+            return
+            
+        logger.info(f"🎤 Calibrando VAD por {duration} segundos... (Fique em silêncio)")
+        try:
+            with self.microphone as source:
+                self.recognizer.adjust_for_ambient_noise(source, duration=duration)
+            logger.info(f"✅ VAD calibrado: Energy Threshold = {self.recognizer.energy_threshold:.2f}")
+        except Exception as e:
+            logger.error(f"❌ Erro na calibração: {e}")
 
     def start_listening(self):
         """Inicia escuta em background"""
@@ -561,13 +597,54 @@ class VoiceController:
             self.detected_tone = "normal"
 
     def check_internet(self) -> bool:
-        """Verifica se há conexão com a internet"""
-        try:
-            # Tentar conectar ao DNS do Google
-            socket.create_connection(("8.8.8.8", 53), timeout=2)
-            return True
-        except OSError:
+        """Verifica se há conexão com a internet (delegado ao BrainRouter)"""
+        from src.core.intelligence.brain_router import brain_router
+        return brain_router.check_connectivity()
+
+    def confirm_with_voice(self, question: str, timeout: int = 5) -> bool:
+        """
+        Fala uma pergunta e aguarda uma confirmação por voz (Sim/Não).
+        Retorna True se confirmado, False caso contrário.
+        """
+        self.speak(question, wait=True)
+        
+        if not self.microphone:
             return False
+            
+        logger.info(f"🎤 Aguardando confirmação: '{question}'")
+        try:
+            with self.microphone as source:
+                # Pequena pausa para o usuário processar a pergunta
+                time.sleep(0.5)
+                audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=3)
+                
+                is_online = self.check_internet()
+                text = ""
+                if is_online:
+                    text = self.recognizer.recognize_google(audio, language="pt-BR")
+                elif VOSK_AVAILABLE:
+                    text = self._recognize_vosk(audio)
+                
+                text = text.lower()
+                logger.info(f"Resposta capturada: '{text}'")
+                
+                confirm_words = ["sim", "pode", "ok", "prosseguir", "confirmo", "afirmativo", "vai", "yes", "do it"]
+                return any(word in text for word in confirm_words)
+                
+        except Exception as e:
+            logger.debug(f"Falha na confirmação por voz: {e}")
+            return False
+        try:
+            from src.core.intelligence.brain_router import brain_router
+            return brain_router.check_connectivity()
+        except:
+            # Fallback se router não estiver disponível
+            import socket
+            try:
+                socket.create_connection(("8.8.8.8", 53), timeout=2)
+                return True
+            except:
+                return False
 
     def _speak_google(self, text: str):
         """Usa Google TTS (gTTS)"""

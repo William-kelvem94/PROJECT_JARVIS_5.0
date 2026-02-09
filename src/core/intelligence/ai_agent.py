@@ -9,6 +9,7 @@ import requests
 import json
 import re
 import time
+import threading
 from typing import Dict, Any, List, Optional
 from src.core.intelligence.context_sanitizer import ContextSanitizer
 from src.core.audio.voice_filter import AtomicVoiceFilter
@@ -255,6 +256,11 @@ except ImportError:
     security_manager_advanced = None
     logger.warning("⚠️ Advanced Security Manager não disponível")
 
+try:
+    from src.learning.knowledge_distiller import knowledge_distiller
+except ImportError:
+    knowledge_distiller = None
+
 
 class AIAgent:
     """Classe principal do Agente Inteligente"""
@@ -422,14 +428,12 @@ class AIAgent:
             logger.critical("❌ NENHUM PROVIDER LLM DISPONÍVEL (sem API key, sem modelo local, sem ollama)")
             logger.critical("💡 Configure GOOGLE_API_KEY ou instale um modelo local")
 
-    def process_command(self, user_command: str):
+    def process_command(self, user_command: str) -> str:
         """
         Recebe um comando (texto ou voz), captura a tela e decide o que fazer
-        
-        ENHANCED WITH:
-        - Phase 3: RAG (recall memories)
-        - Phase 5: Performance (cache responses)
         """
+        all_actions = [] # Rastreamento para Fase 4 (Destilação)
+        original_command = user_command
         logger.info(f"Agente processando comando: {user_command}")
         
         # =====================================================================
@@ -478,6 +482,13 @@ class AIAgent:
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao buscar memórias: {e}")
         
+        # 🔥 Fase 4: Golden Commands (Aprendizado por exemplos de ouro)
+        if knowledge_distiller:
+            golden_context = knowledge_distiller.get_relevant_examples(user_command)
+            if golden_context:
+                memory_context = f"{golden_context}\n{memory_context}"
+                logger.info("✨ Golden Commands injetados para aprendizado few-shot")
+        
         # ... (Steps 1-3 unchanged) ...
         # 1. BRAIN ROUTING (Intelligent Decision)
         if self.brain_router:
@@ -500,7 +511,6 @@ class AIAgent:
             primary_provider = 'local_brain'
         
         # 3. Capturar estado atual da tela (PARALELO)
-        import threading
         screenshot_event = threading.Event()
         screenshot_container = {"path": None}
 
@@ -513,12 +523,19 @@ class AIAgent:
         
         # ... (Step 4 Context building unchanged) ...
         
-        # 4.4 Contexto Emocional (Phase 14) (unchanged)
+        # 4.4 Contexto Emocional (Phase 14)
         user_emotion = camera_controller.current_emotion if camera_controller else "neutral"
         emotion_mod = emotion_detector.get_personality_modifier(user_emotion)
         emotion_prefix = emotion_mod['prefix']
         
+        # 🔥 Fase 3: Ajuste de Persona Dinâmico
+        dynamic_system_prompt = f"{emotion_prefix}{self.system_prompt}\nEstilo de resposta: {emotion_mod['style']}.\nNível de energia: {emotion_mod['energy']}."
+        
         camera_context = f"\n[VISÃO] Usuário identificado: {camera_controller.last_seen_user if camera_controller else 'Desconhecido'}"
+        
+        # Envía emoção para o Dashboard Web (Phase 3)
+        from src.utils.web_emitter import emit_log_sync
+        emit_log_sync(f"Humor detectado: {user_emotion.upper()} | Persona: {emotion_mod['style']}")
         
         # =====================================================================
         # PHASE 3: RAG - INCLUDE MEMORY CONTEXT
@@ -550,17 +567,17 @@ class AIAgent:
             # --- TENTATIVA LOCAL COM STREAMING (Fase 1) ---
             try:
                 if primary_provider == 'gemini':
-                    response = self._call_gemini(enriched_command, screenshot_path)
+                    response = self._call_gemini(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
                 elif primary_provider.startswith('ollama:'):
                     model_name = primary_provider.split(':')[1]
-                    response = self._call_ollama(enriched_command, screenshot_path, model=model_name)
+                    response = self._call_ollama(enriched_command, screenshot_path, model=model_name, system_prompt=dynamic_system_prompt)
                 elif primary_provider == 'ollama': # Fallback legacy
-                    response = self._call_ollama(enriched_command, screenshot_path)
+                    response = self._call_ollama(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
                 else:
                     # Usar streaming do cérebro local para latência mínima
                     response = ""
                     current_phrase = ""
-                    for chunk in local_brain.generate_stream(enriched_command, self.system_prompt):
+                    for chunk in local_brain.generate_stream(enriched_command, dynamic_system_prompt):
                         response += chunk
                         current_phrase += chunk
                         
@@ -622,15 +639,28 @@ class AIAgent:
                 structured_result = self._process_structured_response(response, enriched_command)
                 
                 if structured_result:
-                    final_answer, enriched_command, action_executed = structured_result
+                    final_answer, enriched_command, action_executed, parsed = structured_result
                     response = final_answer
                     
                     # Se executou ações, continuar loop ReAct
                     if action_executed:
+                        # Rastrear ações para destilação ( Phase 4)
+                        if parsed and parsed.actions:
+                            # Converter ações pydantic em dicts para o distiller
+                            all_actions.extend([a.dict() for a in parsed.actions])
+                        
                         current_turn += 1
                         continue
                     else:
-                        # Resposta final sem ações, sair do loop
+                        # ✅ SUCESSO: Resposta final sem ações
+                        if knowledge_distiller and all_actions:
+                            # Destilar o comando original com as ações que levaram ao sucesso
+                            knowledge_distiller.distill_interaction(
+                                user_command=original_command,
+                                thought=parsed.thought if parsed else "",
+                                actions=all_actions,
+                                success=True
+                            )
                         break
             
             # =====================================================================
@@ -921,7 +951,6 @@ class AIAgent:
                     name = name_match.group(1) or name_match.group(2)
                 
                 # Executar em thread separada para não travar o loop de comando principal
-                import threading
                 threading.Thread(target=camera_controller.register_new_face, args=(name,), daemon=True).start()
                 return f"Entendido, senhor. Ativando protocolos de biometria para mapear {name}."
 
@@ -1007,7 +1036,7 @@ class AIAgent:
             enriched_command: Comando enriquecido (para feedback de ações)
         
         Returns:
-            (final_answer, enriched_command, action_executed)
+            (final_answer, enriched_command, action_executed, parsed_obj)
         """
         if not STRUCTURED_OUTPUT_AVAILABLE:
             logger.warning("Structured output não disponível, usando fallback legado")
@@ -1050,7 +1079,7 @@ class AIAgent:
                     enriched_command += f"\n\n[SISTEMA] Ações executadas com sucesso: {', '.join(action_names)}. Você precisa fazer mais algo?"
             
             # 3. Retornar resposta final
-            return (parsed.final_answer, enriched_command, action_executed)
+            return (parsed.final_answer, enriched_command, action_executed, parsed)
         
         except Exception as e:
             logger.error(f"Erro ao processar resposta estruturada: {e}")

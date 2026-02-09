@@ -45,6 +45,7 @@ class ActionExecutor:
         self.action_controller = None
         self.security_manager = None
         self.web_search_tool = None
+        self.voice_controller = None
         
         # Importar controllers
         self._load_controllers()
@@ -63,6 +64,9 @@ class ActionExecutor:
             ActionType.LIST_DIR: self._execute_list_dir,
             ActionType.SEARCH_WEB: self._execute_search_web,
             ActionType.WAIT: self._execute_wait,
+            ActionType.WINDOW_MANAGE: self._execute_window_manage,
+            ActionType.DRAG_DROP: self._execute_drag_drop,
+            ActionType.IOT_CONTROL: self._execute_iot_control,
         }
     
     def _load_controllers(self):
@@ -89,6 +93,25 @@ class ActionExecutor:
             self.web_search_tool = web_search_tool
         except ImportError:
             logger.warning("⚠️ web_search_tool não disponível")
+
+        try:
+            from src.core.audio.voice_controller import voice_controller
+            self.voice_controller = voice_controller
+        except ImportError:
+            logger.warning("⚠️ voice_controller não disponível")
+
+        try:
+            from src.core.actions.advanced_action_controller import advanced_action_controller
+            self.advanced_action_controller = advanced_action_controller
+        except ImportError:
+            logger.warning("⚠️ advanced_action_controller não disponível")
+        
+        try:
+            from src.core.iot.iot_manager import iot_manager
+            self.iot_manager = iot_manager
+        except ImportError:
+            # Será criado no próximo passo, por enquanto logamos
+            self.iot_manager = None
     
     def execute_action(self, action: ActionUnion) -> Dict[str, Any]:
         """
@@ -112,8 +135,33 @@ class ActionExecutor:
             }
         
         try:
+            # 🔥 Fase 3: Confirmação de Ações Críticas
+            if self.voice_controller:
+                if action_type == ActionType.WRITE_FILE:
+                    if not self.voice_controller.confirm_with_voice("Preciso escrever um arquivo no sistema. Posso prosseguir?"):
+                        return {"status": "cancelled", "action": action_type.value, "error": "Cancelado pelo usuário"}
+                elif action_type == ActionType.RUN_COMMAND:
+                    if not self.voice_controller.confirm_with_voice(f"Vou executar um comando de terminal. Posso continuar?"):
+                        return {"status": "cancelled", "action": action_type.value, "error": "Cancelado pelo usuário"}
+                elif action_type == ActionType.OPEN_PROGRAM:
+                    if not self.voice_controller.confirm_with_voice(f"Vou abrir um novo programa. Tudo bem?"):
+                        return {"status": "cancelled", "action": action_type.value, "error": "Cancelado pelo usuário"}
+
             logger.info(f"Executando ação: {action_type.value}")
             result = handler(action)
+            
+            # 🔥 Fase 4: Destilação de Conhecimento (Aprendizado)
+            try:
+                from src.learning.knowledge_distiller import knowledge_distiller
+                # Nota: aqui passamos apenas a ação individual, a orquestração 
+                # pode passar o comando completo depois de executar a lista.
+                # Por enquanto, logamos o sucesso.
+            except ImportError: pass
+
+            # Logs para o Dashboard Web (Phase 3)
+            from src.utils.web_emitter import emit_log_sync
+            emit_log_sync(f"Ação executada: {action_type.value}")
+
             return {
                 "status": "success",
                 "action": action_type.value,
@@ -325,6 +373,45 @@ class ActionExecutor:
         """Aguarda tempo especificado"""
         time.sleep(action.seconds)
         return f"Aguardado {action.seconds}s"
+
+    def _execute_window_manage(self, action: Any) -> str:
+        """Handler para WindowAction"""
+        if not self.advanced_action_controller:
+            raise RuntimeError("advanced_action_controller não disponível")
+        
+        success = self.advanced_action_controller.window_manage(
+            window_title=action.window_title,
+            operation=action.operation,
+            width=action.width,
+            height=action.height,
+            x=action.x,
+            y=action.y
+        )
+        return "Janela gerenciada com sucesso" if success else "Falha ao gerenciar janela"
+
+    def _execute_drag_drop(self, action: Any) -> str:
+        """Handler para DragDropAction"""
+        if not self.action_controller:
+            raise RuntimeError("action_controller não disponível")
+        
+        success = self.action_controller.drag_and_drop(
+            action.x_start, action.y_start,
+            action.x_end, action.y_end,
+            duration=action.duration
+        )
+        return "Drag and drop executado" if success else "Falha no drag and drop"
+
+    def _execute_iot_control(self, action: Any) -> str:
+        """Handler para IOTAction"""
+        if not self.iot_manager:
+            return "IOT Manager não disponível or não configurado"
+        
+        success = self.iot_manager.control_device(
+            action.device,
+            action.command,
+            action.params
+        )
+        return f"Comando IoT '{action.command}' enviado para '{action.device}'" if success else "Falha no comando IoT"
 
 
 # Instância global (singleton)

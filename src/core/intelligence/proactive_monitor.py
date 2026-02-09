@@ -19,15 +19,25 @@ class ProactiveMonitor:
     """Daemon que observa a tela em busca de mudanças (Deltas) e toma iniciativa"""
 
     def __init__(self, check_interval: float = 300.0, sensitivity: float = 0.15):
-        self.check_interval = check_interval  # 🆕 5min entre checks (era 3s)
-        self.sensitivity = sensitivity # 15% de mudança (era 5% - muito sensível)
+        # 🆕 Carregar do ai_config se disponível
+        try:
+            from src.utils.config import config
+            self.check_interval = config.get_ai_config('vision.proactive_monitor.check_interval', check_interval)
+            self.sensitivity = config.get_ai_config('vision.proactive_monitor.sensitivity', sensitivity)
+            self.cooldown = config.get_ai_config('vision.proactive_monitor.cooldown', 600.0)
+            logger.info(f"⚙️ Monitor Proativo: Intervalo={self.check_interval}s, Sensibilidade={self.sensitivity}, Cooldown={self.cooldown}s")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao carregar config para ProactiveMonitor, usando defaults: {e}")
+            self.check_interval = check_interval
+            self.sensitivity = sensitivity
+            self.cooldown = 600.0
+
         self.running = False
         self.thread = None
         self.last_frame = None
         
         # Cooldown para não ser irritante (segundos)
         self.last_trigger_time = 0
-        self.cooldown = 600  # 🆕 10min entre triggers (era 60s) 
 
     def start(self):
         """Inicia o monitoramento em background"""

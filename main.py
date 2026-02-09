@@ -14,6 +14,8 @@ import threading
 from src.core.management.shutdown_manager import ShutdownManager # New Shutdown Manager
 from src.core.management.hardware_manager import hardware_manager
 from src.core.orchestrator import StarkOrchestrator # Stark 2.0 Orchestrator
+from src.web.web_server import start_server
+from src.utils.web_emitter import emit_telemetry_sync, emit_log_sync
 
 # ============================================================================
 # [STAGE 1] ENVIRONMENT CONFIGURATION & COMPATIBILITY
@@ -539,6 +541,14 @@ async def parallel_boot(app):
 # MAIN ENTRY POINT - STAGED BOOT PROTOCOL
 # ============================================================================
 def main():
+    # Fix console encoding for Windows (emojis support)
+    if sys.platform == 'win32':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+            sys.stderr.reconfigure(encoding='utf-8')
+        except:
+            pass  # Python < 3.7 or non-standard console
+    
     print(f"\n🌌 [STAGE 0] Initializing JARVIS Singularity Suite...")
     start_time = time.time()
     
@@ -569,6 +579,7 @@ def main():
         instances = asyncio.run(parallel_boot(app))
         
         # Fetch instances for Stage 3
+        window_manager = instances.get("Window Manager")
         vision_system = instances.get("Vision System")
         audio_system = instances.get("Audio System")
         neural_systems = instances.get("Neural Systems")
@@ -593,19 +604,55 @@ def main():
             """Load heavy models SEQUENTIALLY to avoid memory conflicts"""
             logger.info("⚡ [STAGE 3] Igniting Neural Engines (Sequential Load)...")
             
+            # 0. 🔥 LocalBrain Pre-Load (nuevo - auto-load durante boot)
+            try:
+                from src.core.intelligence.local_brain import local_brain
+                if local_brain and not local_brain._is_loaded:
+                    logger.info("🧠 Pre-loading LocalBrain (1.5B model)...")
+                    if window_manager and window_manager.get_hud():
+                        window_manager.get_hud().update_state("loading_model")
+                        window_manager.get_hud().log_event("Carregando Cérebro Local...")
+                    local_brain.load_async()
+                    # Dar 30s para carregar enquanto outros módulos também carregam
+                    logger.info("✅ LocalBrain loading started (async)")
+            except Exception as e:
+                logger.warning(f"⚠️ LocalBrain pre-load failed: {e}")
+            
             # 1. Vision System first (FaceRec/OCR/YOLO)
             if vision_system:
                 logger.info("🧠 Loading Vision models...")
+                if window_manager and window_manager.get_hud():
+                    window_manager.get_hud().log_event("Carregando modelos de visão...")
                 vision_system.start_background_loading()
                 vision_system.wait_for_models(timeout=30.0)  # Wait for completion
                 logger.info("✅ Vision models loaded")
+                if window_manager and window_manager.get_hud():
+                    window_manager.get_hud().log_event("VISION ENGINE: READY")
             
             # 2. Audio System second (Whisper/VAD) - only after Vision completes
             if audio_system:
                 logger.info("🧠 Loading Audio models...")
+                if window_manager and window_manager.get_hud():
+                    window_manager.get_hud().log_event("Carregando Whisper & VAD...")
                 audio_system.start_background_loading()
                 time.sleep(10)  # Give Whisper time to load
                 logger.info("✅ Audio models loaded")
+                if window_manager and window_manager.get_hud():
+                    window_manager.get_hud().log_event("AUDIO ENGINE: READY")
+                
+                # 🔥 VAD Auto-Calibração (nuevo)
+                try:
+                    logger.info("🎤 Calibrando VAD com ruído ambiente...")
+                    if window_manager and window_manager.get_hud():
+                        window_manager.get_hud().update_state("calibrating")
+                        window_manager.get_hud().log_event("Medindo ruído ambiente...")
+                    audio_system.calibrate_vad_threshold(duration=3.0)
+                    logger.info("✅ VAD calibrado para ambiente atual")
+                    if window_manager and window_manager.get_hud():
+                        window_manager.get_hud().log_event("VAD: CALIBRADO")
+                        window_manager.get_hud().update_state("idle")
+                except Exception as e:
+                    logger.warning(f"⚠️ VAD calibration failed: {e}")
             
             # 3. Camera Monitoring last - schedule with threading.Timer
             logger.info("⏳ Scheduling camera start in 30s for system stabilization...")
@@ -638,6 +685,46 @@ def main():
             name="NeuralSequentialLoad"
         ).start())
 
+        # 🔥 Iniciar Telemetria Live (nuevo)
+        def update_telemetry_loop():
+            """Thread que atualiza telemetria do sistema em tempo real"""
+            import psutil
+            import threading
+            while True:
+                try:
+                    if window_manager and window_manager.get_hud():
+                        cpu = psutil.cpu_percent(interval=0.5)
+                        mem = psutil.virtual_memory().percent
+                        
+                        # 📡 Adicionar status de conexão (Phase 2)
+                        try:
+                            from src.core.intelligence.brain_router import brain_router
+                            is_online = brain_router.check_connectivity() if brain_router else False
+                        except Exception:
+                            is_online = False
+                        
+                        window_manager.get_hud().telemetry_updated.emit({
+                            'cpu': cpu,
+                            'memory': mem,
+                            'threads': threading.active_count(),
+                            'is_online': is_online
+                        })
+
+                        # 🌐 Dashboard Web (Phase 3)
+                        emit_telemetry_sync(cpu, mem)
+                    time.sleep(1)  # Atualizar a cada 1s
+                except Exception as e:
+                    logger.debug(f"Telemetry update error: {e}")
+                    time.sleep(5)
+        
+        telemetry_thread = threading.Thread(
+            target=update_telemetry_loop,
+            daemon=True,
+            name="TelemetryMonitor"
+        )
+        telemetry_thread.start()
+        logger.info("📊 Live telemetry monitoring started")
+        
         # Start Core Orchestrator
         jarvis = JarvisSingularity(app, instances)
         jarvis.start()
@@ -650,6 +737,16 @@ def main():
             logger.info("🧠 Brain Learning Systems active")
         except Exception as e:
             logger.warning(f"⚠️ Learning system unavailable: {e}")
+
+        # 🌐 Iniciar Servidor Web (Phase 3)
+        try:
+            import threading
+            web_server = start_server(port=5000)
+            web_thread = threading.Thread(target=web_server.run, daemon=True, name="WebDashboard")
+            web_thread.start()
+            logger.info("🌐 Web Dashboard ready at http://localhost:5000")
+        except Exception as e:
+            logger.warning(f"⚠️ Web Dashboard unavailable: {e}")
 
         # Enter Event Loop
         return app.exec()
