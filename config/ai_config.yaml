@@ -104,7 +104,7 @@ brain_router:
 # === LOCAL BRAIN CONFIGURATION ===
 local_brain:
   # Native micro-LLM settings
-  model_path: "models/qwen2.5-1.5b-instruct"
+  model_path: "Qwen/Qwen2.5-1.5B-Instruct"
   model_type: "qwen"
   max_context_length: 2048
   temperature: 0.7
@@ -116,6 +116,9 @@ local_brain:
   
   # Device
   device: "auto"  # 'auto', 'cuda', 'cpu', ou 'mps'
+  
+  # Autoloading
+  autoload: true
 
 # === NEURAL MEMORY CONFIGURATION ===
 neural_memory:
@@ -198,6 +201,12 @@ vision:
   screenshot_quality: 85  # Para JPEG
   screenshot_resize_max: 1920  # Redimensionar se > que isso
 
+  # Proactive Monitor (Sentinela)
+  proactive_monitor:
+    check_interval: 300.0  # Tempo entre varreduras (segundos)
+    cooldown: 600.0        # Espera após um gatilho (segundos)
+    sensitivity: 0.15      # % de mudança para disparar análise (0.0 a 1.0)
+
 # === PERFORMANCE MONITORING ===
 performance:
   # Metrics collection
@@ -235,6 +244,13 @@ security:
   # Action limits
   max_actions_per_turn: 10
   max_file_size_mb: 100
+
+# === AUDIO & VOICE ===
+audio:
+  vad_calibration_duration: 3.0  # Tempo de escuta para calibrar ruído ambiente
+  default_tts: "edge"            # 'edge', 'gtts', 'xtts'
+  offline_tts_fallback: true
+  response_caching: true
 
 # === DEBUGGING ===
 debug:
