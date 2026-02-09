@@ -57,13 +57,24 @@ class ActionController:
             logger.error(f"Erro ao executar hotkey: {e}")
             return False
 
+    def drag_and_drop(self, x_start: int, y_start: int, x_end: int, y_end: int, duration: float = 1.0):
+        """Arrasta de um ponto a outro"""
+        try:
+            logger.info(f"Arrastando de ({x_start}, {y_start}) para ({x_end}, {y_end})")
+            pyautogui.moveTo(x_start, y_start)
+            pyautogui.dragTo(x_end, y_end, duration=duration)
+            return True
+        except Exception as e:
+            logger.error(f"Erro no drag and drop: {e}")
+            return False
+
     def move_to(self, x: int, y: int, duration: float = 0.5):
-        """Move o mouse suavemente"""
+        """Move o cursor para uma posição específica"""
         try:
             pyautogui.moveTo(x, y, duration=duration)
             return True
         except Exception as e:
-            logger.error(f"Erro ao mover mouse: {e}")
+            logger.error(f"Erro ao mover cursor: {e}")
             return False
 
     def click_text(self, target_text: str, ocr_regions: List[Dict[str, Any]]) -> bool:

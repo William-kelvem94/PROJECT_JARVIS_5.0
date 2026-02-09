@@ -21,10 +21,13 @@ ARQUITETURA:
 import logging
 import asyncio
 import re
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, TYPE_CHECKING
 from pathlib import Path
 import aiofiles
 import os
+
+if TYPE_CHECKING:
+    from src.core.intelligence.structured_output import ActionUnion
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,8 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 try:
     from src.core.intelligence.action_executor import get_action_executor, ActionExecutor
-    from src.core.intelligence.structured_output import ActionUnion
+    # 🆕 PROTEÇÃO: Importamos um símbolo válido para garantir que o módulo existe
+    from src.core.intelligence.structured_output import ActionType as _AT
     ACTION_EXECUTOR_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"⚠️ action_executor não disponível: {e}")
@@ -51,7 +55,7 @@ except ImportError as e:
     WEB_SEARCH_AVAILABLE = False
 
 try:
-    from src.utils.security_manager import security_manager
+    from src.core.security.security_manager import security_manager
     SECURITY_MANAGER_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"⚠️ security_manager não disponível: {e}")
@@ -152,7 +156,7 @@ class ActionHandler:
         return results
     
     
-    async def _execute_structured_action(self, action: ActionUnion) -> Dict[str, Any]:
+    async def _execute_structured_action(self, action: 'ActionUnion') -> Dict[str, Any]:
         """Executa ação estruturada (Pydantic model)"""
         
         # Validação de segurança

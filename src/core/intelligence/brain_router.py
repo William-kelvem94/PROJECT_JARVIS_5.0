@@ -44,6 +44,8 @@ class BrainRouter:
         self.local_load = 0.0  # 0-1
         self.cloud_quota_remaining = 1.0 if self.cloud_available else 0.0
         self.ollama_available_models = []
+        self._is_online = True
+        self._last_conn_check = 0
         
         # Carregar configurações do ai_config.yaml
         if CONFIG_AVAILABLE and config:
@@ -107,9 +109,12 @@ class BrainRouter:
         Versão Stark IQ 11.2 - Escolha adaptativa baseada em Memória e Tiers
         Retorna: 'ollama:<modelo>', 'local' (native), ou 'cloud'
         """
-        # MODO OFFLINE: Força uso local
-        if self.offline_mode:
-            logger.info("🔒 MODO OFFLINE: Forçando uso de recursos locais")
+        # MODO OFFLINE FORÇADO OU SEM INTERNET: Força uso local
+        if self.offline_mode or not self.check_connectivity():
+            if self.offline_mode:
+                logger.debug("🔒 Modo Offline Forçado (Config)")
+            else:
+                logger.info("📡 Sem internet: Usando recursos locais")
             return self._choose_local_brain()
         
         # PRIVACIDADE CRÍTICA -> NATIVO (Sem rede)
@@ -200,6 +205,25 @@ class BrainRouter:
         self.offline_mode = False
         self.cloud_available = True if self.api_key else False
         logger.info("🌐 MODO ONLINE ATIVADO")
+
+    def check_connectivity(self) -> bool:
+        """Verifica conexão com a internet (cache de 30s)"""
+        import time
+        import socket
+        
+        now = time.time()
+        if now - self._last_conn_check < 30:
+            return self._is_online
+            
+        self._last_conn_check = now
+        try:
+            # Tentar conectar ao DNS do Google
+            socket.create_connection(("8.8.8.8", 53), timeout=2)
+            self._is_online = True
+        except (OSError, socket.timeout):
+            self._is_online = False
+            
+        return self._is_online
 
     def update_status(self, local_load: float = None, cloud_quota: float = None):
         if local_load is not None:

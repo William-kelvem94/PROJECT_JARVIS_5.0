@@ -63,7 +63,10 @@ class ModernReactorCore(QWidget):
             "thinking": QColor(180, 50, 255, 220),  # Purple intenso
             "alert": QColor(255, 170, 0, 220),      # Amber vivo
             "critical": QColor(255, 30, 60, 230),   # Red urgente
-            "listening": QColor(0, 255, 140, 220)   # Green neon
+            "listening": QColor(0, 255, 140, 220),  # Green neon
+            "loading_model": QColor(255, 150, 30, 220),  # Orange: carregamento neural
+            "calibrating": QColor(0, 240, 255, 220),      # Cyan claro: calibração
+            "offline": QColor(100, 100, 100, 200)         # Gray: sem conexão
         }
         self.current_color = self.palettes["stable"]
         
@@ -275,20 +278,26 @@ class ModernTelemetryWidget(QWidget):
         self.cpu_gauge = EliteCircularGauge("NÚCLEO")
         self.layout.addWidget(self.cpu_gauge)
 
-    def update_stats(self, sync=None, emotion=None, cpu=None, pulse=None):
-        if sync is not None:
-            # Handle string like "98.5%"
+    def update_stats(self, data: dict):
+        """Atualiza os indicadores do widget de telemetria baseada em um dicionário de dados"""
+        if 'sync' in data:
             try:
-                val = float(str(sync).replace('%', ''))
+                val = float(str(data['sync']).replace('%', ''))
                 self.sync_gauge.set_value(val)
             except: pass
             
-        if cpu is not None:
-            self.cpu_gauge.set_value(float(cpu))
-            
-        if emotion:
+        if 'cpu' in data: 
+            self.cpu_gauge.set_value(float(data['cpu']))
+        
+        if 'memory' in data:
+            # Assumindo que o gauge de CPU serve para memória se não houver um específico
+            # ou apenas atualizando os gauges disponíveis.
+            pass
+
+        if 'emotion' in data:
             em_map = {"NEUTRAL": "NEUTRO", "HAPPY": "FELIZ", "SAD": "TRISTE", 
                       "ANGRY": "BRAVO", "SURPRISE": "SURPRESA", "FEAR": "MEDO"}
+            emotion = data['emotion']
             self.emotion_val.setText(em_map.get(emotion.upper(), emotion.upper()))
 
 
@@ -866,7 +875,7 @@ class ModernHUD(QMainWindow):
             logger.debug(f"Reactor update fail: {e}")
         
         # 2. Update Telemetry Widget (Labels)
-        self.telemetry.update_stats(sync=sync, emotion=emotion, cpu=cpu, pulse=pulse)
+        self.telemetry.update_stats(data)
         
         # 3. Process Ticker events for critical load
         if cpu > 80:
@@ -874,6 +883,17 @@ class ModernHUD(QMainWindow):
         
         # Force repaint for 60FPS fluid feel
         self.update()
+
+    def update_telemetry(self, data: dict):
+        """
+        Public API: Atualiza telemetria do sistema (called from main.py).
+        Converte chamada de método para signal emit (thread-safe).
+        
+        Args:
+            data: Dict com keys: 'sync', 'emotion', 'pulse', 'cpu', etc.
+        """
+        # Emitir signal para processar no thread principal do Qt
+        self.telemetry_updated.emit(data)
 
     def _draw_hex_grid(self, painter):
         """Draws a subtle pulsating hexagonal grid overlay"""
