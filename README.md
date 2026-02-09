@@ -16,10 +16,10 @@
 
 ```bash
 # Clique duplo no arquivo:
-JARVIS.bat
+START_JARVIS.bat
 
 # OU execute no terminal:
-.\JARVIS.bat
+.\START_JARVIS.bat
 ```
 
 ### 🎯 O que o Launcher Autônomo faz?
@@ -258,7 +258,7 @@ python -c "from src.core.ai_agent import ai_agent; ai_agent.process_command('Ol�
 Execute o validador automático para diagnosticar problemas:
 
 ```bash
-python validate.py
+python scripts/debug/validate.py
 ```
 
 O validador verifica:
@@ -317,19 +317,20 @@ voice:
 
 ### 📖 Documentação Completa
 
-Para guia completo de troubleshooting, veja:
-- **[WINDOWS_INSTALL.md](WINDOWS_INSTALL.md)** - 🆕 Guia específico para Windows
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Guia completo de solução de problemas
-- **[ORGANIZATION_GUIDE.md](ORGANIZATION_GUIDE.md)** - Guia de organização do projeto
+Para um guia de início rápido de 30 segundos, veja:
+- **[docs/getting-started/start-here.md](docs/getting-started/start-here.md)** - 🆕 Guia Essencial
+
+Para guia de troubleshooting e organização:
+- **[docs/maintenance/troubleshooting.md](docs/maintenance/troubleshooting.md)** - Solução de problemas
+- **[docs/README.md](docs/README.md)** - Índice completo da documentação
 
 ---
 
 ## 📚 Documentação
 
-- [**TROUBLESHOOTING.md**](TROUBLESHOOTING.md) - 🆕 Guia completo de solução de problemas
-- [**QUICKSTART.md**](QUICKSTART.md) - Guia de início rápido
-- [**HOW_TO_START.md**](HOW_TO_START.md) - Instruções detalhadas
-- [**STRUCTURE.md**](STRUCTURE.md) - Arquitetura do projeto
+- [**docs/README.md**](docs/README.md) - **🆕 Manual Completo**
+- [**docs/getting-started/installation.md**](docs/getting-started/installation.md) - Guia de instalação
+- [**docs/architecture/overview.md**](docs/architecture/overview.md) - Estrutura do projeto
 
 ---
 
@@ -410,8 +411,7 @@ Execute `JARVIS.bat` e comece a interagir!
 
 Este projeto foi organizado para manter apenas a **versão completa e híbrida**:
 - **main.py** - Entry point único e integrado
-- **requirements.txt** - Dependências completas (Singularity)
-- **requirements_ml.txt** - Dependências opcionais de Machine Learning
-- **JARVIS.bat** - Launcher autônomo
-- **setup.py** - Instalador inteligente
+- **START_JARVIS.bat** - Launcher autônomo e inteligente
+- **INSTALL_JARVIS.bat** - Instalador silencioso
+- **docs/** - Documentação centralizada e organizada
 - **archive/** - Versões antigas arquivadas para referência

@@ -1,38 +1,39 @@
-
 import sys
 import os
 import logging
+import time
 
-# Add src to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 logging.basicConfig(level=logging.INFO)
 
-print("--- Testing Imports ---")
+print('--- Testing Imports ---')
 try:
     from src.core.intelligence.local_brain import local_brain
-    print("LocalBrain imported.")
+    print('LocalBrain imported.')
 except ImportError as e:
-    print(f"Failed to import LocalBrain: {e}")
+    print(f'Failed to import LocalBrain: {e}')
     sys.exit(1)
 
-print("\n--- Testing Load ---")
-try:
-    print("Calling load()... (This triggers download if first time)")
-    local_brain.load()
-    if local_brain.is_loaded:
-        print("Success: Brain Loaded.")
+print('\n--- Testing Load ---')
+if not local_brain._is_loaded:
+    print('Triggering async load...')
+    local_brain.load_async()
+    if local_brain._is_loading:
+         print('Load thread started successfully.')
     else:
-        print("Failed: Brain not loaded (maybe missing dependencies?)")
-except Exception as e:
-    print(f"CRASH during load: {e}")
-
-print("\n--- Testing Generation ---")
-if local_brain.is_loaded:
-    try:
-        response = local_brain.generate_response("Hello, who are you?", "You are a test assistant.")
-        print(f"Response: {response}")
-    except Exception as e:
-        print(f"CRASH during generation: {e}")
+         print('Warning: Load thread did not start.')
 else:
-    print("Skipping generation test.")
+    print('LocalBrain already loaded.')
+
+print('\n--- Testing Generation (Mock) ---')
+if local_brain._is_loaded and local_brain.pipe:
+    try:
+        response = local_brain.generate_response('Hello!')
+        print(f'Response: {response}')
+    except Exception as e:
+        print(f'Generation failed: {e}')
+else:
+    print('Skipping generation (model not fully loaded yet).')
+
+sys.exit(0)

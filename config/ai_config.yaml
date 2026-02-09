@@ -97,6 +97,67 @@ brain_router:
   
   # Offline mode
   offline_mode: false  # Se true, força uso exclusivo de recursos locais
+
+# === CONTINUAL LEARNING CONFIGURATION ===
+continual_learning:
+  # Ativar sistemas de aprendizado autônomo
+  enabled: true
+  
+  # Feedback Loop
+  feedback_loop:
+    enabled: true
+    database_path: "data/learning/feedback.db"
+    auto_collect_implicit: true  # Coleta feedback implícito (tempo de resposta, repetições)
+    
+  # Continual Learner (Training Automation)
+  continual_learner:
+    enabled: true
+    feedback_threshold: 100  # Número de feedbacks para disparar treinamento
+    check_interval: 3600  # Verificar a cada 1 hora (segundos)
+    training_batch_size: 2
+    gradient_accumulation_steps: 2
+    num_epochs: 1
+    save_steps: 100
+    
+  # Knowledge Distiller (Golden Commands)
+  knowledge_distiller:
+    enabled: true
+    min_usage_count: 2  # Comando precisa ser usado X vezes para virar "Golden"
+    max_examples: 3  # Máximo de exemplos a injetar no contexto
+    similarity_threshold: 0.6  # Threshold para matching fuzzy
+    
+  # Dream Cycle (Nighttime Training)
+  dream_cycle:
+    enabled: true
+    night_start_hour: 22  # 22h - 10 PM
+    night_end_hour: 6     # 6h - 6 AM
+    min_idle_duration: 300  # 5 minutos de inatividade
+    max_cpu_percent: 20.0  # CPU abaixo de 20%
+    max_memory_percent: 80.0  # RAM abaixo de 80%
+    check_interval: 60  # Verificar a cada 1 minuto
+    
+  # Local Brain (Model to Train)
+  local_brain:
+    model_path: "Qwen/Qwen2.5-1.5B-Instruct"
+    autoload: true
+    lora_enabled: true  # Usar LoRA/QLoRA para fine-tuning eficiente
+    lora_r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05
+    load_in_4bit: true  # Quantização 4-bit para eficiência
+    
+  # Training Output
+  output:
+    checkpoints_dir: "data/models/continual"
+    backup_enabled: true
+    max_checkpoints: 5  # Manter apenas os 5 melhores checkpoints
+    
+  # Knowledge Distillation (External → Local)
+  distillation:
+    enabled: true
+    teacher_models: ["deepseek-r1:8b", "llama3.3"]  # Modelos externos como tutores
+    confidence_threshold: 0.7  # Quando local brain tem baixa confiança, consulta tutor
+    distill_temperature: 2.0  # Temperature para distillation
   
   # Fallback strategy
   fallback_strategy: "local"  # 'local', 'cloud', ou 'error'
