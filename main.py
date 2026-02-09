@@ -11,20 +11,29 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import threading
+from src.core.management.shutdown_manager import ShutdownManager # New Shutdown Manager
+from src.core.management.hardware_manager import hardware_manager
+from src.core.orchestrator import StarkOrchestrator # Stark 2.0 Orchestrator
 
 # ============================================================================
-# CRITICAL PATCHES (MUST RUN BEFORE ANY OTHER AI IMPORT)
+# [STAGE 1] ENVIRONMENT CONFIGURATION & COMPATIBILITY
 # ============================================================================
-# Fix for Torch DLL initialization (Error 1114)
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+# Core overrides for Windows/Torch stability
 os.environ["OMP_WAIT_POLICY"] = "PASSIVE"
 os.environ["MKL_THREADING_LAYER"] = "INTEL"
 # Suppress ChromaDB Telemetry Bug (capture() takes 1 positional argument but 3 were given)
-try:
-    import chromadb.telemetry.product.posthog
-    def mock_capture(*args, **kwargs): pass
-    chromadb.telemetry.product.posthog.Posthog.capture = mock_capture
-except Exception: pass
+# Centralized comtypes Fix (Windows 11 stability)
+if platform.system() == "Windows":
+    try:
+        import comtypes.client
+        import comtypes.client._code_cache
+        # Disable cache globally to avoid Access Violation in parallel boot
+        comtypes.client._code_cache._enable_cache = False
+        gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
+        if gen_dir.exists():
+            shutil.rmtree(gen_dir, ignore_errors=True)
+        os.makedirs(gen_dir, exist_ok=True)
+    except Exception: pass
 
 # Path Synchronization
 PROJECT_ROOT = Path(__file__).parent.absolute()
@@ -53,6 +62,20 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+# Global reference for shutdown signaling
+QApplication = None
+
+# Unified InterfaceMode Import
+try:
+    from src.interface.window_manager import InterfaceMode
+except ImportError:
+    # Fallback if source root is not in path yet
+    from enum import Enum
+    class InterfaceMode(Enum):
+        HUD_OVERLAY = "hud"
+        DASHBOARD = "dashboard"
+        HIDDEN = "hidden"
+
 logger = logging.getLogger("JARVIS-CORE")
 
 # Try to import torch and determine availability
@@ -92,10 +115,10 @@ def auto_diagnose():
     # Check faces registry
     if not any(Path('data/faces').glob("*.j*")):
         issues.append({
-            'level': 'WARNING',
+            'level': 'INFO',
             'component': 'Visual FaceID',
-            'error': 'Zero authorized faces detected',
-            'fix': 'Add user photos to data/faces/'
+            'error': 'Nenhuma biometria facial detectada',
+            'fix': 'Diga: "Jarvis, cadastrar meu rosto" para iniciar o mapeamento.'
         })
     return issues
 
@@ -117,14 +140,28 @@ def print_system_health(instances, neural_systems=None):
     
     print("\n [ML CAPABILITIES]")
     vs = instances.get("Vision System")
+    # ML Feature Logic with better distinction
+    face_rec_installed = getattr(vs, 'FACE_REC_AVAILABLE', False) if vs else False
+    if not face_rec_installed:
+        # Check globally if not in vs
+        try:
+            import face_recognition
+            face_rec_installed = True
+        except: pass
+
+    num_faces = len(getattr(vs, 'known_face_encodings', [])) if vs else 0
+    
+    face_icon = "✅" if (face_rec_installed and num_faces > 0) else ("🔶" if face_rec_installed else "❌")
+    face_label = f"Face Recognition ({num_faces} faces)" if face_rec_installed else "Face Recognition"
+
     ml_feats = [
         ("OCR (EasyOCR)", vs._ocr_ready if vs else False),
         ("YOLO (Detection)", vs._yolo_ready if vs else False),
-        ("Face Recognition", len(getattr(vs, 'known_face_encodings', [])) > 0 if vs else False),
+        (face_label, face_rec_installed),
         ("PyTorch Neural", TORCH_AVAILABLE)
     ]
     for name, status in ml_feats:
-        icon = "✅" if status else "❌"
+        icon = face_icon if "Face" in name else ("✅" if status else "❌")
         print(f" ├─ {icon} {name}")
     
     # Neural Systems (Advanced)
@@ -163,7 +200,8 @@ def print_system_health(instances, neural_systems=None):
 # ============================================================================
 # JARVIS SINGULARITY CORE
 # ============================================================================
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
+from pathlib import Path
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer
 
 class JarvisSingularity(QObject):
     # Signal to bridge background audio thread to main UI thread
@@ -180,6 +218,13 @@ class JarvisSingularity(QObject):
         self.system_integrator = instances.get("System Integrator")
         self.ai_agent = instances.get("AI Agent")
         
+        # Initialize Shutdown Manager
+        self.shutdown_manager = ShutdownManager(self)
+        
+        # Initialize Stark Orchestrator (Phase 4)
+        self.stark_orchestrator = StarkOrchestrator(self)
+        self.stark_orchestrator.initialize_stark_system()
+        
         # Response lock to avoid overlapping
         self._is_processing = False
         
@@ -195,7 +240,7 @@ class JarvisSingularity(QObject):
         signal.signal(signal.SIGTERM, lambda s, f: self.shutdown())
 
     def start(self):
-        """Start JARVIS with voice listening and HUD"""
+        """Start JARVIS with staggered daemon initialization for maximum stability"""
         # Show HUD interface
         if self.window_manager:
             from interface.window_manager import InterfaceMode
@@ -204,52 +249,61 @@ class JarvisSingularity(QObject):
             hud = self.window_manager.get_hud()
             if hud:
                 hud.log_event("SINGULARITY CORE ENGAGED")
-                hud.log_event("INTERFACE MODE: HUD_OVERLAY")
         
-        # 👁️ START CAMERA MONITORING
-        if self.vision_system:
-             try:
-                 from src.core.vision.camera_controller import camera_controller
-                 threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
-                 logger.info("👁️ Camera Monitoring activated (Vision Core)")
-                 if self.window_manager and self.window_manager.get_hud():
-                     self.window_manager.get_hud().log_event("VISION ENGINE: MONITORING")
-             except Exception as e:
-                 logger.warning(f"⚠️ Failed to start Camera Monitoring: {e}")
-
-        # 🟢 PROACTIVE MONITOR (Quantum Core)
-        try:
-            from src.core.intelligence.proactive_monitor import proactive_monitor
-            proactive_monitor.start()
-            logger.info("⚡ Proactive Monitor online (Sixth Sense Active)")
-            if self.window_manager and self.window_manager.get_hud():
-                self.window_manager.get_hud().log_event("PROACTIVE MONITOR ACTIVE")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to start Proactive Monitor: {e}")
-            
-        # 🎤 START MICROPHONE LISTENING
-        if self.audio_system:
-            logger.info("🎤 Starting continuous microphone listening...")
-            success = self.audio_system.start_listening()
-            if success:
-                logger.info("✅ Microphone active - JARVIS is listening!")
-                if self.window_manager and self.window_manager.get_hud():
-                    self.window_manager.get_hud().log_event("AUDIO ENGINE: LISTENING")
-                
-                # Connect transcription callback (Emits signal to main thread)
-                self.audio_system.on_transcription = self.transcription_received.emit
-                
-                # Update system tray to show listening status
-                if self.window_manager and hasattr(self.window_manager, '_tray_icon') and self.window_manager._tray_icon:
-                    self.window_manager._tray_icon.setToolTip("🎤 JARVIS - Listening")
-            else:
-                logger.error("❌ Failed to start microphone - check audio permissions")
-
+        # Staggered initialization: Warmup for subsystems
+        QTimer.singleShot(5000, self._staggered_daemon_start)
+        
         # 📊 TELEMETRY SYNC (Quantum Core)
-        from PyQt6.QtCore import QTimer
         self.telemetry_timer = QTimer()
         self.telemetry_timer.timeout.connect(self._sync_hud_telemetry)
         self.telemetry_timer.start(2000) # Every 2s
+
+    def _staggered_daemon_start(self):
+        """Sequentially start background subsystems with delays to avoid DLL/COM collisions"""
+        # 1. Start Vision Monitoring
+        if self.vision_system:
+             try:
+                 from src.core.vision.camera_controller import get_camera_controller
+                 camera_controller = get_camera_controller()
+                 # 🆕 LAZY START: Now safe because of DSHOW + Singleton
+                 threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
+                 logger.info("👁️ Camera Monitoring activated (Safe Mode)")
+                 if self.window_manager and self.window_manager.get_hud():
+                     self.window_manager.get_hud().log_event("VISION ENGINE: ONLINE")
+             except Exception as e:
+                 logger.warning(f"⚠️ Vision start failure: {e}")
+
+        # 2. Wait 5s then start Proactive Monitor
+        QTimer.singleShot(5000, self._start_proactive_monitor)
+
+    def _start_proactive_monitor(self):
+        try:
+            from src.core.intelligence.proactive_monitor import proactive_monitor
+            proactive_monitor.start()
+            logger.info("⚡ Proactive Monitor active")
+            if self.window_manager and self.window_manager.get_hud():
+                self.window_manager.get_hud().log_event("SIXTH SENSE ACTIVE")
+        except Exception as e:
+            logger.warning(f"⚠️ Proactive Monitor failure: {e}")
+
+        # 3. Wait another 5s then start Microphone
+        QTimer.singleShot(5000, self._start_audio_listening)
+
+    def _start_audio_listening(self):
+        if self.audio_system:
+            logger.info("🎤 Starting audio engine...")
+            success = self.audio_system.start_listening()
+            if success:
+                logger.info("✅ JARVIS is listening!")
+                if self.window_manager and self.window_manager.get_hud():
+                    self.window_manager.get_hud().log_event("AUDIO ENGINE: LISTENING")
+                
+                self.audio_system.on_transcription = self.transcription_received.emit
+                
+                if self.window_manager and hasattr(self.window_manager, '_tray_icon') and self.window_manager._tray_icon:
+                    self.window_manager._tray_icon.setToolTip("🎤 JARVIS - Listening")
+            else:
+                logger.error("❌ Failed to start microphone")
         
     def _sync_hud_telemetry(self):
         """Sync core stats with HUD telemetry (Quantum Core)"""
@@ -312,14 +366,30 @@ class JarvisSingularity(QObject):
             if self.ai_agent:
                 import threading
                 threading.Thread(target=self._process_and_respond, args=(result.text,), daemon=True).start()
+            
+            # 🆕 STARK 2.0: EMERGENCY FALLBACK DIRECT LINK
+            elif hasattr(self, 'stark_orchestrator') and hasattr(self.stark_orchestrator, 'fallback_system'):
+                logger.warning("⚠️ AI Agent offline - Engaging Emergency Fallback System")
+                
+                # Show fallback status on HUD
+                if self.window_manager:
+                    hud = self.window_manager.get_hud()
+                    if hud:
+                        hud.update_state("error") # Orange/Red state
+                        hud.show_response("⚠️ Modo de Emergência Ativo")
+                
+                # Run fallback in thread
+                import threading
+                threading.Thread(target=self._process_fallback, args=(result.text,), daemon=True).start()
+                
             else:
-                logger.error("AI Agent not loaded")
+                logger.error("AI Agent not loaded and Fallback unavailable")
                 self._is_processing = False
                 if self.window_manager:
                     hud = self.window_manager.get_hud()
                     if hud:
                         hud.update_state("error")
-                        hud.show_response("Erro: Agente de IA offline.")
+                        hud.show_response("Erro Crítico: Agente de IA offline.")
         except Exception as e:
             logger.error(f"Error starting agent thread: {e}")
             self._is_processing = False
@@ -357,58 +427,57 @@ class JarvisSingularity(QObject):
         finally:
             self._is_processing = False
 
-    def shutdown(self):
-        """Finalizes all systems and exits gracefully"""
-        logger.info("Initiating graceful shutdown sequence...")
-        
-        # 1. Stop UI updates
-        if hasattr(self, 'telemetry_timer'):
-            self.telemetry_timer.stop()
-        
-        # 2. Shutdown threads
-        self._is_processing = False
-        
-        # 3. Cleanup core systems (Audio first to stop mixer)
+    def _process_fallback(self, text):
+        """Emergency Fallback Loop (No AI Agent)"""
         try:
+            fb = self.stark_orchestrator.fallback_system
+            result = fb.process_command(text)
+            
+            response_text = result.get("response", "Comando não reconhecido no modo de emergência.")
+            
+            # Emit speech output signal (using same slot as normal)
+            self.hud_update_requested.emit("speaking", response_text)
+            
+            # Speak via voice controller (direct call if available)
+            # Note: Voice Controller might be functional even if Agent failed
             from src.core.audio.voice_controller import voice_controller
-            if voice_controller: 
-                voice_controller.stop() # Ensure mixer is handled
-        except: pass
-        
-        for name, instance in [("Audio", self.audio_system), ("Vision", self.vision_system), ("Integration", self.system_integrator)]:
-            if instance: 
-                try:
-                    instance.cleanup()
-                    logger.info(f"✅ {name} cleaned up")
-                except Exception as e:
-                    logger.warning(f"⚠️ {name} cleanup error: {e}")
-        
-        # 4. Hide all windows before exit to avoid QPainter errors
-        if self.window_manager:
-            self.window_manager.switch_mode(InterfaceMode.HIDDEN)
-        
-        QApplication.quit()
-        sys.exit(0)
+            voice_controller.speak(response_text)
+            
+        except Exception as e:
+            logger.error(f"Fallback processing error: {e}")
+            self.hud_update_requested.emit("error", "Falha no sistema de emergência.")
+        finally:
+            self._is_processing = False
+
+    def shutdown(self):
+        """Finalizes all systems and exits gracefully via ShutdownManager"""
+        if hasattr(self, 'shutdown_manager'):
+            self.shutdown_manager.graceful_shutdown()
+        else:
+            # Fallback if manager not initialized
+            logger.warning("⚠️ ShutdownManager not found, using legacy shutdown")
+            QApplication.quit()
 
 # ============================================================================
 # BOOT ENGINES
 # ============================================================================
 
 async def load_module_async(name: str, factory_func, *args):
-    """Async wrapper for module initialization in thread pool"""
-    loop = asyncio.get_event_loop()
+    """Safe wrapper for module initialization. Using main thread for 100% stability."""
     try:
-        # Some modules might expect to be on the main thread (like GUI)
-        # We use a thread pool for heavy non-GUI IO/ML tasks
-        if name == "Window Manager":
-             module = factory_func(*args)
+        # ABSOLUTE SAFETY: Run everything in the main thread during boot.
+        # This prevents 0xC0000005 Access Violations caused by thread-unsafe DLL loads.
+        if asyncio.iscoroutinefunction(factory_func):
+            module = await factory_func(*args)
         else:
-            with ThreadPoolExecutor() as executor:
-                module = await loop.run_in_executor(executor, factory_func, *args)
+            module = factory_func(*args)
+        
         logger.info(f"✅ {name} loaded")
         return (name, module)
     except Exception as e:
         logger.error(f"❌ {name} failed: {e}")
+        import traceback
+        logger.debug(traceback.format_exc())
         return (name, None)
 
 async def parallel_boot(app):
@@ -416,10 +485,11 @@ async def parallel_boot(app):
     print_progress("Iniciando Parallel Boot", 1, 12)
     
     # Delayed imports to stay parallel
-    from interface.window_manager import get_window_manager
-    from core.vision.vision_system import get_vision_system
-    from core.audio.enhanced_audio import get_audio_system
-    from core.actions.system_integrator import get_system_integrator
+    # Delayed imports to stay parallel
+    from src.interface.window_manager import get_window_manager
+    from src.core.vision.vision_system import get_vision_system
+    from src.core.audio.enhanced_audio import get_audio_system
+    from src.core.actions.system_integrator import get_system_integrator
     from src.core.intelligence.neural_systems import NeuralSystemsLoader
     from src.utils.config import Config
     
@@ -434,51 +504,94 @@ async def parallel_boot(app):
         print_progress("Iniciando Parallel Boot", step, total)
         return res
 
-    tasks = [
-        load_with_progress("Window Manager", get_window_manager, app),
-        load_with_progress("Vision System", get_vision_system, PROJECT_ROOT / "data"),
-        load_with_progress("Audio System", get_audio_system, PROJECT_ROOT / "data"),
-        load_with_progress("System Integrator", get_system_integrator),
-        load_with_progress("AI Agent", lambda: __import__("src.core.intelligence.ai_agent", fromlist=["ai_agent"]).ai_agent),
-        load_with_progress("Neural Systems", lambda: NeuralSystemsLoader(PROJECT_ROOT / "data", config))
-    ]
+    results = {}
     
-    results = await asyncio.gather(*tasks)
-    print_progress("Parallel Boot Finalizado", 12, 12)
+    # Sequential loading for COM/GDI sensitive modules to prevent 0xC0000005
+    # Step 1-6
+    results["Window Manager"] = (await load_with_progress("Window Manager", get_window_manager, app))[1]
+    results["System Integrator"] = (await load_with_progress("System Integrator", get_system_integrator))[1]
+    results["Audio System"] = (await load_with_progress("Audio System", get_audio_system, PROJECT_ROOT / "data"))[1]
+    results["Vision System"] = (await load_with_progress("Vision System", get_vision_system, PROJECT_ROOT / "data"))[1]
+    results["AI Agent"] = (await load_with_progress("AI Agent", lambda: __import__("src.core.intelligence.ai_agent", fromlist=["ai_agent"]).ai_agent))[1]
+    results["Neural Systems"] = (await load_with_progress("Neural Systems", lambda: NeuralSystemsLoader(PROJECT_ROOT / "data", config)))[1]
+
+    print_progress("Boot Finalizado", 12, 12)
     print("\n")
-    return dict(results)
+    return results
 
 # ============================================================================
-# MAIN ENTRY POINT
+# MAIN ENTRY POINT - STAGED BOOT PROTOCOL
 # ============================================================================
 def main():
-    print("\n🌌 Initializing JARVIS Singularity Suite...")
+    print(f"\n🌌 [STAGE 0] Initializing JARVIS Singularity Suite...")
     start_time = time.time()
     
+    # ------------------------------------------------------------------------
+    # [STAGE 1] CORE INITIALIZATION (Pre-GUI)
+    # ------------------------------------------------------------------------
+    # CRITICAL: Initialize Torch/MKL BEFORE QApp to prevent 0xC0000005.
+    # This ensures the Neural Engine's threading model (OpenMP/MKL) captures
+    # the process context before the GUI Event Loop (PyQt6) can conflict with it.
+    if TORCH_AVAILABLE:
+        try:
+             # Force MKL initialization (Pre-warm)
+             _ = torch.zeros(1).to(hardware_manager.get_torch_device())
+             logger.info("🧠 [STAGE 1] Neural Engine: Pre-warmed (MKL Initialized)")
+        except Exception as e:
+            logger.warning(f"⚠️ Neural Engine Pre-warm failed: {e}")
+
     try:
-        from PyQt6.QtWidgets import QApplication
-        app = QApplication(sys.argv)
+        from PyQt6.QtWidgets import QApplication as QApp
+        global QApplication
+        app = QApp(sys.argv)
         app.setStyle("Fusion")
         
-        # 🆕 PARALLEL BOOT (Now includes Neural Systems)
+        # --------------------------------------------------------------------
+        # [STAGE 2] INTERFACE & BODY (Visuals)
+        # --------------------------------------------------------------------
+        # Load lightweight systems: Window Manager, Audio/Vision (Passive), etc.
         instances = asyncio.run(parallel_boot(app))
         
-        # Fetch instances
+        # Fetch instances for Stage 3
         vision_system = instances.get("Vision System")
+        audio_system = instances.get("Audio System")
         neural_systems = instances.get("Neural Systems")
         
-        # 🆕 ASYNC MODEL WAIT (Background)
-        if vision_system:
-            import threading
-            threading.Thread(target=vision_system.wait_for_models, args=(10.0,), daemon=True).start()
-        
         boot_time = time.time() - start_time
-        logger.info(f"⚡ Boot completed in {boot_time:.2f}s")
+        logger.info(f"⚡ [STAGE 2] Boot completed in {boot_time:.2f}s")
         
         print("\n")
         print_system_health(instances, neural_systems)
         print(f" [OK] Startup completed in {boot_time:.2f}s\n")
 
+        # --------------------------------------------------------------------
+        # [STAGE 3] NEURAL AWAKENING (Brain) - POST-BOOT
+        # --------------------------------------------------------------------
+        # Fire 1.5s AFTER event loop starts to skip the "Kill Zone" (DLL Conflict Window).
+        # This allows the GUI to stabilize before heavy models load in background.
+        
+        from PyQt6.QtCore import QTimer
+        
+        def start_neural_engines():
+            logger.info("⚡ [STAGE 3] Igniting Neural Engines (Adaptive Load)...")
+            
+            # 1. Audio System (Whisper/VAD)
+            if audio_system:
+                audio_system.start_background_loading()
+                
+            # 2. Vision System (FaceRec/OCR/YOLO)
+            if vision_system:
+                vision_system.start_background_loading()
+                
+        # Schedule Stage 3
+        QTimer.singleShot(1500, start_neural_engines)
+        
+        # Sync Waiter (Optional, purely for logic sync, doesn't block UI)
+        if vision_system:
+            import threading
+            threading.Thread(target=vision_system.wait_for_models, args=(15.0,), daemon=True).start()
+
+        # Start Core Orchestrator
         jarvis = JarvisSingularity(app, instances)
         jarvis.start()
         
@@ -491,13 +604,30 @@ def main():
         except Exception as e:
             logger.warning(f"⚠️ Learning system unavailable: {e}")
 
+        # Enter Event Loop
         return app.exec()
 
     except KeyboardInterrupt: return 130
     except Exception as e:
         logger.error(f"FATAL BOOT ERROR: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        tb = traceback.format_exc()
+        logger.error(tb)
+        
+        # Crash Intelligence Loop: Save report for Launcher
+        try:
+            import json
+            report = {
+                "timestamp": datetime.now().isoformat() if 'datetime' in globals() else time.ctime(),
+                "error": str(e),
+                "traceback": tb
+            }
+            # Save to logs
+            Path('data/logs').mkdir(parents=True, exist_ok=True)
+            with open('data/logs/crash_report.json', 'w', encoding='utf-8') as f:
+                json.dump(report, f, indent=4)
+        except: pass
+        
         return 1
 
 if __name__ == "__main__":

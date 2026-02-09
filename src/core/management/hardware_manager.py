@@ -39,8 +39,12 @@ class HardwareManager:
         with self._lock:
             if self._initialized: return
         
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.gpu_name = torch.cuda.get_device_name(0) if self.device == "cuda" else "None"
+        if TORCH_AVAILABLE and torch:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.gpu_name = torch.cuda.get_device_name(0) if self.device == "cuda" else "None"
+        else:
+            self.device = "cpu"
+            self.gpu_name = "None"
         self.system = platform.system()
         
         # 🆕 COMPUTE TIERING (Military Grade Scaling)
@@ -56,17 +60,28 @@ class HardwareManager:
             elif logical_cores >= 6: self.tier = "BALANCED"
             else: self.tier = "LITE"
 
-        # Otimizações globais de performance
-        if self.device == "cuda":
+        if TORCH_AVAILABLE and torch and self.device == "cuda":
             torch.backends.cudnn.benchmark = True
             logger.info(f"🏛️ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
         else:
             import psutil
-            cpu_count = psutil.cpu_count(logical=False) or 4
-            # BALANCED use physical cores, LITE use half
-            threads = cpu_count if self.tier == "FAST" else max(1, cpu_count // 2)
-            torch.set_num_threads(threads)
-            logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads otimizadas).")
+            logical_cores = psutil.cpu_count(logical=True) or 4
+            
+            # ADAPTIVE THREADING: Unlock full potential while preserving GUI responsiveness
+            # Previous "Safe Mode" capped at 1 thread or half cores. 
+            # New Staged Boot Protocol allows us to be more aggressive.
+            
+            if self.tier == "FAST":
+                threads = logical_cores
+            elif self.tier == "BALANCED":
+                threads = max(1, logical_cores - 2) # Leave 2 threads for GUI/OS
+            else:
+                threads = max(1, logical_cores // 2) # LITE mode still conservative
+            
+            if TORCH_AVAILABLE and torch:
+                torch.set_num_threads(threads)
+                
+            logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
             
         self._initialized = True
 
@@ -80,16 +95,26 @@ class HardwareManager:
 
     def get_torch_device(self):
         """Retorna o objeto torch.device atual"""
-        return torch.device(self.device)
+        if TORCH_AVAILABLE and torch:
+            return torch.device(self.device)
+        return None
 
     def get_compute_type(self) -> str:
         """Retorna tipo de float mais rápido para o hardware (float16/int8)"""
         if self.device == "cuda":
             return "float16"
-        # Para CPU, usamos int8 se possível (mais rápido para inferência local)
-        if self.tier in ["BALANCED", "LITE"]:
-            return "int8"
+        # 🆕 SYSTEM STABILITY: Force float32 on CPU prevents 0xC0000005 Access Violation
+        # caused by int8 quantization on unsupported instruction sets (AVX512_VNNI missing).
+        # if self.tier in ["BALANCED", "LITE"]:
+        #    return "int8"
         return "float32"
+
+    @property
+    def neural_lock(self):
+        """Global lock for heavy model loading"""
+        if not hasattr(self, '_neural_lock'):
+             self._neural_lock = threading.Lock()
+        return self._neural_lock
 
     def get_memory_status(self) -> Dict[str, float]:
         """Retorna RAM livre (GB) e VRAM livre (GB)"""
@@ -111,12 +136,15 @@ class HardwareManager:
     def get_status(self) -> Dict[str, Any]:
         """Retorna status humano do hardware"""
         mem = self.get_memory_status()
+        threads = torch.get_num_threads() if (TORCH_AVAILABLE and torch) else 0
+        cuda_avail = torch.cuda.is_available() if (TORCH_AVAILABLE and torch) else False
+        
         return {
             "tier": self.tier,
             "device": self.device,
             "gpu_name": self.gpu_name,
-            "threads": torch.get_num_threads(),
-            "cuda": torch.cuda.is_available(),
+            "threads": threads,
+            "cuda": cuda_avail,
             "ram_free_gb": mem["ram_free_gb"],
             "vram_free_gb": mem["vram_free_gb"]
         }

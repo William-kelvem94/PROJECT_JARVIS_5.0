@@ -1,9 +1,17 @@
-
 import sys
 import os
 import logging
 import traceback
 import importlib
+
+# 0. Initialize QApplication for GUI Testing
+try:
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication(sys.argv)
+    print("✅ QApplication initialized")
+except ImportError:
+    app = None
+    print("ℹ️ PyQt6 not available for GUI testing")
 
 # Setup paths - Add PROJECT ROOT to path to allow 'from src...' imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -49,32 +57,32 @@ def run_simulation():
     if not test_module('src.database.models', 'DatabaseManager'): failures.append('src.database.models')
     
     # 3. Hardware Manager
-    if not test_module('src.core.hardware_manager', 'HardwareManager'): failures.append('src.core.hardware_manager')
+    if not test_module('src.core.management.hardware_manager', 'HardwareManager'): failures.append('src.core.management.hardware_manager')
 
     # 4. Neural Memory (Critical)
-    if not test_module('src.core.neural_memory', 'NeuralMemory'): failures.append('src.core.neural_memory')
+    if not test_module('src.core.intelligence.neural_memory', 'NeuralMemory'): failures.append('src.core.intelligence.neural_memory')
 
-    # 5. Controllers (The sources of recent crashes)
-    if not test_module('src.core.action_controller', 'ActionController'): failures.append('src.core.action_controller')
+    # 5. Controllers
+    if not test_module('src.core.actions.action_controller', 'ActionController'): failures.append('src.core.actions.action_controller')
     
-    # Gesture Controller (MediaPipe issue)
-    if not test_module('src.core.gesture_controller', 'GestureController'): failures.append('src.core.gesture_controller')
+    # Gesture Controller
+    if not test_module('src.core.vision.gesture_controller', 'GestureController'): failures.append('src.core.vision.gesture_controller')
     
-    # Voice Controller (Common crash point)
-    if not test_module('src.core.voice_controller', 'VoiceController'): failures.append('src.core.voice_controller')
+    # Voice Controller
+    if not test_module('src.core.audio.voice_controller', 'VoiceController'): failures.append('src.core.audio.voice_controller')
 
-    # Camera Controller (CV2/FaceRec)
-    if not test_module('src.core.camera_controller', 'CameraController'): failures.append('src.core.camera_controller')
+    # Camera Controller
+    if not test_module('src.core.vision.camera_controller', 'CameraController'): failures.append('src.core.vision.camera_controller')
 
-    # UI Detector (YOLO)
-    if not test_module('src.core.ui_detector', 'UIDetector'): failures.append('src.core.ui_detector')
+    # UI Detector
+    if not test_module('src.core.vision.ui_detector', 'UIDetector'): failures.append('src.core.vision.ui_detector')
 
     # 6. AI Agent (Orchestrator)
-    if not test_module('src.core.ai_agent', 'AIAgent'): failures.append('src.core.ai_agent')
+    if not test_module('src.core.intelligence.ai_agent', 'AIAgent'): failures.append('src.core.intelligence.ai_agent')
     
-    # 7. GUI (Main Window) - verifies init logic
+    # 7. GUI (Stark Dashboard) - verifies init logic
     try:
-        if not test_module('src.gui.main_window', 'MainWindow'): failures.append('src.gui.main_window')
+        if not test_module('src.interface.stark_dashboard', 'StarkDashboard'): failures.append('src.interface.stark_dashboard')
     except Exception as e:
         print(f"Skipping GUI test due to environment issues: {e}")
 

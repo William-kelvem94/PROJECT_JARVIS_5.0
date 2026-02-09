@@ -12,9 +12,10 @@
 # NumPy < 2.0 - OBRIGATÓRIO para compatibilidade com Torch/Whisper
 numpy==1.26.4
 
-# PyTorch CPU (versão segura compatível com numpy 1.x e register_pytree_node)
-torch==2.0.1
-torchvision==0.15.2
+# PyTorch CPU (versão estável 2.2.2+cpu para máxima compatibilidade)
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
 
 # Cryptography (versão estável que resolve erro PBKDF2)
 cryptography==42.0.5

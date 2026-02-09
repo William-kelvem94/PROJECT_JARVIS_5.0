@@ -226,60 +226,30 @@ class EnhancedAudioSystem:
         # 🆕 ALWAYS LISTENING MODE: Se não tiver wake word, fica sempre acordado
         self.is_awake = not self.wake_word_active  # Começa acordado se wake word desabilitado
         
-        # Initialize components
-        self._initialize_components()
+        # Readiness flags for heavy models
+        self._whisper_ready = False
+        self._vad_ready = False
+        self._models_lock = threading.Lock()
         
-        logger.info("✅ Enhanced Audio System initialized")
+        # Initialize basic components
+        self._initialize_basic_components()
+        
+        # Start heavy models in background to avoid 0xC0000005 during boot
+        # 🆕 PASSIVE INIT: Do not start threads in __init__. Call start_background_loading() later.
+        # threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
+        
+        logger.info("✅ Enhanced Audio System initialized (Passive Mode)")
         logger.info(f"   Faster-Whisper: {'✅' if FASTER_WHISPER_AVAILABLE else '❌'}")
         logger.info(f"   PyAudio: {'✅' if PYAUDIO_AVAILABLE else '❌'}")
         logger.info(f"   Speaker Verification: {'✅' if RESEMBLYZER_AVAILABLE else '❌'}")
-        
-    def _initialize_components(self):
-        """Initialize audio processing components"""
-        # Initialize Faster-Whisper
-        if FASTER_WHISPER_AVAILABLE:
-            try:
-                logger.info(f"Loading Faster-Whisper model ({self.whisper_model_size})...")
-                
-                # Use Hardware Manager settings
-                device = hardware_manager.get_device()
-                compute_type = hardware_manager.get_compute_type()
-                
-                self.whisper_model = WhisperModel(
-                    self.whisper_model_size,
-                    device=device,
-                    compute_type="float16" if device == "cuda" else "int8"
-                )
-                
-                logger.info(f"✅ Whisper model loaded (Backend: {device.upper()}, Type: {compute_type})")
-                
-            except Exception as e:
-                logger.error(f"Failed to load Whisper model: {e}")
-                
-        # Initialize Silero-VAD
-        if TORCH_AVAILABLE:
-            try:
-                logger.info("Loading Silero-VAD model...")
-                result = torch.hub.load(
-                    repo_or_dir='snakers4/silero-vad',
-                    model='silero_vad',
-                    force_reload=False,
-                    onnx=False
-                )
-                
-                # torch.hub.load may return (model, utils) tuple or just model
-                if isinstance(result, tuple):
-                    self.vad_model, self.vad_utils = result[0], result[1] if len(result) > 1 else None
-                else:
-                    self.vad_model = result
-                    self.vad_utils = None
-                    
-                logger.info("✅ Silero-VAD model loaded")
-                
-            except Exception as e:
-                logger.warning(f"Failed to load VAD model: {e}")
-                self.vad_model = None
 
+    def start_background_loading(self):
+        """Trigger background loading of heavy neural models (Call after GUI boot)"""
+        logger.info("🚀 Audio System: Iniciando carregamento neural post-boot...")
+        threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
+        
+    def _initialize_basic_components(self):
+        """Initialize lightweight audio components (Porcupine, device checks)"""
         # Initialize Porcupine for Wake Word
         if PORCUPINE_AVAILABLE and self.wake_word_active:
             try:
@@ -294,27 +264,82 @@ class EnhancedAudioSystem:
                     )
                     logger.info("✅ Porcupine Wake Word engine loaded ('jarvis')")
                 else:
-                    logger.warning("⚠️ Porcupine Access Key missing. Wake word disabled.")
+                    logger.error("❌ Porcupine Access Key missing! Wake word 'Jarvis' não funcionará.")
+                    logger.info("   👉 Obtenha sua chave gratuita em: https://console.picovoice.ai/")
+                    logger.info("   👉 E insira no arquivo .env como PORCUPINE_ACCESS_KEY")
                     self.wake_word_active = False
-                    self.is_awake = True  # 🆕 Always listening mode ativo
-                    logger.info("🎤 Always Listening Mode: ACTIVE (sem wake word)")
             except Exception as e:
                 logger.error(f"Failed to load Porcupine: {e}")
                 self.wake_word_active = False
-                
-        # Initialize speaker encoder
-        if RESEMBLYZER_AVAILABLE:
+
+    def _load_models_background(self):
+        """Load heavy AI models in background to prevent 0xC0000005 during boot"""
+        # 1. Faster-Whisper
+        if FASTER_WHISPER_AVAILABLE:
             try:
-                logger.info("Loading voice encoder...")
-                self.voice_encoder = VoiceEncoder()
-                logger.info("✅ Voice encoder loaded")
-                
-                # Load known speakers
-                self._load_voice_signatures()
-                
+                # 🆕 GLOBAL NEURAL LOCK: Serialize heavy loads
+                with hardware_manager.neural_lock:
+                    with self._models_lock:
+                        logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
+                        
+                        device = hardware_manager.get_device()
+                        # compute_type will now trigger the float32 force for CPU
+                        compute_type = hardware_manager.get_compute_type()
+                        
+                        self.whisper_model = WhisperModel(
+                            self.whisper_model_size,
+                            device=device,
+                            compute_type=compute_type,
+                            cpu_threads=1 # Isolation for Windows stability
+                        )
+                        self._whisper_ready = True
+                        logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
             except Exception as e:
-                logger.warning(f"Failed to load voice encoder: {e}")
-                
+                self._whisper_ready = False
+                logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
+
+        # 2. Silero-VAD
+        if TORCH_AVAILABLE:
+            try:
+                # 🆕 GLOBAL NEURAL LOCK
+                with hardware_manager.neural_lock:
+                    with self._models_lock:
+                        logger.info("🧠 Audio Core: Carregando Silero-VAD...")
+                        result = torch.hub.load(
+                            repo_or_dir='snakers4/silero-vad',
+                            model='silero_vad',
+                            force_reload=False,
+                            onnx=False
+                        )
+                        
+                        if isinstance(result, tuple):
+                            self.vad_model, self.vad_utils = result[0], result[1] if len(result) > 1 else None
+                        else:
+                            self.vad_model = result
+                            self.vad_utils = None
+                            
+                        self._vad_ready = True
+                        logger.info("✅ Audio Core: Silero-VAD pronto")
+            except Exception as e:
+                self._vad_ready = False
+                logger.warning(f"❌ Audio Core: Falha no VAD: {e}")
+
+    def wait_for_models(self, timeout: float = 30.0) -> bool:
+        """Wait for background model loading to complete"""
+        import time
+        start_time = time.time()
+        logger.info("⏳ Waiting for audio models to initialize...")
+        
+        while time.time() - start_time < timeout:
+            with self._models_lock:
+                if self._whisper_ready and (self._vad_ready or not TORCH_AVAILABLE):
+                    logger.info("✅ Audio models initialized and ready")
+                    return True
+            time.sleep(0.5)
+            
+        logger.warning("⚠️ Timeout waiting for audio models - system may be degraded")
+        return self._whisper_ready
+
     def _load_voice_signatures(self):
         """Load known voice signatures"""
         if not RESEMBLYZER_AVAILABLE:
