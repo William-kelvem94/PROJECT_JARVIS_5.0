@@ -37,7 +37,7 @@ class StarkRigorousTester:
             import src.core.audio.voice_controller as vc_mod
             class MockVoice:
                 def __init__(self): self._is_speaking = False
-                def speak(self, text, mode='online'): pass
+                def speak(self, text, mode='online', wait=False): pass  # Corrigido: adicionado wait=False
                 def stop(self): pass
             vc_mod.voice_controller = MockVoice()
             

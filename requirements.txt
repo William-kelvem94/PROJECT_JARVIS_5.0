@@ -89,6 +89,10 @@ pycaw==20231129; sys_platform == 'win32'  # Per-app audio control
 comtypes==1.2.0; sys_platform == 'win32'  # COM interface
 WMI==1.5.1; sys_platform == 'win32'  # Windows Management Instrumentation
 
+# System Control Extensions (Device Manager Advanced)
+screen-brightness-control==0.22.3; sys_platform == 'win32'  # Monitor brightness control
+watchdog==4.0.0  # File system monitoring
+
 # -------------------------------------------------------------------------
 # LLM & AI
 # -------------------------------------------------------------------------
@@ -251,7 +255,8 @@ noisereduce==3.0.2        # Noise reduction preprocessing
 # ============================================================================
 librosa>=0.10.0               # Advanced audio analysis (emotion, tone)
 pyannote.audio                # Speaker diarization
-onnxruntime-gpu               # Accelerated inference for ML models
+onnxruntime==1.17.0           # Required for ONNX model inference acceleration (CPU)
+# onnxruntime-gpu             # GPU version (uncomment if CUDA available)
 silero-vad==6.2.0             # Neural Voice Activity Detection (Sprint 1)
 networkx>=2.8                 # Knowledge Graph foundation (Sprint 2)
 matplotlib>=3.7.0             # Visualization for graphs
