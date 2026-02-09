@@ -76,3 +76,85 @@ class StarkOrchestrator:
             
             # Se quisermos iniciar com o menu flutuante ou algo assim
             # wm.switch_mode(InterfaceMode.ORB) # Exemplo
+    
+    def get_module_status(self, module_name: str) -> str:
+        """
+        Retorna status real do módulo baseado em health checks
+        
+        Args:
+            module_name: Nome do módulo (vision, audio, intelligence, actions, infrastructure)
+        
+        Returns:
+            str: ONLINE (totalmente funcional), DEGRADED (parcial), OFFLINE (inoperante)
+        """
+        try:
+            if module_name == "vision":
+                from src.core.vision.vision_system import vision_system
+                if vision_system and hasattr(vision_system, 'is_ready'):
+                    # Verifica se componentes críticos estão disponíveis
+                    has_ocr = hasattr(vision_system, 'ocr_reader') and vision_system.ocr_reader is not None
+                    has_yolo = hasattr(vision_system, 'yolo_model') and vision_system.yolo_model is not None
+                    if has_ocr and has_yolo:
+                        return "ONLINE"
+                    elif has_ocr or has_yolo:
+                        return "DEGRADED"
+                return "OFFLINE"
+                
+            elif module_name == "audio":
+                from src.core.audio.voice_controller import voice_controller
+                if voice_controller:
+                    # Verifica se STT e TTS estão operacionais
+                    has_stt = hasattr(voice_controller, 'recognizer')
+                    has_tts = hasattr(voice_controller, 'tts_engine')
+                    if has_stt and has_tts:
+                        return "ONLINE"
+                    elif has_stt or has_tts:
+                        return "DEGRADED"
+                return "OFFLINE"
+                
+            elif module_name == "intelligence":
+                from src.core.intelligence.ai_agent import ai_agent
+                if ai_agent and hasattr(ai_agent, 'brain_router'):
+                    return "ONLINE"
+                return "DEGRADED"
+                
+            elif module_name == "actions":
+                from src.core.actions.action_controller import action_controller
+                if action_controller:
+                    return "ONLINE"
+                return "DEGRADED"
+                
+            elif module_name == "infrastructure":
+                # Verifica componentes básicos
+                if self.is_ready and len(self.components) > 0:
+                    return "ONLINE"
+                return "DEGRADED"
+                
+            return "UNKNOWN"
+            
+        except ImportError as e:
+            logger.warning(f"Módulo {module_name} não encontrado: {e}")
+            return "OFFLINE"
+        except Exception as e:
+            logger.error(f"Erro ao verificar status de {module_name}: {e}")
+            return "UNKNOWN"
+    
+    def get_system_health(self) -> Dict[str, str]:
+        """
+        Retorna status de todos os módulos principais
+        
+        Returns:
+            Dict[str, str]: Dicionário com status de cada módulo
+        """
+        modules = ["vision", "audio", "intelligence", "actions", "infrastructure"]
+        return {module: self.get_module_status(module) for module in modules}
+    
+    def is_system_healthy(self) -> bool:
+        """
+        Verifica se o sistema está saudável (nenhum módulo OFFLINE)
+        
+        Returns:
+            bool: True se todos módulos estão ONLINE ou DEGRADED
+        """
+        health = self.get_system_health()
+        return all(status != "OFFLINE" for status in health.values())
