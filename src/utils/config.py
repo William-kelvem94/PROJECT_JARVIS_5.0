@@ -57,6 +57,15 @@ class Config:
         self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
+        # Carregar variáveis de ambiente
+        from dotenv import load_dotenv
+        env_path = self.PROJECT_ROOT / ".env"
+        if env_path.exists():
+            load_dotenv(env_path)
+            # logger.info(f"✅ Variáveis de ambiente carregadas de {env_path}")
+        else:
+            logger.warning(f"⚠️ Arquivo .env não encontrado em {env_path}")
+
         # Diretórios de dados
         self.CAPTURES_DIR = self.DATA_DIR / "captures"
         self.PROCESSED_DIR = self.DATA_DIR / "processed"
@@ -378,6 +387,32 @@ class Config:
                 return default
         
         return value
+
+    def get_api_key(self, service_name: str) -> Optional[str]:
+        """
+        Retrieves API key for a service from environment variables.
+        
+        Args:
+            service_name (str): 'google', 'openai', 'anthropic', etc.
+            
+        Returns:
+            str: API Key or None if not found
+        """
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        key_map = {
+            'google': 'GOOGLE_API_KEY',
+            'openai': 'OPENAI_API_KEY',
+            'anthropic': 'ANTHROPIC_API_KEY',
+            'porcupine': 'PORCUPINE_ACCESS_KEY',
+            'huggingface': 'HF_TOKEN'
+        }
+        
+        env_var = key_map.get(service_name.lower())
+        if env_var:
+            return os.getenv(env_var)
+        return None
 
 # Instância global
 config = Config()

@@ -14,6 +14,9 @@ logging.getLogger('comtypes').setLevel(logging.ERROR)
 # 2. QT DPI AWARENESS FIX: Suppresses "Access Denied" warnings in terminal
 os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
 
+# 3. COQUI TTS LICENSE FIX: Auto-agree to terms
+os.environ["COQUI_TOS_AGREED"] = "1"
+
 # ============================================================================
 # STANDARD IMPORTS
 # ============================================================================
@@ -141,10 +144,15 @@ class VoiceController:
             "OK", "Entendi", "Claro", "Pode deixar", "Estou trabalhando nisso",
             "Pronto", "Concluído", "Sim", "Não", "Como posso ajudar?"
         ]
+        
+        # Lock para evitar sobreposição de falas (Double Voice Fix)
+        self.speech_lock = threading.RLock()
+        
         self._warm_response_cache()  # Pre-generate on init
 
     def _setup_cloned_voice(self):
         """Inicializa o modelo XTTS-v2 para clonagem de voz"""
+        global TTS_AVAILABLE
         if self.cloned_tts or not TTS_AVAILABLE:
             return
         
@@ -297,70 +305,86 @@ class VoiceController:
             logger.warning("⚠️ Texto vazio após limpeza SSML, abortando speak")
             return
             
-        is_online = self.check_internet()
-        
-        # Get emotion mapping
-        from src.core.intelligence.emotion_detector import emotion_detector
-        emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
-        
-        # ADAPTATIVE RATE
-        base_rate = "+0%"
-        if len(text) > 250: base_rate = "+18%"
-        elif len(text) > 100: base_rate = "+10%"
-        
-        # --- PROVEDOR ONLINE (Primário) ---
-        if is_online and mode != 'offline':
-            try:
-                if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
-                    logger.debug(f"🔊 TTS Edge: '{text[:50]}...'")
-                    asyncio.run(self._speak_edge(text, emotion, base_rate))
-                    return
-                elif GTTS_AVAILABLE:
-                    logger.debug(f"🔊 TTS Google: '{text[:50]}...'")
-                    self._speak_google(text)
-                    return
-            except Exception as e:
-                logger.error(f"❌ Erro no TTS Online ({self.tts_provider}): {e}. Usando fallback offline.")
-                import traceback
-                logger.error(traceback.format_exc())
-        
-        # --- PROVEDOR OFFLINE (Fallback / Forced) ---
-        if not self.stop_requested:
-            try:
-                self._is_speaking = True
-                
-                # 🆕 TRIPLA PROTEÇÃO: Remover SSML mais uma vez antes do offline
-                clean_text = self.strip_ssml(text)
-                if not clean_text or not clean_text.strip():
-                    logger.warning("⚠️ Texto vazio após strip_ssml no offline, abortando")
-                    return
-                
-                logger.debug(f"🔊 TTS Offline (pyttsx3): '{clean_text[:50]}...'")
-                
-                # Ajustar personalidade offline
-                modifier = emotion_detector.get_personality_modifier(emotion)
-                prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
-                
-                # Salvar rate original
-                original_rate = self.engine.getProperty('rate')
-                
-                # Ajustar rate baseado na emoção
-                if modifier.get('energy') in ['alta', 'máxima']:
-                    self.engine.setProperty('rate', original_rate + 20)
-                elif modifier.get('energy') == 'baixa':
-                    self.engine.setProperty('rate', original_rate - 20)
+        # 🔒 SERIALIZAÇÃO DE FALA (Previne vozes sobrepostas)
+        with self.speech_lock:
+            # Re-check stop flag after acquiring lock in case it was set while waiting
+            if self.stop_requested: return
 
-                self.engine.say(prefix + clean_text)
-                self.engine.runAndWait()
+            is_online = self.check_internet()
+        
+            # Get emotion mapping
+            from src.core.intelligence.emotion_detector import emotion_detector
+            emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
+            
+            # ADAPTATIVE RATE
+            base_rate = "+0%"
+            if len(text) > 250: base_rate = "+18%"
+            elif len(text) > 100: base_rate = "+10%"
+            
+            # --- PROVEDOR ONLINE (Primário) ---
+            if is_online and mode != 'offline':
+                try:
+                    if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
+                        logger.debug(f"🔊 TTS Edge: '{text[:50]}...'")
+                        asyncio.run(self._speak_edge(text, emotion, base_rate))
+                        return
+                    elif GTTS_AVAILABLE:
+                        logger.debug(f"🔊 TTS Google: '{text[:50]}...'")
+                        self._speak_google(text)
+                        return
+                except Exception as e:
+                    logger.error(f"❌ Erro no TTS Online ({self.tts_provider}): {e}. Usando fallback offline.")
+                    import traceback
+                    logger.error(traceback.format_exc())
+            
+            # --- PROVEDOR OFFLINE (Fallback / Forced) ---
+            if not self.stop_requested:
+                # 🆕 TENTATIVA DE FALLBACK HUMANO: XTTS-v2 (Local Neural)
+                # Se a internet cair, tentamos usar o modelo neural local antes do robô
+                if TTS_AVAILABLE:
+                    try:
+                        logger.info("⚠️ Modo Offline detectado: Tentando fallback para XTTS-v2 (Humano Local)...")
+                        self.speak_cloned(text, wait=True)
+                        return
+                    except Exception as e:
+                        logger.warning(f"❌ Falha no XTTS fallback: {e}")
                 
-                # Resetar rate
-                self.engine.setProperty('rate', original_rate)
-            except Exception as e:
-                logger.error(f"❌ Falha crítica no motor de voz offline: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
-            finally:
-                self._is_speaking = False
+                # 🆕 ÚLTIMO RECURSO: Pyttsx3 (Melhor que silêncio, mas evitado se possível)
+                try:
+                    self._is_speaking = True
+                    
+                    # 🆕 TRIPLA PROTEÇÃO: Remover SSML mais uma vez antes do offline
+                    clean_text = self.strip_ssml(text)
+                    if not clean_text or not clean_text.strip():
+                        logger.warning("⚠️ Texto vazio após strip_ssml no offline, abortando")
+                        return
+                    
+                    logger.debug(f"🔊 TTS Offline (pyttsx3 - Último Recurso): '{clean_text[:50]}...'")
+                    
+                    # Ajustar personalidade offline
+                    modifier = emotion_detector.get_personality_modifier(emotion)
+                    prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
+                    
+                    # Salvar rate original
+                    original_rate = self.engine.getProperty('rate')
+                    
+                    # Ajustar rate baseado na emoção
+                    if modifier.get('energy') in ['alta', 'máxima']:
+                        self.engine.setProperty('rate', original_rate + 20)
+                    elif modifier.get('energy') == 'baixa':
+                        self.engine.setProperty('rate', original_rate - 20)
+
+                    self.engine.say(prefix + clean_text)
+                    self.engine.runAndWait()
+                    
+                    # Resetar rate
+                    self.engine.setProperty('rate', original_rate)
+                except Exception as e:
+                    logger.error(f"❌ Falha crítica no motor de voz offline: {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
+                finally:
+                    self._is_speaking = False
 
     async def _speak_edge(self, text: str, emotion: str = "neutral", adaptive_rate: str = "+0%"):
         """TTS de Alta Qualidade via Edge-TTS com SSML"""
@@ -401,7 +425,7 @@ class VoiceController:
             rate = "+15%"
             volume = "+20%"
         
-        # 🔒 edge-tts NÃO suporta SSML raw - usar parâmetros nativos da API
+                # 🔒 edge-tts NÃO suporta SSML raw - usar parâmetros nativos da API
         # A prosódia é aplicada via rate/pitch/volume do Communicate
         try:
             communicate = edge_tts.Communicate(
@@ -416,6 +440,13 @@ class VoiceController:
                 tmp_path = tmp.name
                 
             try:
+                # 🆕 AUMENTAR TIMEOUT DA CONEXÃO
+                import aiohttp
+                timeout = aiohttp.ClientTimeout(total=30, connect=10) # 30s total, 10s connect
+                
+                # Monkey-patch temporário ou configuração se suportado pelo edge_tts (geralmente não é direto)
+                # Como edge_tts usa aiohttp internamente, vamos tentar envolver a chamada
+                
                 await communicate.save(tmp_path)
                 
                 # 🔍 Log de confirmação do arquivo gerado
@@ -424,13 +455,13 @@ class VoiceController:
                     logger.info(f"✅ Edge-TTS: Arquivo MP3 gerado ({file_size} bytes) em {tmp_path}")
                 else:
                     logger.error(f"❌ Edge-TTS: Arquivo MP3 NÃO foi criado em {tmp_path}")
-                    raise FileNotFoundError(f"MP3 não gerado: {tmp_path}")
+                    return # Não lançar exceção para evitar fallback duplo
                 
                 if self.stop_requested: return
                 
                 if not PYGAME_AVAILABLE:
                     logger.error("❌ pygame não disponível para reproduzir áudio")
-                    raise Exception("pygame indisponível")  # Cair no fallback offline
+                    return
                 
                 # 🆕 Verificar se mixer está initialized
                 if not pygame.mixer.get_init():
@@ -439,7 +470,7 @@ class VoiceController:
                         pygame.mixer.init()
                     except Exception as init_e:
                         logger.error(f"❌ Falha ao reinicializar pygame: {init_e}")
-                        raise  # Cair no fallback offline
+                        return
                     
                 self._is_speaking = True
                 

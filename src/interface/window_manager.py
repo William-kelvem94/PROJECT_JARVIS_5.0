@@ -294,12 +294,23 @@ class WindowManager(QObject):
             
         except Exception as e:
             logger.error(f"❌ Failed to initialize HUD: {e}")
-            # Fallback to basic window
+            # Fallback to basic window with log_event support
             from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
-            self._hud = QWidget()
-            layout = QVBoxLayout()
-            layout.addWidget(QLabel("HUD initialization failed"))
-            self._hud.setLayout(layout)
+            
+            class FallbackHUD(QWidget):
+                def __init__(self):
+                    super().__init__()
+                    layout = QVBoxLayout(self)
+                    layout.addWidget(QLabel("HUD initialization failed"))
+                    self.setLayout(layout)
+                
+                def log_event(self, message):
+                    print(f"Fallback HUD Log: {message}")
+                
+                def show_response(self, text):
+                    print(f"Fallback HUD Response: {text}")
+
+            self._hud = FallbackHUD()
             
     def _initialize_dashboard(self):
         """Lazy initialization of Stark Dashboard"""

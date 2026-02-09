@@ -77,16 +77,11 @@ class LocalBrain:
                     return
                 
                 # Check hardware configuration
-                device_tier = hardware_manager.get_tier()
-                
-                # If tier is ULTRA or PRO, we might prefer Ollama bridge if available
-                # But for now, let's stick to LocalBrain (Transformers) as the robust fallback
-                # or primary "Quick Response" brain.
-                
-                # logger.info(f"🧠 Checking connection to Superintelligence (Ollama)...") 
-                # -> Future integration: Check if Ollama is running and has models loaded.
-                
-                logger.info(f"Carregando {self.model_id} - Tier: {device_tier}...")
+                tier = hardware_manager.get_tier()
+                device = "cuda" if torch and torch.cuda.is_available() else "cpu"
+                compute_type = "float16" if device == "cuda" else "float32"
+
+                logger.info(f"Carregando {self.model_id} - Tier: {tier}...")
                 
                 # Tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)

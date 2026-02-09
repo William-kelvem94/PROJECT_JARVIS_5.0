@@ -43,15 +43,14 @@ brain_router:
       - "llama3.3:70b"
     
     tier_pro:  # Versatile tier - Média-Alta complexidade
-      - "llama3.3"
+      - "qwen2.5:7b"
+      - "llama3.1:8b"
       - "llama3.2"
-      - "llama3.1"
       - "llama3"
       - "qwen2.5:14b"
       - "qwen2.5:7b"
     
     tier_fast:  # Fast tier - Uso geral econômico
-      - "qwen2.5:3b"
       - "qwen2.5"
       - "phi3.5"
       - "phi3"
@@ -155,9 +154,10 @@ continual_learning:
   # Knowledge Distillation (External → Local)
   distillation:
     enabled: true
-    teacher_models: ["deepseek-r1:8b", "llama3.3"]  # Modelos externos como tutores
-    confidence_threshold: 0.7  # Quando local brain tem baixa confiança, consulta tutor
-    distill_temperature: 2.0  # Temperature para distillation
+    teacher_models: ["gemini", "deepseek-r1:14b", "llama3.3:70b"]  # Modelos externos de elite
+    confidence_threshold: 0.6  # Consulta tutor com mais frequência
+    distill_temperature: 1.5  
+    auto_research_hf: true    # Pesquisa autônoma no Hugging Face
   
   # Fallback strategy
   fallback_strategy: "local"  # 'local', 'cloud', ou 'error'
@@ -315,8 +315,9 @@ audio:
 
 # === DEBUGGING ===
 debug:
-  verbose_logging: false
-  log_model_responses: false
+  verbose_logging: true
+  log_model_responses: true
   log_action_execution: true
   save_failed_screenshots: true
-  profiling_enabled: false
+  profiling_enabled: true
+  neural_reflection: true  # Ativa o Raio-X do pensamento no terminal

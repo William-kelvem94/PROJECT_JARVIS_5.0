@@ -19,6 +19,8 @@ import subprocess
 import platform
 import logging
 import shutil
+import psutil
+import requests
 from pathlib import Path
 from datetime import datetime
 
@@ -51,18 +53,41 @@ class SingularityLauncher:
         self._setup_logging()
 
     def _setup_logging(self):
-        log_dir = PROJECT_ROOT / "data" / "logs"
-        log_dir.mkdir(parents=True, exist_ok=True)
+        # 📂 Estrutura de logs organizada por data e reinício
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        session_str = f"restart_{now.strftime('%H%M%S')}"
+        
+        self.log_dir = PROJECT_ROOT / "data" / "logs" / date_str / session_str
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Compartilhar o diretório de log com os outros processos
+        os.environ["JARVIS_SESSION_LOG_DIR"] = str(self.log_dir)
+        
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - [LAUNCHER] - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(log_dir / "launcher.log", encoding='utf-8'),
+                logging.FileHandler(self.log_dir / "launcher.log", encoding='utf-8'),
                 logging.StreamHandler(sys.stdout)
             ]
         )
         self.logger = logging.getLogger("Launcher")
         self.crash_report_path = PROJECT_ROOT / "data" / "logs" / "crash_report.json"
+        
+        # Link simbólico ou cópia do último log no root de logs para facilitar acesso rápido
+        latest_link = PROJECT_ROOT / "data" / "logs" / "latest_session"
+        try:
+            if latest_link.exists():
+                if latest_link.is_symlink() or latest_link.is_file():
+                    latest_link.unlink()
+                else:
+                    shutil.rmtree(latest_link)
+            
+            # No Windows, criar um atalho ou apenas um arquivo txt com o caminho
+            with open(PROJECT_ROOT / "data" / "logs" / "latest_session.txt", "w") as f:
+                f.write(str(self.log_dir))
+        except: pass
 
     def analyze_last_crash(self):
         """Analyze last crash report and attempt auto-patching"""
@@ -106,6 +131,7 @@ class SingularityLauncher:
 
   [SYS] {platform.system()} {platform.release()}
   [ENV] Python: {VENV_PYTHON}
+  [LOG] {self.log_dir.relative_to(PROJECT_ROOT)}
   [ROOT] {PROJECT_ROOT}
 """
         print(header)
@@ -114,6 +140,7 @@ class SingularityLauncher:
         colors = {"OK": Color.GREEN, "WARN": Color.YELLOW, "ERR": Color.RED, "WAIT": Color.CYAN}
         badge = f"[{colors.get(status, Color.BLUE)}{status}{Color.END}]"
         print(f"  {badge} {title}")
+        self.logger.info(f"Step: {title} Status: {status}")
 
     def sync_infrastructure(self):
         self.step("Infrastructure Synchronization", "WAIT")
@@ -187,7 +214,7 @@ class SingularityLauncher:
         print("\n" + Color.CYAN + "-" * 80 + Color.END)
         print(("🧠 Starting JARVIS Pre-flight Sequence...").ljust(80))
         
-        libs = ["PyQt6", "cv2", "numpy", "torch", "chromadb", "ultralytics"]
+        libs = ["PyQt6", "cv2", "numpy", "torch", "chromadb", "ultralytics", "psutil", "requests", "packaging", "peft"]
         missing = []
         for lib in libs:
             try:
@@ -228,7 +255,7 @@ class SingularityLauncher:
                 print(f"{Color.YELLOW}Attempting emergency full installation...{Color.END}")
                 
                 # Last resort: full requirements.txt install
-                req_file = PROJECT_ROOT / "requirements.txt"
+                req_file = PROJECT_ROOT / "scripts" / "install" / "requirements.txt"
                 if req_file.exists():
                     try:
                         print(f"  [EMERGENCY] Installing all requirements...")
@@ -261,7 +288,7 @@ class SingularityLauncher:
             
             # Fallback to traditional repair
             print(f"  {Color.CYAN}[PHASE 2] Running Traditional Repair...{Color.END}")
-            req_file = PROJECT_ROOT / "requirements.txt"
+            req_file = PROJECT_ROOT / "scripts" / "install" / "requirements.txt"
             if req_file.exists():
                 print(f"  [ACTION] Executing Nuclear Sync via requirements.txt...")
                 self.repair_neural_engine(use_requirements=True)
@@ -303,7 +330,8 @@ class SingularityLauncher:
         try:
             if use_requirements:
                 print(f"  {Color.BLUE}-> Re-syncing environment from requirements.txt...{Color.END}")
-                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "-r", "requirements.txt", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+                req_path = PROJECT_ROOT / "scripts" / "install" / "requirements.txt"
+                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "-r", str(req_path), "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
             elif targets:
                 for target in targets:
                     print(f"  {Color.BLUE}-> targeted fix: {target}...{Color.END}")
@@ -402,13 +430,15 @@ class SingularityLauncher:
                 print(f"  {Color.YELLOW}[EMPTY BRAIN] Downloading primary model: {model_to_pull}...{Color.END}")
                 print(f"  {Color.YELLOW}   (This happens only once. Please wait...){Color.END}")
                 # Stream pull
-                process = subprocess.Popen(["ollama", "pull", model_to_pull], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+                process = subprocess.Popen(["ollama", "pull", model_to_pull], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=False)
                 while True:
-                    line = process.stdout.readline()
-                    if not line and process.poll() is not None: break
-                    if "pulling" in line or "downloading" in line:
-                         sys.stdout.write(f"\r     -> {line.strip()[:60]}...")
-                         sys.stdout.flush()
+                    line_bytes = process.stdout.readline()
+                    if not line_bytes and process.poll() is not None: break
+                    if line_bytes:
+                        line = line_bytes.decode('utf-8', errors='replace').strip()
+                        if "pulling" in line or "downloading" in line:
+                             sys.stdout.write(f"\r     -> {line[:60]}...")
+                             sys.stdout.flush()
                 print(f"\n  {Color.GREEN}✅ Model {model_to_pull} ready.{Color.END}")
             
             elif installed:
@@ -444,7 +474,7 @@ class SingularityLauncher:
                 
         except Exception as e:
             self.step(f"Learning Systems: ERROR - {str(e)}", "WARN")
-            logger.error(f"Failed to initialize learning systems: {e}")
+            self.logger.error(f"Failed to initialize learning systems: {e}")
         
         print("-" * 80)
 
@@ -528,7 +558,7 @@ class SingularityLauncher:
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 1] Environment Validation{Color.END}")
         print("-" * 80)
         if not self.validate_environment():
-            return
+            sys.exit(1)
 
         # Stage 2
         self.check_ml_models()
@@ -543,11 +573,18 @@ class SingularityLauncher:
 
         # Stage 3
         if not self.pre_flight_checks():
-            return
+            sys.exit(1)
             
         # Launch
         self.launch_core()
 
 if __name__ == "__main__":
-    launcher = SingularityLauncher()
-    launcher.run()
+    try:
+        launcher = SingularityLauncher()
+        launcher.run()
+    except Exception as e:
+        import traceback
+        print(f"\n\033[91m[LAUNCHER CRITICAL] Unhandled Exception: {e}\033[0m")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
