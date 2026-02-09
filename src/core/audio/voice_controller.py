@@ -557,7 +557,7 @@ class VoiceController:
         """Reconhecimento via Vosk (Offline)"""
         try:
             if not self.vosk_model:
-                model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.3')
+                model_path = config.get_setting('voice.vosk_model_path', 'models/speech/vosk-model-small-pt-0.3')
                 if not os.path.exists(model_path):
                     logger.warning(f"Modelo Vosk não encontrado em {model_path}. Fala offline desabilitada.")
                     return ""
@@ -688,7 +688,7 @@ class VoiceController:
 
         # Carregar modelo leve se necessário
         if not self.vosk_model:
-            model_path = config.get_setting('voice.vosk_model_path', 'models/vosk-model-small-pt-0.3')
+            model_path = config.get_setting('voice.vosk_model_path', 'models/speech/vosk-model-small-pt-0.3')
             if not os.path.exists(model_path):
                  
                  # Tentar caminho relativo se o absoluto falhar

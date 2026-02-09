@@ -194,7 +194,7 @@ class SingularityLauncher:
                 # Advanced check: Run a small command to force DLL load
                 check_cmd = f"import {lib}"
                 if lib == "torch":
-                    check_cmd = "import torch; from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.2.2') else 1)"
+                    check_cmd = "import torch; from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.4.0') else 1)"
                 elif lib == "cv2":
                     check_cmd = "import cv2" # Relaxed check (removed .Mat())
                 
@@ -283,11 +283,110 @@ class SingularityLauncher:
                 # Default Emergency Stack
                 print(f"  {Color.BLUE}-> Restoring Stability Stack (Numpy/OpenCV/Torch)...{Color.END}")
                 subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "numpy==1.26.4", "opencv-python==4.9.0.80"], check=True)
-                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "torch==2.2.2", "torchvision==0.17.2", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "torch>=2.4.0", "torchvision>=0.19.0", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
             
             print(f"  {Color.GREEN}✅ Restoration Completed.{Color.END}\n")
         except Exception as e:
              print(f"  {Color.RED}❌ Restorer Failed: {e}{Color.END}\n")
+
+    def ensure_brain_capacity(self):
+        """
+        [NEW] Brain Auto-Provisioning.
+        Verifies LLM capabilities (Ollama) and attempts auto-install via Winget.
+        Downloads models (Qwen, Llama3) if missing.
+        """
+        print(f"\n{Color.BOLD}{Color.CYAN}[STAGE 2.5] Neural Brain Provisioning{Color.END}")
+        print("-" * 80)
+        
+        # 1. Check Ollama Binary
+        # FORCE PATH UPDATE for fresh installs
+        local_app_data = os.environ.get('LOCALAPPDATA', '')
+        default_path = os.path.join(local_app_data, 'Programs', 'Ollama')
+        if os.path.exists(default_path) and default_path not in os.environ['PATH']:
+             os.environ['PATH'] += os.pathsep + default_path
+        # 1. Check Ollama Binary
+        ollama_path = shutil.which("ollama")
+        if not ollama_path:
+            # Check default install path
+            user_home = Path(os.environ["USERPROFILE"])
+            default_path = user_home / "AppData" / "Local" / "Programs" / "Ollama" / "ollama.exe"
+            if default_path.exists():
+                ollama_path = str(default_path)
+                os.environ["PATH"] += os.pathsep + str(default_path.parent)
+                print(f"  {Color.GREEN}✅ Ollama detected at {default_path}{Color.END}")
+        
+        if not ollama_path:
+             # Fallback explicit check
+             default_exe = os.path.join(default_path, 'ollama.exe')
+             if os.path.exists(default_exe):
+                 ollama_path = default_exe
+                 
+        if not ollama_path:
+            print(f"  {Color.YELLOW}[BRAIN_WARN] Ollama core not found.{Color.END}")
+            print(f"  {Color.BLUE}-> Attempting auto-install via Windows Winget...{Color.END}")
+            try:
+                # Winget install (Requires user confirmation in terminal but works)
+                ret = subprocess.run(["winget", "install", "Ollama.Ollama", "--source", "winget", "--accept-package-agreements", "--accept-source-agreements"], 
+                                     shell=True)
+                if ret.returncode == 0:
+                    print(f"  {Color.GREEN}✅ Ollama Installed! Restart might be required.{Color.END}")
+                    ollama_path = "ollama" # Assume in path now
+                else:
+                    print(f"  {Color.RED}❌ Auto-install failed. JARVIS will use FALLBACK LOGIC (Lobotomized Mode).{Color.END}")
+                    return
+            except Exception as e:
+                print(f"  {Color.RED}❌ Installer error: {e}{Color.END}")
+                return
+
+        # 2. Check Service
+        try:
+            import requests # Lazy import
+            requests.get("http://localhost:11434", timeout=1)
+            print(f"  {Color.GREEN}✅ Neural Link Established (Ollama is running).{Color.END}")
+        except:
+             print(f"  {Color.YELLOW}[BRAIN_WARN] Brain frozen. Attempting to wake up...{Color.END}")
+             try:
+                 subprocess.Popen(["ollama", "serve"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                 time.sleep(3)
+                 print(f"  {Color.GREEN}✅ Neural Link Restored.{Color.END}")
+             except:
+                 print(f"  {Color.RED}❌ Failed to start brain service.{Color.END}")
+                 return
+
+        # 3. Check Models (Qwen + Llama)
+        print(f"  {Color.BLUE}-> Verifying Cognitive Models (Multi-Model Adaptation)...{Color.END}")
+        try:
+            res = requests.get("http://localhost:11434/api/tags").json()
+            installed = [m['name'].split(':')[0] for m in res.get('models', [])]
+            
+            # Priority Matrix (as requested by user)
+            TARGET_MODELS = [
+                "qwen2.5:7b",   # High balance (Speed/IQ)
+                "llama3.1:8b",     # Standard Logic
+            ]
+            
+            missing = [m for m in TARGET_MODELS if not any(existing in m for existing in installed)]
+            
+            if not installed and missing:
+                # First time setup - Pull Qwen first (User Preference)
+                model_to_pull = "qwen2.5:7b"
+                print(f"  {Color.YELLOW}[EMPTY BRAIN] Downloading primary model: {model_to_pull}...{Color.END}")
+                print(f"  {Color.YELLOW}   (This happens only once. Please wait...){Color.END}")
+                # Stream pull
+                process = subprocess.Popen(["ollama", "pull", model_to_pull], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
+                while True:
+                    line = process.stdout.readline()
+                    if not line and process.poll() is not None: break
+                    if "pulling" in line or "downloading" in line:
+                         sys.stdout.write(f"\r     -> {line.strip()[:60]}...")
+                         sys.stdout.flush()
+                print(f"\n  {Color.GREEN}✅ Model {model_to_pull} ready.{Color.END}")
+            
+            elif installed:
+                print(f"  {Color.GREEN}✅ Intelligences Available: {', '.join(installed)}{Color.END}")
+                
+        except Exception as e:
+            print(f"  {Color.RED}❌ Model verification failed: {e}{Color.END}")
 
     def launch_core(self):
         print("\n" + Color.CYAN + "="*80 + Color.END)
@@ -373,6 +472,9 @@ class SingularityLauncher:
 
         # Stage 2
         self.check_ml_models()
+
+        # Stage 2.5 (User Request: Auto-Brain)
+        self.ensure_brain_capacity()
 
         # Stage 3
         if not self.pre_flight_checks():

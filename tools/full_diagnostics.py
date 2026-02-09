@@ -297,7 +297,7 @@ class DiagnosticRunner:
                         "priority": "CRITICAL",
                         "issue": "NumPy 2.x detectado",
                         "solution": "Downgrade para NumPy 1.26.4: pip uninstall numpy -y && pip install 'numpy==1.26.4'",
-                        "reason": "PyTorch 2.2.2 requer NumPy < 2.0"
+                        "reason": "PyTorch 2.4.0+ requer NumPy < 2.0"
                     })
         
         # Verificar c10.dll

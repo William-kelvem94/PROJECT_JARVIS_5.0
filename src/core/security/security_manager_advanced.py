@@ -282,4 +282,4 @@ class SecurityManager:
 
 
 # Instância global
-security_manager = SecurityManager()
+security_manager = SecurityManager(config_dir="data/security")

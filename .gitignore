@@ -53,7 +53,7 @@ config/secrets.yaml
 
 # Modelos grandes
 models/*.pt
-!models/yolov8n.pt
+!models/vision/yolov8n.pt
 
 # Backup
 _backup_legacy/

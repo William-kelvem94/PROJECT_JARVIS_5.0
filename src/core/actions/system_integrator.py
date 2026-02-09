@@ -668,6 +668,13 @@ def get_system_integrator(audit_log_path: Optional[Path] = None) -> SystemIntegr
     return _system_integrator
 
 
+# Global Instance for direct import
+try:
+    system_integrator = SystemIntegrator()
+except Exception:
+    system_integrator = None
+
+
 # Testing
 if __name__ == "__main__":
     logging.basicConfig(

@@ -600,7 +600,7 @@ def main():
         from PyQt6.QtCore import QTimer
         import threading
         
-        def start_neural_engines_sequential():
+        def start_neural_engines_sequential(window_manager, vision_system, audio_system):
             """Load heavy models SEQUENTIALLY to avoid memory conflicts"""
             logger.info("⚡ [STAGE 3] Igniting Neural Engines (Sequential Load)...")
             
@@ -656,7 +656,7 @@ def main():
             
             # 3. Camera Monitoring last - schedule with threading.Timer
             logger.info("⏳ Scheduling camera start in 30s for system stabilization...")
-            camera_timer = threading.Timer(30.0, start_camera_monitoring_safe)
+            camera_timer = threading.Timer(30.0, lambda: start_camera_monitoring_safe(window_manager, vision_system))
             camera_timer.daemon = True
             camera_timer.start()
             
@@ -665,7 +665,7 @@ def main():
             time.sleep(35)  # Wait for camera to start
             logger.info("✅ Neural sequential load complete")
                 
-        def start_camera_monitoring_safe():
+        def start_camera_monitoring_safe(window_manager, vision_system):
             """Start camera only after all neural models loaded"""
             if vision_system:
                 try:
@@ -681,12 +681,13 @@ def main():
         # Schedule Stage 3 in background thread (doesn't block Qt event loop)
         QTimer.singleShot(1500, lambda: threading.Thread(
             target=start_neural_engines_sequential,
+            args=(window_manager, vision_system, audio_system),
             daemon=True,
             name="NeuralSequentialLoad"
         ).start())
 
         # 🔥 Iniciar Telemetria Live (nuevo)
-        def update_telemetry_loop():
+        def update_telemetry_loop(window_manager):
             """Thread que atualiza telemetria do sistema em tempo real"""
             import psutil
             import threading
@@ -719,6 +720,7 @@ def main():
         
         telemetry_thread = threading.Thread(
             target=update_telemetry_loop,
+            args=(window_manager,),
             daemon=True,
             name="TelemetryMonitor"
         )

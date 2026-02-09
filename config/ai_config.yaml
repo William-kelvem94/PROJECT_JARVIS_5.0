@@ -177,7 +177,7 @@ trainer:
     early_stopping_patience: 3
   
   # Paths
-  output_dir: "models/continual"
+  output_dir: "models/training/continual"
   cache_dir: "data/cache/models"
   
   # Dataset collection
@@ -192,7 +192,7 @@ vision:
   ocr_gpu: true
   
   # YOLO settings
-  yolo_model: "yolov8n.pt"
+  yolo_model: "models/vision/yolov8n.pt"
   yolo_confidence: 0.5
   yolo_device: "auto"
   
