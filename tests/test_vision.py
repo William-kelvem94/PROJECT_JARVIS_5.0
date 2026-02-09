@@ -6,7 +6,7 @@ Tests YOLO UI detection and OCR capabilities
 import cv2
 import numpy as np
 from pathlib import Path
-from src.core.vision_enhancer import vision_enhancer
+from src.core.vision.vision_enhancer import vision_enhancer
 
 print("=" * 70)
 print("👁️ JARVIS VISION ENHANCEMENT - VisionEnhancer Test")
