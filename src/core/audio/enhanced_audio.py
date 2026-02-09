@@ -28,21 +28,24 @@ from enum import Enum
 from datetime import datetime
 
 from src.core.management.hardware_manager import hardware_manager
-from utils.config import config
-
-logger = logging.getLogger(__name__)
 
 # Try to import config with graceful fallback
 try:
-    from src.utils.config import Config
-    config = Config()
-except Exception as e:
-    logger.warning(f"⚠️ Config module unavailable: {e}. Using defaults.")
-    # Mock config object
-    class config:
-        @staticmethod
-        def get_setting(key, default=None):
-            return default
+    from src.utils.config import config
+except ImportError:
+    try:
+        from src.utils.config import Config
+        config = Config()
+    except Exception as e:
+        logger.warning(f"⚠️ Config module unavailable: {e}. Using defaults.")
+        # Mock config object
+        class MoackConfig:
+            @staticmethod
+            def get_setting(key, default=None):
+                return default
+        config = MoackConfig()
+
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # CONDITIONAL IMPORTS (Graceful Degradation)

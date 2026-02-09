@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 
 print("--- Testing Imports ---")
 try:
-    from src.core.local_brain import local_brain
+    from src.core.intelligence.local_brain import local_brain
     print("LocalBrain imported.")
 except ImportError as e:
     print(f"Failed to import LocalBrain: {e}")

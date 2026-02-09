@@ -2,9 +2,9 @@
 # =================================================
 
 # 1. PYTORCH (VERSÕES ESTÁVEIS PARA WINDOWS)
-torch==2.0.1
-torchvision==0.15.2
-torchaudio==2.0.2
+torch>=2.4.0
+torchvision>=0.19.0
+torchaudio>=2.4.0
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # 2. CORE

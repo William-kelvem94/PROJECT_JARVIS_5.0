@@ -183,8 +183,8 @@ class MaintenanceManager:
         
         # 1. Modelos de Arquivo (YOLO, MediaPipe)
         models = {
-            "yolov8n.pt": "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt",
-            "hand_landmarker.task": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
+            "vision/yolov8n.pt": "https://github.com/ultralytics/assets/releases/download/v8.2.0/yolov8n.pt",
+            "vision/hand_landmarker.task": "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
         }
         
         for model_name, url in models.items():
@@ -196,7 +196,7 @@ class MaintenanceManager:
                 self._download_file(url, model_path)
 
         # 2. Verificação do Vosk (Voz Offline)
-        vosk_path = models_dir / "vosk-model-small-pt-0.22"
+        vosk_path = models_dir / "speech" / "vosk-model-small-pt-0.3"
         if not vosk_path.exists():
             logger.warning("Modelo Vosk PT-BR não encontrado. Assistente offline indisponível.")
             if self.on_progress: self.on_progress("AVISO: Modelo de voz offline ausente (vosk).")
@@ -402,11 +402,11 @@ class MaintenanceManager:
         
         try:
             # URL do modelo
-            url = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.22.zip"
-            zip_path = Path("models/vosk-model-small-pt-0.22.zip")
+            url = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
+            zip_path = Path("models/speech/vosk-model-small-pt-0.3.zip")
             
-            # Criar diretório models se não existir
-            Path("models").mkdir(exist_ok=True)
+            # Criar diretório models/speech se não existir
+            Path("models/speech").mkdir(parents=True, exist_ok=True)
             
             # Download do arquivo
             logger.info(f"Baixando de {url}...")
@@ -434,7 +434,7 @@ class MaintenanceManager:
             
             # Extrair ZIP
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall("models")
+                zip_ref.extractall("models/speech")
             
             # Remover arquivo ZIP
             zip_path.unlink()

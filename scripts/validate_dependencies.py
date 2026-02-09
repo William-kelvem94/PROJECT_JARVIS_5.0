@@ -7,15 +7,16 @@ import sys
 import subprocess
 
 CRITICAL_PACKAGES = [
-    ('PyQt6', 'PyQt6', False),  # False = fast import
+    ('PyQt6', 'PyQt6', False),
     ('cv2', 'opencv-python', False),
     ('numpy', 'numpy', False),
-    ('torch', 'torch', True),  # True = use pip show (slow import)
-    ('ultralytics', 'ultralytics', False),
-    ('onnxruntime', 'onnxruntime', True),  # Use pip show (DLL issues on import)
-    ('transformers', 'transformers', True),  # Slow import
-    ('sentence_transformers', 'sentence-transformers', True),  # Slow import
-    ('chromadb', 'chromadb', True),  # Slow import
+    ('torch', 'torch', False),  # False = check via import (more reliable than pip show)
+    ('torchvision', 'torchvision', False), # False = check via import
+    ('ultralytics', 'ultralytics', True),
+    ('onnxruntime', 'onnxruntime', True),
+    ('transformers', 'transformers', True),
+    ('sentence_transformers', 'sentence-transformers', True),
+    ('chromadb', 'chromadb', True),
 ]
 
 def check_package(import_name, pip_name, use_pip_show=False):
@@ -33,7 +34,8 @@ def check_package(import_name, pip_name, use_pip_show=False):
             # Import direto para pacotes leves
             __import__(import_name)
             return True, None
-    except ImportError as e:
+    except (ImportError, OSError, Exception) as e:
+        # Catch OSError for WinError 1114 (DLL Load Failed)
         return False, pip_name
 
 def main():

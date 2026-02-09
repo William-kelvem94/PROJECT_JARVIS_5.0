@@ -30,7 +30,7 @@ class UIDetector:
         if self.enabled and ULTRALYTICS_AVAILABLE:
             try:
                 # Se não houver modelo customizado, usa o YOLOv8n (nano) na pasta models
-                path = model_path or config.get_setting('vision.yolo_model', 'models/yolov8n.pt')
+                path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
                 # Garantir caminho absoluto para estabilidade
                 if not os.path.isabs(path):
                     path = str(Path(__file__).parent.parent.parent.parent / path)
