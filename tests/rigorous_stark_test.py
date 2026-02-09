@@ -165,7 +165,7 @@ class StarkRigorousTester:
     def run_all(self):
         start_time = time.time()
         print("\n" + "="*60)
-        print(" JARVIS 5.0 - STARK RIGOROUS INTEGRATION SUITE ".center(60, "═"))
+        print(" JARVIS 5.0 - STARK RIGOROUS INTEGRATION SUITE ".center(60, "="))
         print("="*60 + "\n")
         
         tests = [
@@ -183,7 +183,7 @@ class StarkRigorousTester:
         
         duration = time.time() - start_time
         print("\n" + "="*60)
-        print(f" RESULTADO FINAL: {passed}/{len(tests)} PASSOU ".center(60, "═"))
+        print(f" RESULTADO FINAL: {passed}/{len(tests)} PASSOU ".center(60, "="))
         print(f" Duração: {duration:.2f}s")
         print("="*60 + "\n")
         

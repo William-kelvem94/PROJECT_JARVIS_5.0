@@ -51,21 +51,43 @@ class MemoryManager:
 
     def _initialize_db(self):
         if not CHROMA_AVAILABLE: return
+        
+        db_path = os.path.join(os.getcwd(), "data", "memory")
+        os.makedirs(db_path, exist_ok=True)
+        
         try:
-            db_path = os.path.join(os.getcwd(), "data", "memory")
-            os.makedirs(db_path, exist_ok=True)
-            
             self.client = chromadb.PersistentClient(path=db_path)
-            self.collection = self.client.get_or_create_collection(
-                name="jarvis_memory",
-                metadata={"description": "JARVIS conversation memory (Singularity 11.2)"}
-            )
-            logger.info(f"✅ ChromaDB inicializado: {self.collection.count()} memórias")
             
-            if EMBEDDINGS_AVAILABLE:
+            # Tentar criar/acessar coleção
+            try:
+                self.collection = self.client.get_or_create_collection(
+                    name="jarvis_memory",
+                    metadata={"description": "JARVIS conversation memory (Singularity 11.2)"}
+                )
+                # Testar se funciona
+                _ = self.collection.count()
+                logger.info(f"✅ ChromaDB inicializado: {self.collection.count()} memórias")
+            except Exception as e:
+                # Se falhar, tentar deletar apenas a coleção
+                logger.warning(f"⚠️ Erro ao acessar coleção: {e}")
+                try:
+                    self.client.delete_collection("jarvis_memory")
+                except:
+                    pass
+                
+                # Criar nova coleção
+                self.collection = self.client.create_collection(
+                    name="jarvis_memory",
+                    metadata={"description": "JARVIS conversation memory (Singularity 11.2)"}
+                )
+                logger.info("✅ ChromaDB coleção recriada")
+            
+            # Carregar modelos apenas se coleção foi criada com sucesso
+            if self.collection and EMBEDDINGS_AVAILABLE:
                 self.embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
                 self.reranker = CrossEncoder('cross-encoder/ms-marco-TinyBERT-L-2-v2')
                 logger.info("✅ Modelos neurais de memória carregados (Embeddings + Reranker)")
+                
         except Exception as e:
             logger.error(f"Erro ao inicializar memória: {e}")
             self.collection = None

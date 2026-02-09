@@ -388,8 +388,8 @@ class DatasetBuilder:
                 with jsonlines.open(self.interactions_file, mode='a') as writer:
                     writer.write(interaction.to_dict())
             else:
-                with open(self.interactions_file, 'a') as f:
-                    f.write(json.dumps(interaction.to_dict()) + '\n')
+                with open(self.interactions_file, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps(interaction.to_dict(), ensure_ascii=False) + '\n')
         except Exception as e:
             logger.error(f"Error saving interaction: {e}", exc_info=True)
     
@@ -408,7 +408,7 @@ class DatasetBuilder:
                         self._update_statistics(interaction, loading=True)
                         loaded_count += 1
             else:
-                with open(self.interactions_file, 'r') as f:
+                with open(self.interactions_file, 'r', encoding='utf-8') as f:
                     for line in f:
                         if line.strip():
                             obj = json.loads(line)
@@ -631,12 +631,12 @@ class DatasetBuilder:
                         for item in data:
                             writer.write(item)
                 else:
-                    with open(output_path, 'w') as f:
+                    with open(output_path, 'w', encoding='utf-8') as f:
                         for item in data:
-                            f.write(json.dumps(item) + '\n')
+                            f.write(json.dumps(item, ensure_ascii=False) + '\n')
             else:
-                with open(output_path, 'w') as f:
-                    json.dump(data, f, indent=2)
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    json.dump(data, f, indent=2, ensure_ascii=False)
             
             logger.info(f"Exported {len(data)} samples to {output_path} ({format} format)")
             return len(data)
@@ -714,8 +714,8 @@ class DatasetBuilder:
         """Save statistics to file."""
         try:
             stats = self.get_statistics()
-            with open(self.stats_file, 'w') as f:
-                json.dump(stats, f, indent=2, default=str)
+            with open(self.stats_file, 'w', encoding='utf-8') as f:
+                json.dump(stats, f, indent=2, default=str, ensure_ascii=False)
             logger.info(f"Statistics saved to {self.stats_file}")
         except Exception as e:
             logger.error(f"Error saving statistics: {e}", exc_info=True)

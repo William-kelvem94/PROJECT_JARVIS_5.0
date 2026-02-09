@@ -316,7 +316,7 @@ class JarvisSingularity(QObject):
             # 1. Fetch Emotion
             try:
                 from src.core.vision.camera_controller import camera_controller
-                emotion = camera_controller.current_emotion if camera_controller else "neutral"
+                emotion = getattr(camera_controller, 'current_emotion', 'neutral') if camera_controller else "neutral"
             except (ImportError, AttributeError):
                 emotion = "neutral"
             

@@ -124,7 +124,7 @@ class Annotation:
     
     def save_yolo_annotation(self, output_path: Path) -> None:
         """Save annotation in YOLO format."""
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             f.write(self.bounding_box.to_yolo_format(self.class_id))
 
 
@@ -342,7 +342,7 @@ class YOLODatasetManager:
                 self.labels_dir / split / f"{example_id}.txt"
             )
             
-            with open(label_path, 'w') as f:
+            with open(label_path, 'w', encoding='utf-8') as f:
                 for ann in annotations:
                     line = ann.bounding_box.to_yolo_format(ann.class_id)
                     f.write(line + '\n')
@@ -387,7 +387,7 @@ class YOLODatasetManager:
             "names": {v: k for k, v in self.classes.items()}
         }
         
-        with open(output_path, 'w') as f:
+        with open(output_path, 'w', encoding='utf-8') as f:
             yaml.dump(config, f, default_flow_style=False)
         
         logger.info(f"Created dataset config: {output_path}")
@@ -418,7 +418,7 @@ class YOLODatasetManager:
             return
         
         try:
-            with open(metadata_file, 'r') as f:
+            with open(metadata_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 self.classes = data.get("classes", {})
                 
@@ -441,8 +441,8 @@ class YOLODatasetManager:
                 "examples": [ex.to_dict() for ex in self.examples]
             }
             
-            with open(metadata_file, 'w') as f:
-                json.dump(data, f, indent=2)
+            with open(metadata_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
                 
         except Exception as e:
             logger.error(f"Error saving metadata: {e}")
@@ -832,8 +832,8 @@ class VisionLearner:
                 "training_history": self.training_history
             }
             
-            with open(stats_file, 'w') as f:
-                json.dump(data, f, indent=2)
+            with open(stats_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
                 
         except Exception as e:
             logger.error(f"Error saving stats: {e}")

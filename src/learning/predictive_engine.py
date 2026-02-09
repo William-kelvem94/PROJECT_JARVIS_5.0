@@ -850,7 +850,7 @@ class PredictiveEngine:
         stats_file = self.model_dir / "stats.json"
         if stats_file.exists():
             try:
-                with open(stats_file, 'r') as f:
+                with open(stats_file, 'r', encoding='utf-8') as f:
                     self.stats = json.load(f)
             except Exception as e:
                 logger.error(f"Error loading stats: {e}")
@@ -859,8 +859,8 @@ class PredictiveEngine:
         """Save statistics to file."""
         stats_file = self.model_dir / "stats.json"
         try:
-            with open(stats_file, 'w') as f:
-                json.dump(self.stats, f, indent=2)
+            with open(stats_file, 'w', encoding='utf-8') as f:
+                json.dump(self.stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving stats: {e}")
 

@@ -46,8 +46,8 @@ class JarvisSystemMonitor:
                     "cpu_percent": psutil.cpu_percent(),
                     "memory_percent": psutil.virtual_memory().percent
                 }
-                with open(self.metrics_file, 'a') as f:
-                    f.write(json.dumps(metrics) + '\n')
+                with open(self.metrics_file, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps(metrics, ensure_ascii=False) + '\n')
             except Exception as e:
                 self.logger.error(f"Monitor error: {e}")
             
