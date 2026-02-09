@@ -11,6 +11,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import threading
+from datetime import datetime
 from src.core.management.shutdown_manager import ShutdownManager # New Shutdown Manager
 from src.core.management.hardware_manager import hardware_manager
 from src.core.orchestrator import StarkOrchestrator # Stark 2.0 Orchestrator
@@ -60,11 +61,15 @@ warnings.filterwarnings('ignore', category=UserWarning)
 Path('data/logs').mkdir(parents=True, exist_ok=True)
 
 # Centralized Logging
+log_dir = Path(os.environ.get("JARVIS_SESSION_LOG_DIR", "data/logs"))
+log_dir.mkdir(parents=True, exist_ok=True)
+log_file = log_dir / "jarvis_singularity.log"
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('data/logs/jarvis_singularity.log', encoding='utf-8'),
+        logging.FileHandler(log_file, encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -276,7 +281,11 @@ class JarvisSingularity(QObject):
             logger.info("✅ HUD interface activated")
             hud = self.window_manager.get_hud()
             if hud:
-                hud.log_event("SINGULARITY CORE ENGAGED")
+                try:
+                    if hasattr(hud, 'log_event'):
+                        hud.log_event("SINGULARITY CORE ENGAGED")
+                except Exception as e:
+                    logger.warning(f"HUD Log Error (Non-Fatal): {e}")
         
         # Staggered initialization: Warmup for subsystems
         QTimer.singleShot(5000, self._staggered_daemon_start)

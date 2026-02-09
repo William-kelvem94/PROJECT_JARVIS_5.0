@@ -255,16 +255,25 @@ class MemoryManager:
             import time
             from datetime import timedelta
             
+            # Formato ISO string para compatibilidade com o que foi salvo
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
             
-            # ChromaDB não tem delete por data direto em versões antigas,
-            # em versões novas podemos usar where com $lt
-            self.collection.delete(
-                where={"timestamp": {"$lt": cutoff_date}}
-            )
-            logger.info(f"🧹 Memória limpa: Registros anteriores a {cutoff_date} removidos.")
+            # ChromaDB purge com tratamento de erro de schema
+            try:
+                self.collection.delete(
+                    where={"timestamp": {"$lt": cutoff_date}}
+                )
+                logger.info(f"🧹 Memória limpa: Registros anteriores a {cutoff_date} removidos.")
+            except Exception as e:
+                # Se der erro de tipo (operando int vs string), ignoramos por enquanto
+                # para não crashar a thread de manutenção
+                if "Expected operand value" in str(e):
+                    logger.warning(f"⚠️ Erro de schema ao limpar memória (ignorado): {e}")
+                else:
+                    raise e
+
         except Exception as e:
-            logger.error(f"Erro ao limpar memória: {e}")
+            logger.error(f"Erro genérico ao limpar memória: {e}")
 
 # Instância global
 memory_manager = MemoryManager()

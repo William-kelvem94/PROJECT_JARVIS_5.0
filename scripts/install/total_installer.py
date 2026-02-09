@@ -29,7 +29,7 @@ class TotalInstaller:
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler(self.project_root / 'total_installer.log', encoding='utf-8'),
+                logging.FileHandler(self.project_root / 'logs' / 'total_installer.log', encoding='utf-8'),
                 logging.StreamHandler(sys.stdout)
             ]
         )
@@ -51,15 +51,27 @@ class TotalInstaller:
         except:
             return False
 
-    def run_command(self, cmd):
-        """Executa comando de forma segura com tratamento de encoding"""
+    def run_command(self, cmd, skip_capture=False):
+        """Executa comando de forma segura com tratamento de encoding resiliente"""
         try:
             self.logger.info(f"⚡ Executando: {' '.join(cmd[:5])}...")
-            # Use errors='replace' to avoid UnicodeDecodeError on localized systems
-            subprocess.run(cmd, check=True, capture_output=True, text=True, errors='replace')
+            
+            if skip_capture:
+                # Streaming mode: deixa o processo imprimir direto no terminal
+                # Isso evita buffering gigante em comandos como 'pip install torch'
+                subprocess.run(cmd, check=True)
+                return ""
+            
+            # Captura binária para evitar crashes de decode no pipe do Windows
+            result = subprocess.run(cmd, check=True, capture_output=True, text=False)
+            return result.stdout.decode('utf-8', errors='replace')
         except subprocess.CalledProcessError as e:
-            err_msg = e.stderr if e.stderr else "Unknown error"
-            self.logger.error(f"❌ Falha: {err_msg[:500]}")
+            if not skip_capture:
+                err_msg = e.stderr.decode('utf-8', errors='replace') if e.stderr else "Unknown error"
+                self.logger.error(f"❌ Falha: {err_msg[:500]}")
+            raise
+        except Exception as e:
+            self.logger.error(f"❌ Erro inesperado: {e}")
             raise
 
     def install_pytorch_correct(self):
@@ -81,14 +93,14 @@ class TotalInstaller:
                 "--index-url", "https://download.pytorch.org/whl/cu121"
             ]
         else:
-            self.logger.info("💻 CPU detectada. Instalando PyTorch 2.2.2+cpu (Stable)...")
+            self.logger.info("💻 CPU detectada. Instalando PyTorch 2.4.1+cpu (Stable)...")
             torch_cmd = [
                 sys.executable, "-m", "pip", "install",
-                "torch==2.2.2+cpu", "torchvision==0.17.2+cpu", "torchaudio==2.2.2+cpu",
+                "torch==2.4.1+cpu", "torchvision==0.19.1+cpu", "torchaudio==2.4.1+cpu",
                 "--index-url", "https://download.pytorch.org/whl/cpu"
             ]
         
-        self.run_command(torch_cmd)
+        self.run_command(torch_cmd, skip_capture=True)
 
     def _download_dlib_wheel(self):
         """Download do wheel CORRETO do dlib com nome exato"""
@@ -130,11 +142,11 @@ class TotalInstaller:
             self.run_command([
                 sys.executable, "-m", "pip", "install",
                 "git+https://github.com/ageitgey/face_recognition_models"
-            ])
+            ], skip_capture=True)
         except Exception as e:
             self.logger.error(f"❌ Falha ao instalar modelos via git: {e}. Tentando via pip padrão...")
             try:
-                self.run_command([sys.executable, "-m", "pip", "install", "face-recognition-models"])
+                self.run_command([sys.executable, "-m", "pip", "install", "face-recognition-models"], skip_capture=True)
             except:
                 pass
         
@@ -142,14 +154,14 @@ class TotalInstaller:
         self.run_command([
             sys.executable, "-m", "pip", "install",
             "face-recognition>=1.3.0"
-        ])
+        ], skip_capture=True)
 
     def install_all(self):
         """Instala TUDO na ordem correta"""
         self.logger.info("🚀 INICIANDO INSTALAÇÃO JARVIS 5.0 (CORRIGIDA)")
         
         # 1. Update PIP
-        self.run_command([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+        self.run_command([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], skip_capture=True)
 
         # 2. PyTorch correto (>=2.4)
         self.install_pytorch_correct()
@@ -158,7 +170,7 @@ class TotalInstaller:
         self.logger.info("📦 Instalando dependências básicas...")
         basic_deps = ["numpy<2", "pandas", "scipy", "pyyaml", "python-dotenv", "PyQt6", "customtkinter", "pillow", "opencv-python", "mss", "ultralytics"]
         for dep in basic_deps:
-            try: self.run_command([sys.executable, "-m", "pip", "install", dep])
+            try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
             except: pass
         
         # 4. dlib via wheel CORRETO
@@ -166,12 +178,12 @@ class TotalInstaller:
         if dlib_wheel and os.path.exists(dlib_wheel):
             self.logger.info(f"🧠 Instalando dlib via wheel local: {dlib_wheel}")
             try:
-                self.run_command([sys.executable, "-m", "pip", "install", dlib_wheel])
+                self.run_command([sys.executable, "-m", "pip", "install", dlib_wheel], skip_capture=True)
             except Exception as e:
                 self.logger.error(f"❌ Falha ao instalar wheel: {e}")
         else:
             self.logger.warning("⚠️ Não foi possível baixar um wheel compatível. Tentando dlib-bin...")
-            try: self.run_command([sys.executable, "-m", "pip", "install", "dlib-bin"])
+            try: self.run_command([sys.executable, "-m", "pip", "install", "dlib-bin"], skip_capture=True)
             except: pass
         
         # 5. face_recognition COMPLETO
@@ -187,16 +199,16 @@ class TotalInstaller:
         ]
         
         # Resemblyzer separado (no-deps)
-        try: self.run_command([sys.executable, "-m", "pip", "install", "resemblyzer", "--no-deps"])
+        try: self.run_command([sys.executable, "-m", "pip", "install", "resemblyzer", "--no-deps"], skip_capture=True)
         except: pass
 
         for dep in remaining:
-            try: self.run_command([sys.executable, "-m", "pip", "install", dep])
+            try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
             except: pass
 
         # 7. Final Fix for Transformers & NumPy (Enforce version < 2)
         self.logger.info("🧹 Finalizing environment constraints...")
-        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "numpy<2", "-U"])
+        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "numpy<2", "-U"], skip_capture=True)
         
         self.logger.info("\n" + "="*50)
         self.logger.info("🎉 INSTALAÇÃO FINALIZADA!")

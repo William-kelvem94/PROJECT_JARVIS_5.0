@@ -79,6 +79,11 @@ class ProactiveMonitor:
                     continue
 
                 # Calcular diferença absoluta entre o frame atual e o anterior
+                if self.last_frame.shape != gray.shape:
+                    logger.warning("Dimensões da tela mudaram. Reiniciando referência.")
+                    self.last_frame = gray
+                    continue
+
                 frame_delta = cv2.absdiff(self.last_frame, gray)
                 thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
                 

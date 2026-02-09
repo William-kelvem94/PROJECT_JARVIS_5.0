@@ -13,6 +13,10 @@ import threading
 from typing import Dict, Any, List, Optional
 from src.core.intelligence.context_sanitizer import ContextSanitizer
 from src.core.audio.voice_filter import AtomicVoiceFilter
+from src.utils.logger_reflection import reflect_logger
+
+# Enable Neural Reflection by default for luxury diagnostics
+reflect_logger.set_enabled(True)
 
 # ============================================================================
 # LOGGER SETUP - DEVE VIR ANTES DE QUALQUER IMPORT QUE USE LOGGER
@@ -283,7 +287,7 @@ class AIAgent:
         self._verify_critical_dependencies()
         
         self.provider = provider
-        self.api_key = os.environ.get('GOOGLE_API_KEY')
+        self.api_key = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
         self.ollama_url = "http://localhost:11434/api/generate"
         
         # Carregar configurações de IA
@@ -569,8 +573,11 @@ class AIAgent:
         
         while current_turn < max_turns:
             logger.info(f"Ciclo de Pensamento {current_turn+1}/{max_turns} | Provedor: {primary_provider}")
+            reflect_logger.reflect(f"Initiating thought cycle {current_turn+1} via {primary_provider}", layer="COGNITIVE")
             
-            # Esperar captura de tela se necessário antes de chamar o modelo
+            # Show on HUD if possible
+            if self.brain_router:
+                reflect_logger.reflect(f"Command context analysis: {user_command[:50]}...", layer="CONTEXT")
             screenshot_event.wait(timeout=5.0)
             screenshot_path = screenshot_container["path"]
 
@@ -643,6 +650,9 @@ class AIAgent:
             # CORREÇÃO P1: PROCESSAMENTO ESTRUTURADO (Substitui Regex)
             # =====================================================================
             action_executed = False
+            
+            if "thought" in response.lower() or "actions" in response.lower():
+                 reflect_logger.reflect("Decoding structured behavioral response...", layer="STRUCTURED_LOGIC")
             
             # Tentar processing estruturado primeiro
             if self.use_structured_output:
@@ -1081,7 +1091,11 @@ class AIAgent:
             # 1. Parsear resposta JSON
             parsed = ResponseParser.parse_llm_response(raw_response)
             
-            logger.info(f"💭 Pensamento: {parsed.thought[:100]}...")
+            # 🔥 RAIO-X NEURAL (AESTHETIC LOGGING)
+            reflect_logger.reflect(parsed.thought, layer="COGNITIVE")
+            if parsed.actions:
+                reflect_logger.log_action_plan([f"{a.action}: {a.dict()}" for a in parsed.actions])
+            
             logger.info(f"🎯 Ações: {len(parsed.actions)} planejadas")
             
             # 2. Executar ações se houver
@@ -1168,7 +1182,7 @@ class AIAgent:
             logger.error(f"Erro ao chamar Gemini: {e}")
             return f"Senhor, tive um problema técnico ao consultar meus servidores: {str(e)}"
 
-    def _call_ollama(self, prompt: str, image_path: str, model: str = "llava"):
+    def _call_ollama(self, prompt: str, image_path: str, model: str = "llava", system_prompt: str = None):
         """Integração com Ollama Local (Multi-modelo)"""
         try:
             import base64
@@ -1178,9 +1192,12 @@ class AIAgent:
                     image_data = base64.b64encode(image_file.read()).decode('utf-8')
 
             # Tenta usar o modelo especificado (padrão 'llava' para visão)
+            # Prioriza system_prompt dinâmico se fornecido, senão usa o padrão self.system_prompt
+            final_system_prompt = system_prompt if system_prompt else self.system_prompt
+            
             payload = {
                 "model": model,
-                "prompt": f"{self.system_prompt}\n\nComando: {prompt}",
+                "prompt": f"{final_system_prompt}\n\nComando: {prompt}",
                 "stream": False
             }
             if image_data:

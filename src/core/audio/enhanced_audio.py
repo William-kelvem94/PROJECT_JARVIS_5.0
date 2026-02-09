@@ -191,7 +191,7 @@ class EnhancedAudioSystem:
         
         # STT Model (faster-whisper)
         self.whisper_model = None
-        self.whisper_model_size = "base"  # tiny, base, small, medium, large
+        self.whisper_model_size = "small"  # tiny, base, small, medium, large
         
         # VAD Model (Silero)
         self.vad_model = None
@@ -252,28 +252,15 @@ class EnhancedAudioSystem:
         threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
     def _initialize_basic_components(self):
-        """Initialize lightweight audio components (Porcupine, device checks)"""
-        # Initialize Porcupine for Wake Word
-        if PORCUPINE_AVAILABLE and self.wake_word_active:
-            try:
-                logger.info("Loading Porcupine Wake Word engine...")
-                # Try to get access key from env or config
-                access_key = os.environ.get("PORCUPINE_ACCESS_KEY") or config.get_setting('audio.porcupine_key')
-                
-                if access_key:
-                    self.porcupine = pvporcupine.create(
-                        access_key=access_key,
-                        keywords=["jarvis"]
-                    )
-                    logger.info("✅ Porcupine Wake Word engine loaded ('jarvis')")
-                else:
-                    logger.error("❌ Porcupine Access Key missing! Wake word 'Jarvis' não funcionará.")
-                    logger.info("   👉 Obtenha sua chave gratuita em: https://console.picovoice.ai/")
-                    logger.info("   👉 E insira no arquivo .env como PORCUPINE_ACCESS_KEY")
-                    self.wake_word_active = False
-            except Exception as e:
-                logger.error(f"Failed to load Porcupine: {e}")
-                self.wake_word_active = False
+        """Initialize lightweight audio components (device checks, VAD gate)"""
+        # 🆕 FREE WAKE WORD: VAD-based Energy Gate
+        # Instead of Porcupine (paid), we use Silero-VAD + Energy Threshold
+        if self.wake_word_active:
+            logger.info("✅ VAD-based Wake Word enabled (Always Listen Mode)")
+            self.porcupine = None # Disable Porcupine explicitly
+            # self.is_awake = False # Start asleep, wait for VAD
+        else:
+            logger.info("ℹ️ Wake Word disabled (Push-to-Talk Mode)")
 
     def _load_models_background(self):
         """Load heavy AI models in background to prevent 0xC0000005 during boot"""
@@ -564,19 +551,20 @@ class EnhancedAudioSystem:
                         voice_detected_in_buffer = True
                         voice_frame_count += 1
                         
-                        # Process Wake Word if enabled and sleeping
-                        if self.wake_word_active and not self.is_awake and self.porcupine:
-                            pcm = (audio * 32767).astype(np.int16)
-                            for i in range(0, len(pcm) - self.porcupine.frame_length, self.porcupine.frame_length):
-                                frame = pcm[i:i+self.porcupine.frame_length]
-                                result = self.porcupine.process(frame)
-                                if result >= 0:
-                                    logger.info("🎤 Wake word 'Jarvis' detected!")
-                                    self.is_awake = True
-                                    self.state = AudioState.LISTENING
-                                    if self.on_wake_word_detected:
-                                        self.on_wake_word_detected()
-                                    break
+                        # 🆕 FREE WAKE WORD LOGIC (VAD GATE)
+                        if self.wake_word_active and not self.is_awake:
+                            # Se detectar voz clara e forte, acorda automaticamente
+                            # Isso substitui "Hey Jarvis" por "Qualquer fala humana clara"
+                            # Para evitar disparos falsos, exigimos confiança alta do VAD
+                            
+                            logger.debug("⚡ VAD Trigger: Voz detectada, acordando sistema...")
+                            self.is_awake = True
+                            self.state = AudioState.LISTENING
+                            if self.on_wake_word_detected:
+                                self.on_wake_word_detected()
+                            
+                            # Não quebramos o loop, continuamos processando o buffer atual como comando
+                            # break  <-- REMOVIDO para capturar o comando "acordar" junto
                         
                         if self.is_awake or not self.wake_word_active:
                             self.state = AudioState.LISTENING
@@ -795,7 +783,7 @@ class EnhancedAudioSystem:
                 beam_size=5,
                 initial_prompt="",  # 🔥 Removido prompt que pode causar alucinações
                 vad_filter=True,
-                vad_parameters=dict(threshold=0.7, min_silence_duration_ms=500)  # Mais rigoroso
+                vad_parameters=dict(threshold=0.8, min_silence_duration_ms=1000)  # Extreme VAD
             )
             
             # Collect segments
