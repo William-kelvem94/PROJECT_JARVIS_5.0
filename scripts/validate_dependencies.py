@@ -59,7 +59,7 @@ def check_package(import_name, pip_name, use_pip_show=False):
         return False, pip_name
 
 def main():
-    print("🔍 Validating JARVIS dependencies...")
+    print("[CHECK] Validating JARVIS dependencies...")
     print("=" * 60)
     
     missing = []
@@ -70,15 +70,15 @@ def main():
             installed, pkg = check_package(import_name, pip_name, use_pip_show)
             
             if installed:
-                print(f"✅ {import_name:25} OK")
+                print(f"[OK] {import_name:25} OK")
             elif pkg is None:
-                print(f"⚠️  {import_name:25} INSTALLED (BROKEN - Needs repair)")
+                print(f"[WARN] {import_name:25} INSTALLED (BROKEN - Needs repair)")
                 broken.append(pip_name)
             else:
-                print(f"❌ {import_name:25} MISSING")
+                print(f"[ERROR] {import_name:25} MISSING")
                 missing.append(pkg)
         except Exception:
-            print(f"❌ {import_name:25} ERROR (Check Failed)")
+            print(f"[ERROR] {import_name:25} ERROR (Check Failed)")
             missing.append(pip_name)
     
     print("=" * 60)
@@ -86,7 +86,7 @@ def main():
     if missing or broken:
         return 1
     else:
-        print("\n✅ All critical dependencies installed!")
+        print("\n[OK] All critical dependencies installed!")
         return 0
 
 if __name__ == "__main__":

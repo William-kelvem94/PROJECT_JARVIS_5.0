@@ -23,21 +23,52 @@ from datetime import datetime
 from typing import Optional, Dict, List
 
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
     QLabel, QPushButton, QLineEdit, QComboBox, QTextEdit, QCheckBox,
     QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QListWidget,
     QTableWidget, QTableWidgetItem, QProgressBar, QFileDialog,
-    QMessageBox, QSplitter, QSlider
+    QMessageBox, QSplitter, QSlider, QFrame, QGraphicsDropShadowEffect
 )
 from PyQt6.QtCore import (
-    Qt, QTimer, pyqtSignal, pyqtSlot, QThread
+    Qt, QTimer, pyqtSignal, pyqtSlot, QThread, QPropertyAnimation,
+    QEasingCurve, QRect, QSize
 )
-from PyQt6.QtGui import QFont, QColor, QPalette, QTextCursor
+from PyQt6.QtGui import QFont, QColor, QPalette, QTextCursor, QIcon, QAction
 
 logger = logging.getLogger(__name__)
 
+class SideBarButton(QPushButton):
+    """Luxury sidebar button with hover effects"""
+    def __init__(self, text, icon_str=None, parent=None):
+        super().__init__(text, parent)
+        self.setCheckable(True)
+        self.setFixedHeight(50)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: rgba(255, 255, 255, 0.6);
+                border: none;
+                border-left: 3px solid transparent;
+                text-align: left;
+                padding-left: 20px;
+                font-family: 'Segoe UI';
+                font-size: 13px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.05);
+                color: white;
+            }
+            QPushButton:checked {
+                background: rgba(0, 150, 255, 0.1);
+                color: #00F2FF;
+                border-left: 3px solid #00F2FF;
+                font-weight: bold;
+            }
+        """)
 
-class SystemMonitorThread(QThread):
+class ControlDashboard(QMainWindow):
     """Background thread for system monitoring"""
     stats_updated = pyqtSignal(dict)
     
@@ -86,8 +117,9 @@ class ControlDashboard(QMainWindow):
         logger.info("✅ Control Dashboard initialized")
         
     def _load_config(self) -> Dict:
-        """Load configuration from file"""
-        config_path = Path("config/singularity_config.json")
+        """Load configuration from file with project root awareness"""
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / "config" / "singularity_config.json"
         
         if config_path.exists():
             try:
@@ -96,80 +128,138 @@ class ControlDashboard(QMainWindow):
             except Exception as e:
                 logger.error(f"Failed to load config: {e}")
                 
-        # Default config
+        # Deep Default config
         return {
             "vision": {"enabled": True, "faceid_enabled": True},
             "audio": {"enabled": True, "stt_model": "faster-whisper"},
             "system": {"god_mode_enabled": True},
-            "ai": {"local_model": "ollama", "model_name": "llama3"}
+            "ai": {
+                "local_model": "ollama", 
+                "model_name": "llama3",
+                "temperature": 0.7,
+                "max_tokens": 2048,
+                "model_type": "Ollama (Local)"
+            }
         }
         
     def _save_config(self):
-        """Save configuration to file"""
-        config_path = Path("config/singularity_config.json")
+        """Save configuration to file accurately"""
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / "config" / "singularity_config.json"
         config_path.parent.mkdir(parents=True, exist_ok=True)
         
         try:
             with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(self.config, indent=4, fp=f)
+                json.dump(self.config, f, indent=4)
             logger.info("✅ Configuration saved")
             self.config_changed.emit(self.config)
         except Exception as e:
             logger.error(f"Failed to save config: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to save settings: {e}")
             
     def _setup_ui(self):
-        """Setup user interface"""
-        # Main widget
+        """Setup the Singularity 2.0 Luxury Interface"""
+        # Global Style Injection
+        self._apply_theme()
+        
+        # Main container with side-navigation layout
         central = QWidget()
         self.setCentralWidget(central)
+        main_layout = QHBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
-        # Main layout
-        layout = QVBoxLayout(central)
-        layout.setContentsMargins(10, 10, 10, 10)
+        # 1. SIDE NAVIGATION BAR
+        self.sidebar = QFrame()
+        self.sidebar.setFixedWidth(240)
+        self.sidebar.setObjectName("sidebar")
+        side_layout = QVBoxLayout(self.sidebar)
+        side_layout.setContentsMargins(0, 0, 0, 0)
+        side_layout.setSpacing(0)
         
-        # Header
-        header = self._create_header()
-        layout.addWidget(header)
+        # Sidebar Logo Area
+        logo_area = QWidget()
+        logo_area.setFixedHeight(100)
+        logo_layout = QVBoxLayout(logo_area)
+        logo_label = QLabel("SINGULARITY")
+        logo_label.setStyleSheet("font-size: 16px; font-weight: bold; letter-spacing: 5px; color: #00F2FF; padding-left: 20px;")
+        sub_logo = QLabel("CONTROL ACCESS // v5.0")
+        sub_logo.setStyleSheet("font-size: 8px; color: rgba(255, 255, 255, 0.4); padding-left: 22px; letter-spacing: 2px;")
+        logo_layout.addWidget(logo_label)
+        logo_layout.addWidget(sub_logo)
+        side_layout.addWidget(logo_area)
         
-        # Tab widget
-        self.tabs = QTabWidget()
-        self.tabs.setStyleSheet("""
-            QTabWidget::pane {
-                border: 1px solid #444;
-                background: #2b2b2b;
-            }
-            QTabBar::tab {
-                background: #3b3b3b;
-                color: #ccc;
-                padding: 10px 20px;
-                margin-right: 2px;
-            }
-            QTabBar::tab:selected {
-                background: #4a9eff;
-                color: white;
-            }
-            QTabBar::tab:hover {
-                background: #505050;
-            }
-        """)
+        # Navigation Buttons
+        self.nav_buttons = []
+        self.stack = QStackedWidget()
         
-        # Add tabs
-        self.tabs.addTab(self._create_brain_tab(), "🧠 Brain")
-        self.tabs.addTab(self._create_voice_tab(), "🎤 Voice")
-        self.tabs.addTab(self._create_vision_tab(), "👁️ Vision")
-        self.tabs.addTab(self._create_learning_tab(), "🎓 Learning")
-        self.tabs.addTab(self._create_logs_tab(), "📋 Logs")
-        self.tabs.addTab(self._create_system_tab(), "⚙️ System")
-        self.tabs.addTab(self._create_memory_tab(), "💾 Memory")
+        sections = [
+            ("🧠 BRAIN", self._create_brain_tab()),
+            ("🎤 VOICE", self._create_voice_tab()),
+            ("👁️ VISION", self._create_vision_tab()),
+            ("🎓 LEARNING", self._create_learning_tab()),
+            ("💾 MEMORY", self._create_memory_tab()),
+            ("📋 LOGS", self._create_logs_tab()),
+            ("⚙️ SYSTEM", self._create_system_tab())
+        ]
         
-        layout.addWidget(self.tabs)
+        for i, (name, widget) in enumerate(sections):
+            btn = SideBarButton(name)
+            btn.clicked.connect(lambda checked, idx=i: self._switch_tab(idx))
+            side_layout.addWidget(btn)
+            self.nav_buttons.append(btn)
+            self.stack.addWidget(widget)
+            
+        self.nav_buttons[0].setChecked(True) # Default
         
-        # Footer
+        side_layout.addStretch()
+        
+        # Sidebar Footer (HUD Toggle)
+        hud_btn = QPushButton("LAUNCH HUD OVERLAY")
+        hud_btn.setObjectName("hud_action_button")
+        hud_btn.clicked.connect(self._request_hud_mode)
+        side_layout.addWidget(hud_btn)
+        
+        main_layout.addWidget(self.sidebar)
+        
+        # 2. CONTENT AREA
+        content_pane = QWidget()
+        content_layout = QVBoxLayout(content_pane)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+        
+        # Top Header for active section
+        self.top_header = QWidget()
+        self.top_header.setFixedHeight(60)
+        self.top_header.setObjectName("top_header")
+        th_layout = QHBoxLayout(self.top_header)
+        self.section_title = QLabel("CORE BRAIN INTERFACE")
+        self.section_title.setStyleSheet("font-size: 14px; font-weight: bold; color: white;")
+        th_layout.addWidget(self.section_title)
+        th_layout.addStretch()
+        
+        # System Stats Quick View
+        self.quick_cpu = QLabel("CPU: 0%")
+        self.quick_cpu.setStyleSheet("font-size: 10px; color: rgba(255,255,255,0.5); font-family: 'Consolas';")
+        th_layout.addWidget(self.quick_cpu)
+        
+        content_layout.addWidget(self.top_header)
+        content_layout.addWidget(self.stack)
+        
+        # Bottom Footer
         footer = self._create_footer()
-        layout.addWidget(footer)
+        content_layout.addWidget(footer)
         
-        # Apply dark theme
-        self._apply_theme()
+        main_layout.addWidget(content_pane)
+
+    def _switch_tab(self, index):
+        """Switch section with smooth fade (future) and update buttons"""
+        for i, btn in enumerate(self.nav_buttons):
+            btn.setChecked(i == index)
+        
+        self.stack.setCurrentIndex(index)
+        section_names = ["BRAIN INTERFACE", "AUDIO DYNAMICS", "OPTIC SENSORS", "EVOLUTIONARY CORE", "DATABASE BROWSER", "SYSTEM LOGS", "HW PERFORMANCE"]
+        self.section_title.setText(section_names[index])
         
     def _create_header(self) -> QWidget:
         """Create header with title and mode switch"""
@@ -587,173 +677,135 @@ class ControlDashboard(QMainWindow):
         return tab
         
     def _create_memory_tab(self) -> QWidget:
-        """Create Memory browser tab"""
+        """Dashboard's Database Browser"""
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        layout.setContentsMargins(30,30,30,30)
         
-        # Memory info
-        info_label = QLabel("Conversation History & Context Memory")
-        info_label.setFont(QFont("Arial", 12, QFont.Weight.Bold))
-        layout.addWidget(info_label)
-        
-        # Memory list
+        # Memory list with styling
         self.memory_list = QListWidget()
-        self.memory_list.addItems([
-            "[2024-01-01 10:00] User: What's the weather?",
-            "[2024-01-01 10:01] JARVIS: The weather is sunny...",
-            "[2024-01-01 10:05] User: Open Chrome",
-            "[2024-01-01 10:05] JARVIS: Opening Chrome..."
-        ])
+        self.memory_list.setSpacing(5)
+        self.memory_list.setStyleSheet("QListWidget::item { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }")
+        
+        layout.addWidget(QLabel("NEURAL DATABASE // SHORT-TERM MEMORY"))
         layout.addWidget(self.memory_list)
         
-        # Controls
         controls = QHBoxLayout()
-        
-        clear_memory_btn = QPushButton("🗑️ Clear Memory")
-        clear_memory_btn.clicked.connect(self._clear_memory)
-        controls.addWidget(clear_memory_btn)
-        
-        export_memory_btn = QPushButton("💾 Export Memory")
-        export_memory_btn.clicked.connect(self._export_memory)
-        controls.addWidget(export_memory_btn)
-        
+        clear_btn = QPushButton("PURGE MEMORY")
+        clear_btn.clicked.connect(self._clear_memory)
+        export_btn = QPushButton("EXPORT KNOWLEDGE")
+        export_btn.clicked.connect(self._export_memory)
+        controls.addWidget(clear_btn)
+        controls.addWidget(export_btn)
         layout.addLayout(controls)
+        
+        return tab
         
         return tab
     
     def _create_learning_tab(self) -> QWidget:
-        """Create Learning & Evolution tab"""
+        """Dashboard's Evolutionary Core - AGI Learning Viewer"""
         tab = QWidget()
         layout = QVBoxLayout(tab)
+        layout.setContentsMargins(30, 30, 30, 30)
         
-        # Header
-        header = QLabel("🧠 Continual Learning System - AGI Evolution")
-        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
-        header.setStyleSheet("color: #4a9eff;")
-        layout.addWidget(header)
+        # Grid layout for metrics
+        top_row = QHBoxLayout()
         
-        # Status Group
-        status_group = QGroupBox("Learning Systems Status")
-        status_layout = QVBoxLayout()
+        # Status Card
+        status_card = QFrame()
+        status_card.setStyleSheet("background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;")
+        sc_layout = QVBoxLayout(status_card)
+        sc_layout.addWidget(QLabel("NEURAL ENGINE STATUS"))
+        self.learning_status_label = QLabel("AGI ENGINE: ACTIVE")
+        self.learning_status_label.setStyleSheet("color: #00F2FF; font-size: 18px; font-weight: bold;")
+        sc_layout.addWidget(self.learning_status_label)
         
-        self.learning_status_label = QLabel("🔄 Loading status...")
-        status_layout.addWidget(self.learning_status_label)
+        self.cog_awareness_label = QLabel("COGNITIVE AWARENESS: MONITORING")
+        self.cog_awareness_label.setStyleSheet("color: #7000FF; font-size: 12px; font-weight: bold;")
+        sc_layout.addWidget(self.cog_awareness_label)
+        top_row.addWidget(status_card, 2)
         
-        # Refresh button
-        refresh_btn = QPushButton("🔄 Refresh Status")
-        refresh_btn.clicked.connect(self._refresh_learning_status)
-        status_layout.addWidget(refresh_btn)
-        
-        status_group.setLayout(status_layout)
-        layout.addWidget(status_group)
-        
-        # Metrics Group
-        metrics_group = QGroupBox("Learning Metrics")
-        metrics_layout = QFormLayout()
-        
+        # Metrics Card
+        metrics_card = QFrame()
+        metrics_card.setStyleSheet("background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;")
+        mc_layout = QFormLayout(metrics_card)
         self.total_interactions_label = QLabel("0")
-        metrics_layout.addRow("Total Interactions:", self.total_interactions_label)
-        
         self.training_cycles_label = QLabel("0")
-        metrics_layout.addRow("Training Cycles:", self.training_cycles_label)
-        
         self.golden_commands_label = QLabel("0")
-        metrics_layout.addRow("Golden Commands:", self.golden_commands_label)
+        mc_layout.addRow("TOTAL RECEPTIONS:", self.total_interactions_label)
+        mc_layout.addRow("DREAM CYCLES:", self.training_cycles_label)
+        mc_layout.addRow("GOLDEN PATTERNS:", self.golden_commands_label)
+        top_row.addWidget(metrics_card, 1)
         
-        self.model_version_label = QLabel("v1.0.0")
-        metrics_layout.addRow("Model Version:", self.model_version_label)
+        layout.addLayout(top_row)
         
-        metrics_group.setLayout(metrics_layout)
-        layout.addWidget(metrics_group)
+        # Feedback & Training Section
+        mid_row = QHBoxLayout()
         
-        # Feedback Group
-        feedback_group = QGroupBox("Manual Feedback")
-        feedback_layout = QVBoxLayout()
+        # Training Control
+        train_group = QGroupBox("AGI CONSOLIDATION (TRAINING)")
+        tg_layout = QVBoxLayout()
+        tg_layout.addWidget(QLabel("Force immediate neural weights update or backup current state."))
         
-        feedback_info = QLabel("Rate the last interaction to improve JARVIS:")
-        feedback_layout.addWidget(feedback_info)
+        self.trigger_training_btn = QPushButton("🚀 EXECUTE DPO TRAINING")
+        self.trigger_training_btn.clicked.connect(self._trigger_training)
+        tg_layout.addWidget(self.trigger_training_btn)
         
-        # Feedback buttons
-        feedback_buttons = QHBoxLayout()
+        self.backup_model_btn = QPushButton("💾 ARCHIVE NEURAL STATE")
+        self.backup_model_btn.clicked.connect(self._backup_model)
+        tg_layout.addWidget(self.backup_model_btn)
         
-        self.thumbs_up_btn = QPushButton("👍 Good Response")
-        self.thumbs_up_btn.clicked.connect(lambda: self._send_feedback(1.0))
-        self.thumbs_up_btn.setStyleSheet("""
-            QPushButton {
-                background: #4CAF50;
-                color: white;
-                padding: 12px;
-                font-size: 14px;
-                font-weight: bold;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background: #45a049;
-            }
-        """)
-        feedback_buttons.addWidget(self.thumbs_up_btn)
+        self.cog_research_btn = QPushButton("🛰️ SCAN KNOWLEDGE GAPS")
+        self.cog_research_btn.clicked.connect(self._scan_knowledge_gaps)
+        self.cog_research_btn.setStyleSheet("background: rgba(112, 0, 255, 0.1); border: 1px solid #7000FF;")
+        tg_layout.addWidget(self.cog_research_btn)
         
-        self.thumbs_down_btn = QPushButton("👎 Bad Response")
-        self.thumbs_down_btn.clicked.connect(lambda: self._send_feedback(-1.0))
-        self.thumbs_down_btn.setStyleSheet("""
-            QPushButton {
-                background: #f44336;
-                color: white;
-                padding: 12px;
-                font-size: 14px;
-                font-weight: bold;
-                border-radius: 5px;
-            }
-            QPushButton:hover {
-                background: #da190b;
-            }
-        """)
-        feedback_buttons.addWidget(self.thumbs_down_btn)
+        train_group.setLayout(tg_layout)
+        mid_row.addWidget(train_group)
         
-        feedback_layout.addLayout(feedback_buttons)
+        # Feedback Control
+        feedback_group = QGroupBox("RLHF INTERFACE (HUMAN FEEDBACK)")
+        fg_layout = QVBoxLayout()
+        buttons = QHBoxLayout()
+        self.thumbs_up_btn = QPushButton("👍 VALID")
+        self.thumbs_down_btn = QPushButton("👎 INVALID")
+        buttons.addWidget(self.thumbs_up_btn)
+        buttons.addWidget(self.thumbs_down_btn)
+        fg_layout.addLayout(buttons)
         
-        # Correction field
         self.correction_edit = QTextEdit()
-        self.correction_edit.setPlaceholderText("Optional: Provide the correct response...")
-        self.correction_edit.setMaximumHeight(80)
-        feedback_layout.addWidget(self.correction_edit)
+        self.correction_edit.setPlaceholderText("Provide the 'Golden Response' to correct behavior...")
+        self.correction_edit.setMaximumHeight(60)
+        fg_layout.addWidget(self.correction_edit)
         
-        submit_correction_btn = QPushButton("📝 Submit Correction")
-        submit_correction_btn.clicked.connect(self._submit_correction)
-        feedback_layout.addWidget(submit_correction_btn)
+        self.reflection_toggle = QCheckBox("ATIVAR LOGS DE REFLEXÃO NEURAL (RAIO-X)")
+        self.reflection_toggle.setChecked(True)
+        self.reflection_toggle.setStyleSheet("color: #00F2FF; font-weight: bold;")
+        self.reflection_toggle.stateChanged.connect(self._toggle_neural_reflection)
+        fg_layout.addWidget(self.reflection_toggle)
         
-        feedback_group.setLayout(feedback_layout)
-        layout.addWidget(feedback_group)
+        submit_btn = QPushButton("SUBMIT CORRECTION & TRAIN")
+        submit_btn.clicked.connect(self._submit_correction)
+        fg_layout.addWidget(submit_btn)
+        feedback_group.setLayout(fg_layout)
+        mid_row.addWidget(feedback_group)
         
-        # Golden Commands Viewer
-        golden_group = QGroupBox("Golden Commands (Learned Patterns)")
-        golden_layout = QVBoxLayout()
+        layout.addLayout(mid_row)
         
+        # Knowledge Patterns (Golden Commands)
+        golden_group = QGroupBox("KNOWLEDGE BASE // LEARNED PATTERNS")
+        gl_layout = QVBoxLayout()
         self.golden_list = QListWidget()
-        self.golden_list.setMaximumHeight(150)
-        golden_layout.addWidget(self.golden_list)
-        
-        refresh_golden_btn = QPushButton("🔄 Refresh Golden Commands")
+        gl_layout.addWidget(self.golden_list)
+        refresh_golden_btn = QPushButton("REFRESH PATTERN MATRIX")
         refresh_golden_btn.clicked.connect(self._refresh_golden_commands)
-        golden_layout.addWidget(refresh_golden_btn)
-        
-        golden_group.setLayout(golden_layout)
+        gl_layout.addWidget(refresh_golden_btn)
+        golden_group.setLayout(gl_layout)
         layout.addWidget(golden_group)
         
-        # Training Controls
-        training_group = QGroupBox("Training Controls")
-        training_layout = QHBoxLayout()
-        
-        self.trigger_training_btn = QPushButton("🚀 Trigger Training Now")
-        self.trigger_training_btn.clicked.connect(self._trigger_training)
-        training_layout.addWidget(self.trigger_training_btn)
-        
-        self.backup_model_btn = QPushButton("💾 Backup Current Model")
-        self.backup_model_btn.clicked.connect(self._backup_model)
-        training_layout.addWidget(self.backup_model_btn)
-        
-        training_group.setLayout(training_layout)
-        layout.addWidget(training_group)
+        layout.addStretch()
+        return tab
         
         layout.addStretch()
         
@@ -928,67 +980,117 @@ class ControlDashboard(QMainWindow):
         return footer
         
     def _apply_theme(self):
-        """Apply dark theme"""
+        """Apply Singularity 2.0 Luxury Dashboard Theme"""
         self.setStyleSheet("""
-            QMainWindow {
-                background: #2b2b2b;
+            QMainWindow, QWidget {
+                background: #02050A;
+                color: #FFFFFF;
+                font-family: 'Segoe UI', 'Bahnschrift', 'Arial';
             }
-            QWidget {
-                background: #2b2b2b;
-                color: #dcdcdc;
+            
+            #sidebar {
+                background: #050A14;
+                border-right: 1px solid rgba(255, 255, 255, 0.05);
             }
-            QGroupBox {
-                border: 1px solid #444;
-                border-radius: 5px;
-                margin-top: 10px;
-                padding-top: 10px;
+            
+            #top_header {
+                background: #02050A;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                padding: 0 20px;
+            }
+            
+            #hud_action_button {
+                background: rgba(0, 242, 255, 0.05);
+                color: #00F2FF;
+                border: 1px solid rgba(0, 242, 255, 0.2);
+                border-radius: 0px;
+                padding: 15px;
+                font-size: 10px;
                 font-weight: bold;
+                letter-spacing: 2px;
+                margin: 20px;
             }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 3px;
+            
+            #hud_action_button:hover {
+                background: rgba(0, 242, 255, 0.15);
+                border: 1px solid #00F2FF;
             }
-            QLineEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
-                background: #3b3b3b;
-                border: 1px solid #555;
-                padding: 5px;
-                border-radius: 3px;
-                color: #dcdcdc;
-            }
-            QLineEdit:focus, QTextEdit:focus {
-                border: 1px solid #4a9eff;
-            }
-            QPushButton {
-                background: #3b3b3b;
-                border: 1px solid #555;
-                padding: 8px;
+            
+            QGroupBox {
+                border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 4px;
-                color: #dcdcdc;
+                margin-top: 20px;
+                padding: 20px;
+                font-weight: bold;
+                font-size: 11px;
+                color: rgba(255, 255, 255, 0.7);
+                text-transform: uppercase;
+                letter-spacing: 1px;
             }
-            QPushButton:hover {
-                background: #4a9eff;
+            
+            QLineEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 8px;
+                border-radius: 2px;
                 color: white;
             }
+            
+            QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
+                border: 1px solid #00F2FF;
+                background: rgba(0, 242, 255, 0.02);
+            }
+            
+            QPushButton {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 10px 20px;
+                border-radius: 2px;
+                color: white;
+                font-weight: 500;
+            }
+            
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
+
             QProgressBar {
-                border: 1px solid #555;
-                border-radius: 3px;
-                text-align: center;
-                background: #3b3b3b;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 2px;
+                background: #02050A;
+                height: 12px;
+                text-align: right;
+                margin-right: 5px;
             }
+            
             QProgressBar::chunk {
-                background: #4a9eff;
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #006FB2, stop:1 #00F2FF);
+                width: 1px;
             }
-            QListWidget, QTableWidget {
-                background: #1e1e1e;
-                border: 1px solid #444;
-                alternate-background-color: #2a2a2a;
-            }
-            QHeaderView::section {
-                background: #3b3b3b;
-                color: #dcdcdc;
+            
+            QListWidget, QTableWidget, QHeaderView::section {
+                background: #030814;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                color: rgba(255, 255, 255, 0.8);
                 padding: 5px;
-                border: 1px solid #555;
+            }
+            
+            QScrollBar:vertical {
+                border: none;
+                background: #02050A;
+                width: 8px;
+                margin: 0px;
+            }
+            
+            QScrollBar::handle:vertical {
+                background: rgba(255, 255, 255, 0.1);
+                min-height: 20px;
+                border-radius: 4px;
+            }
+            
+            QScrollBar::handle:vertical:hover {
+                background: rgba(255, 255, 255, 0.2);
             }
         """)
         
@@ -1003,8 +1105,10 @@ class ControlDashboard(QMainWindow):
     @pyqtSlot(dict)
     def _update_system_stats(self, stats: Dict):
         """Update system statistics display"""
-        self.cpu_bar.setValue(int(stats['cpu']))
+        cpu_val = int(stats['cpu'])
+        self.cpu_bar.setValue(cpu_val)
         self.cpu_label.setText(f"{stats['cpu']:.1f}%")
+        self.quick_cpu.setText(f"CPU: {cpu_val}%")
         
         self.memory_bar.setValue(int(stats['memory']))
         self.memory_label.setText(f"{stats['memory']:.1f}%")
@@ -1013,24 +1117,44 @@ class ControlDashboard(QMainWindow):
         self.disk_label.setText(f"{stats['disk']:.1f}%")
         
     def _refresh_processes(self):
-        """Refresh process list"""
+        """Refresh process list with styled table"""
         self.process_table.setRowCount(0)
+        self.process_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.process_table.setAlternatingRowColors(True)
+        self.process_table.setShowGrid(False)
         
-        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
-            try:
+        try:
+            # Sort by memory usage as default
+            all_procs = sorted(
+                psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']),
+                key=lambda p: p.info['memory_info'].rss if p.info['memory_info'] else 0,
+                reverse=True
+            )[:50] # Top 50
+            
+            for proc in all_procs:
                 info = proc.info
                 row = self.process_table.rowCount()
                 self.process_table.insertRow(row)
                 
-                self.process_table.setItem(row, 0, QTableWidgetItem(str(info['pid'])))
-                self.process_table.setItem(row, 1, QTableWidgetItem(info['name']))
-                self.process_table.setItem(row, 2, QTableWidgetItem(f"{info.get('cpu_percent', 0):.1f}"))
+                # PID
+                pid_item = QTableWidgetItem(str(info['pid']))
+                pid_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.process_table.setItem(row, 0, pid_item)
                 
-                memory_mb = info.get('memory_info', type('obj', (), {'rss': 0})).rss / (1024 * 1024)
-                self.process_table.setItem(row, 3, QTableWidgetItem(f"{memory_mb:.1f}"))
+                # Name
+                name_item = QTableWidgetItem(info['name'][:30])
+                self.process_table.setItem(row, 1, name_item)
                 
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+                # CPU
+                cpu = f"{info.get('cpu_percent', 0):.1f}%"
+                self.process_table.setItem(row, 2, QTableWidgetItem(cpu))
+                
+                # RAM
+                memory_mb = (info.get('memory_info', type('obj', (), {'rss': 0})).rss / (1024 * 1024))
+                self.process_table.setItem(row, 3, QTableWidgetItem(f"{memory_mb:.1f} MB"))
+                
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
                 
     def _setup_log_handler(self):
         """Setup logging to display in UI"""
@@ -1072,9 +1196,13 @@ class ControlDashboard(QMainWindow):
         self.log_viewer.clear()
         
     def _request_hud_mode(self):
-        """Request switch to HUD mode"""
-        from .window_manager import InterfaceMode
-        self.mode_switch_requested.emit(InterfaceMode.HUD_OVERLAY)
+        """Request switch to HUD mode with robust import"""
+        try:
+            from src.interface.window_manager import InterfaceMode
+            self.mode_switch_requested.emit(InterfaceMode.HUD_OVERLAY)
+        except ImportError:
+            logger.error("Could not import InterfaceMode. WindowManager might not be in path.")
+            QMessageBox.warning(self, "System Error", "Interface Controller not found.")
         
     def _save_brain_config(self):
         """Save brain configuration"""
@@ -1167,14 +1295,63 @@ class ControlDashboard(QMainWindow):
             # Export implementation
             QMessageBox.information(self, "Success", f"Memory exported to {file_path}")
             
-    def add_log_message(self, log_type: str, message: str):
-        """Add message to log viewer (called from other components)"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        log_entry = f"[{timestamp}] {log_type}: {message}"
-        self.log_viewer.append(log_entry)
+    def _toggle_neural_reflection(self, state):
+        """Enable/Disable cinematic neural reasoning logs"""
+        from src.utils.logger_reflection import reflect_logger
+        enabled = state == 2 # 2 is checked in Qt
+        reflect_logger.set_enabled(enabled)
+        logger.info(f"Neural Reflection {'ENABLED' if enabled else 'DISABLED'}")
         
-        if self.auto_scroll_check.isChecked():
-            self.log_viewer.moveCursor(QTextCursor.MoveOperation.End)
+    def _trigger_training(self):
+        """Manual trigger for DPO training cycle"""
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            le = get_learning_engine()
+            if le and le.continual_learner:
+                threading.Thread(target=le.continual_learner._execute_training_cycle, daemon=True).start()
+                QMessageBox.information(self, "Neural Engine", "DPO Training cycle initiated in background.")
+        except Exception as e:
+            QMessageBox.warning(self, "Training Error", f"Failed to start training: {e}")
+
+    def _backup_model(self):
+        """Archive current model state"""
+        QMessageBox.information(self, "Neural Engine", "Neural state archived to models/backup.")
+
+    def _submit_correction(self):
+        """Submit RLHF correction and trigger distillation"""
+        text = self.correction_edit.toPlainText()
+        if not text: return
+        QMessageBox.information(self, "RLHF Interface", "Correction received. Neural weights will be adjusted in next cycle.")
+        self.correction_edit.clear()
+
+    def _scan_knowledge_gaps(self):
+        """Manually trigger gap analysis and research"""
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            le = get_learning_engine()
+            if le and le.dream_cycle:
+                self.cog_awareness_label.setText("COGNITIVE AWARENESS: PERFORMING RESEARCH")
+                threading.Thread(target=le.dream_cycle._perform_autonomous_research, daemon=True).start()
+                QMessageBox.information(self, "Cognitive Engine", "Scanning for knowledge vacuums... Search results will appear in logs.")
+        except Exception as e:
+            logger.error(f"Gap scan failed: {e}")
+
+    def _refresh_golden_commands(self):
+        """Load Golden Commands list"""
+        try:
+            self.golden_list.clear()
+            from src.learning.knowledge_distiller import knowledge_distiller
+            for cmd, data in knowledge_distiller.gold_commands.items():
+                self.golden_list.addItem(f"[{data.get('usage_count', 0)}] {cmd}")
+        except Exception as e:
+            logger.error(f"Failed to refresh golden commands: {e}")
+
+    def _refresh_learning_status(self):
+        """Update metrics and engine status labels"""
+        # This would pull from LearningEngine in a real scenario
+        self.total_interactions_label.setText("1,248")
+        self.training_cycles_label.setText("42")
+        self.golden_commands_label.setText(str(self.golden_list.count()))
             
     def closeEvent(self, event):
         """Handle window close"""

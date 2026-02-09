@@ -64,7 +64,7 @@ if not exist "%ROOT%scripts\install\total_installer.py" (
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [CRITICAL] Installation failed. 
-    echo Check scripts\install\total_installer.log for details.
+    echo Check logs\total_installer.log for details.
     if "%SILENT_MODE%"=="0" pause
     exit /b 1
 )

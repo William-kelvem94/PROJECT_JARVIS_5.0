@@ -14,6 +14,7 @@ import json
 import logging
 from typing import List, Dict, Optional, Any, Callable
 import time
+from src.utils.logger_reflection import reflect_logger
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -264,8 +265,12 @@ Task: {task}
                     parameters = dict(function_call.args)
                     
                     if verbose:
+                        reflect_logger.reflect(f"Analyzing function call for tool '{tool_name}'", layer="LOGIC")
                         logger.info(f"💭 Thought: Using tool '{tool_name}'")
                         logger.info(f"🔧 Action: {tool_name}({json.dumps(parameters, indent=2)})")
+                        
+                        # Explicitly log the thought for distillation
+                        self.last_thought = f"Decided to use {tool_name} to address {task}"
                     
                     # Execute tool
                     tool_result = self._execute_tool(tool_name, parameters)
@@ -350,6 +355,8 @@ Tools available: {', '.join([t['name'] for t in self.tools])}
 Reason step-by-step and provide a FINAL ANSWER."""
             
             answer = local_brain.generate_response(prompt, system_prompt="You are JARVIS. Be efficient and direct.")
+            
+            reflect_logger.reflect(f"Local brain generating answer for: {task}", layer="OFFLINE_CORE")
             
             return {
                 'success': True,

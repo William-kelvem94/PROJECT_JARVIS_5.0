@@ -46,6 +46,8 @@ class BrainRouter:
         self.ollama_available_models = []
         self._is_online = True
         self._last_conn_check = 0
+        self._last_model_check = 0
+        self.discovery_interval = 60  # Recarregar lista de modelos a cada 60s
         
         # Carregar configurações do ai_config.yaml
         if CONFIG_AVAILABLE and config:
@@ -109,6 +111,12 @@ class BrainRouter:
         Versão Stark IQ 11.2 - Escolha adaptativa baseada em Memória e Tiers
         Retorna: 'ollama:<modelo>', 'local' (native), ou 'cloud'
         """
+        # Periodic Re-discovery of models (perfeito para downloads em background)
+        import time
+        if time.time() - self._last_model_check > self.discovery_interval:
+            self._discover_ollama_models()
+            self._last_model_check = time.time()
+
         # MODO OFFLINE FORÇADO OU SEM INTERNET: Força uso local
         if self.offline_mode or not self.check_connectivity():
             if self.offline_mode:

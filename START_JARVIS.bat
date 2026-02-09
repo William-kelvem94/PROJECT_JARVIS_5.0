@@ -180,9 +180,15 @@ echo.
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo "[CRITICAL] System crash detected (Exit Code %ERRORLEVEL%)"
+    echo ========================================================================
+    echo  [CRITICAL] JARVIS Core Exited with Error Code: %ERRORLEVEL%
+    echo ========================================================================
+    echo.
     pause
     exit /b %ERRORLEVEL%
 )
 
+echo.
+echo [DEBUG] Launcher loop finished.
+pause
 exit /b 0

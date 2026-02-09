@@ -176,7 +176,7 @@ trusted-host = pypi.org
         
         self.log('INFO', '[AUTO-CONFIG] Adding VENV to Windows Defender exclusions...')
         
-        project_root = Path(__file__).parent.parent.parent
+        project_root = Path(__file__).parent.parent
         venv_path = project_root / 'venv'
         
         try:
