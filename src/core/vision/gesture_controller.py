@@ -73,7 +73,7 @@ class GestureController:
                     from mediapipe.tasks.python import vision
                     
                     # Carregar modelo (precisa baixar o arquivo .task se não existir)
-                    model_path = config.get_setting('sensory.hand_landmarker_path', 'models/hand_landmarker.task')
+                    model_path = config.get_setting('sensory.hand_landmarker_path', 'models/vision/hand_landmarker.task')
                     
                     if not os.path.exists(model_path):
                          logger.warning(f"Modelo Task não encontrado em {model_path}. Tentando baixar/localizar...")

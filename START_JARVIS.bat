@@ -56,8 +56,7 @@ if %ERRORLEVEL% NEQ 0 (
     
     if /i "%install_choice%"=="Y" (
         echo [SYSTEM] Installing missing dependencies...
-        "%VENV_PYTHON%" -m pip install onnxruntime==1.17.0 --quiet
-        "%VENV_PYTHON%" -m pip install -r "%ROOT%requirements.txt" --quiet
+        call "%ROOT%INSTALL_JARVIS.bat"
         echo [OK] Dependencies installed. Revalidating...
         "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
         

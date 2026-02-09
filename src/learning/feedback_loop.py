@@ -81,16 +81,19 @@ class FeedbackDatabase:
         Args:
             db_path: Path to SQLite database file
         """
-        self.db_path = Path(db_path)
+        # Ensure path is absolute to avoid CWD issues
+        self.db_path = Path(db_path).resolve()
         
         # Ensure parent directory exists with proper error handling
         try:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
+            logger.info(f"📁 Feedback database path: {self.db_path}")
         except Exception as e:
             logger.error(f"Failed to create database directory: {e}")
             # Fallback to temp directory
             import tempfile
             self.db_path = Path(tempfile.gettempdir()) / "jarvis_feedback.db"
+            logger.warning(f"⚠️ Using fallback database path: {self.db_path}")
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
         
         self.conn: Optional[sqlite3.Connection] = None

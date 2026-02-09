@@ -205,7 +205,8 @@ class WorkflowEngine:
 
 
 # Instância global
-workflow_engine = WorkflowEngine()
+# Alterado para usar data/workflows e manter a raiz limpa
+workflow_engine = WorkflowEngine(workflows_dir="data/workflows")
 
 
 # Exemplo de workflow pré-definido
