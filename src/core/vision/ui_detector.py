@@ -3,6 +3,7 @@ Módulo de Detecção de Elementos de Interface (UI Detector)
 Usa o YOLOv8 para identificar ícones, botões e outros componentes visuais.
 """
 
+import os
 import logging
 import cv2
 import numpy as np

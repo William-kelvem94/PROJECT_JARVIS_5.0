@@ -554,7 +554,7 @@ class DreamCycle:
             logs = []
             
             if consolidation_log.exists():
-                with open(consolidation_log, 'r') as f:
+                with open(consolidation_log, 'r', encoding='utf-8') as f:
                     logs = json.load(f)
             
             logs.append({
@@ -562,8 +562,8 @@ class DreamCycle:
                 "status": "completed"
             })
             
-            with open(consolidation_log, 'w') as f:
-                json.dump(logs, f, indent=2)
+            with open(consolidation_log, 'w', encoding='utf-8') as f:
+                json.dump(logs, f, indent=2, ensure_ascii=False)
             
             logger.info("Data consolidation completed")
             
@@ -599,7 +599,7 @@ class DreamCycle:
             return
         
         try:
-            with open(stats_file, 'r') as f:
+            with open(stats_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 self.stats = DreamCycleStats(**data)
             logger.info("Loaded dream cycle statistics")
@@ -611,8 +611,8 @@ class DreamCycle:
         stats_file = self.data_dir / "dream_cycle_stats.json"
         
         try:
-            with open(stats_file, 'w') as f:
-                json.dump(self.stats.to_dict(), f, indent=2)
+            with open(stats_file, 'w', encoding='utf-8') as f:
+                json.dump(self.stats.to_dict(), f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving stats: {e}")
     

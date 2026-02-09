@@ -9,6 +9,7 @@ import platform
 from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
+import yaml
 
 # Configuração de logging
 logging.basicConfig(
@@ -64,6 +65,7 @@ class Config:
         # Arquivos de configuração
         self.SETTINGS_FILE = self.CONFIG_DIR / "settings.json"
         self.OCR_CONFIG_FILE = self.CONFIG_DIR / "ocr_config.json"
+        self.AI_CONFIG_FILE = self.CONFIG_DIR / "ai_config.yaml"
 
         # Informações do sistema
         self.SYSTEM_INFO = {
@@ -205,6 +207,9 @@ class Config:
 
         # Carregar configurações do usuário
         self.user_settings = self._load_user_settings()
+        
+        # Carregar configurações de IA
+        self.ai_config = self._load_ai_config()
 
     def _find_tesseract_path(self) -> Optional[str]:
         """Encontra o caminho do Tesseract instalado com busca agressiva"""
@@ -335,6 +340,44 @@ class Config:
     def get_data_categories(self) -> Dict[str, list]:
         """Obtém categorias de dados"""
         return self.DATA_CATEGORIES.copy()
+    
+    def _load_ai_config(self) -> Dict[str, Any]:
+        """Carrega configurações de IA do arquivo YAML"""
+        if self.AI_CONFIG_FILE.exists():
+            try:
+                with open(self.AI_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    ai_config = yaml.safe_load(f)
+                logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
+                return ai_config
+            except Exception as e:
+                logger.error(f"❌ Erro ao carregar ai_config.yaml: {e}")
+                return {}
+        else:
+            logger.warning(f"⚠️ ai_config.yaml não encontrado em {self.AI_CONFIG_FILE}")
+            return {}
+    
+    def get_ai_config(self, key_path: str = None, default=None):
+        """
+        Obtém configuração de IA usando notação de ponto.
+        
+        Exemplos:
+            config.get_ai_config('ai_agent.max_react_turns')
+            config.get_ai_config('brain_router.ollama_models.tier_ultra')
+            config.get_ai_config()  # Retorna toda a configuração
+        """
+        if key_path is None:
+            return self.ai_config
+        
+        keys = key_path.split('.')
+        value = self.ai_config
+        
+        for key in keys:
+            if isinstance(value, dict) and key in value:
+                value = value[key]
+            else:
+                return default
+        
+        return value
 
 # Instância global
 config = Config()
