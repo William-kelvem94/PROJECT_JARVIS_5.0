@@ -12,6 +12,14 @@ import time
 import logging
 from pathlib import Path
 
+# Fix Windows terminal encoding
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except:
+        pass
+
 # Setup paths
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -387,7 +395,7 @@ class DeviceManagerTester:
     def run_all_tests(self):
         """Executa todos os testes"""
         print("\n" + "="*60)
-        print(" JARVIS 5.0 - DEVICE MANAGER COMPLETE TEST SUITE ".center(60, "═"))
+        print(" JARVIS 5.0 - DEVICE MANAGER COMPLETE TEST SUITE ".center(60, "="))
         print("="*60 + "\n")
         
         print(f"🖥️ Sistema: {sys.platform}")
@@ -432,7 +440,7 @@ class DeviceManagerTester:
         total = len(self.results)
         
         print("\n" + "="*60)
-        print(f" RESULTADO FINAL ".center(60, "═"))
+        print(f" RESULTADO FINAL ".center(60, "="))
         print("="*60)
         print(f"\n✅ Passou: {passed}/{total}")
         print(f"⏱️ Duração: {duration:.2f}s\n")
