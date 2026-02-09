@@ -145,6 +145,16 @@ except ImportError as e:
     memory_manager = None
 
 # ============================================================================
+# PHASE 6 - LEARNING ENGINE (CONTINUAL LEARNING / AGI)
+# ============================================================================
+try:
+    from src.learning.learning_engine import get_learning_engine
+    logger.info("✅ Learning Engine carregado (Continual Evolution)")
+except ImportError as e:
+    logger.warning(f"⚠️ learning_engine não disponível: {e}")
+    get_learning_engine = None
+
+# ============================================================================
 # PHASE 4 - VISION ENHANCER (ADVANCED UI DETECTION)
 # ============================================================================
 try:
@@ -769,6 +779,31 @@ class AIAgent:
         # ... (Step 6-7 unchanged) ...
         # 6. Salvar nova interação na memória neural e dataset
         neural_memory.store_interaction(user_command, response)
+        
+        # 🧠 PHASE 6: REGISTRO DE FEEDBACK PARA APRENDIZADO CONTÍNUO
+        if get_learning_engine:
+            try:
+                learning_engine = get_learning_engine()
+                if learning_engine and learning_engine.is_initialized:
+                    # Coletar metadados da interação
+                    metadata = {
+                        'provider': primary_provider,
+                        'turns': current_turn + 1,
+                        'actions_executed': len(all_actions),
+                        'emotion': user_emotion if camera_controller else 'neutral'
+                    }
+                    
+                    # Registrar interação para aprendizado
+                    learning_engine.record_interaction(
+                        user_input=user_command,
+                        ai_response=response,
+                        feedback_value=None,  # Será coletado feedback explícito depois via UI
+                        metadata=metadata
+                    )
+                    
+                    logger.debug("📝 Interação registrada no sistema de aprendizado")
+            except Exception as e:
+                logger.debug(f"Erro ao registrar interação: {e}")
         
         # 7. Falar a resposta (removendo tags de ação para não falar código)
         clean_response = re.sub(r'\[ACTION: .*?\]', '', response)

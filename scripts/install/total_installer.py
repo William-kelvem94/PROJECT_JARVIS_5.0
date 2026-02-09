@@ -52,12 +52,14 @@ class TotalInstaller:
             return False
 
     def run_command(self, cmd):
-        """Executa comando de forma segura"""
+        """Executa comando de forma segura com tratamento de encoding"""
         try:
             self.logger.info(f"⚡ Executando: {' '.join(cmd[:5])}...")
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            # Use errors='replace' to avoid UnicodeDecodeError on localized systems
+            subprocess.run(cmd, check=True, capture_output=True, text=True, errors='replace')
         except subprocess.CalledProcessError as e:
-            self.logger.error(f"❌ Falha: {e.stderr[:500]}")
+            err_msg = e.stderr if e.stderr else "Unknown error"
+            self.logger.error(f"❌ Falha: {err_msg[:500]}")
             raise
 
     def install_pytorch_correct(self):
@@ -192,8 +194,9 @@ class TotalInstaller:
             try: self.run_command([sys.executable, "-m", "pip", "install", dep])
             except: pass
 
-        # 7. Final Fix for Transformers
-        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "-U"])
+        # 7. Final Fix for Transformers & NumPy (Enforce version < 2)
+        self.logger.info("🧹 Finalizing environment constraints...")
+        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "numpy<2", "-U"])
         
         self.logger.info("\n" + "="*50)
         self.logger.info("🎉 INSTALAÇÃO FINALIZADA!")
