@@ -1,0 +1,245 @@
+# ============================================================================
+# JARVIS 5.0 - AI Configuration
+# ============================================================================
+# Este arquivo centraliza todas as configurações de IA, redes neurais e LLMs.
+# Evita valores hardcoded no código-fonte.
+# ============================================================================
+
+# === AI AGENT CONFIGURATION ===
+ai_agent:
+  # ReAct loop settings
+  max_react_turns: 5  # Máximo de turnos de raciocínio-ação
+  screenshot_timeout: 5.0  # Timeout para captura de tela (segundos)
+  quick_response_threshold: 0.05  # 50ms - respostas instantâneas
+  
+  # Thresholds de complexidade para roteamento
+  complexity_thresholds:
+    simple: 0.2    # Tarefas triviais (comandos básicos)
+    medium: 0.5    # Tarefas normais (pesquisas, edições)
+    complex: 0.8   # Tarefas avançadas (análise, código)
+  
+  # Privacy settings
+  privacy_thresholds:
+    public: 0      # Sem dados sensíveis
+    low: 1         # Dados genéricos
+    medium: 2      # Dados pessoais básicos
+    high: 3        # Senhas, documentos privados
+    critical: 4    # Dados financeiros, segredos
+  
+  # Performance settings
+  cache_enabled: true
+  cache_ttl: 3600  # 1 hora
+  max_screenshot_size_mb: 10
+  parallel_processing: true
+
+# === BRAIN ROUTER CONFIGURATION ===
+brain_router:
+  # Ollama Models (Local LLMs)
+  ollama_models:
+    tier_ultra:  # Genius tier - Alta complexidade
+      - "deepseek-r1:8b"
+      - "deepseek-r1:14b"
+      - "deepseek-r1"
+      - "llama3.3:70b"
+    
+    tier_pro:  # Versatile tier - Média-Alta complexidade
+      - "llama3.3"
+      - "llama3.2"
+      - "llama3.1"
+      - "llama3"
+      - "qwen2.5:14b"
+      - "qwen2.5:7b"
+    
+    tier_fast:  # Fast tier - Uso geral econômico
+      - "qwen2.5:3b"
+      - "qwen2.5"
+      - "phi3.5"
+      - "phi3"
+      - "mistral"
+      - "gemma2:9b"
+  
+  # Hardware requirements per tier
+  hardware_requirements:
+    tier_ultra:
+      min_ram_gb: 6.0
+      min_vram_gb: 4.0
+    tier_pro:
+      min_ram_gb: 4.0
+      min_vram_gb: 2.0
+    tier_fast:
+      min_ram_gb: 1.5
+      min_vram_gb: 0.0
+  
+  # Cloud models (Gemini)
+  cloud_models:
+    flash: "gemini-2.0-flash-exp"
+    pro: "gemini-1.5-pro-002"
+    ultra: "gemini-2.0-flash-thinking-exp"
+  
+  # Routing thresholds
+  complexity_thresholds:
+    simple: 0.2
+    medium: 0.5
+    complex: 0.8
+    ultra_complex: 0.9
+  
+  # Latency requirements (seconds)
+  latency_limits:
+    ultra_low: 0.1
+    low: 0.5
+    moderate: 2.0
+    high: 5.0
+    flexible: 10.0
+  
+  # Ollama connection
+  ollama_url: "http://localhost:11434"
+  ollama_timeout: 2.0  # Timeout para descoberta de modelos
+  
+  # Offline mode
+  offline_mode: false  # Se true, força uso exclusivo de recursos locais
+  
+  # Fallback strategy
+  fallback_strategy: "local"  # 'local', 'cloud', ou 'error'
+
+# === LOCAL BRAIN CONFIGURATION ===
+local_brain:
+  # Native micro-LLM settings
+  model_path: "models/qwen2.5-1.5b-instruct"
+  model_type: "qwen"
+  max_context_length: 2048
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 40
+  
+  # Quantization
+  quantization: "int8"  # 'fp16', 'int8', 'int4', ou 'none'
+  
+  # Device
+  device: "auto"  # 'auto', 'cuda', 'cpu', ou 'mps'
+
+# === NEURAL MEMORY CONFIGURATION ===
+neural_memory:
+  # ChromaDB settings
+  chroma_persist_dir: "data/neural_memory"
+  collection_name: "jarvis_memory"
+  
+  # Embedding model
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  embedding_device: "cpu"
+  
+  # Memory retrieval
+  max_memories_retrieved: 3
+  similarity_threshold: 0.7
+  
+  # Context window
+  short_term_memory_size: 10  # Últimos N turnos
+  long_term_memory_enabled: true
+  
+  # Auto-summarization
+  auto_summarize_after_turns: 5
+  summary_model: "local"  # 'local' ou 'cloud'
+
+# === TRAINER CONFIGURATION ===
+trainer:
+  # Default training config
+  default_config:
+    model_name: "meta-llama/Llama-3-8B"
+    model_max_length: 2048
+    load_in_4bit: true
+    load_in_8bit: false
+    
+    # LoRA settings
+    lora_r: 16
+    lora_alpha: 32
+    lora_dropout: 0.05
+    lora_target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+    
+    # Training hyperparameters
+    num_train_epochs: 3
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 0.0002
+    weight_decay: 0.01
+    
+    # Optimization
+    optimizer: "adamw_8bit"
+    lr_scheduler_type: "cosine"
+    bf16: true
+    
+    # Checkpointing
+    save_steps: 500
+    save_total_limit: 3
+    
+    # Early stopping
+    early_stopping_patience: 3
+  
+  # Paths
+  output_dir: "models/continual"
+  cache_dir: "data/cache/models"
+  
+  # Dataset collection
+  auto_collect_interactions: true
+  min_quality_score: 0.7  # 0-1, filtro de qualidade
+
+# === VISION CONFIGURATION ===
+vision:
+  # OCR settings
+  ocr_engine: "easyocr"  # 'easyocr', 'pytesseract', ou 'paddleocr'
+  ocr_languages: ["pt", "en"]
+  ocr_gpu: true
+  
+  # YOLO settings
+  yolo_model: "yolov8n.pt"
+  yolo_confidence: 0.5
+  yolo_device: "auto"
+  
+  # Screenshot settings
+  screenshot_format: "png"
+  screenshot_quality: 85  # Para JPEG
+  screenshot_resize_max: 1920  # Redimensionar se > que isso
+
+# === PERFORMANCE MONITORING ===
+performance:
+  # Metrics collection
+  collect_metrics: true
+  metrics_interval: 60  # segundos
+  
+  # Performance thresholds
+  max_response_time: 5.0  # segundos
+  max_memory_usage_gb: 8.0
+  max_cpu_usage_percent: 80.0
+  
+  # Auto-optimization
+  auto_optimize: true
+  optimize_on_high_load: true
+
+# === SECURITY ===
+security:
+  # Validation
+  validate_actions: true
+  validate_file_access: true
+  validate_network_access: true
+  
+  # Restricted paths
+  restricted_paths:
+    - "C:\\Windows\\System32"
+    - "C:\\Program Files"
+    - "/etc"
+    - "/usr"
+    - "/bin"
+  
+  # Restricted domains
+  restricted_domains:
+    - "localhost"  # Exceto para Ollama
+  
+  # Action limits
+  max_actions_per_turn: 10
+  max_file_size_mb: 100
+
+# === DEBUGGING ===
+debug:
+  verbose_logging: false
+  log_model_responses: false
+  log_action_execution: true
+  save_failed_screenshots: true
+  profiling_enabled: false

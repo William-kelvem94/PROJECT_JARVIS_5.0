@@ -6,10 +6,10 @@ class ContextSanitizer:
     
     SANITIZATION_RULES = {
         # Caminhos do Windows (C:\Users\...) → Descrições amigáveis
-        r'[A-Za-z]:\\[^"\n]*\\Users\\[^"\n]*\\Documents\\[^"\n]*': "[Meus Documentos]",
-        r'[A-Za-z]:\\[^"\n]*\\Users\\[^"\n]*\\': "[Pasta do Usuário]\\",
-        r'[A-Za-z]:\\[^"\n]*\\Windows\\[^"\n]*': "[Sistema Windows]",
-        r'[A-Za-z]:\\[^"\n]*': "[Caminho de Arquivo]",
+        r'[A-Za-z]:[/\\][^"\n]*[/\\]Users[/\\][^"\n]*[/\\]Documents[/\\][^"\n]*': "[Meus Documentos]",
+        r'[A-Za-z]:[/\\][^"\n]*[/\\]Users[/\\][^"\n]*[/\\]': "[Pasta do Usuário]",
+        r'[A-Za-z]:[/\\][^"\n]*[/\\]Windows[/\\][^"\n]*': "[Sistema Windows]",
+        r'[A-Za-z]:[/\\][^"\n]*': "[Caminho de Arquivo]",
         
         # URLs e links → Descrições (Exceto se for muito curto)
         r'https?://[^\s"\']{15,}': "[Link Online]",

@@ -632,9 +632,9 @@ class FeedbackLoop:
             output_path = Path(output_path)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(output_path, 'w') as f:
+            with open(output_path, 'w', encoding='utf-8') as f:
                 for item in dpo_data:
-                    f.write(json.dumps(item) + '\n')
+                    f.write(json.dumps(item, ensure_ascii=False) + '\n')
             
             logger.info(f"Exported {len(dpo_data)} preference pairs to {output_path}")
             return len(dpo_data)
@@ -748,7 +748,7 @@ class FeedbackLoop:
             return
         
         try:
-            with open(stats_file, 'r') as f:
+            with open(stats_file, 'r', encoding='utf-8') as f:
                 self.stats = json.load(f)
             logger.info("Loaded feedback statistics")
         except Exception as e:
@@ -759,8 +759,8 @@ class FeedbackLoop:
         stats_file = self.data_dir / "feedback_stats.json"
         
         try:
-            with open(stats_file, 'w') as f:
-                json.dump(self.stats, f, indent=2)
+            with open(stats_file, 'w', encoding='utf-8') as f:
+                json.dump(self.stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving stats: {e}")
     

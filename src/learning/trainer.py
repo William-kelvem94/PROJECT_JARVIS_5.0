@@ -23,10 +23,7 @@ try:
 except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
     torch = None
-    # Mock Dataset class for when torch is not available
-    class Dataset:
-        """Mock Dataset class."""
-        pass
+    Dataset = None
     DataLoader = None
 
 try:
@@ -41,19 +38,12 @@ try:
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    # Mock classes
-    class AutoModelForCausalLM:
-        pass
-    class AutoTokenizer:
-        pass
-    class TrainingArguments:
-        pass
-    class Trainer:
-        pass
-    class DataCollatorForLanguageModeling:
-        pass
-    class EarlyStoppingCallback:
-        pass
+    AutoModelForCausalLM = None
+    AutoTokenizer = None
+    TrainingArguments = None
+    Trainer = None
+    DataCollatorForLanguageModeling = None
+    EarlyStoppingCallback = None
 
 try:
     from peft import (
@@ -65,23 +55,17 @@ try:
     PEFT_AVAILABLE = True
 except ImportError:
     PEFT_AVAILABLE = False
-    # Mock classes
-    class LoraConfig:
-        pass
-    def get_peft_model(*args, **kwargs):
-        return None
-    def prepare_model_for_kbit_training(*args, **kwargs):
-        return None
-    class PeftModel:
-        pass
+    LoraConfig = None
+    get_peft_model = None
+    prepare_model_for_kbit_training = None
+    PeftModel = None
 
 try:
     from bitsandbytes import BitsAndBytesConfig
     BNB_AVAILABLE = True
 except ImportError:
     BNB_AVAILABLE = False
-    class BitsAndBytesConfig:
-        pass
+    BitsAndBytesConfig = None
 
 try:
     from unsloth import FastLanguageModel
@@ -287,7 +271,7 @@ class CheckpointManager:
         info_file = self.checkpoint_dir / "checkpoint_info.json"
         if info_file.exists():
             try:
-                with open(info_file, 'r') as f:
+                with open(info_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self.checkpoints = data.get("checkpoints", [])
                     self.best_checkpoint = data.get("best_checkpoint")
@@ -298,11 +282,11 @@ class CheckpointManager:
         """Save checkpoint information to disk."""
         info_file = self.checkpoint_dir / "checkpoint_info.json"
         try:
-            with open(info_file, 'w') as f:
+            with open(info_file, 'w', encoding='utf-8') as f:
                 json.dump({
                     "checkpoints": self.checkpoints,
                     "best_checkpoint": self.best_checkpoint
-                }, f, indent=2)
+                }, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.error(f"Error saving checkpoint info: {e}")
     
@@ -404,11 +388,20 @@ class LocalTrainer:
             cache_dir: Directory for model cache
         """
         if not TORCH_AVAILABLE:
-            raise ImportError("PyTorch is required but not installed")
+            raise ImportError(
+                "❌ LocalTrainer requer 'torch'.\n"
+                "Instale com: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121"
+            )
         if not TRANSFORMERS_AVAILABLE:
-            raise ImportError("Transformers is required but not installed")
+            raise ImportError(
+                "❌ LocalTrainer requer 'transformers'.\n"
+                "Instale com: pip install transformers"
+            )
         if not PEFT_AVAILABLE:
-            raise ImportError("PEFT is required but not installed")
+            raise ImportError(
+                "❌ LocalTrainer requer 'peft' (Parameter-Efficient Fine-Tuning).\n"
+                "Instale com: pip install peft"
+            )
         
         self.config = config
         self.output_dir = Path(output_dir)
@@ -828,8 +821,8 @@ class LocalTrainer:
             
             # Save config
             config_path = save_path / "training_config.json"
-            with open(config_path, 'w') as f:
-                json.dump(self.config.to_dict(), f, indent=2)
+            with open(config_path, 'w', encoding='utf-8') as f:
+                json.dump(self.config.to_dict(), f, indent=2, ensure_ascii=False)
             
             logger.info(f"Model saved to {save_path}")
             
@@ -861,7 +854,7 @@ class LocalTrainer:
             # Load config if exists
             config_path = checkpoint_path / "training_config.json"
             if config_path.exists():
-                with open(config_path, 'r') as f:
+                with open(config_path, 'r', encoding='utf-8') as f:
                     config_dict = json.load(f)
                     self.config = TrainingConfig.from_dict(config_dict)
             
@@ -875,8 +868,8 @@ class LocalTrainer:
         """Save training results to file."""
         try:
             results_path = self.output_dir / "training_results.json"
-            with open(results_path, 'w') as f:
-                json.dump(results, f, indent=2)
+            with open(results_path, 'w', encoding='utf-8') as f:
+                json.dump(results, f, indent=2, ensure_ascii=False)
             logger.info(f"Training results saved to {results_path}")
         except Exception as e:
             logger.error(f"Error saving training results: {e}")

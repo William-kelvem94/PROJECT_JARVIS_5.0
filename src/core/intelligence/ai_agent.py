@@ -241,9 +241,27 @@ class AIAgent:
     """Classe principal do Agente Inteligente"""
 
     def __init__(self, provider: str = 'gemini'):
+        # =====================================================================
+        # CORREÇÃO P0: VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS
+        # =====================================================================
+        self.safe_mode = False
+        self._verify_critical_dependencies()
+        
         self.provider = provider
         self.api_key = os.environ.get('GOOGLE_API_KEY')
         self.ollama_url = "http://localhost:11434/api/generate"
+        
+        # Carregar configurações de IA
+        try:
+            self.ai_config = config.get_ai_config()
+            self.max_react_turns = config.get_ai_config('ai_agent.max_react_turns', 5)
+            self.screenshot_timeout = config.get_ai_config('ai_agent.screenshot_timeout', 5.0)
+            logger.info("✅ Configurações de IA carregadas")
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao carregar ai_config, usando defaults: {e}")
+            self.ai_config = {}
+            self.max_react_turns = 5
+            self.screenshot_timeout = 5.0
         
         # Histórico de conversação
         self.chat_history = []
@@ -297,6 +315,40 @@ class AIAgent:
         )
         
         # ... (unchanged)
+    
+    def _verify_critical_dependencies(self):
+        """
+        Verifica dependências críticas e define modo seguro se necessário.
+        
+        Correção P0: Detecta dependências faltantes e impede operação parcial.
+        """
+        critical_modules = {
+            'screen_capture': screen_capture,
+            'action_controller': action_controller,
+        }
+        
+        optional_but_important = {
+            'brain_router': brain_router,
+            'voice_controller': voice_controller,
+            'neural_memory': neural_memory,
+            'local_brain': local_brain,
+        }
+        
+        missing_critical = [name for name, module in critical_modules.items() if module is None]
+        missing_optional = [name for name, module in optional_but_important.items() if module is None]
+        
+        if missing_critical:
+            self.safe_mode = True
+            logger.critical(f"❌ DEPENDÊNCIAS CRÍTICAS FALTANDO: {missing_critical}")
+            logger.critical("🔒 INICIANDO EM MODO SEGURO - Funcionalidade limitada")
+            logger.critical("💡 Execute: pip install -r requirements.txt")
+        else:
+            self.safe_mode = False
+            logger.info("✅ Todas as dependências críticas disponíveis")
+        
+        if missing_optional:
+            logger.warning(f"⚠️ Módulos opcionais faltando: {missing_optional}")
+            logger.warning("💡 Algumas funcionalidades avançadas podem não estar disponíveis")
 
     def process_command(self, user_command: str):
         """
@@ -307,6 +359,19 @@ class AIAgent:
         - Phase 5: Performance (cache responses)
         """
         logger.info(f"Agente processando comando: {user_command}")
+        
+        # =====================================================================
+        # CORREÇÃO P0: VERIFICAÇÃO DE MODO SEGURO
+        # =====================================================================
+        if self.safe_mode:
+            error_msg = (
+                "Sistema em MODO SEGURO devido a dependências críticas faltando. "
+                "Por favor, instale as dependências necessárias executando: pip install -r requirements.txt"
+            )
+            logger.error(f"❌ {error_msg}")
+            if voice_controller:
+                voice_controller.speak("Sistema em modo seguro. Funcionalidade limitada.")
+            return error_msg
         
         # =====================================================================
         # PHASE 5: PERFORMANCE - CHECK CACHE FIRST
@@ -377,11 +442,11 @@ class AIAgent:
         # ... (Step 4 Context building unchanged) ...
         
         # 4.4 Contexto Emocional (Phase 14) (unchanged)
-        user_emotion = camera_controller.current_emotion
+        user_emotion = camera_controller.current_emotion if camera_controller else "neutral"
         emotion_mod = emotion_detector.get_personality_modifier(user_emotion)
         emotion_prefix = emotion_mod['prefix']
         
-        camera_context = f"\n[VISÃO] Usuário identificado: {camera_controller.last_seen_user}"
+        camera_context = f"\n[VISÃO] Usuário identificado: {camera_controller.last_seen_user if camera_controller else 'Desconhecido'}"
         
         # =====================================================================
         # PHASE 3: RAG - INCLUDE MEMORY CONTEXT
@@ -392,7 +457,7 @@ class AIAgent:
         raw_context = {
             "vision": camera_controller.last_seen_user if camera_controller else "Unknown",
             "memory": memory_context,
-            "system_root": config.PROJECT_ROOT, # Sanitizer will mask this
+            "system_root": str(config.PROJECT_ROOT), # Convert Path to string for JSON serialization
             "user_command": user_command
         }
         
