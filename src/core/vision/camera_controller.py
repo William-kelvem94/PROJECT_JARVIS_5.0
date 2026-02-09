@@ -15,6 +15,7 @@ except (ImportError, OSError) as e:
 import threading
 import time
 import logging
+import shutil
 from typing import Optional, List, Dict
 from pathlib import Path
 from datetime import datetime
@@ -59,53 +60,75 @@ class CameraController:
                 logger.warning("Modelo CNN solicitado mas rodando em CPU. Isso será LENTO. Recomendo HOG para CPU.")
                 self.face_detection_model = 'hog'
         
-        # 🆕 MEDIAPIPE FACE DETECTION (Stable Fallback)
+        # 🆕 MEDIAPIPE FACE DETECTION: DISABLED FOR STABILITY
         self.mp_face_detection = None
         self.face_detector = None
-        try:
-            import mediapipe as mp
-            self.mp_face_detection = mp.solutions.face_detection
-            self.face_detector = self.mp_face_detection.FaceDetection(
-                model_selection=0, # 0 for short range (2m), 1 for long range (5m)
-                min_detection_confidence=0.5
-            )
-            logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
+        # try:
+        #     import mediapipe as mp
+        #     self.mp_face_detection = mp.solutions.face_detection
+        #     self.face_detector = self.mp_face_detection.FaceDetection(
+        #         model_selection=0,
+        #         min_detection_confidence=0.5
+        #     )
+        #     logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
+        # except Exception as e:
+        #     logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
         
         # Callback para enviar vídeo para GUI (se necessário)
         self.on_frame_ready: Optional[Callable[[Any], None]] = None
         
-        # Carregar faces conhecidas
-        self._load_known_faces()
+        # Carregar faces conhecidas em background
+        if FACE_REC_AVAILABLE:
+            threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
 
     def _load_known_faces(self):
         """Carrega faces da pasta de dados para reconhecimento"""
         if not FACE_REC_AVAILABLE: return
 
-        faces_dir = Path(config.get_setting('app.data_dir', 'data')) / 'faces'
+        # Usar caminho absoluto centralizado
+        faces_dir = config.DATA_DIR / 'faces'
         faces_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Carregando faces de {faces_dir}...")
+        quarantine_dir = faces_dir / "quarantine"
         
-        for file_path in faces_dir.glob("*.[jp][pn]g"):
+        
+        # Aceitar jpg, jpeg, png
+        count = 0
+        for file_path in list(faces_dir.glob("*.jpg")) + list(faces_dir.glob("*.png")) + list(faces_dir.glob("*.jpeg")):
             try:
-                # O nome do arquivo é o nome da pessoa
-                name = file_path.stem
+                # O nome do arquivo é o nome da pessoa (remove sufixo de ângulo)
+                raw_name = file_path.stem
+                name = raw_name.split('_')[0]
+                
                 image = face_recognition.load_image_file(str(file_path))
                 encodings = face_recognition.face_encodings(image)
                 
                 if encodings:
                     self.known_face_encodings.append(encodings[0])
                     self.known_face_names.append(name)
-                    logger.info(f"Face carregada: {name}")
+                    count += 1
+                    logger.info(f"   👤 FaceID: Carregada biometria de '{raw_name}'")
+                else:
+                    # TRATAMENTO: Mover para quarentena se não houver face
+                    logger.error(f"   ❌ FaceID: Rosto não identificado em '{file_path.name}'. Isolando em quarentena.")
+                    quarantine_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(file_path), str(quarantine_dir / file_path.name))
             except Exception as e:
-                logger.error(f"Erro ao carregar face {file_path}: {e}")
+                logger.error(f"   ❌ FaceID: Erro ao tratar {file_path.name}: {e}")
+                
+        if count == 0:
+            logger.warning("   🔶 Camera: Nenhum perfil facial ativo.")
+        else:
+            logger.info(f"✅ Camera: {count} perfis biométricos sincronizados.")
 
     def start_monitoring(self):
         """Inicia monitoramento em background"""
         if self.is_monitoring: return
         
+        # 🆕 SAFE START: Load faces only when monitoring starts
+        if FACE_REC_AVAILABLE and not self.known_face_encodings:
+             threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
+
         self.is_monitoring = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self.monitor_thread.start()
@@ -119,7 +142,8 @@ class CameraController:
 
     def _monitor_loop(self):
         """Loop principal de visão"""
-        video_capture = cv2.VideoCapture(self.camera_index)
+        # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
+        video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
         
         if not video_capture.isOpened():
             logger.error(f"Não foi possível abrir a câmera {self.camera_index}")
@@ -133,19 +157,12 @@ class CameraController:
                 time.sleep(1)
                 continue
 
-            # Prioridade 1: MediaPipe (Estabilidade)
+            # Prioridade 1: MediaPipe: DISABLED FOR STABILITY
             human_detected = False
-            if self.face_detector:
-                results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                if results_mp.detections:
-                    human_detected = True
-                    for detection in results_mp.detections:
-                        # Desenhar detecção MediaPipe
-                        bbox = detection.location_data.relative_bounding_box
-                        h, w, c = frame.shape
-                        x, y, bw, bh = int(bbox.xmin * w), int(bbox.ymin * h), int(bbox.width * w), int(bbox.height * h)
-                        cv2.rectangle(frame, (x, y), (x + bw, y + bh), (0, 255, 0), 2)
-                        cv2.putText(frame, "HUMAN", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            # if self.face_detector:
+            #     results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            #     if results_mp.detections:
+            #         human_detected = True
 
             # Prioridade 2: Face Recognition (Identidade) - Apenas se não houver falhas consecutivas
             if FACE_REC_AVAILABLE and getattr(self, '_faceid_failures', 0) < 5:
@@ -185,11 +202,15 @@ class CameraController:
                     logger.info("Presença humana detectada (Estável via MediaPipe)")
 
             # Emoção e Gestos
-            if human_detected:
                 try:
                     emotion_data = emotion_detector.detect_emotion_from_frame(frame)
                     self.current_emotion = emotion_data['emotion']
                 except: pass
+
+                # 🆕 BRILHO ADAPTATIVO (Stark Context)
+                if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
+                    self._check_ambient_light(frame)
+                self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
 
             process_this_frame = not process_this_frame
             
@@ -220,30 +241,106 @@ class CameraController:
         video_capture.release()
 
     def register_new_face(self, name: str) -> bool:
-        """Tira uma foto agora e aprende como sendo 'name'"""
-        if not FACE_REC_AVAILABLE: return False
+        """Tira fotos de múltiplos ângulos para mapear o usuário de forma inteligente"""
+        if not FACE_REC_AVAILABLE: 
+            logger.error("Face recognition não disponível para cadastro.")
+            return False
         
         try:
-            video_capture = cv2.VideoCapture(self.camera_index)
-            ret, frame = video_capture.read()
-            video_capture.release()
+            from src.core.audio.voice_controller import voice_controller
+            # 🆕 DIRECTSHOW
+            video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
             
-            if not ret: return False
+            if not video_capture.isOpened():
+                logger.error("Não foi possível abrir a câmera para cadastro.")
+                return False
 
-            # Salvar imagem
-            faces_dir = Path(config.get_setting('app.data_dir', 'data')) / 'faces'
+            logger.info(f"🎭 Iniciando mapeamento facial dinâmico para: {name}")
+            voice_controller.speak(f"Iniciando mapeamento facial para {name}. Por favor, fique de frente para a câmera.")
+            
+            faces_dir = config.DATA_DIR / 'faces'
             faces_dir.mkdir(parents=True, exist_ok=True)
             
-            save_path = faces_dir / f"{name}.jpg"
-            cv2.imwrite(str(save_path), frame)
+            angles = [
+                {"msg": "Olhe diretamente para a câmera.", "suffix": "front"},
+                {"msg": "Agora, vire levemente a cabeça para a direita.", "suffix": "right"},
+                {"msg": "Perfeito. Agora para a esquerda.", "suffix": "left"},
+                {"msg": "Incline a cabeça um pouco para cima.", "suffix": "up"},
+                {"msg": "E finalmente, um pouco para baixo.", "suffix": "down"}
+            ]
             
-            # Recarregar faces
-            self._load_known_faces()
-            return True
+            captured_count = 0
+            for angle in angles:
+                voice_controller.speak(angle["msg"])
+                
+                # Aguardar detecção de face antes de capturar
+                face_found = False
+                attempts = 0
+                while not face_found and attempts < 30: # Max 30 frames (~3-5s)
+                    ret, frame = video_capture.read()
+                    if not ret: break
+                    
+                    # Detecção rápida para confirmar presença
+                    small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+                    rgb_small = small_frame[:, :, ::-1]
+                    locations = face_recognition.face_locations(rgb_small, model="hog")
+                    
+                    if locations:
+                        face_found = True
+                        save_path = faces_dir / f"{name}_{angle['suffix']}.jpg"
+                        cv2.imwrite(str(save_path), frame)
+                        logger.info(f"📸 Capturado ângulo: {angle['suffix']}")
+                        captured_count += 1
+                        time.sleep(1) # Pausa para o usuário mudar a posição
+                    
+                    attempts += 1
+                    time.sleep(0.1)
+                
+                if not face_found:
+                    voice_controller.speak("Não consegui detectar seu rosto. Vamos tentar o próximo ângulo.")
+
+            video_capture.release()
+            
+            if captured_count > 0:
+                voice_controller.speak(f"Mapeamento concluído com sucesso. Já te reconheço agora, {name}.")
+                # Hot-reload no controlador de câmera
+                self._load_known_faces()
+                
+                # Sincronizar com o Vision System (Singleton) se disponível
+                try:
+                    from src.core.vision.vision_system import get_vision_system
+                    vs = get_vision_system()
+                    vs._load_known_faces()
+                except: pass
+                
+                return True
+            else:
+                voice_controller.speak("Falha ao capturar biometria. Certifique-se de que há iluminação suficiente.")
+                return False
             
         except Exception as e:
             logger.error(f"Erro ao registrar nova face: {e}")
             return False
+
+    def _check_ambient_light(self, frame):
+        """Ajusta o brilho do Windows baseado na luz detectada pela câmera"""
+        try:
+            from src.core.management.device_manager import device_manager
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            avg_brightness = cv2.mean(gray)[0]
+            
+            # Mapeamento 0-255 -> 0-100%
+            target_brightness = int((avg_brightness / 255.0) * 100)
+            target_brightness = max(10, min(100, target_brightness))
+            
+            current_br = getattr(self, '_last_brightness', -1)
+            # Só muda se a diferença for > 15% para evitar flickering
+            if abs(target_brightness - current_br) > 15:
+                device_manager.set_brightness(target_brightness)
+                self._last_brightness = target_brightness
+                logger.info(f"💡 Brilho adaptativo: Ambiente {avg_brightness:.1f} -> Tela {target_brightness}%")
+        except Exception as e:
+            logger.debug(f"Falha no brilho adaptativo: {e}")
 
     def _is_cnn_supported(self) -> bool:
         """Verifica se dlib foi compilado com suporte a CUDA para CNN"""
@@ -253,5 +350,13 @@ class CameraController:
         except Exception:
             return False
 
-# Instância global
-camera_controller = CameraController()
+# ============================================================================
+# SINGLETON INSTANCE (Lazy Load)
+# ============================================================================
+_camera_controller = None
+
+def get_camera_controller():
+    global _camera_controller
+    if _camera_controller is None:
+        _camera_controller = CameraController()
+    return _camera_controller

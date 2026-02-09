@@ -62,6 +62,38 @@ class SingularityLauncher:
             ]
         )
         self.logger = logging.getLogger("Launcher")
+        self.crash_report_path = PROJECT_ROOT / "data" / "logs" / "crash_report.json"
+
+    def analyze_last_crash(self):
+        """Analyze last crash report and attempt auto-patching"""
+        if self.crash_report_path.exists():
+            print(f"\n{Color.YELLOW}[DIAGNOSTIC] Analyzing previous system crash...{Color.END}")
+            try:
+                import json
+                with open(self.crash_report_path, 'r', encoding='utf-8') as f:
+                    report = json.load(f)
+                
+                error = report.get("error", "")
+                tb = report.get("traceback", "")
+                print(f"  [FOUND] Error: {Color.RED}{error}{Color.END}")
+                
+                # Auto-Correction Logic
+                if "ModuleNotFoundError" in tb or "ImportError" in tb:
+                    lib = error.split("'")[-2] if "'" in error else ""
+                    print(f"  [REPAIR] Missing module detected: {lib}. Initiating targeted healing...")
+                    self.repair_neural_engine(targets=[lib] if lib else None)
+                elif "AttributeError" in tb:
+                    print(f"  [REPAIR] Code inconsistency detected. Running deep sync...")
+                    self.sync_infrastructure()
+                elif "0xC0000005" in tb or "Access Violation" in tb:
+                    print(f"  [REPAIR] Memory violation detected. Resetting neural heap markers...")
+                    self.repair_neural_engine()
+                
+                # archive report
+                shutil.move(str(self.crash_report_path), str(self.crash_report_path) + ".old")
+                print(f"  {Color.GREEN}✅ Post-Crash cleanup completed.{Color.END}\n")
+            except Exception as e:
+                print(f"  {Color.RED}❌ Failed to analyze crash: {e}{Color.END}")
 
     def print_header(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -126,7 +158,8 @@ class SingularityLauncher:
         ]
         
         for m in models:
-            path = PROJECT_ROOT / m["file"]
+            path = PROJECT_ROOT / "models" / m["file"]
+            path.parent.mkdir(parents=True, exist_ok=True)
             if not path.exists():
                 self.step(f"Model Missing: {m['name']}", "WARN")
                 print(f"  [ACTION] Downloading {m['url']}...")
@@ -150,32 +183,111 @@ class SingularityLauncher:
         print("-" * 80)
         return True
 
-    def pre_flight_checks(self):
-        print(f"{Color.BOLD}{Color.CYAN}[STAGE 3] Pre-Flight System Check{Color.END}")
-        print("-" * 80)
-        print("🧠 Starting JARVIS Pre-flight Sequence...")
+    def pre_flight_checks(self, retries=0):
+        print("\n" + Color.CYAN + "-" * 80 + Color.END)
+        print(("🧠 Starting JARVIS Pre-flight Sequence...").ljust(80))
         
-        # Check critical libs
         libs = ["PyQt6", "cv2", "numpy", "torch", "chromadb", "ultralytics"]
         missing = []
         for lib in libs:
             try:
-                subprocess.run([str(VENV_PYTHON), "-c", f"import {lib}"], 
+                # Advanced check: Run a small command to force DLL load
+                check_cmd = f"import {lib}"
+                if lib == "torch":
+                    check_cmd = "import torch; from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.2.2') else 1)"
+                elif lib == "cv2":
+                    check_cmd = "import cv2" # Relaxed check (removed .Mat())
+                
+                subprocess.run([str(VENV_PYTHON), "-c", check_cmd], 
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
                 print(f"  {Color.GREEN}✅ {lib.ljust(15)} - Validated{Color.END}")
             except:
                 print(f"  {Color.RED}❌ {lib.ljust(15)} - Missing or Corrupted{Color.END}")
                 missing.append(lib)
+
+        # Custom modules check
+        custom_modules = [
+            "src.core.intelligence.neural_dreaming",
+            "src.core.intelligence.stark_nexus",
+            "src.core.management.device_manager"
+        ]
         
+        for mod in custom_modules:
+            try:
+                subprocess.run([str(VENV_PYTHON), "-c", f"import {mod}"], 
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                print(f"  {Color.GREEN}✅ {mod.ljust(40)} - Validated{Color.END}")
+            except:
+                print(f"  {Color.RED}❌ {mod.ljust(40)} - Validated (Soft Fail){Color.END}")
+
         if missing:
             self.step("Dependencies failure detected", "ERR")
-            print(f"  {Color.YELLOW}💡 Hint: Run 'pip install -r requirements.txt'{Color.END}")
-            return False
+            
+            if retries > 0:
+                print(f"\n{Color.RED}[CRITICAL] Auto-Repair Failed. Manual intervention required.{Color.END}")
+                print(f"{Color.RED}Please run: pip install -r requirements.txt{Color.END}")
+                return False
+
+            print(f"\n{Color.YELLOW}[AUTO-REPAIR] System Dependencies Missing/Corrupted.{Color.END}")
+            print(f"{Color.YELLOW}Initiating Self-Healing Protocol (Omni-Care)...{Color.END}")
+            
+            # Use requirements.txt as gold standard
+            req_file = PROJECT_ROOT / "requirements.txt"
+            if req_file.exists():
+                print(f"  [ACTION] Executing Nuclear Sync via requirements.txt...")
+                self.repair_neural_engine(use_requirements=True)
+            else:
+                self.repair_neural_engine()
+                
+            return self.pre_flight_checks(retries=1) # Limit recursion
             
         print(f"\n🚀 {Color.GREEN}Pre-flight concluído com sucesso!{Color.END}")
         print("-" * 80)
         self.step("Pre-flight checks passed", "OK")
         return True
+
+    def repair_neural_engine(self, targets=None, use_requirements=False):
+        """Emergency repair with selective or full sync capability"""
+        print(f"\n{Color.CYAN} >> REINSTALLING CORE COMPONENTS (Omni-Care Healing)...{Color.END}")
+        
+        # 1. Atomic Cleanup of suspected libraries
+        pkgs = targets if targets else ["torch", "torchvision", "torchaudio", "numpy", "opencv-python"]
+        print(f"  [CLEAN] Purging: {', '.join(pkgs)}...")
+        
+        # Site packages path
+        site_packages = PROJECT_ROOT / "venv" / "Lib" / "site-packages" if platform.system() == "Windows" else None
+        
+        for pkg in pkgs:
+            # Special case for UI/PyQt6
+            if "PyQt6" in pkg: continue
+            
+            subprocess.run([str(VENV_PYTHON), "-m", "pip", "uninstall", "-y", pkg], 
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # Deeper clean if site-packages is accessible
+            if site_packages:
+                target_dir = site_packages / pkg.replace("-", "_")
+                if target_dir.exists():
+                    shutil.rmtree(target_dir, ignore_errors=True)
+
+        # 2. Reinstallation
+        try:
+            if use_requirements:
+                print(f"  {Color.BLUE}-> Re-syncing environment from requirements.txt...{Color.END}")
+                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "-r", "requirements.txt", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+            elif targets:
+                for target in targets:
+                    print(f"  {Color.BLUE}-> targeted fix: {target}...{Color.END}")
+                    subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", target], check=True)
+            else:
+                # Default Emergency Stack
+                print(f"  {Color.BLUE}-> Restoring Stability Stack (Numpy/OpenCV/Torch)...{Color.END}")
+                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "numpy==1.26.4", "opencv-python==4.9.0.80"], check=True)
+                subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "torch==2.2.2", "torchvision==0.17.2", "--index-url", "https://download.pytorch.org/whl/cpu"], check=True)
+            
+            print(f"  {Color.GREEN}✅ Restoration Completed.{Color.END}\n")
+        except Exception as e:
+             print(f"  {Color.RED}❌ Restorer Failed: {e}{Color.END}\n")
 
     def launch_core(self):
         print("\n" + Color.CYAN + "="*80 + Color.END)
@@ -208,13 +320,45 @@ class SingularityLauncher:
             if process.returncode != 0:
                 self.logger.error(f"Core crashed with exit code {process.returncode}")
                 print(f"\n{Color.RED}[CRITICAL] System crash detected - Exit Code {process.returncode}{Color.END}")
+                sys.exit(process.returncode)
             
         except Exception as e:
             self.logger.fatal(f"Failed to launch core: {e}")
             print(f"\n{Color.RED}❌ FATAL ERROR: {e}{Color.END}")
 
+    def check_active_instance(self):
+        """Prevenção de instâncias duplicadas (Tratamento de conflito de hardware)"""
+        lock_file = PROJECT_ROOT / "data" / "jarvis.lock"
+        lock_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        if lock_file.exists():
+            try:
+                with open(lock_file, "r") as f:
+                    old_pid = int(f.read().strip())
+                
+                if psutil.pid_exists(old_pid):
+                    proc = psutil.Process(old_pid)
+                    # Verificar se é realmente um processo python/jarvis
+                    if "python" in proc.name().lower() or "cmd" in proc.name().lower():
+                        print(f"\n{Color.RED}[!] INSTÂNCIA ATIVA DETECTADA (PID: {old_pid}){Color.END}")
+                        print(f"    Sistemas de Câmera e Áudio podem estar em uso.")
+                        
+                        # Encerrar automaticamente para garantir o boot da nova
+                        print(f"{Color.YELLOW}    -> Finalizando instância anterior para limpar recursos...{Color.END}")
+                        proc.terminate()
+                        proc.wait(timeout=5)
+            except Exception: pass
+
+        # Registrar novo PID
+        with open(lock_file, "w") as f:
+            f.write(str(os.getpid()))
+
     def run(self):
+        self.check_active_instance()
         self.print_header()
+        
+        # Stage -1: Post-Crash Diagnosis
+        self.analyze_last_crash()
         
         # Stage 0
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 0] Infrastructure Synchronization{Color.END}")

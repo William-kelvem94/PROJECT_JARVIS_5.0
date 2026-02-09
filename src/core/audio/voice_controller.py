@@ -1,29 +1,15 @@
 import os
 import sys
 import logging
+from pathlib import Path
 
 # ============================================================================
 # CRITICAL SYSTEM PATCHES (MUST BE AT THE VERY TOP)
 # ============================================================================
 
-# 1. COMTYPES FIX: Resolves AttributeError: 'MessageFactory' object has no attribute 'GetPrototype'
-# This occurs on Windows 11 due to cache generation issues.
-try:
-    import comtypes.client
-    import comtypes.client._code_cache
-    import shutil
-    from pathlib import Path
-    
-    # Nuke cache programmatically on every init to ensure stability
-    gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
-    if gen_dir.exists():
-        shutil.rmtree(gen_dir, ignore_errors=True)
-    os.makedirs(gen_dir, exist_ok=True)
-    
-    comtypes.client._code_cache._enable_cache = False
-    logging.getLogger('comtypes').setLevel(logging.ERROR)
-except Exception:
-    pass
+# 1. COMTYPES FIX: Handled globally in main.py to prevent race conditions.
+# Suppress comtypes logging
+logging.getLogger('comtypes').setLevel(logging.ERROR)
 
 # 2. QT DPI AWARENESS FIX: Suppresses "Access Denied" warnings in terminal
 os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
@@ -242,9 +228,18 @@ class VoiceController:
         text = re.sub(r'https?://\S+', 'um link externo', text)
         text = re.sub(r'www\.\S+', 'um endereço web', text)
         
-        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear)
-        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', 'o local do sistema', text)
-        text = re.sub(r'/[-a-zA-Z0-9+_.~ /]+', 'o caminho do arquivo', text)
+        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear - Melhorada)
+        # Windows Paths: C:\Something\...
+        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', 'o local do arquivo', text)
+        # C:\Users\... (Sempre silenciar)
+        text = re.sub(r'C:\\Users\\[a-zA-Z0-9.\\]+', 'seus arquivos pessoais', text)
+        # GitHub Paths
+        text = re.sub(r'[-a-zA-Z0-9+_.~ \\]+GitHub[-a-zA-Z0-9+_.~ \\]+', 'diretório do projeto', text)
+        # Unix-style paths: /usr/bin...
+        text = re.sub(r'/\w+/[-a-zA-Z0-9+_.~ /]+', 'o caminho do sistema', text)
+        
+        # Limpar extensões de arquivo comuns
+        text = re.sub(r'\w+\.(exe|py|txt|log|json|yaml|md|dll|bat)', 'arquivo', text)
         
         # Remover blocos de código
         text = re.sub(r'```[\s\S]*?```', '', text)
@@ -252,6 +247,9 @@ class VoiceController:
         text = re.sub(r'[*_]', '', text)
         # Remover crases
         text = re.sub(r'`', '', text)
+        
+        # Reduzir espaços múltiplos
+        text = re.sub(r'\s+', ' ', text)
         
         return text.strip()
 
@@ -262,7 +260,7 @@ class VoiceController:
     def _speak_thread(self, text: str, mode: str):
         is_online = self.check_internet()
         
-        # Get emotion
+        # Get emotion mapping
         from src.core.intelligence.emotion_detector import emotion_detector
         emotion = getattr(emotion_detector, 'last_emotion', 'neutral')
         
@@ -271,46 +269,48 @@ class VoiceController:
         if len(text) > 250: base_rate = "+18%"
         elif len(text) > 100: base_rate = "+10%"
         
+        # --- PROVEDOR ONLINE (Primário) ---
         if is_online and mode != 'offline':
             try:
-                if EDGE_TTS_AVAILABLE:
+                if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
                     asyncio.run(self._speak_edge(text, emotion, base_rate))
                     return
-            except Exception as e:
-                logger.warning(f"Erro no TTS Online: {e}")
-        
-        # Fallback Offline (⚠️ STRIP SSML AQUI)
-        clean_text = self.strip_ssml(text)
-        self._speak_offline(clean_text)
-        modifier = emotion_detector.get_personality_modifier(emotion)
-        
-        # Adjust rate based on emotion
-        original_rate = self.engine.getProperty('rate')
-        if modifier['energy'] == 'alta' or modifier['energy'] == 'máxima':
-            self.engine.setProperty('rate', original_rate + 20)
-        elif modifier['energy'] == 'baixa':
-            self.engine.setProperty('rate', original_rate - 20)
-
-        if (mode == 'online' or mode == 'auto') and is_online:
-            try:
-                if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
-                    asyncio.run(self._speak_edge(text, emotion))
                 elif GTTS_AVAILABLE:
                     self._speak_google(text)
-                else:
-                    logger.warning("Nenhum TTS online disponível, usando fallback offline")
-                return
+                    return
             except Exception as e:
-                logger.warning(f"TTS Online ({self.tts_provider}) falhou: {e}")
+                logger.warning(f"Erro no TTS Online ({self.tts_provider}): {e}. Usando fallback offline.")
         
-        # Fallback Offline
+        # --- PROVEDOR OFFLINE (Fallback / Forced) ---
         if not self.stop_requested:
-            self._is_speaking = True
-            prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
-            self.engine.say(prefix + text)
-            self.engine.runAndWait()
-            self._is_speaking = False
-            self.engine.setProperty('rate', original_rate) # Reset
+            try:
+                self._is_speaking = True
+                
+                # REQUISITO CRÍTICO: Remover SSML antes de enviar para o motor offline
+                clean_text = self.strip_ssml(text)
+                
+                # Ajustar personalidade offline
+                modifier = emotion_detector.get_personality_modifier(emotion)
+                prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
+                
+                # Salvar rate original
+                original_rate = self.engine.getProperty('rate')
+                
+                # Ajustar rate baseado na emoção
+                if modifier.get('energy') in ['alta', 'máxima']:
+                    self.engine.setProperty('rate', original_rate + 20)
+                elif modifier.get('energy') == 'baixa':
+                    self.engine.setProperty('rate', original_rate - 20)
+
+                self.engine.say(prefix + clean_text)
+                self.engine.runAndWait()
+                
+                # Resetar rate
+                self.engine.setProperty('rate', original_rate)
+            except Exception as e:
+                logger.error(f"Falha crítica no motor de voz offline: {e}")
+            finally:
+                self._is_speaking = False
 
     async def _speak_edge(self, text: str, emotion: str = "neutral", adaptive_rate: str = "+0%"):
         """TTS de Alta Qualidade via Edge-TTS com SSML"""

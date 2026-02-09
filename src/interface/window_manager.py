@@ -32,6 +32,8 @@ class InterfaceMode(Enum):
     HUD_OVERLAY = "hud"  # Transparent overlay
     DASHBOARD = "dashboard"  # Full control panel
     HIDDEN = "hidden"  # All interfaces hidden
+    ORB = "orb" # Floating orb
+    EMERGENCY = "emergency" # Manual override
 
 
 class WindowManager(QObject):
@@ -50,7 +52,7 @@ class WindowManager(QObject):
     """
     
     # Signals
-    mode_changed = pyqtSignal(InterfaceMode)
+    mode_changed = pyqtSignal(object) # Using object for better Enum resilience across modules
     status_update = pyqtSignal(str, str)  # (status_type, message)
     
     def __init__(self, app: QApplication):
@@ -67,6 +69,8 @@ class WindowManager(QObject):
         # Interface instances (lazy loaded)
         self._hud = None
         self._dashboard = None
+        self._mini_orb = None
+        self._manual_panel = None
         
         # System tray
         self._tray_icon = None
@@ -157,6 +161,10 @@ class WindowManager(QObject):
             # Ctrl+Shift+H - Toggle HUD
             toggle_hud = QShortcut(QKeySequence("Ctrl+Shift+H"), self._shortcut_window)
             toggle_hud.activated.connect(self._toggle_hud)
+
+            # 🆕 Ctrl+Shift+Alt+J - Emergency Manual Panel
+            emergency_panel = QShortcut(QKeySequence("Ctrl+Shift+Alt+J"), self._shortcut_window)
+            emergency_panel.activated.connect(self._toggle_manual_panel)
             
             # Ctrl+Shift+X - Hide all
             hide_all = QShortcut(QKeySequence("Ctrl+Shift+X"), self._shortcut_window)
@@ -165,6 +173,7 @@ class WindowManager(QObject):
             logger.info("✅ Global shortcuts registered")
             logger.info("   Ctrl+Shift+J - Toggle Dashboard")
             logger.info("   Ctrl+Shift+H - Toggle HUD")
+            logger.info("   Ctrl+Shift+Alt+J - EMERGENCY MANUAL PANEL")
             logger.info("   Ctrl+Shift+X - Hide All")
             
         except Exception as e:
@@ -188,6 +197,24 @@ class WindowManager(QObject):
             self.switch_mode(InterfaceMode.HIDDEN)
         else:
             self.switch_mode(InterfaceMode.HUD_OVERLAY)
+
+    def _toggle_manual_panel(self):
+        """Toggle emergency manual control panel"""
+        if not self._manual_panel:
+            try:
+                from .manual_control_panel import ManualControlPanel
+                self._manual_panel = ManualControlPanel()
+                logger.info("✅ Emergency Manual Panel initialized")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Manual Panel: {e}")
+                return
+
+        if self._manual_panel.isVisible():
+            self._manual_panel.hide()
+        else:
+            self._manual_panel.show()
+            self._manual_panel.raise_()
+            self._manual_panel.activateWindow()
             
     @pyqtSlot(InterfaceMode)
     def switch_mode(self, mode: InterfaceMode):
@@ -226,6 +253,8 @@ class WindowManager(QObject):
             self._hud.hide()
         elif self.current_mode == InterfaceMode.DASHBOARD and self._dashboard:
             self._dashboard.hide()
+        elif self.current_mode == InterfaceMode.ORB and self._mini_orb:
+            self._mini_orb.hide()
             
     def _show_current(self):
         """Show current active interface"""
@@ -242,6 +271,13 @@ class WindowManager(QObject):
             self._dashboard.show()
             self._dashboard.raise_()
             self._dashboard.activateWindow()
+
+        elif self.current_mode == InterfaceMode.ORB:
+            if not self._mini_orb:
+                self._initialize_mini_orb()
+            self._mini_orb.show()
+            self._mini_orb.raise_()
+            self._mini_orb.activateWindow()
             
     def _initialize_hud(self):
         """Lazy initialization of HUD overlay"""
@@ -266,23 +302,34 @@ class WindowManager(QObject):
             self._hud.setLayout(layout)
             
     def _initialize_dashboard(self):
-        """Lazy initialization of Control Dashboard"""
+        """Lazy initialization of Stark Dashboard"""
         try:
-            from .control_dashboard import ControlDashboard
-            self._dashboard = ControlDashboard()
+            from .stark_dashboard import StarkDashboard
+            self._dashboard = StarkDashboard()
             
             # Connect mode switch request from dashboard
             self._dashboard.mode_switch_requested.connect(self.switch_mode)
             
-            logger.info("✅ Control Dashboard initialized")
+            logger.info("✅ Stark Dashboard initialized")
             
-        except ImportError:
-            logger.warning("⚠️ Control Dashboard not yet implemented, using placeholder")
-            self._create_placeholder_dashboard()
         except Exception as e:
             logger.error(f"❌ Failed to initialize Dashboard: {e}")
             self._create_placeholder_dashboard()
+
+    def _initialize_mini_orb(self):
+        """Lazy initialization of Mini Orb"""
+        try:
+            from .mini_orb import MiniOrb
+            self._mini_orb = MiniOrb()
             
+            # Connect mode switch request
+            self._mini_orb.mode_switch_requested.connect(self.switch_mode)
+            
+            logger.info("✅ Mini Hub Orb initialized")
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Mini Orb: {e}")
+
     def _create_placeholder_dashboard(self):
         """Create placeholder dashboard"""
         from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton
@@ -360,18 +407,43 @@ class WindowManager(QObject):
                 duration
             )
             
-    def cleanup(self):
-        """Cleanup resources"""
-        if self._hud:
-            self._hud.close()
-        if self._dashboard:
-            self._dashboard.close()
-        if self._tray_icon:
-            self._tray_icon.hide()
-        if self._shortcut_window:
-            self._shortcut_window.close()
+    def shutdown(self):
+        """Shutdown seguro do WindowManager"""
+        try:
+            # Esconde todas as janelas primeiro
+            self.switch_mode(InterfaceMode.HIDDEN)
             
-        logger.info("✅ Window Manager cleaned up")
+            # Para timers (se existirem)
+            if hasattr(self, 'update_timer') and self.update_timer:
+                self.update_timer.stop()
+                
+            # Limpa widgets
+            if hasattr(self, '_hud') and self._hud:
+                self._hud.close()
+                self._hud.deleteLater()
+                self._hud = None
+                
+            if hasattr(self, '_dashboard') and self._dashboard:
+                self._dashboard.close()
+                self._dashboard.deleteLater()
+                self._dashboard = None
+                
+            if hasattr(self, 'mini_orb') and getattr(self, 'mini_orb', None):
+                self.mini_orb.close()
+                self.mini_orb.deleteLater()
+                self.mini_orb = None
+                
+            if self._tray_icon:
+                self._tray_icon.hide()
+                
+            logger.info("✅ Window Manager cleaned up")
+            
+        except Exception as e:
+            logger.error(f"❌ Erro no shutdown do WindowManager: {e}")
+
+    def cleanup(self):
+        """Cleanup resources (Delegates to shutdown)"""
+        self.shutdown()
 
 
 # Singleton instance
