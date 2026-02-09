@@ -5,7 +5,7 @@ import logging
 from pathlib import Path
 
 # FORCED ABSOLUTE PATHS
-PROJECT_ROOT = Path(r"c:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0")
+PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 SRC_PATH = PROJECT_ROOT / "src"
 
 # Add SRC to path at pos 0

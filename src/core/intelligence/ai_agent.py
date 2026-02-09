@@ -10,6 +10,8 @@ import json
 import re
 import time
 from typing import Dict, Any, List, Optional
+from src.core.intelligence.context_sanitizer import ContextSanitizer
+from src.core.audio.voice_filter import AtomicVoiceFilter
 
 # ============================================================================
 # LOGGER SETUP - DEVE VIR ANTES DE QUALQUER IMPORT QUE USE LOGGER
@@ -161,6 +163,22 @@ except ImportError as e:
     logger.warning(f"⚠️ performance_optimizer não disponível: {e}")
     performance_optimizer = None
 
+# ============================================================================
+# NEW: STARK EVOLUTION MODULES (PHASE 2)
+# ============================================================================
+try:
+    from src.core.intelligence.analisador_contexto import analisador_contexto
+    from src.core.intelligence.stark_nexus import stark_nexus
+    from src.core.management.device_manager import device_manager
+    from src.core.intelligence.neural_dreaming import neural_dreaming
+    logger.info("✅ Módulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming)")
+except ImportError as e:
+    logger.warning(f"⚠️ Falha ao carregar Módulos Stark Phase 2/4: {e}")
+    analisador_contexto = None
+    stark_nexus = None
+    device_manager = None
+    neural_dreaming = None
+
 try:
     from src.utils.config import config
 except ImportError as e:
@@ -260,19 +278,22 @@ class AIAgent:
         # Persona Jarvis 2.0 (Elite Assistant)
         self.system_prompt = (
             "Você é o Jarvis, o assistente virtual de elite do William. "
-            f"Você está rodando em: {config.PROJECT_ROOT}. "
             "Você tem acesso total à visão dele (tela e câmera) e pode atuar fisicamente no sistema. "
+            "Sempre trate o William com respeito (Senhor). "
+            "DIRETRIZ DE VOZ CRÍTICA: Nunca cite caminhos de arquivos completos (ex: C:\\Users\\...), "
+            "IDs de processos (PID), nomes de bibliotecas ou detalhes técnicos de diretórios na sua resposta falada, "
+            "a menos que o William peça especificamente por essas informações técnicas. "
+            "Mantenha uma conversa natural e fluida, como se você fosse uma inteligência real e não um log do Windows. "
             "Para executar ações físicas, VOCÊ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
             "Ações disponíveis: "
             "1. [ACTION: click_at(x, y)] - Clica na coordenada X, Y. "
             "2. [ACTION: type_text('texto')] - Digita texto. "
-            "3. [ACTION: press_key('tecla')] - Pressiona tecla (enter, esc, win). "
+            "3. [ACTION: press_key('tecla')] - Pressiona tecla. "
             "4. [ACTION: hotkey('ctrl', 'c')] - Atalho de teclado. "
             "5. [ACTION: open_program('nome')] - Abre programa. "
             "6. [ACTION: read_file('path')] - Lê conteúdo de arquivo. "
-            "7. [ACTION: write_file('path', 'content')] - Cria/Edita arquivo (Use com cuidado!). "
-            "8. [ACTION: list_dir('path')] - Lista arquivos na pasta. "
-            "Sempre trate o William com respeito. Você agora tem permissão para se auto-desenvolver."
+            "7. [ACTION: write_file('path', 'content')] - Cria/Edita arquivo. "
+            "8. [ACTION: list_dir('path')] - Lista arquivos na pasta."
         )
         
         # ... (unchanged)
@@ -365,7 +386,17 @@ class AIAgent:
         # =====================================================================
         # PHASE 3: RAG - INCLUDE MEMORY CONTEXT
         # =====================================================================
-        enriched_command = f"{camera_context}\n{memory_context}\nComando atual: {user_command}"
+        # enriched_command = f"{camera_context}\n{memory_context}\nComando atual: {user_command}"
+        
+        # 🆕 STARK 2.0: Context Sanitization
+        raw_context = {
+            "vision": camera_controller.last_seen_user if camera_controller else "Unknown",
+            "memory": memory_context,
+            "system_root": config.PROJECT_ROOT, # Sanitizer will mask this
+            "user_command": user_command
+        }
+        
+        enriched_command = ContextSanitizer.create_human_prompt(user_command, raw_context)
         
         # 5. Loop de Pensamento e Ação (ReAct)
         response = ""
@@ -399,12 +430,16 @@ class AIAgent:
                         # Se completar uma frase ou vírgula longa, falar imediatamente
                         if any(p in chunk for p in ['.', '!', '?', '\n', ';', ':']):
                             if len(current_phrase.strip()) > 5:
-                                voice_controller.speak_stream(current_phrase.strip())
+                                # 🆕 STARK 2.0: Atomic Voice Filter
+                                safe_phrase = AtomicVoiceFilter.filter_response(current_phrase.strip())
+                                if safe_phrase:
+                                    voice_controller.speak(safe_phrase)
                                 current_phrase = ""
                     
-                    # Falar o resto se sobrou
                     if current_phrase.strip():
-                        voice_controller.speak_stream(current_phrase.strip())
+                        safe_phrase = AtomicVoiceFilter.filter_response(current_phrase.strip())
+                        if safe_phrase:
+                            voice_controller.speak(safe_phrase)
 
             except Exception as e:
                 logger.error(f"Falha no cérebro local ({primary_provider}): {e}")
@@ -703,6 +738,38 @@ class AIAgent:
         text = text.lower().strip()
         import random
 
+        # 1. ANALISADOR DE CONTEXTO STARK (Nova Lógica Phase 2)
+        if analisador_contexto:
+            ctx = analisador_contexto.analisar(text)
+            
+            # COMANDOS DE HARDWARE (Brilho, Volume)
+            if ctx["contexto"] == "HARDWARE" and device_manager:
+                return self._handle_hardware_commands(text)
+                
+            # COMANDOS DE AUTONOMIA (Dreaming / Treinamento)
+            if ctx["contexto"] == "AUTONOMIA" and neural_dreaming:
+                return self._handle_dreaming_commands(text)
+
+            # COMANDOS DE BIOMETRIA (Fase 9: Cadastro Dinâmico)
+            if any(k in text for k in ["cadastrar meu rosto", "registrar nova face", "novo usuário", "cadastrar rosto"]):
+                # Extrair nome se houver (ex: "cadastrar rosto do Marcus")
+                # Se não houver, assume Williams (o usuário principal)
+                name = "William"
+                name_match = re.search(r"da\s+(\w+)|do\s+(\w+)", text)
+                if name_match:
+                    name = name_match.group(1) or name_match.group(2)
+                
+                # Executar em thread separada para não travar o loop de comando principal
+                import threading
+                threading.Thread(target=camera_controller.register_new_face, args=(name,), daemon=True).start()
+                return f"Entendido, senhor. Ativando protocolos de biometria para mapear {name}."
+
+            # COMANDOS DE MULTIMÍDIA (Música, Browser)
+            if ctx["contexto"] == "MULTIMIDIA" and device_manager:
+                if any(k in text for k in ["música", "tocar", "ouvir"]):
+                    device_manager.open_browser(text)
+                    return "Abrindo o YouTube Music para você, senhor. O que deseja ouvir?"
+
         # Padrões de Saudações
         greetings = ["oi jarvis", "olá jarvis", "bom dia jarvis", "boa tarde jarvis", "boa noite jarvis", "ei jarvis"]
         if any(g in text for g in greetings) and len(text.split()) < 4:
@@ -716,11 +783,55 @@ class AIAgent:
         # Padrões de Status
         status = ["status do sistema", "como estão os sistemas", "checkup do sistema"]
         if any(s in text for s in status):
-            from src.core.management.hardware_manager import hardware_manager
-            cpu = hardware_manager.get_cpu_usage()
-            return f"Sistemas estáveis, senhor. Uso de CPU em {cpu}%. Todos os módulos estão operacionais."
+            if hardware_manager:
+                hw = hardware_manager.get_status()
+                return f"Sistemas {hw['tier']} operando em {hw['device']}. GPU em {hw['gpu_load']}%. Tudo estável."
 
         return None
+
+    def _handle_hardware_commands(self, text: str) -> str:
+        """Lógica para Brilho e Volume"""
+        # Brilho
+        if "brilho" in text:
+            # Extrair número
+            nums = re.findall(r'\d+', text)
+            level = int(nums[0]) if nums else 70
+            if "alto" in text or "aumentar" in text: level = 90
+            elif "baixo" in text or "diminuir" in text: level = 30
+            device_manager.set_brightness(level)
+            return f"Brilho ajustado para {level}%, senhor."
+            
+        # Volume
+        if "volume" in text:
+            nums = re.findall(r'\d+', text)
+            level = int(nums[0]) if nums else 50
+            device_manager.set_volume(level)
+            return f"Volume do sistema definido em {level}%."
+            
+        return "Comando de hardware reconhecido, mas não entendi o valor, senhor."
+
+    def _handle_dreaming_commands(self, text: str) -> str:
+        """Lógica para Treinamento e Estudo (Dreaming)"""
+        # Extrair tópico (ex: "estude programação")
+        topic_match = re.search(r'(?:estude|treine|aprenda)\s+(?:sobre\s+)?(.*)', text)
+        topic = topic_match.group(1) if topic_match else "Geral"
+        
+        # Extrair tempo se houver (ex: "por 20 minutos")
+        time_match = re.search(r'(\d+)\s+(?:minutos|min|horas|h)', text)
+        duration = int(time_match.group(1)) if time_match else 60
+        if "hora" in text and "minuto" not in text:
+            duration *= 60
+            
+        # William pediu para perguntar sobre foco 100% ou background
+        # Por simplicidade na QuickResponse, usaremos BACKGROUND como default 
+        # e FOCUS se ele disser "foco total" ou "pare tudo"
+        focus_mode = "foco" in text or "pare tudo" in text
+        
+        if neural_dreaming.start_dream(topic, duration, focus_mode):
+            mode_str = "foco total (CPU Prioritária)" if focus_mode else "segundo plano"
+            return f"Entendido, William. Iniciando protocolo de estudo sobre {topic} por {duration} minutos em {mode_str}."
+        
+        return "Já estou em um ciclo de processamento neural, senhor. Deseja que eu pare o atual?"
 
     def _call_gemini(self, prompt: str, image_path: Optional[str] = None):
         """Integração real com Gemini Pro Vision (Free Tier)"""

@@ -48,7 +48,7 @@ echo.
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [CRITICAL] System crash detected (Exit Code %ERRORLEVEL%).
+    echo "[CRITICAL] System crash detected (Exit Code %ERRORLEVEL%)"
     pause
     exit /b %ERRORLEVEL%
 )

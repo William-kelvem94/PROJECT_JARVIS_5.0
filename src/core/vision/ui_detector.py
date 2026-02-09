@@ -28,9 +28,12 @@ class UIDetector:
         
         if self.enabled and ULTRALYTICS_AVAILABLE:
             try:
-                # Se não houver modelo customizado, usa o YOLOv8n (nano) como base
-                # No futuro, podemos usar um modelo treinado especificamente para UI (ex: UI-Saliency)
-                path = model_path or config.get_setting('vision.yolo_model', 'yolov8n.pt')
+                # Se não houver modelo customizado, usa o YOLOv8n (nano) na pasta models
+                path = model_path or config.get_setting('vision.yolo_model', 'models/yolov8n.pt')
+                # Garantir caminho absoluto para estabilidade
+                if not os.path.isabs(path):
+                    path = str(Path(__file__).parent.parent.parent.parent / path)
+                
                 self.model = YOLO(path)
                 logger.info(f"Modelo YOLO carregado: {path}")
             except Exception as e:

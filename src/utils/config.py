@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('jarvis.log', encoding='utf-8'),
+        logging.FileHandler(os.path.join('data', 'logs', 'jarvis.log'), encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -53,6 +53,7 @@ class Config:
         self.SRC_DIR = self.PROJECT_ROOT / "src"
         self.DATA_DIR = self.PROJECT_ROOT / "data"
         self.CONFIG_DIR = self.PROJECT_ROOT / "config"
+        self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
         # Diretórios de dados
@@ -134,8 +135,8 @@ class Config:
             },
             "easyocr": {
                 "gpu": self._has_gpu(),
-                "model_storage_directory": str(self.DATA_DIR / "models"),
-                "user_network_directory": str(self.DATA_DIR / "models"),
+                "model_storage_directory": str(self.MODELS_DIR),
+                "user_network_directory": str(self.MODELS_DIR),
                 "detect_network": "craft",
                 "recog_network": "crnn",
                 "download_enabled": True,
@@ -258,7 +259,7 @@ class Config:
             self.CAPTURES_DIR,
             self.PROCESSED_DIR,
             self.CONFIG_DIR,
-            self.DATA_DIR / "models",
+            self.MODELS_DIR,
             self.DATA_DIR / "temp",
             self.DATA_DIR / "exports"
         ]

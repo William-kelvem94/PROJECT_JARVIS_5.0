@@ -32,55 +32,29 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONDITIONAL IMPORTS (Graceful Degradation)
 # ============================================================================
-try:
+import importlib.util
+
+def is_module_available(name: str) -> bool:
+    """Check if module is available without importing it"""
+    try:
+        return importlib.util.find_spec(name) is not None
+    except ImportError:
+        return False
+
+# Lazy detection of heavy modules
+CV2_AVAILABLE = is_module_available("cv2")
+NUMPY_AVAILABLE = is_module_available("numpy")
+MSS_AVAILABLE = is_module_available("mss")
+FACE_REC_AVAILABLE = is_module_available("face_recognition")
+EASYOCR_AVAILABLE = is_module_available("easyocr")
+YOLO_AVAILABLE = is_module_available("ultralytics")
+
+if CV2_AVAILABLE:
     import cv2
-    CV2_AVAILABLE = True
-except (ImportError, OSError) as e:
-    CV2_AVAILABLE = False
-    cv2 = None
-    logger.warning(f"⚠️ cv2 not available - video features disabled: {e}")
-
-try:
+if NUMPY_AVAILABLE:
     import numpy as np
-    NUMPY_AVAILABLE = True
-except (ImportError, OSError) as e:
-    NUMPY_AVAILABLE = False
-    # Mock numpy
-    class np:
-        class ndarray:
-            pass
-        @staticmethod
-        def array(x):
-            return x
-    logger.warning(f"⚠️ numpy not available - array operations disabled: {e}")
-
-try:
+if MSS_AVAILABLE:
     import mss
-    MSS_AVAILABLE = True
-except ImportError:
-    MSS_AVAILABLE = False
-    logger.warning("⚠️ mss not available - screen capture disabled")
-
-try:
-    import face_recognition
-    FACE_REC_AVAILABLE = True
-except (ImportError, OSError) as e:
-    FACE_REC_AVAILABLE = False
-    logger.warning(f"⚠️ face_recognition not available - FaceID disabled: {e}")
-
-try:
-    import easyocr
-    EASYOCR_AVAILABLE = True
-except (ImportError, OSError) as e:
-    EASYOCR_AVAILABLE = False
-    logger.warning(f"⚠️ EasyOCR not available - OCR disabled: {e}")
-
-try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except (ImportError, OSError) as e:
-    YOLO_AVAILABLE = False
-    logger.warning(f"⚠️ ultralytics not available - YOLO detection disabled: {e}")
 
 
 # ============================================================================
@@ -132,10 +106,17 @@ class VisionSystem:
         Args:
             data_dir: Directory for faces, models, screenshots
         """
-        self.data_dir = data_dir or Path("data")
+        from src.utils.config import config
+        if CV2_AVAILABLE:
+            # 🆕 ADAPTIVE THREADING: Only limit on weak CPUs
+            if hardware_manager.get_tier() in ["LITE", "BALANCED"]:
+                 cv2.setNumThreads(1) 
+            # On FAST/ULTRA, let it fly (default OMP behavior)
+            
+        self.data_dir = data_dir or config.DATA_DIR
         self.faces_dir = self.data_dir / "faces"
         self.screenshots_dir = self.data_dir / "screenshots"
-        self.models_dir = self.data_dir / "models"
+        self.models_dir = config.MODELS_DIR
         
         # Create directories
         self.faces_dir.mkdir(parents=True, exist_ok=True)
@@ -169,13 +150,14 @@ class VisionSystem:
         self.ocr_cache_hits = 0
         self.ocr_cache_misses = 0
         
-        # Initialize components
+        # Initialize components (Passive)
+        self.sct = None
         self._initialize_components()
         
-        # Start background loading of heavy models
-        self.load_heavy_models_async()
+        # 🆕 PASSIVE INIT: Do not start loading in __init__
+        # self.load_heavy_models_async()
         
-        logger.info("✅ Vision System initialized")
+        logger.info("✅ Vision System initialized (Passive Mode)")
         logger.info(f"   FaceID: {'✅' if FACE_REC_AVAILABLE else '❌'}")
         logger.info(f"   OCR: {'✅' if EASYOCR_AVAILABLE else '❌'}")
         logger.info(f"   YOLO: {'✅' if YOLO_AVAILABLE else '❌'}")
@@ -183,35 +165,46 @@ class VisionSystem:
         
     def _initialize_components(self):
         """Initialize vision components"""
-        # Load known faces (fast)
+        # 🆕 PASSIVE: Do nothing here. Wait for start_background_loading()
+        pass
+
+    def start_background_loading(self):
+        """Trigger background loading of heavy neural models (Call after GUI boot)"""
+        logger.info("🚀 Vision System: Iniciando carregamento neural post-boot...")
+        threading.Thread(target=self.load_heavy_models_async, daemon=True, name="VisionNeuralLoad").start()
+
+    def load_heavy_models_async(self):
+        """Sequential loading of heavy models to ensure DLL stability on Windows"""
+        # 1. FaceID
         if FACE_REC_AVAILABLE:
             self._load_known_faces()
             
-        # Initialize screen capture (fast)
-        if MSS_AVAILABLE:
-            self.sct = mss.mss()
-
-    def load_heavy_models_async(self):
-        """Start loading OCR and YOLO in background threads"""
+        # 2. EasyOCR
         if EASYOCR_AVAILABLE and not self._ocr_ready and not self._ocr_loading:
-            threading.Thread(target=self._load_ocr_background, daemon=True, name="Vision-OCR-Loader").start()
+            self._load_ocr_background()
             
+        # 3. YOLO
         if YOLO_AVAILABLE and not self._yolo_ready and not self._yolo_loading:
-            threading.Thread(target=self._load_yolo_background, daemon=True, name="Vision-YOLO-Loader").start()
+            self._load_yolo_background()
 
     def _load_ocr_background(self):
         """Load EasyOCR in background"""
         try:
-            with self._models_lock:
-                self._ocr_loading = True
-                device = hardware_manager.get_device()
-                use_gpu = (device == "cuda")
-                
-                logger.info(f"🧠 Vision: Carregando EasyOCR (GPU: {use_gpu})...")
-                self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=use_gpu)
-                self._ocr_ready = True
-                self._ocr_loading = False
-                logger.info(f"✅ Vision: EasyOCR pronto (Aceleração: {device.upper()})")
+            # 🆕 GLOBAL NEURAL LOCK
+            with hardware_manager.neural_lock:
+                with self._models_lock:
+                    self._ocr_loading = True
+                    # Lazy Import
+                    import easyocr
+                    
+                    device = hardware_manager.get_device()
+                    use_gpu = (device == "cuda")
+                    
+                    logger.info(f"🧠 Vision: Carregando EasyOCR (GPU: {use_gpu})...")
+                    self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=use_gpu)
+                    self._ocr_ready = True
+                    self._ocr_loading = False
+                    logger.info(f"✅ Vision: EasyOCR pronto (Aceleração: {device.upper()})")
         except Exception as e:
             self._ocr_loading = False
             logger.error(f"❌ Vision: Erro ao carregar EasyOCR: {e}")
@@ -219,14 +212,19 @@ class VisionSystem:
     def _load_yolo_background(self):
         """Load YOLO in background"""
         try:
-            with self._models_lock:
-                self._yolo_loading = True
-                device = hardware_manager.get_device()
-                
-                logger.info("🧠 Vision: Carregando YOLOv8 em background...")
-                model_path = self.models_dir / "yolov8n.pt"
-                self.yolo_model = YOLO(str(model_path))
-                self.yolo_model.to(device)
+            # 🆕 GLOBAL NEURAL LOCK
+            with hardware_manager.neural_lock:
+                with self._models_lock:
+                    self._yolo_loading = True
+                    # Lazy Import
+                    from ultralytics import YOLO
+                    
+                    device = hardware_manager.get_device()
+                    
+                    logger.info("🧠 Vision: Carregando YOLOv8 em background...")
+                    model_path = self.models_dir / "yolov8n.pt"
+                    self.yolo_model = YOLO(str(model_path))
+                    self.yolo_model.to(device)
                 
                 self._yolo_ready = True
                 self._yolo_loading = False
@@ -269,10 +267,21 @@ class VisionSystem:
         if not FACE_REC_AVAILABLE:
             return
             
-        logger.info(f"Loading known faces from {self.faces_dir}...")
+        # 🆕 GLOBAL NEURAL LOCK: Prevent Dlib/BLAS conflict with Torch
+        with hardware_manager.neural_lock:
+            # Lazy Import
+            import face_recognition
+            
+            logger.info(f"🧠 Vision: Sincronizando faces de {self.faces_dir}...")
+            
+            count = 0
+            self.known_face_encodings = []
+            self.known_face_names = []
         
-        count = 0
-        for face_file in self.faces_dir.glob("*.jpg"):
+        quarantine_dir = self.faces_dir / "quarantine"
+        
+        # Aceitar jpg, jpeg, png
+        for face_file in list(self.faces_dir.glob("*.jpg")) + list(self.faces_dir.glob("*.png")) + list(self.faces_dir.glob("*.jpeg")):
             try:
                 # Load image
                 image = face_recognition.load_image_file(str(face_file))
@@ -282,16 +291,22 @@ class VisionSystem:
                 
                 if encodings:
                     self.known_face_encodings.append(encodings[0])
-                    self.known_face_names.append(face_file.stem)
+                    self.known_face_names.append(face_file.stem.split('_')[0]) # Remover sufixo de ângulo se houver
                     count += 1
-                    logger.info(f"   ✅ Loaded: {face_file.stem}")
+                    logger.info(f"   👤 FaceID: Carregada biometria de '{face_file.stem}'")
                 else:
-                    logger.warning(f"   ⚠️ No face found in: {face_file.name}")
+                    # TRATAMENTO: Mover para quarentena se não houver face
+                    logger.error(f"   ❌ FaceID: Nenhuma face detectável em '{face_file.name}'. Movendo para quarentena.")
+                    quarantine_dir.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(face_file), str(quarantine_dir / face_file.name))
                     
             except Exception as e:
-                logger.error(f"   ❌ Failed to load {face_file.name}: {e}")
+                logger.error(f"   ❌ FaceID: Falha técnica ao processar {face_file.name}: {e}")
                 
-        logger.info(f"✅ Loaded {count} authorized faces")
+        if count == 0:
+            logger.warning("   🔶 FaceID: Nenhum perfil facial ativo. Use o HUD ou diga 'Jarvis, cadastrar meu rosto'.")
+        else:
+            logger.info(f"✅ FaceID: {count} perfis biométricos sincronizados.")
         
     def start_monitoring(self):
         """Start continuous webcam monitoring in background thread"""
