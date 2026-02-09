@@ -18,16 +18,16 @@ logger = logging.getLogger(__name__)
 class ProactiveMonitor:
     """Daemon que observa a tela em busca de mudanças (Deltas) e toma iniciativa"""
 
-    def __init__(self, check_interval: float = 3.0, sensitivity: float = 0.05):
-        self.check_interval = check_interval
-        self.sensitivity = sensitivity # Porcentagem de pixels alterados para disparar
+    def __init__(self, check_interval: float = 300.0, sensitivity: float = 0.15):
+        self.check_interval = check_interval  # 🆕 5min entre checks (era 3s)
+        self.sensitivity = sensitivity # 15% de mudança (era 5% - muito sensível)
         self.running = False
         self.thread = None
         self.last_frame = None
         
         # Cooldown para não ser irritante (segundos)
         self.last_trigger_time = 0
-        self.cooldown = 60 
+        self.cooldown = 600  # 🆕 10min entre triggers (era 60s) 
 
     def start(self):
         """Inicia o monitoramento em background"""

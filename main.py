@@ -21,7 +21,11 @@ from src.core.orchestrator import StarkOrchestrator # Stark 2.0 Orchestrator
 # Core overrides for Windows/Torch stability
 os.environ["OMP_WAIT_POLICY"] = "PASSIVE"
 os.environ["MKL_THREADING_LAYER"] = "INTEL"
-# Suppress ChromaDB Telemetry Bug (capture() takes 1 positional argument but 3 were given)
+# Suppress ChromaDB Telemetry Bug (posthog 7.x incompatible with chromadb 0.4.x)
+# Disable telemetry entirely via env var + silence logger
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["POSTHOG_DISABLED"] = "1"
+logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)
 # Centralized comtypes Fix (Windows 11 stability)
 if platform.system() == "Windows":
     try:
@@ -149,20 +153,42 @@ def print_system_health(instances, neural_systems=None):
             face_rec_installed = True
         except: pass
 
+    # Contar faces: tentar camera_controller primeiro (tem sync pós-boot), fallback para vs
     num_faces = len(getattr(vs, 'known_face_encodings', [])) if vs else 0
+    if num_faces == 0:
+        try:
+            from src.core.vision.camera_controller import camera_controller as cam_ctrl
+            if cam_ctrl:
+                num_faces = len(getattr(cam_ctrl, 'known_face_encodings', []))
+        except Exception:
+            pass
     
     face_icon = "✅" if (face_rec_installed and num_faces > 0) else ("🔶" if face_rec_installed else "❌")
     face_label = f"Face Recognition ({num_faces} faces)" if face_rec_installed else "Face Recognition"
 
+    # 🔒 Vision System em Passive Mode = modelos carregam no Stage 3 (pós health report)
+    # Se vs existe mas _ocr_ready=False, significa que AINDA VAI carregar, não que falhou
+    vs_passive = vs and not getattr(vs, '_ocr_ready', False) and not getattr(vs, '_yolo_ready', False)
+    
+    ocr_status = getattr(vs, '_ocr_ready', False) if vs else False
+    yolo_status = getattr(vs, '_yolo_ready', False) if vs else False
+    
     ml_feats = [
-        ("OCR (EasyOCR)", vs._ocr_ready if vs else False),
-        ("YOLO (Detection)", vs._yolo_ready if vs else False),
-        (face_label, face_rec_installed),
-        ("PyTorch Neural", TORCH_AVAILABLE)
+        ("OCR (EasyOCR)", ocr_status, vs_passive and not ocr_status),
+        ("YOLO (Detection)", yolo_status, vs_passive and not yolo_status),
+        (face_label, face_rec_installed, False),
+        ("PyTorch Neural", TORCH_AVAILABLE, False)
     ]
-    for name, status in ml_feats:
-        icon = face_icon if "Face" in name else ("✅" if status else "❌")
-        print(f" ├─ {icon} {name}")
+    
+    for name, status, pending in ml_feats:
+        if "Face" in name:
+            icon = face_icon
+        elif pending:
+            icon = "⏳"  # Stage 3 vai carregar
+        else:
+            icon = "✅" if status else "❌"
+        suffix = " (Stage 3)" if pending else ""
+        print(f" ├─ {icon} {name}{suffix}")
     
     # Neural Systems (Advanced)
     if neural_systems:
@@ -177,7 +203,7 @@ def print_system_health(instances, neural_systems=None):
             print(f" ├─ {icon} {name}")
 
     # Calculations for Score
-    working = sum(1 for v in instances.values() if v) + sum(1 for _, s in ml_feats if s)
+    working = sum(1 for v in instances.values() if v) + sum(1 for _, s, _ in ml_feats if s)
     total_slots = len(instances) + len(ml_feats)
     
     # Add neural systems to score
@@ -243,7 +269,7 @@ class JarvisSingularity(QObject):
         """Start JARVIS with staggered daemon initialization for maximum stability"""
         # Show HUD interface
         if self.window_manager:
-            from interface.window_manager import InterfaceMode
+            from src.interface.window_manager import InterfaceMode
             self.window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
             logger.info("✅ HUD interface activated")
             hud = self.window_manager.get_hud()
@@ -260,20 +286,10 @@ class JarvisSingularity(QObject):
 
     def _staggered_daemon_start(self):
         """Sequentially start background subsystems with delays to avoid DLL/COM collisions"""
-        # 1. Start Vision Monitoring
-        if self.vision_system:
-             try:
-                 from src.core.vision.camera_controller import get_camera_controller
-                 camera_controller = get_camera_controller()
-                 # 🆕 LAZY START: Now safe because of DSHOW + Singleton
-                 threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
-                 logger.info("👁️ Camera Monitoring activated (Safe Mode)")
-                 if self.window_manager and self.window_manager.get_hud():
-                     self.window_manager.get_hud().log_event("VISION ENGINE: ONLINE")
-             except Exception as e:
-                 logger.warning(f"⚠️ Vision start failure: {e}")
-
-        # 2. Wait 5s then start Proactive Monitor
+        # Camera monitoring now handled in Stage 3 after neural models load
+        # This prevents ACCESS_VIOLATION crashes from parallel model loading
+        
+        # Wait 5s then start Proactive Monitor
         QTimer.singleShot(5000, self._start_proactive_monitor)
 
     def _start_proactive_monitor(self):
@@ -567,29 +583,60 @@ def main():
         # --------------------------------------------------------------------
         # [STAGE 3] NEURAL AWAKENING (Brain) - POST-BOOT
         # --------------------------------------------------------------------
-        # Fire 1.5s AFTER event loop starts to skip the "Kill Zone" (DLL Conflict Window).
-        # This allows the GUI to stabilize before heavy models load in background.
+        # SEQUENTIAL loading to prevent ACCESS_VIOLATION crashes
+        # Vision -> Audio -> Camera (one at a time)
         
         from PyQt6.QtCore import QTimer
+        import threading
         
-        def start_neural_engines():
-            logger.info("⚡ [STAGE 3] Igniting Neural Engines (Adaptive Load)...")
+        def start_neural_engines_sequential():
+            """Load heavy models SEQUENTIALLY to avoid memory conflicts"""
+            logger.info("⚡ [STAGE 3] Igniting Neural Engines (Sequential Load)...")
             
-            # 1. Audio System (Whisper/VAD)
-            if audio_system:
-                audio_system.start_background_loading()
-                
-            # 2. Vision System (FaceRec/OCR/YOLO)
+            # 1. Vision System first (FaceRec/OCR/YOLO)
             if vision_system:
+                logger.info("🧠 Loading Vision models...")
                 vision_system.start_background_loading()
+                vision_system.wait_for_models(timeout=30.0)  # Wait for completion
+                logger.info("✅ Vision models loaded")
+            
+            # 2. Audio System second (Whisper/VAD) - only after Vision completes
+            if audio_system:
+                logger.info("🧠 Loading Audio models...")
+                audio_system.start_background_loading()
+                time.sleep(10)  # Give Whisper time to load
+                logger.info("✅ Audio models loaded")
+            
+            # 3. Camera Monitoring last - schedule with threading.Timer
+            logger.info("⏳ Scheduling camera start in 30s for system stabilization...")
+            camera_timer = threading.Timer(30.0, start_camera_monitoring_safe)
+            camera_timer.daemon = True
+            camera_timer.start()
+            
+            # KEEP THREAD ALIVE until camera starts (prevents crash)
+            logger.info("🛡️ Neural load thread staying alive until camera initialized...")
+            time.sleep(35)  # Wait for camera to start
+            logger.info("✅ Neural sequential load complete")
                 
-        # Schedule Stage 3
-        QTimer.singleShot(1500, start_neural_engines)
+        def start_camera_monitoring_safe():
+            """Start camera only after all neural models loaded"""
+            if vision_system:
+                try:
+                    from src.core.vision.camera_controller import get_camera_controller
+                    camera_controller = get_camera_controller()
+                    threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
+                    logger.info("👁️ Camera Monitoring activated (Post-Neural Load)")
+                    if window_manager and window_manager.get_hud():
+                        window_manager.get_hud().log_event("VISION ENGINE: ONLINE")
+                except Exception as e:
+                    logger.warning(f"⚠️ Vision start failure: {e}")
         
-        # Sync Waiter (Optional, purely for logic sync, doesn't block UI)
-        if vision_system:
-            import threading
-            threading.Thread(target=vision_system.wait_for_models, args=(15.0,), daemon=True).start()
+        # Schedule Stage 3 in background thread (doesn't block Qt event loop)
+        QTimer.singleShot(1500, lambda: threading.Thread(
+            target=start_neural_engines_sequential,
+            daemon=True,
+            name="NeuralSequentialLoad"
+        ).start())
 
         # Start Core Orchestrator
         jarvis = JarvisSingularity(app, instances)

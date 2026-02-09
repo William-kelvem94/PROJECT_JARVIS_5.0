@@ -54,29 +54,31 @@ class ModernReactorCore(QWidget):
         self.rotation_mid = 0
         self.rotation_outer = 0
         self.plasma_phase = 0
+        self.sync_val = 0  # HUD data ring value
+        self.nucleo_val = 0  # HUD nucleo value
         
-        # Color palettes (Stark 2.0)
+        # 🔥 STARK EDITION: Cores vibrantes e visíveis
         self.palettes = {
-            "stable": QColor(0, 242, 255),    # Stark Cyan
-            "thinking": QColor(188, 0, 255),  # Neural Purple
-            "alert": QColor(255, 170, 0),     # Warning Amber
-            "critical": QColor(255, 0, 60),   # Critical Red
-            "listening": QColor(0, 255, 150)  # Biometric Green
+            "stable": QColor(0, 220, 255, 220),     # Cyan vibrante
+            "thinking": QColor(180, 50, 255, 220),  # Purple intenso
+            "alert": QColor(255, 170, 0, 220),      # Amber vivo
+            "critical": QColor(255, 30, 60, 230),   # Red urgente
+            "listening": QColor(0, 255, 140, 220)   # Green neon
         }
         self.current_color = self.palettes["stable"]
         
-        # Animation timer
+        # 🔥 60 FPS para fluidez máxima
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._animate)
-        self.timer.start(16) # 60 FPS
+        self.timer.start(16)  # 60 FPS - smooth animations
         
     def _animate(self):
-        # Update animation phases
+        # 🔥 Animações fluidas e dinâmicas
         self.pulse_value = (self.pulse_value + 2) % 360
-        self.rotation_inner -= 1.5   # Counter-clockwise
-        self.rotation_mid += 0.8     # Clockwise
-        self.rotation_outer -= 0.4   # Slow Counter-clockwise
-        self.plasma_phase += 0.1
+        self.rotation_inner -= 1.5
+        self.rotation_mid += 0.8
+        self.rotation_outer -= 0.4
+        self.plasma_phase += 0.08
         self.update()
 
     def set_status(self, status: str):
@@ -100,10 +102,10 @@ class ModernReactorCore(QWidget):
         
         pulse_factor = (math.sin(math.radians(self.pulse_value)) + 1) / 2
         
-        # 1. ATMOSPHERIC OUTER GLOW
+        # 🔥 OUTER GLOW: Pulsação vibrante visível
         outer_glow = QRadialGradient(cx, cy, 110 * scale)
         c = QColor(self.current_color)
-        c.setAlpha(int(20 + 15 * pulse_factor))
+        c.setAlpha(int(25 + 20 * pulse_factor))  # Glow visível e pulsante
         outer_glow.setColorAt(0, c)
         outer_glow.setColorAt(1, QColor(0, 0, 0, 0))
         painter.setBrush(outer_glow)
@@ -111,57 +113,57 @@ class ModernReactorCore(QWidget):
         painter.drawEllipse(int(cx - 110 * scale), int(cy - 110 * scale), 
                             int(220 * scale), int(220 * scale))
 
-        # 2. TRIPLE ORBITAL DATA RINGS
-        # OUTER SYNC RING (Segmented)
-        self._draw_segmented_ring(painter, cx, cy, 95 * scale, self.rotation_outer, 12, 15, QColor(self.current_color.red(), self.current_color.green(), self.current_color.blue(), 60))
-        self._draw_arc_data(painter, cx, cy, 95 * scale, self.sync_val, QColor(self.current_color), 3 * scale)
+        # 🔥 ANÉIS VIBRANTES - estilo Iron Man
+        # OUTER SYNC RING (Segmented) - visível e dinâmico
+        self._draw_segmented_ring(painter, cx, cy, 95 * scale, self.rotation_outer, 12, 15, QColor(self.current_color.red(), self.current_color.green(), self.current_color.blue(), 100))
+        self._draw_arc_data(painter, cx, cy, 95 * scale, self.sync_val, QColor(self.current_color.red(), self.current_color.green(), self.current_color.blue(), 180), 3 * scale)
 
-        # MID PROCESSING RING (Hex-like dots)
-        self._draw_dotted_ring(painter, cx, cy, 80 * scale, self.rotation_mid, 24, QColor(self.current_color.red(), self.current_color.green(), self.current_color.blue(), 80))
+        # MID PROCESSING RING (Hex-like dots) - nítido
+        self._draw_dotted_ring(painter, cx, cy, 80 * scale, self.rotation_mid, 24, QColor(self.current_color.red(), self.current_color.green(), self.current_color.blue(), 140))
 
-        # INNER NUCLEO RING (Smooth glow)
-        self._draw_arc_data(painter, cx, cy, 65 * scale, self.nucleo_val, QColor(0, 255, 150, 200), 2 * scale)
+        # INNER NUCLEO RING (Smooth glow) - verde neon forte
+        self._draw_arc_data(painter, cx, cy, 65 * scale, self.nucleo_val, QColor(0, 255, 150, 220), 3 * scale)
 
-        # 3. ROTATING POWER SHARDS
-        painter.save()
-        painter.translate(cx, cy)
-        painter.rotate(self.rotation_inner)
-        for i in range(3):
-            painter.rotate(120)
-            shard_path = QPainterPath()
-            shard_path.moveTo(0, -50 * scale)
-            shard_path.lineTo(10 * scale, -40 * scale)
-            shard_path.lineTo(0, -35 * scale)
-            shard_path.lineTo(-10 * scale, -40 * scale)
-            shard_path.closeSubpath()
-            
-            c_shard = QColor(self.current_color)
-            c_shard.setAlpha(180)
-            painter.setBrush(c_shard)
-            painter.setPen(QPen(Qt.GlobalColor.white, 1, Qt.PenStyle.SolidLine))
-            painter.drawPath(shard_path)
-        painter.restore()
-
-        # 4. PLASMA PLASMA PLASMA CORE
+        # 🔥 POWER SHARDS: Partículas de energia ao redor do core
+        for i in range(6):
+            shard_angle = math.radians(self.rotation_inner * 2 + i * 60)
+            shard_r = (50 + 5 * pulse_factor) * scale
+            sx = cx + shard_r * math.cos(shard_angle)
+            sy = cy + shard_r * math.sin(shard_angle)
+            shard_color = QColor(self.current_color)
+            shard_color.setAlpha(int(120 + 80 * pulse_factor))
+            painter.setBrush(shard_color)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(int(sx - 2), int(sy - 2), 4, 4)
+        
+        # 🔥 CORE REACTOR: Arc Reactor brilhante com plasma
         core_r = (35 + (5 * pulse_factor)) * scale
         plasma = QRadialGradient(cx, cy, core_r)
         
-        # Dynamic plasma shift
+        # Plasma intenso
         off1 = (math.sin(self.plasma_phase) + 1) / 2 * 0.2
-        plasma.setColorAt(0, Qt.GlobalColor.white)
-        plasma.setColorAt(0.3 + off1, self.current_color)
-        plasma.setColorAt(0.8, QColor(self.current_color.red()//2, self.current_color.green()//2, self.current_color.blue()//2, 100))
+        
+        c_white = QColor(Qt.GlobalColor.white)
+        c_white.setAlpha(255)  # Centro branco puro
+        plasma.setColorAt(0, c_white)
+        
+        c_mid = QColor(self.current_color)
+        c_mid.setAlpha(230)
+        plasma.setColorAt(0.3 + off1, c_mid)
+        
+        c_out = QColor(self.current_color.red()//2, self.current_color.green()//2, self.current_color.blue()//2, 120)
+        plasma.setColorAt(0.8, c_out)
         plasma.setColorAt(1, QColor(0, 0, 0, 0))
         
         painter.setBrush(plasma)
         painter.drawEllipse(int(cx - core_r), int(cy - core_r), int(core_r * 2), int(core_r * 2))
 
-        # 5. CORE STATUS LABEL
-        painter.setPen(QPen(Qt.GlobalColor.white, 1))
+        # 🔥 LABEL STARK: Texto bold visível
+        painter.setPen(QPen(QColor(255, 255, 255, 240), 1))
         font = QFont("Consolas", int(8 * scale), QFont.Weight.Bold)
         painter.setFont(font)
         status_txt = f"C-LOAD: {int(self.nucleo_val)}%"
-        painter.drawText(QRectF(cx - 50*scale, cy + 50*scale, 100*scale, 20*scale), Qt.AlignmentFlag.AlignCenter, status_txt)
+        painter.drawText(QRectF(cx - 40*scale, cy + 45*scale, 80*scale, 15*scale), Qt.AlignmentFlag.AlignCenter, status_txt)
 
     def _draw_segmented_ring(self, painter, cx, cy, r, rotation, segments, gap, color):
         painter.setPen(QPen(color, 2, Qt.PenStyle.DashLine))
@@ -411,16 +413,6 @@ class ModernHUD(QMainWindow):
         self._setup_window()
         
         # UI Components
-        # Particle System for background neural flow
-        self.particles = []
-        for _ in range(30):
-            self.particles.append({
-                'pos': QPointF(random.randint(0, 1000), random.randint(0, 800)),
-                'speed': random.uniform(0.5, 2.0),
-                'size': random.uniform(1, 3),
-                'opacity': random.uniform(0.1, 0.5)
-            })
-            
         self._setup_ui()
         
         # Load saved position
@@ -539,17 +531,17 @@ class ModernHUD(QMainWindow):
                 background: qradialgradient(
                     cx:0.5, cy:0.3, radius:1.5,
                     fx:0.5, fy:0,
-                    stop:0 rgba(15, 30, 60, 240),
-                    stop:0.6 rgba(5, 10, 20, 248),
-                    stop:1 rgba(0, 0, 0, 255)
+                    stop:0 rgba(8, 20, 50, 245),
+                    stop:0.5 rgba(3, 8, 25, 250),
+                    stop:1 rgba(0, 0, 0, 252)
                 );
-                border: 1px solid rgba(0, 242, 255, 0.2);
-                border-radius: 12px;
+                border: 1px solid rgba(0, 242, 255, 0.6);
+                border-radius: 14px;
             }
             QLabel {
                 background: transparent;
                 color: #00F2FF;
-                font-family: 'Consolas', 'Outfit', 'Segoe UI';
+                font-family: 'Consolas', 'JetBrains Mono', 'Fira Code', 'Segoe UI';
             }
         """)
         
@@ -809,28 +801,6 @@ class ModernHUD(QMainWindow):
         
         painter.restore()
 
-    def _draw_particles(self, painter):
-        """Draw and update background particles"""
-        painter.save()
-        w, h = self.width(), self.height()
-        color = QColor(self.reactor.current_color)
-        
-        for p in self.particles:
-            # Update position
-            p['pos'].setX(p['pos'].x() + p['speed'])
-            if p['pos'].x() > w:
-                p['pos'].setX(0)
-                p['pos'].setY(random.randint(0, h))
-                
-            # Draw
-            c = QColor(color)
-            c.setAlpha(int(255 * p['opacity']))
-            painter.setBrush(c)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawEllipse(p['pos'], p['size'], p['size'])
-            
-        painter.restore()
-
     def _draw_glitch_effect(self, painter):
         """Real-time technical interference simulation"""
         w, h = self.width(), self.height()
@@ -845,41 +815,6 @@ class ModernHUD(QMainWindow):
             painter.setBrush(QColor(0, 242, 255, 100))
             painter.drawRect(gx, gy, w, gh)
         painter.restore()
-
-    def _draw_hex_grid(self, painter):
-        """Pulsating geometric overlay"""
-        painter.save()
-        painter.setOpacity(0.15)
-        hex_size = 25
-        h_hex = hex_size * math.sqrt(3) / 2
-        p_val = (math.sin(time.time() * 1.5) + 1) / 2
-        painter.setPen(QPen(QColor(0, 242, 255, int(50 * p_val)), 0.5))
-        
-        for row in range(-1, self.height() // int(h_hex) + 1):
-            for col in range(-1, self.width() // int(hex_size * 1.5) + 1):
-                x = col * hex_size * 1.5
-                y = row * h_hex * 2 + (col % 2) * h_hex
-                # Efficiently draw 3 lines of hexagon instead of polygon
-                painter.drawLine(int(x), int(y - h_hex), int(x + hex_size/2), int(y))
-                painter.drawLine(int(x + hex_size/2), int(y), int(x), int(y + h_hex))
-        painter.restore()
-
-    def _draw_scanning_laser(self, painter):
-        """Military-grade horizontal scanning line"""
-        self.scan_y += 4 * self.scan_dir
-        if self.scan_y > self.height() or self.scan_y < 0:
-            self.scan_dir *= -1
-            
-        w = self.width()
-        laser_color = QColor(0, 242, 255, 120)
-        grad = QLinearGradient(0, self.scan_y - 15, 0, self.scan_y + 15)
-        grad.setColorAt(0, QColor(0, 0, 0, 0))
-        grad.setColorAt(0.5, laser_color)
-        grad.setColorAt(1, QColor(0, 0, 0, 0))
-        
-        painter.fillRect(6, self.scan_y - 15, w - 12, 30, QBrush(grad))
-        painter.setPen(QPen(laser_color, 1))
-        painter.drawLine(10, self.scan_y, w - 10, self.scan_y)
 
     def _draw_particles(self, painter):
         """Data particles flowing towards the Reactor Core"""
@@ -939,11 +874,6 @@ class ModernHUD(QMainWindow):
         
         # Force repaint for 60FPS fluid feel
         self.update()
-
-    def log_event(self, message: str):
-        """Add a short system message to the event ticker"""
-        if hasattr(self, 'ticker'):
-            self.ticker.add_event(message)
 
     def _draw_hex_grid(self, painter):
         """Draws a subtle pulsating hexagonal grid overlay"""
