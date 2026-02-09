@@ -224,14 +224,43 @@ class SingularityLauncher:
             self.step("Dependencies failure detected", "ERR")
             
             if retries > 0:
-                print(f"\n{Color.RED}[CRITICAL] Auto-Repair Failed. Manual intervention required.{Color.END}")
-                print(f"{Color.RED}Please run: pip install -r requirements.txt{Color.END}")
+                print(f"\n{Color.RED}[CRITICAL] Auto-Repair Failed after multiple attempts.{Color.END}")
+                print(f"{Color.YELLOW}Attempting emergency full installation...{Color.END}")
+                
+                # Last resort: full requirements.txt install
+                req_file = PROJECT_ROOT / "requirements.txt"
+                if req_file.exists():
+                    try:
+                        print(f"  [EMERGENCY] Installing all requirements...")
+                        subprocess.run([str(VENV_PYTHON), "-m", "pip", "install", "-r", str(req_file)], 
+                                     check=True, timeout=600)
+                        print(f"{Color.GREEN}[OK] Emergency installation completed!{Color.END}")
+                        return self.pre_flight_checks(retries=2)  # Final check
+                    except:
+                        pass
+                
+                print(f"{Color.RED}[FATAL] System cannot self-repair. Manual intervention required.{Color.END}")
+                print(f"{Color.RED}Please run: INSTALL_JARVIS.bat{Color.END}")
                 return False
 
             print(f"\n{Color.YELLOW}[AUTO-REPAIR] System Dependencies Missing/Corrupted.{Color.END}")
-            print(f"{Color.YELLOW}Initiating Self-Healing Protocol (Omni-Care)...{Color.END}")
+            print(f"{Color.YELLOW}Initiating Intelligent Self-Healing Protocol...{Color.END}")
             
-            # Use requirements.txt as gold standard
+            # NEW: Try auto_healer first (more intelligent)
+            auto_healer_path = PROJECT_ROOT / "scripts" / "auto_healer.py"
+            if auto_healer_path.exists():
+                print(f"  {Color.CYAN}[PHASE 1] Running AI-powered Auto-Healer...{Color.END}")
+                try:
+                    result = subprocess.run([str(VENV_PYTHON), str(auto_healer_path)], 
+                                          timeout=300, capture_output=False)
+                    if result.returncode == 0:
+                        print(f"{Color.GREEN}[SUCCESS] Auto-Healer fixed the issues!{Color.END}")
+                        return self.pre_flight_checks(retries=1)  # Re-check
+                except Exception as e:
+                    print(f"{Color.YELLOW}[WARN] Auto-Healer encountered issues: {e}{Color.END}")
+            
+            # Fallback to traditional repair
+            print(f"  {Color.CYAN}[PHASE 2] Running Traditional Repair...{Color.END}")
             req_file = PROJECT_ROOT / "requirements.txt"
             if req_file.exists():
                 print(f"  [ACTION] Executing Nuclear Sync via requirements.txt...")
@@ -388,6 +417,37 @@ class SingularityLauncher:
         except Exception as e:
             print(f"  {Color.RED}❌ Model verification failed: {e}{Color.END}")
 
+    def initialize_learning_systems(self):
+        """
+        Stage 2.7: Initialize Autonomous Learning Systems
+        - Continual Learner (Auto-Training)
+        - Feedback Loop (RLHF/DPO)
+        - Knowledge Distiller (Golden Commands)
+        - Dream Cycle (Nighttime Training)
+        """
+        self.step("Learning Systems: Initializing...", "WAIT")
+        
+        try:
+            # Import and initialize
+            from src.learning.learning_engine import initialize_learning_systems
+            
+            success = initialize_learning_systems(PROJECT_ROOT)
+            
+            if success:
+                self.step("Learning Systems: ONLINE (AGI Mode Active)", "OK")
+                print(f"  {Color.GREEN}  → Continual Learner: Monitoring{Color.END}")
+                print(f"  {Color.GREEN}  → Feedback Loop: Collecting{Color.END}")
+                print(f"  {Color.GREEN}  → Knowledge Distiller: Extracting Patterns{Color.END}")
+                print(f"  {Color.GREEN}  → Dream Cycle: Scheduled{Color.END}")
+            else:
+                self.step("Learning Systems: HIBERNATING (Disabled in config)", "WARN")
+                
+        except Exception as e:
+            self.step(f"Learning Systems: ERROR - {str(e)}", "WARN")
+            logger.error(f"Failed to initialize learning systems: {e}")
+        
+        print("-" * 80)
+
     def launch_core(self):
         print("\n" + Color.CYAN + "="*80 + Color.END)
         print(f"{Color.BOLD}                       JARVIS SINGULARITY CORE ONLINE{Color.END}")
@@ -475,6 +535,11 @@ class SingularityLauncher:
 
         # Stage 2.5 (User Request: Auto-Brain)
         self.ensure_brain_capacity()
+        
+        # Stage 2.7 (SINGULARITY: Learning Systems Initialization)
+        print(f"{Color.BOLD}{Color.CYAN}[STAGE 2.7] Learning Systems Initialization{Color.END}")
+        print("-" * 80)
+        self.initialize_learning_systems()
 
         # Stage 3
         if not self.pre_flight_checks():

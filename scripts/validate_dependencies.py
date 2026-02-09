@@ -1,6 +1,7 @@
 """
-JARVIS 5.0 - Dependency Validator
+JARVIS 5.0 - Dependency Validator v2.0
 Verifica se todas as dependências críticas estão instaladas
+Sistema inteligente: distingue "missing" de "broken"
 Retorna exit code 0 se OK, 1 se faltam dependências
 """
 import sys
@@ -22,6 +23,14 @@ CRITICAL_PACKAGES = [
 def check_package(import_name, pip_name, use_pip_show=False):
     """Verifica se um pacote está instalado"""
     try:
+        # Pre-check for numpy incompatibility
+        if import_name == 'numpy':
+            import numpy as np
+            version = tuple(map(int, np.__version__.split('.')[:2]))
+            if version[0] >= 2:
+                print(f"    [WARN] NumPy {np.__version__} detectado. Incompatível com torch atual.")
+                return False, pip_name
+
         # Para pacotes pesados, usar pip show ao invés de import
         if use_pip_show:
             result = subprocess.run(
@@ -32,10 +41,21 @@ def check_package(import_name, pip_name, use_pip_show=False):
             return result.returncode == 0, None if result.returncode == 0 else pip_name
         else:
             # Import direto para pacotes leves
-            __import__(import_name)
-            return True, None
-    except (ImportError, OSError, Exception) as e:
-        # Catch OSError for WinError 1114 (DLL Load Failed)
+            # Wrap in more specific try to catch NumPy/Torch errors
+            try:
+                __import__(import_name)
+                return True, None
+            except (ImportError, RuntimeError, Exception):
+                # Fallback to pip show
+                result = subprocess.run(
+                    [sys.executable, '-m', 'pip', 'show', pip_name],
+                    capture_output=True,
+                    text=True
+                )
+                if result.returncode == 0:
+                    return False, None # Return False but no pkg name means "Installed but Broken"
+                return False, pip_name
+    except Exception:
         return False, pip_name
 
 def main():
@@ -43,22 +63,27 @@ def main():
     print("=" * 60)
     
     missing = []
+    broken = []
     
     for import_name, pip_name, use_pip_show in CRITICAL_PACKAGES:
-        installed, pkg = check_package(import_name, pip_name, use_pip_show)
-        status = "✅" if installed else "❌"
-        print(f"{status} {import_name:25} {'OK' if installed else 'MISSING'}")
-        
-        if not installed:
-            missing.append(pkg)
+        try:
+            installed, pkg = check_package(import_name, pip_name, use_pip_show)
+            
+            if installed:
+                print(f"✅ {import_name:25} OK")
+            elif pkg is None:
+                print(f"⚠️  {import_name:25} INSTALLED (BROKEN - Needs repair)")
+                broken.append(pip_name)
+            else:
+                print(f"❌ {import_name:25} MISSING")
+                missing.append(pkg)
+        except Exception:
+            print(f"❌ {import_name:25} ERROR (Check Failed)")
+            missing.append(pip_name)
     
     print("=" * 60)
     
-    if missing:
-        print(f"\n❌ Missing {len(missing)} critical dependencies:")
-        for pkg in missing:
-            print(f"   - {pkg}")
-        print("\nRun INSTALL_JARVIS.bat to install missing packages.")
+    if missing or broken:
         return 1
     else:
         print("\n✅ All critical dependencies installed!")

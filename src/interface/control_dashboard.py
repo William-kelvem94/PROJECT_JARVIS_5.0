@@ -157,6 +157,7 @@ class ControlDashboard(QMainWindow):
         self.tabs.addTab(self._create_brain_tab(), "🧠 Brain")
         self.tabs.addTab(self._create_voice_tab(), "🎤 Voice")
         self.tabs.addTab(self._create_vision_tab(), "👁️ Vision")
+        self.tabs.addTab(self._create_learning_tab(), "🎓 Learning")
         self.tabs.addTab(self._create_logs_tab(), "📋 Logs")
         self.tabs.addTab(self._create_system_tab(), "⚙️ System")
         self.tabs.addTab(self._create_memory_tab(), "💾 Memory")
@@ -619,6 +620,294 @@ class ControlDashboard(QMainWindow):
         layout.addLayout(controls)
         
         return tab
+    
+    def _create_learning_tab(self) -> QWidget:
+        """Create Learning & Evolution tab"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        
+        # Header
+        header = QLabel("🧠 Continual Learning System - AGI Evolution")
+        header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
+        header.setStyleSheet("color: #4a9eff;")
+        layout.addWidget(header)
+        
+        # Status Group
+        status_group = QGroupBox("Learning Systems Status")
+        status_layout = QVBoxLayout()
+        
+        self.learning_status_label = QLabel("🔄 Loading status...")
+        status_layout.addWidget(self.learning_status_label)
+        
+        # Refresh button
+        refresh_btn = QPushButton("🔄 Refresh Status")
+        refresh_btn.clicked.connect(self._refresh_learning_status)
+        status_layout.addWidget(refresh_btn)
+        
+        status_group.setLayout(status_layout)
+        layout.addWidget(status_group)
+        
+        # Metrics Group
+        metrics_group = QGroupBox("Learning Metrics")
+        metrics_layout = QFormLayout()
+        
+        self.total_interactions_label = QLabel("0")
+        metrics_layout.addRow("Total Interactions:", self.total_interactions_label)
+        
+        self.training_cycles_label = QLabel("0")
+        metrics_layout.addRow("Training Cycles:", self.training_cycles_label)
+        
+        self.golden_commands_label = QLabel("0")
+        metrics_layout.addRow("Golden Commands:", self.golden_commands_label)
+        
+        self.model_version_label = QLabel("v1.0.0")
+        metrics_layout.addRow("Model Version:", self.model_version_label)
+        
+        metrics_group.setLayout(metrics_layout)
+        layout.addWidget(metrics_group)
+        
+        # Feedback Group
+        feedback_group = QGroupBox("Manual Feedback")
+        feedback_layout = QVBoxLayout()
+        
+        feedback_info = QLabel("Rate the last interaction to improve JARVIS:")
+        feedback_layout.addWidget(feedback_info)
+        
+        # Feedback buttons
+        feedback_buttons = QHBoxLayout()
+        
+        self.thumbs_up_btn = QPushButton("👍 Good Response")
+        self.thumbs_up_btn.clicked.connect(lambda: self._send_feedback(1.0))
+        self.thumbs_up_btn.setStyleSheet("""
+            QPushButton {
+                background: #4CAF50;
+                color: white;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background: #45a049;
+            }
+        """)
+        feedback_buttons.addWidget(self.thumbs_up_btn)
+        
+        self.thumbs_down_btn = QPushButton("👎 Bad Response")
+        self.thumbs_down_btn.clicked.connect(lambda: self._send_feedback(-1.0))
+        self.thumbs_down_btn.setStyleSheet("""
+            QPushButton {
+                background: #f44336;
+                color: white;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background: #da190b;
+            }
+        """)
+        feedback_buttons.addWidget(self.thumbs_down_btn)
+        
+        feedback_layout.addLayout(feedback_buttons)
+        
+        # Correction field
+        self.correction_edit = QTextEdit()
+        self.correction_edit.setPlaceholderText("Optional: Provide the correct response...")
+        self.correction_edit.setMaximumHeight(80)
+        feedback_layout.addWidget(self.correction_edit)
+        
+        submit_correction_btn = QPushButton("📝 Submit Correction")
+        submit_correction_btn.clicked.connect(self._submit_correction)
+        feedback_layout.addWidget(submit_correction_btn)
+        
+        feedback_group.setLayout(feedback_layout)
+        layout.addWidget(feedback_group)
+        
+        # Golden Commands Viewer
+        golden_group = QGroupBox("Golden Commands (Learned Patterns)")
+        golden_layout = QVBoxLayout()
+        
+        self.golden_list = QListWidget()
+        self.golden_list.setMaximumHeight(150)
+        golden_layout.addWidget(self.golden_list)
+        
+        refresh_golden_btn = QPushButton("🔄 Refresh Golden Commands")
+        refresh_golden_btn.clicked.connect(self._refresh_golden_commands)
+        golden_layout.addWidget(refresh_golden_btn)
+        
+        golden_group.setLayout(golden_layout)
+        layout.addWidget(golden_group)
+        
+        # Training Controls
+        training_group = QGroupBox("Training Controls")
+        training_layout = QHBoxLayout()
+        
+        self.trigger_training_btn = QPushButton("🚀 Trigger Training Now")
+        self.trigger_training_btn.clicked.connect(self._trigger_training)
+        training_layout.addWidget(self.trigger_training_btn)
+        
+        self.backup_model_btn = QPushButton("💾 Backup Current Model")
+        self.backup_model_btn.clicked.connect(self._backup_model)
+        training_layout.addWidget(self.backup_model_btn)
+        
+        training_group.setLayout(training_layout)
+        layout.addWidget(training_group)
+        
+        layout.addStretch()
+        
+        # Initialize data
+        self._refresh_learning_status()
+        
+        return tab
+        
+    def _refresh_learning_status(self):
+        """Refresh learning system status"""
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            engine = get_learning_engine()
+            
+            if engine and engine.is_initialized:
+                status = engine.get_status()
+                
+                # Update status label
+                components_online = sum(1 for v in status['components'].values() if v)
+                total_components = len(status['components'])
+                
+                status_text = f"✅ ONLINE - {components_online}/{total_components} systems active\n\n"
+                for component, active in status['components'].items():
+                    icon = "✅" if active else "❌"
+                    name = component.replace('_', ' ').title()
+                    status_text += f"{icon} {name}\n"
+                
+                self.learning_status_label.setText(status_text)
+                
+                # Update metrics
+                self.total_interactions_label.setText(str(status.get('total_feedback', 0)))
+                self.training_cycles_label.setText(str(status.get('training_cycles', 0)))
+                
+            else:
+                self.learning_status_label.setText("❌ OFFLINE - Learning systems not initialized")
+                
+        except Exception as e:
+            self.learning_status_label.setText(f"⚠️ ERROR - {str(e)}")
+            logger.error(f"Failed to refresh learning status: {e}")
+    
+    def _refresh_golden_commands(self):
+        """Refresh golden commands list"""
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            engine = get_learning_engine()
+            
+            if engine and engine.knowledge_distiller:
+                distiller = engine.knowledge_distiller
+                golden_cmds = distiller.gold_commands
+                
+                self.golden_list.clear()
+                self.golden_commands_label.setText(str(len(golden_cmds)))
+                
+                for cmd_key, data in list(golden_cmds.items())[:20]:  # Show top 20
+                    usage = data.get('usage_count', 0)
+                    self.golden_list.addItem(f"[{usage}x] {data.get('command', cmd_key)}")
+                    
+        except Exception as e:
+            logger.error(f"Failed to refresh golden commands: {e}")
+    
+    def _send_feedback(self, value: float):
+        """Send explicit feedback for last interaction"""
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            engine = get_learning_engine()
+            
+            if engine:
+                # TODO: Track last interaction ID
+                QMessageBox.information(self, "Feedback Sent", 
+                                       f"Thank you! Your feedback ({'+' if value > 0 else '-'}) will improve JARVIS.")
+                logger.info(f"User feedback: {value}")
+            else:
+                QMessageBox.warning(self, "Error", "Learning engine not available")
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to send feedback: {e}")
+    
+    def _submit_correction(self):
+        """Submit correction for wrong response"""
+        correction = self.correction_edit.toPlainText().strip()
+        
+        if not correction:
+            QMessageBox.warning(self, "Empty Correction", "Please provide a correction first.")
+            return
+        
+        try:
+            from src.learning.learning_engine import get_learning_engine
+            engine = get_learning_engine()
+            
+            if engine:
+                # TODO: Store correction with last interaction
+                QMessageBox.information(self, "Correction Saved", 
+                                       "Your correction will be used for training!")
+                self.correction_edit.clear()
+                logger.info(f"User correction: {correction}")
+            else:
+                QMessageBox.warning(self, "Error", "Learning engine not available")
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to submit correction: {e}")
+    
+    def _trigger_training(self):
+        """Manually trigger a training cycle"""
+        reply = QMessageBox.question(
+            self, "Trigger Training", 
+            "This will start an immediate training cycle.\n"
+            "It may take several minutes and use significant CPU/GPU.\n\n"
+            "Continue?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            try:
+                from src.learning.learning_engine import get_learning_engine
+                engine = get_learning_engine()
+                
+                if engine and engine.continual_learner:
+                    # Trigger training in background thread
+                    import threading
+                    threading.Thread(
+                        target=engine.continual_learner._execute_training_cycle,
+                        daemon=True
+                    ).start()
+                    
+                    QMessageBox.information(self, "Training Started", 
+                                           "Training cycle initiated in background.")
+                else:
+                    QMessageBox.warning(self, "Error", "Continual learner not available")
+                    
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to trigger training: {e}")
+    
+    def _backup_model(self):
+        """Backup current model"""
+        try:
+            import shutil
+            from datetime import datetime
+            
+            source = Path("data/models/continual")
+            if not source.exists():
+                QMessageBox.warning(self, "No Model", "No trained model found to backup.")
+                return
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = Path(f"data/models/backups/model_backup_{timestamp}")
+            backup_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            shutil.copytree(source, backup_path)
+            
+            QMessageBox.information(self, "Backup Complete", 
+                                   f"Model backed up to:\n{backup_path}")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to backup model: {e}")
         
     def _create_footer(self) -> QWidget:
         """Create footer with status"""

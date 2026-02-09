@@ -2,8 +2,15 @@
 :: JARVIS 5.0 - UNIVERSAL INSTALLER v1.4 (Pure ASCII Mode)
 :: Use this if the system closes unexpectedly.
 
-echo [DEBUG] Script started. Press any key to begin setup...
-pause
+:: Check for silent mode
+if "%~1"=="/silent" (
+    echo [INFO] Running in SILENT/AUTO mode...
+    set SILENT_MODE=1
+) else (
+    echo [DEBUG] Script started. Press ENTER to begin setup...
+    pause
+    set SILENT_MODE=0
+)
 
 echo.
 echo ==========================================================================
@@ -21,7 +28,7 @@ where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Python not found in PATH. 
     echo Please install Python 3.11 and check "Add to PATH".
-    pause
+    if "%SILENT_MODE%"=="0" pause
     exit /b 1
 )
 
@@ -35,7 +42,7 @@ echo [INFO] Creating Virtual Environment (VENV)...
 python -m venv venv
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to create VENV.
-    pause
+    if "%SILENT_MODE%"=="0" pause
     exit /b 1
 )
 
@@ -48,7 +55,7 @@ echo.
 if not exist "%ROOT%scripts\install\total_installer.py" (
     echo [ERROR] total_installer.py not found at:
     echo %ROOT%scripts\install\total_installer.py
-    pause
+    if "%SILENT_MODE%"=="0" pause
     exit /b 1
 )
 
@@ -58,7 +65,7 @@ if %ERRORLEVEL% NEQ 0 (
     echo.
     echo [CRITICAL] Installation failed. 
     echo Check scripts\install\total_installer.log for details.
-    pause
+    if "%SILENT_MODE%"=="0" pause
     exit /b 1
 )
 
@@ -67,5 +74,5 @@ echo ==========================================================================
 echo    SYSTEM SYNCED: JARVIS IS ONLINE
 echo ==========================================================================
 echo.
-pause
+if "%SILENT_MODE%"=="0" pause
 exit /b 0

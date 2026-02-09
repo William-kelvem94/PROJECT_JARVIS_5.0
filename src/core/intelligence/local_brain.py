@@ -76,11 +76,17 @@ class LocalBrain:
                 if self._is_loaded:
                     return
                 
-                device = hardware_manager.get_device()
-                tier = hardware_manager.get_tier()
-                compute_type = hardware_manager.get_compute_type()
+                # Check hardware configuration
+                device_tier = hardware_manager.get_tier()
                 
-                logger.info(f"Carregando {self.model_id} - Tier: {tier} | Device: {device}...")
+                # If tier is ULTRA or PRO, we might prefer Ollama bridge if available
+                # But for now, let's stick to LocalBrain (Transformers) as the robust fallback
+                # or primary "Quick Response" brain.
+                
+                # logger.info(f"🧠 Checking connection to Superintelligence (Ollama)...") 
+                # -> Future integration: Check if Ollama is running and has models loaded.
+                
+                logger.info(f"Carregando {self.model_id} - Tier: {device_tier}...")
                 
                 # Tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
