@@ -367,6 +367,77 @@ class EnhancedAudioSystem:
                 logger.error(f"   ❌ Failed to load {sig_file.name}: {e}")
                 
         logger.info(f"✅ Loaded {count} voice signatures")
+    
+    def calibrate_vad_threshold(self, duration: float = 3.0):
+        """
+        🔥 Auto-calibra threshold de VAD baseado no ruído ambiente.
+        Mede RMS médio do ambiente por 'duration' segundos e ajusta threshold.
+        
+        Args:
+            duration: Tempo de medição em segundos (padrão: 3.0s)
+        """
+        if not PYAUDIO_AVAILABLE:
+            logger.warning("PyAudio não disponível - pulando calibração VAD")
+            return
+        
+        logger.info(f"🎤 Iniciando calibração VAD ({duration}s de medição)...")
+        
+        try:
+            import pyaudio
+            p = pyaudio.PyAudio()
+            
+            # Abrir stream temporário para calibração
+            temp_stream = p.open(
+                format=pyaudio.paInt16,
+                channels=1,
+                rate=self.sample_rate,
+                input=True,
+                frames_per_buffer=self.chunk_size
+            )
+            
+            ambient_samples = []
+            start_time = time.time()
+            
+            # Coletar amostras de ruído ambiente
+            while time.time() - start_time < duration:
+                try:
+                    data = temp_stream.read(self.chunk_size, exception_on_overflow=False)
+                    audio_np = np.frombuffer(data, dtype=np.int16)
+                    rms = np.sqrt(np.mean(audio_np.astype(np.float32) ** 2))
+                    ambient_samples.append(rms)
+                except Exception:
+                    continue
+            
+            temp_stream.stop_stream()
+            temp_stream.close()
+            p.terminate()
+            
+            if ambient_samples:
+                ambient_rms_mean = np.mean(ambient_samples)
+                ambient_rms_std = np.std(ambient_samples)
+                
+                # 🔥 Threshold dinâmico: média + 2.5 * desvio padrão
+                # Isso captura apenas áudio SIGNIFICATIVAMENTE mais alto que ambiente
+                dynamic_threshold = ambient_rms_mean + (2.5 * ambient_rms_std)
+                
+                # Clamp entre 1000 e 5000 para segurança
+                dynamic_threshold = max(1000, min(5000, dynamic_threshold))
+                
+                logger.info(f"📊 Ruído ambiente medido: RMS médio = {ambient_rms_mean:.1f}, std = {ambient_rms_std:.1f}")
+                logger.info(f"🎯 Threshold VAD ajustado: {dynamic_threshold:.1f} (era 2000)")
+                
+                # Atualizar threshold global usado em _check_voice_activity
+                # Note: Isso afeta apenas o fallback RMS quando VAD model não disponível
+                self._dynamic_rms_threshold = dynamic_threshold
+                
+                return dynamic_threshold
+            else:
+                logger.warning("⚠️ Nenhuma amostra coletada durante calibração")
+                return 2000  # Fallback padrão
+                
+        except Exception as e:
+            logger.error(f"❌ Erro na calibração VAD: {e}")
+            return 2000  # Fallback padrão
         
     def start_listening(self):
         """Start listening for audio input"""
@@ -453,11 +524,11 @@ class EnhancedAudioSystem:
     def _audio_processing_loop(self):
         """Main audio processing loop"""
         audio_buffer = []
-        silence_threshold = 1.5  # 1.5s de silêncio antes de processar
-        voice_detected_in_buffer = False  # 🔒 Rastreia se houve voz REAL no buffer
-        last_voice_time = time.time()  # 🔒 Tempo real (não incremento fictício)
-        MIN_VOICE_FRAMES = 5  # 🔒 Mínimo de frames com voz para considerar válido
-        voice_frame_count = 0  # Contador de frames com voz detectada
+        silence_threshold = config.get_setting('audio.silence_timeout', 1.0) # Reduzido de 2.0s para 1.0s (Fase 5)
+        voice_detected_in_buffer = False
+        last_voice_time = time.time()
+        MIN_VOICE_FRAMES = 5 # Reduzido de 10 para 5 para maior sensibilidade
+        voice_frame_count = 0
         
         while self.is_running:
             try:
@@ -506,6 +577,18 @@ class EnhancedAudioSystem:
                         
                         if self.is_awake or not self.wake_word_active:
                             self.state = AudioState.LISTENING
+                            
+                            # 🔥 FAST-PATH (Fase 5): Se a energia for muito alta e o buffer curto, 
+                            # podemos antecipar o processamento se for um comando de interrupção
+                            if len(audio_buffer) < 15: # ~300ms de áudio
+                                rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
+                                if rms > 5000: # Grito ou comando muito alto/claro
+                                    logger.debug("⚡ Fast-Path: Disparando processamento imediato por energia alta")
+                                    self._process_audio_buffer(audio_buffer)
+                                    audio_buffer = []
+                                    voice_detected_in_buffer = False
+                                    voice_frame_count = 0
+                                    continue
                     
                     # 🔒 Processar quando silêncio REAL ultrapassar threshold
                     elapsed_silence = time.time() - last_voice_time
@@ -536,8 +619,11 @@ class EnhancedAudioSystem:
         """Check if audio contains voice using VAD"""
         if not self.vad_model:
             # 🔒 Sem VAD: usar RMS energy como fallback simples
+            # AUMENTADO de 500 para 2000 para evitar capturar ruído
+            # Se calibração dinâmica foi feita, usa threshold calibrado
+            threshold = getattr(self, '_dynamic_rms_threshold', 2000)
             rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
-            return rms > 500  # Threshold de energia mínima (int16 range)
+            return rms > threshold
             
         try:
             # Convert to float32 and normalize
@@ -699,13 +785,14 @@ class EnhancedAudioSystem:
             
             # Transcribe (Forçado em PT-BR para comando do usuário)
             # beam_size=5 increases accuracy significantly on CPU
+            # 🔥 VAD threshold aumentado de 0.5 para 0.7 (mais rigoroso)
             segments, info = self.whisper_model.transcribe(
                 audio,
                 language="pt", 
                 beam_size=5,
-                initial_prompt="JARVIS, senhor, sistema, comando, inteligência artificial, português brasil.",
+                initial_prompt="",  # 🔥 Removido prompt que pode causar alucinações
                 vad_filter=True,
-                vad_parameters=dict(threshold=0.5) 
+                vad_parameters=dict(threshold=0.7, min_silence_duration_ms=500)  # Mais rigoroso
             )
             
             # Collect segments

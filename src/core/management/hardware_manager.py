@@ -83,7 +83,49 @@ class HardwareManager:
                 
             logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
             
+        self._start_monitoring_thread()
         self._initialized = True
+
+    def _start_monitoring_thread(self):
+        """Inicia monitoramento em background para alertas proativos"""
+        thread = threading.Thread(target=self._monitoring_loop, daemon=True, name="HardwareProactiveMonitor")
+        thread.start()
+
+    def _monitoring_loop(self):
+        """Loop de monitoramento contínuo (Phase 3)"""
+        import psutil
+        import time
+        from src.utils.web_emitter import emit_log_sync
+        
+        last_alert = 0
+        while True:
+            try:
+                cpu = psutil.cpu_percent(interval=10) # Verifica a cada 10s
+                
+                if cpu > 90:
+                    now = time.time()
+                    if now - last_alert > 60: # Evitar spam (1 alerta por minuto max)
+                        msg = f"ALERTA DE SISTEMA: Sobrecarga Crítica detectada ({cpu}%)"
+                        logger.warning(msg)
+                        
+                        # 1. Dashboard Web
+                        emit_log_sync(msg, level="WARNING")
+                        
+                        # 2. HUD Overlay
+                        try:
+                            from src.interface.window_manager import get_window_manager
+                            # Só tenta acessar se o app Qt estiver rodando
+                            from PyQt6.QtWidgets import QApplication
+                            if QApplication.instance():
+                                wm = get_window_manager()
+                                if wm and wm.get_hud():
+                                    wm.get_hud().log_event(msg)
+                        except: pass
+                        
+                        last_alert = now
+            except Exception as e:
+                logger.debug(f"Erro no monitoramento de hardware: {e}")
+                time.sleep(30)
 
     def get_tier(self) -> str:
         """Retorna o nível de processamento (ULTRA, FAST, BALANCED, LITE)"""
@@ -100,14 +142,30 @@ class HardwareManager:
         return None
 
     def get_compute_type(self) -> str:
-        """Retorna tipo de float mais rápido para o hardware (float16/int8)"""
+        """Retorna tipo de float mais rápido para o hardware (bfloat16/float16/float32)"""
         if self.device == "cuda":
+            # Verificar suporte a bfloat16 (GPUs Ampere+)
+            if TORCH_AVAILABLE and torch and torch.cuda.is_bf16_supported():
+                return "bfloat16"
             return "float16"
-        # 🆕 SYSTEM STABILITY: Force float32 on CPU prevents 0xC0000005 Access Violation
-        # caused by int8 quantization on unsupported instruction sets (AVX512_VNNI missing).
-        # if self.tier in ["BALANCED", "LITE"]:
-        #    return "int8"
+        
+        # CPUs modernas frequentemente suportam bfloat16 (AVX-512 BF16)
+        # Em CPU, float32 ainda é o mais estável para Transformers pura, 
+        # mas bfloat16 pode ser usado se disponível no torch.
+        if TORCH_AVAILABLE and torch:
+             # Heurística: se for CPU mas tier for FAST, talvez valha bfloat16
+             # mas por segurança contra 0xC0000005, mantemos float32 como fallback
+             pass
+
         return "float32"
+
+    def clear_gpu_cache(self):
+        """Limpa cache de memória da GPU e aciona GC"""
+        import gc
+        gc.collect()
+        if TORCH_AVAILABLE and torch and self.device == "cuda":
+            torch.cuda.empty_cache()
+            logger.info("🧹 VRAM Cache limpo com sucesso.")
 
     @property
     def neural_lock(self):

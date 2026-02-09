@@ -11,6 +11,8 @@ import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import json
+import threading
+import time
 
 try:
     import chromadb
@@ -44,9 +46,29 @@ class MemoryManager:
         self.reranker = None
         self.reranking_enabled = True
         self.memory_cache = {}  # Fallback RAM
+        self.prompt_cache = {}  # 🆕 Phase 2: Prompt caching (LRU-like)
+        self.max_cache_size = 50
         self._models_loaded = False  # Flag para lazy loading
         self._initialize_db()
+        self._start_maintenance_thread()
         self._initialized = True
+
+    def _start_maintenance_thread(self):
+        """Inicia thread de manutenção periódica (TTL)"""
+        def maintenance_loop():
+            while True:
+                try:
+                    # Limpar memórias com mais de 30 dias (Phase 2 TTL)
+                    self.purge_old_memories(days=30)
+                    # Dormir por 24 horas
+                    time.sleep(24 * 3600)
+                except Exception as e:
+                    logger.error(f"Erro na thread de manutenção de memória: {e}")
+                    time.sleep(3600) # Tentar de novo em 1h
+        
+        thread = threading.Thread(target=maintenance_loop, daemon=True)
+        thread.start()
+        logger.info("🧹 Thread de manutenção de memória iniciada (TTL: 30 dias)")
 
     def _initialize_db(self):
         if not CHROMA_AVAILABLE:
@@ -166,6 +188,13 @@ class MemoryManager:
         meta["timestamp"] = timestamp
         meta["is_gold"] = "true" if is_gold else "false"
         
+        # 🆕 Phase 2: Atualizar Cache de Prompts
+        self.prompt_cache[command.strip().lower()] = response
+        if len(self.prompt_cache) > self.max_cache_size:
+            # Remover o primeiro item inserido (estratégia simples para exemplo)
+            first_key = next(iter(self.prompt_cache))
+            del self.prompt_cache[first_key]
+        
         if self.collection:
             try:
                 embedding = self._create_embedding(combined_text)
@@ -213,6 +242,29 @@ class MemoryManager:
             return context
         except Exception:
             return ""
+
+    def get_cached_response(self, query: str) -> Optional[str]:
+        """🆕 Retorna resposta do cache se houver match exato"""
+        return self.prompt_cache.get(query.strip().lower())
+
+    def purge_old_memories(self, days: int = 30):
+        """🆕 Phase 2: Limpa memórias antigas (TTL)"""
+        if not self.collection: return
+        
+        try:
+            import time
+            from datetime import timedelta
+            
+            cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+            
+            # ChromaDB não tem delete por data direto em versões antigas,
+            # em versões novas podemos usar where com $lt
+            self.collection.delete(
+                where={"timestamp": {"$lt": cutoff_date}}
+            )
+            logger.info(f"🧹 Memória limpa: Registros anteriores a {cutoff_date} removidos.")
+        except Exception as e:
+            logger.error(f"Erro ao limpar memória: {e}")
 
 # Instância global
 memory_manager = MemoryManager()

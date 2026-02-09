@@ -44,6 +44,13 @@ class ActionType(str, Enum):
     SEARCH_WEB = "search_web"
     OPEN_URL = "open_url"
     
+    # Ações IoT (Phase 4)
+    IOT_CONTROL = "iot_control"
+    
+    # Ações de Desktop Avançadas (Phase 4)
+    WINDOW_MANAGE = "window_manage"
+    DRAG_DROP = "drag_drop"
+    
     # Ações de Controle
     WAIT = "wait"
     SCREENSHOT = "screenshot"
@@ -133,6 +140,35 @@ class SearchWebAction(BaseModel):
     max_results: int = Field(5, ge=1, le=20, description="Máximo de resultados")
 
 
+class IOTAction(BaseModel):
+    """Ação: Controlar dispositivos IoT (Home Assistant)"""
+    action: Literal[ActionType.IOT_CONTROL] = ActionType.IOT_CONTROL
+    device: str = Field(..., description="ID ou nome do dispositivo (ex: luz_sala)")
+    command: str = Field(..., description="Comando (ex: turn_on, turn_off, set_brightness)")
+    params: Optional[Dict[str, Any]] = Field(None, description="Parâmetros extras (ex: {'brightness': 50})")
+
+
+class WindowAction(BaseModel):
+    """Ação: Gerenciar janelas do sistema"""
+    action: Literal[ActionType.WINDOW_MANAGE] = ActionType.WINDOW_MANAGE
+    window_title: Optional[str] = Field(None, description="Parte do título da janela")
+    operation: Literal["focus", "minimize", "maximize", "close", "resize", "move"] = Field(..., description="Operação")
+    width: Optional[int] = Field(None, description="Nova largura")
+    height: Optional[int] = Field(None, description="Nova altura")
+    x: Optional[int] = Field(None, description="Nova posição X")
+    y: Optional[int] = Field(None, description="Nova posição Y")
+
+
+class DragDropAction(BaseModel):
+    """Ação: Arrastar e soltar"""
+    action: Literal[ActionType.DRAG_DROP] = ActionType.DRAG_DROP
+    x_start: int = Field(..., description="X inicial")
+    y_start: int = Field(..., description="Y inicial")
+    x_end: int = Field(..., description="X final")
+    y_end: int = Field(..., description="Y final")
+    duration: float = Field(1.0, description="Duração do arrasto")
+
+
 class WaitAction(BaseModel):
     """Ação: Aguardar (delay)"""
     action: Literal[ActionType.WAIT] = ActionType.WAIT
@@ -156,6 +192,9 @@ ActionUnion = Union[
     WriteFileAction,
     ListDirAction,
     SearchWebAction,
+    IOTAction,
+    WindowAction,
+    DragDropAction,
     WaitAction,
 ]
 

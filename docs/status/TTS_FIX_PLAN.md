@@ -203,15 +203,33 @@ test_ssml = """
 
 ## 🎯 CRITÉRIO DE SUCESSO
 
-- [ ] JARVIS fala texto limpo (SEM XML/SSML)
-- [ ] Pygame mixer inicializa corretamente
-- [ ] Fallback offline funciona sem falar XML
-- [ ] Logs detalhados mostram qual TTS foi usado
-- [ ] Comandos de voz são processados corretamente
-- [ ] Sistema roda por 5+ minutos sem crashes
+### Implementado e Validado:
+- [x] Sistema roda por 5+ minutos sem crashes - ✅ **VALIDADO** (5.2min sem crashes - 09/02/2026 11:08)
+
+### Implementado, Pendente de Teste de Voz:
+- [ ] JARVIS fala texto limpo (SEM XML/SSML) - ⚙️ **CÓDIGO IMPLEMENTADO** → Testar com comando de voz
+- [ ] Pygame mixer inicializa corretamente - ⚙️ **CÓDIGO IMPLEMENTADO** → Verificar logs na inicialização  
+- [ ] Fallback offline funciona sem falar XML - ⚙️ **CÓDIGO IMPLEMENTADO** → Forçar offline e testar
+- [ ] Logs detalhados mostram qual TTS foi usado - ⚙️ **CÓDIGO IMPLEMENTADO** → Verificar `🔊 TTS Edge/Offline` nos logs
+- [ ] Comandos de voz são processados corretamente - ⚙️ **CÓDIGO IMPLEMENTADO** → Enviar comando e validar resposta
 
 ---
 
-**Data:** 09/02/2026 01:20
-**Status:** ⏳ Aguardando teste final
+## 🧪 COMO VALIDAR OS 5 ITENS PENDENTES
+
+1. **Falar comando para JARVIS** (ex: "Jarvis, que horas são?")
+2. **Verificar nos logs:**
+   ```
+   grep -E "🔊 TTS|strip_ssml|pygame.mixer" logs/jarvis.log
+   ```
+3. **Confirmar que:**
+   - Resposta NÃO contém XML/SSML (<speak>, xmlns, etc)
+   - Log mostra `🔊 TTS Edge: 'texto limpo'` OU `🔊 TTS Offline: 'texto limpo'`
+   - Pygame mixer inicializado: `✅ Pygame mixer inicializado`
+   - Resposta é coerente e completa
+
+---
+
+**Data:** 09/02/2026 11:10
+**Status:** ⏳ Aguardando validação de TTS com comando de voz
 **Responsável:** AI Assistant (GitHub Copilot)

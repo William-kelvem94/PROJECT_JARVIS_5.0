@@ -209,6 +209,46 @@ class AdvancedActionController:
             logger.error(f"❌ Erro ao executar macro: {e}")
             return False
     
+    def window_manage(self, window_title: str = None, operation: str = "focus", **kwargs):
+        """Gerencia janelas do sistema"""
+        try:
+            import pygetwindow as gw
+            
+            # Se título não fornecido, usar janela ativa
+            if not window_title:
+                window = gw.getActiveWindow()
+            else:
+                windows = gw.getWindowsWithTitle(window_title)
+                if not windows:
+                    logger.warning(f"⚠️ Janela não encontrada: {window_title}")
+                    return False
+                window = windows[0]
+
+            if not window: return False
+
+            if operation == "focus":
+                window.activate()
+            elif operation == "minimize":
+                window.minimize()
+            elif operation == "maximize":
+                window.maximize()
+            elif operation == "close":
+                window.close()
+            elif operation == "resize":
+                width = kwargs.get('width', window.width)
+                height = kwargs.get('height', window.height)
+                window.resizeTo(width, height)
+            elif operation == "move":
+                x = kwargs.get('x', window.left)
+                y = kwargs.get('y', window.top)
+                window.moveTo(x, y)
+            
+            logger.info(f"✅ Operação '{operation}' na janela: {window.title}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Erro ao gerenciar janela: {e}")
+            return False
+
     def get_system_info(self) -> Dict[str, Any]:
         """Retorna informações do sistema"""
         return {
