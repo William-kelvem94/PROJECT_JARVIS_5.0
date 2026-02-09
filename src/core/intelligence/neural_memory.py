@@ -10,13 +10,17 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from src.utils.config import config
 
+# Lazy loading: Importar apenas ChromaDB no início (rápido)
 try:
-    from sentence_transformers import SentenceTransformer
     import chromadb
     from chromadb.config import Settings
-    NEURAL_AVAILABLE = True
+    CHROMA_AVAILABLE = True
 except ImportError:
-    NEURAL_AVAILABLE = False
+    CHROMA_AVAILABLE = False
+
+# SentenceTransformer será carregado sob demanda (economiza ~5-10s no boot)
+NEURAL_AVAILABLE = CHROMA_AVAILABLE  # Otimista: ChromaDB disponível
+SentenceTransformer = None  # Será carregado quando necessário
 
 # ============ P1: RAG UPGRADE (Jina Embeddings v3) ============
 try:
@@ -31,58 +35,53 @@ class NeuralMemory:
     """Classe que gerencia a memória de longo prazo do Jarvis usando vetores"""
 
     def __init__(self):
-        global NEURAL_AVAILABLE
+        global NEURAL_AVAILABLE, SentenceTransformer
         if not NEURAL_AVAILABLE:
-            logger.warning("Bibliotecas neurais (sentence-transformers/chromadb) não instaladas. Memória desativada.")
+            logger.warning("Bibliotecas neurais (chromadb) não instaladas. Memória desativada.")
             return
 
         self.db_path = Path(config.get_setting('app.data_dir', 'data')) / 'neural_memory'
         self.db_path.mkdir(parents=True, exist_ok=True)
+        self.model = None  # Lazy loading - será carregado quando necessário
+        self._model_loading = False  # Evitar loading concorrente
         
-        # ============ P1: RAG UPGRADE (MiniLM for Fast Boot) ============
-        # We use MiniLM as primary for instant boot on CPU
-        # Jina v3 is kept as an optional high-precision upgrade
+        # Inicializar banco de vetores com Self-Healing robusto
         try:
-            logger.info("Loading MiniLM (Fast Boot, 384-dim)...")
-            self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            logger.info("✅ MiniLM loaded (Instant Boot)")
-        except Exception as e:
-            logger.warning(f"MiniLM failed, attempting Jina v3: {e}")
-            try:
-                self.model = SentenceTransformer('jinaai/jina-embeddings-v3', trust_remote_code=True)
-            except:
-                logger.error("❌ All embedding models failed!")
-                NEURAL_AVAILABLE = False
-                return
-        
-        # Inicializar banco de vetores com Self-Healing
-        try:
-            from chromadb.config import Settings
             self.client = chromadb.PersistentClient(
                 path=str(self.db_path),
                 settings=Settings(anonymized_telemetry=False)
             )
             self._init_collections()
         except Exception as e:
-            logger.error(f"❌ Erro crítico no ChromaDB (pode ser corrupção de esquema): {e}")
-            logger.info("🔄 Tentando auto-cura: Resetando banco de dados neural...")
+            error_msg = str(e).lower()
+            # Detectar erros de schema ("no such column", "table", "schema")
+            is_schema_error = any(keyword in error_msg for keyword in ['column', 'table', 'schema', 'sqlite'])
             
-            try:
-                import shutil
-                # Backup corrupt DB for safety
-                backup_path = self.db_path.parent / f"neural_memory_corrupt_{int(datetime.now().timestamp())}"
-                if self.db_path.exists():
-                    shutil.move(str(self.db_path), str(backup_path))
-                
-                self.db_path.mkdir(parents=True, exist_ok=True)
-                self.client = chromadb.PersistentClient(
-                    path=str(self.db_path),
-                    settings=Settings(anonymized_telemetry=False)
-                )
-                self._init_collections()
-                logger.info("✅ Auto-cura concluída. Banco resetado.")
-            except Exception as e2:
-                logger.error(f"❌ Falha crítica na auto-cura: {e2}")
+            logger.error(f"❌ Erro no ChromaDB: {e}")
+            
+            if is_schema_error:
+                logger.info("🔧 Schema corrompido detectado. Iniciando auto-cura...")
+                try:
+                    import shutil
+                    # Backup do DB corrompido
+                    backup_path = self.db_path.parent / f"neural_memory_backup_{int(datetime.now().timestamp())}"
+                    if self.db_path.exists():
+                        shutil.move(str(self.db_path), str(backup_path))
+                        logger.info(f"📦 Backup criado em: {backup_path.name}")
+                    
+                    # Recriar DB limpo
+                    self.db_path.mkdir(parents=True, exist_ok=True)
+                    self.client = chromadb.PersistentClient(
+                        path=str(self.db_path),
+                        settings=Settings(anonymized_telemetry=False)
+                    )
+                    self._init_collections()
+                    logger.info("✅ Auto-cura concluída. ChromaDB resetado com sucesso.")
+                except Exception as e2:
+                    logger.error(f"❌ Falha na auto-cura: {e2}")
+                    NEURAL_AVAILABLE = False
+            else:
+                logger.error("Sistema continuará em modo degradado sem memória neural.")
                 NEURAL_AVAILABLE = False
 
     def _init_collections(self):
@@ -209,9 +208,37 @@ class NeuralMemory:
             logger.error(f"Erro ao remover lição: {e}")
             return False
 
+    def _ensure_model_loaded(self):
+        """Lazy loading: Carrega modelo apenas quando necessário"""
+        global SentenceTransformer
+        
+        if self.model is not None:
+            return True  # Já carregado
+        
+        if self._model_loading:
+            return False  # Já está carregando em outra thread
+        
+        self._model_loading = True
+        try:
+            if SentenceTransformer is None:
+                logger.info("⏳ Carregando SentenceTransformer (primeira vez)...")
+                from sentence_transformers import SentenceTransformer as ST
+                SentenceTransformer = ST
+            
+            logger.info("📦 Loading MiniLM (Fast, 384-dim)...")
+            self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+            logger.info("✅ Modelo de embeddings carregado")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Erro ao carregar modelo de embeddings: {e}")
+            return False
+        finally:
+            self._model_loading = False
+
     def store_interaction(self, prompt: str, response: str, metadata: Optional[Dict] = None):
         """Armazena uma interação na memória neural"""
         if not NEURAL_AVAILABLE: return
+        if not self._ensure_model_loaded(): return
 
         try:
             interaction_id = f"int_{int(datetime.now().timestamp())}"
@@ -230,6 +257,7 @@ class NeuralMemory:
     def query_context(self, current_prompt: str, n_results: int = 3) -> str:
         """Busca na memória neural por contextos parecidos"""
         if not NEURAL_AVAILABLE: return ""
+        if not self._ensure_model_loaded(): return ""
 
         try:
             query_embedding = self.model.encode(current_prompt).tolist()
@@ -265,6 +293,7 @@ class NeuralMemory:
     def store_knowledge(self, source: str, content: str, metadata: Optional[Dict] = None):
         """Armazena um fragmento de conhecimento no RAG"""
         if not NEURAL_AVAILABLE: return
+        if not self._ensure_model_loaded(): return
         
         try:
             item_id = f"kn_{hash(source + content) % 10**8}_{int(datetime.now().timestamp())}"

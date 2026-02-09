@@ -44,6 +44,38 @@ echo.
 echo [SYSTEM] Engaging Singularity Core Engines...
 echo.
 
+:: Validate critical dependencies before starting
+echo [CHECK] Validating critical dependencies...
+"%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
+
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [WARNING] Some critical dependencies are missing!
+    echo.
+    set /p install_choice="Do you want to install missing dependencies now? (Y/N): "
+    
+    if /i "%install_choice%"=="Y" (
+        echo [SYSTEM] Installing missing dependencies...
+        "%VENV_PYTHON%" -m pip install onnxruntime==1.17.0 --quiet
+        "%VENV_PYTHON%" -m pip install -r "%ROOT%requirements.txt" --quiet
+        echo [OK] Dependencies installed. Revalidating...
+        "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
+        
+        if %ERRORLEVEL% NEQ 0 (
+            echo [ERROR] Some dependencies still missing. Please run INSTALL_JARVIS.bat
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo [ABORT] Cannot start without critical dependencies.
+        pause
+        exit /b 1
+    )
+)
+
+echo [OK] All dependencies validated.
+echo.
+
 "%VENV_PYTHON%" "%ROOT%SINGULARITY_LAUNCHER.py" %*
 
 if %ERRORLEVEL% NEQ 0 (

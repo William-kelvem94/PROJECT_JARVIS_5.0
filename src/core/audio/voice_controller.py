@@ -116,7 +116,14 @@ class VoiceController:
         self.on_speech_recognized: Optional[Callable[[str], None]] = None
         
         # Inicializar pygame para áudio (edge-tts)
-        pygame.mixer.init()
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init()
+                logger.info("✅ Pygame mixer inicializado")
+        except Exception as e:
+            logger.warning(f"⚠️ Falha ao inicializar pygame mixer: {e}")
+            global PYGAME_AVAILABLE
+            PYGAME_AVAILABLE = False
 
         # Flag de interrupção
         self.stop_requested = False
@@ -184,6 +191,10 @@ class VoiceController:
         text = self.clean_text_for_speech(text)
         if not text: return
         
+        # 🆕 CRÍTICO: Limpar SSML/XML ANTES de qualquer processamento
+        text = self.strip_ssml(text)
+        if not text or not text.strip(): return
+        
         # ============ P1: RESPONSE CACHING ============
         if PYGAME_AVAILABLE:
             text_lower = text.lower().strip()
@@ -225,27 +236,32 @@ class VoiceController:
         if not text: return ""
         
         # 🆕 REMOVER URLs e www
-        text = re.sub(r'https?://\S+', 'um link externo', text)
-        text = re.sub(r'www\.\S+', 'um endereço web', text)
+        text = re.sub(r'https?://\S+', 'um link', text, flags=re.IGNORECASE)
+        text = re.sub(r'www\.\S+', 'um endereço', text, flags=re.IGNORECASE)
         
-        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear - Melhorada)
-        # Windows Paths: C:\Something\...
-        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', 'o local do arquivo', text)
+        # 🆕 REMOVER CAMINHOS DE DIRETÓRIO (Regex Nuclear - Melhorada v2)
+        # Windows Paths: C:\Something\... (com suporte a multiline)
+        text = re.sub(r'[a-zA-Z]:\\[-a-zA-Z0-9+_.~ \\]+', '', text, flags=re.MULTILINE)
         # C:\Users\... (Sempre silenciar)
-        text = re.sub(r'C:\\Users\\[a-zA-Z0-9.\\]+', 'seus arquivos pessoais', text)
+        text = re.sub(r'C:\\Users\\[a-zA-Z0-9.\\]+', '', text, flags=re.MULTILINE)
         # GitHub Paths
-        text = re.sub(r'[-a-zA-Z0-9+_.~ \\]+GitHub[-a-zA-Z0-9+_.~ \\]+', 'diretório do projeto', text)
+        text = re.sub(r'[-a-zA-Z0-9+_.~ \\]*GitHub[-a-zA-Z0-9+_.~ \\]*', '', text, flags=re.IGNORECASE)
         # Unix-style paths: /usr/bin...
-        text = re.sub(r'/\w+/[-a-zA-Z0-9+_.~ /]+', 'o caminho do sistema', text)
+        text = re.sub(r'/\w+/[-a-zA-Z0-9+_.~ /]+', '', text)
         
         # Limpar extensões de arquivo comuns
-        text = re.sub(r'\w+\.(exe|py|txt|log|json|yaml|md|dll|bat)', 'arquivo', text)
+        text = re.sub(r'\w+\.(exe|py|txt|log|json|yaml|md|dll|bat|png|jpg|mp3|wav)', '', text, flags=re.IGNORECASE)
+        
+        # 🆕 FILTRAR TERMOS TÉCNICOS IRRITANTES
+        tech_jargon = r'\b(spikes?|batch(es)?|processing|thread(s)?|worker(s)?|buffer|cache|heap|stack|node_modules)\b'
+        text = re.sub(tech_jargon, '', text, flags=re.IGNORECASE)
         
         # Remover blocos de código
-        text = re.sub(r'```[\s\S]*?```', '', text)
+        text = re.sub(r'```[\s\S]*?```', '', text, flags=re.DOTALL)
         # Remover negrito/itálico
         text = re.sub(r'[*_]', '', text)
-        # Remover crases
+        # Remover crases e código inline
+        text = re.sub(r'`[^`]+`', '', text)
         text = re.sub(r'`', '', text)
         
         # Reduzir espaços múltiplos
@@ -254,10 +270,26 @@ class VoiceController:
         return text.strip()
 
     def strip_ssml(self, text: str) -> str:
-        """Remove tags XML/SSML para que o TTS offline não as leia"""
-        return re.sub(r'<[^>]*>', '', text)
+        """Remove tags XML/SSML para que o TTS não as leia literalmente"""
+        if not text:
+            return ""
+        # Remove tags XML/SSML completas
+        text = re.sub(r'<[^>]+>', '', text)
+        # Remove namespaces e atributos XML que ficaram soltos
+        text = re.sub(r'xmlns\s*=\s*["\'][^"\'\']+["\']', '', text)
+        text = re.sub(r'xml:lang\s*=\s*["\'][^"\'\']+["\']', '', text)
+        text = re.sub(r'version\s*=\s*["\'][^"\'\']+["\']', '', text)
+        # Limpar espaços múltiplos
+        text = re.sub(r'\s+', ' ', text)
+        return text.strip()
 
     def _speak_thread(self, text: str, mode: str):
+        # 🆕 PROTEÇÃO EXTRA: Strip SSML mais uma vez
+        text = self.strip_ssml(text)
+        if not text or not text.strip():
+            logger.warning("⚠️ Texto vazio após limpeza SSML, abortando speak")
+            return
+            
         is_online = self.check_internet()
         
         # Get emotion mapping
@@ -273,21 +305,30 @@ class VoiceController:
         if is_online and mode != 'offline':
             try:
                 if self.tts_provider == 'edge' and EDGE_TTS_AVAILABLE:
+                    logger.debug(f"🔊 TTS Edge: '{text[:50]}...'")
                     asyncio.run(self._speak_edge(text, emotion, base_rate))
                     return
                 elif GTTS_AVAILABLE:
+                    logger.debug(f"🔊 TTS Google: '{text[:50]}...'")
                     self._speak_google(text)
                     return
             except Exception as e:
-                logger.warning(f"Erro no TTS Online ({self.tts_provider}): {e}. Usando fallback offline.")
+                logger.error(f"❌ Erro no TTS Online ({self.tts_provider}): {e}. Usando fallback offline.")
+                import traceback
+                logger.error(traceback.format_exc())
         
         # --- PROVEDOR OFFLINE (Fallback / Forced) ---
         if not self.stop_requested:
             try:
                 self._is_speaking = True
                 
-                # REQUISITO CRÍTICO: Remover SSML antes de enviar para o motor offline
+                # 🆕 TRIPLA PROTEÇÃO: Remover SSML mais uma vez antes do offline
                 clean_text = self.strip_ssml(text)
+                if not clean_text or not clean_text.strip():
+                    logger.warning("⚠️ Texto vazio após strip_ssml no offline, abortando")
+                    return
+                
+                logger.debug(f"🔊 TTS Offline (pyttsx3): '{clean_text[:50]}...'")
                 
                 # Ajustar personalidade offline
                 modifier = emotion_detector.get_personality_modifier(emotion)
@@ -308,7 +349,9 @@ class VoiceController:
                 # Resetar rate
                 self.engine.setProperty('rate', original_rate)
             except Exception as e:
-                logger.error(f"Falha crítica no motor de voz offline: {e}")
+                logger.error(f"❌ Falha crítica no motor de voz offline: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
             finally:
                 self._is_speaking = False
 
@@ -351,46 +394,64 @@ class VoiceController:
             rate = "+15%"
             volume = "+20%"
         
-        ssml = f"""
-        <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="pt-BR">
-            <voice name="{voice}">
-                <prosody pitch="{pitch}" rate="{rate}" volume="{volume}">
-                    {text}
-                </prosody>
-            </voice>
-        </speak>
-        """
-        
-        communicate = edge_tts.Communicate(ssml, voice)
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            tmp_path = tmp.name
-            
+        # 🔒 edge-tts NÃO suporta SSML raw - usar parâmetros nativos da API
+        # A prosódia é aplicada via rate/pitch/volume do Communicate
         try:
-            await communicate.save(tmp_path)
+            communicate = edge_tts.Communicate(
+                text,  # 🔒 Texto puro, NÃO SSML
+                voice,
+                rate=rate if rate != "+0%" else "+0%",
+                pitch=pitch if pitch != "+0Hz" else "+0Hz",
+                volume=volume if volume != "+0%" else "+0%"
+            )
             
-            if self.stop_requested: return
-            
-            if not PYGAME_AVAILABLE:
-                logger.warning("pygame não disponível para reproduzir áudio")
-                return
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                tmp_path = tmp.name
                 
-            self._is_speaking = True
-            pygame.mixer.music.load(tmp_path)
-            pygame.mixer.music.play()
-            
-            while pygame.mixer.music.get_busy():
-                if self.stop_requested:
-                    pygame.mixer.music.stop()
-                    break
-                await asyncio.sleep(0.1)
-        finally:
-            self._is_speaking = False
-            if os.path.exists(tmp_path):
+            try:
+                await communicate.save(tmp_path)
+                
+                if self.stop_requested: return
+                
+                if not PYGAME_AVAILABLE:
+                    logger.error("❌ pygame não disponível para reproduzir áudio")
+                    raise Exception("pygame indisponível")  # Cair no fallback offline
+                
+                # 🆕 Verificar se mixer está initialized
+                if not pygame.mixer.get_init():
+                    logger.warning("⚠️ Pygame mixer não inicializado, tentando reinicializar...")
+                    try:
+                        pygame.mixer.init()
+                    except Exception as init_e:
+                        logger.error(f"❌ Falha ao reinicializar pygame: {init_e}")
+                        raise  # Cair no fallback offline
+                    
+                self._is_speaking = True
+                
                 try:
-                    os.remove(tmp_path)
-                except:
-                    pass
+                    pygame.mixer.music.load(tmp_path)
+                    pygame.mixer.music.play()
+                    
+                    while pygame.mixer.music.get_busy():
+                        if self.stop_requested:
+                            pygame.mixer.music.stop()
+                            break
+                        await asyncio.sleep(0.1)
+                except pygame.error as pg_err:
+                    logger.error(f"❌ Pygame error: {pg_err}")
+                    raise  # Cair no fallback offline
+            finally:
+                self._is_speaking = False
+                if os.path.exists(tmp_path):
+                    try:
+                        os.remove(tmp_path)
+                    except:
+                        pass
+        except Exception as e:
+            logger.error(f"❌ Falha no Edge-TTS SSML processing: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise  # Re-raise para cair no fallback offline
 
     def stop_speaking(self):
         """Interrompe a fala atual imediatamente"""
@@ -399,11 +460,13 @@ class VoiceController:
         
         try:
             # Parar Pygame Mixer
-            if pygame.mixer.music.get_busy():
-                pygame.mixer.music.stop()
+            if PYGAME_AVAILABLE and pygame.mixer.get_init():
+                if pygame.mixer.music.get_busy():
+                    pygame.mixer.music.stop()
             
             # Parar Pyttsx3
-            self.engine.stop()
+            if hasattr(self, 'engine'):
+                self.engine.stop()
         except Exception as e:
             logger.error(f"Erro ao parar fala: {e}")
         

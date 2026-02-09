@@ -170,7 +170,17 @@ class VisionSystem:
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
+        # Guard: prevent double-call
+        if getattr(self, '_loading_started', False):
+            logger.warning("⚠️ Vision: start_background_loading já chamado, ignorando")
+            return
+        self._loading_started = True
         logger.info("🚀 Vision System: Iniciando carregamento neural post-boot...")
+        # 🔒 Setar flags ANTES de iniciar thread para que wait_for_models saiba que há loading pendente
+        if EASYOCR_AVAILABLE and not self._ocr_ready:
+            self._ocr_loading = True
+        if YOLO_AVAILABLE and not self._yolo_ready:
+            self._yolo_loading = True
         threading.Thread(target=self.load_heavy_models_async, daemon=True, name="VisionNeuralLoad").start()
 
     def load_heavy_models_async(self):
@@ -179,12 +189,12 @@ class VisionSystem:
         if FACE_REC_AVAILABLE:
             self._load_known_faces()
             
-        # 2. EasyOCR
-        if EASYOCR_AVAILABLE and not self._ocr_ready and not self._ocr_loading:
+        # 2. EasyOCR (flags já setadas por start_background_loading)
+        if EASYOCR_AVAILABLE and not self._ocr_ready:
             self._load_ocr_background()
             
-        # 3. YOLO
-        if YOLO_AVAILABLE and not self._yolo_ready and not self._yolo_loading:
+        # 3. YOLO (flags já setadas por start_background_loading)
+        if YOLO_AVAILABLE and not self._yolo_ready:
             self._load_yolo_background()
 
     def _load_ocr_background(self):

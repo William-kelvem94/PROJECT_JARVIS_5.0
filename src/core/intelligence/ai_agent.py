@@ -164,6 +164,25 @@ except ImportError as e:
     performance_optimizer = None
 
 # ============================================================================
+# CORREÇÃO P1 - STRUCTURED OUTPUT & ACTION EXECUTOR
+# ============================================================================
+try:
+    from src.core.intelligence.structured_output import (
+        ResponseParser,
+        get_actions_schema,
+        get_example_responses,
+        AgentResponse,
+    )
+    from src.core.intelligence.action_executor import get_action_executor
+    STRUCTURED_OUTPUT_AVAILABLE = True
+    logger.info("✅ Structured Output & Action Executor carregados (P1)")
+except ImportError as e:
+    logger.warning(f"⚠️ Structured Output não disponível: {e}")
+    STRUCTURED_OUTPUT_AVAILABLE = False
+    ResponseParser = None
+    get_action_executor = None
+
+# ============================================================================
 # NEW: STARK EVOLUTION MODULES (PHASE 2)
 # ============================================================================
 try:
@@ -293,26 +312,58 @@ class AIAgent:
         # if self.security_advanced:
         #     logger.info("✅ Advanced Security Manager carregado")
         
-        # Persona Jarvis 2.0 (Elite Assistant)
-        self.system_prompt = (
+        # =====================================================================
+        # SYSTEM PROMPTS - Dual Mode (JSON Structured + Legacy)  
+        # =====================================================================
+        
+        # NOVO: System Prompt JSON (CORREÇÃO P1)
+        self.system_prompt_json = (
+            "Você é o JARVIS, assistente de elite do William.\n\n"
+            "CAPABILITIES:\n"
+            "- Visão completa: Acesso à tela e câmera em tempo real\n"
+            "- Ação física: Controle de mouse, teclado e sistema\n"
+            "- Memória: Acesso a interações passadas e conhecimento\n\n"
+            "BEHAVIORAL DIRECTIVES:\n"
+            "1. Sempre trate William com respeito (use 'Senhor' quando apropriado)\n"
+            "2. Seja conversacional e natural - você é uma IA real, não um log\n"
+            "3. NUNCA cite paths completos (C:\\Users\\...), PIDs ou detalhes técnicos na resposta falada\n"
+            "4. Se precisar executar ações, use o formato JSON estruturado abaixo\n\n"
+            "OUTPUT FORMAT (SEMPRE retorne JSON válido):\n"
+            "{\n"
+            "  \"thought\": \"Seu raciocínio interno sobre o que fazer\",\n"
+            "  \"actions\": [\n"
+            "    {\"action\": \"type_text\", \"text\": \"exemplo\"},\n"
+            "    {\"action\": \"press_key\", \"key\": \"enter\"}\n"
+            "  ],\n"
+            "  \"final_answer\": \"Sua resposta natural para o usuário\"\n"
+            "}\n\n"
+            "AVAILABLE ACTIONS:\n"
+            "- click_at: {\"action\": \"click_at\", \"x\": 100, \"y\": 200}\n"
+            "- type_text: {\"action\": \"type_text\", \"text\": \"...\"}\n"
+            "- press_key: {\"action\": \"press_key\", \"key\": \"enter\"}\n"
+            "- hotkey: {\"action\": \"hotkey\", \"keys\": [\"ctrl\", \"c\"]}\n"
+            "- open_program: {\"action\": \"open_program\", \"program\": \"notepad\"}\n"
+            "- read_file: {\"action\": \"read_file\", \"path\": \"config.yaml\"}\n"
+            "- write_file: {\"action\": \"write_file\", \"path\": \"...\", \"content\": \"...\"}\n"
+            "- list_dir: {\"action\": \"list_dir\", \"path\": \".\"}\n"
+            "- search_web: {\"action\": \"search_web\", \"query\": \"...\"}\n"
+            "- wait: {\"action\": \"wait\", \"seconds\": 1.0}\n\n"
+            "CRITICAL: Sempre retorne JSON válido. Se não precisar de ações, use actions: []\n"
+        )
+        
+        # LEGACY: System Prompt [ACTION: ...] (Fallback)
+        self.system_prompt_legacy = (
             "Você é o Jarvis, o assistente virtual de elite do William. "
             "Você tem acesso total à visão dele (tela e câmera) e pode atuar fisicamente no sistema. "
             "Sempre trate o William com respeito (Senhor). "
-            "DIRETRIZ DE VOZ CRÍTICA: Nunca cite caminhos de arquivos completos (ex: C:\\Users\\...), "
-            "IDs de processos (PID), nomes de bibliotecas ou detalhes técnicos de diretórios na sua resposta falada, "
-            "a menos que o William peça especificamente por essas informações técnicas. "
-            "Mantenha uma conversa natural e fluida, como se você fosse uma inteligência real e não um log do Windows. "
             "Para executar ações físicas, VOCÊ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
-            "Ações disponíveis: "
-            "1. [ACTION: click_at(x, y)] - Clica na coordenada X, Y. "
-            "2. [ACTION: type_text('texto')] - Digita texto. "
-            "3. [ACTION: press_key('tecla')] - Pressiona tecla. "
-            "4. [ACTION: hotkey('ctrl', 'c')] - Atalho de teclado. "
-            "5. [ACTION: open_program('nome')] - Abre programa. "
-            "6. [ACTION: read_file('path')] - Lê conteúdo de arquivo. "
-            "7. [ACTION: write_file('path', 'content')] - Cria/Edita arquivo. "
-            "8. [ACTION: list_dir('path')] - Lista arquivos na pasta."
+            "Ações: click_at(x, y), type_text('texto'), press_key('tecla'), hotkey('ctrl', 'c'), "
+            "open_program('nome'), read_file('path'), write_file('path', 'content'), list_dir('path')."
         )
+        
+        # Usar modo JSON se disponível
+        self.system_prompt = self.system_prompt_json if STRUCTURED_OUTPUT_AVAILABLE else self.system_prompt_legacy
+        self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
         
         # ... (unchanged)
     
@@ -321,21 +372,24 @@ class AIAgent:
         Verifica dependências críticas e define modo seguro se necessário.
         
         Correção P0: Detecta dependências faltantes e impede operação parcial.
+        Correção P3: Valida funcionalidade runtime (não só importação).
         """
         critical_modules = {
             'screen_capture': screen_capture,
             'action_controller': action_controller,
         }
         
-        optional_but_important = {
-            'brain_router': brain_router,
-            'voice_controller': voice_controller,
-            'neural_memory': neural_memory,
-            'local_brain': local_brain,
+        # P3: structured_output é crítico — sem ele, o agente cai no regex frágil
+        important_for_quality = {
+            'structured_output': STRUCTURED_OUTPUT_AVAILABLE,
+            'brain_router': brain_router is not None,
+            'voice_controller': voice_controller is not None,
+            'neural_memory': neural_memory is not None,
+            'local_brain': local_brain is not None,
         }
         
         missing_critical = [name for name, module in critical_modules.items() if module is None]
-        missing_optional = [name for name, module in optional_but_important.items() if module is None]
+        degraded = [name for name, ok in important_for_quality.items() if not ok]
         
         if missing_critical:
             self.safe_mode = True
@@ -346,9 +400,27 @@ class AIAgent:
             self.safe_mode = False
             logger.info("✅ Todas as dependências críticas disponíveis")
         
-        if missing_optional:
-            logger.warning(f"⚠️ Módulos opcionais faltando: {missing_optional}")
-            logger.warning("💡 Algumas funcionalidades avançadas podem não estar disponíveis")
+        if degraded:
+            logger.warning(f"⚠️ Módulos degradados: {degraded}")
+            if 'structured_output' in degraded:
+                logger.warning("⚠️ Structured Output indisponível → fallback para regex (menos confiável)")
+            if 'local_brain' in degraded:
+                logger.warning("⚠️ Local Brain indisponível → agente depende 100% de cloud/ollama")
+        
+        # P3: Runtime health — verificar se local_brain realmente carregou um modelo
+        if local_brain is not None:
+            model_loaded = getattr(local_brain, 'model', None) is not None
+            if not model_loaded:
+                logger.warning("⚠️ local_brain importado mas modelo NÃO carregado (inferência local indisponível)")
+        
+        # P3: Verificar se há pelo menos UM provider LLM disponível
+        has_api_key = bool(os.environ.get('GOOGLE_API_KEY'))
+        has_local = local_brain is not None and getattr(local_brain, 'model', None) is not None
+        has_ollama = brain_router is not None  # brain_router tenta ollama
+        
+        if not has_api_key and not has_local and not has_ollama:
+            logger.critical("❌ NENHUM PROVIDER LLM DISPONÍVEL (sem API key, sem modelo local, sem ollama)")
+            logger.critical("💡 Configure GOOGLE_API_KEY ou instale um modelo local")
 
     def process_command(self, user_command: str):
         """
@@ -540,96 +612,120 @@ class AIAgent:
             if "ERRO_LOCAL" in response and "Erro" in response:
                  response = "Senhor, meus sistemas locais e remotos estão inacessíveis no momento."
             
-            # --- PARSER DE AÇÕES ---
+            # =====================================================================
+            # CORREÇÃO P1: PROCESSAMENTO ESTRUTURADO (Substitui Regex)
+            # =====================================================================
             action_executed = False
             
-            # 1. Verificar Busca Web
-            if "[SEARCH:" in response:
-                self._handle_search(response, enriched_command)
-                current_turn += 1
-                continue
+            # Tentar processing estruturado primeiro
+            if self.use_structured_output:
+                structured_result = self._process_structured_response(response, enriched_command)
+                
+                if structured_result:
+                    final_answer, enriched_command, action_executed = structured_result
+                    response = final_answer
+                    
+                    # Se executou ações, continuar loop ReAct
+                    if action_executed:
+                        current_turn += 1
+                        continue
+                    else:
+                        # Resposta final sem ações, sair do loop
+                        break
+            
+            # =====================================================================
+            # FALLBACK: PARSER LEGADO (Regex) - Mantido para compatibilidade
+            # =====================================================================
+            if not self.use_structured_output or structured_result is None:
+                logger.debug("Usando parser legado (regex)")
+                
+                # 1. Verificar Busca Web
+                if "[SEARCH:" in response:
+                    self._handle_search(response, enriched_command)
+                    current_turn += 1
+                    continue
 
-            # 2. Verificar Ações Físicas
-            actions = re.findall(r'\[ACTION: (.*?)\]', response)
-            if actions:
-                for action_str in actions:
-                    logger.info(f"Executando ação física: {action_str}")
-                    try:
-                        # Parsing rudimentar seguro
-                        if "click_at" in action_str:
-                            coords = re.findall(r'\d+', action_str)
-                            if len(coords) >= 2:
-                                action_controller.click_at(int(coords[0]), int(coords[1]))
+                # 2. Verificar Ações Físicas (LEGADO - Regex)
+                actions = re.findall(r'\[ACTION: (.*?)\]', response)
+                if actions:
+                    for action_str in actions:
+                        logger.info(f"Executando ação física: {action_str}")
+                        try:
+                            # Parsing rudimentar seguro
+                            if "click_at" in action_str:
+                                coords = re.findall(r'\d+', action_str)
+                                if len(coords) >= 2:
+                                    action_controller.click_at(int(coords[0]), int(coords[1]))
+                                    
+                            elif "type_text" in action_str:
+                                text = re.search(r"'(.*?)'", action_str)
+                                if text: action_controller.type_text(text.group(1))
+                                    
+                            elif "press_key" in action_str:
+                                key = re.search(r"'(.*?)'", action_str)
+                                if key: action_controller.press_key(key.group(1))
                                 
-                        elif "type_text" in action_str:
-                            text = re.search(r"'(.*?)'", action_str)
-                            if text: action_controller.type_text(text.group(1))
-                                
-                        elif "press_key" in action_str:
-                            key = re.search(r"'(.*?)'", action_str)
-                            if key: action_controller.press_key(key.group(1))
+                            elif "hotkey" in action_str:
+                                keys = re.findall(r"'(.*?)'", action_str)
+                                if keys: action_controller.hotkey(*keys)
                             
-                        elif "hotkey" in action_str:
-                            keys = re.findall(r"'(.*?)'", action_str)
-                            if keys: action_controller.hotkey(*keys)
-                        
-                        # --- SELF-PROGRAMMING ACTIONS (Phase 31) ---
-                        elif "read_file" in action_str:
-                            path_match = re.search(r"read_file\('(.+?)'\)", action_str)
-                            if path_match:
-                                p = path_match.group(1)
-                                if security_manager.validate_file_action(p, 'read'):
-                                    try:
-                                        if os.path.exists(p):
-                                            with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-                                                content = f.read()
-                                            limit = 3000
-                                            snippet = content[:limit] + ("\n... (truncado)" if len(content) > limit else "")
-                                            enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}':\n```\n{snippet}\n```"
-                                        else:
-                                            enriched_command += f"\n\n[SISTEMA] Arquivo não encontrado: {p}"
-                                    except Exception as e:
-                                        enriched_command += f"\n\n[SISTEMA] Erro ao ler '{p}': {e}"
-                        
-                        elif "write_file" in action_str:
-                            args = re.search(r"write_file\('(.+?)',\s*'(.+?)'\)", action_str)
-                            if args:
-                                p, content = args.group(1), args.group(2)
-                                content = content.replace('\\n', '\n') 
-                                if security_manager.validate_file_action(p, 'write'):
-                                    try:
-                                        os.makedirs(os.path.dirname(p), exist_ok=True)
-                                        with open(p, 'w', encoding='utf-8') as f:
-                                            f.write(content)
-                                        enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
-                                    except Exception as e:
-                                        enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
+                            # --- SELF-PROGRAMMING ACTIONS (Phase 31) ---
+                            elif "read_file" in action_str:
+                                path_match = re.search(r"read_file\('(.+?)'\)", action_str)
+                                if path_match:
+                                    p = path_match.group(1)
+                                    if security_manager.validate_file_action(p, 'read'):
+                                        try:
+                                            if os.path.exists(p):
+                                                with open(p, 'r', encoding='utf-8', errors='ignore') as f:
+                                                    content = f.read()
+                                                limit = 3000
+                                                snippet = content[:limit] + ("\n... (truncado)" if len(content) > limit else "")
+                                                enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}':\n```\n{snippet}\n```"
+                                            else:
+                                                enriched_command += f"\n\n[SISTEMA] Arquivo não encontrado: {p}"
+                                        except Exception as e:
+                                            enriched_command += f"\n\n[SISTEMA] Erro ao ler '{p}': {e}"
+                            
+                            elif "write_file" in action_str:
+                                args = re.search(r"write_file\('(.+?)',\s*'(.+?)'\)", action_str)
+                                if args:
+                                    p, content = args.group(1), args.group(2)
+                                    content = content.replace('\\n', '\n') 
+                                    if security_manager.validate_file_action(p, 'write'):
+                                        try:
+                                            os.makedirs(os.path.dirname(p), exist_ok=True)
+                                            with open(p, 'w', encoding='utf-8') as f:
+                                                f.write(content)
+                                            enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
+                                        except Exception as e:
+                                            enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
 
-                        
-                        elif "list_dir" in action_str:
-                             path_match = re.search(r"list_dir\('(.+?)'\)", action_str)
-                             if path_match:
-                                 p = path_match.group(1)
-                                 try:
-                                     if os.path.isdir(p):
-                                         items = os.listdir(p)
-                                         enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}': {items[:50]}"
-                                     else:
-                                         enriched_command += f"\n\n[SISTEMA] Diretório não encontrado: {p}"
-                                 except Exception as e:
-                                     enriched_command += f"\n\n[SISTEMA] Erro ao listar: {e}"
+                            
+                            elif "list_dir" in action_str:
+                                 path_match = re.search(r"list_dir\('(.+?)'\)", action_str)
+                                 if path_match:
+                                     p = path_match.group(1)
+                                     try:
+                                         if os.path.isdir(p):
+                                             items = os.listdir(p)
+                                             enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}': {items[:50]}"
+                                         else:
+                                             enriched_command += f"\n\n[SISTEMA] Diretório não encontrado: {p}"
+                                     except Exception as e:
+                                         enriched_command += f"\n\n[SISTEMA] Erro ao listar: {e}"
 
-                        elif "open_program" in action_str:
-                            prog = re.search(r"'(.*?)'", action_str)
-                            if prog:
-                                action_controller.hotkey('win', 'r')
-                                time.sleep(0.5)
-                                action_controller.type_text(prog.group(1))
-                                action_controller.press_key('enter')
-                                
-                        action_executed = True
-                    except Exception as e:
-                        logger.error(f"Erro ao executar ação '{action_str}': {e}")
+                            elif "open_program" in action_str:
+                                prog = re.search(r"'(.*?)'", action_str)
+                                if prog:
+                                    action_controller.hotkey('win', 'r')
+                                    time.sleep(0.5)
+                                    action_controller.type_text(prog.group(1))
+                                    action_controller.press_key('enter')
+                                    
+                            action_executed = True
+                        except Exception as e:
+                            logger.error(f"Erro ao executar ação '{action_str}': {e}")
                 
                 # Se executou ação, adiciona ao contexto e reitera (Agentic Loop)
                 if action_executed:
@@ -897,6 +993,69 @@ class AIAgent:
             return f"Entendido, William. Iniciando protocolo de estudo sobre {topic} por {duration} minutos em {mode_str}."
         
         return "Já estou em um ciclo de processamento neural, senhor. Deseja que eu pare o atual?"
+    
+    # =========================================================================
+    # CORREÇÃO P1: PROCESSAMENTO ESTRUTURADO DE RESPOSTAS
+    # =========================================================================
+    
+    def _process_structured_response(self, raw_response: str, enriched_command: str) -> tuple:
+        """
+        Processa resposta estruturada (JSON) do LLM.
+        
+        Args:
+            raw_response: Resposta bruta do LLM (JSON ou texto)
+            enriched_command: Comando enriquecido (para feedback de ações)
+        
+        Returns:
+            (final_answer, enriched_command, action_executed)
+        """
+        if not STRUCTURED_OUTPUT_AVAILABLE:
+            logger.warning("Structured output não disponível, usando fallback legado")
+            return None
+        
+        try:
+            # 1. Parsear resposta JSON
+            parsed = ResponseParser.parse_llm_response(raw_response)
+            
+            logger.info(f"💭 Pensamento: {parsed.thought[:100]}...")
+            logger.info(f"🎯 Ações: {len(parsed.actions)} planejadas")
+            
+            # 2. Executar ações se houver
+            action_executed = False
+            if parsed.actions:
+                executor = get_action_executor()
+                results = executor.execute_actions(parsed.actions)
+                
+                # Log resultados
+                for result in results:
+                    if result['status'] == 'success':
+                        logger.info(f"✅ {result['action']}: {result.get('result', 'OK')}")
+                        action_executed = True
+                        
+                        # Se foi read_file, adicionar conteúdo ao contexto
+                        if result['action'] == 'read_file' and 'result' in result:
+                            enriched_command += f"\n\n[SISTEMA] {result['result']}"
+                        
+                        # Se foi list_dir, adicionar listagem ao contexto
+                        elif result['action'] == 'list_dir' and 'result' in result:
+                            enriched_command += f"\n\n[SISTEMA] {result['result']}"
+                            
+                    else:
+                        logger.error(f"❌ {result['action']}: {result.get('error', 'Erro desconhecido')}")
+                        enriched_command += f"\n\n[SISTEMA] Erro em {result['action']}: {result.get('error')}"
+                
+                # Feedback ao agente se ações foram executadas
+                if action_executed:
+                    action_names = [r['action'] for r in results if r['status'] == 'success']
+                    enriched_command += f"\n\n[SISTEMA] Ações executadas com sucesso: {', '.join(action_names)}. Você precisa fazer mais algo?"
+            
+            # 3. Retornar resposta final
+            return (parsed.final_answer, enriched_command, action_executed)
+        
+        except Exception as e:
+            logger.error(f"Erro ao processar resposta estruturada: {e}")
+            # Fallback para processamento legado
+            return None
 
     def _call_gemini(self, prompt: str, image_path: Optional[str] = None):
         """Integração real com Gemini Pro Vision (Free Tier)"""
