@@ -73,13 +73,13 @@ class BrainRouter:
         self._discover_ollama_models()
         
         if not self.cloud_available:
-            logger.warning("⚠️ BrainRouter: Cloud (Gemini) desativado (Falta API Key).")
+            logger.info("ℹ️ BrainRouter: Cloud (Gemini) desativado (Falta API Key ou Offline Mode).")
         else:
             # Validar se a chave realmente funciona
             is_valid = self._validate_cloud_key()
             if not is_valid:
                 self.cloud_available = False
-                logger.warning("🚫 BrainRouter: Chave Gemini inválida. Fallback: Local Apenas.")
+                logger.info("ℹ️ BrainRouter: Chave Gemini inválida. Fallback: Local Apenas.")
     
     def _load_default_config(self):
         """Carrega configurações padrão se ai_config.yaml não estiver disponível"""
@@ -119,11 +119,11 @@ class BrainRouter:
                 logger.info("✅ BrainRouter: Gemini API validada e operacional.")
                 return True
             else:
-                logger.warning(f"⚠️ BrainRouter: Gemini Falhou (HTTP {resp.status_code}). Modo Cloud desativado.")
+                logger.info(f"ℹ️ BrainRouter: Gemini Indisponível (HTTP {resp.status_code}). Cloud Modo OFF.")
                 logger.debug(f"Erro Gemini: {resp.text}")
                 return False
         except Exception as e:
-            logger.warning(f"⚠️ BrainRouter: Erro ao validar Gemini: {e}")
+            logger.info(f"ℹ️ BrainRouter: Gemini Indisponível (Erro Conexão): {e}")
             return False
 
     def choose_brain(

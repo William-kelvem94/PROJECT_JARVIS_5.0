@@ -261,23 +261,27 @@ class WindowManager(QObject):
         if self.current_mode == InterfaceMode.HUD_OVERLAY:
             if not self._hud:
                 self._initialize_hud()
-            self._hud.show()
-            self._hud.raise_()
-            self._hud.activateWindow()
+            # Verificação de segurança: _initialize_hud pode falhar e usar fallback
+            if self._hud:
+                self._hud.show()
+                self._hud.raise_()
+                self._hud.activateWindow()
             
         elif self.current_mode == InterfaceMode.DASHBOARD:
             if not self._dashboard:
                 self._initialize_dashboard()
-            self._dashboard.show()
-            self._dashboard.raise_()
-            self._dashboard.activateWindow()
+            if self._dashboard:
+                self._dashboard.show()
+                self._dashboard.raise_()
+                self._dashboard.activateWindow()
 
         elif self.current_mode == InterfaceMode.ORB:
             if not self._mini_orb:
                 self._initialize_mini_orb()
-            self._mini_orb.show()
-            self._mini_orb.raise_()
-            self._mini_orb.activateWindow()
+            if self._mini_orb:
+                self._mini_orb.show()
+                self._mini_orb.raise_()
+                self._mini_orb.activateWindow()
             
     def _initialize_hud(self):
         """Lazy initialization of HUD overlay"""

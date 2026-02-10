@@ -32,6 +32,7 @@ cd /d "%ROOT%"
 :: Environment settings
 set "KMP_DUPLICATE_LIB_OK=TRUE"
 set "PYTHONUTF8=1"
+set "PYGAME_HIDE_SUPPORT_PROMPT=hide"
 
 :: =======================================
 :: 1.5 AUTO-CONFIGURATION (Optimize Environment)
