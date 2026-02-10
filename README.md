@@ -1,135 +1,109 @@
-# 🤖 JARVIS 5.0 - Singularity Core
+# 🤖 JARVIS 5.0 - Singularity Core 🌌
 
-> Assistente de IA Autônomo com Neural Engine Híbrido (Local + Cloud), Visão Computacional Avançada e Auto-Recuperação.
+> **A Evolução Definitiva da Assistência Digital:** Um ecossistema de Inteligência Artificial autônomo, auto-evolutivo e hiper-consciente, projetado para integração total com o sistema operacional e hardware especializado.
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/Status-Singularity_Active-success.svg)]()
+[![Hardware](https://img.shields.io/badge/Acceleration-OpenVINO_/_CUDA-orange.svg)]()
 
 ---
 
-## ⚡ Início Rápido
+## 📑 Visão Geral
 
-### 🚀 Launcher Autônomo (Recomendado)
+O **JARVIS 5.0** (Just A Rather Very Intelligent System) não é apenas um assistente; é o "Singularity Core". Esta versão marca a transição de um assistente reativo para um sistema proativo que utiliza redes neurais híbridas, processamento paralelo massivo e o protocolo **Neural Curiosity** para aprender e se adaptar ao ambiente do usuário em tempo real.
 
-**Execute com um clique para iniciar o Singularity Core:**
+---
+
+## 🚀 Início Rápido (Singularity Launch)
+
+### �️ Launcher Autônomo (Recomendado)
+O Jarvis possui um sistema de decolagem em múltiplos estágios que garante que todo o ambiente esteja perfeito antes da execução.
 
 ```bash
 START_JARVIS.bat
 ```
 
-### 🎯 O que o Singularity Launcher faz?
-
-O `START_JARVIS.bat` é um **orquestrador autônomo** que:
-
-1.  ✅ **Auto-detecta e Repara Ambiente** - Corrige dependências quebradas.
-2.  ✅ **Sincroniza Modelos Neurais** - Baixa Ollama (Gemma/Qwen) e modelos de visão.
-3.  ✅ **Inicia Servidores Locais** - Garante que o Ollama e serviços de áudio estejam rodando.
-4.  ✅ **Auto-Healing** - Se o sistema falhar, ele analisa o erro, aplica correções e reinicia.
+**O que acontece nos bastidores?**
+1.  **Stage 0: Infrastructure Sync** - Valida a integridade das pastas e do banco de dados vetorial.
+2.  **Stage 1: Environment Validation** - Verifica o Python e o ambiente virtual (VENV).
+3.  **Stage 2: Model Integrity Watcher** - Garante que os pesos neurais (YOLO, LocalBrain, VAD) estejam presentes e válidos.
+4.  **Stage 3: Pre-flight Checks** - Valida bibliotecas críticas e aceleração de hardware (CUDA/OpenVINO).
+5.  **Stage 2.7: Learning Systems** - Inicializa o ciclo de aprendizado autônomo.
 
 ---
 
-## 🧠 Arquitetura "Singularity"
+## 🧠 Pilares Tecnológicos
 
-JARVIS 5.0 foi reescrito com uma arquitetura modular de alta performance:
+### 1. Sistema Neural Híbrido (Stark Nexus)
+O cérebro do JARVIS é composto por três camadas:
+*   **Cérebro Local (Ollama)**: Processamento ultrarrápido offline (Llama 3, Qwen 2.5) para comandos do SO e privacidade total.
+*   **Acelerador de Hardware**: Integração profunda com **Intel OpenVINO** (para GPUs Iris Xe/Arc) e **NVIDIA CUDA**, garantindo latência mínima em visão e linguagem.
+*   **Singularity Cloud**: Transição fluida para Gemini 1.5 Pro em tarefas que exigem raciocínio complexo ou análise de contexto massivo.
 
--   **🧠 Intelligence**:
-    -   **Local Brain**: Modelos leves (Gemma 2, Qwen 2.5) rodando 100% offline via Ollama.
-    -   **Cloud Boost**: Integração com Gemini 1.5 Pro para tarefas complexas.
-    -   **Brain Router**: Decide automaticamente entre IA Local (Privacidade/Velocidade) ou Nuvem (Inteligência).
+### 2. Visão Computacional de Próxima Geração
+*   **Universal Discovery**: O Jarvis "vê" e entende sua tela, detectando ícones, janelas e contextos de trabalho.
+*   **OCR Semântico (EasyOCR)**: Leitura de texto com cache inteligente, permitindo que o Jarvis "leia" documentos e interfaces instantaneamente.
+*   **YOLOv8 & FaceID**: Detecção de objetos e reconhecimento biométrico facial em tempo real para segurança e personalização.
 
--   **👁️ Vision System**:
-    -   **YOLOv8**: Detecção de objetos em tempo real.
-    -   **MediaPipe**: Rastreamento de mãos e face.
-    -   **OCR Híbrido**: Leitura de tela instantânea.
+### 3. Aprendizado e Evolução (Neural Dreaming)
+*   **Feedback Loop**: Aprende com correções do usuário, ajustando seus pesos de decisão.
+*   **Dream Cycle**: Processamento em background que destila conhecimentos adquiridos durante a sessão para a memória de longo prazo (ChromaDB).
+*   **Neural Curiosity**: Um módulo proativo que pesquisa novas tecnologias e ferramentas quando detecta uma lacuna no seu próprio conhecimento.
 
--   **🎤 Audio Engine**:
-    -   **VAD (Voice Activity Detection)**: Escuta passiva inteligente (filtra ruídos).
-    -   **STT Local**: Vosk/Whisper para transcrição offline.
-    -   **TTS Neural**: Vozes naturais via Edge-TTS.
-
--   **🛡️ Infrastructure**:
-    -   **Self-Healing**: O sistema se conserta em caso de falha de dependências.
-    -   **Logs Centralizados**: Rastreamento detalhado em `data/logs`.
+### 4. Áudio e Interação Natural
+*   **VAD (Voice Activity Detection)**: Escuta passiva inteligente que ignora barulhos e identifica sua voz.
+*   **Whisper/Vosk**: Transcrição de alta precisão em múltiplas línguas totalmente offline.
+*   **Neural TTS**: Vozes de alta fidelidade com modulação emocional baseada no contexto.
 
 ---
 
-## 🚀 Funcionalidades
+## 📂 Arquitetura do Sistema
 
-### Interface Visual (HUD)
--   **Overlay Transparente**: Estilo Iron Man, não intrusivo.
--   **Status em Tempo Real**: Cores indicam estado (Verde=Ouvindo, Azul=Pensando).
--   **Interativo**: Clique através dele para usar o PC normalmente.
-
-### Interação Natural
 ```text
-Você: "Jarvis, analise minha tela."
-JARVIS: [Captura tela, processa com YOLO/Outlook] "Vejo que você está programando em Python no VS Code."
-
-Você: "Jarvis, modo foco."
-JARVIS: [Fecha apps inúteis, ativa música lo-fi, bloqueia notificações]
-```
-
----
-
-## 🛠️ Instalação Manual (Desenvolvedores)
-
-Se preferir não usar o launcher automático:
-
-1.  **Clone o Repositório**
-    ```bash
-    git clone https://github.com/seu-usuario/PROJECT_JARVIS_5.0.git
-    cd PROJECT_JARVIS_5.0
-    ```
-
-2.  **Instale Dependências**
-    ```bash
-    # Script de instalação completa
-    python scripts/install/total_installer.py
-    ```
-
-3.  **Configure API Keys**
-    Edite `.env` na raiz:
-    ```env
-    GOOGLE_API_KEY="sua_chave_gemini"
-    ```
-
-4.  **Inicie o Sistema**
-    ```bash
-    python main.py
-    ```
-
----
-
-## 📂 Estrutura do Projeto
-
-```
 PROJECT_JARVIS_5.0/
 ├── src/
-│   ├── core/                  # O Coração do Sistema
-│   │   ├── intelligence/      # LLMs, Brain Router, Agentes
-│   │   ├── vision/           # YOLO, OCR, Câmera
-│   │   ├── audio/            # STT, TTS, VAD
-│   │   ├── actions/          # Automação de SO
-│   │   └── management/       # Hardware, Logs, Segurança
-│   ├── interface/            # PyQt6 HUD & Widgets
-│   └── utils/                # Utilitários globais
-├── data/                      # Memória Persistente (gitignored)
-│   ├── logs/                 # Logs de sessão
-│   ├── models/               # Pesos de IA (YOLO, etc)
-│   └── memory/               # ChromaDB (Memória de longo prazo)
+│   ├── core/                  # Motores Principais
+│   │   ├── intelligence/      # Stark Nexus, Neural Curiosity, Dream Cycle
+│   │   ├── vision/           # OpenVINO OCR, YOLO, Scanner de Contexto
+│   │   ├── audio/            # Enhanced Audio, Whisper VAD, Voice Controller
+│   │   ├── actions/          # Automação de SO, System Integrator
+│   │   └── management/       # Hardware Manager (Intel/NVIDIA), Shutdown Protocol
+│   ├── interface/            # PyQt6 HUD Estilo Glassmorphism
+│   └── learning/             # Feedback Loop & Continual Learner
+├── data/                      # Persistência de Dados
+│   ├── logs/                 # Logs Forenses por Sessão
+│   ├── memory/               # ChromaDB (Memória Vetorial)
+│   └── models/               # Modelos Neurais Locais
 ├── scripts/                   # Ferramentas de Manutenção
-└── config/                    # Arquivos YAML de configuração
+│   ├── auto_healer.py        # Auto-reparo de dependências
+│   └── install/               # Instaladores Militares (Total Installer)
+└── config/                    # YAMLs de Configuração do Cérebro
 ```
 
 ---
 
-## 🤝 Contribuição
+## ⚔️ Protocolo de Resiliência (Military Grade)
 
-Contribuições são bem-vindas! Por favor, leia o `docs/technical/developer-guide.md` para padrões de código e arquitetura.
+O JARVIS 5.0 foi projetado para nunca falhar.
+*   **Auto-Healing**: Se uma biblioteca sumir ou quebrar, o sistema detecta no Stage 3 e se auto-repara antes de iniciar.
+*   **MKL/Torch Guard**: Proteções contra erros críticos de DLL (0xC0000005) em ambientes Windows 11.
+*   **Forensic Logging**: Logs detalhados em `data/logs/` com análise pós-crash para que cada falha seja uma lição aprendida.
 
 ---
 
-## 📜 Licença
+## 🛠️ Requisitos de Hardware
 
-MIT License - Sinta-se livre para usar e modificar.
+*   **Processador**: Intel Core i5/i7 (11ª Gen+) para aceleração OpenVINO.
+*   **GPU**: NVIDIA (CUDA 12.1+) ou Intel Iris Xe / Arc (OpenVINO) para performance ULTRA.
+*   **RAM**: 16GB+ Recomendado.
+*   **OS**: Windows 10/11 (Otimizado para Windows 11).
+
+---
+
+## 📜 Licença e Ética
+
+Este projeto é distribuído sob a **MIT License**. O JARVIS 5.0 foi construído com foco total na privacidade do usuário: todos os processos visuais e de áudio podem ser configurados para rodar 100% de forma local e anônima.
+
+---
+**"A Melhor maneira de prever o futuro é criá-lo." - JARVIS 5.0**
