@@ -46,28 +46,14 @@ class AdvancedSpeechProcessor:
             logger.warning(f"⚠️ Erro ao inicializar Whisper: {e}")
     
     def _init_tts(self):
-        """Inicializa TTS (preparação para XTTS-v2)"""
-        try:
-            # Por enquanto, usar pyttsx3 como fallback
-            import pyttsx3
-            self.tts_engine = pyttsx3.init()
-            
-            # Configurar voz em português se disponível
-            voices = self.tts_engine.getProperty('voices')
-            for voice in voices:
-                if 'portuguese' in voice.name.lower() or 'brazil' in voice.name.lower():
-                    self.tts_engine.setProperty('voice', voice.id)
-                    break
-            
-            # Configurar velocidade e volume
-            self.tts_engine.setProperty('rate', 180)  # Velocidade
-            self.tts_engine.setProperty('volume', 0.9)  # Volume
-            
-            self.tts_available = True
-            logger.info("✅ TTS inicializado (pyttsx3)")
-            
-        except Exception as e:
-            logger.warning(f"⚠️ TTS não disponível: {e}")
+        """
+        [DEPRECATED] Inicialização de TTS interno desativada.
+        O controle de voz agora é centralizado em src.core.audio.voice_controller
+        para evitar conflito de vozes (robótica vs neural).
+        """
+        self.tts_available = False
+        self.tts_engine = None
+        # logger.info("TTS interno do AdvancedSpeechProcessor desativado (usando VoiceController).")
     
     def transcribe(
         self,
@@ -159,47 +145,19 @@ class AdvancedSpeechProcessor:
         async_mode: bool = False
     ) -> bool:
         """
-        Sintetiza fala a partir de texto
-        
-        Args:
-            text: Texto para falar
-            voice: Voz a usar
-            speed: Velocidade (0.5 - 2.0)
-            async_mode: Se True, não bloqueia
-        
-        Returns:
-            True se sucesso
+        Redireciona para o VoiceController centralizado.
         """
-        if not self.tts_available:
-            logger.warning("TTS não disponível")
-            return False
-        
         try:
-            # Ajustar velocidade
-            base_rate = 180
-            self.tts_engine.setProperty('rate', int(base_rate * speed))
-            
-            if async_mode:
-                # Falar em thread separada
-                thread = threading.Thread(target=self._speak_sync, args=(text,))
-                thread.daemon = True
-                thread.start()
-            else:
-                self._speak_sync(text)
-            
+            from src.core.audio.voice_controller import voice_controller
+            voice_controller.speak(text)
             return True
-            
-        except Exception as e:
-            logger.error(f"Erro ao sintetizar fala: {e}")
+        except ImportError:
+            logger.error("VoiceController não disponível para redirecionamento.")
             return False
-    
+            
     def _speak_sync(self, text: str):
-        """Fala síncrona (bloqueante)"""
-        try:
-            self.tts_engine.say(text)
-            self.tts_engine.runAndWait()
-        except Exception as e:
-            logger.error(f"Erro na síntese de fala: {e}")
+        """[DEPRECATED] Método mantido apenas para compatibilidade de interface."""
+        pass
     
     def _get_audio_duration(self, audio_path: str) -> float:
         """Retorna duração do áudio em segundos"""

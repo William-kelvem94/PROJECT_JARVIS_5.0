@@ -111,19 +111,31 @@ def print_progress(label, current, total, width=40):
 def auto_diagnose():
     """Diagnostic suite to detect and suggest fixes for common issues"""
     issues = []
-    # Check PyTorch Stability (c10.dll)
+    # 1. Check PyTorch Stability (c10.dll/MKL)
     try:
         import torch
         _ = torch.zeros(1)
     except Exception as e:
-        if "c10.dll" in str(e) or "1114" in str(e):
-            issues.append({
-                'level': 'CRITICAL',
-                'component': 'AI Neural Engine (c10.dll)',
-                'error': 'DLL dependency failure',
-                'fix': 'Run START_JARVIS.bat --repair-pytorch'
-            })
-    # Check faces registry
+        issues.append({
+            'level': 'CRITICAL',
+            'component': 'Neural Engine (Torch)',
+            'error': str(e),
+            'fix': 'Run START_JARVIS.bat --repair-pytorch'
+        })
+    
+    # 2. Check Vision Engines
+    try:
+        import easyocr
+        import openvino
+    except Exception as e:
+        issues.append({
+            'level': 'CRITICAL',
+            'component': 'AI Vision/Hardware Acceleration',
+            'error': f'Missing neural backends: {e}',
+            'fix': 'Run START_JARVIS.bat to initiate Auto-Repair.'
+        })
+
+    # 3. Check faces registry (Operational warning)
     if not any(Path('data/faces').glob("*.j*")):
         issues.append({
             'level': 'INFO',
@@ -184,6 +196,7 @@ def print_system_health(instances, neural_systems=None):
         ("OCR (EasyOCR)", ocr_status, vs_passive and not ocr_status),
         ("YOLO (Detection)", yolo_status, vs_passive and not yolo_status),
         (face_label, face_rec_installed, False),
+        ("Hw Acceleration", hardware_manager.device != "cpu", False),
         ("PyTorch Neural", TORCH_AVAILABLE, False)
     ]
     
@@ -191,10 +204,10 @@ def print_system_health(instances, neural_systems=None):
         if "Face" in name:
             icon = face_icon
         elif pending:
-            icon = "⏳"  # Stage 3 vai carregar
+            icon = "🛠️"  # Background loading starting shortly
         else:
             icon = "✅" if status else "❌"
-        suffix = " (Stage 3)" if pending else ""
+        suffix = " [LOADING IN BG]" if pending else ""
         print(f" ├─ {icon} {name}{suffix}")
     
     # Neural Systems (Advanced)

@@ -57,7 +57,7 @@ class AutoHealer:
                 self.log('INFO', '  Installing PyTorch (CPU)...')
                 subprocess.run([
                     sys.executable, '-m', 'pip', 'install',
-                    'torch==2.2.2', 'torchvision==0.17.2',
+                    'torch==2.4.1+cpu', 'torchvision==0.19.1+cpu',
                     '--index-url', 'https://download.pytorch.org/whl/cpu'
                 ], check=True, capture_output=True)
                 self.fixed.append('torch')
@@ -151,6 +151,9 @@ class AutoHealer:
             ('PyQt6', lambda: self.check_and_fix_package('PyQt6', 'PyQt6')),
             ('cv2', lambda: self.check_and_fix_package('cv2', 'opencv-python')),
             ('ultralytics', lambda: self.check_and_fix_package('ultralytics', 'ultralytics')),
+            ('easyocr', lambda: self.check_and_fix_package('easyocr', 'easyocr')),
+            ('openvino', lambda: self.check_and_fix_package('openvino', 'openvino-dev >= 2024.1.0')),
+            ('optimum', lambda: self.check_and_fix_package('optimum.intel', 'optimum-intel[openvino,nncf]')),
         ]
         
         success_count = 0

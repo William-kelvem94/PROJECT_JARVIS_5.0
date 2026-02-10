@@ -56,18 +56,48 @@ class NeuralDreaming:
             logger.info(f"🛰️ Dreaming: Expandindo base de conhecimento sobre {topic}...")
             stark_nexus.pesquisar("DREAMING", topic)
             
-            # 2. Loop de Processamento
+            # 2. Loop de Processamento (TREINO REAL)
+            from src.learning.trainer import LocalTrainer, TrainingConfig
+            
+            # Configuração de treino leve para o sonho
+            dream_config = TrainingConfig(
+                model_name="jarvis-dream-v1",
+                num_train_epochs=1,
+                per_device_train_batch_size=1, # Stealth
+                gradient_accumulation_steps=16,
+                learning_rate=1e-5 # Taxa baixa para refino suave
+            )
+            
+            trainer = LocalTrainer(
+                config=dream_config, 
+                output_dir=Path("data/models/dream_checkpoints")
+            )
+            
+            logger.info(f"🧠 Início do Ciclo REM: Ajustando sinapses sobre '{topic}'...")
+            
+            # Simular dados baseados no tópico (Isso deveria vir da memória)
+            # Por enquanto, criamos um dataset sintético mínimo para exercitar os pesos
+            dummy_data = [
+                {"instruction": f"Explain {topic}", "input": "", "output": f"Refined understanding of {topic}."}
+            ]
+            
             while time.time() < end_time and self.is_dreaming:
-                # Simulação de treinamento/destilação
-                # No futuro, aqui rodará o 'finetune' ou 'rag index update'
-                time.sleep(10) # Simula ciclos
-                
-                # Se estiver em BACKGROUND, dorme mais para poupar CPU
-                if self.priority_mode == "BACKGROUND":
-                    time.sleep(20)
-                
-                elapsed = (time.time() - start_time) / 60
-                logger.debug(f"💤 Dreaming progress: {elapsed:.1f}/{duration_min} min")
+                try:
+                    # Executa um ciclo de treino real (o Safety Gate do trainer protegerá a CPU)
+                    trainer.train(train_data=dummy_data)
+                    
+                    elapsed = (time.time() - start_time) / 60
+                    logger.debug(f"💤 Dreaming progress: {elapsed:.1f}/{duration_min} min")
+                    
+                    # Pausa entre ciclos para respirar
+                    time.sleep(30) 
+                    
+                except RuntimeError as re:
+                    logger.warning(f"⏸️ Sonho pausado por carga do sistema: {re}")
+                    time.sleep(60) # Espera 1 min se o sistema estiver cheio
+                except Exception as e:
+                    logger.error(f"❌ Pesadelo (Erro no treino): {e}")
+                    break
 
             logger.info(f"✅ Protocolo SONHAR finalizado para: {topic}")
         except Exception as e:

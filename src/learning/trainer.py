@@ -639,6 +639,33 @@ class LocalTrainer:
             if self.model is None or self.tokenizer is None:
                 self.load_model_and_tokenizer()
             
+            # =================================================================
+            # 🛡️ SAFETY GATE: PREVENT CPU MELTDOWN
+            # =================================================================
+            import psutil
+            cpu_usage = psutil.cpu_percent(interval=1)
+            mem_usage = psutil.virtual_memory().percent
+            
+            # Se não tiver GPU, usamos estratégia adaptativa (STEALTH MODE)
+            if self.device == "cpu":
+                if cpu_usage > 95 or mem_usage > 98:
+                    # Zona de Perigo Extremo: Pausa total
+                    raise RuntimeError(f"⛔ SISTEMA CRÍTICO (CPU {cpu_usage}%), Treino adiado.")
+                
+                elif cpu_usage > 60:
+                    # Zona de Alta Carga: Modo Stealth (Invisível)
+                    logger.warning(f"⚠️ Carga Alta ({cpu_usage}%). Ativando STEALTH MODE")
+                    self.config.per_device_train_batch_size = 1
+                    self.config.gradient_accumulation_steps = 16 # Acumula mais para compensar
+                    time.sleep(1.0) # Espera esfriar
+                
+                else:
+                    # Zona Livre: Modo Padrão CPU
+                    self.config.per_device_train_batch_size = 2
+                    self.config.gradient_accumulation_steps = 4
+            
+            # =================================================================
+            
             # Setup LoRA
             model = self.setup_lora(self.model)
             

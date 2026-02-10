@@ -168,7 +168,7 @@ class TotalInstaller:
         
         # 3. Dependências básicas
         self.logger.info("📦 Instalando dependências básicas...")
-        basic_deps = ["numpy<2", "pandas", "scipy", "pyyaml", "python-dotenv", "PyQt6", "customtkinter", "pillow", "opencv-python", "mss", "ultralytics"]
+        basic_deps = ["numpy==1.26.4", "pandas", "scipy", "pyyaml", "python-dotenv", "PyQt6", "customtkinter", "pillow", "opencv-python", "mss", "ultralytics", "easyocr"]
         for dep in basic_deps:
             try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
             except: pass
@@ -194,8 +194,9 @@ class TotalInstaller:
         remaining = [
             "transformers", "tokenizers", "sentence-transformers", "accelerate",
             "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "faster-whisper",
-            "webrtcvad-wheels", "pytesseract", "easyocr", "pyautogui", "psutil", "chromadb",
-            "fastapi", "uvicorn[standard]", "pywin32", "onnxruntime==1.17.0"
+            "webrtcvad-wheels", "pytesseract", "pyautogui", "psutil", "chromadb",
+            "fastapi", "uvicorn[standard]", "pywin32", "onnxruntime>=1.17.0",
+            "openvino-dev>=2024.1.0", "optimum-intel[openvino,nncf]>=1.18.0"
         ]
         
         # Resemblyzer separado (no-deps)
