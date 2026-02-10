@@ -47,7 +47,7 @@ def install_pytorch():
         print("[3/3] Installing PyTorch CPU version (optimized)...")
         cmd = [
             sys.executable, "-m", "pip", "install",
-            "torch==2.2.2", "torchvision==0.17.2", "torchaudio==2.2.2",
+            "torch==2.4.1+cpu", "torchvision==0.19.1+cpu", "torchaudio==2.4.1+cpu",
             "--index-url", "https://download.pytorch.org/whl/cpu"
         ]
     

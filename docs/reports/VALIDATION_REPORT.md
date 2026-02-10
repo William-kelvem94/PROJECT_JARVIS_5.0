@@ -13,7 +13,7 @@ O sistema JARVIS 5.0 passou por uma validação estrutural completa. Todas as in
 | Componente | Status Anterior | Status Atual | Ação Realizada |
 | :--- | :--- | :--- | :--- |
 | **Estrutura de Pastas** | ⚠️ Inconsistente | ✅ **Padronizada** | Migração para `src/core/` (intelligence, audio, vision). |
-| **Modelos de IA** | ⚠️ Duplicados | ✅ **Otimizados** | `yolov8n.pt` centralizado em `models/vision/`. |
+| **Modelos de IA** | ⚠️ Duplicados | ✅ **Otimizados** | `yolov8n.pt` centralizado. `Continual Learning` desativado por padrão (estabilidade). |
 | **Configuração** | ⚠️ Desatualizada | ✅ **Sincronizada** | `ai_config.yaml` atualizado com Gemma/Qwen. |
 | **Dependências** | ⚠️ Conflitos | ✅ **Resolvidas** | Launcher agora possui auto-healing de dependências. |
 | **Dados** | ⚠️ Expostos | ✅ **Protegidos** | `data/` estruturado com `.gitignore` e placeholders. |

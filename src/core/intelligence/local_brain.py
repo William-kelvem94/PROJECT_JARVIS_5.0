@@ -23,6 +23,8 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
+from src.core.management.compute_orchestrator import compute_orchestrator
+
 logger = logging.getLogger(__name__)
 
 import threading
@@ -30,28 +32,27 @@ import asyncio
 from typing import Optional, Callable
 
 class LocalBrain:
-    """Cérebro local com carregamento assíncrono para evitar travar a GUI"""
+    """Cérebro local Híbrido (CPU + iGPU + GPU)"""
     
     def __init__(self, model_id: str = "Qwen/Qwen2.5-1.5B-Instruct"):
         from src.utils.config import config
-        # 🆕 Preferir model_path do config se existir
+        # Preferir model_path do config se existir
         self.model_id = config.get_ai_config('local_brain.model_path', model_id)
         self.model = None
         self.tokenizer = None
-        self.pipe = None
+        self.ov_config = None
         
         self._is_loaded = False
         self._is_loading = False
         self._load_lock = threading.Lock()
         self._load_event = threading.Event()
         
-        # 🆕 KV Cache Persistence (Fase 5)
+        # KV Cache Persistence
         self.past_key_values = None
-        self.last_context_tokens = None
         
-        # 🆕 Verificar se deve dar autoload
+        # Verificar se deve dar autoload
         autoload = config.get_ai_config('local_brain.autoload', True)
-        logger.info(f"🧠 Cérebro Local configurado: {self.model_id} (Autoload: {autoload})")
+        logger.info(f"🧠 Cérebro Local Híbrido configurado: {self.model_id} (Autoload: {autoload})")
         
         if autoload:
             self.load_async()
@@ -70,68 +71,59 @@ class LocalBrain:
         thread.start()
     
     def _load_model_background(self):
-        """Carrega modelo em thread separada"""
         try:
             with self._load_lock:
                 if self._is_loaded:
                     return
                 
-                # Check hardware configuration
-                tier = hardware_manager.get_tier()
-                device = "cuda" if torch and torch.cuda.is_available() else "cpu"
-                compute_type = "float16" if device == "cuda" else "float32"
-
-                logger.info(f"Carregando {self.model_id} - Tier: {tier}...")
+                provider = compute_orchestrator.get_best_provider()
+                logger.info(f"🧠 LocalBrain: Iniciando motor híbrido via {provider['name']}...")
                 
                 # Tokenizer
+                from transformers import AutoTokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
-                
-                # Modelo (Quantizado para Máxima Velocidade)
-                quantization_config = None
-                try:
-                    # Somente ULTRA (CUDA) se beneficia massivamente de 4-bit no carregamento
-                    if tier == "ULTRA":
-                        from transformers import BitsAndBytesConfig
-                        quantization_config = BitsAndBytesConfig(
-                            load_in_4bit=True,
-                            bnb_4bit_compute_dtype=torch.float16,
-                            bnb_4bit_quant_type="nf4",
-                            bnb_4bit_use_double_quant=True
-                        )
-                        logger.info("📦 Aceleração Nuclear: 4-bit Ativo via CUDA")
-                except ImportError:
-                    logger.warning("⚠️ bitsandbytes não disponível.")
 
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_id,
-                    torch_dtype=getattr(torch, compute_type),
-                    device_map="auto" if tier == "ULTRA" else None,
-                    quantization_config=quantization_config,
-                    low_cpu_mem_usage=True,
-                    trust_remote_code=True,
-                    use_safetensors=True  # Usar safetensors se disponível
-                )
-                
-                # Somente mover para CPU se não estiver usando device_map="auto"
-                if tier != "ULTRA":
-                    self.model.to(device)
-                
-                # Pipeline  
-                self.pipe = pipeline(
-                    "text-generation",
-                    model=self.model,
-                    tokenizer=self.tokenizer,
-                    device=device if tier != "ULTRA" else None
-                )
+                if provider['backend'] == 'openvino':
+                    from optimum.intel.openvino import OVModelForCausalLM
+                    
+                    # Configuração Real de Distribuição de Carga
+                    self.ov_config = {
+                        "PERFORMANCE_HINT": "LATENCY",
+                        "CACHE_DIR": "data/models/ov_cache"
+                    }
+                    
+                    logger.info(f"📦 Carregando modelo na iGPU + Fallback CPU (OpenVINO)...")
+                    self.model = OVModelForCausalLM.from_pretrained(
+                        self.model_id,
+                        export=True, # Exporta para OpenVINO no primeiro boot
+                        device=compute_orchestrator.get_execution_strategy(), # 'HETERO:GPU,CPU'
+                        ov_config=self.ov_config,
+                        compile=True
+                    )
+                else:
+                    # Fallback Torch (CPU ou NVIDIA)
+                    from transformers import AutoModelForCausalLM
+                    compute_type = "float16" if provider['device'] == 'cuda' else "float32"
+                    
+                    self.model = AutoModelForCausalLM.from_pretrained(
+                        self.model_id,
+                        torch_dtype=getattr(torch, compute_type),
+                        device_map="auto" if provider['device'] == 'cuda' else None,
+                        low_cpu_mem_usage=True,
+                        trust_remote_code=True,
+                        use_safetensors=True
+                    )
+                    if provider['device'] != 'cuda':
+                        self.model.to(provider['device'])
                 
                 self._is_loaded = True
                 self._is_loading = False
                 self._load_event.set()
-                logger.info("✅ Cérebro Local pronto para uso")
+                logger.info(f"✅ Cérebro Local Híbrido PRONTO ({provider['name']})")
                 
         except Exception as e:
             self._is_loading = False
-            logger.error(f"❌ Erro ao carregar Cérebro Local: {e}")
+            logger.error(f"❌ Erro crítico no motor híbrido: {e}")
     
     def wait_for_load(self, timeout: float = 30.0) -> bool:
         """Espera o carregamento completar"""
@@ -147,69 +139,76 @@ class LocalBrain:
             if not self.wait_for_load(timeout=60):
                 return "William, estou carregando meu cérebro local..."
 
+        # TENTATIVA 1: Geração Normal com Cache
         try:
-            # 1. Preparar mensagens
-            if self.past_key_values is None or not use_cache:
-                # Primeiro turno ou cache desabilitado: incluir system prompt
-                messages = [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ]
-                text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-                self.past_key_values = None # Reset
-            else:
-                # Turno subsequente: Concatenar apenas o novo prompt
-                messages = [{"role": "user", "content": prompt}]
-                text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                # O tokenizer chat template costuma adicionar o início do chat, 
-                # precisamos apenas da parte nova se o modelo for stateful.
-                # Para simplificar na Fase 5, vamos usar o re-feed otimizado:
-                inputs = self.tokenizer(text, return_tensors="pt").to(self.model.device)
-
-            with torch.no_grad():
-                output = self.model.generate(
-                    **inputs,
-                    max_new_tokens=max_new_tokens,
-                    past_key_values=self.past_key_values,
-                    use_cache=True,
-                    do_sample=True,
-                    temperature=0.7,
-                    top_p=0.9,
-                    pad_token_id=self.tokenizer.eos_token_id,
-                    return_dict_in_generate=True
-                )
-            
-            # Atualizar Cache para o próximo turno
-            if use_cache:
-                self.past_key_values = output.past_key_values
-            
-            # Decodificar apenas a parte nova
-            input_len = inputs.input_ids.shape[1]
-            response_ids = output.sequences[0][input_len:]
-            response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
-            
-            return response.strip()
-            
+            return self._generate_internal(prompt, system_prompt, max_new_tokens, use_cache=True)
         except Exception as e:
-            logger.error(f"Erro na geração local com cache: {e}")
-            self.past_key_values = None # Reset cache em erro
-            return f"Falha no processamento: {e}"
+            logger.warning(f"⚠️ Falha na geração com cache (Tentativa 1): {e}")
+            
+            # TENTATIVA 2: Limpeza de Memória + Sem Cache
+            try:
+                self._clear_memory()
+                return self._generate_internal(prompt, system_prompt, max_new_tokens, use_cache=False)
+            except Exception as e2:
+                logger.error(f"❌ Falha crítica no Cérebro Local (Tentativa 2): {e2}")
+                return "Senhor, meus circuitos neurais locais estão sobrecarregados. Tentando redirecionar para o subsistema Ollama..."
+
+    def _clear_memory(self):
+        """Força limpeza de VRAM/RAM"""
+        self.past_key_values = None
+        if torch:
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+    def _generate_internal(self, prompt: str, system_prompt: str, max_new_tokens: int, use_cache: bool) -> str:
+        """Lógica interna de geração"""
+        # Preparar inputs
+        inputs = self._prepare_inputs(prompt, system_prompt, use_cache)
+        
+        with torch.no_grad():
+            output = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                use_cache=use_cache,
+                past_key_values=self.past_key_values if use_cache else None,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                pad_token_id=self.tokenizer.eos_token_id,
+                return_dict_in_generate=True
+            )
+        
+        if use_cache:
+            self.past_key_values = output.past_key_values
+        
+        input_len = inputs.input_ids.shape[1]
+        response_ids = output.sequences[0][input_len:]
+        response = self.tokenizer.decode(response_ids, skip_special_tokens=True)
+        return response.strip()
+
+    def _prepare_inputs(self, prompt: str, system_prompt: str, use_cache: bool):
+        """Prepara tokens com ou sem histórico"""
+        if self.past_key_values is None or not use_cache:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+        else:
+            messages = [{"role": "user", "content": prompt}]
+            
+        text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        return self.tokenizer(text, return_tensors="pt").to(self.model.device)
 
     def generate_stream(self, prompt: str, system_prompt: str = "", max_new_tokens: int = 128):
         """Gera resposta em streaming (yield chunks)"""
+        # Lógica de streaming simplificada sem retry complexo por enquanto
         if not self._is_loaded:
-            # 🔥 Iniciar carregamento se não estiver rodando
-            if not self._is_loading:
-                logger.warning("⚠️ LocalBrain não carregado! Iniciando carregamento...")
-                self.load_async()
-            
-            # 🔥 TIMEOUT AUMENTADO: 10s → 60s (modelo demora para carregar)
-            yield "William, estou carregando meu cérebro local..."
-            if not self.wait_for_load(timeout=60):
-                logger.error("❌ LocalBrain: Timeout no carregamento (60s)")
-                yield "Desculpe, meu cérebro local não respondeu a tempo. Tente novamente em alguns segundos."
-                return
+             self.load_async()
+             if not self.wait_for_load(timeout=60):
+                 yield "Estou carregando meus módulos neurais..."
+                 return
 
         try:
             from transformers import TextIteratorStreamer

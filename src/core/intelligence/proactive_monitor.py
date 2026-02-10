@@ -56,8 +56,23 @@ class ProactiveMonitor:
 
     def _monitor_loop(self):
         """Loop principal de observação"""
+        consecutive_high_load = 0
+        
         while self.running:
             try:
+                # 🛡️ SAFETY CHECK: System Resource Monitor
+                import psutil
+                cpu_load = psutil.cpu_percent(interval=None) # Non-blocking
+                
+                # Se CPU > 80%, reduz frequência mas MANTÉM ATIVO
+                if cpu_load > 85:
+                    logger.debug(f"CPU Alta ({cpu_load}%) - Visão em modo LOW FREQUENCY (10s).")
+                    time.sleep(10) # Modo econômico
+                    continue
+                elif cpu_load > 60:
+                    time.sleep(5) # Modo normal
+                # Se livre, continua a cada self.check_interval (padrão 2s ou config)
+
                 # Capturar frame atual (em baixa resolução para performance)
                 screenshot = screen_capture.capture_fullscreen(capture_type='monitor')
                 if not screenshot:

@@ -16,6 +16,13 @@ except (ImportError, OSError) as e:
     torch = None
     logging.warning(f"⚠️ torch not available in hardware_manager: {e}")
 
+try:
+    import openvino as ov
+    OPENVINO_AVAILABLE = True
+except ImportError:
+    OPENVINO_AVAILABLE = False
+    ov = None
+
 logger = logging.getLogger(__name__)
 
 import threading
@@ -39,9 +46,23 @@ class HardwareManager:
         with self._lock:
             if self._initialized: return
         
-        if TORCH_AVAILABLE and torch:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
-            self.gpu_name = torch.cuda.get_device_name(0) if self.device == "cuda" else "None"
+        if TORCH_AVAILABLE and torch and torch.cuda.is_available():
+            self.device = "cuda"
+            self.gpu_name = torch.cuda.get_device_name(0)
+        elif OPENVINO_AVAILABLE:
+            # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
+            try:
+                core = ov.Core()
+                devices = core.available_devices
+                if "GPU" in devices:
+                    self.device = "openvino"
+                    self.gpu_name = "Intel Iris Xe / Arc (OpenVINO)"
+                else:
+                    self.device = "cpu"
+                    self.gpu_name = "None"
+            except:
+                self.device = "cpu"
+                self.gpu_name = "None"
         else:
             self.device = "cpu"
             self.gpu_name = "None"
@@ -49,7 +70,7 @@ class HardwareManager:
         
         # 🆕 COMPUTE TIERING (Military Grade Scaling)
         self.tier = "BALANCED"
-        if self.device == "cuda":
+        if self.device in ["cuda", "openvino"]:
             self.tier = "ULTRA"
         else:
             import psutil

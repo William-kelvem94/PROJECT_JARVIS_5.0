@@ -36,6 +36,7 @@ opencv-python==4.9.0.80
 Pillow==10.3.0  # Atualizado de 10.2.0 para corrigir buffer overflow (CVE)
 transformers==4.30.2
 ultralytics==8.1.0  # YOLOv8 para detecção de objetos/UI
+easyocr==1.7.1      # OCR para leitura de tela e descoberta de apps
 
 # Captura de tela ultra-rápida (multi-monitor)
 mss==9.0.1
@@ -266,3 +267,9 @@ silero-vad==6.2.0             # Neural Voice Activity Detection (Sprint 1)
 networkx>=2.8                 # Knowledge Graph foundation (Sprint 2)
 matplotlib>=3.7.0             # Visualization for graphs
 pyqtgraph>=0.13.3             # Advanced plotting for Neural Dashboard (Sprint 5)
+
+# ============================================================================
+# ⚡ HARDWARE ACCELERATION (Intel Iris Xe / OpenVINO)
+# ============================================================================
+optimum-intel[openvino,nncf]>=1.18.0
+openvino-dev>=2024.1.0

@@ -58,8 +58,13 @@ class MemoryManager:
         def maintenance_loop():
             while True:
                 try:
+                try:
                     # Limpar memórias com mais de 30 dias (Phase 2 TTL)
                     self.purge_old_memories(days=30)
+                except Exception as e:
+                    # Ignorar erros de schema silenciosamente na thread de manutenção
+                    if "Expected operand value" not in str(e):
+                        logger.error(f"Erro na limpeza de memória: {e}")
                     # Dormir por 24 horas
                     time.sleep(24 * 3600)
                 except Exception as e:

@@ -209,6 +209,11 @@ class VoiceController:
         text = self.strip_ssml(text)
         if not text or not text.strip(): return
         
+        # LOGGING EXPLÍCITO DA FALA
+        from src.utils.logger_reflection import reflect_logger
+        reflect_logger.log_speech(text)  # Console visual
+        logger.info(f"🗣️  SPEAKING: \"{text}\"")  # Arquivo de log detalhado
+        
         # ============ P1: RESPONSE CACHING ============
         if PYGAME_AVAILABLE:
             text_lower = text.lower().strip()
@@ -371,9 +376,27 @@ class VoiceController:
                     modifier = emotion_detector.get_personality_modifier(emotion)
                     prefix = modifier.get('prefix', '') if random.random() > 0.7 else ''
                     
-                    # Salvar rate original
-                    original_rate = self.engine.getProperty('rate')
-                    
+                    # Verificação de Saúde do Engine
+                    if not hasattr(self, 'engine') or self.engine is None:
+                        try:
+                            self.engine = pyttsx3.init()
+                            self.engine.setProperty('rate', 180)
+                            self.engine.setProperty('volume', 1.0)
+                        except Exception as e:
+                            logger.error(f"❌ Impossível recriar engine pyttsx3: {e}")
+                            return
+
+                    try:
+                        original_rate = self.engine.getProperty('rate')
+                    except:
+                        # Se falhar ao pegar propriedade, tenta reiniciar
+                        try:
+                            self.engine = pyttsx3.init()
+                            original_rate = 180
+                        except:
+                            logger.error("❌ Falha terminal no pyttsx3")
+                            return
+
                     # Ajustar rate baseado na emoção
                     if modifier.get('energy') in ['alta', 'máxima']:
                         self.engine.setProperty('rate', original_rate + 20)
@@ -436,14 +459,30 @@ class VoiceController:
         max_retries = 2
         retry_delay = 1.0
         
-        for attempt in range(max_retries):
-            try:
+                # Sanitize parameters (Edge-TTS is strict)
+                def sanitize_param(val, suffix="%"):
+                    if not val or not isinstance(val, str): return "+0" + suffix
+                    val = val.strip()
+                    if val == "+0" + suffix: return val # Optimization
+                    import re
+                    # Must be +N% or -N%
+                    if not re.match(r'^[+-]\d+' + suffix + r'$', val):
+                         # Try to fix partial strings
+                         if val.isdigit() or (val.startswith('-') and val[1:].isdigit()):
+                             return ("+" if not val.startswith('-') else "") + val + suffix
+                         return "+0" + suffix
+                    return val
+
+                safe_rate = sanitize_param(rate if rate != "+0%" else "+0%")
+                safe_pitch = sanitize_param(pitch if pitch != "+0Hz" else "+0Hz", "Hz")
+                safe_volume = sanitize_param(volume if volume != "+0%" else "+0%")
+                
                 communicate = edge_tts.Communicate(
                     text,  # 🔒 Texto puro, NÃO SSML
                     voice,
-                    rate=rate if rate != "+0%" else "+0%",
-                    pitch=pitch if pitch != "+0Hz" else "+0Hz",
-                    volume=volume if volume != "+0%" else "+0%"
+                    rate=safe_rate,
+                    pitch=safe_pitch,
+                    volume=safe_volume
                 )
                 
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
@@ -452,9 +491,9 @@ class VoiceController:
                 try:
                     # 🆕 TIMEOUT REDUZIDO para falhar mais rápido
                     import aiohttp
-                    timeout = aiohttp.ClientTimeout(total=15, connect=5)  # 15s total, 5s connect
+                    timeout = aiohttp.ClientTimeout(total=8, connect=3)  # 8s total, 3s connect for faster fallback
                     
-                    await asyncio.wait_for(communicate.save(tmp_path), timeout=15.0)
+                    await asyncio.wait_for(communicate.save(tmp_path), timeout=8.0)
                     
                     # 🔍 Log de confirmação do arquivo gerado
                     if os.path.exists(tmp_path):
@@ -739,23 +778,75 @@ class VoiceController:
         logger.info(f"Ouvindo pela palavra chave: '{wake_word}'")
 
     def _listen_for_wake_word_thread(self, wake_word: str, on_wake: Optional[Callable[[], None]]):
-        """Thread de background para Wake Word"""
+        """Thread de background para Wake Word (Loop Infinito Robusto)"""
         if not VOSK_AVAILABLE:
             logger.warning("Vosk (biblioteca) não disponível. Wake Word desativado.")
             return
 
         # Carregar modelo leve se necessário
         if not self.vosk_model:
-            model_path = config.get_setting('voice.vosk_model_path', 'models/speech/vosk-model-small-pt-0.3')
-            if not os.path.exists(model_path):
-                 
-                 # Tentar caminho relativo se o absoluto falhar
-                 abs_model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', model_path))
-                 if os.path.exists(abs_model_path):
-                     model_path = abs_model_path
-                 else:
-                     logger.warning(f"Modelo Vosk não encontrado em {model_path}. Wake Word Offline desativado.")
-                     return
+            # Tentar carregar modelo pequeno para wake word (rápido e leve)
+            model_path = config.PROJECT_ROOT / "models" / "speech" / "vosk-model-small-pt-0.3"
+            
+            if not model_path.exists():
+                logger.warning(f"Modelo Vosk Pequeno não encontrado em {model_path}. Tentando baixar...")
+                # TODO: Implementar download automático se necessário
+                logger.error("❌ Modelo VOSK não encontrado. Wake Word cancelado.")
+                return
+
+            try:
+                self.vosk_model = vosk.Model(str(model_path))
+                logger.info(f"✅ Modelo Vosk carregado: {model_path}")
+            except Exception as e:
+                logger.error(f"Erro fatal ao carregar Vosk: {e}")
+                return
+
+        # Configurar reconhecedor
+        if not self.vosk_recognizer:
+            self.vosk_recognizer = vosk.KaldiRecognizer(self.vosk_model, 16000)
+
+        # Configurar stream de áudio PyAudio
+        import pyaudio
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=4096)
+        stream.start_stream()
+
+        logger.info(f"👂 SENTINELA ATIVO: Aguardando '{wake_word}' ou 'computador'...")
+
+        # Loop Infinito de Escuta
+        triggers = [wake_word.lower(), "computador", "sistema", "assistente", "jarvis"]
+        
+        while self.is_listening:
+            try:
+                data = stream.read(4096, exception_on_overflow=False)
+                
+                if self.vosk_recognizer.AcceptWaveform(data):
+                    result = json.loads(self.vosk_recognizer.Result())
+                    text = result.get('text', '').lower()
+                    
+                    if any(t in text for t in triggers):
+                        logger.info(f"⚡ WAKE WORD DETECTADA: '{text}'")
+                        self._play_wake_sound()
+                        
+                        # Disparar callback de acordar (geralmente inicia listen_command)
+                        if on_wake:
+                            on_wake()
+                            
+                        # Limpar buffer após acordar
+                        self.vosk_recognizer.Reset()
+                        
+                else:
+                    # Partial result (opcional, para gatilho ultra-rápido)
+                    pass
+
+            except Exception as e:
+                logger.error(f"Erro no loop de wake word: {e}")
+                time.sleep(1.0) # Prevenir spam de erro em loop
+
+        # Limpeza
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
 
             try:
                 self.vosk_model = Model(model_path)

@@ -146,9 +146,9 @@ if %ERRORLEVEL% NEQ 0 (
             echo [OK] All dependencies validated!
             goto :CONTINUE_STARTUP
         ) else (
-            echo [WARNING] Some dependencies may still have issues.
-            echo [INFO] Continuing with limited functionality...
-            timeout /t 2 /nobreak >nul
+            echo [CRITICAL] Quick Fix failed to resolve all issues.
+            echo [SYSTEM] Initiating Full System Synchronization...
+            call "%ROOT%INSTALL_JARVIS.bat" /silent
             goto :CONTINUE_STARTUP
         )
     ) else (

@@ -205,7 +205,8 @@ try:
     from src.core.intelligence.stark_nexus import stark_nexus
     from src.core.management.device_manager import device_manager
     from src.core.intelligence.neural_dreaming import neural_dreaming
-    logger.info("✅ Módulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming)")
+    from src.learning.neural_curiosity import neural_curiosity
+    logger.info("✅ Módulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)")
 except ImportError as e:
     logger.warning(f"⚠️ Falha ao carregar Módulos Stark Phase 2/4: {e}")
     analisador_contexto = None
@@ -477,26 +478,49 @@ class AIAgent:
         # =====================================================================
         # PHASE: HYBRID QUICKRESPONSE ROUTER (LATENCY ZERO)
         # =====================================================================
-        quick_response = self._get_quick_response(user_command)
-        if quick_response:
-            logger.info(f"⚡ QuickResponse Engajado: {quick_response}")
-            if voice_controller:
-                voice_controller.speak(quick_response)
-            return quick_response
+        # 3. Capturar estado atual da tela e janela (PARALELO)
+        screenshot_event = threading.Event()
+        screenshot_container = {"path": None, "window_info": None}
+
+        def _capture_task():
+            screenshot_container["path"] = screen_capture.capture_fullscreen(capture_type='agent')
+            screenshot_container["window_info"] = device_manager.get_foreground_window_info()
+            screenshot_event.set()
+
+        capture_thread = threading.Thread(target=_capture_task, daemon=True)
+        capture_thread.start()
+
+        # Aguardar screenshot para análise de contexto real (Vision-Aware)
+        screenshot_event.wait(timeout=2.0)
+        screenshot_path = screenshot_container["path"]
+        window_info = screenshot_container["window_info"]
+        
+        vision_text = ""
+        if screenshot_path and vision_enhancer:
+            reflect_logger.reflect(f"👁️ Analisando ambiente visual (App: {window_info['process_name'] if window_info else '?'})...", layer="VISION")
+            v_res = vision_enhancer.analyze_screen(screenshot_path, detect_ui=False, extract_text=True)
+            vision_text = " ".join([t['text'] for t in v_res.get('text_regions', [])])
 
         # =====================================================================
-        # PHASE 3: RAG - RECALL MEMORIES
+        # PHASE: NEURAL CURIOSITY (PROACTIVE LEARNING)
+        # =====================================================================
+        proactive_question = None
+        from src.core.intelligence.analisador_contexto import analisador_contexto
+        contexto_data = analisador_contexto.analisar(user_command, vision_text=vision_text, window_info=window_info)
+        
+        if 'neural_curiosity' in globals() or 'neural_curiosity' in locals():
+            proactive_question = neural_curiosity.check_learning_opportunity(contexto_data, user_command)
+            if proactive_question:
+                logger.info(f"✨ Proactively engaging user for learning: {proactive_question}")
+
+        # =====================================================================
+        # PHASE 4: GOLDEN COMMANDS & MEMORY
         # =====================================================================
         memory_context = ""
         if memory_manager and memory_manager.collection:
             try:
                 memory_context = memory_manager.get_context(user_command, max_memories=3)
-                if memory_context:
-                    logger.info("🧠 Contexto de memórias adicionado ao prompt")
-            except Exception as e:
-                logger.warning(f"⚠️ Erro ao buscar memórias: {e}")
         
-        # 🔥 Fase 4: Golden Commands (Aprendizado por exemplos de ouro)
         if knowledge_distiller:
             golden_context = knowledge_distiller.get_relevant_examples(user_command)
             if golden_context:
@@ -586,7 +610,7 @@ class AIAgent:
                 if primary_provider == 'gemini':
                     response = self._call_gemini(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
                 elif primary_provider.startswith('ollama:'):
-                    model_name = primary_provider.split(':')[1]
+                    model_name = primary_provider.split(':', 1)[1]
                     response = self._call_ollama(enriched_command, screenshot_path, model=model_name, system_prompt=dynamic_system_prompt)
                 elif primary_provider == 'ollama': # Fallback legacy
                     response = self._call_ollama(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
@@ -620,7 +644,7 @@ class AIAgent:
 
             # Destilação Neural para Ollama Tier S/A
             if primary_provider.startswith("ollama:") and "ERRO" not in response:
-                model_used = primary_provider.split(":")[1]
+                model_used = primary_provider.split(":", 1)[1]
                 if any(tier in model_used.lower() for tier in ["deepseek", "llama"]):
                     self._distill_knowledge(user_command, response, provider=model_used)
 
@@ -820,6 +844,13 @@ class AIAgent:
         clean_response = re.sub(r'\[SEARCH: .*?\]', '', clean_response)
         
         final_response = f"{emotion_prefix}{clean_response}" if emotion_prefix and "no_action" not in clean_response.lower() else clean_response
+        
+        # Injetar pergunta proativa de aprendizado se disponível
+        if proactive_question and "ERRO" not in response:
+            final_response = f"{final_response}\n\nPS: {proactive_question}"
+            # Dispara pesquisa autônoma silenciosa se o William não tiver respondido ainda
+            # (O registro de pesquisa é feito via neural_curiosity se o William colaborar)
+        
         voice_controller.speak(final_response)
         return final_response
 
@@ -1194,6 +1225,8 @@ class AIAgent:
             # Tenta usar o modelo especificado (padrão 'llava' para visão)
             # Prioriza system_prompt dinâmico se fornecido, senão usa o padrão self.system_prompt
             final_system_prompt = system_prompt if system_prompt else self.system_prompt
+            
+            logger.info(f"🦾 Calling Ollama with model: '{model}'")
             
             payload = {
                 "model": model,
