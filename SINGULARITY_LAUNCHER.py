@@ -225,14 +225,14 @@ class SingularityLauncher:
                 if lib == "torch":
                     check_cmd = "import torch; torch.zeros(1); from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.4.0') else 1)"
                 elif lib == "cv2":
-                    check_cmd = "import cv2; import numpy; exit(0 if version.parse(numpy.__version__) < version.parse('2.0.0') else 1)"
+                    check_cmd = "import cv2; import numpy; from packaging import version; exit(0 if version.parse(numpy.__version__) < version.parse('2.0.0') else 1)"
                 elif lib == "numpy":
                     check_cmd = "import numpy; from packaging import version; exit(0 if version.parse(numpy.__version__) < version.parse('2.0.0') else 1)"
                 elif lib == "openvino":
                     check_cmd = "import openvino; core = openvino.Core(); exit(0)"
                 
                 subprocess.run([str(VENV_PYTHON), "-c", check_cmd], 
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=10)
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=30)
                 print(f"  {Color.GREEN}✅ {lib.ljust(15)} - Validated - OK{Color.END}")
             except subprocess.TimeoutExpired:
                 print(f"  {Color.RED}❌ {lib.ljust(15)} - TIMEOUT (Possible DLL Conflict){Color.END}")
@@ -594,6 +594,13 @@ class SingularityLauncher:
         self.launch_core()
 
 if __name__ == "__main__":
+    # Fix console encoding for Windows (emojis support)
+    if sys.platform == 'win32':
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+            sys.stderr.reconfigure(encoding='utf-8')
+        except: pass
+
     try:
         launcher = SingularityLauncher()
         launcher.run()
