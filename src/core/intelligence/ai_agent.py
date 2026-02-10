@@ -428,11 +428,18 @@ class AIAgent:
             if 'local_brain' in degraded:
                 logger.warning("⚠️ Local Brain indisponível → agente depende 100% de cloud/ollama")
         
-        # P3: Runtime health — verificar se local_brain realmente carregou um modelo
+        # P3: Runtime health — verificar status do Local Brain
         if local_brain is not None:
             model_loaded = getattr(local_brain, 'model', None) is not None
-            if not model_loaded:
-                logger.warning("⚠️ local_brain importado mas modelo NÃO carregado (inferência local indisponível)")
+            is_loading = getattr(local_brain, '_is_loading', False)
+            
+            if model_loaded:
+                logger.info("✅ Local Brain totalmente carregado e pronto.")
+            elif is_loading:
+                logger.info("⏳ Local Brain está inicializando em background...")
+            else:
+                # Se não está carregando nem carregado, pode ser lazy loading ou erro silencioso
+                logger.info("ℹ️ Local Brain em modo de espera (Lazy Load ou Cloud-Only)")
         
         # P3: Verificar se há pelo menos UM provider LLM disponível
         has_api_key = bool(os.environ.get('GOOGLE_API_KEY'))
@@ -520,6 +527,9 @@ class AIAgent:
         if memory_manager and memory_manager.collection:
             try:
                 memory_context = memory_manager.get_context(user_command, max_memories=3)
+            except Exception as e:
+                logger.error(f"Error retrieving memory context: {e}")
+                memory_context = ""
         
         if knowledge_distiller:
             golden_context = knowledge_distiller.get_relevant_examples(user_command)

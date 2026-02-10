@@ -15,6 +15,9 @@ Features:
 import os
 import sys
 import time
+
+# Suppress Pygame welcome message
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
 import subprocess
 import platform
 import logging
@@ -48,9 +51,40 @@ class Color:
 
 class SingularityLauncher:
     def __init__(self):
+        try:
+            self._terminate_zombies()
+        except Exception:
+            pass
         self.os_type = platform.system()
         self.start_time = datetime.now()
         self._setup_logging()
+
+    def _terminate_zombies(self):
+        """Kill stale JARVIS processes (Military Cleanup)"""
+        current_pid = os.getpid()
+        killed_count = 0
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    # Check for python processes running JARVIS code
+                    if proc.info['pid'] == current_pid:
+                        continue
+                        
+                    cmd = ' '.join(proc.info['cmdline'] or [])
+                    # Target specific running instances of JARVIS
+                    if 'PROJECT_JARVIS_5.0' in cmd and 'python' in proc.info['name'].lower():
+                        # Avoid killing external IDE processes if possible, target main.py/launcher
+                        if 'main.py' in cmd:
+                            proc.kill()
+                            killed_count += 1
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+        except Exception:
+             pass
+             
+        if killed_count > 0:
+            print(f"  [CLEANUP] Terminated {killed_count} zombie JARVIS processes.")
+            time.sleep(1.0) # Allow OS to release file handles
 
     def _setup_logging(self):
         # 📂 Estrutura de logs organizada por data e reinício
@@ -208,9 +242,85 @@ class SingularityLauncher:
         if not VENV_PYTHON.exists():
             self.step(f"Virtual environment not found at {VENV_PYTHON}", "ERR")
             return False
+            
+        # NEW: Check critical syntax before loading core (NDR - Neural Diagnostic & Repair)
+        if not self._validate_agent_syntax():
+            self.step("AI Agent Syntax Check Failed", "ERR")
+            return False
+            
         self.step(f"Python Environment: ACTIVE", "OK")
         print("-" * 80)
         return True
+
+    def _validate_agent_syntax(self):
+        """NDR: Pre-boot AST analysis to prevent 'Headless Chicken' mode"""
+        agent_path = PROJECT_ROOT / "src" / "core" / "intelligence" / "ai_agent.py"
+        if not agent_path.exists():
+            self.step("AI Agent source missing", "WARN")
+            return True # Let it crash later or handle missing file
+            
+        try:
+            import ast
+            with open(agent_path, "r", encoding="utf-8") as f:
+                source = f.read()
+            ast.parse(source)
+            self.step("Neural Cortex (Source AST): VALID", "OK")
+            return True
+        except SyntaxError as e:
+            print(f"\n{Color.RED}[CRITICAL] AI Agent Brain Damage Detected!{Color.END}")
+            print(f"{Color.YELLOW}  File: {agent_path}{Color.END}")
+            print(f"{Color.YELLOW}  Error: {e.msg} at Line {e.lineno}{Color.END}")
+            print(f"{Color.CYAN}  Auto-Repair suggestion: Check for unclosed try/except blocks.{Color.END}")
+            self.step("Neural Cortex Syntax Error", "ERR")
+            return False
+        except Exception as e:
+             self.step(f"AST Check Failed: {e}", "WARN")
+             return True # Soft fail
+
+    def ensure_brain_capacity(self):
+        """Stage 1.5: Hardware Capabilities Detection (Pre-Vision)"""
+        print(f"{Color.BOLD}{Color.CYAN}[STAGE 1.5] Hardware Capability Scan{Color.END}")
+        print("-" * 80)
+        try:
+            # We run a small probe script to define OpenVINO/CUDA status natively
+            # This sets the 'ground truth' for the rest of the boot
+            # ONE-LINER STRICT FORMAT
+            probe_cmd = (
+                "import sys, torch; "
+                "gpu = torch.cuda.is_available(); "
+                "ov_avail = False; "
+                "try: "
+                "import optimum.intel.openvino; "
+                "import openvino.runtime; "
+                "ov_avail = True; "
+                "except: pass; "
+                "print(f'CUDA={gpu}|OV={ov_avail}')"
+            )
+            result = subprocess.run([str(VENV_PYTHON), "-c", probe_cmd],
+                                  capture_output=True, text=True, timeout=15)
+            
+            output = result.stdout.strip()
+            print(f"  Hardware Probe: {output}")
+            
+            # Decisão Global de Hardware
+            if "OV=True" in output:
+                 self.step("Intel Neural Accelerator (OpenVINO): DETECTED", "OK")
+                 os.environ["JARVIS_OPENVINO_AVAILABLE"] = "1"
+            else:
+                 # Default to disabled if not explicitly True
+                 self.step("Intel Neural Accelerator (OpenVINO): DISABLED (Lib Mismatch/Not Found)", "WARN")
+                 os.environ["JARVIS_DISABLE_OPENVINO"] = "1"
+                 
+            if "CUDA=True" in output:
+                 self.step("NVIDIA Neural Engine (CUDA): DETECTED", "OK")
+            else:
+                 self.step("Standard Compute Unit (CPU): ACTIVE", "OK")
+                 
+        except Exception as e:
+            self.logger.warning(f"Hardware probe failed: {e}")
+            self.step("Hardware Probe Failed (Defaulting to CPU)", "WARN")
+        print("-" * 80)
+
 
     def pre_flight_checks(self, retries=0):
         print("\n" + Color.CYAN + "-" * 80 + Color.END)
@@ -574,6 +684,9 @@ class SingularityLauncher:
         if not self.validate_environment():
             sys.exit(1)
 
+        # Stage 1.5: Hardware Capability Scan (NDR Enhancement)
+        self.ensure_brain_capacity()
+
         # Stage 2: Model Integrity Watcher
         if not self.check_ml_models():
             sys.exit(1)
@@ -582,8 +695,11 @@ class SingularityLauncher:
         if not self.pre_flight_checks():
             sys.exit(1)
 
-        # Stage 2.5 (User Request: Auto-Brain)
-        self.ensure_brain_capacity()
+        # Stage 2.5 (Legacy User Request: Auto-Brain placeholder removed)
+        # self.ensure_brain_capacity() # Moved to 1.5 for better flow
+        
+        # Stage 2.7 (SINGULARITY: Learning Systems Initialization)
+
         
         # Stage 2.7 (SINGULARITY: Learning Systems Initialization)
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 2.7] Learning Systems Initialization{Color.END}")

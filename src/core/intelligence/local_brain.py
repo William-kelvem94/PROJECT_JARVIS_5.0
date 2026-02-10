@@ -5,6 +5,7 @@ Isso remove a dependência 100% externa do Ollama/Gemini para comandos básicos.
 """
 
 import logging
+import os
 from typing import List, Dict, Optional
 
 try:
@@ -83,23 +84,38 @@ class LocalBrain:
                 from transformers import AutoTokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id)
 
-                if provider['backend'] == 'openvino':
-                    from optimum.intel.openvino import OVModelForCausalLM
-                    
-                    # Configuração Real de Distribuição de Carga
-                    self.ov_config = {
-                        "PERFORMANCE_HINT": "LATENCY",
-                        "CACHE_DIR": "data/models/ov_cache"
-                    }
-                    
-                    logger.info(f"📦 Carregando modelo na iGPU + Fallback CPU (OpenVINO)...")
-                    self.model = OVModelForCausalLM.from_pretrained(
-                        self.model_id,
-                        export=True, # Exporta para OpenVINO no primeiro boot
-                        device=compute_orchestrator.get_execution_strategy(), # 'HETERO:GPU,CPU'
-                        ov_config=self.ov_config,
-                        compile=True
-                    )
+                if provider['backend'] == 'openvino' and os.environ.get("JARVIS_DISABLE_OPENVINO") != "1":
+                    try:
+                        from optimum.intel.openvino import OVModelForCausalLM
+                        
+                        # Configuração Real de Distribuição de Carga
+                        self.ov_config = {
+                            "PERFORMANCE_HINT": "LATENCY",
+                            "CACHE_DIR": "data/models/ov_cache"
+                        }
+                        
+                        logger.info(f"📦 Carregando modelo na iGPU + Fallback CPU (OpenVINO)...")
+                        self.model = OVModelForCausalLM.from_pretrained(
+                            self.model_id,
+                            export=True, # Exporta para OpenVINO no primeiro boot
+                            device=compute_orchestrator.get_execution_strategy(), # 'HETERO:GPU,CPU'
+                            ov_config=self.ov_config,
+                            compile=True
+                        )
+                    except Exception as ov_error:
+                        logger.info(f"ℹ️ OpenVINO não disponível ({ov_error}). Usando PyTorch Standard (CPU).")
+                        # Fallback seguro para PyTorch
+                        from transformers import AutoModelForCausalLM
+                        self.model = AutoModelForCausalLM.from_pretrained(
+                            self.model_id,
+                            torch_dtype=torch.float32,
+                            device_map=None,
+                            low_cpu_mem_usage=True,
+                            trust_remote_code=True,
+                            use_safetensors=True
+                        )
+                        # Forçar provider para CPU para evitar erros futuros
+                        provider['device'] = 'cpu'
                 else:
                     # Fallback Torch (CPU ou NVIDIA)
                     from transformers import AutoModelForCausalLM

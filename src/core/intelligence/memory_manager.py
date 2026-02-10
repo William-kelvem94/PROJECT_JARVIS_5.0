@@ -58,18 +58,15 @@ class MemoryManager:
         def maintenance_loop():
             while True:
                 try:
-                try:
                     # Limpar memórias com mais de 30 dias (Phase 2 TTL)
                     self.purge_old_memories(days=30)
                 except Exception as e:
                     # Ignorar erros de schema silenciosamente na thread de manutenção
                     if "Expected operand value" not in str(e):
                         logger.error(f"Erro na limpeza de memória: {e}")
-                    # Dormir por 24 horas
-                    time.sleep(24 * 3600)
-                except Exception as e:
-                    logger.error(f"Erro na thread de manutenção de memória: {e}")
-                    time.sleep(3600) # Tentar de novo em 1h
+                
+                # Dormir por 24 horas (fora do try para evitar loop infinito em caso de sucesso rápido)
+                time.sleep(24 * 3600)
         
         thread = threading.Thread(target=maintenance_loop, daemon=True)
         thread.start()
@@ -264,17 +261,40 @@ class MemoryManager:
             # Formato ISO string para compatibilidade com o que foi salvo
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
             
-            # ChromaDB purge com tratamento de erro de schema
+            # ChromaDB purge com tratamento de erros de schema (Robust Cleanup)
             try:
+                # Tentativa 1: Query direta (rápida)
                 self.collection.delete(
                     where={"timestamp": {"$lt": cutoff_date}}
                 )
-                logger.info(f"🧹 Memória limpa: Registros anteriores a {cutoff_date} removidos.")
+                logger.info(f"Memoria limpa: Registros anteriores a {cutoff_date} removidos (Fast Path).")
             except Exception as e:
-                # Se der erro de tipo (operando int vs string), ignoramos por enquanto
-                # para não crashar a thread de manutenção
-                if "Expected operand value" in str(e):
-                    logger.warning(f"⚠️ Erro de schema ao limpar memória (ignorado): {e}")
+                # Fallback: Se o esquema estiver corrompido (type mismatch warning), fazemos via Python
+                if "Expected operand value" in str(e) or "operator" in str(e):
+                    logger.debug("ChromaDB Schema mismatch detected. Using manual cleanup fallback.")
+                    
+                    # Pegar todos os metadados
+                    all_data = self.collection.get(include=['metadatas'])
+                    ids_to_delete = []
+                    
+                    if all_data and 'metadatas' in all_data and all_data['metadatas']:
+                        for idx, meta in enumerate(all_data['metadatas']):
+                            if meta and 'timestamp' in meta:
+                                ts = meta['timestamp']
+                                # Comparação de strings ISO funciona (YYYY-MM-DD...)
+                                if ts < cutoff_date:
+                                    ids_to_delete.append(all_data['ids'][idx])
+                    
+                    if ids_to_delete:
+                        # Deletar em chunchs de 100 para não travar
+                        batch_size = 100
+                        for i in range(0, len(ids_to_delete), batch_size):
+                            batch = ids_to_delete[i:i + batch_size]
+                            self.collection.delete(ids=batch)
+                            
+                        logger.info(f"Limpeza Manual Concluida: {len(ids_to_delete)} memorias antigas removidas.")
+                    else:
+                        logger.debug("Nenhuma memoria antiga encontrada para limpeza manual.")
                 else:
                     raise e
 

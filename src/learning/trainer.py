@@ -438,7 +438,7 @@ class LocalTrainer:
             logger.info("Using MPS (Apple Silicon)")
         else:
             device = "cpu"
-            logger.warning("No GPU available, using CPU (training will be slow)")
+            logger.info("ℹ️ GPU não detectada (usando CPU). Treinamento operacional mas limitado.")
         
         return device
     
