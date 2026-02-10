@@ -41,7 +41,7 @@ print("\n" + "=" * 70)
 print("PHASE 3: AUTO-LEARNING (RAG)")
 print("=" * 70)
 try:
-    from src.core.memory_manager import memory_manager
+    from src.core.intelligence.memory_manager import memory_manager
     stats = memory_manager.get_stats()
     if stats['available']:
         print(f"✅ MemoryManager: {stats['total_memories']} memórias")

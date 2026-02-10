@@ -21,7 +21,7 @@ def test_brain_router():
     print("="*60)
     
     try:
-        from src.core.brain_router import brain_router, TaskComplexity, PrivacyLevel, LatencyRequirement
+        from src.core.intelligence.brain_router import brain_router, TaskComplexity, PrivacyLevel, LatencyRequirement
         
         # Teste 1: Comando simples
         choice = brain_router.choose_brain(
@@ -64,7 +64,7 @@ def test_advanced_action_controller():
     print("="*60)
     
     try:
-        from src.core.advanced_action_controller import advanced_action_controller
+        from src.core.actions.advanced_action_controller import advanced_action_controller
         
         # Teste 1: Descoberta de aplicações
         apps = advanced_action_controller.known_apps
@@ -95,7 +95,7 @@ def test_workflow_engine():
     print("="*60)
     
     try:
-        from src.core.workflow_engine import workflow_engine, WorkflowStep
+        from src.core.actions.workflow_engine import workflow_engine, WorkflowStep
         
         # Teste 1: Criar workflow
         wf = workflow_engine.create_workflow(
@@ -140,7 +140,7 @@ def test_advanced_vision_pipeline():
     print("="*60)
     
     try:
-        from src.core.advanced_vision_pipeline import advanced_vision_pipeline
+        from src.core.vision.advanced_vision_pipeline import advanced_vision_pipeline
         
         # Teste 1: Verificar níveis disponíveis
         print(f"✅ Teste 4.1: Nível 1 (YOLO): {advanced_vision_pipeline.level1_available}")
@@ -161,7 +161,7 @@ def test_advanced_speech_processor():
     print("="*60)
     
     try:
-        from src.core.advanced_speech_processor import advanced_speech_processor
+        from src.core.audio.advanced_speech_processor import advanced_speech_processor
         
         # Teste 1: Verificar Whisper
         print(f"✅ Teste 5.1: Whisper disponível: {advanced_speech_processor.whisper_available}")
@@ -185,7 +185,7 @@ def test_security_manager():
     print("="*60)
     
     try:
-        from src.core.security_manager_advanced import security_manager
+        from src.core.management.security_manager_advanced import security_manager
         
         # Teste 1: Criptografia
         original = "dados sensíveis"

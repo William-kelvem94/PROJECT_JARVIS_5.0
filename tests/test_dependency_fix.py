@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from utils.config import config
-from core.maintenance_manager import maintenance_manager
+from src.core.management.maintenance_manager import maintenance_manager
 
 
 print("--- TESTE DE ALINHAMENTO DE DEPENDÊNCIAS ---")

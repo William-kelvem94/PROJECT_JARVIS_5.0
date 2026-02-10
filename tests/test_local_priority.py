@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 # Setup paths
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.core.ai_agent import ai_agent
+from src.core.intelligence.ai_agent import ai_agent
 
 # Mock components to avoid real API/Network calls during this specific logic test
 ai_agent._check_ollama_alive = MagicMock(return_value=True) # Simulate Ollama is running

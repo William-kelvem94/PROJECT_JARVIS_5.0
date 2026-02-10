@@ -1,5 +1,6 @@
-# Dados e arquivos temporários
-data/
+# Dados (controle delegado para data/.gitignore)
+# data/  <-- REMOVIDO (usar .gitignore interno)
+
 *.log
 *.tmp
 *.cache
@@ -33,12 +34,12 @@ ENV/
 .venv
 
 # IDE
-.vscode/
+# .vscode/  <-- REMOVIDO (settings.json deve ser versionado)
 .idea/
 *.swp
 *.swo
 *~
-.cursor/
+# .cursor/  <-- REMOVIDO (rules.md deve ser versionado)
 
 # OS
 .DS_Store

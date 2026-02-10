@@ -47,7 +47,7 @@ def test_voice_cloning():
 def test_semantic_caching():
     """Test P1: Semantic Caching"""
     try:
-        from src.core.vision_system import get_vision_system
+        from src.core.vision.vision_system import get_vision_system
         vision = get_vision_system(PROJECT_ROOT / "data")
         
         # Check if cache attributes exist
@@ -75,7 +75,7 @@ def test_noise_reduction():
 def test_response_caching():
     """Test P1: Response Caching"""
     try:
-        from src.core.voice_controller import voice_controller
+        from src.core.audio.voice_controller import voice_controller
         
         if hasattr(voice_controller, 'response_cache'):
             logger.info("✅ P1.3: Response Caching (Voice) - IMPLEMENTED")
@@ -92,7 +92,7 @@ def test_rag_reranking():
     """Test P1: RAG Reranking"""
     try:
         from sentence_transformers import CrossEncoder
-        from src.core.memory_manager import memory_manager
+        from src.core.intelligence.memory_manager import memory_manager
         
         if hasattr(memory_manager, 'reranker'):
             logger.info("✅ P1.4: RAG Reranking (CrossEncoder) - IMPLEMENTED")

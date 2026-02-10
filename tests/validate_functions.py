@@ -28,10 +28,10 @@ sys.path.insert(0, os.path.join(os.getcwd(), "src"))
 def validate_core_imports():
     logger.info("--- 1. Validating Core Imports ---")
     try:
-        from src.core.voice_controller import voice_controller
-        from src.core.camera_controller import camera_controller
-        from src.core.ai_agent import ai_agent
-        from src.core.neural_memory import neural_memory
+        from src.core.audio.voice_controller import voice_controller
+        from src.core.vision.camera_controller import camera_controller
+        from src.core.intelligence.ai_agent import ai_agent
+        from src.core.intelligence.neural_memory import neural_memory
         logger.info("SUCCESS: All core modules imported without error.")
         return True
     except ImportError as e:
@@ -44,7 +44,7 @@ def validate_core_imports():
 def validate_voice_logic():
     logger.info("--- 2. Validating Voice Logic (Mocked) ---")
     try:
-        from src.core.voice_controller import voice_controller
+        from src.core.audio.voice_controller import voice_controller
         # Mock dependencies in the instance
         voice_controller.engine = MagicMock()
         voice_controller.microphone = MagicMock()
@@ -64,7 +64,7 @@ def validate_voice_logic():
 def validate_ai_agent_logic():
     logger.info("--- 3. Validating AI Agent Logic ---")
     try:
-        from src.core.ai_agent import ai_agent
+        from src.core.intelligence.ai_agent import ai_agent
         
         # Mock internal calls
         ai_agent._call_gemini = MagicMock(return_value="Gemini Mock Response")
