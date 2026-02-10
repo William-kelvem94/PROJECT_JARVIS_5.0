@@ -13,7 +13,7 @@ def run_benchmarks():
 
     # 1. OCR Latency Check
     try:
-        from core.vision_system import get_vision_system
+        from src.core.vision.vision_system import get_vision_system
         vision = get_vision_system(Path("data"))
         # Force load models
         vision._load_ocr_background()

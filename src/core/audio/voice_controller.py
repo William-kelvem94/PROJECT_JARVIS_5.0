@@ -162,8 +162,14 @@ class VoiceController:
             if torch.cuda.is_available():
                 self.cloned_tts.to("cuda")
             logger.info("✅ Modelo XTTS-v2 pronto")
+        except ImportError as e:
+            if "BeamSearchScorer" in str(e):
+                logger.warning("⚠️ XTTS-v2 incompatível com versão atual do transformers (usando Edge-TTS)")
+            else:
+                logger.warning(f"⚠️ XTTS-v2 não disponível: {e}")
+            TTS_AVAILABLE = False
         except Exception as e:
-            logger.error(f"❌ Erro ao carregar XTTS-v2: {e}")
+            logger.warning(f"⚠️ Erro ao carregar XTTS-v2 (usando Edge-TTS como alternativa): {e}")
             TTS_AVAILABLE = False
     
     def _warm_response_cache(self):
@@ -427,84 +433,105 @@ class VoiceController:
         
                 # 🔒 edge-tts NÃO suporta SSML raw - usar parâmetros nativos da API
         # A prosódia é aplicada via rate/pitch/volume do Communicate
-        try:
-            communicate = edge_tts.Communicate(
-                text,  # 🔒 Texto puro, NÃO SSML
-                voice,
-                rate=rate if rate != "+0%" else "+0%",
-                pitch=pitch if pitch != "+0Hz" else "+0Hz",
-                volume=volume if volume != "+0%" else "+0%"
-            )
-            
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-                tmp_path = tmp.name
-                
+        max_retries = 2
+        retry_delay = 1.0
+        
+        for attempt in range(max_retries):
             try:
-                # 🆕 AUMENTAR TIMEOUT DA CONEXÃO
-                import aiohttp
-                timeout = aiohttp.ClientTimeout(total=30, connect=10) # 30s total, 10s connect
+                communicate = edge_tts.Communicate(
+                    text,  # 🔒 Texto puro, NÃO SSML
+                    voice,
+                    rate=rate if rate != "+0%" else "+0%",
+                    pitch=pitch if pitch != "+0Hz" else "+0Hz",
+                    volume=volume if volume != "+0%" else "+0%"
+                )
                 
-                # Monkey-patch temporário ou configuração se suportado pelo edge_tts (geralmente não é direto)
-                # Como edge_tts usa aiohttp internamente, vamos tentar envolver a chamada
-                
-                await communicate.save(tmp_path)
-                
-                # 🔍 Log de confirmação do arquivo gerado
-                if os.path.exists(tmp_path):
-                    file_size = os.path.getsize(tmp_path)
-                    logger.info(f"✅ Edge-TTS: Arquivo MP3 gerado ({file_size} bytes) em {tmp_path}")
-                else:
-                    logger.error(f"❌ Edge-TTS: Arquivo MP3 NÃO foi criado em {tmp_path}")
-                    return # Não lançar exceção para evitar fallback duplo
-                
-                if self.stop_requested: return
-                
-                if not PYGAME_AVAILABLE:
-                    logger.error("❌ pygame não disponível para reproduzir áudio")
-                    return
-                
-                # 🆕 Verificar se mixer está initialized
-                if not pygame.mixer.get_init():
-                    logger.warning("⚠️ Pygame mixer não inicializado, tentando reinicializar...")
-                    try:
-                        pygame.mixer.init()
-                    except Exception as init_e:
-                        logger.error(f"❌ Falha ao reinicializar pygame: {init_e}")
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                    tmp_path = tmp.name
+                    
+                try:
+                    # 🆕 TIMEOUT REDUZIDO para falhar mais rápido
+                    import aiohttp
+                    timeout = aiohttp.ClientTimeout(total=15, connect=5)  # 15s total, 5s connect
+                    
+                    await asyncio.wait_for(communicate.save(tmp_path), timeout=15.0)
+                    
+                    # 🔍 Log de confirmação do arquivo gerado
+                    if os.path.exists(tmp_path):
+                        file_size = os.path.getsize(tmp_path)
+                        logger.info(f"✅ Edge-TTS: Arquivo MP3 gerado ({file_size} bytes) em {tmp_path}")
+                    else:
+                        logger.error(f"❌ Edge-TTS: Arquivo MP3 NÃO foi criado em {tmp_path}")
+                        return # Não lançar exceção para evitar fallback duplo
+                    
+                    if self.stop_requested: return
+                    
+                    if not PYGAME_AVAILABLE:
+                        logger.error("❌ pygame não disponível para reproduzir áudio")
                         return
                     
-                self._is_speaking = True
-                
-                try:
-                    logger.debug(f"🔊 Carregando MP3 no pygame.mixer: {tmp_path}")
-                    pygame.mixer.music.load(tmp_path)
-                    logger.info(f"✅ Edge-TTS: Arquivo carregado com sucesso no mixer")
+                    # 🆕 Verificar se mixer está initialized
+                    if not pygame.mixer.get_init():
+                        logger.warning("⚠️ Pygame mixer não inicializado, tentando reinicializar...")
+                        try:
+                            pygame.mixer.init()
+                        except Exception as init_e:
+                            logger.error(f"❌ Falha ao reinicializar pygame: {init_e}")
+                            return
+                        
+                    self._is_speaking = True
                     
-                    pygame.mixer.music.play()
-                    logger.info(f"🎵 Edge-TTS: Reprodução iniciada (aguardando conclusão...)")
-                    
-                    while pygame.mixer.music.get_busy():
-                        if self.stop_requested:
-                            pygame.mixer.music.stop()
-                            logger.info("🛑 Edge-TTS: Reprodução interrompida pelo usuário")
-                            break
-                        await asyncio.sleep(0.1)
-                    
-                    logger.info(f"✅ Edge-TTS: Reprodução concluída com sucesso")
-                except pygame.error as pg_err:
-                    logger.error(f"❌ Pygame error: {pg_err}")
-                    raise  # Cair no fallback offline
-            finally:
-                self._is_speaking = False
-                if os.path.exists(tmp_path):
                     try:
-                        os.remove(tmp_path)
-                    except:
-                        pass
-        except Exception as e:
-            logger.error(f"❌ Falha no Edge-TTS SSML processing: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            raise  # Re-raise para cair no fallback offline
+                        logger.debug(f"🔊 Carregando MP3 no pygame.mixer: {tmp_path}")
+                        pygame.mixer.music.load(tmp_path)
+                        logger.info(f"✅ Edge-TTS: Arquivo carregado com sucesso no mixer")
+                        
+                        pygame.mixer.music.play()
+                        logger.info(f"🎵 Edge-TTS: Reprodução iniciada (aguardando conclusão...)")
+                        
+                        while pygame.mixer.music.get_busy():
+                            if self.stop_requested:
+                                pygame.mixer.music.stop()
+                                logger.info("🛑 Edge-TTS: Reprodução interrompida pelo usuário")
+                                break
+                            await asyncio.sleep(0.1)
+                        
+                        logger.info(f"✅ Edge-TTS: Reprodução concluída com sucesso")
+                        return  # Sucesso, sair da função
+                        
+                    except pygame.error as pg_err:
+                        logger.error(f"❌ Pygame error: {pg_err}")
+                        raise  # Cair no fallback offline
+                finally:
+                    self._is_speaking = False
+                    if os.path.exists(tmp_path):
+                        try:
+                            os.remove(tmp_path)
+                        except:
+                            pass
+                            
+            except asyncio.TimeoutError:
+                if attempt < max_retries - 1:
+                    logger.debug(f"⏱️ Edge-TTS timeout (tentativa {attempt + 1}/{max_retries}), tentando novamente...")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    logger.warning("⚠️ Edge-TTS timeout após múltiplas tentativas (usando fallback offline)")
+                    raise  # Cair no fallback offline
+                    
+            except Exception as e:
+                error_msg = str(e)
+                # Reduzir verbosidade para timeouts conhecidos
+                if "timeout" in error_msg.lower() or "connection" in error_msg.lower():
+                    if attempt < max_retries - 1:
+                        logger.debug(f"⏱️ Edge-TTS conexão falhou (tentativa {attempt + 1}/{max_retries})")
+                        await asyncio.sleep(retry_delay)
+                        continue
+                    else:
+                        logger.warning("⚠️ Edge-TTS indisponível (usando fallback offline)")
+                else:
+                    logger.warning(f"⚠️ Edge-TTS error: {error_msg}")
+                raise  # Re-raise para cair no fallback offline
 
     def stop_speaking(self):
         """Interrompe a fala atual imediatamente"""

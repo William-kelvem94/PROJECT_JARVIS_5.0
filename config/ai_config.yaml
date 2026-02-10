@@ -39,22 +39,20 @@ brain_router:
     tier_ultra:  # Genius tier - Alta complexidade
       - "deepseek-r1:8b"
       - "deepseek-r1:14b"
-      - "deepseek-r1"
       - "llama3.3:70b"
     
     tier_pro:  # Versatile tier - Média-Alta complexidade
+      - "gemma3:4b"    # ✅ Preferido (instrução 2026-02-10)
       - "qwen2.5:7b"
       - "llama3.1:8b"
       - "llama3.2"
-      - "llama3"
-      - "qwen2.5:14b"
-      - "qwen2.5:7b"
+      - "mistral"
     
     tier_fast:  # Fast tier - Uso geral econômico
-      - "qwen2.5"
+      - "gemma3:4b"    # ✅ Rápido e capaz
+      - "qwen2.5:3b"   # ✅ Fallback leve
       - "phi3.5"
       - "phi3"
-      - "mistral"
       - "gemma2:9b"
   
   # Hardware requirements per tier

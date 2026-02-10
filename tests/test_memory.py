@@ -3,7 +3,7 @@ Test script for MemoryManager (Auto-Learning / RAG)
 Tests memory storage, recall, and context generation
 """
 
-from src.core.memory_manager import memory_manager
+from src.core.intelligence.memory_manager import memory_manager
 
 print("=" * 70)
 print("🧠 JARVIS AUTO-LEARNING - Memory Manager Test")

@@ -3,7 +3,8 @@ import os
 from pathlib import Path
 
 # Adicionar src ao path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 print("=== JARVIS 5.0 DIAGNOSTIC BOOT ===")
 
@@ -13,7 +14,7 @@ try:
     print("OK")
 
     print("[2/6] Verificando Hardware...", end=" ")
-    from core.hardware_manager import hardware_manager
+    from src.core.management.hardware_manager import hardware_manager
     status = hardware_manager.get_status()
     print(f"OK ({status['device'].upper()})")
 
@@ -22,7 +23,7 @@ try:
     print("OK")
 
     print("[4/6] Testando Agente de IA...", end=" ")
-    from core.ai_agent import ai_agent
+    from src.core.intelligence.ai_agent import ai_agent
     print("OK")
 
     print("[5/6] Verificando Visão (FaceRec/MediaPipe)...", end=" ")

@@ -198,7 +198,8 @@ class MemoryManager:
         if self.collection:
             try:
                 embedding = self._create_embedding(combined_text)
-                self.collection.add(
+                # 🆕 Usar upsert ao invés de add para evitar warnings de IDs duplicados
+                self.collection.upsert(
                     ids=[mem_id],
                     documents=[combined_text],
                     metadatas=[meta],

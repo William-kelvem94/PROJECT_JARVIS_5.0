@@ -12,7 +12,7 @@ class AutoHealer:
     """Sistema de auto-reparo para dependências e problemas comuns"""
     
     def __init__(self, project_root=None):
-        self.root = Path(project_root) if project_root else Path(__file__).parent.parent.parent
+        self.root = Path(project_root) if project_root else Path(__file__).parent.parent
         self.fixed = []
         self.failed = []
         
