@@ -5,7 +5,7 @@ from pathlib import Path
 # Adicionar src ao path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from core.maintenance_manager import maintenance_manager
+from src.core.management.maintenance_manager import maintenance_manager
 
 def on_progress(msg):
     print(f"[UI UPDATE] {msg}")

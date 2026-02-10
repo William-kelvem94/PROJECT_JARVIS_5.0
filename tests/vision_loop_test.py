@@ -6,9 +6,9 @@ import time
 # Setup paths
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.core.ai_agent import ai_agent
-from src.core.ui_detector import ui_detector
-from src.core.screen_capture import screen_capture
+from src.core.intelligence.ai_agent import ai_agent
+from src.core.vision.ui_detector import ui_detector
+from src.core.vision.screen_capture import screen_capture
 
 # Mock logger
 logging.basicConfig(level=logging.INFO)

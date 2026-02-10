@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import logging
 
-PROJECT_ROOT = Path(__file__).parent.absolute()
+PROJECT_ROOT = Path(__file__).parent.parent.parent.absolute()
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 logging.basicConfig(level=logging.INFO)
@@ -24,17 +24,17 @@ try:
     wm = get_window_manager(app)
     
     print("Step 5: Importing Vision System...")
-    from core.vision_system import get_vision_system
+    from src.core.vision.vision_system import get_vision_system
     print("Step 6: Initializing Vision System...")
     vs = get_vision_system(PROJECT_ROOT / "data")
     
     print("Step 7: Importing Audio System...")
-    from core.enhanced_audio import get_audio_system
+    from src.core.audio.enhanced_audio import get_audio_system
     print("Step 8: Initializing Audio System...")
     asys = get_audio_system(PROJECT_ROOT / "data")
     
     print("Step 9: Importing Integrator...")
-    from core.system_integrator import get_system_integrator
+    from src.core.actions.system_integrator import get_system_integrator
     print("Step 10: Initializing Integrator...")
     si = get_system_integrator()
     

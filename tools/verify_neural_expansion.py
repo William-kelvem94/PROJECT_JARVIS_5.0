@@ -16,8 +16,8 @@ if str(SRC_PATH) not in sys.path:
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 try:
-    from core.advanced_speech_processor import advanced_speech_processor
-    from core.emotion_detector import emotion_detector
+    from src.core.audio.advanced_speech_processor import advanced_speech_processor
+    from src.core.intelligence.emotion_detector import emotion_detector
     print("✅ Core modules imported successfully.")
 except Exception as e:
     print(f"❌ FAIL: Could not import core modules: {e}")
