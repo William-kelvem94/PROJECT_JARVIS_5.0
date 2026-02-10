@@ -84,7 +84,7 @@ class ReActAgent:
             genai.configure(api_key=self.api_key)
             
             # Define tools (function declarations)
-            self.tools = [
+            function_declarations = [
                 {
                     'name': 'file_read',
                     'description': 'Read contents of a file',
@@ -143,16 +143,26 @@ class ReActAgent:
                 }
             ]
             
-            # Create model with tools
+            # Create model with tools (Corrected format for SDK)
+            try:
+                from google.ai.generativelanguage_v1beta.types import Tool
+                # If we could import Tool, we might structure it differently, 
+                # but standard dict typically works if schema is perfect.
+            except ImportError:
+                pass
+
             self.model = genai.GenerativeModel(
-                model,
-                tools=self.tools
+                model_name=model,
+                tools=[{'function_declarations': function_declarations}] 
             )
             
-            logger.info(f"✅ ReAct Agent initialized ({model}, {len(self.tools)} tools)")
+            self.tools_list = [t['name'] for t in function_declarations]
+            logger.info(f"✅ ReAct Agent initialized ({model}, {len(function_declarations)} tools)")
         
         except Exception as e:
-            logger.error(f"Failed to initialize agent: {e}")
+            logger.info(f"ℹ️ ReAct Agent (Gemini) indisponível: {e}. Usando Local Brain.")
+            self.model = None
+            self.tools_list = []
     
     def _execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> str:
         """
@@ -237,7 +247,7 @@ class ReActAgent:
 **Observation**: Observe the tool result
 
 Continue this loop until you can provide a final answer.
-Available tools: {', '.join([t['name'] for t in self.tools])}
+Available tools: {', '.join(self.tools_list)}
 
 Task: {task}
 """
@@ -350,7 +360,7 @@ Task: {task}
             prompt = f"""You are JARVIS, an autonomous agent. Complete this task.
 Task: {task}
 
-Tools available: {', '.join([t['name'] for t in self.tools])}
+Tools available: {', '.join(self.tools_list)}
 
 Reason step-by-step and provide a FINAL ANSWER."""
             

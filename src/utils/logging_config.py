@@ -213,6 +213,10 @@ class LoggingConfig:
         error_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
         logging.getLogger().addHandler(error_handler)
         
+        # 5. Filtrar avisos inofensivos de terçeitos
+        logging.getLogger('easyocr').setLevel(logging.ERROR)
+        logging.getLogger('easyocr.easyocr').setLevel(logging.ERROR)
+        
         return loggers
 
 

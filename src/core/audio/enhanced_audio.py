@@ -532,7 +532,7 @@ class EnhancedAudioSystem:
                         if voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         else:
-                            logger.debug(f"🔇 Buffer descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
+                            logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0

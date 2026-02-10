@@ -48,6 +48,7 @@ class HardwareManager:
         
         if TORCH_AVAILABLE and torch and torch.cuda.is_available():
             self.device = "cuda"
+            self.accelerator = "cuda"
             self.gpu_name = torch.cuda.get_device_name(0)
         elif OPENVINO_AVAILABLE:
             # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
@@ -55,22 +56,26 @@ class HardwareManager:
                 core = ov.Core()
                 devices = core.available_devices
                 if "GPU" in devices:
-                    self.device = "openvino"
-                    self.gpu_name = "Intel Iris Xe / Arc (OpenVINO)"
+                    self.device = "cpu" # Torch needs 'cpu' or 'cuda'. OpenVINO is an accelerator, not a device string.
+                    self.accelerator = "openvino"
+                    self.gpu_name = "Intel Iris Xe / Arc (OpenVINO Accelerator)"
                 else:
                     self.device = "cpu"
+                    self.accelerator = None
                     self.gpu_name = "None"
             except:
                 self.device = "cpu"
+                self.accelerator = None
                 self.gpu_name = "None"
         else:
             self.device = "cpu"
+            self.accelerator = None
             self.gpu_name = "None"
         self.system = platform.system()
         
         # 🆕 COMPUTE TIERING (Military Grade Scaling)
         self.tier = "BALANCED"
-        if self.device in ["cuda", "openvino"]:
+        if self.device == "cuda" or (hasattr(self, 'accelerator') and self.accelerator == "openvino"):
             self.tier = "ULTRA"
         else:
             import psutil
@@ -159,7 +164,11 @@ class HardwareManager:
     def get_torch_device(self):
         """Retorna o objeto torch.device atual"""
         if TORCH_AVAILABLE and torch:
-            return torch.device(self.device)
+            # openvino is not a native torch device string
+            dev = self.device
+            if dev == "openvino":
+                dev = "cpu"
+            return torch.device(dev)
         return None
 
     def get_compute_type(self) -> str:
