@@ -196,10 +196,12 @@ class SingularityLauncher:
                     self.step(f"Model {m['name']} downloaded", "OK")
                 except Exception as e:
                     self.step(f"Failed to download {m['name']}: {e}", "ERR")
+                    return False
             else:
                 self.step(f"Neural Model {m['name']}: VALID", "OK")
         
         print("-" * 80)
+        return True
 
     def validate_environment(self):
         self.step("Environment Validation", "WAIT")
@@ -214,22 +216,29 @@ class SingularityLauncher:
         print("\n" + Color.CYAN + "-" * 80 + Color.END)
         print(("🧠 Starting JARVIS Pre-flight Sequence...").ljust(80))
         
-        libs = ["PyQt6", "cv2", "numpy", "torch", "chromadb", "ultralytics", "psutil", "requests", "packaging", "peft"]
+        libs = ["PyQt6", "cv2", "numpy", "torch", "chromadb", "ultralytics", "psutil", "requests", "packaging", "peft", "easyocr", "openvino"]
         missing = []
         for lib in libs:
             try:
-                # Advanced check: Run a small command to force DLL load
+                # Advanced check: Run a small command to force DLL/Backend load
                 check_cmd = f"import {lib}"
                 if lib == "torch":
-                    check_cmd = "import torch; from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.4.0') else 1)"
+                    check_cmd = "import torch; torch.zeros(1); from packaging import version; exit(0 if version.parse(torch.__version__) >= version.parse('2.4.0') else 1)"
                 elif lib == "cv2":
-                    check_cmd = "import cv2" # Relaxed check (removed .Mat())
+                    check_cmd = "import cv2; import numpy; exit(0 if version.parse(numpy.__version__) < version.parse('2.0.0') else 1)"
+                elif lib == "numpy":
+                    check_cmd = "import numpy; from packaging import version; exit(0 if version.parse(numpy.__version__) < version.parse('2.0.0') else 1)"
+                elif lib == "openvino":
+                    check_cmd = "import openvino; core = openvino.Core(); exit(0)"
                 
                 subprocess.run([str(VENV_PYTHON), "-c", check_cmd], 
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                print(f"  {Color.GREEN}✅ {lib.ljust(15)} - Validated{Color.END}")
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=10)
+                print(f"  {Color.GREEN}✅ {lib.ljust(15)} - Validated - OK{Color.END}")
+            except subprocess.TimeoutExpired:
+                print(f"  {Color.RED}❌ {lib.ljust(15)} - TIMEOUT (Possible DLL Conflict){Color.END}")
+                missing.append(lib)
             except:
-                print(f"  {Color.RED}❌ {lib.ljust(15)} - Missing or Corrupted{Color.END}")
+                print(f"  {Color.RED}❌ {lib.ljust(15)} - Failed Integrity Check{Color.END}")
                 missing.append(lib)
 
         # Custom modules check
@@ -242,10 +251,15 @@ class SingularityLauncher:
         for mod in custom_modules:
             try:
                 subprocess.run([str(VENV_PYTHON), "-c", f"import {mod}"], 
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=5)
                 print(f"  {Color.GREEN}✅ {mod.ljust(40)} - Validated{Color.END}")
             except:
-                print(f"  {Color.RED}❌ {mod.ljust(40)} - Validated (Soft Fail){Color.END}")
+                # Se for um módulo crítico do núcleo (como device_manager), falhamos firme
+                if "device_manager" in mod:
+                    print(f"  {Color.RED}❌ {mod.ljust(40)} - CRITICAL MODULE FAILED{Color.END}")
+                    missing.append(mod)
+                else:
+                    print(f"  {Color.YELLOW}⚠️  {mod.ljust(40)} - Soft Fail (Module partially loaded){Color.END}")
 
         if missing:
             self.step("Dependencies failure detected", "ERR")
@@ -560,8 +574,13 @@ class SingularityLauncher:
         if not self.validate_environment():
             sys.exit(1)
 
-        # Stage 2
-        self.check_ml_models()
+        # Stage 2: Model Integrity Watcher
+        if not self.check_ml_models():
+            sys.exit(1)
+
+        # Stage 3: Pre-flight Checks (CRITICAL DEP CHECK FIRST)
+        if not self.pre_flight_checks():
+            sys.exit(1)
 
         # Stage 2.5 (User Request: Auto-Brain)
         self.ensure_brain_capacity()
@@ -570,10 +589,6 @@ class SingularityLauncher:
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 2.7] Learning Systems Initialization{Color.END}")
         print("-" * 80)
         self.initialize_learning_systems()
-
-        # Stage 3
-        if not self.pre_flight_checks():
-            sys.exit(1)
             
         # Launch
         self.launch_core()

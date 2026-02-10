@@ -52,6 +52,13 @@ class ReflectionLogger:
             print(f"    {i+1}. {self.YELLOW}{action}{self.RESET}")
         print("")
 
+    def log_speech(self, text: str):
+        """Logs what JARVIS is saying to the user"""
+        if not self.enabled: return
+        
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\n{self.GREEN}🗣️  JARVIS [{timestamp}]: {self.RESET}\"{self.YELLOW}{text}{self.RESET}\"\n")
+
 # Global Instance
 reflect_logger = ReflectionLogger()
 

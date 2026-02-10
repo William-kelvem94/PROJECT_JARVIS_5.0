@@ -74,6 +74,12 @@ class BrainRouter:
         
         if not self.cloud_available:
             logger.warning("⚠️ BrainRouter: Cloud (Gemini) desativado (Falta API Key).")
+        else:
+            # Validar se a chave realmente funciona
+            is_valid = self._validate_cloud_key()
+            if not is_valid:
+                self.cloud_available = False
+                logger.warning("🚫 BrainRouter: Chave Gemini inválida. Fallback: Local Apenas.")
     
     def _load_default_config(self):
         """Carrega configurações padrão se ai_config.yaml não estiver disponível"""
@@ -100,6 +106,25 @@ class BrainRouter:
         except Exception:
             self.ollama_available_models = []
             logger.debug("Ollama não está rodando no momento.")
+
+    def _validate_cloud_key(self):
+        """Valida se a chave do Gemini realmente funciona"""
+        if not self.api_key: return False
+        try:
+            # Teste rápido com modelo leve
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+            payload = {"contents": [{"parts": [{"text": "ping"}]}]} 
+            resp = requests.post(url, json=payload, timeout=5)
+            if resp.status_code == 200:
+                logger.info("✅ BrainRouter: Gemini API validada e operacional.")
+                return True
+            else:
+                logger.warning(f"⚠️ BrainRouter: Gemini Falhou (HTTP {resp.status_code}). Modo Cloud desativado.")
+                logger.debug(f"Erro Gemini: {resp.text}")
+                return False
+        except Exception as e:
+            logger.warning(f"⚠️ BrainRouter: Erro ao validar Gemini: {e}")
+            return False
 
     def choose_brain(
         self,
@@ -149,7 +174,7 @@ class BrainRouter:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🧠 TIER ULTRA: {available_model}")
-                            return f"ollama:{model_pattern}"
+                            return f"ollama:{available_model}"
 
             # TIER PRO: Versátil (Llama 3.x) -> Média-Alta Complexidade
             min_ram_pro = self.hw_tier_pro.get('min_ram_gb', 4.0)
@@ -159,7 +184,7 @@ class BrainRouter:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🎯 TIER PRO: {available_model}")
-                            return f"ollama:{model_pattern}"
+                            return f"ollama:{available_model}"
             
             # TIER FAST: Rápido (Qwen / Phi) -> Uso geral econômico
             min_ram_fast = self.hw_tier_fast.get('min_ram_gb', 1.5)
@@ -168,7 +193,7 @@ class BrainRouter:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"⚡ TIER FAST: {available_model}")
-                            return f"ollama:{model_pattern}"
+                            return f"ollama:{available_model}"
 
         # ESCALONAMENTO PARA NUVEM (Último recurso para tarefas ultra-complexas)
         if task_complexity > 0.8 and self.cloud_available and not self.offline_mode:
@@ -191,7 +216,7 @@ class BrainRouter:
             for available_model in self.ollama_available_models:
                 if model_pattern in available_model.lower():
                     logger.info(f"🔒 OFFLINE MODE: Usando {available_model}")
-                    return f"ollama:{model_pattern}"
+                    return f"ollama:{available_model}"
         
         # Se nenhum tier disponível, usar o primeiro modelo encontrado
         if self.ollama_available_models:

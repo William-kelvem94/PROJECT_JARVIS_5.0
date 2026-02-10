@@ -142,68 +142,76 @@ class LoggingConfig:
     @staticmethod
     def setup_jarvis_logging(data_dir: Path) -> dict:
         """
-        Configura todo o sistema de logging do JARVIS
-        
-        Args:
-            data_dir: Diretório base de dados (onde ficam os logs)
-        
-        Returns:
-            dict: Dicionário com todos os loggers configurados
+        Configura todo o sistema de logging do JARVIS 5.0
+        Organiza logs em pastas por data (YYYY-MM-DD) para fácil auditoria.
         """
-        logs_dir = data_dir / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        
+        # Criar diretório da sessão (ex: data/logs/2026-02-10/)
+        session_dir = data_dir / "logs" / date_str
+        session_dir.mkdir(parents=True, exist_ok=True)
         
         loggers = {}
         
-        # Logger principal do sistema (rotação por tamanho)
+        # 1. Logger PRINCIPAL (Info+)
         loggers['main'] = LoggingConfig.setup_rotating_logger(
-            logger_name='jarvis',
-            log_file=logs_dir / 'jarvis_singularity.log',
+            logger_name='jarvis',  # Root logger capture
+            log_file=session_dir / 'jarvis_main.log',
             level=logging.INFO,
-            max_bytes=10 * 1024 * 1024,  # 10MB
-            backup_count=5,
+            max_bytes=10 * 1024 * 1024,
+            backup_count=10,
             console_output=True
         )
         
-        # Logger de visão (rotação menor pois pode gerar muito log)
+        # 2. Logger DETALHADO (Debug total - Arquivo gigante, mas útil)
+        # Capture root logger 'jarvis' debugs too
+        debug_handler = RotatingFileHandler(
+            filename=str(session_dir / 'jarvis_detailed_debug.log'),
+            maxBytes=20 * 1024 * 1024,
+            backupCount=5,
+            encoding='utf-8'
+        )
+        debug_handler.setLevel(logging.DEBUG)
+        debug_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
+        logging.getLogger().addHandler(debug_handler) # Attach to root
+        
+        # 3. Componentes Específicos (Separados para clareza)
+        
+        # Vision (OCR, YOLO)
         loggers['vision'] = LoggingConfig.setup_rotating_logger(
-            logger_name='core.vision',
-            log_file=logs_dir / 'vision.log',
-            level=logging.INFO,
-            max_bytes=5 * 1024 * 1024,  # 5MB
-            backup_count=3,
+            logger_name='src.core.vision', # Mapeia imports src.core.vision...
+            log_file=session_dir / 'component_vision.log',
+            level=logging.DEBUG, 
             console_output=False
         )
         
-        # Logger de áudio
+        # Audio (STT, TTS)
         loggers['audio'] = LoggingConfig.setup_rotating_logger(
-            logger_name='core.audio',
-            log_file=logs_dir / 'audio.log',
-            level=logging.INFO,
-            max_bytes=5 * 1024 * 1024,  # 5MB
-            backup_count=3,
+            logger_name='src.core.audio',
+            log_file=session_dir / 'component_audio.log',
+            level=logging.DEBUG,
             console_output=False
         )
         
-        # Logger de IA/Intelligence
+        # Intelligence (AI, Brain, Memory)
         loggers['intelligence'] = LoggingConfig.setup_rotating_logger(
-            logger_name='core.intelligence',
-            log_file=logs_dir / 'intelligence.log',
-            level=logging.DEBUG,  # DEBUG para análise detalhada
-            max_bytes=10 * 1024 * 1024,  # 10MB
-            backup_count=5,
+            logger_name='src.core.intelligence',
+            log_file=session_dir / 'component_intelligence.log',
+            level=logging.DEBUG, # Fundamental para debug de pensamento
             console_output=False
         )
         
-        # Logger de erros apenas (rotação diária)
-        loggers['errors'] = LoggingConfig.setup_timed_rotating_logger(
-            logger_name='jarvis.errors',
-            log_file=logs_dir / 'errors.log',
-            level=logging.ERROR,
-            when='midnight',
-            backup_count=30,  # Manter 30 dias de erros
-            console_output=True
+        # 4. Logger de ERROS CRÍTICOS (Agregado global)
+        error_handler = RotatingFileHandler(
+            filename=str(session_dir / 'errors_critical.log'),
+            maxBytes=5 * 1024 * 1024,
+            backupCount=10,
+            encoding='utf-8'
         )
+        error_handler.setLevel(logging.ERROR)
+        error_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
+        logging.getLogger().addHandler(error_handler)
         
         return loggers
 

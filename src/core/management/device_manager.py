@@ -1370,6 +1370,35 @@ class AdvancedDeviceManager:
             logger.error(f"❌ Falha ao abrir navegador: {e}")
             return False
     
+    def get_foreground_window_info(self) -> Dict[str, Any]:
+        """
+        Retorna informações sobre a janela atualmente em primeiro plano.
+        """
+        info = {'title': 'Desconhecido', 'process_name': 'Desconhecido', 'pid': 0}
+        
+        if not PYWIN32_AVAILABLE:
+            return info
+            
+        try:
+            import win32gui
+            import win32process
+            
+            hwnd = win32gui.GetForegroundWindow()
+            if hwnd:
+                info['title'] = win32gui.GetWindowText(hwnd)
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                info['pid'] = pid
+                
+                try:
+                    proc = psutil.Process(pid)
+                    info['process_name'] = proc.name()
+                except:
+                    pass
+        except Exception as e:
+            logger.debug(f"Erro ao obter info da janela em primeiro plano: {e}")
+            
+        return info
+
     # ==================== UTILITY METHODS ====================
     
     def get_system_health_report(self) -> Dict[str, Any]:

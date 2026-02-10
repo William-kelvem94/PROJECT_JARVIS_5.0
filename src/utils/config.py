@@ -11,15 +11,11 @@ from typing import Dict, Any, Optional
 import logging
 import yaml
 
-# Configuração de logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(os.path.join('data', 'logs', 'jarvis.log'), encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+# Configuração de logging gerenciada pelo LoggingConfig
+from src.utils.logging_config import LoggingConfig
+
+# Será inicializado no __init__ do Config para garantir paths corretos
+# (Removido basicConfig estático que causava conflitos)
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +53,18 @@ class Config:
         self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
+        # INICIALIZAR LOGGING EXTENDIDO
+        try:
+            LoggingConfig.setup_jarvis_logging(self.DATA_DIR)
+            logger.info("✅ Sistema de Logging Detalhado inicializado.")
+        except Exception as e:
+            print(f"FATAL: Erro ao iniciar logs: {e}")
+
         # Carregar variáveis de ambiente
         from dotenv import load_dotenv
         env_path = self.PROJECT_ROOT / ".env"
         if env_path.exists():
-            load_dotenv(env_path)
+            load_dotenv(dotenv_path=env_path, override=True)
             # logger.info(f"✅ Variáveis de ambiente carregadas de {env_path}")
         else:
             logger.warning(f"⚠️ Arquivo .env não encontrado em {env_path}")

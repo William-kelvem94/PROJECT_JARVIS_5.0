@@ -174,7 +174,7 @@ local_brain:
   quantization: "int8"  # 'fp16', 'int8', 'int4', ou 'none'
   
   # Device
-  device: "auto"  # 'auto', 'cuda', 'cpu', ou 'mps'
+  device: "auto"  # 'auto' agora detecta OpenVINO (Iris Xe) via ComputeOrchestrator
   
   # Autoloading
   autoload: true
@@ -253,7 +253,7 @@ vision:
   # YOLO settings
   yolo_model: "models/vision/yolov8n.pt"
   yolo_confidence: 0.5
-  yolo_device: "auto"
+  yolo_device: "auto" # Intel Iris Xe acelerada via OpenVINO
   
   # Screenshot settings
   screenshot_format: "png"
