@@ -196,7 +196,7 @@ def print_system_health(instances, neural_systems=None):
         ("OCR (EasyOCR)", ocr_status, vs_passive and not ocr_status),
         ("YOLO (Detection)", yolo_status, vs_passive and not yolo_status),
         (face_label, face_rec_installed, False),
-        ("Hw Acceleration", hardware_manager.device != "cpu", False),
+        ("Hw Acceleration", hardware_manager.device != "cpu" or (hasattr(hardware_manager, 'accelerator') and hardware_manager.accelerator is not None), False),
         ("PyTorch Neural", TORCH_AVAILABLE, False)
     ]
     
@@ -342,9 +342,50 @@ class JarvisSingularity(QObject):
                 
                 if self.window_manager and hasattr(self.window_manager, '_tray_icon') and self.window_manager._tray_icon:
                     self.window_manager._tray_icon.setToolTip("🎤 JARVIS - Listening")
+                
+                # 🌟 NOVO: Agendar saudação proativa após 3 segundos
+                QTimer.singleShot(3000, self._greet_user_proactively)
             else:
                 logger.error("❌ Failed to start microphone")
         
+    def _greet_user_proactively(self):
+        """
+        🌟 Executa saudação proativa após boot completo.
+        Chama o AI Agent para gerar frase humana e contextual.
+        """
+        try:
+            logger.info("⚡ Iniciando saudação proativa...")
+            
+            # 1. Verificar disponibilidade do AI Agent
+            if not self.ai_agent or getattr(self.ai_agent, 'safe_mode', False):
+                logger.warning("⚠️ AI Agent offline ou em safe mode - usando saudação básica")
+                from src.core.audio.voice_controller import voice_controller
+                voice_controller.speak("Sistemas online, William. Estou pronto.")
+                return
+            
+            # 2. Coletar status de saúde do sistema
+            system_health = {
+                "AI Agent": bool(self.ai_agent),
+                "Vision System": bool(self.vision_system),
+                "Audio System": bool(self.audio_system),
+                "Window Manager": bool(self.window_manager),
+                "System Integrator": bool(self.system_integrator)
+            }
+            
+            # 3. Chamar método de saudação do AI Agent (em thread para não bloquear)
+            import threading
+            def greeting_worker():
+                try:
+                    self.ai_agent.greet_user_on_startup(system_health=system_health)
+                except Exception as e:
+                    logger.error(f"❌ Erro na thread de saudação: {e}")
+            
+            greeting_thread = threading.Thread(target=greeting_worker, daemon=True, name="StartupGreeting")
+            greeting_thread.start()
+            
+        except Exception as e:
+            logger.error(f"❌ Falha ao executar saudação proativa: {e}")
+    
     def _sync_hud_telemetry(self):
         """Sync core stats with HUD telemetry (Quantum Core)"""
         if not self.window_manager: return

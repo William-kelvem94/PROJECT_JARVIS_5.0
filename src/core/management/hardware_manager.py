@@ -56,7 +56,7 @@ class HardwareManager:
                 core = ov.Core()
                 devices = core.available_devices
                 if "GPU" in devices:
-                    self.device = "cpu" # Torch needs 'cpu' or 'cuda'. OpenVINO is an accelerator, not a device string.
+                    self.device = "cpu" # Torch device string (cpu/cuda). OpenVINO acts as a compiler/accelerator on top of CPU.
                     self.accelerator = "openvino"
                     self.gpu_name = "Intel Iris Xe / Arc (OpenVINO Accelerator)"
                 else:
@@ -230,6 +230,7 @@ class HardwareManager:
         return {
             "tier": self.tier,
             "device": self.device,
+            "accelerator": getattr(self, 'accelerator', None),
             "gpu_name": self.gpu_name,
             "threads": threads,
             "cuda": cuda_avail,

@@ -529,45 +529,55 @@ class DreamCycle:
             except Exception as e:
                 logger.error(f"Web Search failed: {e}")
 
-            # 3. TEACHER_DISTILL (Synthesis)
+            # 3. TEACHER_DISTILL (Synthesis using Ollama)
             try:
-                from src.utils.config import config
+                from src.core.intelligence.ai_agent import ai_agent
                 
-                # Check if we have a cloud key for Gemini
-                has_cloud_key = bool(os.getenv('GOOGLE_API_KEY'))
-                teacher_model = "gemini" if has_cloud_key else "local_teacher"
+                teacher_model = "llama3.1:8b" # Modelo superior para síntese
+                reflect_logger.reflect(f"Requesting Knowledge Distillation from {teacher_model.upper()} (Ollama)...", layer="TEACHER-DISTILL")
                 
-                reflect_logger.reflect(f"Requesting Knowledge Distillation from {teacher_model.upper()}...", layer="TEACHER-DISTILL")
-                
-                if not has_cloud_key:
-                     reflect_logger.reflect("⚠️ Google API Key not found. Using local Ollama models as teacher fallback.", layer="TEACHER-DISTILL")
-                
-                self._generate_synthetic_data(topic, context=web_context)
+                # Gera dados sintéticos usando o agente local
+                self._generate_synthetic_data(topic, context=web_context, teacher_model=teacher_model)
                 
             except Exception as e:
                 logger.error(f"Distillation failed: {e}")
             
             logger.info(f"✅ Research for '{topic}' completed. Knowledge synthesized.")
 
-    def _generate_synthetic_data(self, topic: str, context: str = ""):
+    def _generate_synthetic_data(self, topic: str, context: str = "", teacher_model: str = "llama3.1:8b"):
         """Generates synthetic preference pairs for the local brain using gathered context"""
         from src.utils.logger_reflection import reflect_logger
+        from src.core.intelligence.ai_agent import ai_agent
+        
         reflect_logger.reflect(f"Synthesizing Neural Preference Pairs (DPO) for '{topic}'...", layer="BRAIN-SYNTHESIS")
         
         ds_dir = self.data_dir / "training_datasets" / "autonomous"
         ds_dir.mkdir(parents=True, exist_ok=True)
         ds_path = ds_dir / f"{topic}_synthetic.jsonl"
         
-        # In a real scenario, we'd feed 'context' to the Teacher LLM here to ensure accuracy
-        # For now, we simulate the output of that process
-        
-        dummy_data = {
-            "prompt": f"Explique o conceito de {topic} com base na documentação oficial.",
-            "chosen": f"Com base na pesquisa em fontes confiáveis: {topic} é um componente que... [Contexto Autêntico: {context[:50]}...]",
-            "rejected": f"Eu acho que {topic} é algo sobre comida."
-        }
+        # Chamada real ao Ollama via AI Agent para gerar par CHOSEN/REJECTED
+        prompt = f"Com base no seguinte contexto sobre {topic}: '{context}', gere um par DPO (Chosen/Rejected) para treinamento de uma IA. Retorne apenas JSON no formato: {{\"chosen\": \"...\", \"rejected\": \"...\"}}"
         
         try:
+            raw_response = ai_agent._call_ollama(prompt, model=teacher_model, system_prompt="Você é um Professor de IA especializado em Synthetic Data Generation.")
+            
+            # Limpar resposta para JSON se necessário
+            import re
+            json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)
+            if json_match:
+                distilled_data = json.loads(json_match.group(0))
+            else:
+                distilled_data = {
+                    "chosen": raw_response,
+                    "rejected": f"Eu acho que {topic} é algo irrelevante."
+                }
+            
+            dummy_data = {
+                "prompt": f"Explique o conceito de {topic} com base na documentação oficial.",
+                "chosen": distilled_data.get("chosen", ""),
+                "rejected": distilled_data.get("rejected", "")
+            }
+            
             with open(ds_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(dummy_data, ensure_ascii=False) + "\n")
             

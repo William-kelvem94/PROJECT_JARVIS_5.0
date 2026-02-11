@@ -344,9 +344,14 @@ class HUDEventTicker(QWidget):
             self.events.pop()
         
         for i, event in enumerate(self.events):
-            self.labels[i].setText(event)
-            opacity = 0.7 - (i * 0.12)
-            self.labels[i].setStyleSheet(f"color: rgba(255, 255, 255, {opacity}); font-size: 8px; font-family: 'Segoe UI';")
+            try:
+                if i < len(self.labels):
+                    self.labels[i].setText(event)
+                    opacity = 0.7 - (i * 0.12)
+                    self.labels[i].setStyleSheet(f"color: rgba(255, 255, 255, {opacity}); font-size: 8px; font-family: 'Segoe UI';")
+            except (RuntimeError, AttributeError):
+                # Caso o objeto C++ tenha sido deletado (shutdown ou refresh)
+                break
 
 class ManualSettingsDrawer(QWidget):
     """Hidden panel for manual configurations inside the HUD"""

@@ -286,11 +286,15 @@ class ResponseParser:
             logger.error(f"JSON inválido do LLM: {e}")
             logger.debug(f"Raw response (primeiros 500 chars): {raw_response[:500] if raw_response else 'NONE'}")
             
-            # Fallback: Criar resposta de erro
+            # 🆕 RESILIÊNCIA: Se não é JSON, tenta tratar como texto puro
+            # Limpa possíveis tags markdown remanescentes
+            import re
+            clean_text = re.sub(r'```(?:json)?|```', '', raw_response).strip()
+            
             return AgentResponse(
-                thought="Erro ao processar resposta",
+                thought="Resposta não estruturada (Fallback para Texto)",
                 actions=[],
-                final_answer=f"Desculpe, houve um erro no processamento."
+                final_answer=clean_text if clean_text else "Senhor, tive uma falha na estruturação da resposta, mas estou operacional."
             )
             
         except Exception as e:

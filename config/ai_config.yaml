@@ -69,7 +69,7 @@ brain_router:
   
   # Cloud models (Gemini)
   cloud_models:
-    flash: "gemini-2.0-flash-exp"
+    flash: "gemini-1.5-flash-latest"
     pro: "gemini-1.5-pro-002"
     ultra: "gemini-2.0-flash-thinking-exp"
   
