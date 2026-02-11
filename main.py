@@ -438,8 +438,10 @@ class JarvisSingularity(QObject):
         if self.window_manager:
             hud = self.window_manager.get_hud()
             if hud:
-                hud.update_state("thinking")
-                hud.show_response(f"Processando: {result.text}")
+                if hasattr(hud, 'update_state'):
+                    hud.update_state("thinking")
+                if hasattr(hud, 'show_response'):
+                    hud.show_response(f"Processando: {result.text}")
                 hud.show() # Force visibility
 
         # Process via Agent in Background Thread
@@ -796,6 +798,10 @@ def main():
         
         # Optional: Start learning background process
         try:
+            # 🎨 FASE 5: Exibir HUD no boot
+            from src.interface.window_manager import InterfaceMode
+            window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
+            
             from src.learning.continual_learner import get_continual_learner
             learner = get_continual_learner(PROJECT_ROOT / "data")
             learner.start()

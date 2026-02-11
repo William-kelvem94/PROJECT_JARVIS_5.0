@@ -277,9 +277,19 @@ class EnhancedAudioSystem:
                         # CRITICAL: Import here to avoid init-time conflicts
                         from faster_whisper import WhisperModel
                         
-                        device = hardware_manager.get_device()
-                        # compute_type will now trigger the float32 force for CPU
-                        compute_type = hardware_manager.get_compute_type()
+                        # 4. Abstração de Hardware (Universalidade)
+                        try:
+                            if torch.cuda.is_available():
+                                device = "cuda"
+                                compute_type = "float16"
+                                logger.info(f"   🚀 GPU NVIDIA Detectada: Usando CUDA + Float16")
+                            else:
+                                device = "cpu"
+                                compute_type = "int8"
+                                logger.info(f"   💻 CPU Detectada: Usando INT8 para economia de memória")
+                        except Exception:
+                            device = "cpu"
+                            compute_type = "int8"
                         
                         # CRITICAL: cpu_threads=1 for Windows stability
                         # num_workers=1 to prevent thread pool crashes

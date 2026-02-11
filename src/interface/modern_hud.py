@@ -64,9 +64,10 @@ class ModernReactorCore(QWidget):
             "alert": QColor(255, 200, 0, 220),      # Dourado Sutil
             "critical": QColor(255, 50, 50, 230),    # Vermelho Sangue
             "listening": QColor(255, 255, 255, 240), # Branco Neve (Ativo)
-            "loading_model": QColor(0, 200, 255, 200),
-            "calibrating": QColor(255, 255, 255, 150),
-            "offline": QColor(50, 50, 50, 180)
+            "offline": QColor(50, 50, 50, 180),
+            "ultra": QColor(255, 100, 0, 230),     # Laranja/Dourado (Alta Performance)
+            "pro": QColor(0, 180, 255, 220),       # Azul Profundo
+            "fast": QColor(0, 242, 255, 200)       # Ciano Brilhante
         }
         self.current_color = self.palettes["stable"]
         
@@ -84,10 +85,13 @@ class ModernReactorCore(QWidget):
         self.plasma_phase += 0.08
         self.update()
 
-    def set_status(self, status: str):
+    def set_status(self, status: str, tier: str = "balanced"):
         self.status = status.lower()
-        target = self.palettes.get(self.status, self.palettes["stable"])
-        # Simple color snap for now
+        # Se for thinking, usa a cor do tier se disponível
+        if self.status == "thinking" and tier in self.palettes:
+            target = self.palettes[tier]
+        else:
+            target = self.palettes.get(self.status, self.palettes["stable"])
         self.current_color = target
 
     def set_data(self, sync=None, nucleo=None):
@@ -399,11 +403,13 @@ class ModernHUD(QMainWindow):
     """
     
     # Signals for thread-safe communication
+    telemetry_updated = pyqtSignal(dict)
+    tier_changed = pyqtSignal(str)
+    context_updated = pyqtSignal(str)
     status_changed = pyqtSignal(str)
     response_ready = pyqtSignal(str)
     input_received = pyqtSignal(str)
     task_initiated = pyqtSignal(str)
-    telemetry_updated = pyqtSignal(dict)
     
     def __init__(self):
         super().__init__()
@@ -438,6 +444,8 @@ class ModernHUD(QMainWindow):
         self.input_received.connect(self._on_input_received)
         self.task_initiated.connect(self._on_task_initiated)
         self.telemetry_updated.connect(self._on_telemetry_updated)
+        self.tier_changed.connect(self._on_tier_changed)
+        self.context_updated.connect(self._on_context_updated)
         
         # Drag support
         self._drag_position = None
@@ -620,6 +628,18 @@ class ModernHUD(QMainWindow):
         
         layout.addWidget(self.interaction_container)
         
+        # 3.1 CONTEXT LABEL (Window Awareness) - Stark 2.0
+        self.context_label = QLabel("CONTEXTO: DESCONHECIDO")
+        self.context_label.setStyleSheet("""
+            color: rgba(255, 255, 255, 0.4); 
+            font-size: 8px; 
+            font-family: 'Segoe UI Bold';
+            letter-spacing: 2px;
+            padding: 2px 8px;
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+        """)
+        layout.addWidget(self.context_label)
+
         # 4. TELEMETRY & FEED
         self.telemetry = ModernTelemetryWidget()
         layout.addWidget(self.telemetry)
@@ -1015,6 +1035,19 @@ class ModernHUD(QMainWindow):
             self.response_label.setText(self.current_display_text)
         else:
             self.type_timer.stop()
+
+    def _on_tier_changed(self, tier: str):
+        """Muda a cor do HUD baseada na potência do modelo"""
+        if hasattr(self, 'reactor'):
+            self.reactor.set_status(self.status, tier=tier)
+            self.log_event(f"IQ SCALE: {tier.upper()}")
+
+    def _on_context_updated(self, context: str):
+        """Atualiza o rótulo de contexto de janela"""
+        self.context_label.setText(f"CONTEXTO › {context.upper()}")
+        # Efeito de brilho temporário no label
+        self.context_label.setStyleSheet(self.context_label.styleSheet() + "color: #00F2FF;")
+        QTimer.singleShot(2000, lambda: self.context_label.setStyleSheet(self.context_label.styleSheet().replace("color: #00F2FF;", "")))
 
     def toggle_compact_mode(self):
         """Switch between full telemetric view and reduced core view with opacity blending"""

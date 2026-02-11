@@ -97,6 +97,7 @@ class FeedbackDatabase:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
         
         self.conn: Optional[sqlite3.Connection] = None
+        self._db_lock = threading.Lock()  # 🔒 Proteção contra escritas simultâneas
         self._init_database()
     
     def _init_database(self) -> None:
@@ -157,7 +158,8 @@ class FeedbackDatabase:
                 ON feedback(timestamp)
             """)
             
-            self.conn.commit()
+            with self._db_lock:
+                self.conn.commit()
             logger.info(f"Database initialized: {self.db_path}")
             
         except Exception as e:
@@ -175,24 +177,25 @@ class FeedbackDatabase:
             True if successful
         """
         try:
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                INSERT INTO feedback 
-                (feedback_id, interaction_id, user_input, ai_response, 
-                 feedback_type, feedback_value, correction, timestamp, metadata)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                feedback.feedback_id,
-                feedback.interaction_id,
-                feedback.user_input,
-                feedback.ai_response,
-                feedback.feedback_type,
-                feedback.feedback_value,
-                feedback.correction,
-                feedback.timestamp,
-                json.dumps(feedback.metadata)
-            ))
-            self.conn.commit()
+            with self._db_lock:
+                cursor = self.conn.cursor()
+                cursor.execute("""
+                    INSERT INTO feedback 
+                    (feedback_id, interaction_id, user_input, ai_response, 
+                     feedback_type, feedback_value, correction, timestamp, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    feedback.feedback_id,
+                    feedback.interaction_id,
+                    feedback.user_input,
+                    feedback.ai_response,
+                    feedback.feedback_type,
+                    feedback.feedback_value,
+                    feedback.correction,
+                    feedback.timestamp,
+                    json.dumps(feedback.metadata)
+                ))
+                self.conn.commit()
             return True
             
         except Exception as e:
@@ -210,23 +213,24 @@ class FeedbackDatabase:
             True if successful
         """
         try:
-            cursor = self.conn.cursor()
-            cursor.execute("""
-                INSERT INTO preference_pairs
-                (pair_id, prompt, chosen_response, rejected_response,
-                 chosen_score, rejected_score, created_at, metadata)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                pair.pair_id,
-                pair.prompt,
-                pair.chosen_response,
-                pair.rejected_response,
-                pair.chosen_score,
-                pair.rejected_score,
-                pair.created_at,
-                json.dumps(pair.metadata)
-            ))
-            self.conn.commit()
+            with self._db_lock:
+                cursor = self.conn.cursor()
+                cursor.execute("""
+                    INSERT INTO preference_pairs
+                    (pair_id, prompt, chosen_response, rejected_response,
+                     chosen_score, rejected_score, created_at, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    pair.pair_id,
+                    pair.prompt,
+                    pair.chosen_response,
+                    pair.rejected_response,
+                    pair.chosen_score,
+                    pair.rejected_score,
+                    pair.created_at,
+                    json.dumps(pair.metadata)
+                ))
+                self.conn.commit()
             return True
             
         except Exception as e:

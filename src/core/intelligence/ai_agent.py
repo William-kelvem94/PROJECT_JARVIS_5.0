@@ -213,6 +213,15 @@ except ImportError as e:
     stark_nexus = None
     device_manager = None
     neural_dreaming = None
+    
+try:
+    from src.core.vision.os_monitor import get_active_window_context
+    from src.core.security.action_validator import action_validator
+    logger.info("✅ FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa")
+except ImportError as e:
+    logger.warning(f"⚠️ Falha ao carregar Módulos Fase 3: {e}")
+    get_active_window_context = lambda: {"title": "Unknown", "executable": "Unknown"}
+    action_validator = None
 
 try:
     from src.utils.config import config
@@ -227,6 +236,12 @@ except ImportError as e:
             return default if default is not None else {}
             
     config = DummyConfig()
+
+try:
+    from src.utils.web_emitter import emit_status_sync, emit_log_sync
+except ImportError:
+    emit_status_sync = lambda *args, **kwargs: None
+    emit_log_sync = lambda *args, **kwargs: None
 
 # ============================================================================
 # ADVANCED MODULES (JARVIS EVOLUTION) - SAFE LOADING
@@ -316,6 +331,10 @@ class AIAgent:
             from src.core.intelligence.brain_router import brain_router
             self.brain_router = brain_router
             logger.info("✅ Brain Router inicializado")
+            
+            # 🆕 FASE 2: Conectar UX Masking
+            if self.brain_router:
+                self.brain_router.on_heavy_model_loading = self._on_heavy_model_loading
         except Exception as e:
             logger.warning(f"⚠️ Brain Router não disponível: {e}")
             self.brain_router = None
@@ -395,11 +414,12 @@ class AIAgent:
         Correção P3: Valida funcionalidade runtime (não só importação).
         """
         critical_modules = {
+            'voice_controller': voice_controller,
+            'vision_enhancer': vision_enhancer,
             'screen_capture': screen_capture,
             'action_controller': action_controller,
         }
         
-        # P3: structured_output é crítico — sem ele, o agente cai no regex frágil
         important_for_quality = {
             'structured_output': STRUCTURED_OUTPUT_AVAILABLE,
             'brain_router': brain_router is not None,
@@ -437,17 +457,72 @@ class AIAgent:
             elif is_loading:
                 logger.info("⏳ Local Brain está inicializando em background...")
             else:
-                # Se não está carregando nem carregado, pode ser lazy loading ou erro silencioso
                 logger.info("ℹ️ Local Brain em modo de espera (Lazy Load ou Cloud-Only)")
         
         # P3: Verificar se há pelo menos UM provider LLM disponível
         has_api_key = bool(os.environ.get('GOOGLE_API_KEY'))
         has_local = local_brain is not None and getattr(local_brain, 'model', None) is not None
-        has_ollama = brain_router is not None  # brain_router tenta ollama
+        has_ollama = brain_router is not None
         
         if not has_api_key and not has_local and not has_ollama:
             logger.critical("❌ NENHUM PROVIDER LLM DISPONÍVEL (sem API key, sem modelo local, sem ollama)")
             logger.critical("💡 Configure GOOGLE_API_KEY ou instale um modelo local")
+        
+    def _on_heavy_model_loading(self, message: str):
+        """
+        Callback para UX Masking (Fase 2):
+        Informa o usuário quando um modelo pesado está sendo carregado.
+        """
+        try:
+            if voice_controller:
+                # Falar imediatamente (sem esperar fila se possível)
+                # Usar thread separada para não bloquear o carregamento do modelo
+                threading.Thread(target=voice_controller.speak, args=(message,), daemon=True).start()
+            else:
+                logger.info(f"🤐 (Sem Voz) UX Masking: {message}")
+        except Exception as e:
+            logger.warning(f"⚠️ Falha no UX Masking: {e}")
+
+    def _request_human_authorization(self, action_description: str) -> bool:
+        """
+        HITL (Human-In-The-Loop) - Protocolo de Segurança Fase 3
+        Pede autorização por voz com timeout de segurança.
+        Retorna True se autorizado, False se negado ou timeout.
+        """
+        if not voice_controller:
+            logger.warning("HITL: Voice Controller não disponível. Bloqueando por segurança.")
+            return False
+
+        try:
+            # 1. Anunciar a ação
+            msg = f"Atenção. Autorização requerida para: {action_description}. Diga sim para autorizar, ou não para cancelar."
+            logger.info(f"🛑 HITL Request: {action_description}")
+            voice_controller.speak(msg, wait=True)
+            
+            # 2. Escuta com Timeout (10s) - Fail-Safe
+            # Usando o método confirm_with_voice do controller se disponível, ou implementando lógica raw
+            if hasattr(voice_controller, 'confirm_with_voice'):
+                # O método do controller já implementa a lógica de escuta e validação
+                authorized = voice_controller.confirm_with_voice("Aguardando confirmação...", timeout=10)
+            else:
+                # Fallback se o método não existir no controller (versão antiga)
+                logger.warning("VoiceController.confirm_with_voice não encontrado. Bloqueando.")
+                return False
+
+            if authorized:
+                voice_controller.speak("Autorizado. Executando.", wait=False)
+                logger.info("✅ HITL: Ação AUTORIZADA pelo usuário.")
+                return True
+            else:
+                voice_controller.speak("Ação cancelada.", wait=False)
+                logger.warning("❌ HITL: Ação NEGADA pelo usuário.")
+                return False
+
+        except Exception as e:
+            logger.error(f"Erro no protocolo HITL: {e}")
+            if voice_controller:
+                voice_controller.speak("Erro na verificação de segurança. Ação abortada.")
+            return False
 
 
     def greet_user_on_startup(self, system_health: dict = None):
@@ -575,7 +650,8 @@ class AIAgent:
         original_command = user_command
         logger.info(f"Agente processando comando: {user_command}")
         
-        # =====================================================================
+        # 🎨 FASE 5: Feedback Visual (Pensando)
+        emit_status_sync("thinking", "Analisando comando do Senhor...", tier="pro")
         # CORREÇÃO P0: VERIFICAÇÃO DE MODO SEGURO
         # =====================================================================
         if self.safe_mode:
@@ -608,7 +684,8 @@ class AIAgent:
 
         def _capture_task():
             screenshot_container["path"] = screen_capture.capture_fullscreen(capture_type='agent')
-            screenshot_container["window_info"] = device_manager.get_foreground_window_info()
+            # 🆕 FASE 3: OS Monitor (Leve e Rápido)
+            screenshot_container["window_info"] = get_active_window_context()
             screenshot_event.set()
 
         capture_thread = threading.Thread(target=_capture_task, daemon=True)
@@ -725,6 +802,10 @@ class AIAgent:
         while current_turn < max_turns:
             logger.info(f"Ciclo de Pensamento {current_turn+1}/{max_turns} | Provedor: {primary_provider}")
             reflect_logger.reflect(f"Initiating thought cycle {current_turn+1} via {primary_provider}", layer="COGNITIVE")
+            
+            # 🎨 FASE 5: Atualizar HUD com Provedor/Tier Real
+            tier = "pro" if "pro" in primary_provider else ("ultra" if "ultra" in primary_provider or "gemini" in primary_provider else "fast")
+            emit_status_sync("thinking", f"Processando no {primary_provider}...", model=primary_provider, tier=tier)
             
             # Show on HUD if possible
             if self.brain_router:
@@ -863,14 +944,34 @@ class AIAgent:
                                 if args:
                                     p, content = args.group(1), args.group(2)
                                     content = content.replace('\\n', '\n') 
-                                    if security_manager.validate_file_action(p, 'write'):
+                                    
+                                    # 🆕 FASE 3: Jaula de Vidro + Auto-Backup + HITL
+                                    if action_validator:
                                         try:
-                                            os.makedirs(os.path.dirname(p), exist_ok=True)
-                                            with open(p, 'w', encoding='utf-8') as f:
-                                                f.write(content)
-                                            enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
+                                            # Checagem de Risco para HITL
+                                            is_risky = p.endswith(".py") or p.endswith(".bat") or "delete" in p.lower()
+                                            
+                                            if is_risky:
+                                                if not self._request_human_authorization(f"Modificar arquivo sensível {os.path.basename(p)}"):
+                                                    raise PermissionError("Autorização humana negada.")
+                                            
+                                            # Validação + Backup + Escrita
+                                            action_validator.safe_file_edit(p, content)
+                                            enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso (Backup criado)."
                                         except Exception as e:
-                                            enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
+                                            logger.error(f"Bloqueio de Segurança: {e}")
+                                            enriched_command += f"\n\n[SEGURANÇA] Ação Bloqueada: {e}"
+                                            voice_controller.speak("Acesso negado pelos protocolos de segurança.")
+                                    else:
+                                        # Fallback (Legacy Security)
+                                        if security_manager.validate_file_action(p, 'write'):
+                                            try:
+                                                os.makedirs(os.path.dirname(p), exist_ok=True)
+                                                with open(p, 'w', encoding='utf-8') as f:
+                                                    f.write(content)
+                                                enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
+                                            except Exception as e:
+                                                enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
 
                             
                             elif "list_dir" in action_str:
@@ -889,10 +990,30 @@ class AIAgent:
                             elif "open_program" in action_str:
                                 prog = re.search(r"'(.*?)'", action_str)
                                 if prog:
-                                    action_controller.hotkey('win', 'r')
-                                    time.sleep(0.5)
-                                    action_controller.type_text(prog.group(1))
-                                    action_controller.press_key('enter')
+                                    program_name = prog.group(1)
+                                    # 🆕 FASE 3: Validação de Comandos + HITL
+                                    safe, reason = action_validator.validate_action("shell_command", program_name) if action_validator else (True, "No Validator")
+                                    
+                                    if safe:
+                                        # 🛡️ 2ª Opinião: Sentinel Cognitivo
+                                        if action_validator.check_intent_safety(program_name):
+                                            # HITL para comandos shell (sempre considerar risco médio/alto)
+                                            if self._request_human_authorization(f"Executar comando {program_name}"):
+                                                action_controller.hotkey('win', 'r')
+                                                time.sleep(0.5)
+                                                action_controller.type_text(program_name)
+                                                action_controller.press_key('enter')
+                                            else:
+                                                logger.warning(f"Execução bloqueada pelo usuário: {program_name}")
+                                                enriched_command += f"\n\n[SEGURANÇA] Execução cancelada pelo usuário."
+                                        else:
+                                            logger.critical(f"Execução bloqueada pelo SENTINEL: {program_name}")
+                                            voice_controller.speak("O Sentinela identificou risco neste comando. Bloqueado.")
+                                            enriched_command += f"\n\n[SEGURANÇA] Ação considerada MALICIOSA pela IA."
+                                    else:
+                                        logger.warning(f"Execução bloqueada: {program_name}")
+                                        voice_controller.speak("Não posso executar esse comando, senhor.")
+                                        enriched_command += f"\n\n[SEGURANÇA] Execução negada: {reason}"
                                     
                             action_executed = True
                         except Exception as e:
@@ -1280,7 +1401,7 @@ class AIAgent:
         return "qwen2.5:7b" # Padrão estável
 
     def _call_ollama(self, prompt: str, image_path: Optional[str] = None, model: Optional[str] = None, system_prompt: str = None):
-        """Integração com Ollama Local (Multi-modelo)"""
+        """Integração com Ollama Local (Multi-modelo) com Keep-Alive Dinâmico"""
         try:
             import base64
             
@@ -1294,12 +1415,17 @@ class AIAgent:
 
             final_system_prompt = system_prompt if system_prompt else self.system_prompt
             
-            logger.info(f"🦾 [OLLAMA] Usando modelo: '{target_model}'")
+            # 🆕 FASE 2: Determinar keep_alive baseado no tier do modelo
+            keep_alive = self._get_keep_alive_for_model(target_model)
+            is_heavy = keep_alive == 0
+            
+            logger.info(f"🤾 [OLLAMA] Usando modelo: '{target_model}' (keep_alive: {keep_alive})")
             
             payload = {
                 "model": target_model,
                 "prompt": f"{final_system_prompt}\n\nComando do William: {prompt}\n\nLembre-se: Retorne APENAS o JSON.",
                 "stream": False,
+                "keep_alive": keep_alive,  # 🆕 FASE 2: Câmbio Cognitivo
                 "options": {
                     "temperature": 0.2, # Mais focado para seguir formato
                     "num_predict": 512
@@ -1308,7 +1434,10 @@ class AIAgent:
             if image_data:
                 payload["images"] = [image_data]
 
-            response = requests.post(self.ollama_url, json=payload, timeout=60)
+            # 🆕 FASE 2: Timeout dinâmico (120s para modelos pesados, 60s para leves)
+            timeout = 120 if is_heavy else 60
+            
+            response = requests.post(self.ollama_url, json=payload, timeout=timeout)
             response.raise_for_status()
             
             data = response.json()
@@ -1317,6 +1446,24 @@ class AIAgent:
         except Exception as e:
             logger.error(f"Erro ao chamar Ollama ({target_model}): {e}")
             return f"Infelizmente estou com dificuldades no processamento offline: {str(e)}."
+    
+    def _get_keep_alive_for_model(self, model_name: str) -> any:
+        """
+        🆕 FASE 2: Determina keep_alive baseado no tier do modelo
+        - tier_fast (1.5B-3B): 15 minutos (cache para respostas rápidas)
+        - tier_pro/ultra (7B+): 0 (descarte imediato para liberar RAM)
+        """
+        model_lower = model_name.lower()
+        
+        # tier_fast: Modelos leves ficam em cache
+        tier_fast_patterns = ["qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:3b", "phi3.5", "gemma2:2b"]
+        for pattern in tier_fast_patterns:
+            if pattern in model_lower:
+                return "15m"
+        
+        # tier_pro/ultra: Modelos pesados são descarregados imediatamente
+        return 0
+
 
     def _check_ollama_alive(self) -> bool:
         """Verifica se o Ollama está rodando localmente"""
