@@ -268,17 +268,18 @@ class NeuralMemory:
         try:
             query_embedding = self.model.encode(current_prompt).tolist()
             
-            # 1. Buscar nas interações passadas
-            results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=n_results
-            )
-            
-            # 2. Buscar no conhecimento indexado (RAG)
-            knowledge_results = self.knowledge_collection.query(
-                query_embeddings=[query_embedding],
-                n_results=n_results
-            )
+            with self._db_lock:
+                # 1. Buscar nas interações passadas
+                results = self.collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=n_results
+                )
+                
+                # 2. Buscar no conhecimento indexado (RAG)
+                knowledge_results = self.knowledge_collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=n_results
+                )
             
             context_parts = []
             
