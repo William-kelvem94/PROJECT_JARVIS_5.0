@@ -28,6 +28,7 @@ from enum import Enum
 from datetime import datetime
 
 from src.core.management.hardware_manager import hardware_manager
+from src.utils.stability import model_load_lock
 
 # Try to import config with graceful fallback
 try:
@@ -268,7 +269,8 @@ class EnhancedAudioSystem:
         if FASTER_WHISPER_AVAILABLE:
             try:
                 # 🆕 GLOBAL NEURAL LOCK: Serialize heavy loads
-                with hardware_manager.neural_lock:
+                model_load_lock.acquire("Whisper (Audio Core)")
+                try:
                     with self._models_lock:
                         logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
                         
@@ -290,6 +292,8 @@ class EnhancedAudioSystem:
                         )
                         self._whisper_ready = True
                         logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
+                finally:
+                    model_load_lock.release()
             except Exception as e:
                 self._whisper_ready = False
                 logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
@@ -299,8 +303,8 @@ class EnhancedAudioSystem:
         # 2. Silero-VAD
         if TORCH_AVAILABLE:
             try:
-                # 🆕 GLOBAL NEURAL LOCK
-                with hardware_manager.neural_lock:
+                model_load_lock.acquire("Silero-VAD (Audio Core)")
+                try:
                     with self._models_lock:
                         logger.info("🧠 Audio Core: Carregando Silero-VAD...")
                         result = torch.hub.load(
@@ -318,6 +322,8 @@ class EnhancedAudioSystem:
                             
                         self._vad_ready = True
                         logger.info("✅ Audio Core: Silero-VAD pronto")
+                finally:
+                    model_load_lock.release()
             except Exception as e:
                 self._vad_ready = False
                 logger.warning(f"❌ Audio Core: Falha no VAD: {e}")
@@ -532,7 +538,7 @@ class EnhancedAudioSystem:
                         if voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         else:
-                            logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
+                            pass  # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
@@ -587,7 +593,8 @@ class EnhancedAudioSystem:
                         if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         elif len(audio_buffer) > 0:
-                            logger.debug(f"🔇 Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
+                            # Silencioso descartado - log removido para evitar pollution (~300 linhas/min)
+                            pass  # logger.debug(f"🔇 Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0

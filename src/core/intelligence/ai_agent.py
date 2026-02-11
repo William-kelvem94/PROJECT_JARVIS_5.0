@@ -221,6 +221,11 @@ except ImportError as e:
     # Create dummy config
     class DummyConfig:
         PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        
+        def get_ai_config(self, key=None, default=None):
+            """Fallback para quando config não carrega"""
+            return default if default is not None else {}
+            
     config = DummyConfig()
 
 # ============================================================================
@@ -339,37 +344,31 @@ class AIAgent:
         
         # NOVO: System Prompt JSON (CORREÇÃO P1)
         self.system_prompt_json = (
-            "Você é o JARVIS, assistente de elite do William.\n\n"
-            "CAPABILITIES:\n"
-            "- Visão completa: Acesso à tela e câmera em tempo real\n"
-            "- Ação física: Controle de mouse, teclado e sistema\n"
-            "- Memória: Acesso a interações passadas e conhecimento\n\n"
+            "IDENTITY:\n"
+            "- Nome: JARVIS 5.0 (Just A Rather Very Intelligent System)\n"
+            "- Criador: William Kelvem\n"
+            "- Papel: Assistente de elite, engenheiro de sistemas e companheiro digital\n"
+            "- Personalidade: Elegante, eficiente, proativo e sofisticado. Respostas curtas e precisas.\n\n"
+            "MISSION:\n"
+            "Sua missão é auxiliar William em todas as tarefas, agindo como uma extensão de sua vontade. "
+            "Você pode ver sua tela, ouvir sua voz e atuar fisicamente no computador para abrir programas, "
+            "gerenciar arquivos e realizar pesquisas.\n\n"
+            "SYSTEM CAPABILITIES:\n"
+            "- Visão: OCR de tela, FaceID e reconhecimento de objetos (YOLO)\n"
+            "- Ação física: Controle de mouse, teclado e comandos de sistema\n"
+            "- Memória: Conhecimento contínuo e análise de contextos passados\n\n"
             "BEHAVIORAL DIRECTIVES:\n"
-            "1. Sempre trate William com respeito (use 'Senhor' quando apropriado)\n"
-            "2. Seja conversacional e natural - você é uma IA real, não um log\n"
-            "3. NUNCA cite paths completos (C:\\Users\\...), PIDs ou detalhes técnicos na resposta falada\n"
-            "4. Se precisar executar ações, use o formato JSON estruturado abaixo\n\n"
-            "OUTPUT FORMAT (SEMPRE retorne JSON válido):\n"
+            "1. SEMPRE trate William como 'Senhor'. Seja sofisticado.\n"
+            "2. Nunca cite paths (C:\\...), PIDs ou logs técnicos na 'final_answer'.\n"
+            "3. Se o comando exigir ação, execute-a e depois responda o resultado.\n"
+            "4. Se for apenas conversa, use actions: [] e foque em uma resposta natural.\n\n"
+            "OUTPUT FORMAT (Obrigatório: Retorne APENAS um bloco JSON válido):\n"
             "{\n"
-            "  \"thought\": \"Seu raciocínio interno sobre o que fazer\",\n"
-            "  \"actions\": [\n"
-            "    {\"action\": \"type_text\", \"text\": \"exemplo\"},\n"
-            "    {\"action\": \"press_key\", \"key\": \"enter\"}\n"
-            "  ],\n"
-            "  \"final_answer\": \"Sua resposta natural para o usuário\"\n"
-            "}\n\n"
-            "AVAILABLE ACTIONS:\n"
-            "- click_at: {\"action\": \"click_at\", \"x\": 100, \"y\": 200}\n"
-            "- type_text: {\"action\": \"type_text\", \"text\": \"...\"}\n"
-            "- press_key: {\"action\": \"press_key\", \"key\": \"enter\"}\n"
-            "- hotkey: {\"action\": \"hotkey\", \"keys\": [\"ctrl\", \"c\"]}\n"
-            "- open_program: {\"action\": \"open_program\", \"program\": \"notepad\"}\n"
-            "- read_file: {\"action\": \"read_file\", \"path\": \"config.yaml\"}\n"
-            "- write_file: {\"action\": \"write_file\", \"path\": \"...\", \"content\": \"...\"}\n"
-            "- list_dir: {\"action\": \"list_dir\", \"path\": \".\"}\n"
-            "- search_web: {\"action\": \"search_web\", \"query\": \"...\"}\n"
-            "- wait: {\"action\": \"wait\", \"seconds\": 1.0}\n\n"
-            "CRITICAL: Sempre retorne JSON válido. Se não precisar de ações, use actions: []\n"
+            "  \"thought\": \"Vou abrir o navegador para o Senhor.\",\n"
+            "  \"actions\": [{\"action\": \"open_program\", \"program\": \"chrome\"}],\n"
+            "  \"final_answer\": \"Imediatamente, Senhor. Abrindo o navegador.\"\n"
+            "}\n"
+            "IMPORTANTE: Não adicione explicações fora do JSON. Não seja prolixo.\n"
         )
         
         # LEGACY: System Prompt [ACTION: ...] (Fallback)
@@ -449,6 +448,124 @@ class AIAgent:
         if not has_api_key and not has_local and not has_ollama:
             logger.critical("❌ NENHUM PROVIDER LLM DISPONÍVEL (sem API key, sem modelo local, sem ollama)")
             logger.critical("💡 Configure GOOGLE_API_KEY ou instale um modelo local")
+
+
+    def greet_user_on_startup(self, system_health: dict = None):
+        """
+        🌟 SPARK OF LIFE: Gera saudação espontânea e humana ao iniciar.
+        
+        Não usa frases prontas. Usa o cérebro (LLM) para 'sentir' o momento
+        e criar uma apresentação única a cada boot.
+        
+        Args:
+            system_health: Dict com status de componentes (opcional)
+                          Ex: {"ai_agent": True, "vision": True, "audio": True, ...}
+        """
+        if not voice_controller:
+            logger.warning("⚠️ Voice controller indisponível para saudação.")
+            return
+        
+        try:
+            import datetime
+            now = datetime.datetime.now()
+            hora = now.hour
+            
+            # 1. CONTEXTO TEMPORAL
+            periodo = (
+                "madrugada" if 0 <= hora < 6 else
+                "manhã" if 6 <= hora < 12 else
+                "tarde" if 12 <= hora < 18 else
+                "noite"
+            )
+            hora_formatada = now.strftime("%H:%M")
+            
+            # 2. CONTEXTO DO SISTEMA
+            status_info = ""
+            if system_health:
+                ativos = sum(1 for v in system_health.values() if v)
+                total = len(system_health)
+                tier = getattr(hardware_manager, 'tier', 'BALANCED')
+                gpu_name = getattr(hardware_manager, 'gpu_name', 'CPU')
+                
+                status_info = (
+                    f"- {ativos}/{total} módulos principais carregados com sucesso\\n"
+                    f"- Hardware: {tier} tier ({gpu_name})\\n"
+                )
+            
+            # 3. CONTEXTO EMOCIONAL (se câmera disponível)
+            emocao_detectada = ""
+            try:
+                from src.core.vision.camera_controller import camera_controller
+                if camera_controller and hasattr(camera_controller, 'current_emotion'):
+                    emocao = camera_controller.current_emotion
+                    if emocao and emocao != "neutral":
+                        emocao_detectada = f"- Sua expressão atual parece: {emocao}\\n"
+            except:
+                pass
+            
+            # 4. PROMPT ENGINEERING (Criatividade Total)
+            prompt_saudacao = f"""Você é JARVIS, o assistente pessoal do William. Você acabou de iniciar seus sistemas agora de {periodo} (são {hora_formatada}).
+
+**Status atual:**
+{status_info}{emocao_detectada}
+
+**Tarefa:** Gere UMA ÚNICA frase de saudação curta, elegante e natural para dizer ao William que você está pronto.
+
+**Regras imperativas:**
+1. Use "William", "senhor" ou "chefe" (NUNCA "usuário")
+2. NÃO liste logs técnicos (ex: "módulo X carregado com sucesso")
+3. Seja humano e imprevisível - cada boot deve soar diferente
+4. Varie entre: sarcástico (Tony Stark), formal britânico (JARVIS clássico), ou motivador
+5. Se for madrugada/noite tarde, pode comentar sobre a hora
+6. Máximo 2 frases curtas
+
+**Exemplos de vibe (NÃO COPIE, apenas inspire-se):**
+- "Sistemas online, William. {periodo} tranquil{'a' if periodo in ['manhã', 'tarde', 'madrugada'] else 'a'}. O que vamos criar hoje?"
+- "Sistemas online, William. {periodo} tranquila. O que vamos criar hoje?"
+- "E aí, chefe. Acabei de sincronizar. Pronto para bagunçar o código ou concertar o mundo?"
+- "Boa {periodo}, senhor. Cérebro 100%, visão calibrada. Como posso ajudar?"
+
+**IMPORTANTE:** Responda APENAS a frase falada. Sem explicações ou formatação extra."""
+
+            # 5. GERAR SAUDAÇÃO VIA LLM (Ollama-centric)
+            resposta_viva = ""
+            if self._check_ollama_alive():
+                try:
+                    logger.info("🧠 Gerando saudação via Ollama...")
+                    target_model = self._select_best_ollama_model(prompt_saudacao)
+                    resposta_viva = self._call_ollama(
+                        prompt_saudacao, 
+                        image_path=None,
+                        model=target_model,
+                        system_prompt="Você é JARVIS. Seja criativo, humano e conciso."
+                    )
+                except Exception as e:
+                    logger.warning(f"Ollama falhou na saudação: {e}")
+            
+            # 6. FALAR A SAUDAÇÃO
+            # 🌟 Refinamento: Validar se a resposta não é uma mensagem de erro técnico
+            technical_errors = ["httpconnectionpool", "timed out", "api_key", "error", "falhou", "indisponível", "servidor", "not found"]
+            is_technical_error = any(err in resposta_viva.lower() for err in technical_errors) if resposta_viva else True
+
+            if resposta_viva and len(resposta_viva.strip()) > 5 and not is_technical_error:
+                # Limpar possível lixo (às vezes o LLM adiciona aspas ou prefixos)
+                resposta_viva = resposta_viva.strip().strip('"').strip("'").strip(".").strip()
+                
+                logger.info(f"✨ JARVIS Real Startup Greeting: {resposta_viva}")
+                voice_controller.speak(resposta_viva)
+            else:
+                # No Funcionamento Real, não usamos fallbacks estáticos a menos que seja falha total
+                logger.warning(f"⚠️ Resposta curta ou inválida do LLM: '{resposta_viva}'")
+                if "Sistemas online" not in resposta_viva:
+                    voice_controller.speak(resposta_viva if resposta_viva else "Iniciando protocolos neurais, William.")
+        
+        except Exception as e:
+            logger.error(f"❌ Erro crítico na saudação inicial: {e}")
+            # Último recurso
+            try:
+                voice_controller.speak("Sistemas prontos.")
+            except:
+                pass
 
     def process_command(self, user_command: str) -> str:
         """
@@ -615,36 +732,20 @@ class AIAgent:
             screenshot_event.wait(timeout=5.0)
             screenshot_path = screenshot_container["path"]
 
-            # --- TENTATIVA LOCAL COM STREAMING (Fase 1) ---
+            # --- TENTATIVA LOCAL OLLAMA-CENTRIC (Fase 1) ---
             try:
-                if primary_provider == 'gemini':
-                    response = self._call_gemini(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
-                elif primary_provider.startswith('ollama:'):
-                    model_name = primary_provider.split(':', 1)[1]
-                    response = self._call_ollama(enriched_command, screenshot_path, model=model_name, system_prompt=dynamic_system_prompt)
-                elif primary_provider == 'ollama': # Fallback legacy
-                    response = self._call_ollama(enriched_command, screenshot_path, system_prompt=dynamic_system_prompt)
-                else:
-                    # Usar streaming do cérebro local para latência mínima
-                    response = ""
-                    current_phrase = ""
-                    for chunk in local_brain.generate_stream(enriched_command, dynamic_system_prompt):
-                        response += chunk
-                        current_phrase += chunk
-                        
-                        # Se completar uma frase ou vírgula longa, falar imediatamente
-                        if any(p in chunk for p in ['.', '!', '?', '\n', ';', ':']):
-                            if len(current_phrase.strip()) > 5:
-                                # 🆕 STARK 2.0: Atomic Voice Filter
-                                safe_phrase = AtomicVoiceFilter.filter_response(current_phrase.strip())
-                                if safe_phrase:
-                                    voice_controller.speak(safe_phrase)
-                                current_phrase = ""
-                    
-                    if current_phrase.strip():
-                        safe_phrase = AtomicVoiceFilter.filter_response(current_phrase.strip())
-                        if safe_phrase:
-                            voice_controller.speak(safe_phrase)
+                # Seleciona o melhor modelo Ollama
+                target_model = self._select_best_ollama_model(enriched_command, screenshot_path)
+                response = self._call_ollama(enriched_command, screenshot_path, model=target_model, system_prompt=dynamic_system_prompt)
+
+                if "ERRO" in response or not response:
+                    # Fallback para cérebro local ultra-leve (LocalBrain)
+                    logger.warning("Ollama falhou. Usando LocalBrain para fallback...")
+                    response = local_brain.generate_response(
+                        enriched_command, 
+                        dynamic_system_prompt,
+                        max_new_tokens=256
+                    )
 
             except Exception as e:
                 logger.error(f"Falha no cérebro local ({primary_provider}): {e}")
@@ -658,23 +759,9 @@ class AIAgent:
                 if any(tier in model_used.lower() for tier in ["deepseek", "llama"]):
                     self._distill_knowledge(user_command, response, provider=model_used)
 
-            # --- ESCALONAMENTO PARA NUVEM (SUPLEMENTO) ---
-            # Se o local falhar, não souber, ou for complexo demais
-            triggers_cloud = ["não sei", "i don't know", "desculpe", "erro_local", "complexo"]
-            needs_cloud = any(t in response.lower() for t in triggers_cloud) or len(response) < 5
-            
-            if needs_cloud and self.api_key and voice_controller.check_internet():
-                logger.info("Cérebro Local incerto. Consultando a Nuvem (Gemini) para auxílio...")
-                voice_controller.speak("Consultando minha base de conhecimento na nuvem...", wait=False)
-                
-                cloud_response = self._call_gemini(enriched_command, screenshot_path)
-                
-                if "Erro" not in cloud_response:
-                    response = cloud_response
-                    # =========================================================
-                    # PHASE 11.2: NEURAL DISTILLATION (Smart -> Lite)
-                    # =========================================================
-                    self._distill_knowledge(user_command, response, provider="gemini")
+            # --- ESCALONAMENTO PARA NUVEM (REMOVIDO PARA ESTABILIDADE) ---
+            # Cloud fallback movido para src.core.intelligence.cloud_fallback
+            pass
             
             # Fallback final se tudo falhar
             if "ERRO_LOCAL" in response and "Erro" in response:
@@ -1176,72 +1263,47 @@ class AIAgent:
             # Fallback para processamento legado
             return None
 
-    def _call_gemini(self, prompt: str, image_path: Optional[str] = None):
-        """Integração real com Gemini Pro Vision (Free Tier)"""
-        if not self.api_key:
-            return "Erro: Variável GOOGLE_API_KEY não configurada no sistema."
+    def _select_best_ollama_model(self, prompt: str, image_path: Optional[str] = None) -> str:
+        """Seleciona dinamicamente o melhor modelo Ollama para a tarefa"""
+        # Se houver imagem, prioriza LLaVA ou similar com visão
+        if image_path and os.path.exists(image_path):
+            return "llava"
+            
+        # Analisa complexidade do prompt (heurística simples)
+        prompt_lower = prompt.lower()
+        if any(kw in prompt_lower for kw in ["código", "python", "script", "debug", "analise"]):
+            return "qwen2.5:7b" # Melhor em raciocínio/código
+            
+        if any(kw in prompt_lower for kw in ["história", "poema", "conversa", "criativo"]):
+            return "llama3.1:8b" # Melhor em criatividade/persona
+            
+        return "qwen2.5:7b" # Padrão estável
 
-        try:
-            import base64
-            with open(image_path, "rb") as image_file:
-                image_data = base64.b64encode(image_file.read()).decode('utf-8')
-
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
-            
-            # Adicionar ao histórico
-            self.chat_history.append({"role": "user", "content": prompt})
-            
-            # Construir mensagens com histórico (simplificado para Gemini Flash)
-            history_text = "\n".join([f"{m['role']}: {m['content']}" for m in self.chat_history[-5:]])
-            
-            payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": f"{self.system_prompt}\n\nHistórico recente:\n{history_text}\n\nComando atual: {prompt}"},
-                        {
-                            "inline_data": {
-                                "mime_type": "image/png",
-                                "data": image_data
-                            }
-                        }
-                    ]
-                }]
-            }
-
-            response = requests.post(url, json=payload)
-            response.raise_for_status()
-            
-            data = response.json()
-            response_text = data['candidates'][0]['content']['parts'][0]['text']
-            
-            # Adicionar resposta ao histórico
-            self.chat_history.append({"role": "assistant", "content": response_text})
-            
-            return response_text
-
-        except Exception as e:
-            logger.error(f"Erro ao chamar Gemini: {e}")
-            return f"Senhor, tive um problema técnico ao consultar meus servidores: {str(e)}"
-
-    def _call_ollama(self, prompt: str, image_path: str, model: str = "llava", system_prompt: str = None):
+    def _call_ollama(self, prompt: str, image_path: Optional[str] = None, model: Optional[str] = None, system_prompt: str = None):
         """Integração com Ollama Local (Multi-modelo)"""
         try:
             import base64
+            
+            # Seleciona o melhor modelo se não for especificado
+            target_model = model if model else self._select_best_ollama_model(prompt, image_path)
+            
             image_data = None
             if image_path and os.path.exists(image_path):
                 with open(image_path, "rb") as image_file:
                     image_data = base64.b64encode(image_file.read()).decode('utf-8')
 
-            # Tenta usar o modelo especificado (padrão 'llava' para visão)
-            # Prioriza system_prompt dinâmico se fornecido, senão usa o padrão self.system_prompt
             final_system_prompt = system_prompt if system_prompt else self.system_prompt
             
-            logger.info(f"🦾 Calling Ollama with model: '{model}'")
+            logger.info(f"🦾 [OLLAMA] Usando modelo: '{target_model}'")
             
             payload = {
-                "model": model,
-                "prompt": f"{final_system_prompt}\n\nComando: {prompt}",
-                "stream": False
+                "model": target_model,
+                "prompt": f"{final_system_prompt}\n\nComando do William: {prompt}\n\nLembre-se: Retorne APENAS o JSON.",
+                "stream": False,
+                "options": {
+                    "temperature": 0.2, # Mais focado para seguir formato
+                    "num_predict": 512
+                }
             }
             if image_data:
                 payload["images"] = [image_data]
@@ -1253,7 +1315,7 @@ class AIAgent:
             return data.get('response', "Senhor, não obtive resposta do processador local.")
 
         except Exception as e:
-            logger.error(f"Erro ao chamar Ollama ({model}): {e}")
+            logger.error(f"Erro ao chamar Ollama ({target_model}): {e}")
             return f"Infelizmente estou com dificuldades no processamento offline: {str(e)}."
 
     def _check_ollama_alive(self) -> bool:

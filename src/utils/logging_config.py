@@ -64,7 +64,8 @@ class LoggingConfig:
             filename=str(log_file),
             maxBytes=max_bytes,
             backupCount=backup_count,
-            encoding='utf-8'
+            encoding='utf-8',
+            delay=True  # Thread-safe: abre arquivo apenas quando necessário
         )
         file_handler.setLevel(level)
         file_handler.setFormatter(formatter)
