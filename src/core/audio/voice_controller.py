@@ -420,6 +420,11 @@ class VoiceController:
         if not EDGE_TTS_AVAILABLE:
             logger.warning("edge-tts não disponível")
             return
+        
+        # 🔧 FIX: Validar texto muito curto (evita NoAudioReceived)
+        if len(text.strip()) < 2:
+            logger.warning(f"⚠️ Edge-TTS: Texto muito curto para TTS: '{text}', ignorando")
+            return
             
         # Mapeamento de vozes neurais para emoções
         voice_map = {

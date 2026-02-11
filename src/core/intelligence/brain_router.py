@@ -111,8 +111,12 @@ class BrainRouter:
         """Valida se a chave do Gemini realmente funciona"""
         if not self.api_key: return False
         try:
-            # Teste rápido com modelo leve
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+            # Carregar modelo flashes configurado
+            from src.utils.config import config
+            model_name = config.get_ai_config('brain_router.cloud_models.flash', 'gemini-1.5-flash')
+            
+            # Teste rápido com modelo real (usando v1 para evitar 404)
+            url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={self.api_key}"
             payload = {"contents": [{"parts": [{"text": "ping"}]}]} 
             resp = requests.post(url, json=payload, timeout=5)
             if resp.status_code == 200:

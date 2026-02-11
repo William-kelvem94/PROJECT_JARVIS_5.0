@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 import threading
 import asyncio
 from typing import Optional, Callable
+from src.utils.stability import model_load_lock
 
 class LocalBrain:
     """Cérebro local Híbrido (CPU + iGPU + GPU)"""
@@ -76,6 +77,9 @@ class LocalBrain:
             with self._load_lock:
                 if self._is_loaded:
                     return
+                
+                # Adquirir trava de segurança global
+                model_load_lock.acquire(f"LocalBrain ({self.model_id})")
                 
                 provider = compute_orchestrator.get_best_provider()
                 logger.info(f"🧠 LocalBrain: Iniciando motor híbrido via {provider['name']}...")
@@ -140,11 +144,32 @@ class LocalBrain:
         except Exception as e:
             self._is_loading = False
             logger.error(f"❌ Erro crítico no motor híbrido: {e}")
+        finally:
+            # Liberar trava de segurança global
+            model_load_lock.release()
     
     def wait_for_load(self, timeout: float = 30.0) -> bool:
         """Espera o carregamento completar"""
         return self._load_event.wait(timeout)
     
+    def unload(self):
+        """Descarrega o modelo da memória para liberar recursos"""
+        if not self._is_loaded:
+            return
+            
+        logger.info(f"🧠 LocalBrain: Descarregando modelo {self.model_id}...")
+        try:
+            with self._load_lock:
+                self.model = None
+                self.tokenizer = None
+                self.past_key_values = None
+                self._is_loaded = False
+                if torch and torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            logger.info("✅ Memória liberada com sucesso.")
+        except Exception as e:
+            logger.error(f"Erro ao descarregar modelo: {e}")
+
     def generate_response(self, prompt: str, system_prompt: str = "", 
                           max_new_tokens: int = 128, use_cache: bool = True) -> str:
         """Gera resposta com suporte opcional a KV Cache"""
@@ -153,7 +178,7 @@ class LocalBrain:
             if not self._is_loading:
                 self.load_async()
             if not self.wait_for_load(timeout=60):
-                return "William, estou carregando meu cérebro local..."
+                return f"⚠️ Erro: Cérebro Local não carregou a tempo ({self.model_id}). Verifique logs."
 
         # TENTATIVA 1: Geração Normal com Cache
         try:
@@ -167,7 +192,7 @@ class LocalBrain:
                 return self._generate_internal(prompt, system_prompt, max_new_tokens, use_cache=False)
             except Exception as e2:
                 logger.error(f"❌ Falha crítica no Cérebro Local (Tentativa 2): {e2}")
-                return "Senhor, meus circuitos neurais locais estão sobrecarregados. Tentando redirecionar para o subsistema Ollama..."
+                return f"❌ Falha crítica no processamento neural local: {e2}. Tentando transição para subsistemas..."
 
     def _clear_memory(self):
         """Força limpeza de VRAM/RAM"""

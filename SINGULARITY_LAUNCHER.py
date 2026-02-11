@@ -18,9 +18,17 @@ import time
 
 # Suppress Pygame welcome message
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = 'hide'
+# Suppress TensorFlow/oneDNN warnings (C++ binary level)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # 0=DEBUG, 1=INFO, 2=WARNING, 3=ERROR (FATAL only)
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'  # Disable oneDNN custom operations
+os.environ['GLOG_minloglevel'] = '3'       # Google logging (for TFLite C++ warnings)
 import subprocess
 import platform
 import logging
+
+# Suppress TensorFlow Lite C++ warnings via Python logging (redundant but safe)
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+logging.getLogger('absl').setLevel(logging.ERROR)  # TF uses absl for logging
 import shutil
 import psutil
 import requests
@@ -677,19 +685,23 @@ class SingularityLauncher:
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 0] Infrastructure Synchronization{Color.END}")
         print("-" * 80)
         self.sync_infrastructure()
+        time.sleep(2.0) # Stability delay
         
         # Stage 1
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 1] Environment Validation{Color.END}")
         print("-" * 80)
         if not self.validate_environment():
             sys.exit(1)
+        time.sleep(2.0) # Stability delay
 
         # Stage 1.5: Hardware Capability Scan (NDR Enhancement)
         self.ensure_brain_capacity()
+        time.sleep(2.0) # Stability delay
 
         # Stage 2: Model Integrity Watcher
         if not self.check_ml_models():
             sys.exit(1)
+        time.sleep(2.0) # Stability delay
 
         # Stage 3: Pre-flight Checks (CRITICAL DEP CHECK FIRST)
         if not self.pre_flight_checks():
@@ -697,9 +709,6 @@ class SingularityLauncher:
 
         # Stage 2.5 (Legacy User Request: Auto-Brain placeholder removed)
         # self.ensure_brain_capacity() # Moved to 1.5 for better flow
-        
-        # Stage 2.7 (SINGULARITY: Learning Systems Initialization)
-
         
         # Stage 2.7 (SINGULARITY: Learning Systems Initialization)
         print(f"{Color.BOLD}{Color.CYAN}[STAGE 2.7] Learning Systems Initialization{Color.END}")
