@@ -459,7 +459,7 @@ class VisionLearner:
     def __init__(
         self,
         model_dir: Path,
-        base_model: str = "yolov8n.pt"
+        base_model: str = "models/vision/yolov8n.pt"
     ):
         """
         Initialize the VisionLearner.

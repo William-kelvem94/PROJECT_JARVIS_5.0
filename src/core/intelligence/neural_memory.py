@@ -5,6 +5,7 @@ Utiliza Vector DB para busca semântica de interações passadas.
 
 import os
 import logging
+import threading
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -44,6 +45,7 @@ class NeuralMemory:
         self.db_path.mkdir(parents=True, exist_ok=True)
         self.model = None  # Lazy loading - será carregado quando necessário
         self._model_loading = False  # Evitar loading concorrente
+        self._db_lock = threading.Lock() # 🔒 Proteção para o ChromaDB
         
         # Inicializar banco de vetores com Self-Healing robusto
         try:
@@ -118,12 +120,13 @@ class NeuralMemory:
             embeddings = self.model.encode([int_data['prompt'] for int_data in interactions]).tolist()
             metadatas = [{"source": "seed", "timestamp": datetime.now().isoformat()} for _ in interactions]
             
-            self.collection.add(
-                ids=ids,
-                embeddings=embeddings,
-                documents=texts,
-                metadatas=metadatas
-            )
+            with self._db_lock:
+                self.collection.add(
+                    ids=ids,
+                    embeddings=embeddings,
+                    documents=texts,
+                    metadatas=metadatas
+                )
             logger.info(f"Semeadas {len(interactions)} interações na memória.")
         except Exception as e:
             logger.error(f"Erro no seeding em lote: {e}")
@@ -136,12 +139,13 @@ class NeuralMemory:
             lesson_id = f"lesson_{int(datetime.now().timestamp())}"
             embedding = self.model.encode(trigger).tolist()
             
-            self.lessons_collection.add(
-                ids=[lesson_id],
-                embeddings=[embedding],
-                documents=[f"Quando usuário disser: '{trigger}' -> Ação: '{action}'"],
-                metadatas=[{"trigger": trigger, "action": action, "timestamp": datetime.now().isoformat()}]
-            )
+            with self._db_lock:
+                self.lessons_collection.add(
+                    ids=[lesson_id],
+                    embeddings=[embedding],
+                    documents=[f"Quando usuário disser: '{trigger}' -> Ação: '{action}'"],
+                    metadatas=[{"trigger": trigger, "action": action, "timestamp": datetime.now().isoformat()}]
+                )
             logger.info(f"Lição aprendida: {trigger} -> {action}")
             return True
         except Exception as e:
@@ -201,7 +205,8 @@ class NeuralMemory:
         """Remove uma lição específica"""
         if not NEURAL_AVAILABLE: return False
         try:
-            self.lessons_collection.delete(ids=[lesson_id])
+            with self._db_lock:
+                self.lessons_collection.delete(ids=[lesson_id])
             logger.info(f"Lição removida: {lesson_id}")
             return True
         except Exception as e:
@@ -244,12 +249,13 @@ class NeuralMemory:
             interaction_id = f"int_{int(datetime.now().timestamp())}"
             embedding = self.model.encode(prompt).tolist()
             
-            self.collection.add(
-                ids=[interaction_id],
-                embeddings=[embedding],
-                documents=[f"User: {prompt}\nJarvis: {response}"],
-                metadatas=[metadata or {"timestamp": datetime.now().isoformat()}]
-            )
+            with self._db_lock:
+                self.collection.add(
+                    ids=[interaction_id],
+                    embeddings=[embedding],
+                    documents=[f"User: {prompt}\nJarvis: {response}"],
+                    metadatas=[metadata or {"timestamp": datetime.now().isoformat()}]
+                )
             logger.info(f"Interação neural armazenada: {interaction_id}")
         except Exception as e:
             logger.error(f"Erro ao armazenar interação neural: {e}")
@@ -299,12 +305,13 @@ class NeuralMemory:
             item_id = f"kn_{hash(source + content) % 10**8}_{int(datetime.now().timestamp())}"
             embedding = self.model.encode(content).tolist()
             
-            self.knowledge_collection.add(
-                ids=[item_id],
-                embeddings=[embedding],
-                documents=[content],
-                metadatas=[metadata or {"source": source, "timestamp": datetime.now().isoformat()}]
-            )
+            with self._db_lock:
+                self.knowledge_collection.add(
+                    ids=[item_id],
+                    embeddings=[embedding],
+                    documents=[content],
+                    metadatas=[metadata or {"source": source, "timestamp": datetime.now().isoformat()}]
+                )
             logger.debug(f"Conhecimento indexado: {source}")
         except Exception as e:
             logger.error(f"Erro ao armazenar conhecimento: {e}")

@@ -1,195 +1,69 @@
 @echo off
-:: JARVIS 5.0 - SINGULARITY LAUNCHER v10.0 (Admin + Ollama Auto-Setup)
-:: Use this if the system closes unexpectedly.
+:: ============================================================================
+:: JARVIS 5.0 - STARTUP SCRIPT - MODO UNIVERSAL
+:: ============================================================================
+:: Este script prepara o ambiente e inicia o SINGULARITY_LAUNCHER.
+:: Toda a inteligencia de auto-cura e hardware esta no Launcher Python.
+:: ============================================================================
 
-:: =======================================
-:: 1. REQUEST ADMINISTRATOR PRIVILEGES
-:: =======================================
+setlocal enabledelayedexpansion
+
+:: 1. VERIFICAR PRIVILEGIOS DE ADMINISTRADOR
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo [SYSTEM] Requesting Administrator Privileges...
+    echo [SISTEMA] Solicitando Privilegios de Administrador...
     powershell -Command "Start-Process '%~dpnx0' -Verb RunAs"
     exit /b
 )
 
-echo.
-echo ========================================================================
-echo   JARVIS 5.0 - SINGULARITY LAUNCHER [AUTO MODE]
-echo ========================================================================
-echo   Status: Running as Administrator
-echo   Mode: Fully Autonomous (No user input required)
-echo   Auto-Config: ENABLED
-echo   Self-Healing: ENABLED
-echo ========================================================================
-echo.
-echo [INFO] Starting in 2 seconds...
-timeout /t 2 /nobreak >nul
-
-setlocal enabledelayedexpansion
+:: 2. CONFIGURAR DIRETORIO RAIZ
 set "ROOT=%~dp0"
 cd /d "%ROOT%"
 
-:: Environment settings
+echo.
+echo  [ STARK INDUSTRIES - INFRASTRUCTURE DIVISION ]
+echo  ----------------------------------------------
+echo  PROJETO: JARVIS 5.0 - Singularity
+echo  STATUS: Inicializando Motores de Boot...
+echo.
+
+:: 3. CONFIGURACOES DE AMBIENTE - ESTABILIDADE
 set "KMP_DUPLICATE_LIB_OK=TRUE"
 set "PYTHONUTF8=1"
 set "PYGAME_HIDE_SUPPORT_PROMPT=hide"
+set "TF_CPP_MIN_LOG_LEVEL=3"
 
-:: =======================================
-:: 1.5 AUTO-CONFIGURATION (Optimize Environment)
-:: =======================================
-echo [SYSTEM] Optimizing environment configuration...
-if exist "%ROOT%venv\Scripts\python.exe" (
-    "%ROOT%venv\Scripts\python.exe" "%ROOT%scripts\auto_configurator.py"
-)
-echo.
-
-:: =======================================
-:: 2. OLLAMA AUTO-SETUP (Superintelligence)
-:: =======================================
-echo.
-echo [SYSTEM] Verifying Neural Backend (Ollama)...
-
-where ollama >nul 2>&1
-if %errorLevel% neq 0 (
-    echo [WARNING] Ollama AI Bridge not found. Initiating Auto-Install...
-    echo [DOWNLOAD] Downloading OllamaSetup.exe...
-    powershell -Command "Invoke-WebRequest -Uri 'https://ollama.com/download/OllamaSetup.exe' -OutFile 'OllamaSetup.exe'"
-    
-    if exist "OllamaSetup.exe" (
-        echo [INSTALL] Installing Ollama... Please follow the prompts if any.
-        start /wait OllamaSetup.exe /silent
-        del OllamaSetup.exe
-        echo [OK] Ollama installed.
-    ) else (
-        echo [ERROR] Failed to download Ollama. Check internet connection.
-        pause
-        exit /b 1
-    )
+:: 4. ATIVACAO DO AMBIENTE VIRTUAL - VENV
+if exist "%ROOT%venv\Scripts\activate.bat" (
+    echo [OK] Ativando Ambiente Virtual...
+    call "%ROOT%venv\Scripts\activate.bat"
 ) else (
-    echo [OK] Ollama AI Bridge detected.
-)
-
-:: Ensure Ollama Service is running
-tasklist /FI "IMAGENAME eq ollama_app.exe" 2>NUL | find /I /N "ollama_app.exe">NUL
-if "%ERRORLEVEL%"=="0" (
-    echo [OK] Ollama Service is active.
-) else (
-    echo [SYSTEM] Starting Ollama Service...
-    start /min "" "ollama" serve
-    timeout /t 5 /nobreak >nul
-)
-
-:: =======================================
-:: 3. PYTHON ENVIRONMENT CHECK
-:: =======================================
-:: Check VENV
-set "VENV_PYTHON=%ROOT%venv\Scripts\python.exe"
-
-if exist "%VENV_PYTHON%" goto :START_CORE
-
-echo [WARNING] Virtual Environment not detected.
-echo [SYSTEM] Starting Auto-Recovery Protocol...
-echo.
-set /p choice="Do you want to install dependencies now? (Y/N): "
-
-if /i "%choice%"=="Y" (
+    echo [ERRO] Ambiente Virtual - .venv - nao encontrado!
+    echo Executando instalador de emergencia...
     call "%ROOT%INSTALL_JARVIS.bat"
-) else (
-    echo [ABORT] System cannot run without dependencies.
-    pause
-    exit /b 1
+    if %errorLevel% neq 0 exit /b 1
+    call "%ROOT%venv\Scripts\activate.bat"
 )
 
-:: Re-verify
-if not exist "%VENV_PYTHON%" (
-    echo [FATAL] Environment setup failed. 
-    echo Run INSTALL_JARVIS.bat manually to debug.
-    pause
-    exit /b 1
-)
-
-:START_CORE
-echo.
-echo [SYSTEM] Engaging Singularity Core Engines...
+:: 5. INICIAR SINGULARITY LAUNCHER - ORQUESTRADOR
+echo [SISTEMA] Delegando orquestracao para SINGULARITY_LAUNCHER...
 echo.
 
-:: Validate critical dependencies before starting
-echo [CHECK] Validating critical dependencies...
-"%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
+python "%ROOT%SINGULARITY_LAUNCHER.py" %*
 
+:: 6. TRATAMENTO DE ERROS DE SAIDA
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [AUTO-HEAL] Dependency issues detected - initiating auto-repair...
-    echo.
-    
-    :: Tenta auto-healing primeiro
-    "%VENV_PYTHON%" "%ROOT%scripts\auto_healer.py"
-    
-    if %ERRORLEVEL% EQU 0 (
-        echo [OK] Auto-healing successful! Revalidating...
-        "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
-        
-        if %ERRORLEVEL% EQU 0 (
-            echo [OK] All dependencies validated after auto-heal!
-            goto :CONTINUE_STARTUP
-        )
-    )
-    
-    :: Se auto-heal falhou, tenta quick fix
-    echo [AUTO-FIX] Running Quick Fix for remaining issues...
-    "%VENV_PYTHON%" "%ROOT%scripts\install\quick_fix_torch.py"
-    
-    if %ERRORLEVEL% EQU 0 (
-        echo [OK] Quick Fix completed. Revalidating...
-        "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
-        
-        if %ERRORLEVEL% EQU 0 (
-            echo [OK] All dependencies validated!
-            goto :CONTINUE_STARTUP
-        ) else (
-            echo [CRITICAL] Quick Fix failed to resolve all issues.
-            echo [SYSTEM] Initiating Full System Synchronization...
-            call "%ROOT%INSTALL_JARVIS.bat" /silent
-            goto :CONTINUE_STARTUP
-        )
-    ) else (
-        echo [ERROR] Auto-repair failed. Running full installation...
-        call "%ROOT%INSTALL_JARVIS.bat" /silent
-        
-        if %ERRORLEVEL% NEQ 0 (
-            echo [CRITICAL] Installation failed. Manual intervention required.
-            echo [INFO] Check logs: total_installer.log
-            timeout /t 5
-            exit /b 1
-        )
-    )
-)
-
-:CONTINUE_STARTUP
-
-echo [OK] All dependencies validated.
-echo.
-
-:: =======================================
-:: 4. MODEL SYNCHRONIZATION (Superintelligence)
-:: =======================================
-echo [SYSTEM] Synchronizing Neural Models (Ollama)...
-"%VENV_PYTHON%" "%ROOT%scripts\install\setup_ollama_models.py"
-echo.
-
-"%VENV_PYTHON%" "%ROOT%SINGULARITY_LAUNCHER.py" %*
-
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo ========================================================================
-    echo  [CRITICAL] JARVIS Core Exited with Error Code: %ERRORLEVEL%
-    echo ========================================================================
+    echo ------------------------------------------------------------------------
+    echo [CRITICO] O Nucleo do JARVIS encerrou com erro - Codigo: %ERRORLEVEL%
+    echo ------------------------------------------------------------------------
+    echo Verifique os logs em: data/logs/latest_session/launcher.log
     echo.
     pause
     exit /b %ERRORLEVEL%
 )
 
 echo.
-echo [DEBUG] Launcher loop finished.
-pause
+echo [INFO] JARVIS encerrado normalmente.
+timeout /t 5
 exit /b 0

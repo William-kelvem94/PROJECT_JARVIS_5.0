@@ -49,6 +49,8 @@ class MemoryManager:
         self.prompt_cache = {}  # 🆕 Phase 2: Prompt caching (LRU-like)
         self.max_cache_size = 50
         self._models_loaded = False  # Flag para lazy loading
+        self._graph_lock = threading.Lock()  # 🔒 Proteção para I/O concorrente do Grafo JSON
+        self._chroma_lock = threading.Lock() # 🔒 Proteção para o ChromaDB
         self._initialize_db()
         self._start_maintenance_thread()
         self._initialized = True
@@ -201,12 +203,13 @@ class MemoryManager:
             try:
                 embedding = self._create_embedding(combined_text)
                 # 🆕 Usar upsert ao invés de add para evitar warnings de IDs duplicados
-                self.collection.upsert(
-                    ids=[mem_id],
-                    documents=[combined_text],
-                    metadatas=[meta],
-                    embeddings=[embedding] if embedding else None
-                )
+                with self._chroma_lock:
+                    self.collection.upsert(
+                        ids=[mem_id],
+                        documents=[combined_text],
+                        metadatas=[meta],
+                        embeddings=[embedding] if embedding else None
+                    )
                 if is_gold: logger.info(f"✨ Memória de OURO destilada: {mem_id[:8]}")
             except Exception as e:
                 logger.error(f"Erro ao salvar memória persistente: {e}")
@@ -264,9 +267,10 @@ class MemoryManager:
             # ChromaDB purge com tratamento de erros de schema (Robust Cleanup)
             try:
                 # Tentativa 1: Query direta (rápida)
-                self.collection.delete(
-                    where={"timestamp": {"$lt": cutoff_date}}
-                )
+                with self._chroma_lock:
+                    self.collection.delete(
+                        where={"timestamp": {"$lt": cutoff_date}}
+                    )
                 logger.info(f"Memoria limpa: Registros anteriores a {cutoff_date} removidos (Fast Path).")
             except Exception as e:
                 # Fallback: Se o esquema estiver corrompido (type mismatch warning), fazemos via Python
@@ -290,7 +294,8 @@ class MemoryManager:
                         batch_size = 100
                         for i in range(0, len(ids_to_delete), batch_size):
                             batch = ids_to_delete[i:i + batch_size]
-                            self.collection.delete(ids=batch)
+                            with self._chroma_lock:
+                                self.collection.delete(ids=batch)
                             
                         logger.info(f"Limpeza Manual Concluida: {len(ids_to_delete)} memorias antigas removidas.")
                     else:
@@ -300,6 +305,98 @@ class MemoryManager:
 
         except Exception as e:
             logger.error(f"Erro genérico ao limpar memória: {e}")
+
+    def save_to_vault(self, content: str, metadata: Dict[str, Any] = None):
+        """
+        🆕 Fase 4: Cofre (Deep Storage)
+        Salva conteúdo bruto no ChromaDB para recuperação semântica futura.
+        """
+        if not self.collection:
+            logger.warning("ChromaDB indisponível. Salvando apenas em log.")
+            return
+
+        try:
+            doc_id = hashlib.md5(content.encode()).hexdigest()
+            current_time = datetime.now().isoformat()
+            
+            meta = metadata or {}
+            meta['timestamp'] = current_time
+            meta['type'] = 'vault_entry'
+            
+            with self._chroma_lock:
+                self.collection.add(
+                    documents=[content],
+                    metadatas=[meta],
+                    ids=[doc_id]
+                )
+            logger.info(f"🔒 Conteúdo salvo no Cofre (Vault): {doc_id[:8]}...")
+        except Exception as e:
+            logger.error(f"Erro ao salvar no Cofre: {e}")
+
+    def extract_semantic_graph(self, text_content: str):
+        """
+        🆕 Fase 4: Grafo (Fast Recall)
+        Extrai conceitos chave e salva em JSON leve para carga rápida na RAM.
+        """
+        try:
+            import ollama
+            
+            # Prompt para extração estruturada
+            prompt = (
+                f"Extraia os conceitos principais deste texto em formato JSON simples prescrevendo relações.\n"
+                f"Texto: {text_content[:2000]}...\n\n"
+                f"Saída esperada apenas JSON: {{\"Conceito\": \"Definição\", \"RelacionadoA\": \"OutroConceito\"}}"
+            )
+            
+            # Usar modelo leve (Tier Fast)
+            response = ollama.chat(model='qwen2.5:3b', messages=[
+                {'role': 'user', 'content': prompt}
+            ])
+            
+            json_str = response['message']['content']
+            # Limpar markdown ```json ... ```
+            if "```" in json_str:
+                json_str = json_str.split("```")[1].replace("json", "").strip()
+                
+            graph_data = json.loads(json_str)
+            
+            # Salvar em arquivo local (Grafo)
+            graph_path = os.path.join(os.getcwd(), "data", "memory", "concepts_graph.json")
+            
+            # 🔒 Thread-Safe I/O
+            with self._graph_lock:
+                existing_graph = {}
+                if os.path.exists(graph_path):
+                    try:
+                        with open(graph_path, 'r', encoding='utf-8') as f:
+                            existing_graph = json.load(f)
+                    except Exception as e:
+                        logger.warning(f"Erro ao ler grafo existente (resetting): {e}")
+
+                # Merge
+                existing_graph.update(graph_data)
+                
+                # ✂️ Pruning Inteligente (Limite de 500 conceitos para não explodir RAM)
+                MAX_GRAPH_SIZE = 500
+                if len(existing_graph) > MAX_GRAPH_SIZE:
+                    excess = len(existing_graph) - MAX_GRAPH_SIZE
+                    # Remover os primeiros 'excess' itens (FIFO em Python 3.7+)
+                    # Não é perfeito (remove antigos), mas mantém o tamanho controlado
+                    keys_to_remove = list(existing_graph.keys())[:excess]
+                    for k in keys_to_remove:
+                        del existing_graph[k]
+                    logger.info(f"✂️ Grafo podado: {excess} conceitos antigos removidos.")
+                
+                # Write atomicamente (writes to temp then rename) para evitar leitura parcial
+                # Mas no Windows rename atomico tem caveats, vamos usar lock simples + write direto por enquanto
+                # protegido pelo lock
+                with open(graph_path, 'w', encoding='utf-8') as f:
+                    json.dump(existing_graph, f, indent=2, ensure_ascii=False)
+                
+            logger.info(f"🕸️ Grafo Semântico atualizado com {len(graph_data)} novos conceitos.")
+            
+        except Exception as e:
+            logger.error(f"Falha na extração do Grafo Semântico: {e}")
 
 # Instância global
 memory_manager = MemoryManager()

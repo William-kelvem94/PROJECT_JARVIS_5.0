@@ -79,6 +79,14 @@ class WindowManager(QObject):
         # Callbacks
         self.on_mode_switch: Optional[Callable[[InterfaceMode], None]] = None
         
+        # Conectar ao Signal Hub Global
+        try:
+            from src.utils.web_emitter import register_subscriber
+            register_subscriber(self._on_global_signal)
+            logger.info("✅ WindowManager conectado ao Signal Hub")
+        except Exception as e:
+            logger.warning(f"⚠️ Falha ao conectar ao Signal Hub: {e}")
+
         # Initialize components
         self._setup_system_tray()
         self._setup_global_shortcuts()
@@ -313,6 +321,10 @@ class WindowManager(QObject):
                 
                 def show_response(self, text):
                     print(f"Fallback HUD Response: {text}")
+                
+                def update_state(self, state):
+                    """Stub para evitar crash se o HUD principal falhar"""
+                    pass
 
             self._hud = FallbackHUD()
             
@@ -455,6 +467,31 @@ class WindowManager(QObject):
             
         except Exception as e:
             logger.error(f"❌ Erro no shutdown do WindowManager: {e}")
+
+    def _on_global_signal(self, event_type: str, data: dict):
+        """Callback recebido do Signal Hub (thread-safe bridging)"""
+        if event_type == "status":
+            msg = data.get("details", "")
+            status = data.get("status", "idle")
+            model = data.get("model", "")
+            tier = data.get("tier", "balanced")
+            # Repassar para o HUD
+            if self._hud:
+                if hasattr(self._hud, 'status_changed'):
+                    self._hud.status_changed.emit(status)
+                if tier and hasattr(self._hud, 'tier_changed'):
+                    self._hud.tier_changed.emit(tier)
+                if msg and hasattr(self._hud, 'response_ready'):
+                    self._hud.response_ready.emit(msg)
+                
+        elif event_type == "context":
+            app = data.get("app", "Sistema")
+            if self._hud and hasattr(self._hud, 'context_updated'):
+                self._hud.context_updated.emit(app)
+                
+        elif event_type == "telemetry":
+            if self._hud and hasattr(self._hud, 'telemetry_updated'):
+                self._hud.telemetry_updated.emit(data)
 
     def cleanup(self):
         """Cleanup resources (Delegates to shutdown)"""

@@ -85,13 +85,33 @@ class BrainRouter:
         """Carrega configurações padrão se ai_config.yaml não estiver disponível"""
         self.ollama_url = 'http://localhost:11434'
         self.ollama_timeout = 2.0
-        self.tier_ultra = ["deepseek-r1:8b", "deepseek-r1:14b", "deepseek-r1", "llama3.3:70b"]
-        self.tier_pro = ["llama3.3", "llama3.2", "llama3.1", "llama3", "qwen2.5:14b", "qwen2.5:7b"]
-        self.tier_fast = ["qwen2.5:3b", "qwen2.5", "phi3.5", "phi3", "mistral", "gemma2:9b"]
-        self.hw_tier_ultra = {"min_ram_gb": 6.0, "min_vram_gb": 4.0}
-        self.hw_tier_pro = {"min_ram_gb": 4.0, "min_vram_gb": 2.0}
-        self.hw_tier_fast = {"min_ram_gb": 1.5, "min_vram_gb": 0.0}
+        
+        # 🆕 FASE 2: Tiers otimizados para 16GB RAM com quantização GGUF
+        # tier_ultra: Especialista Pesado (8B-14B) - Tarefas complexas
+        self.tier_ultra = ["deepseek-r1:8b", "deepseek-r1:14b", "llama3.3:70b"]
+        
+        # tier_pro: Especialista Médio (7B-8B) - Tarefas versáteis
+        self.tier_pro = ["llama3.1:8b", "llama3.3:8b", "qwen2.5:7b", "mistral:7b"]
+        
+        # tier_fast: Sentinela (1.5B-3B) - Respostas rápidas e cache
+        self.tier_fast = ["qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:3b", "phi3.5", "gemma2:2b"]
+        
+        import psutil
+        ram_percent = psutil.virtual_memory().percent
+        # Se RAM estiver cheia (>75%), descarta modelos imediatamente (0).
+        # Se tiver sobra, mantém por 5 minutos ("5m") para resposta rápida.
+        self.dynamic_keep_alive = 0 if ram_percent > 75 else "5m"
+        
+        # 🆕 FASE 2: Thresholds de RAM + Keep-Alive Dinâmico
+        self.hw_tier_ultra = {"min_ram_gb": 10.0, "min_vram_gb": 4.0, "keep_alive": self.dynamic_keep_alive}  # Dinâmico
+        self.hw_tier_pro = {"min_ram_gb": 6.0, "min_vram_gb": 2.0, "keep_alive": 0}     # Descarte imediato
+        self.hw_tier_fast = {"min_ram_gb": 2.0, "min_vram_gb": 0.0, "keep_alive": "15m"}  # Cache 15min
+        
         self.offline_mode = False
+        
+        # 🆕 FASE 2: Callback para UX Masking
+        self.on_heavy_model_loading = None
+
 
     def _discover_ollama_models(self):
         """Detecta quais modelos estão instalados no Ollama localmente"""
@@ -135,10 +155,10 @@ class BrainRouter:
         task_complexity: float = 0.5,
         privacy_level: PrivacyLevel = PrivacyLevel.MEDIUM,
         latency_requirement: LatencyRequirement = LatencyRequirement.MODERATE
-    ) -> str:
+    ) -> dict:
         """
         Versão Stark IQ 11.2 - Escolha adaptativa baseada em Memória e Tiers
-        Retorna: 'ollama:<modelo>', 'local' (native), ou 'cloud'
+        Retorna: {'brain': 'ollama:<modelo>'|'local'|'cloud', 'keep_alive': 0|'15m', 'is_heavy': bool}
         """
         # Periodic Re-discovery of models (perfeito para downloads em background)
         import time
@@ -156,7 +176,7 @@ class BrainRouter:
         
         # PRIVACIDADE CRÍTICA -> NATIVO (Sem rede)
         if privacy_level.value >= PrivacyLevel.HIGH.value:
-            return "local"
+            return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
 
         # Capturar Hardware em tempo real
         try:
@@ -171,42 +191,66 @@ class BrainRouter:
         # ROTEAMENTO OLLAMA (TIERS)
         if self.ollama_available_models:
             # TIER ULTRA: Gênio (DeepSeek-R1) -> Alta Complexidade + Recursos Livres
-            min_ram_ultra = self.hw_tier_ultra.get('min_ram_gb', 6.0)
+            min_ram_ultra = self.hw_tier_ultra.get('min_ram_gb', 10.0)
             min_vram_ultra = self.hw_tier_ultra.get('min_vram_gb', 4.0)
             if task_complexity >= 0.7 and (free_ram > min_ram_ultra or free_vram > min_vram_ultra):
                 for model_pattern in self.tier_ultra:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🧠 TIER ULTRA: {available_model}")
-                            return f"ollama:{available_model}"
+                            # 🆕 FASE 2: UX Masking para modelo pesado
+                            if self.on_heavy_model_loading:
+                                self.on_heavy_model_loading(
+                                    "Isso é um pouco mais complexo, senhor. "
+                                    "Deixe-me alocar mais recursos para analisar..."
+                                )
+                            return {
+                                "brain": f"ollama:{available_model}",
+                                "keep_alive": self.hw_tier_ultra.get('keep_alive', 0),
+                                "is_heavy": True
+                            }
 
             # TIER PRO: Versátil (Llama 3.x) -> Média-Alta Complexidade
-            min_ram_pro = self.hw_tier_pro.get('min_ram_gb', 4.0)
+            min_ram_pro = self.hw_tier_pro.get('min_ram_gb', 6.0)
             min_vram_pro = self.hw_tier_pro.get('min_vram_gb', 2.0)
             if task_complexity >= 0.4 and (free_ram > min_ram_pro or free_vram > min_vram_pro):
                 for model_pattern in self.tier_pro:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🎯 TIER PRO: {available_model}")
-                            return f"ollama:{available_model}"
+                            # 🆕 FASE 2: UX Masking para modelo pesado
+                            if self.on_heavy_model_loading:
+                                self.on_heavy_model_loading(
+                                    "Analisando com recursos avançados, senhor..."
+                                )
+                            return {
+                                "brain": f"ollama:{available_model}",
+                                "keep_alive": self.hw_tier_pro.get('keep_alive', 0),
+                                "is_heavy": True
+                            }
             
             # TIER FAST: Rápido (Qwen / Phi) -> Uso geral econômico
-            min_ram_fast = self.hw_tier_fast.get('min_ram_gb', 1.5)
+            min_ram_fast = self.hw_tier_fast.get('min_ram_gb', 2.0)
             if free_ram > min_ram_fast:
                 for model_pattern in self.tier_fast:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"⚡ TIER FAST: {available_model}")
-                            return f"ollama:{available_model}"
+                            return {
+                                "brain": f"ollama:{available_model}",
+                                "keep_alive": self.hw_tier_fast.get('keep_alive', "15m"),
+                                "is_heavy": False
+                            }
 
         # ESCALONAMENTO PARA NUVEM (Último recurso para tarefas ultra-complexas)
         if task_complexity > 0.8 and self.cloud_available and not self.offline_mode:
             logger.info("☁️ Escalando para Cloud (Gemini)")
-            return "cloud_flash"
+            return {"brain": "cloud_flash", "keep_alive": 0, "is_heavy": False}
 
         # FALLBACK: Native Micro-LLM (Qwen 0.5B/1.5B)
         logger.info("🏠 Usando LocalBrain nativo")
-        return "local"
+        return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
+    
     
     def _choose_local_brain(self) -> str:
         """Escolhe o melhor modelo local disponível (Modo Offline)"""
