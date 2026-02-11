@@ -825,7 +825,8 @@ class AdvancedDeviceManager:
             level: Nível de brilho (0-100)
         """
         if not SBC_AVAILABLE:
-            logger.warning("⚠️ screen_brightness_control não instalado.")
+            # Silencioso se for chamado via automação padrão, mas loga aviso técnico
+            logger.debug("Omitindo comando de brilho: screen_brightness_control não instalado.")
             return False
         try:
             level = max(0, min(100, level))
