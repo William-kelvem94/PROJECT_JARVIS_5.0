@@ -1057,18 +1057,13 @@ class AIAgent:
             except Exception as e:
                 logger.debug(f"Erro ao registrar interação: {e}")
         
-        # 7. Falar a resposta (removendo tags de ação para não falar código)
-        clean_response = re.sub(r'\[ACTION: .*?\]', '', response)
-        clean_response = re.sub(r'\[SEARCH: .*?\]', '', clean_response)
-        
-        final_response = f"{emotion_prefix}{clean_response}" if emotion_prefix and "no_action" not in clean_response.lower() else clean_response
+        # 7. Falar a resposta (removendo tags de ação e limpando JSON)
+        final_response = self._clean_response_for_speech(response, emotion_prefix)
         
         # Injetar pergunta proativa de aprendizado se disponível
         if proactive_question and "ERRO" not in response:
             final_response = f"{final_response}\n\nPS: {proactive_question}"
-            # Dispara pesquisa autônoma silenciosa se o William não tiver respondido ainda
-            # (O registro de pesquisa é feito via neural_curiosity se o William colaborar)
-        
+            
         voice_controller.speak(final_response)
         return final_response
 
@@ -1464,6 +1459,44 @@ class AIAgent:
         # tier_pro/ultra: Modelos pesados são descarregados imediatamente
         return 0
 
+
+    def _clean_response_for_speech(self, response: str, emotion_prefix: str = "") -> str:
+        """
+        Limpa a resposta do LLM para ser falada pelo TTS.
+        Remove tags [ACTION], [SEARCH], blocos JSON e Markdown.
+        """
+        if not response:
+            return ""
+
+        # 1. Tentar extrair 'final_answer' se for um JSON puro ou tiver bloco JSON
+        try:
+            # Tentar Regex para achar bloco JSON {}
+            json_match = re.search(r'\{.*"final_answer":\s*"(.*?)".*\}', response, re.DOTALL)
+            if json_match:
+                response = json_match.group(1)
+            else:
+                # Tentar carregar como JSON completo se o LLM só cuspiu JSON
+                data = json.loads(response)
+                if isinstance(data, dict):
+                    response = data.get('final_answer', data.get('frase', response))
+        except:
+            pass # Não era JSON puro, segue limpeza normal
+
+        # 2. Remover tags do sistema
+        response = re.sub(r'\[ACTION: .*?\]', '', response)
+        response = re.sub(r'\[SEARCH: .*?\]', '', response)
+        response = re.sub(r'```.*?```', '', response, flags=re.DOTALL) # Remove blocos de código
+        
+        # 3. Limpeza de aspas extras (frequente em saídas estruturadas)
+        response = response.strip().strip('"').strip("'").strip()
+        
+        # 4. Aplicar prefixo emocional se aplicável
+        if emotion_prefix and "no_action" not in response.lower() and len(response) > 5:
+            # Evitar duplicar prefixo se já estiver lá
+            if not response.startswith(emotion_prefix[:5]):
+                response = f"{emotion_prefix}{response}"
+                
+        return response
 
     def _check_ollama_alive(self) -> bool:
         """Verifica se o Ollama está rodando localmente"""

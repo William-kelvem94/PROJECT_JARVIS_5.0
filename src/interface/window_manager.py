@@ -55,6 +55,9 @@ class WindowManager(QObject):
     mode_changed = pyqtSignal(object) # Using object for better Enum resilience across modules
     status_update = pyqtSignal(str, str)  # (status_type, message)
     
+    # Internal Signal for thread-safe mode switching
+    _request_mode_switch = pyqtSignal(object)
+    
     def __init__(self, app: QApplication):
         """
         Initialize Window Manager.
@@ -65,6 +68,9 @@ class WindowManager(QObject):
         super().__init__()
         self.app = app
         self.current_mode = InterfaceMode.HIDDEN  # Start hidden to force refresh on first switch
+        
+        # Connect bridge signal to the actual switch worker
+        self._request_mode_switch.connect(self._do_switch_mode)
         
         # Interface instances (lazy loaded)
         self._hud = None
@@ -224,13 +230,26 @@ class WindowManager(QObject):
             self._manual_panel.raise_()
             self._manual_panel.activateWindow()
             
-    @pyqtSlot(InterfaceMode)
     def switch_mode(self, mode: InterfaceMode):
         """
-        Switch to specified interface mode.
+        Switch to specified interface mode (Thread-Safe Bridge).
         
         Args:
             mode: Target interface mode
+        """
+        import threading
+        # Check if we are running in the Main Thread
+        if threading.current_thread() is threading.main_thread():
+            self._do_switch_mode(mode)
+        else:
+            # We are in a background thread, dispatch to Main Thread
+            logger.debug(f"🔀 Redirecting switch_mode request ({mode.value}) to Main Thread")
+            self._request_mode_switch.emit(mode)
+
+    @pyqtSlot(object)
+    def _do_switch_mode(self, mode: InterfaceMode):
+        """
+        Actual mode switching, always runs on main thread.
         """
         if mode == self.current_mode:
             return
