@@ -232,7 +232,7 @@ class VisionSystem:
                     device = hardware_manager.get_device()
                     
                     logger.info("🧠 Vision: Carregando YOLOv8 em background...")
-                    model_path = self.models_dir / "yolov8n.pt"
+                    model_path = self.models_dir / "vision" / "yolov8n.pt"
                     self.yolo_model = YOLO(str(model_path))
                     self.yolo_model.to(device)
                 

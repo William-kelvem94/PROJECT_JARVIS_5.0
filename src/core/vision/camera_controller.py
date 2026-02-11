@@ -44,11 +44,17 @@ class CameraController:
         self.last_seen_time = 0
         self.known_face_encodings = []
         self.known_face_names = []
-        self.face_detection_model = config.get_setting('sensory.face_detection_model', 'hog')
+        self.face_detection_model = config.get_setting('sensory.camera_index', 'hog')
         
         # Estado emocional
         self.current_emotion = "neutral"
         self.emotion_history = []
+        
+        # 🆕 FASE 1: FPS Adaptativo para economia de CPU
+        self.active_fps = 30  # FPS quando há movimento/usuário
+        self.idle_fps = 5     # FPS quando cenário estático
+        self.motion_threshold = 5000  # Threshold de pixels diferentes para detectar movimento
+        self.previous_frame = None
         
         # Otimização: Usar GPU se disponível
         if hardware_manager.get_device() == "cuda":
@@ -141,7 +147,7 @@ class CameraController:
             self.monitor_thread.join(timeout=2)
 
     def _monitor_loop(self):
-        """Loop principal de visão"""
+        """Loop principal de visão com FPS adaptativo"""
         video_capture = None
         try:
             # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
@@ -154,9 +160,10 @@ class CameraController:
                 logger.error(f"Não foi possível abrir a câmera {self.camera_index}")
                 return
                 
-            logger.info("✅ Camera opened successfully")
+            logger.info("✅ Camera opened successfully (FPS Adaptativo Ativo)")
 
             process_this_frame = True
+            is_active_mode = True  # Começa em modo ativo
 
             while self.is_monitoring:
                 ret, frame = video_capture.read()
@@ -164,86 +171,107 @@ class CameraController:
                     time.sleep(1)
                     continue
 
-                # Prioridade 1: MediaPipe: DISABLED FOR STABILITY
-                human_detected = False
-                # if self.face_detector:
-                #     results_mp = self.face_detector.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            #     if results_mp.detections:
-            #         human_detected = True
-
-            # Prioridade 2: Face Recognition (Identidade) - Apenas se não houver falhas consecutivas
-            if FACE_REC_AVAILABLE and getattr(self, '_faceid_failures', 0) < 5:
-                if process_this_frame:
-                    try:
-                        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                        rgb_small_frame = small_frame[:, :, ::-1]
-                        
-                        # Buscar faces com HOG
-                        face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
-                        
-                        if face_locations:
-                            try:
-                                face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-                                for face_encoding in face_encodings:
-                                    match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
-                                    name = "Desconhecido"
-                                    if True in match:
-                                        name = self.known_face_names[match.index(True)]
-                                    
-                                    # Log e atualização
-                                    if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
-                                        logger.info(f"Usuário identificado: {name}")
-                                        self.last_seen_user = name
-                                    self.last_seen_time = time.time()
-                                self._faceid_failures = 0
-                            except Exception:
-                                self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
-                    except Exception as e:
-                        logger.debug(f"Erro FaceID: {e}")
-            
-            # Fallback se identificação falhar mas human_detected for true
-            if human_detected and (not self.last_seen_user or time.time() - self.last_seen_time > 60):
-                if not self.last_seen_user or self.last_seen_user == "Desconhecido":
-                    self.last_seen_user = "Human"
-                    self.last_seen_time = time.time()
-                    logger.info("Presença humana detectada (Estável via MediaPipe)")
-
-            # Emoção e Gestos
+                # 🆕 FASE 1: Detecção de Movimento para FPS Adaptativo
+                motion_detected = False
                 try:
-                    emotion_data = emotion_detector.detect_emotion_from_frame(frame)
-                    self.current_emotion = emotion_data['emotion']
-                except: pass
-
-                # 🆕 BRILHO ADAPTATIVO (Stark Context)
-                if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
-                    self._check_ambient_light(frame)
-                self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
-
-            process_this_frame = not process_this_frame
-            
-            # Processamento de Gestos (Todo frame ou intercalado)
-            try:
-                # Safe check for gesture controller
-                if gesture_controller:
-                    # Retorna frame desenhado se MediaPipe ativo
-                    processed_frame, gesture = gesture_controller.process_frame(frame)
+                    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    gray_frame = cv2.GaussianBlur(gray_frame, (21, 21), 0)
                     
-                    if self.on_frame_ready:
-                        # Enviar para UI (converter BGR para RGB para tkinter)
+                    if self.previous_frame is not None:
+                        frame_delta = cv2.absdiff(self.previous_frame, gray_frame)
+                        thresh = cv2.threshold(frame_delta, 25, 255, cv2.THRESH_BINARY)[1]
+                        non_zero_count = cv2.countNonZero(thresh)
+                        
+                        if non_zero_count > self.motion_threshold:
+                            motion_detected = True
+                            self.last_seen_time = time.time()
+                    
+                    self.previous_frame = gray_frame
+                except Exception as e:
+                    logger.debug(f"Erro na detecção de movimento: {e}")
+                    motion_detected = True  # Fallback: assume movimento
+
+                # Determinar modo (Ativo vs Idle)
+                idle_time = time.time() - self.last_seen_time if self.last_seen_time > 0 else 0
+                should_be_active = motion_detected or idle_time < 10  # 10s de grace period
+                
+                # Transição de modo com log
+                if should_be_active and not is_active_mode:
+                    logger.info("⚡ Camera: Modo ATIVO (movimento detectado)")
+                    is_active_mode = True
+                elif not should_be_active and is_active_mode:
+                    logger.info("💤 Camera: Modo IDLE (cenário estático)")
+                    is_active_mode = False
+
+                # Processar Face Recognition APENAS em modo ativo
+                if is_active_mode and FACE_REC_AVAILABLE and getattr(self, '_faceid_failures', 0) < 5:
+                    if process_this_frame:
                         try:
-                            rgb_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                            self.on_frame_ready(rgb_frame)
-                        except Exception:
-                            pass
+                            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+                            rgb_small_frame = small_frame[:, :, ::-1]
+                            
+                            # Buscar faces com HOG
+                            face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+                            
+                            if face_locations:
+                                try:
+                                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                                    for face_encoding in face_encodings:
+                                        match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
+                                        name = "Desconhecido"
+                                        if True in match:
+                                            name = self.known_face_names[match.index(True)]
+                                        
+                                        # Log e atualização
+                                        if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
+                                            logger.info(f"Usuário identificado: {name}")
+                                            self.last_seen_user = name
+                                        self.last_seen_time = time.time()
+                                    self._faceid_failures = 0
+                                except Exception:
+                                    self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
+                        except Exception as e:
+                            logger.debug(f"Erro FaceID: {e}")
+            
+                # Emoção (apenas em modo ativo)
+                if is_active_mode:
+                    try:
+                        emotion_data = emotion_detector.detect_emotion_from_frame(frame)
+                        self.current_emotion = emotion_data['emotion']
+                    except: pass
 
-                    if gesture != "None":
-                        logger.debug(f"Gesto: {gesture}")
-            except Exception as e:
-                # Silently ignore gesture errors to prevent log flooding
-                pass
+                    # 🆕 BRILHO ADAPTATIVO (Stark Context)
+                    if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
+                        self._check_ambient_light(frame)
+                    self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
 
-            process_this_frame = not process_this_frame
-            time.sleep(0.03) # Mais fluido
+                process_this_frame = not process_this_frame
+            
+                # Processamento de Gestos (apenas em modo ativo)
+                if is_active_mode:
+                    try:
+                        # Safe check for gesture controller
+                        if gesture_controller:
+                            # Retorna frame desenhado se MediaPipe ativo
+                            processed_frame, gesture = gesture_controller.process_frame(frame)
+                            
+                            if self.on_frame_ready:
+                                # Enviar para UI (converter BGR para RGB para tkinter)
+                                try:
+                                    rgb_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
+                                    self.on_frame_ready(rgb_frame)
+                                except Exception:
+                                    pass
+
+                            if gesture != "None":
+                                logger.debug(f"Gesto: {gesture}")
+                    except Exception as e:
+                        # Silently ignore gesture errors to prevent log flooding
+                        pass
+
+                # 🆕 FASE 1: FPS Adaptativo
+                sleep_time = (1.0 / self.active_fps) if is_active_mode else (1.0 / self.idle_fps)
+                time.sleep(sleep_time)
 
         except Exception as e:
             logger.error(f"❌ Erro no loop de monitoramento: {e}")

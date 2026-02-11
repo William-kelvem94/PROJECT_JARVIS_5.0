@@ -40,7 +40,7 @@ class CircularGauge(QWidget):
         
         # Desenha trilho (fundo)
         painter.setPen(QPen(self.color_track, pen_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
-        painter.drawEllipse(center, radius, radius)
+        painter.drawEllipse(center, int(radius), int(radius))
         
         # Desenha arco de valor
         percent = (self.value - self.min_val) / (self.max_val - self.min_val)

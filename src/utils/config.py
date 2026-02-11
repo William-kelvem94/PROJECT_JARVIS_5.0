@@ -135,7 +135,7 @@ class Config:
             },
             "vision": {
                 "yolo_enabled": True,
-                "yolo_model": "yolov8n.pt",
+                "yolo_model": "models/vision/yolov8n.pt",
                 "yolo_confidence": 0.25
             }
         }

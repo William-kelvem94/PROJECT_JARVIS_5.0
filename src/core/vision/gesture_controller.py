@@ -109,7 +109,7 @@ class GestureController:
         Retorna: (frame_processado, nome_gesto)
         """
         if not MEDIAPIPE_AVAILABLE or self.hands is None:
-            return frame, "MediaPipe Not Ready"
+            return frame, "None"
 
         # Converter BGR para RGB
         img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
