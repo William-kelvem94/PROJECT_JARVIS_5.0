@@ -68,10 +68,10 @@ class VisionEnhancer:
         # Inicializar YOLO
         if YOLO_AVAILABLE:
             try:
-                # Usar modelo pré-treinado YOLO
-                model_path = f"yolov8{model_size}.pt"
+                # Usar modelo pré-treinado YOLO no diretório correto
+                model_path = f"models/vision/yolov8{model_size}.pt"
                 self.yolo_model = YOLO(model_path)
-                logger.info(f"✅ YOLO {model_size} carregado")
+                logger.info(f"✅ YOLO {model_size} carregado de {model_path}")
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao carregar YOLO: {e}")
         

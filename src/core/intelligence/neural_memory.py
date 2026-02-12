@@ -6,6 +6,7 @@ Utiliza Vector DB para busca semântica de interações passadas.
 import os
 import logging
 import threading
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -246,7 +247,11 @@ class NeuralMemory:
         if not self._ensure_model_loaded(): return
 
         try:
-            interaction_id = f"int_{int(datetime.now().timestamp())}"
+            # Gerar ID único usando timestamp com nanossegundos + UUID curto
+            timestamp_ns = int(datetime.now().timestamp() * 1000000)  # microssegundos
+            uuid_short = str(uuid.uuid4())[:8]  # Primeiros 8 chars do UUID
+            interaction_id = f"int_{timestamp_ns}_{uuid_short}"
+            
             embedding = self.model.encode(prompt).tolist()
             
             with self._db_lock:

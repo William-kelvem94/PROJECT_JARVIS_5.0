@@ -67,11 +67,17 @@ brain_router:
       min_ram_gb: 1.5
       min_vram_gb: 0.0
   
-  # Cloud models (Gemini)
+  # Cloud models (Selective - Gemini Removed)
   cloud_models:
-    flash: "gemini-1.5-flash"
-    pro: "gemini-1.5-pro"
-    ultra: "gemini-2.0-flash-thinking-exp"
+    tier_ultra:
+      - "deepseek-chat"
+      - "deepseek-reasoner"
+      - "gpt-4-turbo"
+    tier_pro:
+      - "claude-3-haiku"
+      - "gpt-3.5-turbo"
+  
+  offline_mode: false # Set to true to force strictly local
   
   # Routing thresholds
   complexity_thresholds:

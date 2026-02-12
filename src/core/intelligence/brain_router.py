@@ -40,9 +40,9 @@ class BrainRouter:
     def __init__(self):
         self.api_key = os.environ.get('GOOGLE_API_KEY')
         self.local_available = True
-        self.cloud_available = True if self.api_key else False
+        self.cloud_available = True 
         self.local_load = 0.0  # 0-1
-        self.cloud_quota_remaining = 1.0 if self.cloud_available else 0.0
+        self.cloud_quota_remaining = 0.0
         self.ollama_available_models = []
         self._is_online = True
         self._last_conn_check = 0
@@ -72,14 +72,8 @@ class BrainRouter:
         # Discover Ollama models
         self._discover_ollama_models()
         
-        if not self.cloud_available:
-            logger.info("ℹ️ BrainRouter: Cloud (Gemini) desativado (Falta API Key ou Offline Mode).")
-        else:
-            # Validar se a chave realmente funciona
-            is_valid = self._validate_cloud_key()
-            if not is_valid:
-                self.cloud_available = False
-                logger.info("ℹ️ BrainRouter: Chave Gemini inválida. Fallback: Local Apenas.")
+        self.cloud_available = self._check_cloud_availability()
+        logger.info(f"✅ BrainRouter: Cloud integration initialized (Available: {self.cloud_available})")
     
     def _load_default_config(self):
         """Carrega configurações padrão se ai_config.yaml não estiver disponível"""
@@ -127,28 +121,6 @@ class BrainRouter:
             self.ollama_available_models = []
             logger.debug("Ollama não está rodando no momento.")
 
-    def _validate_cloud_key(self):
-        """Valida se a chave do Gemini realmente funciona"""
-        if not self.api_key: return False
-        try:
-            # Carregar modelo flashes configurado
-            from src.utils.config import config
-            model_name = config.get_ai_config('brain_router.cloud_models.flash', 'gemini-1.5-flash')
-            
-            # Teste rápido com modelo real (usando v1 para maior estabilidade)
-            url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={self.api_key}"
-            payload = {"contents": [{"parts": [{"text": "ping"}]}]} 
-            resp = requests.post(url, json=payload, timeout=5)
-            if resp.status_code == 200:
-                logger.info("✅ BrainRouter: Gemini API validada e operacional.")
-                return True
-            else:
-                logger.info(f"ℹ️ BrainRouter: Gemini Indisponível (HTTP {resp.status_code}). Cloud Modo OFF.")
-                logger.debug(f"Erro Gemini: {resp.text}")
-                return False
-        except Exception as e:
-            logger.info(f"ℹ️ BrainRouter: Gemini Indisponível (Erro Conexão): {e}")
-            return False
 
     def choose_brain(
         self,
@@ -229,6 +201,7 @@ class BrainRouter:
                                 "is_heavy": True
                             }
             
+            
             # TIER FAST: Rápido (Qwen / Phi) -> Uso geral econômico
             min_ram_fast = self.hw_tier_fast.get('min_ram_gb', 2.0)
             if free_ram > min_ram_fast:
@@ -242,10 +215,19 @@ class BrainRouter:
                                 "is_heavy": False
                             }
 
-        # ESCALONAMENTO PARA NUVEM (Último recurso para tarefas ultra-complexas)
-        if task_complexity > 0.8 and self.cloud_available and not self.offline_mode:
-            logger.info("☁️ Escalando para Cloud (Gemini)")
-            return {"brain": "cloud_flash", "keep_alive": 0, "is_heavy": False}
+        # CLOUD ESCALATION: Se local não for suficiente e internet disponível
+        if self.cloud_available and task_complexity >= 0.8:
+            cloud_tier = "tier_ultra" if task_complexity >= 0.9 else "tier_pro"
+            cloud_models = config.get_ai_config(f'brain_router.cloud_models.{cloud_tier}', []) if CONFIG_AVAILABLE else []
+            
+            if cloud_models:
+                # Filtrar Gemini (Segurança redundante)
+                safe_models = [m for m in cloud_models if "gemini" not in m.lower()]
+                if safe_models:
+                    model = safe_models[0]
+                    logger.info(f"☁️ CLOUD ESCALATION ({cloud_tier}): {model}")
+                    return {"brain": f"cloud:{model}", "keep_alive": 0, "is_heavy": True}
+
 
         # FALLBACK: Native Micro-LLM (Qwen 0.5B/1.5B)
         logger.info("🏠 Usando LocalBrain nativo")
@@ -284,8 +266,8 @@ class BrainRouter:
     def disable_offline_mode(self):
         """Desativa modo offline"""
         self.offline_mode = False
-        self.cloud_available = True if self.api_key else False
-        logger.info("🌐 MODO ONLINE ATIVADO")
+        self.cloud_available = self._check_cloud_availability()
+        logger.info(f"🌐 MODO ONLINE ATIVADO (Cloud Available: {self.cloud_available})")
 
     def check_connectivity(self) -> bool:
         """Verifica conexão com a internet (cache de 30s)"""
@@ -305,6 +287,17 @@ class BrainRouter:
             self._is_online = False
             
         return self._is_online
+
+    def _check_cloud_availability(self) -> bool:
+        """Verifica se existem provedores de nuvem ativos (Exceto Gemini)"""
+        if not CONFIG_AVAILABLE: return False
+        
+        # Verificar DeepSeek (exemplo de outro provedor)
+        ds_key = os.environ.get('DEEPSEEK_API_KEY')
+        if ds_key: return True
+        
+        # Verificar outros provedores genéricos se configurados
+        return False
 
     def update_status(self, local_load: float = None, cloud_quota: float = None):
         if local_load is not None:

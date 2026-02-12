@@ -46,6 +46,7 @@ def get_active_window_context() -> dict:
             try:
                 process = psutil.Process(pid)
                 context["executable"] = process.name()
+                context["process_name"] = process.name()  # Alias para compatibilidade
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 context["executable"] = "System/Protected"
                 

@@ -69,25 +69,31 @@ class StarkDashboard(QMainWindow):
         
         # Menu Bar para troca rápida
         menubar = self.menuBar()
-        view_menu = menubar.addMenu("Exibir")
-        
-        hud_action = QAction("HUD Overlay", self)
-        hud_action.triggered.connect(lambda: self._request_mode_switch("hud"))
-        view_menu.addAction(hud_action)
-        
-        orb_action = QAction("Mini Orb", self)
-        orb_action.triggered.connect(lambda: self._request_mode_switch("orb"))
-        view_menu.addAction(orb_action)
+        if menubar:
+            view_menu = menubar.addMenu("Exibir")
+            
+            hud_action = QAction("HUD Overlay", self)
+            hud_action.triggered.connect(lambda: self._request_mode_switch("hud"))
+            view_menu.addAction(hud_action)
+            
+            orb_action = QAction("Mini Orb", self)
+            orb_action.triggered.connect(lambda: self._request_mode_switch("orb"))
+            view_menu.addAction(orb_action)
 
     def _request_mode_switch(self, mode_str):
-        # Precisaremos importar InterfaceMode aqui ou passar a string se o manager resolver
-        # Para evitar dependência circular, emitimos string ou objeto se disponível
-        # O WindowManager saberá interpretar.
-        from src.interface.window_manager import InterfaceMode
-        if mode_str == "hud":
-            self.mode_switch_requested.emit(InterfaceMode.HUD_OVERLAY)
-        elif mode_str == "orb":
-            self.mode_switch_requested.emit(InterfaceMode.ORB)
+        """Request interface mode change via WindowManager"""
+        # Para evitar dependência circular, importamos InterfaceMode apenas aqui
+        try:
+            from src.interface.window_manager import InterfaceMode
+            if mode_str == "hud":
+                self.mode_switch_requested.emit(InterfaceMode.HUD_OVERLAY)
+            elif mode_str == "orb":
+                self.mode_switch_requested.emit(InterfaceMode.ORB)
+            elif mode_str == "hidden":
+                self.mode_switch_requested.emit(InterfaceMode.HIDDEN)
+        except ImportError:
+            # Fallback se não conseguir importar (usar string)
+            self.mode_switch_requested.emit(mode_str)
 
     def setup_monitor_tab(self):
         """Aba de monitoramento em tempo real"""

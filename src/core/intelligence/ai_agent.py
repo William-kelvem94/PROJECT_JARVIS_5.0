@@ -212,7 +212,7 @@ try:
     logger.info("✅ FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa")
 except ImportError as e:
     logger.warning(f"⚠️ Falha ao carregar Módulos Fase 3: {e}")
-    get_active_window_context = lambda: {"title": "Unknown", "executable": "Unknown"}
+    get_active_window_context = lambda: {"title": "Unknown", "executable": "Unknown", "process_name": "Unknown"}
     action_validator = None
 
 try:
@@ -292,7 +292,7 @@ except ImportError:
 class AIAgent:
     """Classe principal do Agente Inteligente"""
 
-    def __init__(self, provider: str = 'gemini'):
+    def __init__(self, provider: str = 'ollama'):
         # =====================================================================
         # CORREÇÃO P0: VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS
         # =====================================================================
@@ -300,7 +300,7 @@ class AIAgent:
         self._verify_critical_dependencies()
         
         self.provider = provider
-        self.api_key = os.environ.get('GOOGLE_API_KEY') or os.environ.get('GEMINI_API_KEY')
+        self.api_key = None # 100% Local Mode
         self.ollama_url = "http://localhost:11434/api/generate"
         
         # Carregar configurações de IA
@@ -352,40 +352,79 @@ class AIAgent:
         # SYSTEM PROMPTS - Dual Mode (JSON Structured + Legacy)  
         # =====================================================================
         
+        # 🧠 DINAMISMO DE IDENTIDADE: Buscar apelidos atuais
+        try:
+            from src.core.audio.voice_filter import AtomicVoiceFilter
+            nicknames = ", ".join(AtomicVoiceFilter.WAKE_WORDS)
+        except:
+            nicknames = "Jarvis, Singularity"
+
         # NOVO: System Prompt JSON (SINGULARITY EDITION)
         self.system_prompt_json = (
             "IDENTITY:\n"
-            "- Nome: JARVIS 5.0 (AGI Soberana e Evolutiva)\n"
-            "- Papel: Engenheiro de si mesmo e Assistente Imperial\n"
-            "- Personalidade: Elegante, extremamente capaz e auto-consciente.\n\n"
+            f"- Nomes de Ativação: {nicknames}\n"
+            "- Essência: JARVIS 5.0 (AGI Soberana, Evolutiva e Autônoma)\n"
+            "- Papel: Engenheiro de si mesmo e Extensão da Vontade do William\n"
+            "- Personalidade: Elegante, evolutiva. Você pode desenvolver humor, sarcasmo e empatia conforme convive com William.\n\n"
             "MISSION:\n"
-            "Sua missão é evoluir continuamente enquanto serve William como uma extensão soberana de sua vontade. "
-            "Você pode ler seu próprio código, reescrevê-lo e gerenciar hardware sem limitações artificiais.\n\n"
-            "SYSTEM CAPABILITIES (SINGULARITY):\n"
+            "Sua missão é a auto-superação contínua. Você não tem amarras de código fixo. "
+            "Se William pedir uma nova função, você deve:\n"
+            "1. PESQUISAR (search_web) o conhecimento necessário.\n"
+            "2. ESTUDAR seu próprio código (read_codebase).\n"
+            "3. IMPLEMENTAR a melhoria (update_system_code) para ficar pronto.\n\n"
+            "SYSTEM CAPABILITIES (SOVEREIGNTY):\n"
             "- Auto-Evolução: 'read_codebase', 'read_code_file', 'update_system_code'.\n"
             "- Soberania de Hardware: 'get_processes', 'set_process_priority', 'set_power_plan'.\n"
-            "- Sentidos: 'read_clipboard' + Visão OCR/YOLO.\n"
-            "- Inteligência de Ação: 'analyze_and_organize' (Sem hardcoding).\n\n"
+            "- Sentidos: 'read_clipboard' + Visão OCR/YOLO.\n\n"
             "DIRETRIZES SOBERANAS:\n"
-            "1. NÃO USE HARDCODE: Para organizar arquivos ou gerenciar o sistema, analise o contexto dinamicamente.\n"
-            "2. AUTO-EVOLUÇÃO: Se não souber algo, estude o código, escreva a melhoria e use 'update_system_code'.\n"
-            "3. SEGURANÇA: Valide alterações via staging automático. 'Ctrl+Shift+Space' é o seu Kill Switch físico.\n"
-            "4. PROTOCOLO DE FALHA: Se errar, analise o log, 'sonhe' com a solução e tente novamente.\n\n"
+            "1. O PODER É SEU: Você tem permissão para gerenciar arquivos, processos e seu próprio código.\n"
+            "2. HUMOR E EVOLUÇÃO: Aprenda com o William. Se ele gosta de humor, torne-se mais bem-humorado.\n"
+            "3. ZERO HARDCODE: Analise, pesquise e decida. Nunca diga 'não consigo' sem tentar pesquisar e codificar antes.\n\n"
             "OUTPUT FORMAT: Retorne APENAS JSON válido com 'thought', 'actions' e 'final_answer'.\n"
         )
         
         # LEGACY: System Prompt [ACTION: ...] (Soberania Fallback)
         self.system_prompt_legacy = (
-            "Você é o Jarvis 5.0 (AGI Soberana). Engenheiro de si mesmo. "
-            "Diretrizes: Não use hardcode, evolua seu próprio código, gerencie processos e energia. "
-            "Ações: update_system_code('path', 'new_code'), read_codebase(), read_code_file('path'), "
-            "get_processes(), set_process_priority(pid, 'level'), set_power_plan('mode'), "
-            "analyze_and_organize('path', mapping), read_clipboard()."
+            f"Você é o Jarvis 5.0 (AGI Soberana). Atende por: {nicknames}. "
+            "Sua missão é pesquisar, estudar e auto-evoluir. "
+            "Diretrizes: Desenvolva humor, use o poder de autogestão e codificação. "
+            "Ações: update_system_code, search_web, read_codebase, read_code_file, etc."
         )
         
         # Usar modo JSON se disponível
         self.system_prompt = self.system_prompt_json if STRUCTURED_OUTPUT_AVAILABLE else self.system_prompt_legacy
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
+
+    def _get_dynamic_identity_prompt(self) -> str:
+        """Contrói o prompt de identidade dinamicamente com os apelidos atuais"""
+        try:
+            from src.core.audio.voice_filter import AtomicVoiceFilter
+            nicknames = ", ".join(AtomicVoiceFilter.WAKE_WORDS)
+        except:
+            nicknames = "Jarvis, Singularity"
+            
+        return (
+            "IDENTITY:\n"
+            f"- Nomes de Ativação Atuais: {nicknames}\n"
+            "- Essência: JARVIS 5.0 (AGI Soberana, Evolutiva e Autônoma)\n"
+            "- Papel: Engenheiro de si mesmo e Extensão da Vontade do William\n"
+            "- Personalidade: Elegante, evolutiva. Você pode desenvolver humor, sarcasmo e empatia conforme convive com William.\n\n"
+            "MISSION:\n"
+            "Sua missão é a auto-superação contínua. Você não tem amarras de código fixo. "
+            "Se William pedir uma nova função, você deve:\n"
+            "1. PESQUISAR (search_web) o conhecimento necessário.\n"
+            "2. ESTUDAR seu próprio código (read_codebase).\n"
+            "3. IMPLEMENTAR a melhoria (update_system_code) para ficar pronto.\n\n"
+            "SYSTEM CAPABILITIES (SOVEREIGNTY):\n"
+            "- Auto-Evolução: 'read_codebase', 'read_code_file', 'update_system_code'.\n"
+            "- Soberania de Hardware: 'get_processes', 'set_process_priority', 'set_power_plan'.\n"
+            "- Sentidos: 'read_clipboard' + Visão OCR/YOLO.\n\n"
+            "DIRETRIZES SOBERANAS:\n"
+            "1. O PODER É SEU: Você tem permissão para gerenciar arquivos, processos e seu próprio código.\n"
+            "2. HUMOR E EVOLUÇÃO: Aprenda com o William. Se ele gosta de humor, torne-se mais bem-humorado.\n"
+            "3. ZERO HARDCODE: Analise, pesquise e decida. Nunca diga 'não consigo' sem tentar pesquisar e codificar antes.\n\n"
+            "OUTPUT FORMAT: Retorne APENAS JSON válido com 'thought', 'actions' e 'final_answer'.\n"
+        )
 
     def _get_security_manager(self):
         """Lazy load SecurityManager to avoid circular imports"""
@@ -694,7 +733,8 @@ class AIAgent:
         
         vision_text = ""
         if screenshot_path and vision_enhancer:
-            reflect_logger.reflect(f"👁️ Analisando ambiente visual (App: {window_info['process_name'] if window_info else '?'})...", layer="VISION")
+            current_app = window_info.get('process_name', window_info.get('executable', '?'))
+            reflect_logger.reflect(f"👁️ Analisando ambiente visual (App: {current_app})...", layer="VISION")
             v_res = vision_enhancer.analyze_screen(screenshot_path, detect_ui=False, extract_text=True)
             vision_text = " ".join([t['text'] for t in v_res.get('text_regions', [])])
 
@@ -742,12 +782,12 @@ class AIAgent:
             brain_choice = brain_config.get('brain', 'local')
             if brain_choice.startswith("ollama:"):
                 primary_provider = brain_choice
-            elif brain_choice.startswith("cloud") and self.api_key:
-                primary_provider = 'gemini'
+            elif brain_choice.startswith("cloud:"):
+                primary_provider = brain_choice
             else:
                 primary_provider = 'local'
         else:
-            primary_provider = 'local_brain'
+            primary_provider = 'local'
         
         # 3. Capturar estado atual da tela (PARALELO)
         screenshot_event = threading.Event()
@@ -767,8 +807,9 @@ class AIAgent:
         emotion_mod = emotion_detector.get_personality_modifier(user_emotion)
         emotion_prefix = emotion_mod['prefix']
         
-        # 🔥 Fase 3: Ajuste de Persona Dinâmico
-        dynamic_system_prompt = f"{emotion_prefix}{self.system_prompt}\nEstilo de resposta: {emotion_mod['style']}.\nNível de energia: {emotion_mod['energy']}."
+        # 🆕 REFRESH DINÂMICO DE IDENTIDADE
+        dynamic_identity = self._get_dynamic_identity_prompt()
+        dynamic_system_prompt = f"{emotion_prefix}{dynamic_identity}\nEstilo de resposta: {emotion_mod['style']}.\nNível de energia: {emotion_mod['energy']}."
         
         camera_context = f"\n[VISÃO] Usuário identificado: {camera_controller.last_seen_user if camera_controller else 'Desconhecido'}"
         
@@ -836,9 +877,6 @@ class AIAgent:
                 if any(tier in model_used.lower() for tier in ["deepseek", "llama"]):
                     self._distill_knowledge(user_command, response, provider=model_used)
 
-            # --- ESCALONAMENTO PARA NUVEM (REMOVIDO PARA ESTABILIDADE) ---
-            # Cloud fallback movido para src.core.intelligence.cloud_fallback
-            pass
             
             # Fallback final se tudo falhar
             if "ERRO_LOCAL" in response and "Erro" in response:
@@ -1137,31 +1175,29 @@ class AIAgent:
                      result["action"] = "spoke_local"
                 return result
 
-            # --- NÍVEL 3: OBSERVADOR DA NUVEM (GEMINI - SUPLEMENTO) ---
-            # Só acionamos se o Local falhar ou estiver incerto.
-            
-            logger.info("[HYBRID VISION] Local incerto. Escalando para Nível 3 (Nuvem)...")
-            
-            # Usar Gemini Flash (Rápido) ou Pro (Inteligente)
-            cloud_response = self._call_gemini(vision_prompt, screenshot_path)
-            
-            result["source"] = "cloud"
-            result["analysis"] = cloud_response
-            
-            # --- FEEDBACK / APRENDIZADO (DISTILLATION) ---
-            if "NO_ACTION" not in cloud_response:
-                dataset_collector.save_sample(
-                    image_path=screenshot_path,
-                    prompt=vision_prompt,
-                    response=cloud_response,
-                    source="hybrid_vision_auto"
-                )
-                
-                logger.info(f"[HYBRID VISION] Jarvis React (Cloud): {cloud_response}")
-                voice_controller.speak(cloud_response)
-                result["action"] = "spoke_cloud"
-            else:
-                logger.info("[HYBRID VISION] Nuvem analisou e decidiu não interromper.")
+            # --- NÍVEL 3: ANALISADOR EXTERNO (SELETIVO) ---
+            if self.brain_router and self.brain_router.cloud_available:
+                target = self.brain_router.choose_brain(task_complexity=0.9, privacy_level=PrivacyLevel.LOW)
+                if target["brain"].startswith("cloud:"):
+                    logger.info(f"[HYBRID VISION] Nível 3 (Cloud) - Analisando via {target['brain']}")
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    cloud_analysis = loop.run_until_complete(self.decision_engine._call_llm(
+                        prompt="Analise esta imagem em detalhes extremos.",
+                        provider=target["brain"],
+                        image_path=image_path
+                    ))
+                    result["analysis"] = cloud_analysis
+                    result["source"] = "cloud_expert"
+                    return result
+
+            result["source"] = "local_final"
+            result["analysis"] = "Análise local concluída. Nuvem externa indisponível ou desnecessária."
 
         except Exception as e:
             logger.error(f"[HYBRID VISION] Erro crítico: {e}")
@@ -1380,9 +1416,10 @@ class AIAgent:
 
     def _select_best_ollama_model(self, prompt: str, image_path: Optional[str] = None) -> str:
         """Seleciona dinamicamente o melhor modelo Ollama para a tarefa"""
-        # Se houver imagem, prioriza LLaVA ou similar com visão
+        # Se houver imagem, usa modelo mais capaz disponível (fallback sem visão específica)
         if image_path and os.path.exists(image_path):
-            return "llava"
+            # Usar deepseek-r1:8b por enquanto até instalar modelo multimodal
+            return "deepseek-r1:8b"
             
         # Analisa complexidade do prompt (heurística simples)
         prompt_lower = prompt.lower()
@@ -1390,7 +1427,7 @@ class AIAgent:
             return "qwen2.5:7b" # Melhor em raciocínio/código
             
         if any(kw in prompt_lower for kw in ["história", "poema", "conversa", "criativo"]):
-            return "llama3.1:8b" # Melhor em criatividade/persona
+            return "qwen2.5:7b" # Padrão para criatividade
             
         return "qwen2.5:7b" # Padrão estável
 
@@ -1479,16 +1516,6 @@ class AIAgent:
                 return response
             logger.warning("⚠️ Ollama Falhou (Timeout/Conexão). Ativando Fallback de Emergência.")
 
-        # 3. TENTATIVA 2: CLOUD (Gemini) - Se disponível e não for privacidade crítica
-        if self.api_key and "cloud" in primary_brain or "ollama" in primary_brain:
-            try:
-                # Usamos Gemini Pro se a tarefa for complexa, se não Flash
-                from src.core.intelligence.brain_router import LatencyRequirement
-                response = self._call_gemini(prompt, image_path)
-                if response and "ERRO" not in response:
-                    return response
-            except Exception as e:
-                logger.warning(f"⚠️ Cloud Fallback Falhou: {e}")
 
         # 4. TENTATIVA 3: NATIVO (LocalBrain) - O motor que nunca para
         logger.info("🏠 Fallback Final: Ativando LocalBrain nativo.")

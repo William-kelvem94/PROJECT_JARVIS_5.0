@@ -180,15 +180,34 @@ trusted-host = pypi.org
         venv_path = project_root / 'venv'
         
         try:
-            # PowerShell command para adicionar exclusão
+            # Primeiro verifica se já está excluído
+            check_cmd = f'Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object {{$_ -eq "{venv_path}"}}'
+            result = subprocess.run(['powershell', '-Command', check_cmd], 
+                                   capture_output=True, text=True, timeout=15)
+            
+            if result.stdout.strip():
+                self.log('OK', '  ✅ VENV already excluded from Windows Defender')
+                return True
+            
+            # Tenta adicionar exclusão
             ps_cmd = f'Add-MpPreference -ExclusionPath "{venv_path}"'
-            subprocess.run(['powershell', '-Command', ps_cmd], 
-                         check=True, capture_output=True, timeout=10)
+            subprocess.run(['powershell', '-ExecutionPolicy', 'Bypass', '-Command', ps_cmd], 
+                         check=True, capture_output=True, timeout=15)
             self.fixed.append('defender_exclusion')
             self.log('OK', '  ✅ VENV excluded from Windows Defender')
             return True
+            
+        except subprocess.TimeoutExpired:
+            self.log('WARN', '  ⚠️  Windows Defender configuration timed out')
+            return False
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                self.log('WARN', '  ⚠️  Windows Defender: Access denied or policy restriction')
+            else:
+                self.log('WARN', f'  ⚠️  Windows Defender error (code {e.returncode})')
+            return False
         except Exception as e:
-            self.log('WARN', f'  ⚠️  Could not configure Defender: {e}')
+            self.log('WARN', f'  ⚠️  Could not configure Defender: {str(e)[:50]}...')
             return False
     
     def auto_configure_all(self):

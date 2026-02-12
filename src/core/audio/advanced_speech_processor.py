@@ -26,7 +26,7 @@ class AdvancedSpeechProcessor:
         self.tts_available = False
         self.tts_engine = None
         
-        self._init_whisper()
+        # self._init_whisper() # Desativado o auto-load para economizar recursos (Uso sob demanda)
         self._init_tts()
     
     def _init_whisper(self):
@@ -72,6 +72,9 @@ class AdvancedSpeechProcessor:
         Returns:
             Dicionário com texto e metadados
         """
+        if not self.whisper_available:
+            self._init_whisper()
+            
         if not self.whisper_available:
             return {
                 "error": "Whisper não disponível",
