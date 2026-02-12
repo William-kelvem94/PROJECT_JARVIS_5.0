@@ -13,6 +13,15 @@ from ctypes import cast, POINTER
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
+# Lazy import helpers
+def _get_security_manager():
+    from src.core.security.security_manager import SecurityManager
+    return SecurityManager()
+
+def _get_config():
+    from src.utils.config import config
+    return config
+
 # -------------------------------------------------------------------------
 # IMPORTS CONDICIONAIS (Graceful degradation)
 # -------------------------------------------------------------------------

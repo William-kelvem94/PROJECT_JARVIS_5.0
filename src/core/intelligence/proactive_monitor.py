@@ -23,9 +23,10 @@ class ProactiveMonitor:
         try:
             from src.utils.config import config
             self.check_interval = config.get_ai_config('vision.proactive_monitor.check_interval', check_interval)
-            self.sensitivity = config.get_ai_config('vision.proactive_monitor.sensitivity', sensitivity)
-            self.cooldown = config.get_ai_config('vision.proactive_monitor.cooldown', 600.0)
-            logger.info(f"⚙️ Monitor Proativo: Intervalo={self.check_interval}s, Sensibilidade={self.sensitivity}, Cooldown={self.cooldown}s")
+            # Aumentar threshold ( threshold maior = menos triggers falsos)
+            self.sensitivity = 0.25 # Padrão mais conservador para evitar sobrecarga
+            self.cooldown = config.get_ai_config('vision.proactive_monitor.cooldown', 900.0)
+            logger.info(f"⚙️ Monitor Proativo Otimizado: Intervalo={self.check_interval}s, Threshold={self.sensitivity}, Cooldown={self.cooldown}s")
         except Exception as e:
             logger.warning(f"⚠️ Erro ao carregar config para ProactiveMonitor, usando defaults: {e}")
             self.check_interval = check_interval

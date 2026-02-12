@@ -6,7 +6,21 @@ Detecta e otimiza o uso de CPU/GPU para todos os módulos de IA.
 import logging
 import platform
 import os
-from typing import Dict, Any
+import sys
+from typing import Dict, Any, List, Optional
+
+# 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
+try:
+    import openvino
+    import openvino.runtime
+    node_obj = getattr(openvino.runtime, 'Node', None)
+    if node_obj:
+        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
+    if hasattr(openvino.runtime, 'op'):
+        sys.modules['openvino.op'] = openvino.runtime.op
+except Exception:
+    pass
 
 try:
     import torch
@@ -237,6 +251,79 @@ class HardwareManager:
             "ram_free_gb": mem["ram_free_gb"],
             "vram_free_gb": mem["vram_free_gb"]
         }
+
+    # =========================================================================
+    # SOBERANIA DE HARDWARE (Singularity Edition)
+    # =========================================================================
+
+    def get_running_processes(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Retorna processos com maior consumo de CPU/RAM"""
+        import psutil
+        processes = []
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']):
+            try:
+                processes.append(proc.info)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        
+        # Ordenar por CPU e pegar top N
+        sorted_procs = sorted(processes, key=lambda x: x['cpu_percent'], reverse=True)
+        return sorted_procs[:limit]
+
+    def set_process_priority(self, pid: int, level: str) -> bool:
+        """Altera a prioridade de um processo (IDLE, BELOW_NORMAL, NORMAL, ABOVE_NORMAL, HIGH, REALTIME)"""
+        import psutil
+        try:
+            p = psutil.Process(pid)
+            levels = {
+                "IDLE": psutil.IDLE_PRIORITY_CLASS,
+                "BELOW_NORMAL": psutil.BELOW_NORMAL_PRIORITY_CLASS,
+                "NORMAL": psutil.NORMAL_PRIORITY_CLASS,
+                "ABOVE_NORMAL": psutil.ABOVE_NORMAL_PRIORITY_CLASS,
+                "HIGH": psutil.HIGH_PRIORITY_CLASS,
+                "REALTIME": psutil.REALTIME_PRIORITY_CLASS
+            }
+            if level in levels:
+                p.nice(levels[level])
+                logger.info(f"🚀 Prioridade do processo {pid} alterada para {level}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao alterar prioridade: {e}")
+        return False
+
+    def set_power_plan(self, mode: str) -> bool:
+        """Altera o plano de energia do Windows (GAMER/HIGH_PERFORMANCE, BALANCED, POWER_SAVER)"""
+        if self.system != "Windows": return False
+        
+        import subprocess
+        # GUIDs padrão do Windows
+        plans = {
+            "GAMER": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", # High Performance
+            "BALANCED": "381b4222-f694-41f0-9685-ff5bb260df2e",
+            "POWER_SAVER": "a1841308-3541-4fab-bc81-f71556f20b4a"
+        }
+        
+        try:
+            guid = plans.get(mode.upper())
+            if guid:
+                subprocess.run(["powercfg", "/setactive", guid], check=True)
+                logger.info(f"🔋 Plano de energia alterado para: {mode}")
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao alterar plano de energia: {e}")
+        return False
+
+    def suggest_optimizations(self) -> str:
+        """Analisa o contexto e sugere otimizações soberanas"""
+        status = self.get_status()
+        cpu_usage = psutil.cpu_percent()
+        
+        if cpu_usage > 85:
+            return "Sugestão: O sistema está sob carga pesada. Recomendo alterar para o modo 'GAMER/HIGH_PERFORMANCE' e reduzir prioridade de processos em background."
+        elif status["ram_free_gb"] < 2.0:
+            return "Sugestão: Pouca memória RAM disponível. Recomendo fechar aplicações não essenciais ou limpar cache de VRAM."
+        
+        return "Sistema operando em parâmetros ideais."
 
 # Instância global
 hardware_manager = HardwareManager()

@@ -74,6 +74,7 @@ except ImportError:
     logging.warning("TTS (Coqui) não disponível. Voice cloning desativado.")
 
 from src.utils.config import config
+from src.interface.ui_signals import ui_signals
 
 logger = logging.getLogger(__name__)
 
@@ -213,6 +214,7 @@ class VoiceController:
         from src.utils.logger_reflection import reflect_logger
         reflect_logger.log_speech(text)  # Console visual
         logger.info(f"🗣️  SPEAKING: \"{text}\"")  # Arquivo de log detalhado
+        ui_signals.update_status.emit(text)
         
         # ============ P1: RESPONSE CACHING ============
         if PYGAME_AVAILABLE:
@@ -626,7 +628,9 @@ class VoiceController:
                 
                 try:
                     logger.info(f"Ouvindo ({'Online' if is_online else 'Offline'})...")
+                    ui_signals.update_listening_state.emit(True)
                     audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
+                    ui_signals.update_listening_state.emit(False)
                     
                     text = ""
                     if self.stt_provider == 'google' or (self.stt_provider == 'auto' and is_online):
