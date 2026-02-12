@@ -635,12 +635,93 @@ def main():
             sys.stderr.reconfigure(encoding='utf-8')
         except:
             pass  # Python < 3.7 or non-standard console
+    
+    # ========================================================================
+    # 🔥 NOVO: VERIFICAÇÃO DE MODO DEMOCRÁTICO
+    # ========================================================================
+    democratic_mode = "--democratic" in sys.argv
+    
+    if democratic_mode:
+        print(f"\n🔥 [DEMOCRÁTICO] Inicializando JARVIS em Modo Democrático Total...")
+        print("="*80)
+        print("🔥 PODER TOTAL HABILITADO - SEM PRÉ-CONFIGURAÇÕES")
+        print("👑 Interface de Controle Democrático Ativa")
+        print("🆔 Identificação Microsoft + Biometric")
+        print("☁️ Google Drive Estruturado")
+        print("🌐 Rede Inteligente Democrática")
+        print("="*80)
+    else:
+        print(f"\n🌌 [SINGULARITY] Inicializando JARVIS Singularity Suite...")
             
     # CRITICAL FIX: Ensure ui_signals is available in local scope
     from src.interface.ui_signals import ui_signals
     
-    print(f"\n🌌 [STAGE 0] Initializing JARVIS Singularity Suite...")
     start_time = time.time()
+    
+    # ========================================================================
+    # 🔥 NOVO: INICIALIZAÇÃO DEMOCRÁTICA PRÉ-GUI
+    # ========================================================================
+    democratic_systems = None
+    if democratic_mode:
+        try:
+            print("🔥 [DEMOCRÁTICO] Inicializando sistemas de poder...")
+            
+            # Importar e inicializar sistemas democráticos
+            from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier
+            from src.core.identity.enhanced_biometric_verifier import EnhancedBiometricVerifier
+            from src.core.cloud.structured_google_drive import StructuredGoogleDriveManager
+            from src.core.interface.democratic_control_interface import DemocraticControlInterface
+            from src.core.democratic_core import DemocraticCore
+            
+            # Configurar paths
+            PROJECT_ROOT = Path(__file__).parent
+            data_path = PROJECT_ROOT / "data"
+            
+            # Classe temporária para jarvis_core
+            class TempJarvisCore:
+                def __init__(self):
+                    self.config = {
+                        'system': {
+                            'base_path': str(PROJECT_ROOT),
+                            'data_path': str(data_path)
+                        }
+                    }
+            
+            temp_core = TempJarvisCore()
+            
+            # Inicializar sistemas democráticos
+            print("   🆔 Carregando identificação Microsoft...")
+            microsoft_identifier = MicrosoftDeviceIdentifier(str(data_path))
+            microsoft_identifier.initialize()
+            
+            print("   🔐 Preparando verificação biométrica...")
+            biometric_verifier = EnhancedBiometricVerifier(temp_core, microsoft_identifier)
+            
+            print("   ☁️ Configurando Google Drive...")
+            drive_manager = StructuredGoogleDriveManager(temp_core, microsoft_identifier)
+            drive_manager.initialize()
+            
+            print("   🗳️ Inicializando núcleo democrático...")
+            democratic_core = DemocraticCore(temp_core)
+            
+            print("   🔥 Preparando interface de controle...")
+            democratic_interface = DemocraticControlInterface(temp_core)
+            
+            # Armazenar sistemas para usar depois
+            democratic_systems = {
+                'core': temp_core,
+                'microsoft_identifier': microsoft_identifier,
+                'biometric_verifier': biometric_verifier,
+                'drive_manager': drive_manager,
+                'democratic_core': democratic_core,
+                'democratic_interface': democratic_interface
+            }
+            
+            print("✅ [DEMOCRÁTICO] Sistemas de poder inicializados com sucesso!")
+            
+        except Exception as e:
+            print(f"❌ [DEMOCRÁTICO] Erro inicializando sistemas: {e}")
+            democratic_mode = False  # Fallback para modo normal
     
     # ------------------------------------------------------------------------
     # [STAGE 1] CORE INITIALIZATION (Pre-GUI)
@@ -732,6 +813,40 @@ def main():
             if boot_data["instances"]:
                 logger.info("⚡ [STAGE 2] Background Boot Completed")
                 instances = boot_data["instances"]
+                
+                # ========================================================================
+                # 🔥 NOVO: INTEGRAÇÃO DOS SISTEMAS DEMOCRÁTICOS
+                # ========================================================================
+                if democratic_mode and democratic_systems:
+                    try:
+                        print("🔥 [DEMOCRÁTICO] Integrando sistemas de poder ao núcleo...")
+                        
+                        # Adicionar sistemas democráticos às instâncias
+                        instances["Democratic Core"] = democratic_systems['democratic_core']
+                        instances["Microsoft Identifier"] = democratic_systems['microsoft_identifier']
+                        instances["Biometric Verifier"] = democratic_systems['biometric_verifier']
+                        instances["Drive Manager"] = democratic_systems['drive_manager']
+                        instances["Democratic Interface"] = democratic_systems['democratic_interface']
+                        
+                        # Lançar interface democrática em thread separada
+                        def launch_democratic_interface():
+                            try:
+                                print("🚀 [DEMOCRÁTICO] Lançando Interface de Controle Total...")
+                                democratic_systems['democratic_interface'].launch_interface()
+                            except Exception as e:
+                                print(f"❌ [DEMOCRÁTICO] Erro na interface: {e}")
+                        
+                        democratic_thread = threading.Thread(
+                            target=launch_democratic_interface, 
+                            daemon=True, 
+                            name="DemocraticInterface"
+                        )
+                        democratic_thread.start()
+                        
+                        print("✅ [DEMOCRÁTICO] Interface de Poder Total Ativa!")
+                        
+                    except Exception as e:
+                        print(f"❌ [DEMOCRÁTICO] Erro integrando sistemas: {e}")
                 
                 # Start Stage 3 (Neural Awakening)
                 logger.info("⚡ [STAGE 3] Igniting Neural Engines...")

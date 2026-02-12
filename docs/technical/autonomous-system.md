@@ -81,7 +81,7 @@ JARVIS Iniciado! 🎉
 | `scripts/auto_healer.py` | Auto-healing inteligente | Automático |
 | `scripts/auto_configurator.py` | Configuração de ambiente | Automático |
 | `scripts/install/quick_fix_torch.py` | Fix rápido PyTorch | Automático/Manual |
-| `scripts/test_pytorch.py` | Diagnóstico PyTorch | Manual |
+| `tests/test_pytorch.py` | Diagnóstico PyTorch | Manual |
 | `scripts/validate_dependencies.py` | Validação melhorada | Automático/Manual |
 
 ---

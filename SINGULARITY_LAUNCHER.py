@@ -107,39 +107,117 @@ def ensure_ollama_running():
             sys.exit(1)
 
 def main():
-    print("\n" + "="*60)
-    print("🛡️ [LAUNCHER] PROTOCOLO JARVIS SINGULARITY v5.0")
-    print("="*60)
+    print("\n" + "="*80)
+    print("🔥 [LAUNCHER] PROTOCOLO JARVIS DEMOCRÁTICO SINGULARITY v5.0")
+    print("="*80)
     print(f"💎 Ambiente: {sys.executable}")
+    print(f"🌐 Modo: DEMOCRÁTICO - Rede Inteligente")
+    print(f"🔒 Identificação: Microsoft Account + Biometric")
+    print(f"☁️ Sincronização: Google Drive Estruturado")
+    print("="*80)
     
     # Validação de Infraestrutura
     ensure_ollama_installed()
     ensure_ollama_running()
     
-    print("\n🚀 [SISTEMA] Iniciando Arquitetura Fênix...")
+    # ========================================================================
+    # NOVO: PRÉ-INICIALIZAÇÃO DEMOCRÁTICA
+    # ========================================================================
+    print("\n🔥 [DEMOCRÁTICO] Inicializando Sistema de Poder Total...")
+    
+    try:
+        # Detectar Microsoft Account e dispositivo
+        print("🆔 [IDENT] Detectando conta Microsoft...")
+        result = subprocess.run([
+            sys.executable, "-c", 
+            "from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier; "
+            "import sys; "
+            "mi = MicrosoftDeviceIdentifier('./data'); "
+            "success = mi.initialize(); "
+            "print(f'ACCOUNT:{mi.microsoft_account.account_email if mi.microsoft_account else \"None\"}'); "
+            "print(f'DEVICE:{mi.device_fingerprint.device_id if mi.device_fingerprint else \"None\"}'); "
+            "sys.exit(0 if success else 1)"
+        ], capture_output=True, text=True, timeout=30)
+        
+        if result.returncode == 0:
+            lines = result.stdout.strip().split('\n')
+            account_line = next((line for line in lines if line.startswith('ACCOUNT:')), None)
+            device_line = next((line for line in lines if line.startswith('DEVICE:')), None)
+            
+            if account_line and device_line:
+                account = account_line.split(':', 1)[1]
+                device = device_line.split(':', 1)[1]
+                
+                if account != "None" and device != "None":
+                    print(f"   ✅ Conta: {account}")
+                    print(f"   ✅ Dispositivo: {device[:16]}...")
+                else:
+                    print("   ⚠️ Identificação parcial - continuando...")
+            else:
+                print("   ⚠️ Resposta inesperada - continuando...")
+        else:
+            print("   ⚠️ Falha na detecção - continuando sem identificação...")
+        
+    except subprocess.TimeoutExpired:
+        print("   ⚠️ Timeout na identificação - continuando...")
+    except Exception as e:
+        print(f"   ⚠️ Erro na identificação: {e} - continuando...")
+    
+    # Verificar Google Drive
+    print("☁️ [DRIVE] Verificando integração Google Drive...")
+    try:
+        import os
+        from pathlib import Path
+        
+        # Caminhos comuns do Google Drive
+        drive_paths = [
+            Path.home() / "Google Drive",
+            Path("C:") / "Users" / os.getenv("USERNAME", "") / "Google Drive"
+        ]
+        
+        drive_found = False
+        for path in drive_paths:
+            if path.exists():
+                print(f"   ✅ Google Drive detectado: {path}")
+                drive_found = True
+                break
+        
+        if not drive_found:
+            print("   ⚠️ Google Drive não detectado - funcionalidade limitada")
+        
+    except Exception as e:
+        print(f"   ⚠️ Erro verificando Drive: {e}")
+    
+    print("\n🚀 [SISTEMA] Iniciando Arquitetura Democrática...")
     
     while True:
         try:
-            # Roda o main.py no ambiente atual
-            process = subprocess.Popen([sys.executable, "main.py"])
+            # Roda o main.py no ambiente atual com args democráticos
+            args = [sys.executable, "main.py"]
+            
+            # Adicionar flags democráticos
+            if "--democratic" not in sys.argv:
+                args.append("--democratic")
+            
+            process = subprocess.Popen(args)
             exit_code = process.wait()
             
             if exit_code == EXIT_CODE_REBIRTH:
-                print("\n🧬 [EVOLUÇÃO] Atualização do núcleo detectada. Reiniciando Matriz...")
+                print("\n🧬 [EVOLUÇÃO] Atualização democrática detectada. Reiniciando Matriz...")
                 time.sleep(2)
                 continue 
             elif exit_code == 0:
-                print("🛑 [SISTEMA] Sistema encerrado normalmente.")
+                print("🛑 [SISTEMA] Sistema democrático encerrado normalmente.")
                 break
             else:
-                print(f"⚠️ [AVISO] O JARVIS encerrou com código {exit_code}. Reiniciando em 5s...")
+                print(f"⚠️ [AVISO] O JARVIS democrático encerrou com código {exit_code}. Reiniciando em 5s...")
                 time.sleep(5)
                 
         except KeyboardInterrupt:
-            print("\n🛑 [SISTEMA] Interrupção manual detectada. Launcher desligando...")
+            print("\n🛑 [SISTEMA] Interrupção manual detectada. Launcher democrático desligando...")
             break
         except Exception as e:
-            logger.error(f"❌ [ERRO] Falha no loop de execução: {e}")
+            logger.error(f"❌ [ERRO] Falha no loop de execução democrática: {e}")
             time.sleep(5)
 
 if __name__ == "__main__":

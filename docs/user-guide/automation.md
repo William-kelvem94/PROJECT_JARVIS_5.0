@@ -31,8 +31,9 @@ import subprocess
 
 def executar():
     """Abre VSCode e navegador com GitHub"""
-    # Abrir VSCode
-    subprocess.Popen(["code", "C:\\Users\\willi\\Documents\\GitHub"])
+    # Abrir VSCode no diretório de projetos (usa variável de ambiente)
+    projects_dir = os.path.join(os.environ.get('USERPROFILE', ''), 'Documents', 'GitHub')
+    subprocess.Popen(["code", projects_dir])
     
     # Abrir GitHub no navegador
     subprocess.Popen(["start", "https://github.com"], shell=True)
@@ -225,7 +226,8 @@ import os
 import shutil
 
 def executar():
-    downloads = "C:\\Users\\willi\\Downloads"
+    # Usar variável de ambiente para o diretório de downloads
+    downloads = os.path.join(os.environ.get('USERPROFILE', ''), 'Downloads')
     
     # Criar pastas por tipo
     folders = {

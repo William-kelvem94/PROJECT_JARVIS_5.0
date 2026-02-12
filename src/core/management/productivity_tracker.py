@@ -257,8 +257,8 @@ class ProductivityTracker:
         logger.info("⏸️ Rastreamento de produtividade pausado")
 
 
-# Instância global
-productivity_tracker = ProductivityTracker()
+# Instância global removida para evitar execução durante import
+# productivity_tracker = ProductivityTracker()
 
 
 # Exemplo de uso

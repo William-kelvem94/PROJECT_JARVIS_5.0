@@ -45,5 +45,8 @@
     "show_notifications": true,
     "auto_start": false,
     "check_updates": true
+  },
+  "test": {
+    "value": "test_data"
   }
 }

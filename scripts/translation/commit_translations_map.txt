@@ -1,0 +1,57 @@
+f4d3184cedce8fd99515afe9ebfaa5090585a3a5|||🎯 Estrutura inicial do projeto Jarvis IA
+ccec6f7d8cdb78fb45ea16a9b6d4b3c09668ac5b|||Remove arquivos obsoletos, incluindo README_MODELS.md, requirements.txt, e arquivos de configuração e plugins, para simplificar a estrutura do projeto Jarvis IA. Essa limpeza prepara o repositório para uma nova abordagem modular e atualizada.
+251060e1f1edb67777ea3b00ecabc01a82beb4ea|||Remove arquivos obsoletos e desnecessários, incluindo configurações de Docker, scripts de instalação, documentação e arquivos de frontend, para simplificar a estrutura do projeto Jarvis IA e preparar o repositório para uma nova abordagem modular.
+018eedff0f32b5843cb8ed15d6431ba378c50aef|||Remove arquivos obsoletos e desnecessários, incluindo documentação, scripts de instalação, e arquivos de configuração do Docker, para simplificar a estrutura do projeto JARVIS 5.0 e preparar o repositório para uma nova abordagem modular. Essa limpeza melhora a manutenibilidade e a organização do código.
+fe211d40d926c5be82091e594c5d7e7715665869|||Remove arquivos obsoletos do projeto JARVIS 5.0, incluindo .gitignore, CHANGELOG.md, config.json, e diversos módulos de voz, IA, automação e vídeo. Essa limpeza visa simplificar a estrutura do repositório e preparar o código para uma nova abordagem modular, melhorando a manutenibilidade e organização do projeto.
+3397e7331a76bbb982647f169bcdc82224180e76|||🚀 Adicionar infraestrutura abrangente de treinamento com orquestrador
+ef8cb954f0a0ea619080b0bd2fd9810c2684331e|||🔍 Adicionar capacidades de pesquisa web e research com contexto integrado
+6a7bf016d84a12394320c037100a2a3f5b8d50f1|||✨ Adicionar sistema JARVIS completo: controle multiplataforma + treinamento contínuo
+db349b2eb456c0f233e175336c6c11f4e7d350e4|||📚 Adicionar guia completo de uso do JARVIS
+0e7c619c1d15c5ca32e5553de68e44187d55d052|||🔒 Corrigir problemas de segurança e qualidade da revisão de código
+e71c84d69f7fa2e44f101c6b5839266ee98b614c|||🧹 Limpar arquivos de backup
+45a22a549784379e881745672eb7d5df21d6b165|||🛡️ Melhorar segurança e robustez baseado no feedback da revisão de código
+287696f48aabe0b85c55a0ef04e0bb96f95e33bd|||📝 Atualizar documentação para refletir implementação do Google Search
+ad9e92904f8ada89c2deb971c1ff6b94d2149e49|||Merge pull request #1 from William-kelvem94/copilot/develop-ai-training-model
+d11a5d74e931a5410865a072b1a0f6f92fdad8db|||🗑️ Remover documentação e scripts obsoletos relacionados ao JARVIS 5.0, incluindo análise, documentação de API, arquitetura e vários scripts de configuração, para simplificar a estrutura do projeto e focar em componentes essenciais
+d651ecb14f9757769bf27d117d77d0fe739ef6cc|||📊 Adicionar session_stats.json com métricas de sessão
+b50d7b362c665d55c1f3a42b9a45cb820ca0b847|||🚀 Adicionar launcher autônomo e validador de projeto
+93b533d6ddf24fb5d087c3110f0b30255b056b58|||⚡ Adicionar verificadores de configuração rápida e melhorar documentação
+cc7afcd75c34a7601b7adb9cd2b55282fa678b33|||📋 Adicionar resumo abrangente de implementação
+1a8dfc4060297b35d24a88d13cfe147570e57912|||Merge pull request #3 from William-kelvem94/copilot/organize-project-structure
+3c970796a74d373ad1f5c139795b547af68229be|||🔧 Corrigir dependências críticas: adicionar mss, edge-tts, mediapipe, face-recognition, PyYAML e atualizar torch para 2.5.1
+382ebaffc2a15f7c7b125f24af6db805ea910fc6|||✅ Abordar comentários de revisão do PR: corrigir privilégios de admin, manipulação de erros, validação e documentação
+9e39981c1bbcc53ccf4156689a7ab86a6c873aa4|||🛡️ Adicionar fallbacks graciosos para dependências opcionais (mss, edge-tts, pygame, PIL)
+45d615ba1891b8dda28560d52fba4692f78ddfa6|||📝 Abordar feedback de revisão de código: simplificar manipulação de encoding, corrigir ortografia, especificar Python 3.11
+d4fc58902c55bd58c9b76b111ce2747151f904c8|||📋 Adicionar CHANGELOG abrangente documentando todas as correções e melhorias
+52d6b9d4a51409ac35e1ff4a146a85dd2fcb745c|||🔒 SEGURANÇA: Atualizar torch para 2.6.0, Pillow para 10.3.0, aiohttp para 3.9.4 - corrigir 6 CVEs
+b28e2b9dbbc05dc612c865f01c5d2ea8aaa70bb9|||🔐 SEGURANÇA: Atualizar aiohttp para 3.13.3 para corrigir completamente todas as vulnerabilidades de zip bomb
+88594b765f04b936b6230ead5419b1fca02833d8|||🛡️ SEGURANÇA: Atualizar TODOS os arquivos de requisitos e docs - remover todas as referências ao torch 2.1.2
+08080060f653b28a304017a58ffb4e78db1097bd|||🔧 Corrigir imports do main_singularity.py e criar HUD moderno aprimorado
+19d70c5153bc47bc1eccdb522fe7b1070efaa8dc|||🐛 Corrigir erros de indentação em hud.py - garantir aninhamento adequado de classes
+e94c0730937034b4f6ea24708da50196dee358e4|||📚 Adicionar documentação abrangente para HUD Moderno e relatório de revalidação
+bb0d9d3362f7ce822037e1fce8b645b1d15da3d2|||✅ Adicionar resumo final de revalidação - projeto completo e pronto para produção
+5f4f76e3653ebf08a952ca0420373fac07e3945f|||🚀 Implementar arquitetura JARVIS Singularity: interface dupla, sistema de visão e God Mode
+5dbe991145f648d4e5b31a7f379a16f415f36cd0|||📖 Adicionar documentação abrangente da arquitetura Singularity
+3844e0a79457a8b34f1d2d0d78ee9b5ce6c3ff05|||⚙️ Implementar auto-instalador, Painel de Controle e sistema de áudio aprimorado
+af5976f98cfd7b302888f32f74b5bf8d745f0cab|||✨ Integração completa: entrada principal sem erros, requisitos atualizados, guia de início rápido abrangente
+fbac318434837cd2ce4808cf3aaaa2efc4bef146|||🧠 Implementar AGI Machine Learning Core: construtor de dataset, treinador, ciclo de sonhos e autonomia
+ee11da1bf254bfea89d9a50e5657f97df5672736|||🤖 Adicionar módulos abrangentes do JARVIS AGI Machine Learning Core
+3cfc46128ffe3eadad0701fbb140fe8e338ea33b|||🎯 Implementar Modo Adaptativo: comportamento inteligente tudo-em-um combinando todos os modos dinamicamente
+89b298ec78ccc33677f1ee7c5e90037520dcc306|||📚 Adicionar documentação abrangente do AGI Learning Core com todos os recursos e modo adaptativo
+84d6a5aece36748b4ab5d06ccd3bcfd083cee34e|||🦎 Completar Instalador Chameleon: configuração adaptativa, gerenciador de dependências, launcher e requisitos de perfil
+012c7b02fe534dbdd9788745e2eecc256947e9b9|||📖 Adicionar documentação abrangente do Instalador Chameleon com exemplos e solução de problemas
+3597963e562bb108b5bf619098d132e6d197e625|||🔧 Corrigir erros de importação nos módulos de aprendizagem com fallbacks mock adequados
+5b491bd06c145250ddb8199a1a7230576e01b5b5|||🐛 Corrigir erros de importação nos módulos principais com importações condicionais adequadas
+2a56f61d92a15de800f8b8a05cded0737ff2a509|||✅ Validação completa: corrigir criação de diretório, adicionar script de validação, 100% de taxa de sucesso
+d7cb7f5ca3199e0e7f95a4fccafa7e5d4273f8df|||🎉 Verificação final completa: relatório de implementação abrangente com 100% de validação
+bc198a869e85afb3a6d273be89f6ba03e3daf3b0|||📋 Adicionar PROJECT_STATUS_FINAL.md abrangente com resumo de implementação completa
+34c428ef80f0263582552924d06c6e37755193c5|||Merge pull request #4 from William-kelvem94/copilot/setup-manager-environment
+2f5292f6543a70e24d27309e97131c23b45929be|||🧹 Limpar estrutura do projeto - manter apenas versão híbrida completa
+91a1d929cdcc3176835703e64c59ff0a6b983729|||📚 Adicionar guia de organização e atualizar changelog
+424e0a0800921eefe4c27893c042079346b1dfd8|||📝 Adicionar resumo final da organização do projeto
+a0192abfb779abce1d231ce5266b11bd2911c4a6|||🔧 Corrigir JARVIS.bat e lidar com problemas de instalação do Windows
+6141dcbd55454b70da421702c1055773ebf9af2a|||✨ Reescrita completa do JARVIS.bat - launcher robusto, limpo e inteligente
+4456df5269f253bdb68efb130f8e3c6ea5e18a7d|||📚 Adicionar guia de resolução abrangente - projeto pronto para uso
+456c0810f86ee56b86357fa953d649b42c3dcc8b|||🎉 Commit final: Resolução completa do projeto com guia de início rápido
+caeba762b0b3648d2f7e43a7ff5d7b49f0ad1d25|||Merge pull request #5 from William-kelvem94/copilot/organize-project-files
+52da9fe767e5a2f580c8206ee426a0520dcd0d42|||📁 Organizar: Movidos relatórios de validação para docs/reports/ para raiz mais limpa

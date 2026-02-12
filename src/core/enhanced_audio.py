@@ -67,7 +67,7 @@ except (ImportError, OSError) as e:
 try:
     from faster_whisper import WhisperModel
     FASTER_WHISPER_AVAILABLE = True
-except (ImportError, OSError) as e:
+except (ImportError, OSError, AttributeError) as e:
     FASTER_WHISPER_AVAILABLE = False
     logger.warning(f"⚠️ faster-whisper not available - STT disabled: {e}")
 

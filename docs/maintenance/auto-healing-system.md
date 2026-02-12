@@ -107,7 +107,7 @@ Validação inteligente de dependências:
 - Recomenda ação correta baseada no problema
 - Detecta problemas de DLL
 
-### `scripts/test_pytorch.py`
+### `tests/test_pytorch.py`
 Teste completo de PyTorch:
 - 5 testes diagnósticos
 - Identifica exatamente onde está o problema
