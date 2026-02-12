@@ -24,6 +24,7 @@ class CuriosityEngine:
         self.study_backlog = queue.Queue()
         self.memory_manager = memory_manager
         self.is_studying = False
+        self.skill_gaps = [] # Lista de habilidades faltando
         
         # Whitelist de APIs Acadêmicas
         self.ARXIV_API_URL = "http://export.arxiv.org/api/query"
@@ -31,6 +32,21 @@ class CuriosityEngine:
         # Inicializar com alguns tópicos padrão se vazio
         self.study_backlog.put("Artificial General Intelligence architecture")
         self.study_backlog.put("Self-supervised learning robotics")
+
+    def register_skill_gap(self, feature_name: str):
+        """Registra uma falha de execução como lacuna de conhecimento para o Dream Cycle"""
+        gap_msg = f"Gap de Habilidade: Como implementar ou usar {feature_name} no Windows"
+        if gap_msg not in self.skill_gaps:
+            self.skill_gaps.append(gap_msg)
+            self.study_backlog.put(gap_msg)
+            logger.info(f"🧠 Skill Gap registrado: {feature_name}. Pesquisa agendada para o próximo ciclo de sonho.")
+            
+            # Armazenar no ChromaDB se disponível (para persistência entre boots)
+            if self.memory_manager:
+                self.memory_manager.save_to_vault(
+                    f"O sistema tentou mas não soube como executar: {feature_name}", 
+                    metadata={"type": "skill_gap", "status": "pending_research"}
+                )
 
     def stop_study(self):
         self.is_studying = False

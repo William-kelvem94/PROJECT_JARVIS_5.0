@@ -135,8 +135,8 @@ class BrainRouter:
             from src.utils.config import config
             model_name = config.get_ai_config('brain_router.cloud_models.flash', 'gemini-1.5-flash')
             
-            # Teste rápido com modelo real (usando v1 para evitar 404)
-            url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={self.api_key}"
+            # Teste rápido com modelo real (usando v1beta para melhor suporte a modelos novos)
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
             payload = {"contents": [{"parts": [{"text": "ping"}]}]} 
             resp = requests.post(url, json=payload, timeout=5)
             if resp.status_code == 200:

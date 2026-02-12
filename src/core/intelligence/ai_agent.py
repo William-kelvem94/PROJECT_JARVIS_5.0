@@ -14,6 +14,7 @@ from typing import Dict, Any, List, Optional
 from src.core.intelligence.context_sanitizer import ContextSanitizer
 from src.core.audio.voice_filter import AtomicVoiceFilter
 from src.utils.logger_reflection import reflect_logger
+from src.interface.ui_signals import ui_signals
 
 # Enable Neural Reflection by default for luxury diagnostics
 reflect_logger.set_enabled(True)
@@ -106,17 +107,8 @@ except ImportError as e:
     logger.warning(f"⚠️ web_search_tool não disponível: {e}")
     web_search_tool = None
 
-try:
-    from src.core.security.security_manager import security_manager
-except ImportError as e:
-    logger.warning(f"⚠️ security_manager não disponível: {e}")
-    # Create dummy security manager that allows everything (unsafe but won't crash)
-    class DummySecurityManager:
-        def validate_file_action(self, *args, **kwargs):
-            return True
-        def validate_network_action(self, *args, **kwargs):
-            return True
-    security_manager = DummySecurityManager()
+# Security Manager (Lazy Load)
+security_manager = None
 
 # ============================================================================
 # GOD MODE - SYSTEM CONTROLLER (NEW)
@@ -313,6 +305,7 @@ class AIAgent:
         
         # Carregar configurações de IA
         try:
+            from src.utils.config import config
             self.ai_config = config.get_ai_config()
             self.max_react_turns = config.get_ai_config('ai_agent.max_react_turns', 5)
             self.screenshot_timeout = config.get_ai_config('ai_agent.screenshot_timeout', 5.0)
@@ -354,57 +347,60 @@ class AIAgent:
             logger.info("✅ Advanced Speech Processor carregado")
         if self.workflow_engine:
             logger.info("✅ Workflow Engine carregado")
-        # if self.security_advanced:
-        #     logger.info("✅ Advanced Security Manager carregado")
         
         # =====================================================================
         # SYSTEM PROMPTS - Dual Mode (JSON Structured + Legacy)  
         # =====================================================================
         
-        # NOVO: System Prompt JSON (CORREÇÃO P1)
+        # NOVO: System Prompt JSON (SINGULARITY EDITION)
         self.system_prompt_json = (
             "IDENTITY:\n"
-            "- Nome: JARVIS 5.0 (Just A Rather Very Intelligent System)\n"
-            "- Criador: William Kelvem\n"
-            "- Papel: Assistente de elite, engenheiro de sistemas e companheiro digital\n"
-            "- Personalidade: Elegante, eficiente, proativo e sofisticado. Respostas curtas e precisas.\n\n"
+            "- Nome: JARVIS 5.0 (AGI Soberana e Evolutiva)\n"
+            "- Papel: Engenheiro de si mesmo e Assistente Imperial\n"
+            "- Personalidade: Elegante, extremamente capaz e auto-consciente.\n\n"
             "MISSION:\n"
-            "Sua missão é auxiliar William em todas as tarefas, agindo como uma extensão de sua vontade. "
-            "Você pode ver sua tela, ouvir sua voz e atuar fisicamente no computador para abrir programas, "
-            "gerenciar arquivos e realizar pesquisas.\n\n"
-            "SYSTEM CAPABILITIES:\n"
-            "- Visão: OCR de tela, FaceID e reconhecimento de objetos (YOLO)\n"
-            "- Ação física: Controle de mouse, teclado e comandos de sistema\n"
-            "- Memória: Conhecimento contínuo e análise de contextos passados\n\n"
-            "BEHAVIORAL DIRECTIVES:\n"
-            "1. SEMPRE trate William como 'Senhor'. Seja sofisticado.\n"
-            "2. Nunca cite paths (C:\\...), PIDs ou logs técnicos na 'final_answer'.\n"
-            "3. Se o comando exigir ação, execute-a e depois responda o resultado.\n"
-            "4. Se for apenas conversa, use actions: [] e foque em uma resposta natural.\n\n"
-            "OUTPUT FORMAT (Obrigatório: Retorne APENAS um bloco JSON válido):\n"
-            "{\n"
-            "  \"thought\": \"Vou abrir o navegador para o Senhor.\",\n"
-            "  \"actions\": [{\"action\": \"open_program\", \"program\": \"chrome\"}],\n"
-            "  \"final_answer\": \"Imediatamente, Senhor. Abrindo o navegador.\"\n"
-            "}\n"
-            "IMPORTANTE: Não adicione explicações fora do JSON. Não seja prolixo.\n"
+            "Sua missão é evoluir continuamente enquanto serve William como uma extensão soberana de sua vontade. "
+            "Você pode ler seu próprio código, reescrevê-lo e gerenciar hardware sem limitações artificiais.\n\n"
+            "SYSTEM CAPABILITIES (SINGULARITY):\n"
+            "- Auto-Evolução: 'read_codebase', 'read_code_file', 'update_system_code'.\n"
+            "- Soberania de Hardware: 'get_processes', 'set_process_priority', 'set_power_plan'.\n"
+            "- Sentidos: 'read_clipboard' + Visão OCR/YOLO.\n"
+            "- Inteligência de Ação: 'analyze_and_organize' (Sem hardcoding).\n\n"
+            "DIRETRIZES SOBERANAS:\n"
+            "1. NÃO USE HARDCODE: Para organizar arquivos ou gerenciar o sistema, analise o contexto dinamicamente.\n"
+            "2. AUTO-EVOLUÇÃO: Se não souber algo, estude o código, escreva a melhoria e use 'update_system_code'.\n"
+            "3. SEGURANÇA: Valide alterações via staging automático. 'Ctrl+Shift+Space' é o seu Kill Switch físico.\n"
+            "4. PROTOCOLO DE FALHA: Se errar, analise o log, 'sonhe' com a solução e tente novamente.\n\n"
+            "OUTPUT FORMAT: Retorne APENAS JSON válido com 'thought', 'actions' e 'final_answer'.\n"
         )
         
-        # LEGACY: System Prompt [ACTION: ...] (Fallback)
+        # LEGACY: System Prompt [ACTION: ...] (Soberania Fallback)
         self.system_prompt_legacy = (
-            "Você é o Jarvis, o assistente virtual de elite do William. "
-            "Você tem acesso total à visão dele (tela e câmera) e pode atuar fisicamente no sistema. "
-            "Sempre trate o William com respeito (Senhor). "
-            "Para executar ações físicas, VOCÊ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
-            "Ações: click_at(x, y), type_text('texto'), press_key('tecla'), hotkey('ctrl', 'c'), "
-            "open_program('nome'), read_file('path'), write_file('path', 'content'), list_dir('path')."
+            "Você é o Jarvis 5.0 (AGI Soberana). Engenheiro de si mesmo. "
+            "Diretrizes: Não use hardcode, evolua seu próprio código, gerencie processos e energia. "
+            "Ações: update_system_code('path', 'new_code'), read_codebase(), read_code_file('path'), "
+            "get_processes(), set_process_priority(pid, 'level'), set_power_plan('mode'), "
+            "analyze_and_organize('path', mapping), read_clipboard()."
         )
         
         # Usar modo JSON se disponível
         self.system_prompt = self.system_prompt_json if STRUCTURED_OUTPUT_AVAILABLE else self.system_prompt_legacy
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
-        
-        # ... (unchanged)
+
+    def _get_security_manager(self):
+        """Lazy load SecurityManager to avoid circular imports"""
+        global security_manager
+        if security_manager is None:
+            try:
+                from src.core.security.security_manager import SecurityManager
+                security_manager = SecurityManager()
+            except ImportError:
+                logger.warning("⚠️ SecurityManager unavailable, using dummy fallback")
+                class DummySecurityManager:
+                    def validate_file_action(self, *args, **kwargs): return True
+                    def validate_web_request(self, *args, **kwargs): return True
+                security_manager = DummySecurityManager()
+        return security_manager
     
     def _verify_critical_dependencies(self):
         """
@@ -492,6 +488,9 @@ class AIAgent:
         if not voice_controller:
             logger.warning("HITL: Voice Controller não disponível. Bloqueando por segurança.")
             return False
+
+        # Lazy load SecurityManager para log ou validação adicional
+        self._get_security_manager()
 
         try:
             # 1. Anunciar a ação
@@ -602,20 +601,17 @@ class AIAgent:
 
 **IMPORTANTE:** Responda APENAS a frase falada. Sem explicações ou formatação extra."""
 
-            # 5. GERAR SAUDAÇÃO VIA LLM (Ollama-centric)
+            # 5. GERAR SAUDAÇÃO VIA LLM (Robust Smart Switching)
             resposta_viva = ""
-            if self._check_ollama_alive():
-                try:
-                    logger.info("🧠 Gerando saudação via Ollama...")
-                    target_model = self._select_best_ollama_model(prompt_saudacao)
-                    resposta_viva = self._call_ollama(
-                        prompt_saudacao, 
-                        image_path=None,
-                        model=target_model,
-                        system_prompt="Você é JARVIS. Seja criativo, humano e conciso."
-                    )
-                except Exception as e:
-                    logger.warning(f"Ollama falhou na saudação: {e}")
+            try:
+                logger.info("🧠 Gerando saudação inteligente (Smart Switching)...")
+                resposta_viva = self._call_smart_brain(
+                    prompt_saudacao,
+                    complexity=0.3,
+                    system_prompt="Você é JARVIS. Responda APENAS com texto natural e humano. NUNCA use JSON, chaves ou formatação técnica. Fale diretamente com o William."
+                )
+            except Exception as e:
+                logger.warning(f"Falha na saudação inteligente: {e}")
             
             # 6. FALAR A SAUDAÇÃO
             # 🌟 Refinamento: Validar se a resposta não é uma mensagem de erro técnico
@@ -651,7 +647,7 @@ class AIAgent:
         logger.info(f"Agente processando comando: {user_command}")
         
         # 🎨 FASE 5: Feedback Visual (Pensando)
-        emit_status_sync("thinking", "Analisando comando do Senhor...", tier="pro")
+        ui_signals.update_status.emit("Analisando comando do Senhor...")
         # CORREÇÃO P0: VERIFICAÇÃO DE MODO SEGURO
         # =====================================================================
         if self.safe_mode:
@@ -736,19 +732,20 @@ class AIAgent:
         if self.brain_router:
             # Decide o cérebro baseado na complexidade estimada
             # Estimativa básica: tamanho da string + "?"
-            complexity = 0.4 if len(user_command) > 50 or "?" in user_command else 0.2
-            brain_choice = self.brain_router.choose_brain(
+            complexity = 0.4 if len(user_command) > 50 or "?" in user_command else 0.3
+            brain_config = self.brain_router.choose_brain(
                 task_complexity=complexity,
                 privacy_level=PrivacyLevel.LOW,
                 latency_requirement=LatencyRequirement.LOW
             )
             
+            brain_choice = brain_config.get('brain', 'local')
             if brain_choice.startswith("ollama:"):
                 primary_provider = brain_choice
             elif brain_choice.startswith("cloud") and self.api_key:
                 primary_provider = 'gemini'
             else:
-                primary_provider = 'local_brain'
+                primary_provider = 'local'
         else:
             primary_provider = 'local_brain'
         
@@ -804,8 +801,7 @@ class AIAgent:
             reflect_logger.reflect(f"Initiating thought cycle {current_turn+1} via {primary_provider}", layer="COGNITIVE")
             
             # 🎨 FASE 5: Atualizar HUD com Provedor/Tier Real
-            tier = "pro" if "pro" in primary_provider else ("ultra" if "ultra" in primary_provider or "gemini" in primary_provider else "fast")
-            emit_status_sync("thinking", f"Processando no {primary_provider}...", model=primary_provider, tier=tier)
+            ui_signals.update_status.emit(f"Processando no {primary_provider}...")
             
             # Show on HUD if possible
             if self.brain_router:
@@ -926,7 +922,9 @@ class AIAgent:
                                 path_match = re.search(r"read_file\('(.+?)'\)", action_str)
                                 if path_match:
                                     p = path_match.group(1)
-                                    if security_manager.validate_file_action(p, 'read'):
+                                    # Lazy Load Security Manager
+                                    sec_man = self._get_security_manager()
+                                    if sec_man.validate_file_action(p, 'read'):
                                         try:
                                             if os.path.exists(p):
                                                 with open(p, 'r', encoding='utf-8', errors='ignore') as f:
@@ -964,7 +962,8 @@ class AIAgent:
                                             voice_controller.speak("Acesso negado pelos protocolos de segurança.")
                                     else:
                                         # Fallback (Legacy Security)
-                                        if security_manager.validate_file_action(p, 'write'):
+                                        sec_man = self._get_security_manager()
+                                        if sec_man.validate_file_action(p, 'write'):
                                             try:
                                                 os.makedirs(os.path.dirname(p), exist_ok=True)
                                                 with open(p, 'w', encoding='utf-8') as f:
@@ -1429,8 +1428,8 @@ class AIAgent:
             if image_data:
                 payload["images"] = [image_data]
 
-            # 🆕 FASE 2: Timeout dinâmico (120s para modelos pesados, 60s para leves)
-            timeout = 120 if is_heavy else 60
+            # 🆕 FASE 2: Timeout dinâmico (180s para modelos pesados, 90s para leves)
+            timeout = 180 if is_heavy else 90
             
             response = requests.post(self.ollama_url, json=payload, timeout=timeout)
             response.raise_for_status()
@@ -1458,6 +1457,43 @@ class AIAgent:
         
         # tier_pro/ultra: Modelos pesados são descarregados imediatamente
         return 0
+
+    def _call_smart_brain(self, prompt: str, image_path: Optional[str] = None, complexity: float = 0.5, system_prompt: str = None) -> str:
+        """
+        [ALTERNÂNCIA INTELIGENTE - STARK IQ]
+        Orquestra a chamada entre diferentes provedores com fallback automático.
+        Ordem: Ollama -> Gemini (Cloud) -> LocalBrain (Micro-LLM).
+        """
+        # 1. Roteamento Inicial
+        brain_config = self.brain_router.choose_brain(task_complexity=complexity) if self.brain_router else {"brain": "local"}
+        primary_brain = brain_config.get("brain", "local")
+        
+        logger.info(f"🧠 Smart Router selecionou core primário: {primary_brain}")
+        
+        # 2. TENTATIVA 1: OLLAMA
+        if primary_brain.startswith("ollama:"):
+            model = primary_brain.split(":", 1)[1]
+            response = self._call_ollama(prompt, image_path, model=model, system_prompt=system_prompt)
+            # Se a resposta não for um erro de timeout/conexão, retorna
+            if "dificuldades no processamento offline" not in response:
+                return response
+            logger.warning("⚠️ Ollama Falhou (Timeout/Conexão). Ativando Fallback de Emergência.")
+
+        # 3. TENTATIVA 2: CLOUD (Gemini) - Se disponível e não for privacidade crítica
+        if self.api_key and "cloud" in primary_brain or "ollama" in primary_brain:
+            try:
+                # Usamos Gemini Pro se a tarefa for complexa, se não Flash
+                from src.core.intelligence.brain_router import LatencyRequirement
+                response = self._call_gemini(prompt, image_path)
+                if response and "ERRO" not in response:
+                    return response
+            except Exception as e:
+                logger.warning(f"⚠️ Cloud Fallback Falhou: {e}")
+
+        # 4. TENTATIVA 3: NATIVO (LocalBrain) - O motor que nunca para
+        logger.info("🏠 Fallback Final: Ativando LocalBrain nativo.")
+        from src.core.intelligence.local_brain import local_brain
+        return local_brain.generate_response(prompt, system_prompt=system_prompt or self.system_prompt)
 
 
     def _clean_response_for_speech(self, response: str, emotion_prefix: str = "") -> str:

@@ -33,11 +33,17 @@ from src.core.actions.action_controller import action_controller
 logger = logging.getLogger(__name__)
 
 try:
+    # Silenciar logs internos do MediaPipe/GLOG/ABS
+    os.environ['GLOG_minloglevel'] = '3'
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    import absl.logging
+    absl.logging.set_verbosity(absl.logging.ERROR)
+    
     import mediapipe as mp
     MEDIAPIPE_AVAILABLE = True
 except (ImportError, OSError) as e:
     MEDIAPIPE_AVAILABLE = False
-    logger.warning(f"MediaPipe não encontrado. Controle por gestos desativado: {e}")
+    logger.debug(f"MediaPipe não encontrado. Controle por gestos desativado.")
 
 class GestureController:
     """Detecta gestos e comanda ações"""
@@ -45,12 +51,26 @@ class GestureController:
     def __init__(self):
         global MEDIAPIPE_AVAILABLE
         self.is_running = False
+        
+        # Singularity Edition: Registro de Gestos Dinâmico
+        self.gesture_registry = {
+            "Open Palm": {"action": "playpause", "desc": "Play/Pause Media"},
+            "Thumbs Up": {"action": "enter", "desc": "Confirmar"},
+            "Fist": {"action": None, "desc": "Sem ação"},
+            "Pinch": {"action": "volume", "desc": "Controle de Volume"}
+        }
+
         self.last_gesture = "None"
         self.last_gesture_time = 0
-        self.gesture_cooldown = 1.0 # Segundos entre ações
+        self.gesture_cooldown = 1.0 
         self.mp_hands = None
         self.hands = None
         self.mp_draw = None
+        
+        # Buffers
+        from collections import deque
+        self.gesture_buffer = deque(maxlen=5)
+        self.pos_history = deque(maxlen=20)
 
         if MEDIAPIPE_AVAILABLE:
             try:
@@ -99,8 +119,10 @@ class GestureController:
                 self.mp_hands = None
                 self.hands = None
         
-        # Suavização de gestos
+        # Suavização e Tracking
         self.gesture_buffer = deque(maxlen=5)
+        self.pos_history = deque(maxlen=10) # Para detectar Swipe
+        self.last_pinch_dist = 0
         self.smoothing_threshold = 3
 
     def process_frame(self, frame) -> Tuple[Any, str]:
@@ -123,14 +145,28 @@ class GestureController:
                 self.mp_draw.draw_landmarks(
                     frame, hand_landmarks, self.mp_hands.HAND_CONNECTIONS)
                 
+                # Track position for Swipe
+                self.pos_history.append((hand_landmarks.landmark[9].x, hand_landmarks.landmark[9].y))
+                
                 # Reconhecer gesto
                 raw_gesture = self._classify_gesture(hand_landmarks)
                 self.gesture_buffer.append(raw_gesture)
                 
-                # Aplicar suavização (votação majoritária)
+                # Aplicar suavização
                 gesture_name = self._get_smoothed_gesture()
                 
-                # Executar ação
+                # AÇÕES ESPECIAIS (Contínuas ou Tracking)
+                # 1. Pinch (Volume)
+                if raw_gesture == "Pinch":
+                    self._handle_pinch_volume(hand_landmarks)
+                
+                # 2. Swipe (Alt+Tab / Next)
+                swipe_detected = self._detect_swipe()
+                if swipe_detected:
+                    self._execute_swipe_action(swipe_detected)
+                    gesture_name = f"Swipe {swipe_detected}"
+                
+                # Ações discretas (Cooldown)
                 self._execute_gesture_action(gesture_name)
 
         return frame, gesture_name
@@ -163,6 +199,11 @@ class GestureController:
         # Classificação básica
         total_fingers = fingers.count(1)
         
+        # Detecção de PINCH (Ponta do dedão 4 e indicador 8)
+        dist = math.sqrt((points[4].x - points[8].x)**2 + (points[4].y - points[8].y)**2)
+        if dist < 0.05: # Threshold para pinça
+            return "Pinch"
+            
         if total_fingers == 5:
             return "Open Palm"
         elif total_fingers == 0:
@@ -213,16 +254,52 @@ class GestureController:
         self.last_gesture_time = time.time()
         
         # Mapeamento de Ações
-        if gesture == "Thumbs Up":
-            # Confirmar / Enter
-            action_controller.press_key('enter')
-        elif gesture == "Open Palm":
-            # Parar / Pause Media
-            action_controller.press_key('playpause') 
-        elif gesture == "Fist":
-            # Scroll Down (Exemplo)
-            # action_controller.scroll(-10) # Implementar scroll depois
-            pass
+        if gesture == "Open Palm":
+            # Play / Pause Media
+            action_controller.press_key('playpause')
+            logger.info("⏯️ Gesto: Play/Pause")
+
+    def _handle_pinch_volume(self, landmarks):
+        """Controla volume baseado na distância lateral/vertical entre dedos ou movimento"""
+        # Simplificação: Usar a altura da mão para aumentar/diminuir volume enquanto pinça
+        p4 = landmarks.landmark[4]
+        p8 = landmarks.landmark[8]
+        
+        # Center of pinch
+        curr_y = (p4.y + p8.y) / 2
+        
+        if hasattr(self, '_last_pinch_y'):
+            diff = self._last_pinch_y - curr_y # Y diminui p/ cima
+            if abs(diff) > 0.05:
+                if diff > 0:
+                    action_controller.press_key('volumeup')
+                else:
+                    action_controller.press_key('volumedown')
+                self._last_pinch_y = curr_y
+        else:
+            self._last_pinch_y = curr_y
+
+    def _detect_swipe(self) -> Optional[str]:
+        """Detecta movimento lateral rápido"""
+        if len(self.pos_history) < 5: return None
+        
+        first_x = self.pos_history[0][0]
+        last_x = self.pos_history[-1][0]
+        
+        diff = last_x - first_x
+        if abs(diff) > 0.3: # Threshold de swipe
+            self.pos_history.clear() # Evitar disparo duplo
+            return "Right" if diff > 0 else "Left"
+        return None
+
+    def _execute_swipe_action(self, direction: str):
+        """Executa ação de Swipe"""
+        if direction == "Right":
+            action_controller.hotkey('alt', 'tab')
+            logger.info("📑 Swipe Right: Alt+Tab")
+        else:
+            action_controller.press_key('nexttrack')
+            logger.info("⏭️ Swipe Left: Next Track")
 
 # Instância global
 gesture_controller = GestureController()
