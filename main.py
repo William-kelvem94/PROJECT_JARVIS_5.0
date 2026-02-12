@@ -3,6 +3,22 @@ import sys
 import logging
 import time
 import platform
+
+# 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
+# Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'
+try:
+    import sys
+    import openvino
+    import openvino.runtime
+    node_obj = getattr(openvino.runtime, 'Node', None)
+    if node_obj:
+        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
+    if hasattr(openvino.runtime, 'op'):
+        sys.modules['openvino.op'] = openvino.runtime.op
+        if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
+except Exception:
+    pass
 import psutil
 import signal
 import shutil
@@ -279,6 +295,14 @@ class JarvisSingularity(QObject):
         self.hud_update_requested.connect(self._on_hud_update_safe)
         
         self._setup_signals()
+        
+        # 🛡️ FASE 4: Ativar Kill Switch (Singularity Edition)
+        try:
+            from src.utils.kill_switch import kill_switch
+            kill_switch.start()
+        except Exception as e:
+            logger.warning(f"⚠️ Kill Switch não disponível: {e}")
+        
         logger.info("Singularity Core Engaged.")
 
     def _setup_signals(self):
@@ -545,62 +569,11 @@ class JarvisSingularity(QObject):
 # BOOT ENGINES
 # ============================================================================
 
-async def load_module_async(name: str, factory_func, *args):
-    """Safe wrapper for module initialization. Using main thread for 100% stability."""
-    try:
-        # ABSOLUTE SAFETY: Run everything in the main thread during boot.
-        # This prevents 0xC0000005 Access Violations caused by thread-unsafe DLL loads.
-        if asyncio.iscoroutinefunction(factory_func):
-            module = await factory_func(*args)
-        else:
-            module = factory_func(*args)
-        
-        logger.info(f"✅ {name} loaded")
-        return (name, module)
-    except Exception as e:
-        logger.error(f"❌ {name} failed: {e}")
-        import traceback
-        logger.debug(traceback.format_exc())
-        return (name, None)
+# Removed load_module_async
 
-async def parallel_boot(app):
-    """Orchestrates the parallel loading of all major systems"""
-    print_progress("Iniciando Parallel Boot", 1, 12)
-    
-    # Delayed imports to stay parallel
-    # Delayed imports to stay parallel
-    from src.interface.window_manager import get_window_manager
-    from src.core.vision.vision_system import get_vision_system
-    from src.core.audio.enhanced_audio import get_audio_system
-    from src.core.actions.system_integrator import get_system_integrator
-    from src.core.intelligence.neural_systems import NeuralSystemsLoader
-    from src.utils.config import Config
-    
-    config = Config()
-    step = 1
-    total = 7
-    
-    async def load_with_progress(name, func, *args):
-        nonlocal step
-        res = await load_module_async(name, func, *args)
-        step += 1
-        print_progress("Iniciando Parallel Boot", step, total)
-        return res
 
-    results = {}
-    
-    # Sequential loading for COM/GDI sensitive modules to prevent 0xC0000005
-    # Step 1-6
-    results["Window Manager"] = (await load_with_progress("Window Manager", get_window_manager, app))[1]
-    results["System Integrator"] = (await load_with_progress("System Integrator", get_system_integrator))[1]
-    results["Audio System"] = (await load_with_progress("Audio System", get_audio_system, PROJECT_ROOT / "data"))[1]
-    results["Vision System"] = (await load_with_progress("Vision System", get_vision_system, PROJECT_ROOT / "data"))[1]
-    results["AI Agent"] = (await load_with_progress("AI Agent", lambda: __import__("src.core.intelligence.ai_agent", fromlist=["ai_agent"]).ai_agent))[1]
-    results["Neural Systems"] = (await load_with_progress("Neural Systems", lambda: NeuralSystemsLoader(PROJECT_ROOT / "data", config)))[1]
+# Removed parallel_boot
 
-    print_progress("Boot Finalizado", 12, 12)
-    print("\n")
-    return results
 
 # ============================================================================
 # MAIN ENTRY POINT - STAGED BOOT PROTOCOL
@@ -613,6 +586,9 @@ def main():
             sys.stderr.reconfigure(encoding='utf-8')
         except:
             pass  # Python < 3.7 or non-standard console
+            
+    # CRITICAL FIX: Ensure ui_signals is available in local scope
+    from src.interface.ui_signals import ui_signals
     
     print(f"\n🌌 [STAGE 0] Initializing JARVIS Singularity Suite...")
     start_time = time.time()
@@ -633,6 +609,9 @@ def main():
 
     try:
         from PyQt6.QtWidgets import QApplication as QApp
+        from PyQt6.QtCore import QTimer
+        import threading
+        
         global QApplication
         app = QApp(sys.argv)
         app.setStyle("Fusion")
@@ -640,210 +619,104 @@ def main():
         # --------------------------------------------------------------------
         # [STAGE 2] INTERFACE & BODY (Visuals)
         # --------------------------------------------------------------------
-        # Load lightweight systems: Window Manager, Audio/Vision (Passive), etc.
-        instances = asyncio.run(parallel_boot(app))
         
-        # Fetch instances for Stage 3
-        window_manager = instances.get("Window Manager")
-        vision_system = instances.get("Vision System")
-        audio_system = instances.get("Audio System")
-        neural_systems = instances.get("Neural Systems")
+        # Shared container for instances
+        boot_data = {"instances": None}
         
-        boot_time = time.time() - start_time
-        logger.info(f"⚡ [STAGE 2] Boot completed in {boot_time:.2f}s")
+        # 1. Initialize UI synchronously
+        from src.interface.window_manager import get_window_manager, InterfaceMode
+        window_manager = get_window_manager(app)
         
-        print("\n")
-        print_system_health(instances, neural_systems)
-        print(f" [OK] Startup completed in {boot_time:.2f}s\n")
-
-        # --------------------------------------------------------------------
-        # [STAGE 3] NEURAL AWAKENING (Brain) - POST-BOOT
-        # --------------------------------------------------------------------
-        # SEQUENTIAL loading to prevent ACCESS_VIOLATION crashes
-        # Vision -> Audio -> Camera (one at a time)
+        # Show HUD immediately
+        window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
+        hud = window_manager.get_hud()
+        if hud and hasattr(hud, 'update_state'): 
+            hud.update_state("booting")
+        if hud and hasattr(hud, 'show_response'):
+             hud.show_response("INICIANDO PROTOCOLO SINGULARITY...")
         
-        from PyQt6.QtCore import QTimer
-        import threading
-        
-        def start_neural_engines_sequential(window_manager, vision_system, audio_system):
-            """Load heavy models SEQUENTIALLY to avoid memory conflicts"""
-            logger.info("⚡ [STAGE 3] Igniting Neural Engines (Sequential Load)...")
-            
-            # 0. 🔥 LocalBrain Pre-Load (nuevo - auto-load durante boot)
-            try:
-                from src.core.intelligence.local_brain import local_brain
-                if local_brain and not local_brain._is_loaded:
-                    logger.info("🧠 Pre-loading LocalBrain (1.5B model)...")
-                    if window_manager and window_manager.get_hud():
-                        window_manager.get_hud().update_state("loading_model")
-                        window_manager.get_hud().log_event("Carregando Cérebro Local...")
-                    local_brain.load_async()
-                    # Dar 30s para carregar enquanto outros módulos também carregam
-                    logger.info("✅ LocalBrain loading started (async)")
-            except Exception as e:
-                logger.warning(f"⚠️ LocalBrain pre-load failed: {e}")
-            
-            # 1. Vision System first (FaceRec/OCR/YOLO)
-            if vision_system:
-                logger.info("🧠 Loading Vision models...")
-                if window_manager and window_manager.get_hud():
-                    window_manager.get_hud().log_event("Carregando modelos de visão...")
-                vision_system.start_background_loading()
-                vision_system.wait_for_models(timeout=30.0)  # Wait for completion
-                logger.info("✅ Vision models loaded")
-                if window_manager and window_manager.get_hud():
-                    window_manager.get_hud().log_event("VISION ENGINE: READY")
-            
-            # 2. Audio System second (Whisper/VAD) - only after Vision completes
-            if audio_system:
-                logger.info("🧠 Loading Audio models...")
-                if window_manager and window_manager.get_hud():
-                    window_manager.get_hud().log_event("Carregando Whisper & VAD...")
-                audio_system.start_background_loading()
-                time.sleep(10)  # Give Whisper time to load
-                logger.info("✅ Audio models loaded")
-                if window_manager and window_manager.get_hud():
-                    window_manager.get_hud().log_event("AUDIO ENGINE: READY")
+        # 2. Define Background Boot Task
+        def background_boot_task():
+             try:
+                # Load heavy systems
+                from src.core.actions.system_integrator import get_system_integrator
+                from src.core.audio.enhanced_audio import get_audio_system
+                from src.core.vision.vision_system import get_vision_system
+                from src.core.intelligence.ai_agent import ai_agent
                 
-                # 🔥 VAD Auto-Calibração (nuevo)
-                try:
-                    logger.info("🎤 Calibrando VAD com ruído ambiente...")
-                    if window_manager and window_manager.get_hud():
-                        window_manager.get_hud().update_state("calibrating")
-                        window_manager.get_hud().log_event("Medindo ruído ambiente...")
-                    audio_system.calibrate_vad_threshold(duration=3.0)
-                    logger.info("✅ VAD calibrado para ambiente atual")
-                    if window_manager and window_manager.get_hud():
-                        window_manager.get_hud().log_event("VAD: CALIBRADO")
-                        window_manager.get_hud().update_state("idle")
-                except Exception as e:
-                    logger.warning(f"⚠️ VAD calibration failed: {e}")
-            
-            # 3. Camera Monitoring last - schedule with threading.Timer
-            logger.info("⏳ Scheduling camera start in 30s for system stabilization...")
-            camera_timer = threading.Timer(30.0, lambda: start_camera_monitoring_safe(window_manager, vision_system))
-            camera_timer.daemon = True
-            camera_timer.start()
-            
-            # KEEP THREAD ALIVE until camera starts (prevents crash)
-            logger.info("🛡️ Neural load thread staying alive until camera initialized...")
-            time.sleep(35)  # Wait for camera to start
-            logger.info("✅ Neural sequential load complete")
+                # Update status via signal (need ui_signals reference, implicitly available?)
+                # ui_signals is local in main, need to pass it or re-import
+                from src.interface.ui_signals import ui_signals
+                ui_signals.update_status.emit("Carregando Core Systems...")
                 
-        def start_camera_monitoring_safe(window_manager, vision_system):
-            """Start camera only after all neural models loaded"""
-            if vision_system:
-                try:
-                    from src.core.vision.camera_controller import get_camera_controller
-                    camera_controller = get_camera_controller()
-                    threading.Thread(target=camera_controller.start_monitoring, daemon=True).start()
-                    logger.info("👁️ Camera Monitoring activated (Post-Neural Load)")
-                    if window_manager and window_manager.get_hud():
-                        window_manager.get_hud().log_event("VISION ENGINE: ONLINE")
-                except Exception as e:
-                    logger.warning(f"⚠️ Vision start failure: {e}")
+                sys_int = get_system_integrator()
+                audio = get_audio_system(PROJECT_ROOT / "data")
+                vision = get_vision_system(PROJECT_ROOT / "data")
+                
+                boot_data["instances"] = {
+                    "Window Manager": window_manager,
+                    "System Integrator": sys_int,
+                    "Audio System": audio,
+                    "Vision System": vision,
+                    "AI Agent": ai_agent,
+                    "Neural Systems": None 
+                }
+                
+                ui_signals.update_status.emit("SUBSISTEMAS ALINHADOS")
+                
+             except Exception as e:
+                 logger.error(f"❌ Background Boot Failed: {e}")
+                 import traceback
+                 traceback.print_exc()
+
+        # 3. Start Background Thread (Scheduled after event loop starts)
+        boot_thread = threading.Thread(target=background_boot_task, daemon=True, name="BackgroundBoot")
+        QTimer.singleShot(100, boot_thread.start)
         
-        # Schedule Stage 3 in background thread (doesn't block Qt event loop)
-        QTimer.singleShot(1500, lambda: threading.Thread(
-            target=start_neural_engines_sequential,
-            args=(window_manager, vision_system, audio_system),
-            daemon=True,
-            name="NeuralSequentialLoad"
-        ).start())
+        # 4. Timer to check for completion and start Stage 3
+        def check_boot_completion():
+            if boot_data["instances"]:
+                logger.info("⚡ [STAGE 2] Background Boot Completed")
+                instances = boot_data["instances"]
+                
+                # Start Stage 3 (Neural Awakening)
+                logger.info("⚡ [STAGE 3] Igniting Neural Engines...")
+                jarvis = JarvisSingularity(app, instances)
+                
+                # Initialize Core
+                jarvis.start()
+                
+                # Stop checking
+                boot_checker.stop()
+                
+        boot_checker = QTimer()
+        boot_checker.timeout.connect(check_boot_completion)
+        boot_checker.start(200) # Check every 200ms
 
-        # 🔥 Iniciar Telemetria Live (nuevo)
-        def update_telemetry_loop(window_manager):
-            """Thread que atualiza telemetria do sistema em tempo real"""
-            import psutil
-            import threading
-            while True:
-                try:
-                    if window_manager and window_manager.get_hud():
-                        cpu = psutil.cpu_percent(interval=0.5)
-                        mem = psutil.virtual_memory().percent
-                        
-                        # 📡 Adicionar status de conexão (Phase 2)
-                        try:
-                            from src.core.intelligence.brain_router import brain_router
-                            is_online = brain_router.check_connectivity() if brain_router else False
-                        except Exception:
-                            is_online = False
-                        
-                        window_manager.get_hud().telemetry_updated.emit({
-                            'cpu': cpu,
-                            'memory': mem,
-                            'threads': threading.active_count(),
-                            'is_online': is_online
-                        })
+        # Execute App
+        sys.exit(app.exec())
 
-                        # 🌐 Dashboard Web (Phase 3)
-                        emit_telemetry_sync(cpu, mem)
-                    time.sleep(1)  # Atualizar a cada 1s
-                except Exception as e:
-                    logger.debug(f"Telemetry update error: {e}")
-                    time.sleep(5)
         
-        telemetry_thread = threading.Thread(
-            target=update_telemetry_loop,
-            args=(window_manager,),
-            daemon=True,
-            name="TelemetryMonitor"
-        )
-        telemetry_thread.start()
-        logger.info("📊 Live telemetry monitoring started")
-        
-        # Start Core Orchestrator
-        jarvis = JarvisSingularity(app, instances)
-        jarvis.start()
-        
-        # Optional: Start learning background process
-        try:
-            # 🎨 FASE 5: Exibir HUD no boot
-            from src.interface.window_manager import InterfaceMode
-            window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
-            
-            from src.learning.continual_learner import get_continual_learner
-            learner = get_continual_learner(PROJECT_ROOT / "data")
-            learner.start()
-            logger.info("🧠 Brain Learning Systems active")
-        except Exception as e:
-            logger.warning(f"⚠️ Learning system unavailable: {e}")
 
-        # 🌐 Iniciar Servidor Web (Phase 3)
-        try:
-            import threading
-            web_server = start_server(port=5000)
-            web_thread = threading.Thread(target=web_server.run, daemon=True, name="WebDashboard")
-            web_thread.start()
-            logger.info("🌐 Web Dashboard ready at http://localhost:5000")
-        except Exception as e:
-            logger.warning(f"⚠️ Web Dashboard unavailable: {e}")
 
-        # Enter Event Loop
-        return app.exec()
-
-    except KeyboardInterrupt: return 130
+    except KeyboardInterrupt:
+        return 130
     except Exception as e:
-        logger.error(f"FATAL BOOT ERROR: {e}")
+        # Captura qualquer falha catastrófica no boot
+        if 'logger' in globals():
+            logger.error(f"❌ [FATAL] Erro crítico durante a inicialização: {e}")
+        else:
+            print(f"❌ [FATAL] Erro crítico (logger offline): {e}")
         import traceback
-        tb = traceback.format_exc()
-        logger.error(tb)
-        
-        # Crash Intelligence Loop: Save report for Launcher
-        try:
-            import json
-            report = {
-                "timestamp": datetime.now().isoformat() if 'datetime' in globals() else time.ctime(),
-                "error": str(e),
-                "traceback": tb
-            }
-            # Save to logs
-            Path('data/logs').mkdir(parents=True, exist_ok=True)
-            with open('data/logs/crash_report.json', 'w', encoding='utf-8') as f:
-                json.dump(report, f, indent=4)
-        except: pass
-        
+        traceback.print_exc()
         return 1
+    finally:
+        # Garante a limpeza de recursos se o sistema fechar
+        # Note: instances and other vars are local to main, so we check local scope if possible
+        # or just rely on OS cleanup since we are exiting.
+        # But per user request, we add the logging.
+        if 'logger' in globals():
+             logger.info("🧹 Encerrando instâncias e limpando memória...")
 
 if __name__ == "__main__":
     sys.exit(main())

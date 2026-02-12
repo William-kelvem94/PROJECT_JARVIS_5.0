@@ -148,16 +148,28 @@ class CameraController:
 
     def _monitor_loop(self):
         """Loop principal de visão com FPS adaptativo"""
+        # 🆕 SAFE DELAY: Garantir que a GUI e outros sistemas estejam prontos
+        time.sleep(2)
+        
         video_capture = None
         try:
             # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
             # 🆕 GLOBAL NEURAL LOCK: Prevent conflicts with model loading
             logger.info("📹 Opening camera with DirectShow backend...")
-            with hardware_manager.neural_lock:
-                video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+            
+            # Tentar abrir a câmera com retry
+            for attempt in range(3):
+                try:
+                    with hardware_manager.neural_lock:
+                        video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+                    if video_capture and video_capture.isOpened():
+                        break
+                except Exception as e:
+                    logger.warning(f"Tentativa {attempt+1} de abrir câmera falhou: {e}")
+                    time.sleep(1)
             
             if not video_capture or not video_capture.isOpened():
-                logger.error(f"Não foi possível abrir a câmera {self.camera_index}")
+                logger.error(f"Não foi possível abrir a câmera {self.camera_index} após múltiplas tentativas.")
                 return
                 
             logger.info("✅ Camera opened successfully (FPS Adaptativo Ativo)")
@@ -240,10 +252,12 @@ class CameraController:
                         self.current_emotion = emotion_data['emotion']
                     except: pass
 
-                    # 🆕 BRILHO ADAPTATIVO (Stark Context)
-                    if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
-                        self._check_ambient_light(frame)
-                    self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
+
+                    # 🆕 BRILHO ADAPTATIVO (Stark Context) - DESATIVADO POR SOLICITAÇÃO
+                    # O Jarvis mantém o poder de controlar (via DeviceManager), mas não faz isso sozinho.
+                    # if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
+                    #     self._check_ambient_light(frame)
+                    # self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
 
                 process_this_frame = not process_this_frame
             

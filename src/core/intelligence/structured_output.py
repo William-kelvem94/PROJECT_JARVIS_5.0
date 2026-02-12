@@ -39,6 +39,7 @@ class ActionType(str, Enum):
     LIST_DIR = "list_dir"
     CREATE_DIR = "create_dir"
     DELETE_FILE = "delete_file"
+    ORGANIZE_DIRECTORY = "organize_directory"
     
     # Ações de Web
     SEARCH_WEB = "search_web"
@@ -54,6 +55,19 @@ class ActionType(str, Enum):
     # Ações de Controle
     WAIT = "wait"
     SCREENSHOT = "screenshot"
+    
+    # Ações de Evolução (Singularity Edition)
+    READ_CODEBASE = "read_codebase"
+    READ_CODE_FILE = "read_code_file"
+    UPDATE_SYSTEM_CODE = "update_system_code"
+    
+    # Ações de Soberania de Hardware (Singularity)
+    GET_PROCESSES = "get_processes"
+    SET_PROCESS_PRIORITY = "set_process_priority"
+    SET_POWER_PLAN = "set_power_plan"
+    GET_HARDWARE_SUGGESTIONS = "get_hardware_suggestions"
+    READ_CLIPBOARD = "read_clipboard"
+    ANALYZE_AND_ORGANIZE = "analyze_and_organize"
 
 
 # ============================================================================
@@ -133,6 +147,12 @@ class ListDirAction(BaseModel):
     pattern: Optional[str] = Field(None, description="Padrão de filtro (ex: *.py)")
 
 
+class OrganizeDirectoryAction(BaseModel):
+    """Ação: Organizar arquivos em subpastas por categoria"""
+    action: Literal[ActionType.ORGANIZE_DIRECTORY] = ActionType.ORGANIZE_DIRECTORY
+    path: str = Field(..., min_length=1, description="Caminho da pasta a ser organizada")
+
+
 class SearchWebAction(BaseModel):
     """Ação: Buscar na web"""
     action: Literal[ActionType.SEARCH_WEB] = ActionType.SEARCH_WEB
@@ -175,6 +195,60 @@ class WaitAction(BaseModel):
     seconds: float = Field(..., ge=0.1, le=10.0, description="Segundos a aguardar")
 
 
+class ReadCodebaseAction(BaseModel):
+    """Ação: Listar estrutura de arquivos fonte (introspecção)"""
+    action: Literal[ActionType.READ_CODEBASE] = ActionType.READ_CODEBASE
+
+
+class ReadCodeFileAction(BaseModel):
+    """Ação: Ler conteúdo de um arquivo código do sistema"""
+    action: Literal[ActionType.READ_CODE_FILE] = ActionType.READ_CODE_FILE
+    path: str = Field(..., description="Caminho relativo do arquivo (ex: src/core/main.py)")
+
+
+class UpdateSystemCodeAction(BaseModel):
+    """Ação: Reescrever arquivo código do sistema autonomamente"""
+    action: Literal[ActionType.UPDATE_SYSTEM_CODE] = ActionType.UPDATE_SYSTEM_CODE
+    path: str = Field(..., description="Caminho relativo do arquivo")
+    new_code: str = Field(..., description="Código Python completo e corrigido")
+
+
+class ReadClipboardAction(BaseModel):
+    """Ação: Ler o conteúdo atual da área de transferência"""
+    action: Literal[ActionType.READ_CLIPBOARD] = ActionType.READ_CLIPBOARD
+
+
+class AnalyzeAndOrganizeAction(BaseModel):
+    """Ação: Organizar diretório com base em lógica de IA"""
+    action: Literal[ActionType.ANALYZE_AND_ORGANIZE] = ActionType.ANALYZE_AND_ORGANIZE
+    path: str = Field(..., description="Caminho do diretório")
+    mapping: Dict[str, str] = Field(..., description="Mapeamento {arquivo: subpasta}")
+
+
+class GetProcessesAction(BaseModel):
+    """Ação: Listar processos do sistema para otimização"""
+    action: Literal[ActionType.GET_PROCESSES] = ActionType.GET_PROCESSES
+    limit: int = Field(10, description="Número de processos a listar")
+
+
+class SetProcessPriorityAction(BaseModel):
+    """Ação: Alterar prioridade de um processo"""
+    action: Literal[ActionType.SET_PROCESS_PRIORITY] = ActionType.SET_PROCESS_PRIORITY
+    pid: int = Field(..., description="ID do processo")
+    level: str = Field(..., description="Nível: IDLE, BELOW_NORMAL, NORMAL, ABOVE_NORMAL, HIGH, REALTIME")
+
+
+class SetPowerPlanAction(BaseModel):
+    """Ação: Alterar plano de energia (GAMER, BALANCED, POWER_SAVER)"""
+    action: Literal[ActionType.SET_POWER_PLAN] = ActionType.SET_POWER_PLAN
+    mode: str = Field(..., description="Plano desejado")
+
+
+class GetHardwareSuggestionsAction(BaseModel):
+    """Ação: Obter sugestões de otimização de hardware da IA"""
+    action: Literal[ActionType.GET_HARDWARE_SUGGESTIONS] = ActionType.GET_HARDWARE_SUGGESTIONS
+
+
 # ============================================================================
 # MODELO DE RESPOSTA DO AGENTE
 # ============================================================================
@@ -196,6 +270,16 @@ ActionUnion = Union[
     WindowAction,
     DragDropAction,
     WaitAction,
+    OrganizeDirectoryAction,
+    ReadCodebaseAction,
+    ReadCodeFileAction,
+    UpdateSystemCodeAction,
+    ReadClipboardAction,
+    AnalyzeAndOrganizeAction,
+    GetProcessesAction,
+    SetProcessPriorityAction,
+    SetPowerPlanAction,
+    GetHardwareSuggestionsAction,
 ]
 
 
@@ -396,6 +480,16 @@ def get_actions_schema() -> Dict[str, Any]:
                         ListDirAction.schema(),
                         SearchWebAction.schema(),
                         WaitAction.schema(),
+                        OrganizeDirectoryAction.schema(),
+                        ReadCodebaseAction.schema(),
+                        ReadCodeFileAction.schema(),
+                        UpdateSystemCodeAction.schema(),
+                        ReadClipboardAction.schema(),
+                        AnalyzeAndOrganizeAction.schema(),
+                        GetProcessesAction.schema(),
+                        SetProcessPriorityAction.schema(),
+                        SetPowerPlanAction.schema(),
+                        GetHardwareSuggestionsAction.schema(),
                     ]
                 }
             },

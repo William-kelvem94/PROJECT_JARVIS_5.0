@@ -24,6 +24,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QAction
 
+from src.interface.ui_signals import ui_signals
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,18 +63,20 @@ class WindowManager(QObject):
     def __init__(self, app: QApplication):
         """
         Initialize Window Manager.
-        
-        Args:
-            app: QApplication instance
         """
         super().__init__()
         self.app = app
-        self.current_mode = InterfaceMode.HIDDEN  # Start hidden to force refresh on first switch
+        self.current_mode = InterfaceMode.HIDDEN
         
-        # Connect bridge signal to the actual switch worker
+        # Sinais de Controle Interno
         self._request_mode_switch.connect(self._do_switch_mode)
         
-        # Interface instances (lazy loaded)
+        # Conectar Hub de Sinais Global (Thread-Safe)
+        ui_signals.update_status.connect(self._on_status_received)
+        ui_signals.update_listening_state.connect(self._on_listening_received)
+        ui_signals.show_notification.connect(self._on_notification_received)
+        
+        # Interfaces
         self._hud = None
         self._dashboard = None
         self._mini_orb = None
@@ -198,19 +202,39 @@ class WindowManager(QObject):
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
             self._toggle_dashboard()
             
+    @pyqtSlot()
     def _toggle_dashboard(self):
         """Toggle dashboard on/off"""
         if self.current_mode == InterfaceMode.DASHBOARD:
             self.switch_mode(InterfaceMode.HUD_OVERLAY)
         else:
             self.switch_mode(InterfaceMode.DASHBOARD)
-            
+
+    @pyqtSlot()
     def _toggle_hud(self):
         """Toggle HUD on/off"""
         if self.current_mode == InterfaceMode.HUD_OVERLAY:
             self.switch_mode(InterfaceMode.HIDDEN)
         else:
             self.switch_mode(InterfaceMode.HUD_OVERLAY)
+
+    @pyqtSlot(str)
+    def _on_status_received(self, message: str):
+        """Receptor de status do AIAgent"""
+        if self._hud:
+            self._hud.update_status(message)
+
+    @pyqtSlot(bool)
+    def _on_listening_received(self, state: bool):
+        """Receptor de estado de voz"""
+        if self._hud:
+            self._hud.reactor.set_listening(state)
+
+    @pyqtSlot(str, str)
+    def _on_notification_received(self, title: str, message: str):
+        """Mostra notificação no sistema"""
+        if self._tray_icon:
+            self._tray_icon.showMessage(title, message, QSystemTrayIcon.MessageIcon.Information, 5000)
 
     def _toggle_manual_panel(self):
         """Toggle emergency manual control panel"""
@@ -345,6 +369,10 @@ class WindowManager(QObject):
                     """Stub para evitar crash se o HUD principal falhar"""
                     pass
 
+                def update_status(self, status):
+                    """Stub para compatibilidade com on_status_received"""
+                    print(f"Fallback HUD Status: {status}")
+
             self._hud = FallbackHUD()
             
     def _initialize_dashboard(self):
@@ -465,19 +493,22 @@ class WindowManager(QObject):
                 
             # Limpa widgets
             if hasattr(self, '_hud') and self._hud:
+                self._hud.hide()
                 self._hud.close()
                 self._hud.deleteLater()
                 self._hud = None
                 
             if hasattr(self, '_dashboard') and self._dashboard:
+                self._dashboard.hide()
                 self._dashboard.close()
                 self._dashboard.deleteLater()
                 self._dashboard = None
                 
-            if hasattr(self, 'mini_orb') and getattr(self, 'mini_orb', None):
-                self.mini_orb.close()
-                self.mini_orb.deleteLater()
-                self.mini_orb = None
+            if hasattr(self, '_mini_orb') and self._mini_orb:
+                self._mini_orb.hide()
+                self._mini_orb.close()
+                self._mini_orb.deleteLater()
+                self._mini_orb = None
                 
             if self._tray_icon:
                 self._tray_icon.hide()

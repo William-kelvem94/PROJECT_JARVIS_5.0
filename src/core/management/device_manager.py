@@ -819,23 +819,34 @@ class AdvancedDeviceManager:
     
     def set_brightness(self, level: int) -> bool:
         """
-        Ajusta o brilho do monitor (0-100)
+        Ajusta o brilho do monitor (0-100) com fallback WMI.
         
         Args:
             level: Nível de brilho (0-100)
         """
-        if not SBC_AVAILABLE:
-            # Silencioso se for chamado via automação padrão, mas loga aviso técnico
-            logger.debug("Omitindo comando de brilho: screen_brightness_control não instalado.")
-            return False
+        level = max(0, min(100, level))
+        
+        # 1. Tentar via screen_brightness_control (SBC)
+        if SBC_AVAILABLE:
+            try:
+                sbc.set_brightness(level)
+                logger.info(f"💡 Brilho ajustado para {level}% via SBC")
+                return True
+            except Exception as e:
+                logger.warning(f"⚠️ Falha no SBC: {e}. Tentando fallback WMI...")
+
+        # 2. Fallback Definitive: WMI (Força o hardware do notebook - Samsung Fix)
         try:
-            level = max(0, min(100, level))
-            sbc.set_brightness(level)
-            logger.info(f"💡 Brilho ajustado para {level}%")
+            import wmi
+            wmi_inst = wmi.WMI(namespace='wmi')
+            methods = wmi_inst.WmiMonitorBrightnessMethods()[0]
+            methods.WmiSetBrightness(1, level) # Timeout 1, Nível level
+            logger.info(f"💡 Brilho ajustado para {level}% via WMI (Hardware Direct/Samsung Mode)")
             return True
         except Exception as e:
-            logger.error(f"❌ Falha ao ajustar brilho: {e}")
-            return False
+            logger.error(f"❌ Falha crítica no controle de brilho WMI: {e}")
+        
+        return False
     
     def get_brightness(self) -> Optional[int]:
         """Retorna brilho atual"""
@@ -974,30 +985,52 @@ class AdvancedDeviceManager:
         return None
     
     def mute(self, muted: bool = True) -> bool:
-        """
-        Silencia/ativa áudio do sistema
-        
-        Args:
-            muted: True para mutar, False para desmutar
-        """
+        """Silencia/ativa áudio de saída (Speakers)"""
         if self.audio_interface:
             try:
                 self.audio_interface.SetMute(1 if muted else 0, None)
-                logger.info(f"🔇 Áudio {'mutado' if muted else 'desmutado'}")
+                logger.info(f"🔇 Áudio de saída {'mutado' if muted else 'desmutado'}")
                 return True
             except Exception as e:
                 logger.error(f"❌ Erro ao mutar áudio: {e}")
                 return False
         return False
-    
-    def is_muted(self) -> Optional[bool]:
-        """Verifica se áudio está mutado"""
-        if self.audio_interface:
-            try:
-                return bool(self.audio_interface.GetMute())
-            except Exception as e:
-                logger.error(f"Erro ao verificar mute: {e}")
-        return None
+
+    def mute_microphone(self, muted: bool = True) -> bool:
+        """
+        Silencia/ativa o microfone padrão do sistema.
+        Útil para comandos de 'Privacidade' ou 'Ficar em silêncio'.
+        """
+        try:
+            from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+            from comtypes import CLSCTX_ALL
+            
+            devices = AudioUtilities.GetMicrophone()
+            if not devices:
+                logger.warning("⚠️ Nenhum microfone encontrado para mutar.")
+                return False
+                
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMute(1 if muted else 0, None)
+            logger.info(f"🎙️ Microfone {'mutado' if muted else 'desmutado'}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Falha ao mutar microfone: {e}")
+            return False
+
+    def lock_workstation(self) -> bool:
+        """
+        Bloqueia a tela do Windows instantaneamente (Win + L).
+        Ação Física Real via user32.dll.
+        """
+        try:
+            logger.info("🔒 Bloqueando estação de trabalho...")
+            ctypes.windll.user32.LockWorkStation()
+            return True
+        except Exception as e:
+            logger.error(f"❌ Erro ao bloquear tela: {e}")
+            return False
     
     def list_audio_devices(self) -> List[Dict[str, Any]]:
         """Lista dispositivos de áudio disponíveis"""

@@ -5,7 +5,7 @@ Permite que o Jarvis busque informações no Google de forma autônoma.
 
 import logging
 from typing import List, Dict, Any
-from src.core.security.security_manager import security_manager
+# from src.core.security.security_manager import security_manager (Removido para evitar import circular)
 
 try:
     from googlesearch import search
@@ -28,10 +28,15 @@ class WebSearchTool:
             logger.error("Busca indisponível: biblioteca ausente.")
             return []
 
-        # 1. Gatekeeper: Validar permissão
-        if not security_manager.validate_web_search(query):
-            logger.warning("Busca na web cancelada pelo Gatekeeper.")
-            return ["Busca cancelada por falta de permissão."]
+        # 1. Gatekeeper: Validar permissão (Lazy Import para evitar ciclo)
+        try:
+            from src.core.security.security_manager import security_manager
+            if not security_manager.validate_web_search(query):
+                logger.warning("Busca na web cancelada pelo Gatekeeper.")
+                return ["Busca cancelada por falta de permissão."]
+        except (ImportError, AttributeError, Exception) as e:
+            logger.error(f"Erro ao carregar Gatekeeper: {e}. Busca bloqueada por segurança.")
+            return ["Busca bloqueada: Erro crítico no motor de segurança."]
 
         logger.info(f"Buscando no Google: '{query}'")
         

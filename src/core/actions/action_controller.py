@@ -7,6 +7,7 @@ import pyautogui
 import time
 import logging
 from typing import Tuple, Optional, List, Dict, Any
+from src.core.security.security_manager import SecurityManager
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,61 @@ class ActionController:
             return False
         except Exception as e:
             logger.error(f"Erro ao clicar no texto: {e}")
+            return False
+
+    def read_clipboard(self) -> str:
+        """Lê o conteúdo atual da área de transferência com retry"""
+        for _ in range(3):
+            try:
+                import pyperclip
+                return pyperclip.paste()
+            except ImportError:
+                # Fallback
+                break
+            except Exception:
+                time.sleep(0.1)
+        
+        # Fallback se pyperclip falhar ou não existir
+        try:
+             import tkinter as tk
+             root = tk.Tk()
+             root.withdraw()
+             return root.clipboard_get()
+        except Exception as e:
+             logger.error(f"Erro ao ler clipboard (Final): {e}")
+             return ""
+
+    def analyze_and_organize(self, target_path: str, mapping: Dict[str, str]) -> bool:
+        """
+        Organiza arquivos com base em um mapeamento fornecido pela IA.
+        mapping: { 'nome_arquivo.ext': 'Pasta Destino' }
+        """
+        import shutil
+        from pathlib import Path
+
+        try:
+            logger.info(f"🧠 Organizando via IA em: {target_path}")
+            if not SecurityManager.validate_path_access(target_path):
+                logger.error(f"🛡️ Bloqueio Anti-Genesis: Caminho proibido {target_path}")
+                return False
+
+            target = Path(target_path)
+            if not target.exists() or not target.is_dir():
+                return False
+
+            count = 0
+            for filename, category in mapping.items():
+                file_path = target / filename
+                if file_path.exists() and file_path.is_file():
+                    dest_dir = target / category
+                    dest_dir.mkdir(exist_ok=True)
+                    shutil.move(str(file_path), str(dest_dir / filename))
+                    count += 1
+            
+            logger.info(f"✅ {count} arquivos movidos com lógica soberana.")
+            return True
+        except Exception as e:
+            logger.error(f"Erro na organização soberana: {e}")
             return False
 
     def fill_field(self, field_label: str, value: str, ocr_regions: List[Dict[str, Any]]) -> bool:

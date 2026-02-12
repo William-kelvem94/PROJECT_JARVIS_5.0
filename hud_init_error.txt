@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\interface\window_manager.py", line 344, in _initialize_hud
+    self._hud.status_changed.connect(
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ModernHUD' object has no attribute 'status_changed'

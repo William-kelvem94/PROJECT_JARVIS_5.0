@@ -67,6 +67,15 @@ class ActionExecutor:
             ActionType.WINDOW_MANAGE: self._execute_window_manage,
             ActionType.DRAG_DROP: self._execute_drag_drop,
             ActionType.IOT_CONTROL: self._execute_iot_control,
+            ActionType.ANALYZE_AND_ORGANIZE: self._execute_analyze_and_organize,
+            ActionType.READ_CODEBASE: self._execute_read_codebase,
+            ActionType.READ_CODE_FILE: self._execute_read_code_file,
+            ActionType.UPDATE_SYSTEM_CODE: self._execute_update_system_code,
+            ActionType.READ_CLIPBOARD: self._execute_read_clipboard,
+            ActionType.GET_PROCESSES: self._execute_get_processes,
+            ActionType.SET_PROCESS_PRIORITY: self._execute_set_process_priority,
+            ActionType.SET_POWER_PLAN: self._execute_set_power_plan,
+            ActionType.GET_HARDWARE_SUGGESTIONS: self._execute_get_hardware_suggestions,
         }
     
     def _load_controllers(self):
@@ -107,11 +116,11 @@ class ActionExecutor:
             logger.warning("⚠️ advanced_action_controller não disponível")
         
         try:
-            from src.core.iot.iot_manager import iot_manager
-            self.iot_manager = iot_manager
+            from src.core.management.hardware_manager import hardware_manager
+            self.hardware_manager = hardware_manager
         except ImportError:
-            # Será criado no próximo passo, por enquanto logamos
-            self.iot_manager = None
+            logger.warning("⚠️ hardware_manager não disponível")
+            self.hardware_manager = None
     
     def execute_action(self, action: ActionUnion) -> Dict[str, Any]:
         """
@@ -128,6 +137,15 @@ class ActionExecutor:
         
         if not handler:
             logger.error(f"Handler não encontrado para ação: {action_type}")
+            
+            # 🔥 Fase 4: Registro de Skill Gap (Curiosidade Neural)
+            try:
+                from src.learning.curiosity_engine import curiosity_engine
+                if curiosity_engine:
+                    curiosity_engine.register_skill_gap(action_type.value)
+            except Exception as e:
+                logger.debug(f"Falha ao registrar skill gap: {e}")
+
             return {
                 "status": "error",
                 "action": action_type.value,
@@ -401,17 +419,83 @@ class ActionExecutor:
         )
         return "Drag and drop executado" if success else "Falha no drag and drop"
 
-    def _execute_iot_control(self, action: Any) -> str:
-        """Handler para IOTAction"""
-        if not self.iot_manager:
-            return "IOT Manager não disponível or não configurado"
-        
-        success = self.iot_manager.control_device(
-            action.device,
-            action.command,
-            action.params
-        )
         return f"Comando IoT '{action.command}' enviado para '{action.device}'" if success else "Falha no comando IoT"
+
+    def _execute_analyze_and_organize(self, action: Any) -> str:
+        """Handler para AnalyzeAndOrganizeAction"""
+        if not self.action_controller:
+            raise RuntimeError("action_controller não disponível")
+        
+        success = self.action_controller.analyze_and_organize(action.path, action.mapping)
+        return f"Diretório '{action.path}' organizado com sucesso via IA" if success else f"Falha ao organizar diretório '{action.path}'"
+
+    def _execute_read_clipboard(self, action: Any) -> str:
+        """Handler para ReadClipboardAction"""
+        if not self.action_controller:
+            raise RuntimeError("action_controller não disponível")
+        
+        content = self.action_controller.read_clipboard()
+        return f"Conteúdo do clipboard:\n{content}" if content else "Clipboard vazio ou erro na leitura."
+
+    def _execute_read_codebase(self, action: Any) -> str:
+        """Handler para ReadCodebaseAction"""
+        if not self.system_controller:
+            raise RuntimeError("system_controller não disponível")
+        
+        files = self.system_controller.read_codebase_structure()
+        return f"Arquivos encontrados: {files[:50]}..." if len(files) > 0 else "Nenhum arquivo encontrado."
+
+    def _execute_read_code_file(self, action: Any) -> str:
+        """Handler para ReadCodeFileAction"""
+        if not self.system_controller:
+            raise RuntimeError("system_controller não disponível")
+        
+        content = self.system_controller.read_file_content(action.path)
+        if content:
+            return f"Conteúdo de {action.path}:\n{content[:2000]}..."
+        return f"Falha ao ler arquivo: {action.path}"
+
+    def _execute_update_system_code(self, action: Any) -> str:
+        """Handler para UpdateSystemCodeAction"""
+        if not self.system_controller:
+            raise RuntimeError("system_controller não disponível")
+        
+        result = self.system_controller.safe_code_update(action.path, action.new_code)
+        if result["status"] == "success":
+            return f"✅ {result['message']} Backup em: {result['backup']}"
+        return f"❌ Erro na atualização: {result['message']}"
+
+    def _execute_get_processes(self, action: Any) -> str:
+        """Handler para GetProcessesAction"""
+        if not self.hardware_manager:
+            raise RuntimeError("hardware_manager não disponível")
+        
+        processes = self.hardware_manager.get_running_processes(action.limit)
+        return f"Top Processos: {[{'pid': p['pid'], 'name': p['name'], 'cpu': p['cpu_percent']} for p in processes]}"
+
+    def _execute_set_process_priority(self, action: Any) -> str:
+        """Handler para SetProcessPriorityAction"""
+        if not self.hardware_manager:
+            raise RuntimeError("hardware_manager não disponível")
+        
+        success = self.hardware_manager.set_process_priority(action.pid, action.level)
+        return f"Prioridade do PID {action.pid} alterada para {action.level}" if success else "Falha ao alterar prioridade."
+
+    def _execute_set_power_plan(self, action: Any) -> str:
+        """Handler para SetPowerPlanAction"""
+        if not self.hardware_manager:
+            raise RuntimeError("hardware_manager não disponível")
+        
+        success = self.hardware_manager.set_power_plan(action.mode)
+        return f"Plano de energia alterado para {action.mode}" if success else "Falha ao alterar plano de energia."
+
+    def _execute_get_hardware_suggestions(self, action: Any) -> str:
+        """Handler para GetHardwareSuggestionsAction"""
+        if not self.hardware_manager:
+            raise RuntimeError("hardware_manager não disponível")
+        
+        suggestion = self.hardware_manager.suggest_optimizations()
+        return suggestion
 
 
 # Instância global (singleton)
