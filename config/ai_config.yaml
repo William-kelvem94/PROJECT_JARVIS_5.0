@@ -69,8 +69,8 @@ brain_router:
   
   # Cloud models (Gemini)
   cloud_models:
-    flash: "gemini-1.5-flash-latest"
-    pro: "gemini-1.5-pro-latest"
+    flash: "gemini-1.5-flash"
+    pro: "gemini-1.5-pro"
     ultra: "gemini-2.0-flash-thinking-exp"
   
   # Routing thresholds

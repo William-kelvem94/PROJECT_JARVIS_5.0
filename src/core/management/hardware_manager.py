@@ -12,13 +12,12 @@ from typing import Dict, Any, List, Optional
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
 try:
     import openvino
-    import openvino.runtime
-    node_obj = getattr(openvino.runtime, 'Node', None)
-    if node_obj:
-        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
-    if hasattr(openvino.runtime, 'op'):
-        sys.modules['openvino.op'] = openvino.runtime.op
+    if hasattr(openvino, "runtime"):
+        node_obj = getattr(openvino.runtime, 'Node', None)
+        if node_obj:
+            if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+        if hasattr(openvino.runtime, 'op'):
+            sys.modules['openvino.op'] = openvino.runtime.op
 except Exception:
     pass
 
@@ -142,7 +141,7 @@ class HardwareManager:
             try:
                 cpu = psutil.cpu_percent(interval=10) # Verifica a cada 10s
                 
-                if cpu > 90:
+                if cpu > 95:
                     now = time.time()
                     if now - last_alert > 60: # Evitar spam (1 alerta por minuto max)
                         msg = f"ALERTA DE SISTEMA: Sobrecarga Crítica detectada ({cpu}%)"
