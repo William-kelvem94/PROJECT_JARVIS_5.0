@@ -439,5 +439,5 @@ class OCRProcessor:
             'engine_status': self.test_engines()
         }
 
-# Instância global
-ocr_processor = OCRProcessor()
+# Instância global removida para evitar execução durante import
+# ocr_processor = OCRProcessor()

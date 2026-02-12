@@ -62,7 +62,7 @@ venv\Scripts\python scripts\test_pytorch.py
 
 ### ✨ Novos Arquivos
 - `scripts/install/quick_fix_torch.py` - Instalador rápido de PyTorch
-- `scripts/test_pytorch.py` - Testes diagnósticos
+- `tests/test_pytorch.py` - Testes diagnósticos
 - `docs/DEPENDENCY_TROUBLESHOOTING.md` - Guia completo de problemas
 - `docs/CHANGELOG_FIXES.md` - Detalhes técnicos das correções
 

@@ -415,5 +415,5 @@ def get_camera_controller():
         _camera_controller = CameraController()
     return _camera_controller
 
-# Global instance for direct import
-camera_controller = get_camera_controller()
+# Global instance removida para evitar execução durante import
+# camera_controller = get_camera_controller()

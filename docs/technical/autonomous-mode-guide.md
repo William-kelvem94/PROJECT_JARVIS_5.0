@@ -151,7 +151,7 @@ Press any key...
 - ✅ `scripts/auto_healer.py` - Sistema de auto-reparo
 - ✅ `scripts/auto_configurator.py` - Otimizador de ambiente
 - ✅ `scripts/install/quick_fix_torch.py` - Fix rápido PyTorch
-- ✅ `scripts/test_pytorch.py` - Testes diagnósticos
+- ✅ `tests/test_pytorch.py` - Testes diagnósticos
 
 ### Scripts Melhorados
 - ✅ `START_JARVIS.bat` - Agora 100% automático

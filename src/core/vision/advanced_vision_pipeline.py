@@ -320,5 +320,5 @@ class AdvancedVisionPipeline:
         return results
 
 
-# Instância global
-advanced_vision_pipeline = AdvancedVisionPipeline()
+# Instância global removida para evitar execução durante import
+# advanced_vision_pipeline = AdvancedVisionPipeline()

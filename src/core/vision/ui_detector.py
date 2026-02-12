@@ -102,5 +102,5 @@ class UIDetector:
             
         return "Elementos visuais identificados: " + ", ".join(summary_parts)
 
-# Instância global
-ui_detector = UIDetector()
+# Instância global removida para evitar execução durante import
+# ui_detector = UIDetector()

@@ -329,4 +329,5 @@ def cached(ttl_minutes: int = 60):
 # ============================================================================
 # SINGLETON INSTANCE
 # ============================================================================
-performance_optimizer = PerformanceOptimizer()
+# Instância global removida para evitar execução durante import
+# performance_optimizer = PerformanceOptimizer()

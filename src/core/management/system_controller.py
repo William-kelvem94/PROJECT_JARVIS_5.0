@@ -93,12 +93,12 @@ import os
 sys.path.append('{str(self.project_root)}')
 try:
     import importlib.util
-    spec = importlib.util.spec_from_file_location("validation_target", "{str(staging_path).replace('\\', '/')}")
+    spec = importlib.util.spec_from_file_location("validation_target", "{str(staging_path).replace(chr(92), '/')}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     print("SUCCESS")
 except Exception as e:
-    print(f"FAILED: {{e}}")
+    print("FAILED: " + str(e))
     sys.exit(1)
 """
             val_cmd = [sys.executable, "-c", val_script]
@@ -136,5 +136,5 @@ except Exception as e:
             if staging_path.exists():
                 os.remove(staging_path)
 
-# Instância global
-system_controller = SystemController()
+# Instância global removida para evitar execução durante import
+# system_controller = SystemController()

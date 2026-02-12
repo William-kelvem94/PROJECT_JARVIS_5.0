@@ -1,0 +1,37 @@
+{
+  "portability": {
+    "target_user_email": "williamkelvem64@gmail.com",
+    "allow_dynamic_user_detection": true,
+    "auto_detect_google_drive": true,
+    "auto_detect_microsoft_account": true,
+    "fallback_paths": {
+      "google_drive": [
+        "%USERPROFILE%/Google Drive",
+        "C:/GoogleDrive"
+      ],
+      "downloads": "%USERPROFILE%/Downloads",
+      "documents": "%USERPROFILE%/Documents"
+    }
+  },
+  "system_compatibility": {
+    "min_python_version": "3.11",
+    "supported_os": [
+      "Windows",
+      "Linux",
+      "macOS"
+    ],
+    "required_dependencies": [
+      "opencv-python",
+      "numpy",
+      "torch",
+      "transformers",
+      "pyaudio",
+      "pygame"
+    ],
+    "optional_dependencies": [
+      "face_recognition",
+      "google-api-python-client",
+      "pywin32"
+    ]
+  }
+}

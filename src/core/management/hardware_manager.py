@@ -333,5 +333,5 @@ class HardwareManager:
         
         return "Sistema operando em parâmetros ideais."
 
-# Instância global
-hardware_manager = HardwareManager()
+# Instância global removida para evitar execução durante import
+# hardware_manager = HardwareManager()

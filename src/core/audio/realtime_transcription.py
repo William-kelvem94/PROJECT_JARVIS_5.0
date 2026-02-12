@@ -38,9 +38,9 @@ except ImportError:
 try:
     from faster_whisper import WhisperModel
     FASTER_WHISPER_AVAILABLE = True
-except ImportError:
+except (ImportError, AttributeError) as e:
     FASTER_WHISPER_AVAILABLE = False
-    logger.warning("Faster-Whisper not available.")
+    logger.warning(f"Faster-Whisper not available: {e}")
 
 
 class AudioStream:
