@@ -13,14 +13,14 @@ from typing import List, Dict, Optional, Callable
 try:
     import sys
     import openvino
-    import openvino.runtime
-    node_obj = getattr(openvino.runtime, 'Node', None)
-    if node_obj:
-        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
-    if hasattr(openvino.runtime, 'op'):
-        sys.modules['openvino.op'] = openvino.runtime.op
-        if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
+    # openvino.runtime is deprecated in favor of openvino
+    if hasattr(openvino, "runtime"):
+        node_obj = getattr(openvino.runtime, 'Node', None)
+        if node_obj:
+            if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+        if hasattr(openvino.runtime, 'op'):
+            sys.modules['openvino.op'] = openvino.runtime.op
+            if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
 except Exception:
     pass
 

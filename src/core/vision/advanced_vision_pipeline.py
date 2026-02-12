@@ -52,11 +52,14 @@ class AdvancedVisionPipeline:
     def _init_level3(self):
         """Inicializa processadores de nível 3"""
         try:
-            # Verificar se Gemini está disponível
-            import os
-            if os.environ.get('GOOGLE_API_KEY'):
+            from src.core.intelligence.brain_router import brain_router
+            # Synchronize with BrainRouter availability which validates the key/model reaching v1 endpoint
+            if brain_router.cloud_available:
                 self.level3_available = True
                 logger.info("✅ Gemini Vision disponível (Nível 3)")
+            else:
+                self.level3_available = False
+                logger.debug("ℹ️ Nível 3 indisponível (BrainRouter cloud_available is False)")
         except Exception as e:
             logger.warning(f"⚠️ Nível 3 não disponível: {e}")
     
