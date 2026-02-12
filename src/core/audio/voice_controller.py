@@ -210,29 +210,48 @@ class VoiceController:
         text = self.strip_ssml(text)
         if not text or not text.strip(): return
         
-        # LOGGING EXPLÍCITO DA FALA
-        from src.utils.logger_reflection import reflect_logger
-        reflect_logger.log_speech(text)  # Console visual
-        logger.info(f"🗣️  SPEAKING: \"{text}\"")  # Arquivo de log detalhado
-        ui_signals.update_status.emit(text)
+        try:
+            # LOGGING EXPLÍCITO DA FALA
+            from src.utils.logger_reflection import reflect_logger
+            reflect_logger.log_speech(text)  # Console visual
+            logger.info(f"🗣️  SPEAKING: \"{text}\"")  # Arquivo de log detalhado
+            ui_signals.update_status.emit(text)
+            
+            # ============ P1: RESPONSE CACHING ============
+            if PYGAME_AVAILABLE:
+                text_lower = text.lower().strip()
+                if text_lower in self.response_cache:
+                    cache_file = self.response_cache[text_lower]
+                    try:
+                        pygame.mixer.music.load(cache_file)
+                        pygame.mixer.music.play()
+                        if wait:
+                            while pygame.mixer.music.get_busy(): time.sleep(0.1)
+                        return
+                    except: pass
+            
+            if wait:
+                self._speak_thread(text, mode)
+            else:
+                threading.Thread(target=self._speak_thread, args=(text, mode), daemon=True).start()
         
-        # ============ P1: RESPONSE CACHING ============
-        if PYGAME_AVAILABLE:
-            text_lower = text.lower().strip()
-            if text_lower in self.response_cache:
-                cache_file = self.response_cache[text_lower]
-                try:
-                    pygame.mixer.music.load(cache_file)
-                    pygame.mixer.music.play()
-                    if wait:
-                        while pygame.mixer.music.get_busy(): time.sleep(0.1)
-                    return
-                except: pass
-        
-        if wait:
-            self._speak_thread(text, mode)
-        else:
-            threading.Thread(target=self._speak_thread, args=(text, mode), daemon=True).start()
+        except Exception as e:
+            logger.error(f"❌ Critical error in speak method: {e}")
+            
+            # 🆕 AUTO-RECOVERY: Trigger recovery for voice controller failures
+            try:
+                from src.core.management.auto_recovery_system import trigger_recovery_for_exception
+                trigger_recovery_for_exception("voice_controller", e, severity=7)
+            except:
+                pass  # Don't fail if auto-recovery is not available
+            
+            # Fallback to basic TTS
+            try:
+                if hasattr(self, 'engine') and self.engine:
+                    self.engine.say(text)
+                    self.engine.runAndWait()
+            except:
+                logger.error("❌ All TTS methods failed - voice functionality compromised")
 
     def speak_stream(self, text_chunk: str):
         """Consome chunks de texto e fala assim que possível (Streaming)"""

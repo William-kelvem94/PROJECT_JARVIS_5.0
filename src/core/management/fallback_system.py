@@ -1,6 +1,7 @@
 import logging
 import threading
 import time
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -8,14 +9,47 @@ class FallbackSystem:
     """
     Sistema de redundância em camadas para garantir que o Jarvis nunca deixe o usuário na mão.
     Se a internet cair, usa local. Se o local travar, usa hotkeys. Se tudo falhar, reinicia.
+    
+    🆕 Integração com Auto-Recovery System para healing automático de falhas.
     """
     
     def __init__(self, jarvis_core=None):
         self.jarvis = jarvis_core
         self.current_layer = 0
         
+        # Integration with Auto-Recovery System
+        self.auto_recovery = None
+        self._initialize_auto_recovery()
+        
+    def _initialize_auto_recovery(self):
+        """Initialize auto-recovery system integration"""
+        try:
+            from .auto_recovery_system import get_auto_recovery_system
+            self.auto_recovery = get_auto_recovery_system()
+            
+            # Set bidirectional integration
+            self.auto_recovery.set_fallback_system(self)
+            
+            # Register fallback system as a monitored module
+            self.auto_recovery.register_module("fallback_system")
+            
+            logger.info("✅ Auto-Recovery System integration established")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize auto-recovery integration: {e}")
+    
+    def trigger_auto_recovery(self, exception: Exception, module_name: str = "unknown", severity: int = 5):
+        """Trigger auto-recovery for detected failures"""
+        if self.auto_recovery:
+            try:
+                from .auto_recovery_system import trigger_recovery_for_exception
+                trigger_recovery_for_exception(module_name, exception, severity)
+                logger.info(f"🔧 Auto-recovery triggered for {module_name}")
+            except Exception as e:
+                logger.error(f"❌ Failed to trigger auto-recovery: {e}")
+        
     def process_command(self, command: str, max_layers=5):
-        """Tenta processar comando em camadas de fallback"""
+        """Tenta processar comando em camadas de fallback com auto-recovery integrado"""
         
         # Sequência de tentativas
         layers = [
@@ -40,7 +74,17 @@ class FallbackSystem:
                     
             except Exception as e:
                 logger.error(f"❌ Falha na Camada {i}: {e}")
+                
+                # 🆕 Trigger auto-recovery for layer failures
+                layer_name = f"fallback_layer_{i}"
+                severity = min(10, 3 + i)  # Increasing severity with layer depth
+                self.trigger_auto_recovery(e, layer_name, severity)
+                
                 continue
+        
+        # 🆕 If all fallback layers failed, trigger critical auto-recovery
+        critical_failure = Exception("All fallback layers failed")
+        self.trigger_auto_recovery(critical_failure, "fallback_system_critical", 10)
         
         return {"success": False, "response": "Falha crítica em todos os subsistemas de resposta."}
     
