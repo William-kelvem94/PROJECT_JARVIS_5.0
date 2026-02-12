@@ -9,39 +9,36 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from src.core.intelligence.ai_agent import ai_agent
 
 # Mock components to avoid real API/Network calls during this specific logic test
-ai_agent._check_ollama_alive = MagicMock(return_value=True) # Simulate Ollama is running
-ai_agent._call_ollama = MagicMock(return_value="Olá senhor (Local)")
-ai_agent._call_gemini = MagicMock(return_value="Hello Sir (Cloud)")
+# Mock components for local verification
+ai_agent._check_ollama_alive = MagicMock(return_value=True) 
+ai_agent._call_ollama = MagicMock(return_value="Olá senhor (Ollama)")
 ai_agent.local_brain = MagicMock()
-ai_agent.voice_controller = MagicMock()
+ai_agent.local_brain.generate_response.return_value = "Senhor (LocalBrain)"
 
 def test_local_priority():
     print("\n[TEST] Verifying Local-First Priority...")
     
-    # 1. Standard Command (Should stay local)
-    print("  🧪 Test 1: Standard Command")
+    # 1. Standard Command (Should use Ollama)
+    print("  🧪 Test 1: Standard Command (Ollama)")
     response = ai_agent.process_command("Que dia é hoje?")
     
-    if "Local" in response:
-        print("  ✅ Accessing Local Brain (Correct)")
+    if "Ollama" in response:
+        print("  ✅ Accessing Ollama (Correct)")
     else:
-        print(f"  ❌ Failed (Went to cloud?): {response}")
+        print(f"  ❌ Failed (Ollama not used?): {response}")
 
-    # 2. Complex/Uncertain Command (Should go to Cloud)
-    print("\n  🧪 Test 2: Uncertainty Trigger")
-    # Force the mock to return a trigger word exactly as checked in ai_agent
-    ai_agent._call_ollama.return_value = "Desculpe, não sei a resposta." 
+    # 2. Local Fallback (Should use LocalBrain)
+    print("\n  🧪 Test 2: LocalBrain Fallback")
+    # Simulate Ollama Failure
+    ai_agent._call_ollama.return_value = "dificuldades no processamento offline"
     
-    # We also need to ensure check_internet returns True for this test to pass
-    ai_agent.voice_controller.check_internet.return_value = True
-    
-    response = ai_agent.process_command("Quem é o presidente de Marte?")
-    if "Cloud" in response: # Mocked gemini returns 'Cloud' string
-        print("  ✅ Escalated to Cloud correctly")
+    response = ai_agent.process_command("Comando para fallback")
+    if "LocalBrain" in response:
+        print("  ✅ Fell back to LocalBrain correctly")
     else:
-        print(f"  ❌ Failed to escalate: {response}")
+        print(f"  ❌ Failed fallback: {response}")
 
-    print("\n[TEST] Logic Verification Complete.")
+    print("\n[TEST] 100% Local Logic Verification Complete.")
 
 if __name__ == "__main__":
     test_local_priority()

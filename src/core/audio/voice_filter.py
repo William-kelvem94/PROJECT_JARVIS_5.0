@@ -7,6 +7,50 @@ logger = logging.getLogger(__name__)
 class AtomicVoiceFilter:
     """Filtro final que garante 100% voz natural, bloqueando falas técnicas."""
     
+    WAKE_WORDS = [
+        'jarvis', 'james', 'gerber', 'javis', 'jarvi', 'star', 'stark', 'singularity'
+    ]
+    
+    _initialized = False
+
+    @classmethod
+    def _ensure_initialized(cls):
+        """Garante que os apelidos customizados foram carregados"""
+        if not cls._initialized:
+            try:
+                from src.utils.config import config
+                custom = config.get_setting("audio.nicknames", [])
+                for nick in custom:
+                    nick_lower = nick.lower().strip()
+                    if nick_lower and nick_lower not in cls.WAKE_WORDS:
+                        cls.WAKE_WORDS.append(nick_lower)
+            except Exception as e:
+                logger.error(f"Erro ao carregar apelidos customizados: {e}")
+            cls._initialized = True
+
+    @classmethod
+    def add_nickname(cls, nickname: str) -> bool:
+        """Adiciona um novo apelido e persiste na configuração"""
+        cls._ensure_initialized()
+        nick_lower = nickname.lower().strip()
+        if not nick_lower:
+            return False
+            
+        if nick_lower not in cls.WAKE_WORDS:
+            cls.WAKE_WORDS.append(nick_lower)
+            
+        try:
+            from src.utils.config import config
+            custom = config.get_setting("audio.nicknames", [])
+            if nick_lower not in custom:
+                custom.append(nick_lower)
+                config.set_setting("audio.nicknames", custom)
+                return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar novo apelido: {e}")
+            
+        return False
+
     TECH_BLOCKLIST = [
         # Palavras técnicas em inglês que vazam com frequência
         'speak', 'say', 'tell', 'command', 'execute', 'run',
@@ -73,6 +117,20 @@ class AtomicVoiceFilter:
         clean_response = re.sub(r'[*_#@$]', '', raw_response)
         
         return clean_response.strip()
+    
+    @classmethod
+    def has_wake_word(cls, text: str) -> bool:
+        """Verifica se o nome do JARVIS ou palavra de ativação está presente na frase."""
+        cls._ensure_initialized()
+        if not text:
+            return False
+            
+        lower_text = text.lower()
+        # Verifica se alguma palavra de ativação está presente
+        for word in cls.WAKE_WORDS:
+            if word in lower_text:
+                return True
+        return False
     
     @staticmethod
     def _generate_safe_fallback() -> str:

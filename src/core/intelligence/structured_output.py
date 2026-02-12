@@ -68,6 +68,7 @@ class ActionType(str, Enum):
     GET_HARDWARE_SUGGESTIONS = "get_hardware_suggestions"
     READ_CLIPBOARD = "read_clipboard"
     ANALYZE_AND_ORGANIZE = "analyze_and_organize"
+    REGISTER_NICKNAME = "register_nickname"
 
 
 # ============================================================================
@@ -248,6 +249,11 @@ class GetHardwareSuggestionsAction(BaseModel):
     """Ação: Obter sugestões de otimização de hardware da IA"""
     action: Literal[ActionType.GET_HARDWARE_SUGGESTIONS] = ActionType.GET_HARDWARE_SUGGESTIONS
 
+class RegisterNicknameAction(BaseModel):
+    """Ação: Registrar um novo apelido/palavra de ativação para o JARVIS"""
+    action: Literal[ActionType.REGISTER_NICKNAME] = ActionType.REGISTER_NICKNAME
+    nickname: str = Field(..., min_length=2, description="O novo apelido a ser registrado")
+
 
 # ============================================================================
 # MODELO DE RESPOSTA DO AGENTE
@@ -280,6 +286,7 @@ ActionUnion = Union[
     SetProcessPriorityAction,
     SetPowerPlanAction,
     GetHardwareSuggestionsAction,
+    RegisterNicknameAction,
 ]
 
 
@@ -490,6 +497,7 @@ def get_actions_schema() -> Dict[str, Any]:
                         SetProcessPriorityAction.schema(),
                         SetPowerPlanAction.schema(),
                         GetHardwareSuggestionsAction.schema(),
+                        RegisterNicknameAction.schema(),
                     ]
                 }
             },
@@ -534,6 +542,16 @@ def get_example_responses() -> List[Dict[str, Any]]:
                     {"action": "search_web", "query": "clima hoje"}
                 ],
                 "final_answer": "Deixe-me verificar o clima para você."
+            }
+        },
+        {
+            "user": "A partir de agora, seu apelido é Batatinha",
+            "response": {
+                "thought": "O usuário quer me dar um novo apelido. Preciso registrar 'Batatinha' no sistema.",
+                "actions": [
+                    {"action": "register_nickname", "nickname": "Batatinha"}
+                ],
+                "final_answer": "Entendido, senhor. Registrei 'Batatinha' como um dos meus nomes de ativação."
             }
         }
     ]

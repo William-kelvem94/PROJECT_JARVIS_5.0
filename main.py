@@ -1,22 +1,39 @@
 import os
 import sys
-import logging
+import warnings
 import time
 import platform
+
+# 🛡️ EARLY WARNING SUPPRESSION (Must be before any heavy imports)
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', message='.*openvino.runtime.*')
+warnings.filterwarnings('ignore', message='.*loss_type=None.*')
+
+import logging
 
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
 # Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'
 try:
     import sys
     import openvino
-    import openvino.runtime
-    node_obj = getattr(openvino.runtime, 'Node', None)
+    # Favorece o novo padrão sem .runtime (OpenVINO 2023.1+)
+    node_obj = getattr(openvino, 'Node', None)
+    
+    # Fallback silencioso via sys.modules se já estiver carregado por outra lib
+    if not node_obj and 'openvino.runtime' in sys.modules:
+        node_obj = getattr(sys.modules['openvino.runtime'], 'Node', None)
+        
     if node_obj:
         if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
-    if hasattr(openvino.runtime, 'op'):
-        sys.modules['openvino.op'] = openvino.runtime.op
-        if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
+        
+    # Patch op module
+    op_obj = getattr(openvino, 'op', None)
+    if not op_obj and 'openvino.runtime' in sys.modules:
+        op_obj = getattr(sys.modules['openvino.runtime'], 'op', None)
+        
+    if op_obj:
+        sys.modules['openvino.op'] = op_obj
+        if not hasattr(openvino, 'op'): openvino.op = op_obj
 except Exception:
     pass
 import psutil
@@ -72,6 +89,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', message='.*loss_type=None.*')
 
 # Ensure necessary data structure
 Path('data/logs').mkdir(parents=True, exist_ok=True)
@@ -280,6 +298,11 @@ class JarvisSingularity(QObject):
         self.system_integrator = instances.get("System Integrator")
         self.ai_agent = instances.get("AI Agent")
         
+        # 🧠 Contextual Awareness State
+        self.last_interaction_time = 0
+        self.continuous_mode_window = 15 # Seconds to stay 'awake' for follow-ups
+        
+        self.is_running = False
         # Initialize Shutdown Manager
         self.shutdown_manager = ShutdownManager(self)
         
@@ -334,11 +357,23 @@ class JarvisSingularity(QObject):
 
     def _staggered_daemon_start(self):
         """Sequentially start background subsystems with delays to avoid DLL/COM collisions"""
-        # Camera monitoring now handled in Stage 3 after neural models load
-        # This prevents ACCESS_VIOLATION crashes from parallel model loading
+        # [STEP 1] Wait 5s then start Camera (Eyes)
+        # We start camera first to capture the user's initial emotion for the greeting
+        QTimer.singleShot(5000, self._start_camera_monitoring)
         
-        # Wait 5s then start Proactive Monitor
-        QTimer.singleShot(5000, self._start_proactive_monitor)
+        # [STEP 2] Wait another 5s then start Proactive Monitor (Screen)
+        QTimer.singleShot(10000, self._start_proactive_monitor)
+
+    def _start_camera_monitoring(self):
+        """Initializes FaceID and Emotion detection via CameraController"""
+        try:
+            from src.core.vision.camera_controller import camera_controller
+            camera_controller.start_monitoring()
+            logger.info("👁️ Camera Monitoring (Eyes) active")
+            if self.window_manager and self.window_manager.get_hud():
+                self.window_manager.get_hud().log_event("OPTIC SENSORS: ONLINE")
+        except Exception as e:
+            logger.warning(f"⚠️ Camera Monitor failure: {e}")
 
     def _start_proactive_monitor(self):
         try:
@@ -367,7 +402,8 @@ class JarvisSingularity(QObject):
                 if self.window_manager and hasattr(self.window_manager, '_tray_icon') and self.window_manager._tray_icon:
                     self.window_manager._tray_icon.setToolTip("🎤 JARVIS - Listening")
                 
-                # 🌟 NOVO: Agendar saudação proativa após 3 segundos
+                # 🌟 NOVO: Agendar saudação proativa após o áudio estar pronto
+                # Isso garante que ele te cumprimente sabendo que pode te ouvir
                 QTimer.singleShot(3000, self._greet_user_proactively)
             else:
                 logger.error("❌ Failed to start microphone")
@@ -453,9 +489,21 @@ class JarvisSingularity(QObject):
             
         if self._is_processing:
             logger.warning("Already processing a command, skipping...")
+        # 🧠 [STARK NATURAL CONVERSATION LOGIC]
+        # Check if we should process this:
+        # 1. Has any wake word (Jarvis, James, etc) anywhere?
+        # 2. Are we in a follow-up window (last 15s)?
+        from src.core.audio.voice_filter import AtomicVoiceFilter
+        has_name = AtomicVoiceFilter.has_wake_word(result.text)
+        is_follow_up = (time.time() - self.last_interaction_time) < self.continuous_mode_window
+        
+        if not has_name and not is_follow_up:
+            # Let's be smart: if it's very short silence or background, ignore
+            # but log for diagnostics
+            logger.debug(f"🔇 Ignored (No wake word & no context): '{result.text}'")
             return
-            
-        logger.info(f"🎙️ [UI THREAD] Transcription received: '{result.text}'")
+
+        logger.info(f"🎙️ [UI THREAD] {'CONTINUAÇÃO' if is_follow_up and not has_name else 'COMANDO'} recebido: '{result.text}'")
         self._is_processing = True
         
         # Update HUD state (Now safe because we are on main thread)
@@ -533,6 +581,7 @@ class JarvisSingularity(QObject):
             self.hud_update_requested.emit("error", f"Erro: {e}")
         finally:
             self._is_processing = False
+            self.last_interaction_time = time.time() # Start follow-up timer AFTER finishing speech
 
     def _process_fallback(self, text):
         """Emergency Fallback Loop (No AI Agent)"""
@@ -652,6 +701,11 @@ def main():
                 sys_int = get_system_integrator()
                 audio = get_audio_system(PROJECT_ROOT / "data")
                 vision = get_vision_system(PROJECT_ROOT / "data")
+                
+                # 🚀 INICIAR CARREGAMENTO NEURAL EM BACKGROUND
+                # Isso impede que o sistema fique "surdo" ou "cego"
+                audio.start_background_loading()
+                vision.start_background_loading()
                 
                 boot_data["instances"] = {
                     "Window Manager": window_manager,

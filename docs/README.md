@@ -46,6 +46,14 @@ Inteligência artificial e aprendizado
 
 ---
 
+### 🎓 AI Training (Treinamento de IA)
+Guias para treinamento manual da IA
+
+- **[manual_training_guide.md](ai_training/manual_training_guide.md)** - 📖 Guia completo de treinamento manual (EN)
+- **[manual_training_guide_ptbr.md](ai_training/manual_training_guide_ptbr.md)** - 📖 Guia completo de treinamento manual (PT-BR)
+
+---
+
 ### 🏗️ Architecture (Arquitetura)
 Estrutura técnica do sistema
 
@@ -142,6 +150,7 @@ Documentos antigos e descontinuados
 | **Instalação** | [installation.md](getting-started/installation.md) |
 | **Comandos de Voz** | [voice-commands.md](user-guide/voice-commands.md) |
 | **Aprendizado de IA** | [learning-system.md](ai-systems/learning-system.md) |
+| **Treinamento Manual** | [manual_training_guide.md](ai_training/manual_training_guide.md) |
 | **API Keys** | [api-keys-setup.md](getting-started/api-keys-setup.md) |
 | **Problemas** | [troubleshooting.md](maintenance/troubleshooting.md) |
 | **Arquitetura** | [overview.md](architecture/overview.md) |

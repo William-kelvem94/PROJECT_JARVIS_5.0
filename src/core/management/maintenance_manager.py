@@ -223,7 +223,7 @@ class MaintenanceManager:
                 return
 
             # Verificar modelos carregados no Ollama
-            required_models = ["llava", "qwen2.5:0.5b"]  # Modelos padrão do Jarvis
+            required_models = ["deepseek-r1:8b", "qwen2.5:7b", "gemma3:4b"]  # Modelos padrão do Jarvis
             try:
                 resp = requests.get(f"{base_url}/api/tags")
                 installed_models = [m['name'] for m in resp.json().get('models', [])]
