@@ -14,13 +14,21 @@ try:
     import sys
     import openvino
     # openvino.runtime is deprecated in favor of openvino
-    if hasattr(openvino, "runtime"):
-        node_obj = getattr(openvino.runtime, 'Node', None)
-        if node_obj:
-            if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if hasattr(openvino.runtime, 'op'):
-            sys.modules['openvino.op'] = openvino.runtime.op
-            if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
+    # openvino.runtime is deprecated in favor of openvino
+    node_obj = getattr(openvino, 'Node', None)
+    if not node_obj and 'openvino.runtime' in sys.modules:
+        node_obj = getattr(sys.modules['openvino.runtime'], 'Node', None)
+        
+    if node_obj:
+        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+    
+    op_obj = getattr(openvino, 'op', None)
+    if not op_obj and 'openvino.runtime' in sys.modules:
+        op_obj = getattr(sys.modules['openvino.runtime'], 'op', None)
+        
+    if op_obj:
+        sys.modules['openvino.op'] = op_obj
+        if not hasattr(openvino, 'op'): openvino.op = op_obj
 except Exception:
     pass
 
@@ -91,19 +99,23 @@ class LocalBrain:
                 # 1. Carregar Tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True)
                 
-                # 2. Tentar Aceleração OpenVINO (Optimum Intel)
+                # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache Inteligente
                 if OPENVINO_AVAILABLE and os.environ.get("JARVIS_DISABLE_OPENVINO") != "1":
+                    cache_dir = "data/models/ov_cache"
+                    os.makedirs(cache_dir, exist_ok=True)
+                    
                     try:
                         logger.info("⚡ Tentando Aceleração OpenVINO via GPU Intel...")
                         self.model = OVModelForCausalLM.from_pretrained(
                             self.model_id,
                             export=True,
-                            device="GPU",
-                            compile=True,
+                            device="GPU", 
+                            compile=False,  # Evita recompilação desnecessária
                             trust_remote_code=True,
                             ov_config={
                                 "PERFORMANCE_HINT": "LATENCY",
-                                "CACHE_DIR": "data/models/ov_cache"
+                                "CACHE_DIR": cache_dir,
+                                "INFERENCE_PRECISION_HINT": "f16"  # Melhor performance
                             }
                         )
                         self.device = "GPU"
@@ -116,8 +128,12 @@ class LocalBrain:
                                 self.model_id,
                                 export=True,
                                 device="CPU",
-                                compile=True,
-                                trust_remote_code=True
+                                compile=False,  # Evita recompilação
+                                trust_remote_code=True,
+                                ov_config={
+                                    "PERFORMANCE_HINT": "THROUGHPUT",
+                                    "CACHE_DIR": cache_dir
+                                }
                             )
                             self.device = "CPU"
                             self.provider_name = "OpenVINO (CPU)"

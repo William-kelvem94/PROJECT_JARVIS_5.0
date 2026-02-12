@@ -707,7 +707,7 @@ class EnhancedAudioSystem:
                         y=audio_float,
                         sr=self.sample_rate,
                         stationary=True,
-                        prop_decrease=0.8  # 80% noise reduction
+                        prop_decrease=0.6  # Reduzido de 0.8 para 0.6 para evitar voz 'robótica'
                     )
                     logger.debug("✅ Noise reduction applied (+20% accuracy)")
                 except Exception as e:
@@ -798,9 +798,9 @@ class EnhancedAudioSystem:
                 audio,
                 language="pt", 
                 beam_size=5,
-                initial_prompt="",  # 🔥 Removido prompt que pode causar alucinações
+                initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, português do Brasil.", 
                 vad_filter=True,
-                vad_parameters=dict(threshold=0.8, min_silence_duration_ms=1000)  # Extreme VAD
+                vad_parameters=dict(threshold=0.5, min_silence_duration_ms=500)  # VAD mais equilibrado
             )
             
             # Collect segments

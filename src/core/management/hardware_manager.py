@@ -12,12 +12,21 @@ from typing import Dict, Any, List, Optional
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
 try:
     import openvino
-    if hasattr(openvino, "runtime"):
-        node_obj = getattr(openvino.runtime, 'Node', None)
-        if node_obj:
-            if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if hasattr(openvino.runtime, 'op'):
-            sys.modules['openvino.op'] = openvino.runtime.op
+    # openvino.runtime is deprecated in favor of openvino
+    node_obj = getattr(openvino, 'Node', None)
+    if not node_obj and 'openvino.runtime' in sys.modules:
+        node_obj = getattr(sys.modules['openvino.runtime'], 'Node', None)
+        
+    if node_obj:
+        if not hasattr(openvino, 'Node'): openvino.Node = node_obj
+    
+    op_obj = getattr(openvino, 'op', None)
+    if not op_obj and 'openvino.runtime' in sys.modules:
+        op_obj = getattr(sys.modules['openvino.runtime'], 'op', None)
+        
+    if op_obj:
+        sys.modules['openvino.op'] = op_obj
+        if not hasattr(openvino, 'op'): openvino.op = op_obj
 except Exception:
     pass
 

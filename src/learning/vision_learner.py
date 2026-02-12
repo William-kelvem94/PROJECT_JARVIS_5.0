@@ -846,7 +846,7 @@ if __name__ == "__main__":
     # Initialize vision learner
     learner = VisionLearner(
         model_dir=Path("./data/vision_learner"),
-        base_model="yolov8n.pt"
+        base_model="models/vision/yolov8n.pt"
     )
     
     # Example: Add a training example

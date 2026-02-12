@@ -7,7 +7,7 @@ import platform
 
 # Provedores de Aceleração
 try:
-    import openvino.runtime as ov
+    import openvino as ov
     OPENVINO_AVAILABLE = True
 except ImportError:
     OPENVINO_AVAILABLE = False

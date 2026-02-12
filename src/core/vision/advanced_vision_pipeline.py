@@ -50,18 +50,13 @@ class AdvancedVisionPipeline:
             logger.warning(f"⚠️ Erro ao inicializar EasyOCR: {e}")
     
     def _init_level3(self):
-        """Inicializa processadores de nível 3"""
-        try:
-            from src.core.intelligence.brain_router import brain_router
-            # Synchronize with BrainRouter availability which validates the key/model reaching v1 endpoint
-            if brain_router.cloud_available:
-                self.level3_available = True
-                logger.info("✅ Gemini Vision disponível (Nível 3)")
-            else:
-                self.level3_available = False
-                logger.debug("ℹ️ Nível 3 indisponível (BrainRouter cloud_available is False)")
-        except Exception as e:
-            logger.warning(f"⚠️ Nível 3 não disponível: {e}")
+        """Inicializa processadores de nível 3 (Híbrido)"""
+        from src.core.intelligence.brain_router import brain_router
+        self.level3_available = brain_router.cloud_available
+        if self.level3_available:
+            logger.info("✅ Visão de Nível 3 Habilitada (Nuvem Disponível)")
+        else:
+            logger.info("ℹ️ Nível 3 operando em modo reduzido ou desativado")
     
     def analyze(self, image_path: str, complexity: str = "auto") -> Dict[str, Any]:
         """
@@ -209,7 +204,12 @@ class AdvancedVisionPipeline:
                 "4. Qualquer informação importante ou erro visível"
             )
             
-            description = ai_agent._call_gemini(prompt, image_path)
+            # Usar Decision Engine para análise profunda via Cloud Seletivo
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            description = loop.run_until_complete(ai_agent._call_smart_brain(prompt, image_path))
             results["deep_description"] = description
             
             logger.info(f"✅ Nível 3: Análise profunda concluída")

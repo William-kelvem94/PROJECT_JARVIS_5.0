@@ -5,16 +5,21 @@
 try:
     import sys
     import openvino
-    import openvino.runtime
-    # 1. Patch Node
-    node_obj = getattr(openvino.runtime, 'Node', None)
+    # 1. Patch Node - Favorece topo (OpenVINO 2023.1+)
+    node_obj = getattr(openvino, 'Node', None)
+    if not node_obj and 'openvino.runtime' in sys.modules:
+        node_obj = getattr(sys.modules['openvino.runtime'], 'Node', None)
+        
     if node_obj:
         if not hasattr(openvino, 'Node'): openvino.Node = node_obj
-        if not hasattr(openvino.runtime, 'Node'): openvino.runtime.Node = node_obj
     
     # 2. Patch op module
-    if hasattr(openvino.runtime, 'op'):
-        sys.modules['openvino.op'] = openvino.runtime.op
-        if not hasattr(openvino, 'op'): openvino.op = openvino.runtime.op
+    op_obj = getattr(openvino, 'op', None)
+    if not op_obj and 'openvino.runtime' in sys.modules:
+        op_obj = getattr(sys.modules['openvino.runtime'], 'op', None)
+        
+    if op_obj:
+        sys.modules['openvino.op'] = op_obj
+        if not hasattr(openvino, 'op'): openvino.op = op_obj
 except Exception:
     pass

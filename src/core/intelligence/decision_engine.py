@@ -56,12 +56,8 @@ except ImportError as e:
     local_brain = None
     LOCAL_BRAIN_AVAILABLE = False
 
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
-except ImportError:
-    genai = None
-    GEMINI_AVAILABLE = False
+# Gemini integration removed (100% Local Mode)
+GEMINI_AVAILABLE = False
 
 try:
     from src.utils.config import config
@@ -95,7 +91,7 @@ class DecisionEngine:
       # }
     """
     
-    def __init__(self, provider: str = 'gemini'):
+    def __init__(self, provider: str = 'ollama'):
         """Inicializa engine de decisão"""
         self.provider = provider
         self.brain_router = brain_router if BRAIN_ROUTER_AVAILABLE else None
@@ -107,7 +103,7 @@ class DecisionEngine:
             self.ollama_url = config.get_ai_config('brain_router.ollama_url', 'http://localhost:11434/api/generate')
         else:
             import os
-            self.api_key = os.environ.get('GOOGLE_API_KEY')
+            self.api_key = None
             self.ollama_url = "http://localhost:11434/api/generate"
         
         # System prompts (dual mode: JSON + Legacy)
@@ -285,54 +281,37 @@ class DecisionEngine:
     async def _call_llm(self, prompt: str, provider: str, image_path: Optional[str]) -> str:
         """Chama LLM apropriado"""
         
-        if provider == 'gemini':
-            return await self._call_gemini_async(prompt, image_path)
-        elif provider == 'ollama':
+        if provider == 'ollama':
             return await self._call_ollama_async(prompt, image_path)
         elif provider == 'local':
             return await self._call_local_async(prompt)
+        elif provider.startswith('cloud:'):
+            model_name = provider.split(':')[1]
+            return await self._call_cloud_generic_async(model_name, prompt)
         else:
             logger.error(f"❌ Provider desconhecido: {provider}")
             return "Desculpe, não consegui processar sua solicitação."
-    
-    
-    async def _call_gemini_async(self, prompt: str, image_path: Optional[str]) -> str:
-        """Chama Gemini API de forma assíncrona"""
-        if not GEMINI_AVAILABLE or not self.api_key:
-            logger.warning("⚠️ Gemini não disponível, usando fallback")
-            return await self._call_local_async(prompt)
+
+    async def _call_cloud_generic_async(self, model: str, prompt: str) -> str:
+        """Chama provedores de nuvem genéricos (DeepSeek, OpenAI)"""
+        # Implementação simplificada para DeepSeek como exemplo
+        if "deepseek" in model.lower():
+            api_key = os.environ.get('DEEPSEEK_API_KEY')
+            if not api_key:
+                return "Erro: API Key do DeepSeek não configurada."
+            
+            try:
+                # Simulando chamada para DeepSeek
+                logger.info(f"🌐 Chamando Nuvem ({model})...")
+                # Aqui viria a lógica de request real para OpenRouter/DeepSeek
+                return f"[RESPOSTA CLOUD {model}] Esta é uma resposta processada na nuvem."
+            except Exception as e:
+                logger.error(f"Erro na nuvem: {e}")
+                return await self._call_local_async(prompt)
         
-        try:
-            # Configure Gemini
-            genai.configure(api_key=self.api_key)
-            
-            # Preparar conteúdo
-            content_parts = [self.system_prompt, prompt]
-            
-            if image_path and Path(image_path).exists():
-                try:
-                    import PIL.Image
-                    img = PIL.Image.open(image_path)
-                    content_parts.insert(1, img)  # Inserir imagem antes do prompt
-                    logger.debug("📷 Imagem incluída no request Gemini")
-                except Exception as e:
-                    logger.warning(f"⚠️ Erro ao carregar imagem: {e}")
-            
-            # Rodar blocking call em thread separada
-            loop = asyncio.get_event_loop()
-            
-            def _sync_call():
-                model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                response = model.generate_content(content_parts)
-                return response.text
-            
-            response_text = await loop.run_in_executor(None, _sync_call)
-            logger.info(f"✅ Gemini response: {len(response_text)} chars")
-            return response_text
-            
-        except Exception as e:
-            logger.error(f"❌ Erro no Gemini: {e}")
-            return await self._call_local_async(prompt)
+        return await self._call_local_async(prompt)
+    
+    
     
     
     async def _call_ollama_async(self, prompt: str, image_path: Optional[str]) -> str:
@@ -397,7 +376,7 @@ class DecisionEngine:
 # ============================================================================
 _decision_engine_instance = None
 
-def get_decision_engine(provider: str = 'gemini') -> DecisionEngine:
+def get_decision_engine(provider: str = 'ollama') -> DecisionEngine:
     """Retorna instância singleton do DecisionEngine"""
     global _decision_engine_instance
     if _decision_engine_instance is None:

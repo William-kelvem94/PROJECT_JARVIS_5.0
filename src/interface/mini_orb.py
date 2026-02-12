@@ -137,7 +137,9 @@ class MiniOrb(QWidget):
         menu.addSeparator()
         
         quit_action = QAction("🚪 Sair", self)
-        quit_action.triggered.connect(QApplication.instance().quit)
+        app = QApplication.instance()
+        if app:
+            quit_action.triggered.connect(app.quit)
         menu.addAction(quit_action)
         
         menu.exec(self.mapToGlobal(pos))

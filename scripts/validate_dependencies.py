@@ -18,8 +18,6 @@ CRITICAL_PACKAGES = [
     ('transformers', 'transformers', True),
     ('sentence_transformers', 'sentence-transformers', True),
     ('chromadb', 'chromadb', True),
-    ('easyocr', 'easyocr', True),
-    ('openvino', 'openvino-dev', True),
 ]
 
 def check_package(import_name, pip_name, use_pip_show=False):

@@ -18,6 +18,7 @@ import sys
 import logging
 import json
 import psutil
+import threading
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, List
@@ -68,7 +69,7 @@ class SideBarButton(QPushButton):
             }
         """)
 
-class ControlDashboard(QMainWindow):
+class SystemMonitorThread(QThread):
     """Background thread for system monitoring"""
     stats_updated = pyqtSignal(dict)
     
@@ -85,7 +86,7 @@ class ControlDashboard(QMainWindow):
             except Exception as e:
                 logger.error(f"Error monitoring system: {e}")
             
-            self.msleep(2000)  # Update every 2 seconds
+            QThread.msleep(2000)  # Update every 2 seconds
 
 
 class ControlDashboard(QMainWindow):
@@ -1301,57 +1302,6 @@ class ControlDashboard(QMainWindow):
         enabled = state == 2 # 2 is checked in Qt
         reflect_logger.set_enabled(enabled)
         logger.info(f"Neural Reflection {'ENABLED' if enabled else 'DISABLED'}")
-        
-    def _trigger_training(self):
-        """Manual trigger for DPO training cycle"""
-        try:
-            from src.learning.learning_engine import get_learning_engine
-            le = get_learning_engine()
-            if le and le.continual_learner:
-                threading.Thread(target=le.continual_learner._execute_training_cycle, daemon=True).start()
-                QMessageBox.information(self, "Neural Engine", "DPO Training cycle initiated in background.")
-        except Exception as e:
-            QMessageBox.warning(self, "Training Error", f"Failed to start training: {e}")
-
-    def _backup_model(self):
-        """Archive current model state"""
-        QMessageBox.information(self, "Neural Engine", "Neural state archived to models/backup.")
-
-    def _submit_correction(self):
-        """Submit RLHF correction and trigger distillation"""
-        text = self.correction_edit.toPlainText()
-        if not text: return
-        QMessageBox.information(self, "RLHF Interface", "Correction received. Neural weights will be adjusted in next cycle.")
-        self.correction_edit.clear()
-
-    def _scan_knowledge_gaps(self):
-        """Manually trigger gap analysis and research"""
-        try:
-            from src.learning.learning_engine import get_learning_engine
-            le = get_learning_engine()
-            if le and le.dream_cycle:
-                self.cog_awareness_label.setText("COGNITIVE AWARENESS: PERFORMING RESEARCH")
-                threading.Thread(target=le.dream_cycle._perform_autonomous_research, daemon=True).start()
-                QMessageBox.information(self, "Cognitive Engine", "Scanning for knowledge vacuums... Search results will appear in logs.")
-        except Exception as e:
-            logger.error(f"Gap scan failed: {e}")
-
-    def _refresh_golden_commands(self):
-        """Load Golden Commands list"""
-        try:
-            self.golden_list.clear()
-            from src.learning.knowledge_distiller import knowledge_distiller
-            for cmd, data in knowledge_distiller.gold_commands.items():
-                self.golden_list.addItem(f"[{data.get('usage_count', 0)}] {cmd}")
-        except Exception as e:
-            logger.error(f"Failed to refresh golden commands: {e}")
-
-    def _refresh_learning_status(self):
-        """Update metrics and engine status labels"""
-        # This would pull from LearningEngine in a real scenario
-        self.total_interactions_label.setText("1,248")
-        self.training_cycles_label.setText("42")
-        self.golden_commands_label.setText(str(self.golden_list.count()))
             
     def closeEvent(self, event):
         """Handle window close"""

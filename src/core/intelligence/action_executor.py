@@ -28,6 +28,7 @@ from src.core.intelligence.structured_output import (
     SearchWebAction,
     WaitAction,
     ActionType,
+    RegisterNicknameAction,
 )
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,7 @@ class ActionExecutor:
             ActionType.SET_PROCESS_PRIORITY: self._execute_set_process_priority,
             ActionType.SET_POWER_PLAN: self._execute_set_power_plan,
             ActionType.GET_HARDWARE_SUGGESTIONS: self._execute_get_hardware_suggestions,
+            ActionType.REGISTER_NICKNAME: self._execute_register_nickname,
         }
     
     def _load_controllers(self):
@@ -496,6 +498,14 @@ class ActionExecutor:
         
         suggestion = self.hardware_manager.suggest_optimizations()
         return suggestion
+
+    def _execute_register_nickname(self, action: RegisterNicknameAction) -> str:
+        """Handler para RegisterNicknameAction"""
+        from src.core.audio.voice_filter import AtomicVoiceFilter
+        success = AtomicVoiceFilter.add_nickname(action.nickname)
+        if success:
+            return f"Apelido '{action.nickname}' registrado com sucesso. Agora você pode me chamar assim!"
+        return f"O apelido '{action.nickname}' já está registrado ou é inválido."
 
 
 # Instância global (singleton)

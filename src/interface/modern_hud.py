@@ -143,9 +143,9 @@ class ModernHUD(QMainWindow):
         
         # Central Widget
         self.central_widget = QWidget()
-        self.layout = QVBoxLayout(self.central_widget)
+        self._main_layout = QVBoxLayout(self.central_widget)
         self.reactor = ArcReactorWidget()
-        self.layout.addWidget(self.reactor)
+        self._main_layout.addWidget(self.reactor)
         self.setCentralWidget(self.central_widget)
         
         # Posicionamento Inicial (Canto Superior Direito)
@@ -199,8 +199,12 @@ class ModernHUD(QMainWindow):
         self.reactor.update()
 
     def _set_default_position(self):
-        screen = QApplication.primaryScreen().geometry()
-        self.move(screen.width() - self.width() - 20, 20)
+        screen = QApplication.primaryScreen()
+        if screen:
+            geometry = screen.geometry()
+            self.move(geometry.width() - self.width() - 20, 20)
+        else:
+            self.move(100, 100)
 
     @pyqtSlot(str, int)
     def update_boot_ui(self, message: str, progress: int):
