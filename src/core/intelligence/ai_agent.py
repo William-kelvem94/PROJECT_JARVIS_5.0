@@ -299,6 +299,12 @@ class AIAgent:
         self.safe_mode = False
         self._verify_critical_dependencies()
         
+        # =====================================================================
+        # 🆕 AUTO-RECOVERY INTEGRATION
+        # =====================================================================
+        self.auto_recovery = None
+        self._initialize_auto_recovery()
+        
         self.provider = provider
         self.api_key = None # 100% Local Mode
         self.ollama_url = "http://localhost:11434/api/generate"
@@ -502,6 +508,62 @@ class AIAgent:
         if not has_api_key and not has_local and not has_ollama:
             logger.critical("❌ NENHUM PROVIDER LLM DISPONÍVEL (sem API key, sem modelo local, sem ollama)")
             logger.critical("💡 Configure GOOGLE_API_KEY ou instale um modelo local")
+        
+        # 🆕 AUTO-RECOVERY: Log critical issues for automatic recovery
+        if self.auto_recovery and missing_critical:
+            for module in missing_critical:
+                self.auto_recovery._trigger_recovery(
+                    failure_type=self.auto_recovery.FailureType.IMPORT_ERROR,
+                    module_name=module,
+                    error_message=f"Critical module {module} is missing",
+                    severity=9
+                )
+    
+    def _initialize_auto_recovery(self):
+        """Initialize auto-recovery system integration"""
+        try:
+            from src.core.management.auto_recovery_system import get_auto_recovery_system, register_module_for_monitoring
+            self.auto_recovery = get_auto_recovery_system()
+            
+            # Register AI Agent as a monitored module
+            register_module_for_monitoring("ai_agent")
+            
+            # Register health check callback
+            if hasattr(self.auto_recovery, 'register_health_callback'):
+                self.auto_recovery.register_health_callback("ai_agent", self._health_check)
+                
+            logger.info("🔧 AI Agent auto-recovery integration established")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize auto-recovery integration: {e}")
+    
+    def _health_check(self) -> Dict[str, Any]:
+        """Health check for auto-recovery monitoring"""
+        try:
+            return {
+                "status": "healthy" if not self.safe_mode else "degraded",
+                "safe_mode": self.safe_mode,
+                "provider": self.provider,
+                "brain_router_available": self.brain_router is not None,
+                "last_interaction": getattr(self, 'last_interaction_time', None)
+            }
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+    
+    def _handle_critical_error(self, error: Exception, context: str = "unknown"):
+        """Handle critical errors with auto-recovery"""
+        if self.auto_recovery:
+            try:
+                from src.core.management.auto_recovery_system import trigger_recovery_for_exception
+                trigger_recovery_for_exception("ai_agent", error, severity=8)
+                logger.info(f"🔧 Auto-recovery triggered for AI Agent error in {context}")
+            except Exception as e:
+                logger.error(f"❌ Failed to trigger auto-recovery: {e}")
+        
+        # Set safe mode if error is critical
+        if isinstance(error, (ImportError, MemoryError)):
+            self.safe_mode = True
+            logger.critical("🔒 AI Agent entering safe mode due to critical error")
         
     def _on_heavy_model_loading(self, message: str):
         """
@@ -867,6 +929,10 @@ class AIAgent:
 
             except Exception as e:
                 logger.error(f"Falha no cérebro local ({primary_provider}): {e}")
+                
+                # 🆕 AUTO-RECOVERY: Handle critical AI processing errors
+                self._handle_critical_error(e, "ai_processing")
+                
                 from src.core.management.evolution_engine import evolution_engine
                 evolution_engine.log_failure("Thought Cycle", str(e), primary_provider)
                 response = "ERRO_LOCAL"

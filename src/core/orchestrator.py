@@ -28,7 +28,8 @@ class StarkOrchestrator:
         
         initialization_sequence = [
             ("🛡️ Sanitizer", self._init_sanitizers),
-            ("🔐 Security", self._init_security),
+            ("� Auto-Recovery System", self._init_auto_recovery),
+            ("�🔐 Security", self._init_security),
             ("🎤 Voice Filter", self._init_voice_filter),
             ("🛡️ Fallback System", self._init_fallback_system),
             ("🏠 IoT Manager", self._init_iot),
@@ -59,7 +60,38 @@ class StarkOrchestrator:
                 
         logger.info(f"✨ Stark 2.0 Inicializado: {'Sucesso' if self.is_ready else 'Parcial'} ({success_count}/{len(initialization_sequence)})")
         
+    def _init_auto_recovery(self):
+        """Inicializa o sistema de auto-recuperação avançado"""
+        try:
+            from src.core.management.auto_recovery_system import get_auto_recovery_system
+            self.auto_recovery = get_auto_recovery_system()
+            
+            # Register core modules for monitoring
+            core_modules = [
+                "src.core.intelligence.ai_agent",
+                "src.core.audio.voice_controller", 
+                "src.core.vision.camera_controller",
+                "src.core.management.hardware_manager",
+                "src.interface.window_manager"
+            ]
+            
+            for module in core_modules:
+                self.auto_recovery.register_module(module)
+            
+            # Start real-time monitoring
+            self.auto_recovery.start_monitoring()
+            
+            self.components["auto_recovery"] = self.auto_recovery
+            logger.info("🔧 Sistema de Auto-Recovery inicializado com monitoramento ativo")
+            
+        except Exception as e:
+            logger.error(f"❌ Falha na inicialização do Auto-Recovery: {e}")
+            # Don't raise - auto-recovery is optional enhancement
+        
     def _init_sanitizers(self):
+        # Sanitizers são estáticos/classe, mas podemos configurar algo se necessário
+        # Se tivessem estado, instanciariamos aqui.
+        pass
         # Sanitizers são estáticos/classe, mas podemos configurar algo se necessário
         # Se tivessem estado, instanciariamos aqui.
         pass
