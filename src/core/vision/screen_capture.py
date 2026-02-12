@@ -450,5 +450,5 @@ class ScreenCapture:
             logger.error(f"Erro na captura com cursor: {e}")
             return None
 
-# Instância global
-screen_capture = ScreenCapture()
+# Instância global removida para evitar execução durante import
+# screen_capture = ScreenCapture()

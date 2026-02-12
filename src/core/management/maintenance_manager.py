@@ -465,5 +465,5 @@ class MaintenanceManager:
 
 
 
-# Instância global
-maintenance_manager = MaintenanceManager()
+# Instância global removida para evitar execução durante import
+# maintenance_manager = MaintenanceManager()

@@ -165,5 +165,5 @@ class ActionValidator:
             logger.error(f"⚠️ Erro no Security Sentinel: {e}. Bloqueando por falha aberta.")
             return False # Fail-safe closed
 
-# Instância Global singleton
-action_validator = ActionValidator()
+# Instância Global singleton removida para evitar execução durante import
+# action_validator = ActionValidator()

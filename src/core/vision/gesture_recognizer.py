@@ -222,8 +222,8 @@ class GestureRecognizer:
         return names.get(gesture, gesture.value)
 
 
-# Instância global
-gesture_recognizer = GestureRecognizer()
+# Instância global removida para evitar execução durante import
+# gesture_recognizer = GestureRecognizer()
 
 
 # Exemplo de uso

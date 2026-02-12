@@ -43,7 +43,7 @@ Installing packages...
 1. `scripts/auto_healer.py` - Auto-healing
 2. `scripts/auto_configurator.py` - Auto-config
 3. `scripts/install/quick_fix_torch.py` - Quick fix
-4. `scripts/test_pytorch.py` - Diagnóstico
+4. `tests/test_pytorch.py` - Diagnóstico
 
 ## 📖 Documentação
 

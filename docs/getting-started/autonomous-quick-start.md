@@ -109,7 +109,7 @@ Tempo: 20 minutos
 - `scripts/auto_healer.py` ← Auto-healing inteligente
 - `scripts/auto_configurator.py` ← Otimização automática
 - `scripts/install/quick_fix_torch.py` ← Fix rápido
-- `scripts/test_pytorch.py` ← Diagnóstico
+- `tests/test_pytorch.py` ← Diagnóstico
 
 ### Arquivos Modificados
 - `START_JARVIS.bat` ← 100% automático

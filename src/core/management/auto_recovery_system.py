@@ -329,13 +329,17 @@ class AutoRecoverySystem:
         
         # Start recovery process
         recovery_thread = threading.Thread(
-            target=self._execute_recovery,
+            target=self._execute_recovery_async,
             args=(failure_event,),
             daemon=True
         )
         recovery_thread.start()
     
-    def _execute_recovery(self, failure_event: FailureEvent):
+    def _execute_recovery_async(self, failure_event: FailureEvent):
+        """Execute recovery strategies for a failure event (async wrapper)"""
+        asyncio.run(self._execute_recovery(failure_event))
+    
+    async def _execute_recovery(self, failure_event: FailureEvent):
         """Execute recovery strategies for a failure event"""
         
         self.recovery_in_progress = True

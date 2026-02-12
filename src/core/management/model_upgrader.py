@@ -234,8 +234,9 @@ class ModelUpgrader:
         return recommendations
 
 
-# Instância global
-model_upgrader = ModelUpgrader()
+
+# Instância global removida para evitar execução durante import
+# model_upgrader = ModelUpgrader()
 
 
 # Exemplo de uso

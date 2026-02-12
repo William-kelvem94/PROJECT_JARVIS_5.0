@@ -281,5 +281,5 @@ class SecurityManager:
         }
 
 
-# Instância global
-security_manager = SecurityManager(config_dir="data/security")
+# Instância global removida para evitar execução durante import
+# security_manager = SecurityManager(config_dir="data/security")

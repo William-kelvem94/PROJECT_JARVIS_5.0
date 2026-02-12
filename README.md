@@ -34,6 +34,44 @@
 
 ---
 
+## 📁 Estrutura do Projeto
+
+```
+PROJECT_JARVIS_5.0/
+├── 📂 config/                    # Configurações do sistema
+│   ├── ai_config.yaml           # Configuração da IA
+│   ├── democratic_config.py     # Configuração do sistema democrático
+│   └── settings.json            # Configurações gerais
+├── 📂 data/                     # Dados e recursos
+│   ├── logs/                    # Logs do sistema
+│   ├── models/                  # Modelos treinados
+│   └── captures/                # Capturas de tela/dados
+├── 📂 demos/                    # Demonstrações e exemplos (arquivos movidos para src/core/)
+│   └── README.md               # Documentação dos arquivos movidos
+├── 📂 docs/                     # Documentação
+│   ├── ai_training/            # Guias de treinamento
+│   ├── technical/              # Documentação técnica
+│   ├── SISTEMA_DEMOCRATICO_PRONTO.md
+│   └── ...
+├── 📂 scripts/                  # Scripts utilitários
+│   ├── translation/            # Scripts de tradução
+│   ├── install/                # Scripts de instalação
+│   ├── create_shortcut.py
+│   └── ...
+├── 📂 src/                      # Código fonte principal
+│   ├── core/                   # Núcleo do sistema
+│   ├── interface/              # Interfaces de usuário
+│   └── utils/                  # Utilitários
+├── 📂 tests/                    # Testes automatizados
+├── 📂 tools/                    # Ferramentas de desenvolvimento
+├── 🔧 INSTALL_JARVIS.bat       # Instalador Windows
+├── 🚀 START_JARVIS.bat         # Inicializador
+├── 🧠 main.py                  # Ponto de entrada principal
+└── 📖 README.md                # Esta documentação
+```
+
+---
+
 ## 🎯 Visão Geral
 
 O **JARVIS 5.0 (Singularity Edition)** representa o estado da arte em sistemas de IA pessoais. Este não é apenas um assistente virtual; é um **ecossistema cognitivo completo** que combina:
@@ -74,6 +112,26 @@ O **JARVIS 5.0 (Singularity Edition)** representa o estado da arte em sistemas d
 - **🗣️ Comando de Voz**: Controle total via comandos naturais
 - **👁️ Gestos Faciais**: Reconhecimento e autenticação biométrica
 - **⌨️ Chat Interface**: Interação textual avançada
+
+### 🏛️ Sistema Democrático de Inteligência
+
+**Nova Arquitetura de IA Distribuída**: Implementação completa do sistema democrático com as seguintes capacidades:
+
+| Componente | Descrição | Status |
+|------------|-----------|--------|
+| 🌐 **Network Mesh** | Rede democrática de dispositivos conectados | ✅ Implementado |
+| 🔄 **Auto-Recovery** | Sistema de recuperação automática inteligente | ✅ Implementado |
+| 📊 **Predictive Analytics** | Análise preditiva com ML para otimização | ✅ Implementado |
+| ⚖️ **Task Distribution** | Distribuição democrática de tarefas | ✅ Implementado |
+| 🔋 **Energy Optimization** | Otimização energética adaptiva | ✅ Implementado |
+| 📈 **Performance Monitoring** | Monitoramento contínuo de performance | ✅ Implementado |
+
+**Características do Sistema Democrático:**
+- **Eleições Automáticas**: Seleção dinâmica de líderes baseada em performance
+- **Redistribuição Inteligente**: Balanceamento de carga entre dispositivos
+- **Recuperação Autônoma**: Healing automático de falhas críticas
+- **Análise Preditiva**: Previsão de falhas e otimização preventiva
+- **Configuração Centralizada**: Gestão unificada via `democratic_config.py`
 
 ---
 

@@ -74,7 +74,7 @@ INSTALL_JARVIS.bat /silent  # Zero pausas
 - ✅ OK (funcionando)
 
 ### 6. Diagnóstico Completo
-**Arquivo:** `scripts/test_pytorch.py`
+**Arquivo:** `tests/test_pytorch.py`
 
 **5 Testes:**
 1. Import torch
@@ -150,7 +150,7 @@ Ação: Auto-Configurator baixa + instala
 1. ✅ `scripts/auto_healer.py`
 2. ✅ `scripts/auto_configurator.py`
 3. ✅ `scripts/install/quick_fix_torch.py`
-4. ✅ `scripts/test_pytorch.py`
+4. ✅ `tests/test_pytorch.py`
 
 ### Arquivos Modificados (4)
 5. ✅ `START_JARVIS.bat` - 100% automático

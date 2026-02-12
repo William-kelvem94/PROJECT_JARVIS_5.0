@@ -125,7 +125,7 @@ python -m pytest tests/test_orchestrator.py -v
 ### Testes de Integração
 ```bash
 # Teste completo do sistema
-python scripts/test_core_integration.py
+python tests/test_core_integration.py
 ```
 
 ### Saída Esperada
