@@ -61,7 +61,7 @@ if %errorLevel% neq 0 (
     
     if exist "OllamaSetup.exe" (
         echo [INSTALL] Installing Ollama... Please follow the prompts if any.
-        start /wait OllamaSetup.exe /silent
+        start /wait OllamaSetup.exe /quiet
         del OllamaSetup.exe
         echo [OK] Ollama installed.
     ) else (

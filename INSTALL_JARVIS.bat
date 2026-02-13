@@ -26,10 +26,17 @@ echo [INFO] Project Root: %ROOT%
 :: 1. Check Python
 where python >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Python not found in PATH. 
-    echo Please install Python 3.11 and check "Add to PATH".
-    if "%SILENT_MODE%"=="0" pause
-    exit /b 1
+    where python3 >nul 2>&1
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERROR] Python not found in PATH. 
+        echo Please install Python 3.11 and check "Add to PATH".
+        if "%SILENT_MODE%"=="0" pause
+        exit /b 1
+    ) else (
+        set PYTHON_CMD=python3
+    )
+) else (
+    set PYTHON_CMD=python
 )
 
 :: 2. Create VENV
@@ -39,7 +46,7 @@ if exist "%ROOT%venv\Scripts\python.exe" (
 )
 
 echo [INFO] Creating Virtual Environment (VENV)...
-python -m venv venv
+%PYTHON_CMD% -m venv venv
 if %ERRORLEVEL% NEQ 0 (
     echo [ERROR] Failed to create VENV.
     if "%SILENT_MODE%"=="0" pause

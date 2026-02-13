@@ -1,6 +1,5 @@
 ﻿import os
 import sys
-import logging
 import asyncio
 import threading
 import hashlib
@@ -10,12 +9,12 @@ import json
 import tempfile
 from pathlib import Path
 from typing import Optional, Callable
+import logging
 
 # ============================================================================
 # CRITICAL SYSTEM PATCHES & ENVIRONMENT
 # ============================================================================
 os.environ["COQUI_TOS_AGREED"] = "1"
-os.environ["QT_LOGGING_RULES"] = "qt.qpa.window=false"
 logging.getLogger('comtypes').setLevel(logging.ERROR)
 
 # ============================================================================
@@ -46,6 +45,7 @@ except ImportError:
 from src.utils.config import config
 from src.interface.ui_signals import ui_signals
 
+import logging
 logger = logging.getLogger(__name__)
 
 class VoiceController:
@@ -276,3 +276,23 @@ class VoiceController:
             return True
         except:
             return False
+
+
+# Module-level singleton accessor for a VoiceController instance.
+# We avoid creating the heavy `VoiceController` at import time; use `get_voice_controller()`.
+voice_controller = None
+
+def get_voice_controller():
+    """Return a singleton VoiceController instance, creating it on demand.
+
+    This avoids heavy initialization during module import (TTS models, audio drivers).
+    """
+    global voice_controller
+    if voice_controller is None:
+        try:
+            voice_controller = VoiceController()
+            logger.info("VoiceController initialized lazily.")
+        except Exception as e:
+            logger.warning(f"Failed to initialize VoiceController lazily: {e}")
+            voice_controller = None
+    return voice_controller

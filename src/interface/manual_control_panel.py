@@ -4,7 +4,7 @@
 JARVIS 5.0 - Manual Control Panel (Emergency Mode)
 ==================================================
 Interface PyQt6 para controle manual quando a voz falha.
-AcessÃ­vel via Hotkey Global: Ctrl+Shift+Alt+J
+Acessível via Hotkey Global: Ctrl+Shift+Alt+J
 """
 
 import sys
@@ -19,18 +19,18 @@ from PyQt6.QtGui import QFont, QColor, QPalette
 logger = logging.getLogger(__name__)
 
 class ManualControlPanel(QWidget):
-    """Painel de EmergÃªncia 'Bug-Proof'"""
+    """Painel de Emergência 'Bug-Proof'"""
     
-    # Sinais para comunicaÃ§Ã£o com o nÃºcleo
+    # Sinais para comunicação com o núcleo
     settings_changed = pyqtSignal(dict)
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("JARVIS - MODO EMERGÃŠNCIA")
+        self.setWindowTitle("JARVIS - MODO EMERGÊNCIA")
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint)
         self.setFixedSize(400, 500)
         
-        # EstÃ©tica Stark (Dark Mode / Blue Glow)
+        # Estética Stark (Dark Mode / Blue Glow)
         self._setup_style()
         self._init_ui()
         
@@ -70,13 +70,13 @@ class ManualControlPanel(QWidget):
         layout = QVBoxLayout()
         
         # Header
-        header = QLabel("ðŸ›ï¸ NÃšCLEO MECÃ‚NICO - MANUAL")
+        header = QLabel("🏛️ NÚCLEO MECÂNICO - MANUAL")
         header.setFont(QFont("Arial", 14, QFont.Weight.Bold))
         header.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(header)
         
         # --- VOZ ---
-        voice_group = QGroupBox("ðŸ”‰ ConfiguraÃ§Ãµes de Voz")
+        voice_group = QGroupBox("🔉 Configurações de Voz")
         v_layout = QVBoxLayout()
         
         v_layout.addWidget(QLabel("Velocidade da Fala"))
@@ -95,14 +95,14 @@ class ManualControlPanel(QWidget):
         layout.addWidget(voice_group)
         
         # --- BIOMETRIA ---
-        bio_group = QGroupBox("ðŸ” Biometria e UsuÃ¡rios")
+        bio_group = QGroupBox("🔐 Biometria e Usuários")
         b_layout = QVBoxLayout()
         
-        btn_face = QPushButton("ðŸ”„ Recadastrar Face (Manual)")
+        btn_face = QPushButton("🔄 Recadastrar Face (Manual)")
         btn_face.clicked.connect(self._on_face_record)
         b_layout.addWidget(btn_face)
         
-        btn_voice = QPushButton("ðŸŽ¤ Recadastrar Voz (Manual)")
+        btn_voice = QPushButton("🎤 Recadastrar Voz (Manual)")
         btn_voice.clicked.connect(self._on_voice_record)
         b_layout.addWidget(btn_voice)
         
@@ -110,14 +110,14 @@ class ManualControlPanel(QWidget):
         layout.addWidget(bio_group)
         
         # --- HARDWARE ---
-        hw_group = QGroupBox("âš™ï¸ GestÃ£o de Hardware")
+        hw_group = QGroupBox("⚙️ Gestão de Hardware")
         h_layout = QVBoxLayout()
         
-        btn_swap = QPushButton("ðŸš€ ForÃ§ar IA para RAM/SWAP")
+        btn_swap = QPushButton("🚀 Forçar IA para RAM/SWAP")
         btn_swap.clicked.connect(self._on_force_swap)
         h_layout.addWidget(btn_swap)
         
-        btn_reset = QPushButton("â™»ï¸ Reiniciar NÃºcleo Neural")
+        btn_reset = QPushButton("♻️ Reiniciar Núcleo Neural")
         btn_reset.clicked.connect(self._on_reset_brain)
         h_layout.addWidget(btn_reset)
         
@@ -142,7 +142,7 @@ class ManualControlPanel(QWidget):
     def _on_force_swap(self):
         logger.warning("ManualControl: Force Swap solicitado manualmente.")
         from src.core.management.hardware_manager import hardware_manager
-        # LÃ³gica de offload
+        # Lógica de offload
 
     def _on_reset_brain(self):
         logger.critical("ManualControl: RESET NEURAL solicitado.")
