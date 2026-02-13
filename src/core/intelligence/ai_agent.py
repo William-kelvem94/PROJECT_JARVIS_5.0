@@ -312,7 +312,14 @@ class AIAgent:
         
         self.provider = provider
         self.api_key = None # 100% Local Mode
-        self.ollama_url = "http://localhost:11434/api/generate"
+        
+        # Carregar URL do Ollama do env_manager
+        try:
+            from src.utils.env_manager import get_config
+            config_obj = get_config()
+            self.ollama_url = config_obj.ollama_url + "/api/generate" if config_obj else "http://localhost:11434/api/generate"
+        except ImportError:
+            self.ollama_url = "http://localhost:11434/api/generate"
         
         # Carregar configurações de IA
         try:

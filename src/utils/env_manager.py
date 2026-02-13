@@ -237,13 +237,13 @@ class EnvironmentManager:
                 logger.warning(f"URL potencialmente inválida para {url_key}: {url}")
 
         # Validar portas
-        if not (1 <= self.config.web_port <= 65535):
+        if self.config and hasattr(self.config, 'web_port') and not (1 <= self.config.web_port <= 65535):
             logger.warning(f"Porta inválida: {self.config.web_port}, usando 5000")
             self.config.web_port = 5000
 
         # Validar tiers de modelo
         valid_tiers = ['ultra', 'pro', 'fast']
-        if self.config.default_model_tier not in valid_tiers:
+        if self.config and hasattr(self.config, 'default_model_tier') and self.config.default_model_tier not in valid_tiers:
             logger.warning(f"Tier inválido: {self.config.default_model_tier}, usando 'pro'")
             self.config.default_model_tier = 'pro'
 
@@ -251,14 +251,15 @@ class EnvironmentManager:
         """Retorna modelo apropriado para o tier."""
         # Carregar do ai_config.yaml se disponível
         try:
-            config_file = self.config.config_dir / "ai_config.yaml"
-            if config_file.exists():
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    ai_config = yaml.safe_load(f)
+            if self.config and hasattr(self.config, 'config_dir'):
+                config_file = self.config.config_dir / "ai_config.yaml"
+                if config_file.exists():
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        ai_config = yaml.safe_load(f)
 
-                tier_models = ai_config.get('brain_router', {}).get('ollama_models', {}).get(f'tier_{tier}', [])
-                if tier_models:
-                    return tier_models[0]  # Retorna o primeiro modelo do tier
+                    tier_models = ai_config.get('brain_router', {}).get('ollama_models', {}).get(f'tier_{tier}', [])
+                    if tier_models:
+                        return tier_models[0]  # Retorna o primeiro modelo do tier
         except Exception as e:
             logger.debug(f"Erro ao carregar modelos do tier: {e}")
 
@@ -274,7 +275,10 @@ class EnvironmentManager:
     def save_config_template(self, output_path: Optional[Path] = None):
         """Salva template de configuração .env."""
         if output_path is None:
-            output_path = self.config.project_root / '.env.template'
+            if self.config and hasattr(self.config, 'project_root'):
+                output_path = self.config.project_root / '.env.template'
+            else:
+                output_path = Path.cwd() / '.env.template'
 
         template = """# JARVIS 5.0 - Environment Configuration Template
 # Copie este arquivo para .env e ajuste os valores conforme necessário

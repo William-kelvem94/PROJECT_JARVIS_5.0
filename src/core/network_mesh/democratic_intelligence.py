@@ -243,9 +243,23 @@ class DemocraticNetworkIntelligence:
         total_ram_gb = memory.total / (1024**3)
         available_ram_gb = memory.available / (1024**3)
         
-        # Storage
-        disk = psutil.disk_usage('C:\\')
-        storage_free_gb = disk.free / (1024**3)
+        # Storage - Detectar disco principal automaticamente
+        try:
+            # Tentar detectar o disco do sistema
+            system_disk = 'C:\\' if os.name == 'nt' else '/'  # Windows vs Unix-like
+            disk = psutil.disk_usage(system_disk)
+            storage_free_gb = disk.free / (1024**3)
+        except Exception:
+            # Fallback: usar o primeiro disco disponível
+            try:
+                partitions = psutil.disk_partitions()
+                if partitions:
+                    disk = psutil.disk_usage(partitions[0].mountpoint)
+                    storage_free_gb = disk.free / (1024**3)
+                else:
+                    storage_free_gb = 0.0
+            except Exception:
+                storage_free_gb = 0.0
         
         # GPU Detection
         gpu_name = None
