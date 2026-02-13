@@ -241,7 +241,7 @@ class TotalInstaller:
             "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "soundfile", 
             "faster-whisper", "webrtcvad-wheels", "pytesseract", "pyautogui", "psutil", 
             "chromadb", "fastapi", "uvicorn[standard]", "pywin32", "wmi", 
-            "screen-brightness-control", "resemblyzer"
+            "screen-brightness-control", "resemblyzer", "face-recognition>=1.3.0"
         ]
         
         for dep in remaining:

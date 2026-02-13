@@ -21,12 +21,12 @@
 
 - [🎯 Visão Geral](#-visão-geral)
 - [✨ Principais Recursos](#-principais-recursos)
-- [🏛️ Arquitetura](#️-arquitetura)
+- [🏛️ Arquitetura](#-arquitetura)
 - [📁 Estrutura do Projeto](#-estrutura-do-projeto)
 - [🚀 Instalação e Configuração](#-instalação-e-configuração)
 - [💻 Uso e Comandos](#-uso-e-comandos)
 - [🧪 Testes e Validação](#-testes-e-validação)
-- [⚙️ Configurações Avançadas](#️-configurações-avançadas)
+- [⚙️ Configurações Avançadas](#-configurações-avançadas)
 - [📖 Documentação](#-documentação)
 - [🔧 Troubleshooting](#-troubleshooting)
 - [🤝 Contribuição](#-contribuição)
@@ -82,7 +82,7 @@ O **JARVIS 5.0 (Singularity Edition)** representa o estado da arte em sistemas d
 
 🧬 **Aprendizado Contínuo**: Sistema de memória neural que evolui autonomamente durante o sono do sistema
 
-⚡ **Performance Adaptiva**: Otimização automática para CPU/GPU com gerenciamento dinânico de recursos
+⚡ **Performance Adaptiva**: Otimização automática para CPU/GPU com gerenciamento dinâmico de recursos
 
 🛡️ **Segurança Militar**: Protocolos Human-In-The-Loop (HITL) com validação semântica para ações críticas
 
@@ -244,7 +244,7 @@ Dream_Cycle:
 
 ---
 
-## � Estrutura do Projeto
+## 📁 Estrutura do Projeto
 
 ```
 PROJECT_JARVIS_5.0/
@@ -304,7 +304,7 @@ PROJECT_JARVIS_5.0/
 
 #### Requisitos Recomendados
 - **GPU**: NVIDIA RTX 30xx/40xx séries (8GB+ VRAM)
-- **RAM**: 32GB para performance otima
+- **RAM**: 32GB para performance ótima
 - **Armazenamento**: SSD NVMe 25GB+
 - **CPU**: 8+ cores, 3.0GHz+
 
@@ -350,10 +350,10 @@ pip install -r scripts/install/requirements.txt
 ollama pull llama3
 ollama pull qwen:14b
 
-# 4. Executar configuração
+# 5. Executar configuração
 python scripts/auto_configurator.py
 
-# 5. Validar instalação
+# 6. Validar instalação
 python scripts/validate_dependencies.py
 ```
 
@@ -452,7 +452,7 @@ PROXY_PORT=
 
 ---
 
-## � Documentação e Recursos
+## 📖 Documentação e Recursos
 
 ### Documentação Técnica
 - **[Mapa de Capacidades](docs/capabilities_map_singularity.md)**: Auditoria completa das funcionalidades do sistema
@@ -470,7 +470,7 @@ PROXY_PORT=
 - **Simulações**: Scripts de simulação para testes de carga
 - **Benchmarks**: Ferramentas de medição de performance
 
-## �🛡️ Segurança e Resiliência
+## 🔒🛡️ Segurança e Resiliência
 ### 🛡️ Camadas de Proteção
 
 | Camada | Descrição | Status |
@@ -478,7 +478,7 @@ PROXY_PORT=
 | **L1 - Autenticação** | FaceID + Voice biometrics | ✅ Ativo |
 | **L2 - Autorização** | HITL para ações críticas | ✅ Ativo |
 | **L3 - Validação** | Análise semântica de comandos | ✅ Ativo |
-| **L4 - Monitoramento** | Detectção de anomalias | ✅ Ativo |
+| **L4 - Monitoramento** | Detecção de anomalias | ✅ Ativo |
 | **L5 - Recuperação** | Auto-healing e rollback | ✅ Ativo |
 
 ### 🔒 Recursos de Segurança
@@ -547,7 +547,7 @@ Para reportar bugs, use o template de issue:
 - ✨ **NEW**: Interfaces múltiplas (HUD, Dashboard, Voice)
 - 🔧 **FIX**: Resolução de problemas de startup
 - 📚 **DOCS**: Documentação completa e profissional
-- ⚡ **PERF**: Otimizações de performance e uso de memoria
+- ⚡ **PERF**: Otimizações de performance e uso de memória
 
 ---
 

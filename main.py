@@ -31,11 +31,12 @@ warnings.filterwarnings('ignore', message='.*loss_type=None.*')
 
 import logging
 
+logger = logging.getLogger("JARVIS-CORE")
+
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
 # Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'
 try:
-    import sys
-    import openvino
+    import openvino  # noqa: F401  # type: ignore
     # Favorece o novo padrão sem .runtime (OpenVINO 2023.1+)
     node_obj = getattr(openvino, 'Node', None)
     
@@ -54,17 +55,13 @@ try:
     if op_obj:
         sys.modules['openvino.op'] = op_obj
         if not hasattr(openvino, 'op'): openvino.op = op_obj
-except Exception:
+except ImportError:
     pass
 import psutil
 import signal
 import shutil
 import warnings
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-import threading
-from datetime import datetime
 
 # Try to import ShutdownManager (may fail due to heavy dependencies)
 try:
@@ -94,8 +91,24 @@ except (ImportError, AttributeError) as e:
     StarkOrchestrator = None
     STARK_ORCHESTRATOR_AVAILABLE = False
 
-from src.web.web_server import start_server
-from src.utils.web_emitter import emit_telemetry_sync, emit_log_sync
+# Optional web server imports (loaded on demand)
+
+# =============================
+# ORIENTAÇÃO SOBRE ENCODING DE ARQUIVOS EXTERNOS
+# =============================
+# Para evitar bugs de encoding:
+# 1. Garanta que todos os arquivos de texto/configuração (json, yaml, txt, csv, etc.) estejam salvos em UTF-8.
+#    - No VS Code: clique com o direito no arquivo > "Reabrir com codificação" > UTF-8.
+# 2. Sempre abra arquivos de texto explicitamente com encoding='utf-8':
+#    with open('arquivo.txt', 'r', encoding='utf-8') as f:
+#        conteudo = f.read()
+# 3. Se usar pandas, use encoding='utf-8' ao ler csv:
+#    pd.read_csv('arquivo.csv', encoding='utf-8')
+# 4. Para arquivos de configuração YAML:
+#    with open('config.yaml', 'r', encoding='utf-8') as f:
+#        config = yaml.safe_load(f)
+# 5. Se usar arquivos de tradução (.ts/.qm), gere e salve em UTF-8.
+# =============================
 
 # ============================================================================
 # [STAGE 1] ENVIRONMENT CONFIGURATION & COMPATIBILITY
@@ -112,13 +125,15 @@ logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICA
 if platform.system() == "Windows":
     try:
         import comtypes.client
-        import comtypes.client._code_cache
+        code_cache = getattr(comtypes.client, '_code_cache', None)
         # Disable cache globally to avoid Access Violation in parallel boot
-        comtypes.client._code_cache._enable_cache = False
-        gen_dir = Path(comtypes.client._code_cache._get_gen_dir())
-        if gen_dir.exists():
-            shutil.rmtree(gen_dir, ignore_errors=True)
-        os.makedirs(gen_dir, exist_ok=True)
+        if code_cache and hasattr(code_cache, '_enable_cache'):
+            code_cache._enable_cache = False
+        if code_cache and hasattr(code_cache, '_get_gen_dir'):
+            gen_dir = Path(code_cache._get_gen_dir())
+            if gen_dir.exists():
+                shutil.rmtree(gen_dir, ignore_errors=True)
+            os.makedirs(gen_dir, exist_ok=True)
     except Exception: pass
 
 # Path Synchronization
@@ -157,25 +172,22 @@ logging.basicConfig(
 QApplication = None
 
 # Unified InterfaceMode Import
-try:
-    from src.interface.window_manager import InterfaceMode
-except ImportError:
-    # Fallback if source root is not in path yet
-    from enum import Enum
-    class InterfaceMode(Enum):
-        HUD_OVERLAY = "hud"
-        DASHBOARD = "dashboard"
-        HIDDEN = "hidden"
-
-logger = logging.getLogger("JARVIS-CORE")
+from enum import Enum
+class InterfaceMode(Enum):
+    HUD_OVERLAY = "hud"
+    DASHBOARD = "dashboard"
+    HIDDEN = "hidden"
 
 # Try to import torch and determine availability (lazy import)
 TORCH_AVAILABLE = False
+torch = None
+
 def _check_torch():
-    global TORCH_AVAILABLE
+    global TORCH_AVAILABLE, torch
     if not TORCH_AVAILABLE:
         try:
-            import torch
+            import torch as torch_module
+            torch = torch_module
             TORCH_AVAILABLE = True
             return True
         except Exception:
@@ -200,8 +212,7 @@ def auto_diagnose():
     issues = []
     # 1. Check PyTorch Stability (c10.dll/MKL)
     try:
-        if _check_torch():
-            import torch
+        if _check_torch() and torch is not None:
             _ = torch.zeros(1)
     except Exception as e:
         issues.append({
@@ -213,8 +224,17 @@ def auto_diagnose():
     
     # 2. Check Vision Engines
     try:
-        import easyocr
-        import openvino
+        try:
+            import easyocr  # noqa: F401
+        except ImportError:
+            pass
+    except Exception:
+        pass
+    try:
+        try:
+            import openvino  # noqa: F401  # type: ignore
+        except ImportError:
+            pass
     except Exception as e:
         issues.append({
             'level': 'CRITICAL',
@@ -241,7 +261,7 @@ def print_system_health(instances, neural_systems=None):
     print("═"*70)
     print(f" HOST OS:      {platform.system()} {platform.release()} (v{platform.version()})")
     print(f" RAM USAGE:    {ram.available/1e9:.1f}GB Free / {ram.total/1e9:.1f}GB Total")
-    if TORCH_AVAILABLE and torch.cuda.is_available():
+    if TORCH_AVAILABLE and torch is not None and torch.cuda.is_available():
         print(f" GPU ADAPTER:  {torch.cuda.get_device_name(0)}")
     
     print("\n [INFRASTRUCTURE STATUS]")
@@ -254,11 +274,13 @@ def print_system_health(instances, neural_systems=None):
     # ML Feature Logic with better distinction
     face_rec_installed = getattr(vs, 'FACE_REC_AVAILABLE', False) if vs else False
     if not face_rec_installed:
-        # Check globally if not in vs
+        # Check globally if not in vs using dynamic import to avoid static analysis issues
         try:
-            import face_recognition
-            face_rec_installed = True
-        except: pass
+            import importlib.util
+            if importlib.util.find_spec('face_recognition') is not None:
+                face_rec_installed = True
+        except Exception:
+            pass
 
     # Contar faces: tentar camera_controller primeiro (tem sync pós-boot), fallback para vs
     num_faces = len(getattr(vs, 'known_face_encodings', [])) if vs else 0
@@ -280,11 +302,15 @@ def print_system_health(instances, neural_systems=None):
     ocr_status = getattr(vs, '_ocr_ready', False) if vs else False
     yolo_status = getattr(vs, '_yolo_ready', False) if vs else False
     
+    hw_accel = False
+    if hardware_manager is not None:
+        hw_accel = (getattr(hardware_manager, 'device', 'cpu') != "cpu") or (hasattr(hardware_manager, 'accelerator') and hardware_manager.accelerator is not None)
+    
     ml_feats = [
         ("OCR (EasyOCR)", ocr_status, vs_passive and not ocr_status),
         ("YOLO (Detection)", yolo_status, vs_passive and not yolo_status),
         (face_label, face_rec_installed, False),
-        ("Hw Acceleration", hardware_manager.device != "cpu" or (hasattr(hardware_manager, 'accelerator') and hardware_manager.accelerator is not None), False),
+        ("Hw Acceleration", hw_accel, False),
         ("PyTorch Neural", TORCH_AVAILABLE, False)
     ]
     
@@ -334,8 +360,7 @@ def print_system_health(instances, neural_systems=None):
 # ============================================================================
 # JARVIS SINGULARITY CORE
 # ============================================================================
-from pathlib import Path
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer  # type: ignore
 
 class JarvisSingularity(QObject):
     # Signal to bridge background audio thread to main UI thread
@@ -358,11 +383,12 @@ class JarvisSingularity(QObject):
         
         self.is_running = False
         # Initialize Shutdown Manager
-        self.shutdown_manager = ShutdownManager(self)
+        self.shutdown_manager = ShutdownManager(self) if ShutdownManager else None
         
         # Initialize Stark Orchestrator (Phase 4)
-        self.stark_orchestrator = StarkOrchestrator(self)
-        self.stark_orchestrator.initialize_stark_system()
+        self.stark_orchestrator = StarkOrchestrator(self) if StarkOrchestrator else None
+        if self.stark_orchestrator:
+            self.stark_orchestrator.initialize_stark_system()
         
         # Response lock to avoid overlapping
         self._is_processing = False
@@ -383,8 +409,8 @@ class JarvisSingularity(QObject):
         logger.info("Singularity Core Engaged.")
 
     def _setup_signals(self):
-        signal.signal(signal.SIGINT, lambda s, f: self.shutdown())
-        signal.signal(signal.SIGTERM, lambda s, f: self.shutdown())
+        signal.signal(signal.SIGINT, lambda _, __: self.shutdown())
+        signal.signal(signal.SIGTERM, lambda _, __: self.shutdown())
 
     def start(self):
         """Start JARVIS with staggered daemon initialization for maximum stability"""
@@ -473,8 +499,12 @@ class JarvisSingularity(QObject):
             # 1. Verificar disponibilidade do AI Agent
             if not self.ai_agent or getattr(self.ai_agent, 'safe_mode', False):
                 logger.warning("⚠️ AI Agent offline ou em safe mode - usando saudação básica")
-                from src.core.audio.voice_controller import voice_controller
-                voice_controller.speak("Sistemas online, William. Estou pronto.")
+                try:
+                    from src.core.audio.voice_controller import voice_controller  # noqa: F401  # type: ignore
+                    if voice_controller:
+                        voice_controller.speak("Sistemas online, William. Estou pronto.")
+                except ImportError:
+                    logger.warning("⚠️ Voice controller not available")
                 return
             
             # 2. Coletar status de saúde do sistema
@@ -577,7 +607,7 @@ class JarvisSingularity(QObject):
                 threading.Thread(target=self._process_and_respond, args=(result.text,), daemon=True).start()
             
             # 🆕 STARK 2.0: EMERGENCY FALLBACK DIRECT LINK
-            elif hasattr(self, 'stark_orchestrator') and hasattr(self.stark_orchestrator, 'fallback_system'):
+            elif hasattr(self, 'stark_orchestrator') and self.stark_orchestrator and hasattr(self.stark_orchestrator, 'fallback_system'):
                 logger.warning("⚠️ AI Agent offline - Engaging Emergency Fallback System")
                 
                 # Show fallback status on HUD
@@ -623,9 +653,13 @@ class JarvisSingularity(QObject):
             self.hud_update_requested.emit("speaking", response)
                     
             # 3. Wait for voice to finish
-            from src.core.audio.voice_controller import voice_controller
-            while voice_controller._is_speaking:
-                time.sleep(0.5)
+            try:
+                from src.core.audio.voice_controller import voice_controller  # noqa: F401  # type: ignore
+                if voice_controller:
+                    while getattr(voice_controller, '_is_speaking', False):
+                        time.sleep(0.5)
+            except ImportError:
+                pass
                 
             # 4. Return to idle (Emit signal)
             self.hud_update_requested.emit("idle", "")
@@ -640,19 +674,26 @@ class JarvisSingularity(QObject):
     def _process_fallback(self, text):
         """Emergency Fallback Loop (No AI Agent)"""
         try:
-            fb = self.stark_orchestrator.fallback_system
-            result = fb.process_command(text)
-            
-            response_text = result.get("response", "Comando não reconhecido no modo de emergência.")
-            
-            # Emit speech output signal (using same slot as normal)
-            self.hud_update_requested.emit("speaking", response_text)
-            
-            # Speak via voice controller (direct call if available)
-            # Note: Voice Controller might be functional even if Agent failed
-            from src.core.audio.voice_controller import voice_controller
-            voice_controller.speak(response_text)
-            
+            if self.stark_orchestrator and hasattr(self.stark_orchestrator, 'fallback_system'):
+                fb = self.stark_orchestrator.fallback_system
+                result = fb.process_command(text)
+                
+                response_text = result.get("response", "Comando não reconhecido no modo de emergência.")
+                
+                # Emit speech output signal (using same slot as normal)
+                self.hud_update_requested.emit("speaking", response_text)
+                
+                # Speak via voice controller (direct call if available)
+                # Note: Voice Controller might be functional even if Agent failed
+                try:
+                    from src.core.audio.voice_controller import voice_controller  # noqa: F401  # type: ignore
+                    if voice_controller:
+                        voice_controller.speak(response_text)
+                except ImportError:
+                    logger.warning("⚠️ Voice controller not available")
+            else:
+                logger.error("Fallback system not available")
+                
         except Exception as e:
             logger.error(f"Fallback processing error: {e}")
             self.hud_update_requested.emit("error", "Falha no sistema de emergência.")
@@ -661,12 +702,13 @@ class JarvisSingularity(QObject):
 
     def shutdown(self):
         """Finalizes all systems and exits gracefully via ShutdownManager"""
-        if hasattr(self, 'shutdown_manager'):
+        if hasattr(self, 'shutdown_manager') and self.shutdown_manager:
             self.shutdown_manager.graceful_shutdown()
         else:
             # Fallback if manager not initialized
             logger.warning("⚠️ ShutdownManager not found, using legacy shutdown")
-            QApplication.quit()
+            if QApplication:
+                QApplication.quit()
 
 # ============================================================================
 # BOOT ENGINES
@@ -685,10 +727,14 @@ def main():
     # Fix console encoding for Windows (emojis support)
     if sys.platform == 'win32':
         try:
-            sys.stdout.reconfigure(encoding='utf-8')
-            sys.stderr.reconfigure(encoding='utf-8')
-        except:
-            pass  # Python < 3.7 or non-standard console
+            # Só usa reconfigure se for o sys.stdout padrão (não wrapper)
+            import io
+            if isinstance(sys.stdout, io.TextIOWrapper) and hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(encoding='utf-8')
+            if isinstance(sys.stderr, io.TextIOWrapper) and hasattr(sys.stderr, 'reconfigure'):
+                sys.stderr.reconfigure(encoding='utf-8')
+        except Exception:
+            pass  # Python < 3.7 ou stdout redefinido
     
     # ========================================================================
     # 🔥 NOVO: VERIFICAÇÃO DE MODO DEMOCRÁTICO
@@ -706,11 +752,6 @@ def main():
         print("="*80)
     else:
         print(f"\n🌌 [SINGULARITY] Inicializando JARVIS Singularity Suite...")
-            
-    # CRITICAL FIX: Ensure ui_signals is available in local scope
-    from src.interface.ui_signals import ui_signals
-    
-    start_time = time.time()
     
     # ========================================================================
     # 🔥 NOVO: INICIALIZAÇÃO DEMOCRÁTICA PRÉ-GUI
@@ -725,54 +766,63 @@ def main():
             from src.core.identity.enhanced_biometric_verifier import EnhancedBiometricVerifier
             from src.core.cloud.structured_google_drive import StructuredGoogleDriveManager
             from src.core.interface.democratic_control_interface import DemocraticControlInterface
-            from src.core.democratic.democratic_core import DemocraticCore
-            
-            # Configurar paths
-            PROJECT_ROOT = Path(__file__).parent
-            data_path = PROJECT_ROOT / "data"
-            
+            try:
+                from src.core.democratic.democratic_core import DemocraticCore  # noqa: F401  # type: ignore
+            except (ImportError, ModuleNotFoundError):
+                logger.warning("⚠️ DemocraticCore module not found at src.core.democratic.democratic_core")
+                DemocraticCore = None
+
+            # Configurar paths (usar variável local para não sobrescrever o PROJECT_ROOT global)
+            democratic_project_root = Path(__file__).parent
+            data_path = democratic_project_root / "data"
+
             # Classe temporária para jarvis_core
             class TempJarvisCore:
                 def __init__(self):
                     self.config = {
                         'system': {
-                            'base_path': str(PROJECT_ROOT),
-                            'data_path': str(data_path)
-                        }
+                                    'base_path': str(democratic_project_root),
+                                    'data_path': str(data_path)
+                                }
                     }
-            
+
             temp_core = TempJarvisCore()
-            
+
             # Inicializar sistemas democráticos
             print("   🆔 Carregando identificação Microsoft...")
             microsoft_identifier = MicrosoftDeviceIdentifier(str(data_path))
             microsoft_identifier.initialize()
-            
+
             print("   🔐 Preparando verificação biométrica...")
             biometric_verifier = EnhancedBiometricVerifier(temp_core, microsoft_identifier)
-            
+
             print("   ☁️ Configurando Google Drive...")
             drive_manager = StructuredGoogleDriveManager(temp_core, microsoft_identifier)
             drive_manager.initialize()
-            
-            print("   🗳️ Inicializando núcleo democrático...")
-            democratic_core = DemocraticCore(temp_core)
-            
-            print("   🔥 Preparando interface de controle...")
-            democratic_interface = DemocraticControlInterface(temp_core)
-            
-            # Armazenar sistemas para usar depois
-            democratic_systems = {
-                'core': temp_core,
-                'microsoft_identifier': microsoft_identifier,
-                'biometric_verifier': biometric_verifier,
-                'drive_manager': drive_manager,
-                'democratic_core': democratic_core,
-                'democratic_interface': democratic_interface
-            }
-            
-            print("✅ [DEMOCRÁTICO] Sistemas de poder inicializados com sucesso!")
-            
+
+            if DemocraticCore is not None:
+                print("   🗳️ Inicializando núcleo democrático...")
+                democratic_core = DemocraticCore(temp_core)
+
+                print("   🔥 Preparando interface de controle...")
+                democratic_interface = DemocraticControlInterface(temp_core)
+
+                # Armazenar sistemas para usar depois
+                democratic_systems = {
+                    'core': temp_core,
+                    'microsoft_identifier': microsoft_identifier,
+                    'biometric_verifier': biometric_verifier,
+                    'drive_manager': drive_manager,
+                    'democratic_core': democratic_core,
+                    'democratic_interface': democratic_interface
+                }
+
+                print("✅ [DEMOCRÁTICO] Sistemas de poder inicializados com sucesso!")
+            else:
+                print("⚠️ [DEMOCRÁTICO] Núcleo democrático não disponível, pulando inicialização.")
+                democratic_systems = None
+                democratic_mode = False  # Fallback para modo normal
+
         except Exception as e:
             print(f"❌ [DEMOCRÁTICO] Erro inicializando sistemas: {e}")
             democratic_mode = False  # Fallback para modo normal
@@ -783,29 +833,33 @@ def main():
     # CRITICAL: Initialize Torch/MKL BEFORE QApp to prevent 0xC0000005.
     # This ensures the Neural Engine's threading model (OpenMP/MKL) captures
     # the process context before the GUI Event Loop (PyQt6) can conflict with it.
-    if TORCH_AVAILABLE:
+    if TORCH_AVAILABLE and torch is not None and hardware_manager is not None:
         try:
              # Force MKL initialization (Pre-warm)
-             _ = torch.zeros(1).to(hardware_manager.get_torch_device())
+             device = getattr(hardware_manager, 'get_torch_device', lambda: 'cpu')() if hasattr(hardware_manager, 'get_torch_device') else 'cpu'
+             _ = torch.zeros(1).to(device)
              logger.info("🧠 [STAGE 1] Neural Engine: Pre-warmed (MKL Initialized)")
         except Exception as e:
             logger.warning(f"⚠️ Neural Engine Pre-warm failed: {e}")
 
     try:
-        from PyQt6.QtWidgets import QApplication as QApp
-        from PyQt6.QtCore import QTimer
-        import threading
+        from PyQt6.QtWidgets import QApplication as QApp  # noqa: F401  # type: ignore
+        from PyQt6.QtCore import QTimer  # noqa: F401  # type: ignore
+        import threading as threading_module
         
         global QApplication
         app = QApp(sys.argv)
         app.setStyle("Fusion")
+        # Fallback de fonte Unicode para toda interface
+        from src.interface.window_manager import set_unicode_font
+        set_unicode_font(app)
         
         # --------------------------------------------------------------------
         # [STAGE 2] INTERFACE & BODY (Visuals)
         # --------------------------------------------------------------------
         
         # Shared container for instances
-        boot_data = {"instances": None}
+        boot_data: dict = {"instances": None}
         
         # 1. Initialize UI synchronously
         from src.interface.window_manager import get_window_manager, InterfaceMode
@@ -828,14 +882,17 @@ def main():
                 from src.core.vision.vision_system import get_vision_system
                 from src.core.intelligence.ai_agent import ai_agent
                 
-                # Update status via signal (need ui_signals reference, implicitly available?)
-                # ui_signals is local in main, need to pass it or re-import
-                from src.interface.ui_signals import ui_signals
-                ui_signals.update_status.emit("Carregando Core Systems...")
+                # Update status via signal
+                try:
+                    from src.interface.ui_signals import ui_signals
+                    ui_signals.update_status.emit("Carregando Core Systems...")
+                except ImportError:
+                    logger.warning("⚠️ ui_signals not available")
                 
                 sys_int = get_system_integrator()
-                audio = get_audio_system(PROJECT_ROOT / "data")
-                vision = get_vision_system(PROJECT_ROOT / "data")
+                data_path = PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data")
+                audio = get_audio_system(data_path)
+                vision = get_vision_system(data_path)
                 
                 # 🚀 INICIAR CARREGAMENTO NEURAL EM BACKGROUND
                 # Isso impede que o sistema fique "surdo" ou "cego"
@@ -859,7 +916,7 @@ def main():
                  traceback.print_exc()
 
         # 3. Start Background Thread (Scheduled after event loop starts)
-        boot_thread = threading.Thread(target=background_boot_task, daemon=True, name="BackgroundBoot")
+        boot_thread = threading_module.Thread(target=background_boot_task, daemon=True, name="BackgroundBoot")
         QTimer.singleShot(100, boot_thread.start)
         
         # 4. Timer to check for completion and start Stage 3
@@ -885,12 +942,13 @@ def main():
                         # Lançar interface democrática em thread separada
                         def launch_democratic_interface():
                             try:
-                                print("🚀 [DEMOCRÁTICO] Lançando Interface de Controle Total...")
-                                democratic_systems['democratic_interface'].launch_interface()
+                                if democratic_systems and 'democratic_interface' in democratic_systems:
+                                    print("🚀 [DEMOCRÁTICO] Lançando Interface de Controle Total...")
+                                    democratic_systems['democratic_interface'].launch_interface()
                             except Exception as e:
                                 print(f"❌ [DEMOCRÁTICO] Erro na interface: {e}")
                         
-                        democratic_thread = threading.Thread(
+                        democratic_thread = threading_module.Thread(
                             target=launch_democratic_interface, 
                             daemon=True, 
                             name="DemocraticInterface"

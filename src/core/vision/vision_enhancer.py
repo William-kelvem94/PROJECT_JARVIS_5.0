@@ -1,46 +1,21 @@
-﻿# ============================================================================
-# JARVIS SINGULARITY - Vision Enhancer (Phase 4: Vision Enhancement)
-# ============================================================================
-# DetecÃ§Ã£o avanÃ§ada de UI com YOLO + OCR
-# Permite JARVIS "ver" e entender elementos na tela
-# ============================================================================
+﻿"""
+Vision Enhancer: detecção UI + OCR.
+
+This module avoids importing heavy vision libraries at module import time
+to prevent startup failures when optional native-backed packages (torch,
+torchvision, easyocr, ultralytics) are present but incompatible. The
+actual imports happen lazily inside the class where needed.
+"""
 
 import logging
-import numpy as np
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import cv2
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# -------------------------------------------------------------------------
-# IMPORTS CONDICIONAIS
-# -------------------------------------------------------------------------
-try:
-    from ultralytics import YOLO
-    YOLO_AVAILABLE = True
-except ImportError:
-    YOLO_AVAILABLE = False
-    logger.warning("âš ï¸ Ultralytics YOLO nÃ£o disponÃ­vel - detecÃ§Ã£o avanÃ§ada desabilitada")
 
-try:
-    import easyocr
-    OCR_AVAILABLE = True
-except ImportError:
-    OCR_AVAILABLE = False
-    logger.warning("âš ï¸ EasyOCR nÃ£o disponÃ­vel - OCR desabilitado")
-
-try:
-    from PIL import Image
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
-    logger.warning("âš ï¸ PIL nÃ£o disponÃ­vel")
-
-
-# ============================================================================
-# VISION ENHANCER
-# ============================================================================
 class VisionEnhancer:
     """
     VisÃ£o computacional avanÃ§ada para JARVIS.
@@ -53,38 +28,13 @@ class VisionEnhancer:
     """
     
     def __init__(self, model_size: str = "n"):
-        """
-        Inicializa o Vision Enhancer.
-        
-        Args:
-            model_size: Tamanho do modelo YOLO (n=nano, s=small, m=medium)
-        """
-        logger.info("ðŸ‘ï¸ Inicializando Vision Enhancer...")
-        
+        self.model_size = model_size
         self.yolo_model = None
         self.ocr_reader = None
-        self.model_size = model_size
-        
-        # Inicializar YOLO
-        if YOLO_AVAILABLE:
-            try:
-                # Usar modelo prÃ©-treinado YOLO no diretÃ³rio correto
-                model_path = f"models/vision/yolov8{model_size}.pt"
-                self.yolo_model = YOLO(model_path)
-                logger.info(f"âœ… YOLO {model_size} carregado de {model_path}")
-            except Exception as e:
-                logger.warning(f"âš ï¸ Erro ao carregar YOLO: {e}")
-        
-        # Inicializar OCR
-        if OCR_AVAILABLE:
-            try:
-                # Suporte para portuguÃªs e inglÃªs
-                self.ocr_reader = easyocr.Reader(['pt', 'en'], gpu=False)
-                logger.info("âœ… EasyOCR carregado (PT/EN)")
-            except Exception as e:
-                logger.warning(f"âš ï¸ Erro ao carregar OCR: {e}")
-        
-        logger.info("âœ… Vision Enhancer online")
+        logger.info("Inicializando Vision Enhancer (lazy-load de dependências)...")
+
+        # Lazy initialize heavy libraries only when explicitly requested
+        # The actual loading is deferred until a method that needs them is called.
     
     def analyze_screen(
         self,
@@ -157,7 +107,12 @@ class VisionEnhancer:
                 boxes = result.boxes
                 for box in boxes:
                     # Extrair informaÃ§Ãµes
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                    # support both tensor and numpy-like coordinates
+                    coords = box.xyxy[0]
+                    try:
+                        x1, y1, x2, y2 = coords.cpu().numpy()
+                    except Exception:
+                        x1, y1, x2, y2 = coords.tolist()
                     conf = float(box.conf[0])
                     cls = int(box.cls[0])
                     

@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
     QApplication, QSystemTrayIcon, QMenu
 )
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
-from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QAction
+from PyQt6.QtGui import QIcon, QKeySequence, QShortcut, QAction, QFont
 
 from src.interface.ui_signals import ui_signals
 
@@ -36,6 +36,18 @@ class InterfaceMode(Enum):
     HIDDEN = "hidden"  # All interfaces hidden
     ORB = "orb" # Floating orb
     EMERGENCY = "emergency" # Manual override
+
+# =============================
+# Fallback de fonte Unicode para PyQt6
+# =============================
+def set_unicode_font(app):
+    """
+    Define uma fonte Unicode padrão para garantir visualização correta de emojis e caracteres especiais.
+    Recomendada: Segoe UI, Arial Unicode MS, Noto Sans, DejaVu Sans.
+    """
+    font = QFont("Segoe UI")
+    font.setPointSize(10)
+    app.setFont(font)
 
 
 class WindowManager(QObject):
@@ -101,6 +113,9 @@ class WindowManager(QObject):
         self._setup_system_tray()
         self._setup_global_shortcuts()
         
+        # Carregar posições salvas das janelas
+        self._load_window_positions()
+        
         logger.info("âœ… Window Manager initialized")
         
     def _setup_system_tray(self):
@@ -129,25 +144,29 @@ class WindowManager(QObject):
             self._tray_menu = QMenu()
             
             # Mode switching actions
-            hud_action = QAction("ðŸŽ¯ HUD Overlay Mode", self._tray_menu)
+            hud_action = QAction("🎯 HUD Overlay Mode", self._tray_menu)
             hud_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.HUD_OVERLAY))
             self._tray_menu.addAction(hud_action)
             
-            dashboard_action = QAction("ðŸŽ›ï¸ Control Dashboard", self._tray_menu)
+            orb_action = QAction("💫 Mini Orb Mode", self._tray_menu)
+            orb_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.ORB))
+            self._tray_menu.addAction(orb_action)
+            
+            dashboard_action = QAction("🛠️ Control Dashboard", self._tray_menu)
             dashboard_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.DASHBOARD))
             self._tray_menu.addAction(dashboard_action)
             
             self._tray_menu.addSeparator()
             
             # Quick actions
-            hide_action = QAction("ðŸ™ˆ Hide All", self._tray_menu)
+            hide_action = QAction("🙈 Hide All", self._tray_menu)
             hide_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.HIDDEN))
             self._tray_menu.addAction(hide_action)
             
             self._tray_menu.addSeparator()
             
             # Exit action
-            quit_action = QAction("âŒ Exit JARVIS", self._tray_menu)
+            quit_action = QAction("❌ Exit JARVIS", self._tray_menu)
             quit_action.triggered.connect(self.app.quit)
             self._tray_menu.addAction(quit_action)
             
@@ -180,6 +199,10 @@ class WindowManager(QObject):
             toggle_hud = QShortcut(QKeySequence("Ctrl+Shift+H"), self._shortcut_window)
             toggle_hud.activated.connect(self._toggle_hud)
 
+            # Ctrl+Shift+O - Toggle Mini Orb
+            toggle_orb = QShortcut(QKeySequence("Ctrl+Shift+O"), self._shortcut_window)
+            toggle_orb.activated.connect(self._toggle_orb)
+
             # ðŸ†• Ctrl+Shift+Alt+J - Emergency Manual Panel
             emergency_panel = QShortcut(QKeySequence("Ctrl+Shift+Alt+J"), self._shortcut_window)
             emergency_panel.activated.connect(self._toggle_manual_panel)
@@ -191,6 +214,7 @@ class WindowManager(QObject):
             logger.info("âœ… Global shortcuts registered")
             logger.info("   Ctrl+Shift+J - Toggle Dashboard")
             logger.info("   Ctrl+Shift+H - Toggle HUD")
+            logger.info("   Ctrl+Shift+O - Toggle Mini Orb")
             logger.info("   Ctrl+Shift+Alt+J - EMERGENCY MANUAL PANEL")
             logger.info("   Ctrl+Shift+X - Hide All")
             
@@ -217,6 +241,14 @@ class WindowManager(QObject):
             self.switch_mode(InterfaceMode.HIDDEN)
         else:
             self.switch_mode(InterfaceMode.HUD_OVERLAY)
+
+    @pyqtSlot()
+    def _toggle_orb(self):
+        """Toggle Mini Orb on/off"""
+        if self.current_mode == InterfaceMode.ORB:
+            self.switch_mode(InterfaceMode.HIDDEN)
+        else:
+            self.switch_mode(InterfaceMode.ORB)
 
     @pyqtSlot(str)
     def _on_status_received(self, message: str):
@@ -307,6 +339,9 @@ class WindowManager(QObject):
         elif self.current_mode == InterfaceMode.ORB and self._mini_orb:
             self._mini_orb.hide()
             
+        # Salvar posições quando interfaces são ocultas
+        self._save_window_positions()
+            
     def _show_current(self):
         """Show current active interface"""
         if self.current_mode == InterfaceMode.HUD_OVERLAY:
@@ -314,6 +349,7 @@ class WindowManager(QObject):
                 self._initialize_hud()
             # VerificaÃ§Ã£o de seguranÃ§a: _initialize_hud pode falhar e usar fallback
             if self._hud:
+                self._restore_window_position(self._hud, 'hud')
                 self._hud.show()
                 self._hud.raise_()
                 self._hud.activateWindow()
@@ -330,6 +366,7 @@ class WindowManager(QObject):
             if not self._mini_orb:
                 self._initialize_mini_orb()
             if self._mini_orb:
+                self._restore_window_position(self._mini_orb, 'mini_orb')
                 self._mini_orb.show()
                 self._mini_orb.raise_()
                 self._mini_orb.activateWindow()
@@ -403,6 +440,85 @@ class WindowManager(QObject):
             
         except Exception as e:
             logger.error(f"âŒ Failed to initialize Mini Orb: {e}")
+
+    def _load_window_positions(self):
+        """Carrega posições salvas das janelas"""
+        try:
+            import json
+            import os
+            from pathlib import Path
+            
+            config_dir = Path(__file__).parent.parent.parent / "data"
+            config_dir.mkdir(exist_ok=True)
+            positions_file = config_dir / "window_positions.json"
+            
+            if positions_file.exists():
+                with open(positions_file, 'r', encoding='utf-8') as f:
+                    positions = json.load(f)
+                    self._saved_positions = positions
+                    logger.info("âœ… Posições das janelas carregadas")
+            else:
+                self._saved_positions = {}
+                
+        except Exception as e:
+            logger.warning(f"âš ï¸ Falha ao carregar posições das janelas: {e}")
+            self._saved_positions = {}
+
+    def _save_window_positions(self):
+        """Salva posições atuais das janelas"""
+        try:
+            import json
+            from pathlib import Path
+            
+            positions = {}
+            
+            # Salvar posição do HUD
+            if self._hud and self._hud.isVisible():
+                pos = self._hud.pos()
+                positions['hud'] = {'x': pos.x(), 'y': pos.y()}
+            
+            # Salvar posição do Mini Orb
+            if self._mini_orb and self._mini_orb.isVisible():
+                pos = self._mini_orb.pos()
+                positions['mini_orb'] = {'x': pos.x(), 'y': pos.y()}
+            
+            if positions:
+                config_dir = Path(__file__).parent.parent.parent / "data"
+                config_dir.mkdir(exist_ok=True)
+                positions_file = config_dir / "window_positions.json"
+                
+                with open(positions_file, 'w', encoding='utf-8') as f:
+                    json.dump(positions, f, indent=2)
+                    
+                logger.info("âœ… Posições das janelas salvas")
+                
+        except Exception as e:
+            logger.warning(f"âš ï¸ Falha ao salvar posições das janelas: {e}")
+
+    def _restore_window_position(self, window, window_type: str):
+        """Restaura posição salva de uma janela"""
+        try:
+            if hasattr(self, '_saved_positions') and window_type in self._saved_positions:
+                pos_data = self._saved_positions[window_type]
+                # Verificar se a posição está dentro de algum monitor disponível
+                screens = self.app.screens()
+                valid_position = False
+                
+                for screen in screens:
+                    geometry = screen.geometry()
+                    if (geometry.left() <= pos_data['x'] < geometry.right() and 
+                        geometry.top() <= pos_data['y'] < geometry.bottom()):
+                        valid_position = True
+                        break
+                
+                if valid_position:
+                    window.move(pos_data['x'], pos_data['y'])
+                    logger.info(f"âœ… Posição restaurada para {window_type}")
+                else:
+                    logger.info(f"âš ï¸ Posição salva para {window_type} não é válida, usando padrão")
+                    
+        except Exception as e:
+            logger.warning(f"âš ï¸ Falha ao restaurar posição para {window_type}: {e}")
 
     def _create_placeholder_dashboard(self):
         """Create placeholder dashboard"""

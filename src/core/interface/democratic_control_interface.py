@@ -3,10 +3,10 @@
 """
 JARVIS SINGULARITY - Democratic Control Interface
 ===========================================================
-Interface democrÃ¡tica que dÃ¡ ao usuÃ¡rio PODER E CONTROLE sobre
-todo o sistema. NÃ£o prÃ©-configuraÃ§Ãµes: LIBERDADE TOTAL.
+Interface democrática que dá ao usuário PODER E CONTROLE sobre
+todo o sistema. Não pré-configurações: LIBERDADE TOTAL.
 
-ðŸ”¥ O PODER, A ESTRUTURA PARA QUE ISSO ACONTEÃ‡A
+🔥 O PODER, A ESTRUTURA PARA QUE ISSO ACONTEÇA
 """
 
 import tkinter as tk
@@ -21,8 +21,23 @@ from pathlib import Path
 import logging
 import subprocess
 import webbrowser
+import psutil
 
-# Imports dos sistemas democrÃ¡ticos
+# GPU detection imports
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+
+try:
+    import pynvml
+    pynvml.nvmlInit()
+    NVML_AVAILABLE = True
+except ImportError:
+    NVML_AVAILABLE = False
+
+# Imports dos sistemas democráticos
 try:
     from src.core.democratic_core import DemocraticIntelligenceCore as DemocraticCore
 except ImportError:
@@ -34,13 +49,13 @@ logger = logging.getLogger(__name__)
 
 class DemocraticControlInterface:
     """
-    ðŸ”¥ INTERFACE DE CONTROLE DEMOCRÃTICO TOTAL
+    🔥 INTERFACE DE CONTROLE DEMOCRÁTICO TOTAL
     
-    Esta interface dÃ¡ ao usuÃ¡rio PODER TOTAL sobre:
-    - IdentificaÃ§Ã£o e conexÃ£o de dispositivos
-    - ConfiguraÃ§Ã£o automÃ¡tica de Google Drive
-    - Controle da rede democrÃ¡tica
-    - VerificaÃ§Ã£o biomÃ©trica avanÃ§ada
+    Esta interface dá ao usuário PODER TOTAL sobre:
+    - Identificação e conexão de dispositivos
+    - Configuração automática de Google Drive
+    - Controle da rede democrática
+    - Verificação biométrica avançada
     - Treinamento distribuÃ­do
     - Monitoramento em tempo real
     - ConfiguraÃ§Ã£o de webhooks e integraÃ§Ãµes
@@ -500,7 +515,7 @@ class DemocraticControlInterface:
         monitoring_frame = ttk.Frame(self.notebook)
         self.notebook.add(monitoring_frame, text="ðŸ“Š Monitoramento")
         
-        # ===== MÃ‰TRICAS EM TEMPO REAL =====
+        # ===== MÉTRICAS EM TEMPO REAL =====
         metrics_frame = ttk.LabelFrame(monitoring_frame, text="Real-time Metrics", padding=10)
         metrics_frame.pack(fill='x', padx=10, pady=5)
         
@@ -513,7 +528,7 @@ class DemocraticControlInterface:
             ('cpu', 'CPU Usage: 0%'),
             ('memory', 'Memory: 0%'),
             ('network', 'Network: 0 KB/s'),
-            ('gpu', 'GPU: N/A')
+            ('gpu', 'GPU: Detecting...')
         ]
         
         for i, (key, default_text) in enumerate(metrics_items):
@@ -1022,7 +1037,80 @@ class DemocraticControlInterface:
     def _execute_script_distributed(self): self._log("ðŸ”¥ Executando script distribuÃ­do...")
     def _emergency_stop(self): self._log("ðŸš¨ PARADA DE EMERGÃŠNCIA!")
     def _emergency_restart(self): self._log("ðŸ”„ REINÃCIO DE EMERGÃŠNCIA!")
-    def _refresh_metrics(self): pass  # Implementar refresh de mÃ©tricas
+    def _refresh_metrics(self):
+        """ðŸ“Š ATUALIZA MÃ‰TRICAS EM TEMPO REAL"""
+        try:
+            # CPU Usage
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            self.metrics_labels['cpu'].config(text=f"CPU Usage: {cpu_percent:.1f}%")
+            
+            # Memory Usage
+            memory = psutil.virtual_memory()
+            memory_percent = memory.percent
+            memory_used_gb = memory.used / (1024**3)
+            memory_total_gb = memory.total / (1024**3)
+            self.metrics_labels['memory'].config(text=f"Memory: {memory_percent:.1f}% ({memory_used_gb:.1f}GB/{memory_total_gb:.1f}GB)")
+            
+            # Network Usage (simplified)
+            network = psutil.net_io_counters()
+            if network:
+                bytes_sent = network.bytes_sent
+                bytes_recv = network.bytes_recv
+                total_mb = (bytes_sent + bytes_recv) / (1024**2)
+                self.metrics_labels['network'].config(text=f"Network: {total_mb:.1f} MB total")
+            else:
+                self.metrics_labels['network'].config(text="Network: N/A")
+            
+            # GPU Usage
+            gpu_text = self._get_gpu_metrics_text()
+            self.metrics_labels['gpu'].config(text=gpu_text)
+            
+        except Exception as e:
+            self._log(f"Erro atualizando métricas: {e}")
+            # Fallback values
+            self.metrics_labels['cpu'].config(text="CPU Usage: Error")
+            self.metrics_labels['memory'].config(text="Memory: Error")
+            self.metrics_labels['network'].config(text="Network: Error")
+            self.metrics_labels['gpu'].config(text="GPU: Error")
+
+    def _get_gpu_metrics_text(self) -> str:
+        """Obtém texto de métricas da GPU"""
+        try:
+            if not TORCH_AVAILABLE or not torch.cuda.is_available():
+                return "GPU: Not Available"
+            
+            gpu_count = torch.cuda.device_count()
+            if gpu_count == 0:
+                return "GPU: Not Available"
+            
+            # GPU 0 (principal)
+            gpu_name = torch.cuda.get_device_name(0)
+            
+            # Utilização via NVML (mais preciso)
+            if NVML_AVAILABLE:
+                try:
+                    handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+                    util = pynvml.nvmlDeviceGetUtilizationRates(handle)
+                    gpu_util = util.gpu
+                    
+                    # Memória
+                    memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                    memory_used_gb = memory_info.used / (1024**3)
+                    memory_total_gb = memory_info.total / (1024**3)
+                    
+                    return f"GPU: {gpu_util}% ({memory_used_gb:.1f}GB/{memory_total_gb:.1f}GB)"
+                except Exception:
+                    pass
+            
+            # Fallback via PyTorch (memória apenas)
+            memory_allocated = torch.cuda.memory_allocated(0)
+            memory_total = torch.cuda.get_device_properties(0).total_memory
+            memory_percent = (memory_allocated / memory_total) * 100
+            
+            return f"GPU: ~{memory_percent:.1f}% (mem) - {gpu_name[:15]}..."
+            
+        except Exception:
+            return "GPU: Error"
     def _refresh_network_status(self): pass  # Implementar refresh de status da rede
     def _check_devices(self): pass  # Implementar verificaÃ§Ã£o de dispositivos
 
