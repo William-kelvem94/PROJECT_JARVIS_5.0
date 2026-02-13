@@ -11,8 +11,17 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("LAUNCHER")
 
-EXIT_CODE_REBIRTH = 777
-OLLAMA_SERVER_URL = "http://localhost:11434"
+# Carregar configuração externalizada
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+    from utils.env_manager import get_config
+    config = get_config()
+    OLLAMA_SERVER_URL = config.ollama_url
+    logger.info(f"✅ [CONFIG] URL Ollama carregada: {OLLAMA_SERVER_URL}")
+except Exception as e:
+    logger.warning(f"⚠️ [CONFIG] Erro ao carregar configuração, usando padrão: {e}")
+    OLLAMA_SERVER_URL = "http://localhost:11434"
+
 OLLAMA_INSTALLER_URL = "https://ollama.com/download/OllamaSetup.exe"
 
 # Ajustar CWD para o root do projeto se disparado de dentro de /scripts/launchers

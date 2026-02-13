@@ -14,6 +14,10 @@ from typing import Dict, Any, List, Optional
 from src.core.intelligence.context_sanitizer import ContextSanitizer
 from src.core.audio.voice_filter import AtomicVoiceFilter
 from src.utils.logger_reflection import reflect_logger
+try:
+    from src.utils.env_manager import get_model_for_tier
+except ImportError:
+    get_model_for_tier = lambda tier: 'deepseek-r1:8b'  # Fallback
 from src.interface.ui_signals import ui_signals
 
 # Enable Neural Reflection by default for luxury diagnostics
@@ -1372,8 +1376,8 @@ class AIAgent:
         """Seleciona dinamicamente o melhor modelo Ollama para a tarefa"""
         # Se houver imagem, usa modelo mais capaz disponível (fallback sem visão específica)
         if image_path and os.path.exists(image_path):
-            # Usar deepseek-r1:8b por enquanto até instalar modelo multimodal
-            return "deepseek-r1:8b"
+            # Usar modelo do tier ultra para processamento de imagem
+            return get_model_for_tier('ultra')
             
         # Analisa complexidade do prompt (heurística simples)
         prompt_lower = prompt.lower()
@@ -1441,7 +1445,10 @@ class AIAgent:
         model_lower = model_name.lower()
         
         # tier_fast: Modelos leves ficam em cache
-        tier_fast_patterns = ["qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:3b", "phi3.5", "gemma2:2b"]
+        if self.brain_router and hasattr(self.brain_router, 'tier_fast'):
+            tier_fast_patterns = [model.lower() for model in self.brain_router.tier_fast]
+        else:
+            tier_fast_patterns = ["qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:3b", "phi3.5", "gemma2:2b"]  # Fallback
         for pattern in tier_fast_patterns:
             if pattern in model_lower:
                 return "15m"
