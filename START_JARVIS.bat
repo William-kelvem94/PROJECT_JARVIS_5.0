@@ -215,7 +215,7 @@ echo [SYSTEM] Synchronizing Neural Models (Ollama)...
 "%VENV_PYTHON%" "%ROOT%scripts\install\setup_ollama_models.py"
 echo.
 
-"%VENV_PYTHON%" "%ROOT%SINGULARITY_LAUNCHER.py" %*
+"%VENV_PYTHON%" "%ROOT%scripts\launchers\SINGULARITY_LAUNCHER.py" %*
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

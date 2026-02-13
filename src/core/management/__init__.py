@@ -24,11 +24,14 @@ Exemplo de uso:
 
 from .device_manager import AdvancedDeviceManager as DeviceManager
 from .hardware_manager import HardwareManager
-from .auto_recovery_system import AutoRecoverySystem
+from .auto_recovery_system import AutoRecoverySystem, get_auto_recovery_system
 from .performance_optimizer import PerformanceOptimizer
 from .dependency_manager import DependencyManager
 from .shutdown_manager import ShutdownManager
 from .system_controller import SystemController
+
+# Global Instances
+auto_recovery_system = get_auto_recovery_system()
 
 __all__ = [
     'DeviceManager',

@@ -4,6 +4,21 @@ import warnings
 import time
 import platform
 
+# 🛡️ EARLY ENVIRONMENT CONFIGURATION (Critical for Windows/UTF-8)
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+# Force UTF-8 encoding for file operations
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+    except locale.Error:
+        pass  # Use system default if UTF-8 not available
+
 # 🛡️ EARLY WARNING SUPPRESSION (Must be before any heavy imports)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', message='.*openvino.runtime.*')
@@ -45,9 +60,39 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import threading
 from datetime import datetime
-from src.core.management.shutdown_manager import ShutdownManager # New Shutdown Manager
-from src.core.management.hardware_manager import hardware_manager
-from src.core.orchestrator import StarkOrchestrator # Stark 2.0 Orchestrator
+
+# Try to import ShutdownManager (may fail due to heavy dependencies)
+try:
+    from src.core.management.shutdown_manager import ShutdownManager # New Shutdown Manager
+    SHUTDOWN_MANAGER_AVAILABLE = True
+except ImportError as e:
+    print(f"WARNING: ShutdownManager not available: {e}")
+    ShutdownManager = None
+    SHUTDOWN_MANAGER_AVAILABLE = False
+
+# Lazy import of hardware manager to avoid torch loading at startup
+try:
+    from src.core.management.hardware_manager import get_hardware_manager
+    hardware_manager = get_hardware_manager()
+    HARDWARE_MANAGER_AVAILABLE = True
+except ImportError as e:
+    print(f"WARNING: HardwareManager not available: {e}")
+    hardware_manager = None
+    HARDWARE_MANAGER_AVAILABLE = False
+
+# Lazy import of StarkOrchestrator to avoid heavy dependencies
+try:
+    from src.core.management.orchestrator import StarkOrchestrator
+    STARK_ORCHESTRATOR_AVAILABLE = True
+except (ImportError, AttributeError) as e:
+    logger.warning(f"⚠️ StarkOrchestrator not available via management: {e}")
+    try:
+        from src.core import StarkOrchestrator
+        STARK_ORCHESTRATOR_AVAILABLE = True
+    except:
+        StarkOrchestrator = None
+        STARK_ORCHESTRATOR_AVAILABLE = False
+
 from src.web.web_server import start_server
 from src.utils.web_emitter import emit_telemetry_sync, emit_log_sync
 
@@ -123,12 +168,19 @@ except ImportError:
 
 logger = logging.getLogger("JARVIS-CORE")
 
-# Try to import torch and determine availability
-try:
-    import torch
-    TORCH_AVAILABLE = True
-except Exception:
-    TORCH_AVAILABLE = False
+# Try to import torch and determine availability (lazy import)
+TORCH_AVAILABLE = False
+def _check_torch():
+    global TORCH_AVAILABLE
+    if not TORCH_AVAILABLE:
+        try:
+            import torch
+            TORCH_AVAILABLE = True
+            return True
+        except Exception:
+            TORCH_AVAILABLE = False
+            return False
+    return True
 
 # ============================================================================
 # VISUAL & DIAGNOSTIC UTILITIES
@@ -147,8 +199,9 @@ def auto_diagnose():
     issues = []
     # 1. Check PyTorch Stability (c10.dll/MKL)
     try:
-        import torch
-        _ = torch.zeros(1)
+        if _check_torch():
+            import torch
+            _ = torch.zeros(1)
     except Exception as e:
         issues.append({
             'level': 'CRITICAL',
@@ -671,7 +724,7 @@ def main():
             from src.core.identity.enhanced_biometric_verifier import EnhancedBiometricVerifier
             from src.core.cloud.structured_google_drive import StructuredGoogleDriveManager
             from src.core.interface.democratic_control_interface import DemocraticControlInterface
-            from src.core.democratic_core import DemocraticCore
+            from src.core.democratic.democratic_core import DemocraticCore
             
             # Configurar paths
             PROJECT_ROOT = Path(__file__).parent

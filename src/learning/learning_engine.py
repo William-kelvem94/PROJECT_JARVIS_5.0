@@ -176,6 +176,12 @@ class LearningEngine:
         if self.config.get('dream_cycle', {}).get('enabled', True):
             success &= self._init_dream_cycle()
         
+        # 9. Sanity Checker (Integrity Validation)
+        from .sanity_checker import get_sanity_checker
+        self.sanity_checker = get_sanity_checker(self.project_root)
+        health_report = self.sanity_checker.run_full_check()
+        logger.info(f"🏥 Health Check: {health_report['total_score']*100}% Stability")
+        
         self.is_initialized = success
         
         if success:

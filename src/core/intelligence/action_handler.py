@@ -155,6 +155,28 @@ class ActionHandler:
         logger.info(f"✅ Actions executed: {success_count}/{len(results)} successful")
         return results
     
+    def execute_actions_sync(self, actions: List, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """Versão síncrona para compatibilidade com AIAgent legado"""
+        try:
+            import asyncio
+            # Se já houver um loop rodando nesta thread, precisamos de uma abordagem diferente
+            # mas geralmente background threads de worker não têm loop.
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Usar o loop existente se possível (approach delicado)
+                    # Por simplicidade, assumimos que threads de worker podem criar seu loop
+                    import nest_asyncio
+                    nest_asyncio.apply()
+                    return loop.run_until_complete(self.execute_actions(actions, context))
+                else:
+                    return loop.run_until_complete(self.execute_actions(actions, context))
+            except RuntimeError:
+                return asyncio.run(self.execute_actions(actions, context))
+        except Exception as e:
+            logger.error(f"Erro na execução síncrona de ações: {e}")
+            return [{"status": "failed", "action": "sync_wrapper", "error": str(e)}]
+    
     
     async def _execute_structured_action(self, action: 'ActionUnion') -> Dict[str, Any]:
         """Executa ação estruturada (Pydantic model)"""
@@ -200,39 +222,113 @@ class ActionHandler:
     async def _execute_legacy_action(self, action_str: str) -> Dict[str, Any]:
         """Executa ação legada ([ACTION: ...])"""
         
-        logger.debug(f"🔧 Legacy action: {action_str}")
+        logger.debug(f"🔧 Legacy action parsing: {action_str[:100]}...")
         
-        # Extrair comando
-        match = re.search(r'\[ACTION: (.*?)\]', action_str)
-        if not match:
+        # 1. Tentar extrair todas as ações no formato [ACTION: cmd]
+        actions = re.findall(r'\[ACTION: (.*?)\]', action_str)
+        if not actions:
+            # Tentar formato SEARCH: se não houver ACTION:
+            if "SEARCH:" in action_str:
+                return await self._handle_web_search(action_str)
             return {
                 "status": "failed",
                 "action": "parse",
-                "error": "Formato inválido"
+                "error": "Nenhuma ação encontrada no formato [ACTION: ...]"
             }
         
-        command = match.group(1)
+        combined_results = []
+        for cmd in actions:
+            result = {"status": "success", "action": cmd, "result": "Executado"}
+            try:
+                # --- Mouse & Keyboard ---
+                if "click_at" in cmd:
+                    coords = re.findall(r'\d+', cmd)
+                    if len(coords) >= 2:
+                        from src.core.intelligence.structured_output import ClickAction
+                        action = ClickAction(action="click_at", x=int(coords[0]), y=int(coords[1]))
+                        result = self.executor.execute_action(action)
+                
+                elif "type_text" in cmd:
+                    text_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if text_match:
+                        from src.core.intelligence.structured_output import TypeTextAction
+                        action = TypeTextAction(action="type_text", text=text_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                elif "press_key" in cmd:
+                    key_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if key_match:
+                        from src.core.intelligence.structured_output import PressKeyAction
+                        action = PressKeyAction(action="press_key", key=key_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                elif "hotkey" in cmd:
+                    keys = re.findall(r"['\"](.*?)['\"]", cmd)
+                    if keys:
+                        from src.core.intelligence.structured_output import HotkeyAction
+                        action = HotkeyAction(action="hotkey", keys=keys)
+                        result = self.executor.execute_action(action)
+                
+                # --- File System ---
+                elif "read_file" in cmd:
+                    path_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if path_match:
+                        from src.core.intelligence.structured_output import ReadFileAction
+                        action = ReadFileAction(action="read_file", path=path_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                elif "write_file" in cmd:
+                    # write_file('path', 'content')
+                    args = re.findall(r"['\"](.*?)['\"]", cmd)
+                    if len(args) >= 2:
+                        from src.core.intelligence.structured_output import WriteFileAction
+                        action = WriteFileAction(action="write_file", path=args[0], content=args[1])
+                        result = self.executor.execute_action(action)
+                
+                elif "list_dir" in cmd:
+                    path_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if path_match:
+                        from src.core.intelligence.structured_output import ListDirAction
+                        action = ListDirAction(action="list_dir", path=path_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                # --- System ---
+                elif "open_program" in cmd:
+                    prog_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if prog_match:
+                        from src.core.intelligence.structured_output import OpenProgramAction
+                        action = OpenProgramAction(action="open_program", program=prog_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                elif "search_web" in cmd:
+                    query_match = re.search(r"['\"](.*?)['\"]", cmd)
+                    if query_match:
+                        from src.core.intelligence.structured_output import SearchWebAction
+                        action = SearchWebAction(action="search_web", query=query_match.group(1))
+                        result = self.executor.execute_action(action)
+                
+                else:
+                    result = {
+                        "status": "failed",
+                        "action": cmd,
+                        "error": "Comando legado desconhecido ou não mapeado"
+                    }
+                
+                combined_results.append(result)
+                
+            except Exception as e:
+                logger.error(f"Erro ao processar comando legado: {e}")
+                combined_results.append({"status": "failed", "action": cmd, "error": str(e)})
         
-        # Roteamento de comandos
-        if "search_web" in command or "SEARCH:" in action_str:
-            return await self._handle_web_search(action_str)
+        # Retornar o último resultado ou um consolidado
+        if len(combined_results) == 1:
+            return combined_results[0]
         
-        elif "read_file" in command:
-            return await self._handle_read_file(command)
-        
-        elif "write_file" in command:
-            return await self._handle_write_file(command)
-        
-        elif "list_dir" in command:
-            return await self._handle_list_dir(command)
-        
-        else:
-            # Fallback: Executar via action_controller (se disponível)
-            return {
-                "status": "failed",
-                "action": command,
-                "error": "Comando legado não suportado"
-            }
+        return {
+            "status": "success" if all(r["status"] == "success" for r in combined_results) else "partial_success",
+            "action": "multiple_legacy",
+            "result": "\n".join([str(r.get("result", r.get("error", ""))) for r in combined_results])
+        }
     
     
     def _validate_security(self, action) -> bool:
