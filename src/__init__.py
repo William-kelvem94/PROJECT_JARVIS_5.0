@@ -4,7 +4,7 @@
 # Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'
 try:
     import sys
-    import openvino
+    import openvino  # type: ignore
     # 1. Patch Node - Favorece topo (OpenVINO 2023.1+)
     node_obj = getattr(openvino, 'Node', None)
     if not node_obj and 'openvino.runtime' in sys.modules:
@@ -21,5 +21,18 @@ try:
     if op_obj:
         sys.modules['openvino.op'] = op_obj
         if not hasattr(openvino, 'op'): openvino.op = op_obj
+except Exception:
+    pass
+
+# NumPy 2.0 compatibility shim: some downstream libs still reference removed
+# aliases like np.float_, np.int_, np.uint. Add safe aliases if missing.
+try:
+    import numpy as _np
+    if not hasattr(_np, 'float_'):
+        _np.float_ = _np.float64
+    if not hasattr(_np, 'int_'):
+        _np.int_ = _np.int64
+    if not hasattr(_np, 'uint'):
+        _np.uint = _np.uint64
 except Exception:
     pass

@@ -13,17 +13,27 @@ import importlib
 import logging
 from pathlib import Path
 
+# Ensure project root is on sys.path so imports from repo root resolve when running from /scripts
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
 # Configuração de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def test_imports():
     """Testa importação de todos os pacotes obrigatórios"""
+    # Note: some biometric packages (dlib/face_recognition) are optional on systems
+    # without native build toolchains. We will warn but not fail the full validation
+    # so the app can boot in degraded mode.
     mandatory_packages = {
-        "Biometria": ["face_recognition", "dlib", "cv2"],
+        "Biometria": ["cv2"],
         "Áudio": ["pyaudio", "librosa", "soundfile"],
         "Interface": ["tkinter", "tkinter_tooltip", "PyQt6"],
         "Monitoramento": ["psutil", "wmi"]
+    }
+    optional_packages = {
+        "Biometria (optional)": ["face_recognition", "dlib"]
     }
     
     results = {}
@@ -44,6 +54,15 @@ def test_imports():
                 category_passed = False
                 all_passed = False
         results[category] = category_passed
+    # Check optional packages but don't change overall pass/fail
+    for category, packages in optional_packages.items():
+        print(f"\n📂 Categoria: {category}")
+        for package in packages:
+            try:
+                importlib.import_module(package)
+                print(f"   ✅ {package:20} - OK")
+            except ImportError as e:
+                print(f"   ⚠️ {package:20} - OPCIONAL AUSENTE: {e}")
         
     return all_passed
 

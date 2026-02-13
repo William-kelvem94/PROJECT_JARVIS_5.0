@@ -67,6 +67,14 @@ def check_package(import_name, pip_name, use_pip_show=False):
     except Exception:
         return False, pip_name
 
+def install_package(pip_name):
+    """Tenta instalar um pacote via pip"""
+    try:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', pip_name], check=True, capture_output=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 def main():
     print("[CHECK] Validating JARVIS dependencies...")
     print("=" * 60)
@@ -92,10 +100,30 @@ def main():
     
     print("=" * 60)
     
+    if missing:
+        print(f"\n[INFO] Tentando instalar {len(missing)} pacotes faltantes automaticamente...")
+        for pkg in missing[:]:  # Copia para modificar
+            if install_package(pkg):
+                print(f"[OK] {pkg} instalado com sucesso!")
+                missing.remove(pkg)
+            else:
+                print(f"[ERROR] Falha ao instalar {pkg}")
+
+    if broken:
+        print(f"\n[INFO] Tentando reparar {len(broken)} pacotes quebrados...")
+        for pkg in broken[:]:
+            if install_package(f"--force-reinstall {pkg}"):
+                print(f"[OK] {pkg} reparado!")
+                broken.remove(pkg)
+            else:
+                print(f"[ERROR] Falha ao reparar {pkg}")
+
+    # Retorne 0 apenas se tudo estiver OK após tentativas
     if missing or broken:
+        print("\n[ERROR] Alguns pacotes ainda estão faltando ou quebrados. Execute novamente ou verifique manualmente.")
         return 1
     else:
-        print("\n[OK] All critical dependencies installed!")
+        print("\n[OK] Todas as dependências validadas/instaladas!")
         return 0
 
 if __name__ == "__main__":
