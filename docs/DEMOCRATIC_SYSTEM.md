@@ -128,8 +128,8 @@ recommendations = predictive_analytics.get_device_recommendations("heavy_inferen
 ### 1. ⚡ Instalação e Setup
 
 ```bash
-# 1. Instalar dependências adicionais (se necessário):
-pip install scikit-learn
+# 1. Instalar dependências OBRIGATÓRIAS (Biometria, Áudio, Monitoramento):
+python scripts/install_democratic_dependencies.py
 
 # 2. Configurar sistema democrático:
 python scripts/democratic_integration_example.py --reset-democratic-config

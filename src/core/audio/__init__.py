@@ -23,13 +23,13 @@ Exemplo de uso:
 from .voice_controller import VoiceController
 from .voice_filter import AtomicVoiceFilter as VoiceFilter
 from .advanced_speech_processor import AdvancedSpeechProcessor
-from .realtime_transcription import RealtimeTranscription
-from .enhanced_audio import EnhancedAudio
+from .realtime_transcription import RealtimeTranscriber
+from .enhanced_audio import EnhancedAudioSystem
 
 __all__ = [
     'VoiceController',
     'VoiceFilter',
     'AdvancedSpeechProcessor',
-    'RealtimeTranscription',
-    'EnhancedAudio'
+    'RealtimeTranscriber',
+    'EnhancedAudioSystem'
 ]

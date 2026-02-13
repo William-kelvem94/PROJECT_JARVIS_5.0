@@ -51,22 +51,8 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONDITIONAL IMPORTS (Graceful Degradation)
 # ============================================================================
-try:
-    import numpy as np
-    NUMPY_AVAILABLE = True
-except (ImportError, OSError) as e:
-    NUMPY_AVAILABLE = False
-    # Mock numpy
-    class np:
-        class ndarray:
-            pass
-        @staticmethod
-        def array(x):
-            return x
-        @staticmethod
-        def frombuffer(*args, **kwargs):
-            return []
-    logger.warning(f"⚠️ numpy not available - audio processing limited: {e}")
+import numpy as np
+NUMPY_AVAILABLE = True
 
 try:
     from faster_whisper import WhisperModel
@@ -83,19 +69,11 @@ except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
     logger.warning(f"⚠️ torch not available - advanced audio features disabled: {e}")
 
-try:
-    import soundfile as sf
-    SOUNDFILE_AVAILABLE = True
-except (ImportError, OSError) as e:
-    SOUNDFILE_AVAILABLE = False
-    logger.warning(f"⚠️ soundfile not available - audio I/O limited: {e}")
+import soundfile as sf
+SOUNDFILE_AVAILABLE = True
 
-try:
-    import pyaudio
-    PYAUDIO_AVAILABLE = True
-except (ImportError, OSError) as e:
-    PYAUDIO_AVAILABLE = False
-    logger.warning(f"⚠️ pyaudio not available - microphone input disabled: {e}")
+import pyaudio
+PYAUDIO_AVAILABLE = True
 
 # Fallback for speaker recognition
 try:

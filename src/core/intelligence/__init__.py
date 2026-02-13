@@ -26,7 +26,7 @@ from .ai_agent import AIAgent
 from .decision_engine import DecisionEngine
 from .memory_manager import MemoryManager
 from .context_sanitizer import ContextSanitizer
-from .neural_systems import NeuralSystems
+from .neural_systems import NeuralSystemsLoader
 from .perception_engine import PerceptionEngine
 from .knowledge_graph import KnowledgeGraph
 
@@ -35,7 +35,7 @@ __all__ = [
     'DecisionEngine',
     'MemoryManager',
     'ContextSanitizer',
-    'NeuralSystems',
+    'NeuralSystemsLoader',
     'PerceptionEngine',
     'KnowledgeGraph'
 ]

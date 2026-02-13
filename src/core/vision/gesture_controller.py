@@ -301,5 +301,5 @@ class GestureController:
             action_controller.press_key('nexttrack')
             logger.info("⏭️ Swipe Left: Next Track")
 
-# Instância global removida para evitar execução durante import
-# gesture_controller = GestureController()
+# Instância global
+gesture_controller = GestureController()
