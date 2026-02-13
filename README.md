@@ -343,10 +343,12 @@ cd PROJECT_JARVIS_5.0
 python -m venv venv
 venv\Scripts\activate
 
-# 2. Instalar dependências
-pip install -r requirements.txt
+# 2. Instalar dependências obrigatórias e sincronizar (biométricas, áudio, monitoramento):
+python scripts/install_democratic_dependencies.py
+# 3. Instalar dependências principais (para a funcionalidade completa)
+pip install -r scripts/install/requirements.txt
 
-# 3. Configurar Ollama
+# 4. Configurar Ollama
 ollama pull llama3
 ollama pull qwen:14b
 

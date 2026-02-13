@@ -294,16 +294,16 @@ class AIAgent:
 
     def __init__(self, provider: str = 'ollama'):
         # =====================================================================
-        # CORREÇÃO P0: VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS
-        # =====================================================================
-        self.safe_mode = False
-        self._verify_critical_dependencies()
-        
-        # =====================================================================
         # 🆕 AUTO-RECOVERY INTEGRATION
         # =====================================================================
         self.auto_recovery = None
         self._initialize_auto_recovery()
+
+        # =====================================================================
+        # CORREÇÃO P0: VERIFICAÇÃO DE DEPENDÊNCIAS CRÍTICAS
+        # =====================================================================
+        self.safe_mode = False
+        self._verify_critical_dependencies()
         
         self.provider = provider
         self.api_key = None # 100% Local Mode
@@ -511,9 +511,10 @@ class AIAgent:
         
         # 🆕 AUTO-RECOVERY: Log critical issues for automatic recovery
         if self.auto_recovery and missing_critical:
+            from src.core.management.auto_recovery_system import FailureType
             for module in missing_critical:
                 self.auto_recovery._trigger_recovery(
-                    failure_type=self.auto_recovery.FailureType.IMPORT_ERROR,
+                    failure_type=FailureType.IMPORT_ERROR,
                     module_name=module,
                     error_message=f"Critical module {module} is missing",
                     severity=9

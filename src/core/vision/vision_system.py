@@ -30,31 +30,20 @@ from src.core.management.hardware_manager import hardware_manager
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CONDITIONAL IMPORTS (Graceful Degradation)
+# MANDATORY IMPORTS
 # ============================================================================
-import importlib.util
+import cv2
+import numpy as np
+import face_recognition
+import mss
 
-def is_module_available(name: str) -> bool:
-    """Check if module is available without importing it"""
-    try:
-        return importlib.util.find_spec(name) is not None
-    except ImportError:
-        return False
-
-# Lazy detection of heavy modules
-CV2_AVAILABLE = is_module_available("cv2")
-NUMPY_AVAILABLE = is_module_available("numpy")
-MSS_AVAILABLE = is_module_available("mss")
-FACE_REC_AVAILABLE = is_module_available("face_recognition")
-EASYOCR_AVAILABLE = is_module_available("easyocr")
-YOLO_AVAILABLE = is_module_available("ultralytics")
-
-if CV2_AVAILABLE:
-    import cv2
-if NUMPY_AVAILABLE:
-    import numpy as np
-if MSS_AVAILABLE:
-    import mss
+# Module availability flags (deprecated, set to True for compatibility)
+CV2_AVAILABLE = True
+NUMPY_AVAILABLE = True
+MSS_AVAILABLE = True
+FACE_REC_AVAILABLE = True
+EASYOCR_AVAILABLE = True
+YOLO_AVAILABLE = True
 
 
 # ============================================================================
@@ -158,7 +147,7 @@ class VisionSystem:
         # self.load_heavy_models_async()
         
         logger.info("✅ Vision System initialized (Passive Mode)")
-        logger.info(f"   FaceID: {'✅' if FACE_REC_AVAILABLE else '❌'}")
+        logger.info(f"   FaceID: ✅")
         logger.info(f"   OCR: {'✅' if EASYOCR_AVAILABLE else '❌'}")
         logger.info(f"   YOLO: {'✅' if YOLO_AVAILABLE else '❌'}")
         logger.info(f"   Screen Capture: {'✅' if MSS_AVAILABLE else '❌'}")
@@ -186,8 +175,7 @@ class VisionSystem:
     def load_heavy_models_async(self):
         """Sequential loading of heavy models to ensure DLL stability on Windows"""
         # 1. FaceID
-        if FACE_REC_AVAILABLE:
-            self._load_known_faces()
+        self._load_known_faces()
             
         # 2. EasyOCR (flags já setadas por start_background_loading)
         if EASYOCR_AVAILABLE and not self._ocr_ready:
@@ -274,13 +262,9 @@ class VisionSystem:
             
     def _load_known_faces(self):
         """Load authorized faces for FaceID"""
-        if not FACE_REC_AVAILABLE:
-            return
-            
         # 🆕 GLOBAL NEURAL LOCK: Prevent Dlib/BLAS conflict with Torch
         with hardware_manager.neural_lock:
-            # Lazy Import
-            import face_recognition
+            # Face recognition is now mandatory, no need for lazy import
             
             logger.info(f"🧠 Vision: Sincronizando faces de {self.faces_dir}...")
             
@@ -322,10 +306,6 @@ class VisionSystem:
         """Start continuous webcam monitoring in background thread"""
         if self.is_running:
             logger.warning("Vision monitoring already running")
-            return
-            
-        if not FACE_REC_AVAILABLE:
-            logger.warning("Cannot start monitoring: face_recognition not available")
             return
             
         self.is_running = True
@@ -397,7 +377,7 @@ class VisionSystem:
                 
     def _check_face_in_frame(self, frame: np.ndarray):
         """Check if authorized face is present in frame"""
-        if not FACE_REC_AVAILABLE or not self.known_face_encodings:
+        if not self.known_face_encodings:
             return
             
         try:
@@ -695,10 +675,6 @@ class VisionSystem:
         Returns:
             True if successful
         """
-        if not FACE_REC_AVAILABLE:
-            logger.error("face_recognition not available")
-            return False
-            
         try:
             # Get image
             if image_path:
@@ -813,14 +789,11 @@ if __name__ == "__main__":
         print("   ❌ Failed")
         
     # Start monitoring
-    if FACE_REC_AVAILABLE:
-        print("\n4. Starting face monitoring (5 seconds)...")
-        vision.start_monitoring()
-        time.sleep(5)
-        print(f"   Authorized user present: {vision.is_authorized_user_present()}")
-        vision.stop_monitoring()
-    else:
-        print("\n4. Face monitoring not available")
+    print("\n4. Starting face monitoring (5 seconds)...")
+    vision.start_monitoring()
+    time.sleep(5)
+    print(f"   Authorized user present: {vision.is_authorized_user_present()}")
+    vision.stop_monitoring()
         
     # Cleanup
     vision.cleanup()

@@ -19,23 +19,14 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import logging
 
-# Imports de face recognition
-try:
-    import face_recognition
-    FACE_REC_AVAILABLE = True
-except ImportError:
-    FACE_REC_AVAILABLE = False
-    face_recognition = None
+# Imports obrigatórios de face recognition
+import face_recognition
 
-# Imports de áudio
-try:
-    import pyaudio
-    import wave
-    import librosa
-    import numpy as np
-    AUDIO_AVAILABLE = True
-except ImportError:
-    AUDIO_AVAILABLE = False
+# Imports obrigatórios de áudio
+import pyaudio
+import wave
+import librosa
+import numpy as np
 
 # Import do sistema de identificação Microsoft
 from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier
@@ -108,7 +99,7 @@ class EnhancedBiometricVerifier:
         # Configurações de voz
         self.voice_samples_needed = 2
         self.voice_confidence_threshold = 0.7
-        self.audio_format = pyaudio.paInt16 if AUDIO_AVAILABLE else None
+        self.audio_format = pyaudio.paInt16
         self.audio_channels = 1
         self.audio_rate = 16000
         self.audio_chunk = 1024
@@ -176,17 +167,12 @@ class EnhancedBiometricVerifier:
         
         try:
             # 1. COLETAR AMOSTRAS DE FACE
-            face_encodings = []
-            if FACE_REC_AVAILABLE:
-                print(f"   📷 Coletando {self.face_samples_needed} amostras de face...")
-                face_encodings = self._collect_face_samples()
+            print(f"   📷 Coletando {self.face_samples_needed} amostras de face...")
+            face_encodings = self._collect_face_samples()
             
             # 2. COLETAR AMOSTRAS DE VOZ
-            voice_features = None
-            voice_samples_count = 0
-            if AUDIO_AVAILABLE:
-                print(f"   🎤 Coletando {self.voice_samples_needed} amostras de voz...")
-                voice_features, voice_samples_count = self._collect_voice_samples()
+            print(f"   🎤 Coletando {self.voice_samples_needed} amostras de voz...")
+            voice_features, voice_samples_count = self._collect_voice_samples()
             
             # 3. CRIAR PERFIL
             if len(face_encodings) == 0 and voice_features is None:
@@ -225,9 +211,6 @@ class EnhancedBiometricVerifier:
     def _collect_face_samples(self) -> List[List[float]]:
         """📷 COLETA AMOSTRAS DE FACE DO USUÁRIO"""
         
-        if not FACE_REC_AVAILABLE:
-            return []
-        
         face_encodings = []
         
         try:
@@ -251,9 +234,6 @@ class EnhancedBiometricVerifier:
                 rgb_small_frame = small_frame[:, :, ::-1]
                 
                 # Detectar faces
-                if face_recognition is None:
-                    continue
-                    
                 face_locations = face_recognition.face_locations(rgb_small_frame, model=self.face_detection_model)
                 
                 # Desenhar retângulos nas faces
@@ -302,15 +282,9 @@ class EnhancedBiometricVerifier:
     def _collect_voice_samples(self) -> Tuple[Optional[List[float]], int]:
         """🎤 COLETA AMOSTRAS DE VOZ DO USUÁRIO"""
         
-        if not AUDIO_AVAILABLE:
-            return None, 0
-        
         try:
             voice_features_list = []
             
-            if not AUDIO_AVAILABLE or pyaudio is None:
-                return None, 0
-                
             p = pyaudio.PyAudio()
             
             for i in range(self.voice_samples_needed):
@@ -387,7 +361,7 @@ class EnhancedBiometricVerifier:
         
         try:
             # VERIFICAÇÃO FACIAL
-            if use_face and FACE_REC_AVAILABLE and self.current_user_profile.face_encodings:
+            if use_face and self.current_user_profile.face_encodings:
                 if hasattr(self, '_verify_face') and callable(getattr(self, '_verify_face')):
                     face_confidence = self._verify_face(timeout_seconds)
                     if face_confidence is not None:
@@ -397,7 +371,7 @@ class EnhancedBiometricVerifier:
                         additional_info["face_confidence"] = face_confidence
             
             # VERIFICAÇÃO VOCAL
-            if use_voice and AUDIO_AVAILABLE and self.current_user_profile.voice_features:
+            if use_voice and self.current_user_profile.voice_features:
                 if hasattr(self, '_verify_voice') and callable(getattr(self, '_verify_voice')):
                     voice_confidence = self._verify_voice(timeout_seconds)
                     if voice_confidence is not None:
@@ -549,9 +523,6 @@ class EnhancedBiometricVerifier:
         try:
             print("🎤 Fale por 3 segundos para verificação...")
             
-            if not AUDIO_AVAILABLE or pyaudio is None:
-                return None
-                
             p = pyaudio.PyAudio()
             
             # Gravar áudio

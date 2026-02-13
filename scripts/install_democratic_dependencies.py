@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-JARVIS - Instalador de Dependências Democráticas Opcionais
-===========================================================
-Instala dependências opcionais para funcionalidades democráticas avançadas.
+JARVIS - Instalador de Dependências Democráticas Obrigatórias
+=============================================================
+Instala dependências obrigatórias para funcionalidades democráticas avançadas.
 """
 
 import subprocess
@@ -11,12 +11,12 @@ import sys
 import os
 from pathlib import Path
 
-def install_optional_dependencies():
-    """Instala dependências opcionais para funcionalidades avançadas"""
+def install_mandatory_dependencies():
+    """Instala dependências obrigatórias para funcionalidades avançadas"""
     
-    print("🔧 Instalando dependências democráticas opcionais...")
+    print("🔧 Instalando dependências democráticas obrigatórias...")
     
-    requirements_file = Path(__file__).parent.parent / "requirements_democratic_optional.txt"
+    requirements_file = Path(__file__).parent.parent / "scripts" / "install" / "requirements.txt"
     
     try:
         # Verificar se arquivo existe
@@ -25,19 +25,19 @@ def install_optional_dependencies():
             return False
         
         # Instalar dependências
-        print(f"📦 Instalando de: {requirements_file}")
+        print(f"📦 Instalando dependências obrigatórias de: {requirements_file}")
         
         result = subprocess.run([
             sys.executable, "-m", "pip", "install", "-r", str(requirements_file)
         ], capture_output=True, text=True)
         
         if result.returncode == 0:
-            print("✅ Dependências opcionais instaladas com sucesso!")
-            print("\n📋 Funcionalidades habilitadas:")
-            print("   🔐 Reconhecimento facial avançado")
-            print("   🎤 Reconhecimento vocal")
-            print("   ☁️ Integração Google Drive API")
-            print("   🖥️ Monitoramento avançado de sistema")
+            print("✅ Dependências obrigatórias sincronizadas!")
+            print("\n📋 Recursos OBRIGATÓRIOS habilitados:")
+            print("   🔐 Reconhecimento Facial (FaceID)")
+            print("   🎤 Processamento de Voz Avançado")
+            print("   🖥️ Monitoramento de Sistema (WMI/psutil)")
+            print("   🖥️ Interface Aprimorada (Tooltips)")
             return True
         else:
             print("❌ Erro na instalação:")
@@ -48,18 +48,20 @@ def install_optional_dependencies():
         print(f"❌ Erro: {e}")
         return False
 
-def check_optional_dependencies():
-    """Verifica quais dependências opcionais estão disponíveis"""
+def check_mandatory_dependencies():
+    """Verifica quais dependências obrigatórias estão disponíveis"""
     
-    print("\n🔍 Verificando dependências opcionais...")
+    print("\n🔍 Verificando dependências obrigatórias...")
     
     checks = [
         ("face_recognition", "Reconhecimento facial"),
+        ("dlib", "Processamento facial"),
         ("pyaudio", "Captura de áudio"),
         ("librosa", "Processamento de áudio"), 
-        ("googleapiclient", "Google Drive API"),
+        ("soundfile", "I/O de arquivos de áudio"),
+        ("tkinter_tooltip", "Tooltips de interface"),
         ("wmi", "Informações do sistema Windows"),
-        ("tkinter", "Interface gráfica")
+        ("psutil", "Monitoramento de sistema")
     ]
     
     available = 0
@@ -71,40 +73,37 @@ def check_optional_dependencies():
             print(f"   ✅ {description}")
             available += 1
         except ImportError:
-            print(f"   ❌ {description} (opcional)")
+            print(f"   ❌ {description} (OBRIGATÓRIA - FALTANDO)")
     
-    print(f"\n📊 Status: {available}/{total} funcionalidades opcionais disponíveis")
+    print(f"\n📊 Status: {available}/{total} funcionalidades obrigatórias disponíveis")
     
     if available == total:
-        print("🎉 Todas as funcionalidades opcionais estão disponíveis!")
-    elif available > total // 2:
-        print("✅ Maioria das funcionalidades disponíveis")
+        print("🎉 Todas as funcionalidades obrigatórias estão disponíveis!")
+        return True
     else:
-        print("⚠️ Muitas funcionalidades opcionais ausentes")
-        print("💡 Execute este script para instalar")
+        print("❌ Algumas dependências obrigatórias estão faltando!")
+        print("💡 Execute este script novamente para tentar instalar")
+        return False
 
 if __name__ == "__main__":
-    print("🔥 JARVIS - Instalador de Dependências Democráticas")
+    print("🔥 JARVIS - Instalador de Dependências Democráticas Obrigatórias")
     print("=" * 60)
     
     # Verificar dependências atuais
-    check_optional_dependencies()
+    all_available = check_mandatory_dependencies()
     
-    # Perguntar se quer instalar
-    print("\n" + "=" * 60)
-    while True:
-        choice = input("Instalar dependências opcionais? (S/n): ").lower()
-        if choice in ['s', 'sim', 'y', 'yes', '']:
-            success = install_optional_dependencies()
-            if success:
-                print("\n🔍 Verificação pós-instalação:")
-                check_optional_dependencies()
-            break
-        elif choice in ['n', 'nao', 'não', 'no']:
-            print("⚠️ Algumas funcionalidades podem estar limitadas sem as dependências opcionais")
-            break
+    if not all_available:
+        print("\n" + "=" * 60)
+        print("🔧 Instalando dependências obrigatórias faltantes...")
+        success = install_mandatory_dependencies()
+        if success:
+            print("\n🔍 Verificação pós-instalação:")
+            check_mandatory_dependencies()
         else:
-            print("❓ Resposta inválida. Digite 'S' para sim ou 'N' para não.")
+            print("❌ Falha na instalação. Verifique os logs acima.")
+            sys.exit(1)
+    else:
+        print("✅ Todas as dependências obrigatórias já estão instaladas!")
     
     print("\n🎯 Instalação concluída!")
     print("🚀 Execute START_JARVIS.bat para iniciar o sistema democrático")
