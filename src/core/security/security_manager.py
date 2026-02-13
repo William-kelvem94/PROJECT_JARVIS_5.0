@@ -13,8 +13,11 @@ class SecurityManager:
     @staticmethod
     def validate_path_access(path: str) -> bool:
         """Retorna False se o caminho for proibido (Anti-Genesis)"""
+        if not path or not isinstance(path, str) or not path.strip():
+            return False
+            
         try:
-            abs_path = os.path.abspath(path)
+            abs_path = os.path.abspath(path.strip())
             for forbidden in SecurityManager.FORBIDDEN_PATHS:
                 if forbidden.lower() in abs_path.lower():
                     return False

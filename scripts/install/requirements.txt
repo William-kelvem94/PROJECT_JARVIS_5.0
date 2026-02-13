@@ -28,6 +28,7 @@ PyQt6==6.6.1
 PyQt6-Qt6==6.6.1
 PyQt6-sip==13.6.0
 pyqtgraph==0.13.3  # Advanced plotting for Control Dashboard
+tkinter-tooltip==2.0.1  # Tooltips for interface
 
 # -------------------------------------------------------------------------
 # VISÃO COMPUTACIONAL (Omni-Vision System)
@@ -41,12 +42,9 @@ easyocr==1.7.1      # OCR para leitura de tela e descoberta de apps
 # Captura de tela ultra-rápida (multi-monitor)
 mss==9.0.1
 
-# Reconhecimento facial (FaceID biométrico)
-# NOTA: face-recognition e dlib podem falhar no Windows sem Visual C++ build tools
-# Se a instalação falhar, pule estas dependências - o sistema funcionará sem FaceID
-# Para instalar depois: pip install dlib face-recognition
+# Reconhecimento facial (FaceID biométrico) - OBRIGATÓRIO
 face-recognition==1.3.0
-# dlib==19.24.2  # OPCIONAL - Comentado por padrão (requer compilação C++)
+dlib==19.24.2
 
 # MediaPipe para detecção de gestos
 mediapipe==0.10.9

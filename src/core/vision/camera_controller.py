@@ -3,14 +3,8 @@ Controlador de Câmera (Eyes)
 Responsável por detecção de presença e reconhecimento facial
 """
 
-try:
-    import cv2
-    CV2_AVAILABLE = True
-except (ImportError, OSError) as e:
-    CV2_AVAILABLE = False
-    cv2 = None
-    import logging
-    logging.warning(f"⚠️ cv2 not available in camera_controller: {e}")
+import cv2
+CV2_AVAILABLE = True
 
 import threading
 import time
@@ -26,12 +20,9 @@ from src.core.management.hardware_manager import hardware_manager
 
 logger = logging.getLogger(__name__)
 
-try:
-    import face_recognition
-    FACE_REC_AVAILABLE = True
-except ImportError:
-    FACE_REC_AVAILABLE = False
-    logger.warning("Biblioteca face_recognition não encontrada. Funcionalidades de FaceID desativadas.")
+# Face recognition is now mandatory
+import face_recognition
+FACE_REC_AVAILABLE = True
 
 class CameraController:
     """Controla a webcam e processa visão computacional"""
@@ -84,13 +75,10 @@ class CameraController:
         self.on_frame_ready: Optional[Callable[[Any], None]] = None
         
         # Carregar faces conhecidas em background
-        if FACE_REC_AVAILABLE:
-            threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
+        threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
 
     def _load_known_faces(self):
         """Carrega faces da pasta de dados para reconhecimento"""
-        if not FACE_REC_AVAILABLE: return
-
         # Usar caminho absoluto centralizado
         faces_dir = config.DATA_DIR / 'faces'
         faces_dir.mkdir(parents=True, exist_ok=True)
@@ -132,7 +120,7 @@ class CameraController:
         if self.is_monitoring: return
         
         # 🆕 SAFE START: Load faces only when monitoring starts
-        if FACE_REC_AVAILABLE and not self.known_face_encodings:
+        if not self.known_face_encodings:
              threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
 
         self.is_monitoring = True
@@ -216,7 +204,7 @@ class CameraController:
                     is_active_mode = False
 
                 # Processar Face Recognition APENAS em modo ativo
-                if is_active_mode and FACE_REC_AVAILABLE and getattr(self, '_faceid_failures', 0) < 5:
+                if is_active_mode and getattr(self, '_faceid_failures', 0) < 5:
                     if process_this_frame:
                         try:
                             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
@@ -296,10 +284,6 @@ class CameraController:
 
     def register_new_face(self, name: str) -> bool:
         """Tira fotos de múltiplos ângulos para mapear o usuário de forma inteligente"""
-        if not FACE_REC_AVAILABLE: 
-            logger.error("Face recognition não disponível para cadastro.")
-            return False
-        
         try:
             from src.core.audio.voice_controller import voice_controller
             # 🆕 DIRECTSHOW

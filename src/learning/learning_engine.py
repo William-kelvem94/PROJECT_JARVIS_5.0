@@ -16,7 +16,7 @@ Este é o "motor evolutivo" que transforma JARVIS de assistente para AGI.
 
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Callable
 import yaml
 import threading
 

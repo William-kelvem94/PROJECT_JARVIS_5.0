@@ -257,7 +257,19 @@ class DemocraticSystemValidator:
             "time": "Time utilities (built-in)",
             "psutil": "System info (external)",
             "numpy": "Numeric computing (external)",
-            "pandas": "Data analysis (external)"
+            "pandas": "Data analysis (external)",
+            # Biometria obrigatória
+            "face_recognition": "Face recognition (biometric)",
+            "dlib": "Facial processing (biometric)",
+            # Áudio obrigatório
+            "pyaudio": "Audio capture (speech)",
+            "librosa": "Audio processing (speech)",
+            "soundfile": "Audio I/O (speech)",
+            # Interface obrigatória
+            "tkinter": "GUI framework (built-in)",
+            "tkinter_tooltip": "GUI tooltips (interface)",
+            # Monitoramento obrigatório
+            "wmi": "Windows Management Instrumentation (system monitoring)"
         }
         
         optional_packages = {

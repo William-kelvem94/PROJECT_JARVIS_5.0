@@ -193,10 +193,10 @@ class TotalInstaller:
         self.logger.info("📦 Instalando dependências restantes (Voz, Web, etc.)...")
         remaining = [
             "transformers", "tokenizers", "sentence-transformers", "accelerate",
-            "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "faster-whisper",
-            "webrtcvad-wheels", "pytesseract", "pyautogui", "psutil", "chromadb",
-            "fastapi", "uvicorn[standard]", "pywin32", "onnxruntime>=1.17.0",
-            "openvino-dev>=2024.1.0", "optimum-intel[openvino,nncf]>=1.18.0",
+            "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "soundfile", 
+            "faster-whisper", "webrtcvad-wheels", "pytesseract", "pyautogui", "psutil", 
+            "chromadb", "fastapi", "uvicorn[standard]", "pywin32", "wmi", "tkinter-tooltip",
+            "onnxruntime>=1.17.0", "openvino-dev>=2024.1.0", "optimum-intel[openvino,nncf]>=1.18.0",
             "screen-brightness-control"
         ]
         

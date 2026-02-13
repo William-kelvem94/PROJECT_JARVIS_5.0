@@ -7,17 +7,25 @@ Retorna exit code 0 se OK, 1 se faltam dependências
 import sys
 import subprocess
 
-CRITICAL_PACKAGES = [
     ('PyQt6', 'PyQt6', False),
     ('cv2', 'opencv-python', False),
     ('numpy', 'numpy', False),
-    ('torch', 'torch', False),  # False = check via import (more reliable than pip show)
-    ('torchvision', 'torchvision', False), # False = check via import
+    ('torch', 'torch', False),
+    ('torchvision', 'torchvision', False),
     ('ultralytics', 'ultralytics', True),
     ('onnxruntime', 'onnxruntime', True),
     ('transformers', 'transformers', True),
     ('sentence_transformers', 'sentence-transformers', True),
     ('chromadb', 'chromadb', True),
+    # Novos pacotes obrigatórios (Biometria, Áudio, Monitoramento)
+    ('face_recognition', 'face-recognition', False),
+    ('dlib', 'dlib', False),
+    ('pyaudio', 'pyaudio', False),
+    ('librosa', 'librosa', False),
+    ('soundfile', 'soundfile', False),
+    ('psutil', 'psutil', False),
+    ('wmi', 'wmi', False),
+    ('tkinter_tooltip', 'tkinter-tooltip', False),
 ]
 
 def check_package(import_name, pip_name, use_pip_show=False):
