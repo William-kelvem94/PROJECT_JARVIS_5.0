@@ -8,6 +8,11 @@ import requests
 import queue
 import time
 import xml.etree.ElementTree as ET
+
+try:
+    from src.utils.env_manager import get_model_for_tier
+except ImportError:
+    get_model_for_tier = lambda tier: 'deepseek-r1:8b'  # Fallback
 from typing import List, Dict
 
 try:
@@ -145,8 +150,9 @@ class CuriosityEngine:
                 "para investigarmos amanhã. Formato: Apenas as perguntas, uma por linha."
             )
             
-            # Usar modelo 'deepseek-r1:8b' ou similar (Tier Ultra/Pro)
-            response = ollama.chat(model='deepseek-r1:8b', messages=[
+            # Usar modelo do tier ultra
+            model_name = get_model_for_tier('ultra')
+            response = ollama.chat(model=model_name, messages=[
                 {'role': 'user', 'content': prompt}
             ])
             

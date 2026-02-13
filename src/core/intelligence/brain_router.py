@@ -18,6 +18,12 @@ except ImportError:
     CONFIG_AVAILABLE = False
     config = None
 
+try:
+    from src.utils.env_manager import get_config
+    ENV_MANAGER_AVAILABLE = True
+except ImportError:
+    ENV_MANAGER_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class PrivacyLevel(Enum):

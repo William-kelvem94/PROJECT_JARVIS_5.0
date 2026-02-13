@@ -79,8 +79,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class TrainingConfig:
     """Configuration for model training."""
-    # Model settings
-    model_name: str = "meta-llama/Llama-3-8B"
+    # Model settings - Now using tier instead of hardcoded name
+    model_tier: str = "pro"  # ultra, pro, fast
     model_max_length: int = 2048
     load_in_4bit: bool = True
     load_in_8bit: bool = False
@@ -411,6 +411,9 @@ class LocalTrainer:
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
         
+        # Resolve model name from tier
+        self.model_name = self._resolve_model_from_tier(config.model_tier)
+        
         self.model = None
         self.tokenizer = None
         self.trainer = None
@@ -425,7 +428,44 @@ class LocalTrainer:
         self.device = self._setup_device()
         
         logger.info(f"LocalTrainer initialized on device: {self.device}")
+        logger.info(f"Model tier: {config.model_tier} -> {self.model_name}")
         logger.info(f"Output directory: {self.output_dir}")
+    
+    def _resolve_model_from_tier(self, tier: str) -> str:
+        """Resolve model name from tier using configuration."""
+        try:
+            # Try to load from env_manager first
+            from src.utils.env_manager import get_model_for_tier
+            return get_model_for_tier(tier)
+        except ImportError:
+            # Fallback to direct config loading
+            try:
+                import yaml
+                from pathlib import Path
+                
+                config_dir = Path(__file__).parent.parent.parent / "config"
+                config_file = config_dir / "ai_config.yaml"
+                
+                if config_file.exists():
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        ai_config = yaml.safe_load(f)
+                    
+                    tier_models = ai_config.get('brain_router', {}).get('ollama_models', {}).get(f'tier_{tier}', [])
+                    if tier_models:
+                        return tier_models[0]
+            except Exception as e:
+                logger.warning(f"Could not load model from config: {e}")
+        
+        # Final fallback - hardcoded but minimal
+        fallback_models = {
+            'ultra': 'deepseek-r1:8b',
+            'pro': 'gemma3:4b', 
+            'fast': 'llama3.2'
+        }
+        
+        model = fallback_models.get(tier, 'gemma3:4b')
+        logger.info(f"Using fallback model for tier '{tier}': {model}")
+        return model
     
     def _setup_device(self) -> str:
         """Setup compute device."""
@@ -476,7 +516,7 @@ class LocalTrainer:
             Tuple of (model, tokenizer)
         """
         try:
-            model_name = self._get_model_name(self.config.model_name)
+            model_name = self.model_name
             logger.info(f"Loading model: {model_name}")
             
             # Use unsloth if available and requested
@@ -911,7 +951,7 @@ class LocalTrainer:
         
         return {
             "status": "loaded",
-            "model_name": self.config.model_name,
+            "model_name": self.model_name,
             "total_parameters": total_params,
             "trainable_parameters": trainable_params,
             "trainable_percent": 100 * trainable_params / total_params if total_params > 0 else 0,
