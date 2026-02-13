@@ -37,30 +37,57 @@ def install_pytorch():
     if has_cuda:
         print("    🎮 NVIDIA GPU detected!")
         print("[3/3] Installing PyTorch with CUDA support...")
-        cmd = [
+        # Install PyTorch without torchvision first to avoid NumPy conflicts
+        cmd_torch = [
             sys.executable, "-m", "pip", "install",
-            "torch>=2.4.0", "torchvision>=0.19.0", "torchaudio>=2.4.0",
+            "torch>=2.4.0",
             "--index-url", "https://download.pytorch.org/whl/cu121"
         ]
+        cmd_vision = [
+            sys.executable, "-m", "pip", "install",
+            "torchvision>=0.19.0", "torchaudio>=2.4.0",
+            "--index-url", "https://download.pytorch.org/whl/cu121",
+            "--no-deps"
+        ]
+        
+        try:
+            result = subprocess.run(cmd_torch, check=True, capture_output=True, text=True)
+            result = subprocess.run(cmd_vision, check=True, capture_output=True, text=True)
+            print("\n✅ PyTorch installation successful!")
+            print("=" * 60)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"\n❌ Installation failed!")
+            print(f"Error: {e.stderr[:500]}")
+            print("=" * 60)
+            return False
     else:
         print("    💻 CPU-only system detected")
         print("[3/3] Installing PyTorch CPU version (optimized)...")
-        cmd = [
+        # Install PyTorch without torchvision first to avoid NumPy conflicts
+        cmd_torch = [
             sys.executable, "-m", "pip", "install",
-            "torch==2.4.1+cpu", "torchvision==0.19.1+cpu", "torchaudio==2.4.1+cpu",
+            "torch==2.4.1+cpu",
             "--index-url", "https://download.pytorch.org/whl/cpu"
         ]
-    
-    try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print("\n✅ PyTorch installation successful!")
-        print("=" * 60)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Installation failed!")
-        print(f"Error: {e.stderr[:500]}")
-        print("=" * 60)
-        return False
+        cmd_vision = [
+            sys.executable, "-m", "pip", "install",
+            "torchvision==0.19.1+cpu", "torchaudio==2.4.1+cpu",
+            "--index-url", "https://download.pytorch.org/whl/cpu",
+            "--no-deps"
+        ]
+        
+        try:
+            result = subprocess.run(cmd_torch, check=True, capture_output=True, text=True)
+            result = subprocess.run(cmd_vision, check=True, capture_output=True, text=True)
+            print("\n✅ PyTorch installation successful!")
+            print("=" * 60)
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"\n❌ Installation failed!")
+            print(f"Error: {e.stderr[:500]}")
+            print("=" * 60)
+            return False
 
 if __name__ == "__main__":
     success = install_pytorch()

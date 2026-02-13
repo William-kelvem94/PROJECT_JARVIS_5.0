@@ -1,6 +1,6 @@
 """
-🛠️ JARVIS AUTO-HEALER - Sistema de Auto-Reparo Inteligente
-Detecta e corrige problemas automaticamente sem interação manual
+STARK AUTO-HEALER - Sistema de Auto-Reparo Inteligente
+Detecta e corrige problemas automaticamente sem interacao manual
 """
 import sys
 import subprocess
@@ -16,17 +16,28 @@ class AutoHealer:
         self.fixed = []
         self.failed = []
         
-    def log(self, level, msg):
-        """Log com cores"""
-        colors = {
-            'INFO': '\033[96m',
-            'OK': '\033[92m',
-            'WARN': '\033[93m',
-            'ERROR': '\033[91m',
-            'END': '\033[0m'
-        }
-        print(f"{colors.get(level, '')}{msg}{colors['END']}")
+    def run_command_safe(self, cmd, capture=True):
+        """Executa comando de forma segura com tratamento de encoding"""
+        try:
+            if capture:
+                result = subprocess.run(cmd, check=True, capture_output=True, text=False)
+                stdout = ""
+                if result.stdout:
+                    try:
+                        stdout = result.stdout.decode('utf-8')
+                    except UnicodeDecodeError:
+                        try:
+                            stdout = result.stdout.decode('cp1252', errors='replace')
+                        except:
+                            stdout = result.stdout.decode('utf-8', errors='replace')
+                return stdout
+            else:
+                return ""
     
+    def log(self, level, msg):
+        """Log com niveis de gravidade"""
+        print(f"[{level}] {msg}")
+
     def check_and_fix_pytorch(self):
         """Verifica e corrige problemas com PyTorch"""
         self.log('INFO', '[AUTO-HEAL] Checking PyTorch...')
@@ -37,34 +48,36 @@ class AutoHealer:
             import torchvision
             # Testa operação básica
             x = torch.tensor([1.0])
-            self.log('OK', '  ✅ PyTorch OK')
+            self.log('OK', '  [OK] PyTorch OK')
             return True
         except ImportError:
-            self.log('WARN', '  ⚠️  PyTorch missing - installing...')
+            self.log('WARN', '  [WARN] PyTorch missing - installing...')
         except Exception as e:
-            self.log('WARN', f'  ⚠️  PyTorch broken ({type(e).__name__}) - reinstalling...')
+            self.log('WARN', f'  [WARN] PyTorch broken ({type(e).__name__}) - reinstalling...')
         
         # Auto-fix: instala PyTorch
         try:
             quick_fix = self.root / "scripts" / "install" / "quick_fix_torch.py"
             if quick_fix.exists():
-                subprocess.run([sys.executable, str(quick_fix)], check=True)
+                self.run_command_safe([sys.executable, str(quick_fix)], capture=False)
+                # After PyTorch installation, ensure NumPy is compatible
+                self.run_command_safe([sys.executable, '-m', 'pip', 'install', '--force-reinstall', 'numpy==1.26.4'], capture=False)
                 self.fixed.append('torch')
-                self.log('OK', '  ✅ PyTorch fixed!')
+                self.log('OK', '  [OK] PyTorch fixed!')
                 return True
             else:
                 # Fallback: instalação manual
                 self.log('INFO', '  Installing PyTorch (CPU)...')
-                subprocess.run([
+                self.run_command_safe([
                     sys.executable, '-m', 'pip', 'install',
                     'torch==2.4.1+cpu', 'torchvision==0.19.1+cpu',
                     '--index-url', 'https://download.pytorch.org/whl/cpu'
-                ], check=True, capture_output=True)
+                ], capture=False)
                 self.fixed.append('torch')
-                self.log('OK', '  ✅ PyTorch installed!')
+                self.log('OK', '  [OK] PyTorch installed!')
                 return True
         except Exception as e:
-            self.log('ERROR', f'  ❌ Failed to fix PyTorch: {e}')
+            self.log('ERROR', f'  [ERR] Failed to fix PyTorch: {e}')
             self.failed.append(('torch', str(e)))
             return False
     
@@ -74,23 +87,23 @@ class AutoHealer:
         
         try:
             __import__(import_name)
-            self.log('OK', f'  ✅ {import_name} OK')
+            self.log('OK', f'  [OK] {import_name} OK')
             return True
         except ImportError:
-            self.log('WARN', f'  ⚠️  {import_name} missing - installing...')
+            self.log('WARN', f'  [WARN] {import_name} missing - installing...')
         except Exception as e:
-            self.log('WARN', f'  ⚠️  {import_name} broken - reinstalling...')
+            self.log('WARN', f'  [WARN] {import_name} broken - reinstalling...')
         
         # Auto-fix: instala o pacote
         try:
-            subprocess.run([
+            self.run_command_safe([
                 sys.executable, '-m', 'pip', 'install', pip_name
-            ], check=True, capture_output=True)
+            ], capture=False)
             self.fixed.append(import_name)
-            self.log('OK', f'  ✅ {import_name} fixed!')
+            self.log('OK', f'  [OK] {import_name} fixed!')
             return True
         except Exception as e:
-            self.log('ERROR', f'  ❌ Failed to fix {import_name}: {e}')
+            self.log('ERROR', f'  [ERR] Failed to fix {import_name}: {e}')
             self.failed.append((import_name, str(e)))
             return False
     
@@ -124,15 +137,15 @@ class AutoHealer:
             version = tuple(map(int, np.__version__.split('.')[:2]))
             
             if version[0] >= 2:
-                self.log('WARN', f'  ⚠️  NumPy {np.__version__} incompatible - downgrading...')
+                self.log('WARN', f'  [WARN] NumPy {np.__version__} incompatible - downgrading...')
                 subprocess.run([
-                    sys.executable, '-m', 'pip', 'install', 'numpy<2.0'
+                    sys.executable, '-m', 'pip', 'install', '--force-reinstall', 'numpy==1.26.4'
                 ], check=True, capture_output=True)
                 self.fixed.append('numpy')
-                self.log('OK', '  ✅ NumPy downgraded to compatible version!')
+                self.log('OK', '  [OK] NumPy downgraded to compatible version!')
                 return True
             else:
-                self.log('OK', f'  ✅ NumPy {np.__version__} OK')
+                self.log('OK', f'  [OK] NumPy {np.__version__} OK')
                 return True
         except Exception as e:
             self.log('ERROR', f'  ❌ NumPy check failed: {e}')
@@ -141,7 +154,7 @@ class AutoHealer:
     def auto_heal_all(self):
         """Executa todos os reparos automáticos"""
         self.log('INFO', '\n' + '='*60)
-        self.log('INFO', '🛠️  JARVIS AUTO-HEALER - Starting...')
+        self.log('INFO', 'STARK AUTO-HEALER - Starting...')
         self.log('INFO', '='*60 + '\n')
         
         # Lista de verificações - Priorizar NumPy Version
@@ -167,17 +180,17 @@ class AutoHealer:
         # Relatório final
         self.log('INFO', '\n' + '='*60)
         if self.fixed:
-            self.log('OK', f'✅ AUTO-HEALER: Fixed {len(self.fixed)} issues:')
+            self.log('OK', f'[OK] AUTO-HEALER: Fixed {len(self.fixed)} issues:')
             for item in self.fixed:
                 print(f'   - {item}')
         
         if self.failed:
-            self.log('WARN', f'\n⚠️  AUTO-HEALER: {len(self.failed)} issues need manual attention:')
+            self.log('WARN', f'\n[WARN] {len(self.failed)} issues need manual attention:')
             for item, error in self.failed:
                 print(f'   - {item}: {error[:50]}...')
         
         if not self.fixed and not self.failed:
-            self.log('OK', '✅ AUTO-HEALER: System healthy - no repairs needed!')
+            self.log('OK', '[OK] AUTO-HEALER: System healthy - no repairs needed!')
         
         self.log('INFO', '='*60 + '\n')
         
