@@ -228,13 +228,25 @@ class ModernHUD(QMainWindow):
             self.reactor.update()
 
     def mousePressEvent(self, event):
+        """Inicia arrasto do HUD"""
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
+            # Garantir que a janela fique no topo durante o arrasto
+            self.raise_()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton:
-            self.move(event.globalPosition().toPoint() - self.drag_pos)
+        """Arrasta o HUD - permite movimento entre monitores"""
+        if hasattr(self, 'drag_pos') and self.drag_pos is not None:
+            # Calcular nova posição usando coordenadas globais
+            new_pos = event.globalPosition().toPoint() - self.drag_pos
+            self.move(new_pos)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        """Finaliza arrasto do HUD"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_pos = None
             event.accept()
 
 if __name__ == "__main__":

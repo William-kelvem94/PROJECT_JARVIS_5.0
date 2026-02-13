@@ -165,8 +165,20 @@ class AutoHealer:
             ('cv2', lambda: self.check_and_fix_package('cv2', 'opencv-python')),
             ('ultralytics', lambda: self.check_and_fix_package('ultralytics', 'ultralytics')),
             ('easyocr', lambda: self.check_and_fix_package('easyocr', 'easyocr')),
-            ('openvino', lambda: self.check_and_fix_package('openvino', 'openvino-dev >= 2024.1.0')),
+            ('openvino', lambda: self.check_and_fix_package('openvino', 'openvino-dev>=2024.1.0')),
             ('optimum', lambda: self.check_and_fix_package('optimum.intel', 'optimum-intel[openvino,nncf]')),
+            ('face_recognition', lambda: self.check_and_fix_package('face_recognition', 'face-recognition')),
+            ('dlib', lambda: self.check_and_fix_package('dlib', 'dlib')),
+            ('pyaudio', lambda: self.check_and_fix_package('pyaudio', 'pyaudio')),
+            ('librosa', lambda: self.check_and_fix_package('librosa', 'librosa')),
+            ('soundfile', lambda: self.check_and_fix_package('soundfile', 'soundfile')),
+            ('psutil', lambda: self.check_and_fix_package('psutil', 'psutil')),
+            ('wmi', lambda: self.check_and_fix_package('wmi', 'wmi')),
+            ('tktooltip', lambda: self.check_and_fix_package('tktooltip', 'tkinter-tooltip')),
+            ('transformers', lambda: self.check_and_fix_package('transformers', 'transformers')),
+            ('sentence_transformers', lambda: self.check_and_fix_package('sentence_transformers', 'sentence-transformers')),
+            ('chromadb', lambda: self.check_and_fix_package('chromadb', 'chromadb')),
+            ('onnxruntime', lambda: self.check_and_fix_package('onnxruntime', 'onnxruntime')),
         ]
         
         success_count = 0

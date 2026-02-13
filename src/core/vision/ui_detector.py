@@ -1,73 +1,88 @@
-﻿"""
-MÃ³dulo de DetecÃ§Ã£o de Elementos de Interface (UI Detector)
-Usa o YOLOv8 para identificar Ã­cones, botÃµes e outros componentes visuais.
+"""
+Módulo de Detecção de Elementos de Interface (UI Detector)
+Usa o YOLOv8 (Ultralytics) para identificar ícones, botões e outros componentes visuais.
+Esta implementação evita importar o pacote `ultralytics` no momento do import do módulo
+para impedir que incompatibilidades de `torch/torchvision` quebrassem o processo de
+inicialização. A importação acontece de forma preguiçosa quando o detector for realmente
+instanciado e ativado via configuração.
 """
 
 import os
 import logging
-import cv2
-import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-try:
-    from ultralytics import YOLO
-    ULTRALYTICS_AVAILABLE = True
-except ImportError:
-    ULTRALYTICS_AVAILABLE = False
+import cv2
+import numpy as np
+
+# Indicador de disponibilidade do Ultralytics (definido durante a inicialização preguiçosa)
+ULTRALYTICS_AVAILABLE = False
 
 from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 
+
 class UIDetector:
-    """Classe para detecÃ§Ã£o de objetos de interface usando YOLOv8"""
+    """Classe para detecção de objetos de interface usando YOLOv8 (Ultralytics).
+
+    A carga do pacote `ultralytics` e do modelo é feita de forma preguiçosa para
+    evitar inicializar bibliotecas pesadas/incompatíveis no momento do import do módulo.
+    """
 
     def __init__(self, model_path: Optional[str] = None):
         self.enabled = config.get_setting('vision.yolo_enabled', True)
         self.model = None
-        
-        if self.enabled and ULTRALYTICS_AVAILABLE:
-            try:
-                # Se nÃ£o houver modelo customizado, usa o YOLOv8n (nano) na pasta models
-                path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
-                # Garantir caminho absoluto para estabilidade
-                if not os.path.isabs(path):
-                    path = str(Path(__file__).parent.parent.parent.parent / path)
-                
-                self.model = YOLO(path)
-                logger.info(f"Modelo YOLO carregado: {path}")
-            except Exception as e:
-                logger.error(f"Erro ao carregar modelo YOLO: {e}")
-                self.enabled = False
-        else:
-            if not ULTRALYTICS_AVAILABLE:
-                logger.warning("Ultralytics nÃ£o instalado. YOLO UI Detector desativado.")
+
+        if not self.enabled:
+            logger.debug("UIDetector desativado pela configuração.")
+            return
+
+        try:
+            # Importação preguiçosa do Ultralytics (pode lançar se houver incompatibilidade)
+            from importlib import import_module
+            import_module('ultralytics')
+            from ultralytics import YOLO  # type: ignore
+
+            # Se não houver modelo customizado, usa o YOLOv8n (nano) na pasta models
+            path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
+            if not os.path.isabs(path):
+                path = str(Path(__file__).parent.parent.parent.parent / path)
+
+            self.model = YOLO(path)
+            globals()['ULTRALYTICS_AVAILABLE'] = True
+            logger.info(f"Modelo YOLO carregado: {path}")
+        except Exception as e:
+            logger.warning(f"Ultralytics/YOLO indisponível ou falha ao carregar o modelo: {e}")
             self.enabled = False
+            self.model = None
 
     def detect_elements(self, image_path: str) -> List[Dict[str, Any]]:
         """
-        Detecta elementos de UI na imagem
-        Returns: Lista de dicionÃ¡rios com {label, confidence, x, y, w, h}
+        Detecta elementos de UI na imagem.
+        Retorna: Lista de dicionários com {label, confidence, x, y, width, height, center}
         """
         if not self.enabled or self.model is None:
             return []
 
         try:
             results = self.model(image_path, verbose=False)
-            detections = []
+            detections: List[Dict[str, Any]] = []
 
             for r in results:
-                boxes = r.boxes
+                boxes = getattr(r, 'boxes', [])
                 for box in boxes:
-                    # Coordenadas (xywh)
-                    x1, y1, x2, y2 = box.xyxy[0].tolist()
+                    # Coordenadas (xyxy)
+                    coords = box.xyxy[0].tolist()
+                    if len(coords) < 4:
+                        continue
+                    x1, y1, x2, y2 = coords
                     w = x2 - x1
                     h = y2 - y1
-                    
-                    label_id = int(box.cls[0])
-                    label = self.model.names[label_id]
-                    confidence = float(box.conf[0])
+
+                    label_id = int(box.cls[0]) if hasattr(box, 'cls') and len(box.cls) > 0 else 0
+                    label = getattr(self.model, 'names', {}).get(label_id, str(label_id))
+                    confidence = float(box.conf[0]) if hasattr(box, 'conf') and len(box.conf) > 0 else 0.0
 
                     if confidence >= config.get_setting('vision.yolo_confidence', 0.25):
                         detections.append({
@@ -77,30 +92,31 @@ class UIDetector:
                             'y': int(y1),
                             'width': int(w),
                             'height': int(h),
-                            'center': (int(x1 + w/2), int(y1 + h/2))
+                            'center': (int(x1 + w / 2), int(y1 + h / 2))
                         })
 
             logger.info(f"YOLO detectou {len(detections)} elementos em {image_path}")
             return detections
 
         except Exception as e:
-            logger.error(f"Erro na detecÃ§Ã£o YOLO: {e}")
+            logger.error(f"Erro na detecção YOLO: {e}")
             return []
 
     def get_summary(self, detections: List[Dict[str, Any]]) -> str:
-        """Gera uma descriÃ§Ã£o textual do que foi visto"""
+        """Gera uma descrição textual do que foi visto"""
         if not detections:
-            return "Nenhum elemento visual identificado alÃ©m de texto."
-            
-        summary_parts = []
+            return "Nenhum elemento visual identificado além de texto."
+
+        summary_parts: List[str] = []
         labels = [d['label'] for d in detections]
         unique_labels = set(labels)
-        
+
         for label in unique_labels:
             count = labels.count(label)
             summary_parts.append(f"{count} {label}(s)")
-            
+
         return "Elementos visuais identificados: " + ", ".join(summary_parts)
 
-# InstÃ¢ncia global
+
+# Instância global (a inicialização tentará carregar o Ultralytics apenas se ativado)
 ui_detector = UIDetector()

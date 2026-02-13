@@ -6,7 +6,7 @@ Valida se o projeto pode rodar em qualquer PC
 
 import os
 import sys
-import json
+
 from pathlib import Path
 
 def validate_portability():
@@ -31,7 +31,7 @@ def validate_portability():
             if result.strip():
                 lines = result.strip().split('\n')
                 issues.extend(lines[:5])  # Limitar a 5 exemplos
-        except:
+        except Exception:
             pass
 
     # 2. Verificar estrutura de arquivos
