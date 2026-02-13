@@ -1,5 +1,5 @@
 """
-🚀 INSTALADOR TOTAL JARVIS 5.0 - VERSÃO ULTRA RESILIENTE (FIXED VERSION)
+INSTALADOR TOTAL JARVIS 5.0 - VERSAO ULTRA RESILIENTE (FIXED VERSION)
 Corrigido: dlib wheel name, PyTorch >=2.4, face_recognition_models
 """
 import os
@@ -20,7 +20,7 @@ class TotalInstaller:
         # Detecção dinâmica do ROOT (scripts/install/total_installer.py -> root)
         self.project_root = Path(__file__).parent.parent.parent
         self.setup_logging()
-        self.logger.info(f"📍 Projeto detectado em: {self.project_root}")
+        self.logger.info(f"[INFO] Projeto detectado em: {self.project_root}")
         
     def setup_logging(self):
         """Configura logging ultra robusto"""
@@ -54,7 +54,7 @@ class TotalInstaller:
     def run_command(self, cmd, skip_capture=False):
         """Executa comando de forma segura com tratamento de encoding resiliente"""
         try:
-            self.logger.info(f"⚡ Executando: {' '.join(cmd[:5])}...")
+            self.logger.info(f"++ Executando: {' '.join(cmd[:5])}...")
             
             if skip_capture:
                 # Streaming mode: deixa o processo imprimir direto no terminal
@@ -64,19 +64,32 @@ class TotalInstaller:
             
             # Captura binária para evitar crashes de decode no pipe do Windows
             result = subprocess.run(cmd, check=True, capture_output=True, text=False)
-            return result.stdout.decode('utf-8', errors='replace')
+            
+            # Decode com fallback robusto para Windows
+            stdout = ""
+            if result.stdout:
+                try:
+                    stdout = result.stdout.decode('utf-8')
+                except UnicodeDecodeError:
+                    try:
+                        stdout = result.stdout.decode('cp1252', errors='replace')
+                    except:
+                        stdout = result.stdout.decode('utf-8', errors='replace')
+            
+            return stdout
         except subprocess.CalledProcessError as e:
             if not skip_capture:
+                err_msg = ""
                 err_msg = e.stderr.decode('utf-8', errors='replace') if e.stderr else "Unknown error"
-                self.logger.error(f"❌ Falha: {err_msg[:500]}")
+                self.logger.error(f"[ERR] Falha: {err_msg[:500]}")
             raise
         except Exception as e:
-            self.logger.error(f"❌ Erro inesperado: {e}")
+            self.logger.error(f"[ERR] Erro inesperado: {e}")
             raise
 
     def install_pytorch_correct(self):
         """Instala PyTorch versão CORRETA (>=2.4)"""
-        self.logger.info("🧠 Instalando PyTorch 2.4+...")
+        self.logger.info("[SYS] Instalando PyTorch 2.4+...")
         
         # REMOVE versão antiga para evitar conflitos (Seguro contra encoding)
         try:
@@ -87,14 +100,14 @@ class TotalInstaller:
         
         # Instala versão NOVA (CPU ou CUDA)
         if self._check_cuda():
-            self.logger.info("🎮 GPU detectada! Instalando PyTorch 2.4+ CUDA 12.1...")
+            self.logger.info("[GPU] GPU detectada! Instalando PyTorch 2.4+ CUDA 12.1...")
             torch_cmd = [
                 sys.executable, "-m", "pip", "install",
                 "torch>=2.4.0", "torchvision>=0.19.0", "torchaudio>=2.4.0",
                 "--index-url", "https://download.pytorch.org/whl/cu121"
             ]
         else:
-            self.logger.info("💻 CPU detectada. Instalando PyTorch 2.4.1+cpu (Stable)...")
+            self.logger.info("[SYS] CPU detectada. Instalando PyTorch 2.4.1+cpu (Stable)...")
             torch_cmd = [
                 sys.executable, "-m", "pip", "install",
                 "torch==2.4.1+cpu", "torchvision==0.19.1+cpu", "torchaudio==2.4.1+cpu",
@@ -123,29 +136,29 @@ class TotalInstaller:
             wheel_path = os.path.join(temp_dir, target_name)
             
             try:
-                self.logger.info(f"📦 Baixando dlib wheel: {target_name}")
+                self.logger.info(f"[DOWN] Baixando dlib wheel: {target_name}")
                 urllib.request.urlretrieve(url, wheel_path)
                 if os.path.exists(wheel_path):
                     return wheel_path
             except Exception as e:
-                self.logger.warning(f"⚠️ Falha ao baixar de {url}: {e}")
+                self.logger.warning(f"[WARN] Falha ao baixar de {url}: {e}")
                 continue
         
         return None
 
     def install_face_recognition_complete(self):
         """Instala face_recognition COMPLETO"""
-        self.logger.info("👤 Instalando face_recognition completo...")
+        self.logger.info("[SYS] Instalando face_recognition completo...")
         
         # 1. Instala modelos primeiro (via GIT como solicitado)
-        self.logger.info("📦 Instalando face_recognition_models via git...")
+        self.logger.info("[DOWN] Instalando face_recognition_models via git...")
         try:
             self.run_command([
                 sys.executable, "-m", "pip", "install",
                 "git+https://github.com/ageitgey/face_recognition_models"
             ], skip_capture=True)
         except Exception as e:
-            self.logger.error(f"❌ Falha ao instalar modelos via git: {e}. Tentando via pip padrão...")
+            self.logger.error(f"[ERR] Falha ao instalar modelos via git: {e}. Tentando via pip padrao...")
             try:
                 self.run_command([sys.executable, "-m", "pip", "install", "face-recognition-models"], skip_capture=True)
             except:
@@ -159,7 +172,7 @@ class TotalInstaller:
 
     def install_all(self):
         """Instala TUDO na ordem correta"""
-        self.logger.info("🚀 INICIANDO INSTALAÇÃO JARVIS 5.0 (CORRIGIDA)")
+        self.logger.info("[START] INICIANDO INSTALACAO JARVIS 5.0 (CORRIGIDA)")
         
         # 1. Update PIP
         self.run_command([sys.executable, "-m", "pip", "install", "--upgrade", "pip"], skip_capture=True)
@@ -168,59 +181,87 @@ class TotalInstaller:
         self.install_pytorch_correct()
         
         # 3. Dependências básicas
-        self.logger.info("📦 Instalando dependências básicas...")
-        basic_deps = ["numpy==1.26.4", "pandas", "scipy", "pyyaml", "python-dotenv", "PyQt6", "customtkinter", "pillow", "opencv-python", "mss", "ultralytics", "easyocr"]
+        self.logger.info("[DOWN] Instalando dependencias basicas...")
+        basic_deps = ["numpy==1.26.4", "pandas", "scipy", "pyyaml", "python-dotenv", "PyQt6", "customtkinter", "pillow", "opencv-python", "mss"]
         for dep in basic_deps:
             try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
             except: pass
         
+        # Forçar NumPy 1.26.4 ANTES de instalar ultralytics/easyocr
+        try: self.run_command([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy==1.26.4"], skip_capture=True)
+        except: pass
+        
+        # Instalar ultralytics após NumPy correto
+        try: self.run_command([sys.executable, "-m", "pip", "install", "ultralytics"], skip_capture=True)
+        except: pass
+        
+        # Instalar easyocr após NumPy correto
+        try: self.run_command([sys.executable, "-m", "pip", "install", "easyocr"], skip_capture=True)
+        except: pass
+        
+        # Forçar NumPy correto novamente após easyocr
+        try: self.run_command([sys.executable, "-m", "pip", "install", "--force-reinstall", "numpy==1.26.4"], skip_capture=True)
+        except: pass
+        
         # 4. dlib via wheel CORRETO
         dlib_wheel = self._download_dlib_wheel()
         if dlib_wheel and os.path.exists(dlib_wheel):
-            self.logger.info(f"🧠 Instalando dlib via wheel local: {dlib_wheel}")
+            self.logger.info(f"[SYS] Instalando dlib via wheel local: {dlib_wheel}")
             try:
                 self.run_command([sys.executable, "-m", "pip", "install", dlib_wheel], skip_capture=True)
             except Exception as e:
-                self.logger.error(f"❌ Falha ao instalar wheel: {e}")
+                self.logger.error(f"[ERR] Falha ao instalar wheel: {e}")
         else:
-            self.logger.warning("⚠️ Não foi possível baixar um wheel compatível. Tentando dlib-bin...")
+            self.logger.warning("[WARN] Nao foi possivel baixar um wheel compativel. Tentando dlib-bin...")
             try: self.run_command([sys.executable, "-m", "pip", "install", "dlib-bin"], skip_capture=True)
             except: pass
         
         # 5. face_recognition COMPLETO
         self.install_face_recognition_complete()
         
-        # 6. Restante das dependências
-        self.logger.info("📦 Instalando dependências restantes (Voz, Web, etc.)...")
+        # 5.5. Dependências faltantes críticas (resemblyzer, etc.)
+        self.logger.info("[SYS] Instalando dependencias faltantes criticas...")
+        critical_missing = ["typing", "webrtcvad>=2.0.10"]
+        for dep in critical_missing:
+            try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
+            except: pass
+
+        # 6. Restante das dependencias
+        self.logger.info("[DOWN] Instalando dependencias restantes (Voz, Web, etc.)...")
+        
+        # Install packages that might pull NumPy 2.x with --no-deps
+        numpy_conflicting = ["optimum-intel[openvino,nncf]>=1.18.0", "openvino-dev>=2024.1.0", "onnxruntime>=1.17.0,<1.18.0"]
+        for dep in numpy_conflicting:
+            try: self.run_command([sys.executable, "-m", "pip", "install", dep, "--no-deps"], skip_capture=True)
+            except: pass
+
+        # Install remaining packages normally
         remaining = [
-            "transformers", "tokenizers", "sentence-transformers", "accelerate",
+            "transformers>=4.36,<4.54", "tokenizers", "sentence-transformers", "accelerate",
             "SpeechRecognition", "pyaudio", "pyttsx3", "edge-tts", "librosa", "soundfile", 
             "faster-whisper", "webrtcvad-wheels", "pytesseract", "pyautogui", "psutil", 
-            "chromadb", "fastapi", "uvicorn[standard]", "pywin32", "wmi", "tkinter-tooltip",
-            "onnxruntime>=1.17.0", "openvino-dev>=2024.1.0", "optimum-intel[openvino,nncf]>=1.18.0",
-            "screen-brightness-control"
+            "chromadb", "fastapi", "uvicorn[standard]", "pywin32", "wmi", 
+            "screen-brightness-control", "resemblyzer"
         ]
         
-        # Resemblyzer e suas dependências críticas
-        try:
-            self.logger.info("📦 Instalando dependências críticas para Resemblyzer...")
-            # 'typing' é um backport, em 3.11 pode causar confusão mas alguns pacotes legados pedem
-            for d in ["webrtcvad-wheels", "typing"]:
-                self.run_command([sys.executable, "-m", "pip", "install", d], skip_capture=True)
-            self.run_command([sys.executable, "-m", "pip", "install", "resemblyzer", "--no-deps"], skip_capture=True)
-        except:
-            pass
-
         for dep in remaining:
             try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)
             except: pass
 
+
         # 7. Final Fix for Transformers & NumPy (Enforce version < 2)
-        self.logger.info("🧹 Finalizing environment constraints...")
-        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "numpy<2", "-U"], skip_capture=True)
+        self.logger.info("[FIX] Finalizing environment constraints...")
+        self.run_command([sys.executable, "-m", "pip", "install", "transformers", "tokenizers", "-U"], skip_capture=True)
+        
+        # FORCE NumPy 1.26.4 at the VERY END after all packages are installed
+        self.logger.info("[FIX] Enforcing NumPy 1.26.4 compatibility...")
+        try: self.run_command([sys.executable, "-m", "pip", "uninstall", "numpy", "-y"], skip_capture=True)
+        except: pass
+        try: self.run_command([sys.executable, "-m", "pip", "install", "numpy==1.26.4", "--no-deps"], skip_capture=True)
+        except: pass
         
         self.logger.info("\n" + "="*50)
-        self.logger.info("🎉 INSTALAÇÃO FINALIZADA!")
+        self.logger.info("[DONE] INSTALACAO FINALIZADA!")
         self.logger.info("Por favor, execute: python test_install.py")
         self.logger.info("="*50)
 
