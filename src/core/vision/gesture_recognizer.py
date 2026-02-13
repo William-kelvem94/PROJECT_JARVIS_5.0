@@ -23,7 +23,31 @@ except (ImportError, OSError) as e:
     np = None
     logging.warning(f"⚠️ numpy not available in gesture_recognizer: {e}")
 
-logger = logging.getLogger(__name__)
+# Lazy import mediapipe to avoid startup issues
+MEDIAPIPE_AVAILABLE = False
+mp = None
+
+def _ensure_mediapipe():
+    global MEDIAPIPE_AVAILABLE, mp
+    if not MEDIAPIPE_AVAILABLE and mp is None:
+        try:
+            import mediapipe as mp
+            MEDIAPIPE_AVAILABLE = True
+        except (ImportError, OSError) as e:
+            MEDIAPIPE_AVAILABLE = False
+            mp = None
+            logger.debug(f"MediaPipe não encontrado. Reconhecimento de gestos desativado: {e}")
+
+try:
+    # Just check if mediapipe can be imported without actually importing it
+    import importlib
+    mediapipe_spec = importlib.util.find_spec("mediapipe")
+    if mediapipe_spec is not None:
+        MEDIAPIPE_AVAILABLE = True
+    else:
+        MEDIAPIPE_AVAILABLE = False
+except:
+    MEDIAPIPE_AVAILABLE = False
 
 class GestureType(Enum):
     """Tipos de gestos reconhecidos"""
@@ -58,8 +82,11 @@ class GestureRecognizer:
     def _init_mediapipe(self):
         """Inicializa MediaPipe Hands"""
         try:
-            import mediapipe as mp
-            
+            _ensure_mediapipe()
+            if not MEDIAPIPE_AVAILABLE or mp is None:
+                logger.warning("MediaPipe failed to load")
+                return
+                
             self.mp_hands = mp.solutions.hands
             self.mp_drawing = mp.solutions.drawing_utils
             
@@ -79,7 +106,7 @@ class GestureRecognizer:
         except Exception as e:
             logger.warning(f"⚠️ Erro ao inicializar MediaPipe: {e}")
     
-    def detect_gesture(self, frame: np.ndarray) -> Optional[GestureType]:
+    def detect_gesture(self, frame) -> Optional[GestureType]:
         """
         Detecta gesto em um frame
         

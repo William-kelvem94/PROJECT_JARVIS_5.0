@@ -67,9 +67,11 @@ except ImportError:
     VOSK_AVAILABLE = False
 
 try:
-    from TTS.api import TTS
+    # Only import TTS if explicitly needed to avoid heavy dependencies
+    import TTS
     TTS_AVAILABLE = True
 except ImportError:
+    TTS = None
     TTS_AVAILABLE = False
     logging.warning("TTS (Coqui) não disponível. Voice cloning desativado.")
 
@@ -960,5 +962,14 @@ class VoiceController:
         else:
             threading.Thread(target=_cloned_speak, daemon=True).start()
 
+voice_controller = None
+
+def get_voice_controller():
+    """Get or create voice controller instance"""
+    global voice_controller
+    if voice_controller is None:
+        voice_controller = VoiceController()
+    return voice_controller
+
 # Instância global
-voice_controller = VoiceController()
+voice_controller = get_voice_controller()

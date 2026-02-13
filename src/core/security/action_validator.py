@@ -80,13 +80,21 @@ class ActionValidator:
 
         return True, "Action Approved"
 
-    def safe_file_edit(self, filepath: str, new_content: str) -> bool:
+    def safe_file_edit(self, filepath: str, new_content: str, reason: str = "Unspecified autonomous update") -> bool:
         """
         Edição segura com Backup Automático (.bak).
         HITL Integration: Deve ser chamado apenas após validação.
         """
         try:
             path = Path(filepath)
+            
+            # Log evolution through EvolutionEngine
+            try:
+                from src.core.management.evolution_engine import evolution_engine
+                evolution_engine.log_evolution(filepath, "File modification", reason)
+            except Exception as e:
+                logger.warning(f"Failed to log evolution event: {e}")
+
             if not path.exists():
                 # Arquivo novo não precisa de backup, mas precisa de validação de path
                 safe, reason = self.validate_action("write_file", filepath)
@@ -165,5 +173,5 @@ class ActionValidator:
             logger.error(f"⚠️ Erro no Security Sentinel: {e}. Bloqueando por falha aberta.")
             return False # Fail-safe closed
 
-# Instância Global singleton removida para evitar execução durante import
-# action_validator = ActionValidator()
+# Instância Global
+action_validator = ActionValidator()

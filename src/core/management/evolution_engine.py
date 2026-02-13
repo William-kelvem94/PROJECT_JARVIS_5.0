@@ -54,6 +54,29 @@ class EvolutionEngine:
         # Trigger Pulse Update
         self.generate_pulse_report()
 
+    def log_evolution(self, file_path: str, change_description: str, rationale: str):
+        """
+        Records an autonomous system evolution (code change).
+        Saves to data/EVOLUTION.log for human auditing.
+        """
+        log_file = Path("data/EVOLUTION.log")
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        log_entry = (
+            f"[{timestamp}] EVOLUTION EVENT\n"
+            f"Target: {file_path}\n"
+            f"Action: {change_description}\n"
+            f"Rationale: {rationale}\n"
+            f"{'-'*50}\n"
+        )
+        
+        try:
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(log_entry)
+            logger.info(f"🧬 Evolution logged for {file_path}")
+        except Exception as e:
+            logger.error(f"Failed to log evolution: {e}")
+
     def _load_failures(self):
         file = self.data_dir / "failure_history.json"
         if file.exists():
