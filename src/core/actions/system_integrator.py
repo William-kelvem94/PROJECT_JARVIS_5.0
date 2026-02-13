@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - System Integrator (God Mode)
@@ -40,7 +40,7 @@ try:
 except ImportError:
     PSUTIL_AVAILABLE = False
     psutil = None
-    logger.warning("⚠️ psutil not available - system monitoring disabled")
+    logger.warning("âš ï¸ psutil not available - system monitoring disabled")
 
 WINDOWS = sys.platform == 'win32'
 
@@ -54,7 +54,7 @@ if WINDOWS:
         PYWIN32_AVAILABLE = True
     except ImportError:
         PYWIN32_AVAILABLE = False
-        logger.warning("⚠️ pywin32 not available - Windows API features disabled")
+        logger.warning("âš ï¸ pywin32 not available - Windows API features disabled")
         
     try:
         from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume, ISimpleAudioVolume
@@ -63,19 +63,19 @@ if WINDOWS:
         PYCAW_AVAILABLE = True
     except ImportError:
         PYCAW_AVAILABLE = False
-        logger.warning("⚠️ pycaw not available - audio control disabled")
+        logger.warning("âš ï¸ pycaw not available - audio control disabled")
         
     try:
         import wmi
         WMI_AVAILABLE = True
     except ImportError:
         WMI_AVAILABLE = False
-        logger.warning("⚠️ WMI not available - advanced hardware features disabled")
+        logger.warning("âš ï¸ WMI not available - advanced hardware features disabled")
 else:
     PYWIN32_AVAILABLE = False
     PYCAW_AVAILABLE = False
     WMI_AVAILABLE = False
-    logger.warning("⚠️ Non-Windows platform - God Mode features limited")
+    logger.warning("âš ï¸ Non-Windows platform - God Mode features limited")
 
 
 # ============================================================================
@@ -166,11 +166,11 @@ class SystemIntegrator:
             'lsass.exe', 'winlogon.exe', 'explorer.exe', 'smss.exe'
         }
         
-        logger.info("✅ System Integrator initialized")
+        logger.info("âœ… System Integrator initialized")
         logger.info(f"   Platform: {'Windows' if WINDOWS else 'Other'}")
-        logger.info(f"   pywin32: {'✅' if PYWIN32_AVAILABLE else '❌'}")
-        logger.info(f"   pycaw: {'✅' if PYCAW_AVAILABLE else '❌'}")
-        logger.info(f"   WMI: {'✅' if WMI_AVAILABLE else '❌'}")
+        logger.info(f"   pywin32: {'âœ…' if PYWIN32_AVAILABLE else 'âŒ'}")
+        logger.info(f"   pycaw: {'âœ…' if PYCAW_AVAILABLE else 'âŒ'}")
+        logger.info(f"   WMI: {'âœ…' if WMI_AVAILABLE else 'âŒ'}")
         
     def _audit_log(self, operation: SystemOperation, details: str, success: bool = True):
         """Log privileged operation to audit file"""
@@ -228,7 +228,7 @@ class SystemIntegrator:
                             f"{proc_name} -> {volume*100:.0f}%"
                         )
                         
-                        logger.info(f"✅ Set volume for {proc_name}: {volume*100:.0f}%")
+                        logger.info(f"âœ… Set volume for {proc_name}: {volume*100:.0f}%")
                         return True
                         
             logger.warning(f"No audio session found for: {app_name}")
@@ -318,7 +318,7 @@ class SystemIntegrator:
                             f"{process_name} (PID: {pid})"
                         )
                         
-                        logger.info(f"✅ Killed process: {process_name} (PID: {pid})")
+                        logger.info(f"âœ… Killed process: {process_name} (PID: {pid})")
                         killed = True
                         
                 except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
@@ -488,7 +488,7 @@ class SystemIntegrator:
                 f"{window.title}"
             )
             
-            logger.info(f"✅ Focused window: {window.title}")
+            logger.info(f"âœ… Focused window: {window.title}")
             return True
             
         except Exception as e:
@@ -513,7 +513,7 @@ class SystemIntegrator:
                 f"{window.title}"
             )
             
-            logger.info(f"✅ Minimized window: {window.title}")
+            logger.info(f"âœ… Minimized window: {window.title}")
             return True
             
         except Exception as e:
@@ -539,7 +539,7 @@ class SystemIntegrator:
                 f"{window.title}"
             )
             
-            logger.info(f"✅ Closed window: {window.title}")
+            logger.info(f"âœ… Closed window: {window.title}")
             return True
             
         except Exception as e:
@@ -643,7 +643,7 @@ class SystemIntegrator:
             
     def cleanup(self):
         """Cleanup resources"""
-        logger.info("✅ System Integrator cleaned up")
+        logger.info("âœ… System Integrator cleaned up")
 
 
 # Singleton instance
@@ -719,7 +719,7 @@ if __name__ == "__main__":
     print("\n" + "="*60)
     print("Capabilities:")
     for cap, available in si.capabilities.items():
-        print(f"   {cap}: {'✅' if available else '❌'}")
+        print(f"   {cap}: {'âœ…' if available else 'âŒ'}")
     print("="*60 + "\n")
     
     si.cleanup()

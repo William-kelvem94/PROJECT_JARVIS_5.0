@@ -1,4 +1,4 @@
-"""
+﻿"""
 Real-time Metrics Dashboard for JARVIS Learning Systems.
 
 Provides comprehensive monitoring and visualization of training progress,
@@ -541,8 +541,8 @@ class WebDashboard:
 </head>
 <body>
     <div class="header">
-        <h1>🤖 JARVIS Learning Metrics Dashboard</h1>
-        <button class="refresh-button" onclick="refreshData()">🔄 Refresh</button>
+        <h1>ðŸ¤– JARVIS Learning Metrics Dashboard</h1>
+        <button class="refresh-button" onclick="refreshData()">ðŸ”„ Refresh</button>
         <span id="lastUpdate"></span>
     </div>
 

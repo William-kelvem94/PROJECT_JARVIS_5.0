@@ -1,6 +1,6 @@
-"""
-A Bússola de Estudo (Curiosity Engine)
-Busca conhecimento acadêmico, gera perguntas e expande a base de conhecimento.
+﻿"""
+A BÃºssola de Estudo (Curiosity Engine)
+Busca conhecimento acadÃªmico, gera perguntas e expande a base de conhecimento.
 """
 
 import logging
@@ -31,25 +31,25 @@ class CuriosityEngine:
         self.is_studying = False
         self.skill_gaps = [] # Lista de habilidades faltando
         
-        # Whitelist de APIs Acadêmicas
+        # Whitelist de APIs AcadÃªmicas
         self.ARXIV_API_URL = "http://export.arxiv.org/api/query"
         
-        # Inicializar com alguns tópicos padrão se vazio
+        # Inicializar com alguns tÃ³picos padrÃ£o se vazio
         self.study_backlog.put("Artificial General Intelligence architecture")
         self.study_backlog.put("Self-supervised learning robotics")
 
     def register_skill_gap(self, feature_name: str):
-        """Registra uma falha de execução como lacuna de conhecimento para o Dream Cycle"""
+        """Registra uma falha de execuÃ§Ã£o como lacuna de conhecimento para o Dream Cycle"""
         gap_msg = f"Gap de Habilidade: Como implementar ou usar {feature_name} no Windows"
         if gap_msg not in self.skill_gaps:
             self.skill_gaps.append(gap_msg)
             self.study_backlog.put(gap_msg)
-            logger.info(f"🧠 Skill Gap registrado: {feature_name}. Pesquisa agendada para o próximo ciclo de sonho.")
+            logger.info(f"ðŸ§  Skill Gap registrado: {feature_name}. Pesquisa agendada para o prÃ³ximo ciclo de sonho.")
             
-            # Armazenar no ChromaDB se disponível (para persistência entre boots)
+            # Armazenar no ChromaDB se disponÃ­vel (para persistÃªncia entre boots)
             if self.memory_manager:
                 self.memory_manager.save_to_vault(
-                    f"O sistema tentou mas não soube como executar: {feature_name}", 
+                    f"O sistema tentou mas nÃ£o soube como executar: {feature_name}", 
                     metadata={"type": "skill_gap", "status": "pending_research"}
                 )
 
@@ -59,12 +59,12 @@ class CuriosityEngine:
     def run_study_cycle(self):
         """Loop de estudo executado durante o sonho"""
         self.is_studying = True
-        logger.info("📚 Iniciando ciclo de estudos...")
+        logger.info("ðŸ“š Iniciando ciclo de estudos...")
         
         while self.is_studying and not self.study_backlog.empty():
             try:
                 topic = self.study_backlog.get(timeout=1)
-                logger.info(f"🔍 Investigando tópico: {topic}")
+                logger.info(f"ðŸ” Investigando tÃ³pico: {topic}")
                 
                 # 1. Buscar conhecimento
                 papers = self.fetch_academic_data(topic)
@@ -76,9 +76,9 @@ class CuriosityEngine:
                     summary = paper['summary']
                     full_text = f"Title: {title}\nSummary: {summary}\nLink: {paper['link']}"
                     
-                    logger.info(f"📖 Lendo artigo: {title}")
+                    logger.info(f"ðŸ“– Lendo artigo: {title}")
                     
-                    # 2. Salvar na Memória (RAG Hierárquico)
+                    # 2. Salvar na MemÃ³ria (RAG HierÃ¡rquico)
                     if self.memory_manager:
                         # Cofre (Deep Storage)
                         self.memory_manager.save_to_vault(full_text, metadata={"source": "arxiv", "topic": topic})
@@ -98,7 +98,7 @@ class CuriosityEngine:
                 logger.error(f"Erro no ciclo de estudo: {e}")
                 time.sleep(10)
 
-        logger.info("💤 Ciclo de estudos finalizado (Backlog vazio ou interrupção).")
+        logger.info("ðŸ’¤ Ciclo de estudos finalizado (Backlog vazio ou interrupÃ§Ã£o).")
         self.is_studying = False
 
     def fetch_academic_data(self, topic: str) -> List[Dict]:
@@ -119,7 +119,7 @@ class CuriosityEngine:
                 logger.warning(f"Erro API arXiv: {response.status_code}")
                 return []
         except Exception as e:
-            logger.error(f"Falha na conexão com arXiv: {e}")
+            logger.error(f"Falha na conexÃ£o com arXiv: {e}")
             return []
 
     def _parse_arxiv_response(self, xml_content) -> List[Dict]:
@@ -143,11 +143,11 @@ class CuriosityEngine:
         if not OLLAMA_AVAILABLE: return
 
         try:
-            logger.info("🤔 Gerando novas perguntas de pesquisa...")
+            logger.info("ðŸ¤” Gerando novas perguntas de pesquisa...")
             prompt = (
-                f"Analise o seguinte resumo científico:\n\n{text_content}\n\n"
-                "Gere exatamente 3 perguntas técnicas complexas que este texto NÃO respondeu, "
-                "para investigarmos amanhã. Formato: Apenas as perguntas, uma por linha."
+                f"Analise o seguinte resumo cientÃ­fico:\n\n{text_content}\n\n"
+                "Gere exatamente 3 perguntas tÃ©cnicas complexas que este texto NÃƒO respondeu, "
+                "para investigarmos amanhÃ£. Formato: Apenas as perguntas, uma por linha."
             )
             
             # Usar modelo do tier ultra
@@ -162,10 +162,10 @@ class CuriosityEngine:
             for q in questions[:3]:
                 if len(q) > 10:
                     self.study_backlog.put(q)
-                    logger.info(f"💡 Nova curiosidade adicionada: {q}")
+                    logger.info(f"ðŸ’¡ Nova curiosidade adicionada: {q}")
                     
         except Exception as e:
             logger.error(f"Erro ao gerar perguntas: {e}")
 
-# Instância Global placeholder (Será instanciada no main com memory_manager)
+# InstÃ¢ncia Global placeholder (SerÃ¡ instanciada no main com memory_manager)
 curiosity_engine = None

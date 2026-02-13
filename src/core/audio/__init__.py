@@ -1,17 +1,17 @@
-"""
-🔊 JARVIS Audio System - Sistema de Áudio
+﻿"""
+ðŸ”Š JARVIS Audio System - Sistema de Ãudio
 ========================================
 
-Este módulo contém todas as funcionalidades de processamento de áudio do JARVIS,
-incluindo reconhecimento de voz, síntese de fala, processamento avançado de áudio
+Este mÃ³dulo contÃ©m todas as funcionalidades de processamento de Ã¡udio do JARVIS,
+incluindo reconhecimento de voz, sÃ­ntese de fala, processamento avanÃ§ado de Ã¡udio
 e controle de voz em tempo real.
 
-Módulos Principais:
+MÃ³dulos Principais:
 - voice_controller: Controle de voz principal
 - voice_filter: Filtragem e processamento de voz
-- advanced_speech_processor: Processamento avançado de fala
-- realtime_transcription: Transcrição em tempo real
-- enhanced_audio: Áudio aprimorado
+- advanced_speech_processor: Processamento avanÃ§ado de fala
+- realtime_transcription: TranscriÃ§Ã£o em tempo real
+- enhanced_audio: Ãudio aprimorado
 
 Exemplo de uso:
     from src.core.audio import VoiceController, VoiceFilter

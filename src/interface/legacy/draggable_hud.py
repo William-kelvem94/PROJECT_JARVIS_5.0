@@ -1,7 +1,7 @@
-# ============================================================================
+﻿# ============================================================================
 # JARVIS SINGULARITY - Draggable HUD Component
 # ============================================================================
-# HUD moderno, arrastável, com suporte multi-monitor
+# HUD moderno, arrastÃ¡vel, com suporte multi-monitor
 # ============================================================================
 
 import json
@@ -13,13 +13,13 @@ from PyQt6.QtGui import QFont
 
 class DraggableHUD(QWidget):
     """
-    HUD arrastável com glassmorphism e animações.
+    HUD arrastÃ¡vel com glassmorphism e animaÃ§Ãµes.
     
     FEATURES:
-    - Arrastável com mouse
-    - Salva posição entre sessões
+    - ArrastÃ¡vel com mouse
+    - Salva posiÃ§Ã£o entre sessÃµes
     - Suporte multi-monitor
-    - Animações de estado
+    - AnimaÃ§Ãµes de estado
     - Glassmorphism design
     """
     
@@ -32,7 +32,7 @@ class DraggableHUD(QWidget):
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
-            Qt.WindowType.Tool  # Não aparece na taskbar
+            Qt.WindowType.Tool  # NÃ£o aparece na taskbar
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
@@ -50,7 +50,7 @@ class DraggableHUD(QWidget):
         # ---------------------------------------------------------------------
         # DRAG HANDLE
         # ---------------------------------------------------------------------
-        drag_handle = QLabel("⋮⋮ JARVIS ⋮⋮")
+        drag_handle = QLabel("â‹®â‹® JARVIS â‹®â‹®")
         drag_handle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         drag_handle.setStyleSheet("""
             QLabel {
@@ -78,7 +78,7 @@ class DraggableHUD(QWidget):
         reactor_layout.setContentsMargins(0, 0, 0, 0)
         reactor_layout.addStretch()
         
-        self.reactor = QLabel("◉")
+        self.reactor = QLabel("â—‰")
         self.reactor.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.reactor.setStyleSheet("""
             QLabel {
@@ -182,14 +182,14 @@ class DraggableHUD(QWidget):
             event.accept()
     
     def mouseReleaseEvent(self, event):
-        """Finaliza arrasto e salva posição"""
+        """Finaliza arrasto e salva posiÃ§Ã£o"""
         if event.button() == Qt.MouseButton.LeftButton:
             self._is_dragging = False
             self._save_position()
             event.accept()
     
     def _save_position(self):
-        """Salva posição atual"""
+        """Salva posiÃ§Ã£o atual"""
         try:
             pos_file = Path("data/hud_position.json")
             pos_file.parent.mkdir(parents=True, exist_ok=True)
@@ -197,17 +197,17 @@ class DraggableHUD(QWidget):
             with open(pos_file, 'w') as f:
                 json.dump({'x': self.x(), 'y': self.y()}, f)
         except Exception as e:
-            print(f"⚠️ Erro ao salvar posição: {e}")
+            print(f"âš ï¸ Erro ao salvar posiÃ§Ã£o: {e}")
     
     def _load_position(self):
-        """Carrega posição salva ou centraliza"""
+        """Carrega posiÃ§Ã£o salva ou centraliza"""
         try:
             pos_file = Path("data/hud_position.json")
             if pos_file.exists():
                 with open(pos_file, 'r') as f:
                     pos = json.load(f)
                 
-                # Verificar se está em tela válida
+                # Verificar se estÃ¡ em tela vÃ¡lida
                 screens = QApplication.screens()
                 for screen in screens:
                     geom = screen.geometry()
@@ -272,7 +272,7 @@ class DraggableHUD(QWidget):
             self.pulse_value = 1.0
     
     def _pulse_reactor(self):
-        """Animação de pulsação"""
+        """AnimaÃ§Ã£o de pulsaÃ§Ã£o"""
         self.pulse_value += 0.02 * self.pulse_direction
         if self.pulse_value >= 1.0 or self.pulse_value <= 0.5:
             self.pulse_direction *= -1
@@ -283,9 +283,9 @@ class DraggableHUD(QWidget):
     def show_response(self, response: str):
         """Mostra resposta"""
         display = response[:200] + "..." if len(response) > 200 else response
-        self.response_label.setText(f"💬 {display}")
+        self.response_label.setText(f"ðŸ’¬ {display}")
     
     def show_error(self, error: str):
         """Mostra erro"""
         self.update_state("error")
-        self.response_label.setText(f"❌ {error}")
+        self.response_label.setText(f"âŒ {error}")

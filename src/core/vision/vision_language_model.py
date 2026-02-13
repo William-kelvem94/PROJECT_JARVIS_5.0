@@ -1,7 +1,7 @@
-"""
+﻿"""
 JARVIS 5.0 - Vision-Language Model (VQA)
 =========================================
-Sprint 3: Multimodal Básico
+Sprint 3: Multimodal BÃ¡sico
 Vision Question Answering using Gemini Vision API
 
 USAGE: from src.core.vision_language_model import VisionQA
@@ -70,14 +70,14 @@ class VisionQA:
             self.api_key = os.getenv('GEMINI_API_KEY')
         
         if not self.api_key:
-            logger.warning("⚠️ No Gemini API key provided - Vision QA will operate in LOCAL mode only.")
+            logger.warning("âš ï¸ No Gemini API key provided - Vision QA will operate in LOCAL mode only.")
             return # Local reasoning handled in analyze_screenshot() fallback
         
         # Configure GenAI
         try:
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel(model)
-            logger.info(f"✅ Vision QA initialized ({model})")
+            logger.info(f"âœ… Vision QA initialized ({model})")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini: {e}")
     
@@ -130,7 +130,7 @@ Answer JSON-style or as a direct natural response as JARVIS."""
             
         except Exception as e:
             logger.error(f"Local VQA fallback failed: {e}")
-            return "William, desculpe, meu sistema de visão local falhou ao analisar esta imagem."
+            return "William, desculpe, meu sistema de visÃ£o local falhou ao analisar esta imagem."
     
     def describe_scene(self, image_path: str, detail_level: str = 'normal') -> Optional[str]:
         """
@@ -337,32 +337,32 @@ if __name__ == "__main__":
     vqa = VisionQA(api_key=args.api_key)
     
     if not vqa.model:
-        print("❌ Failed to initialize Vision QA")
+        print("âŒ Failed to initialize Vision QA")
         sys.exit(1)
     
     # Execute requested action
     if args.question:
-        print(f"\n❓ Question: {args.question}")
+        print(f"\nâ“ Question: {args.question}")
         answer = vqa.analyze_screenshot(args.image, args.question)
-        print(f"💡 Answer: {answer}")
+        print(f"ðŸ’¡ Answer: {answer}")
     
     elif args.describe:
-        print("\n🖼️  Describing scene...")
+        print("\nðŸ–¼ï¸  Describing scene...")
         description = vqa.describe_scene(args.image, detail_level='detailed')
-        print(f"📝 Description:\n{description}")
+        print(f"ðŸ“ Description:\n{description}")
     
     elif args.objects:
-        print("\n🔍 Detecting objects...")
+        print("\nðŸ” Detecting objects...")
         objects = vqa.detect_objects(args.image)
         if objects:
-            print(f"📦 Found {len(objects)} objects:")
+            print(f"ðŸ“¦ Found {len(objects)} objects:")
             for obj in objects:
                 print(f"  - {obj}")
     
     elif args.text:
-        print("\n📄 Extracting text...")
+        print("\nðŸ“„ Extracting text...")
         text = vqa.read_text(args.image)
-        print(f"📝 Text:\n{text}")
+        print(f"ðŸ“ Text:\n{text}")
     
     else:
-        print("❌ Please specify an action: --question, --describe, --objects, or --text")
+        print("âŒ Please specify an action: --question, --describe, --objects, or --text")

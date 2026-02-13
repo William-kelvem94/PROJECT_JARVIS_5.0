@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import QWidget, QMenu, QApplication
+﻿from PyQt6.QtWidgets import QWidget, QMenu, QApplication
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QFont, QAction
 
 class MiniOrb(QWidget):
     """
-    Orb flutuante minimalista para controle rápido e feedback visual.
+    Orb flutuante minimalista para controle rÃ¡pido e feedback visual.
     Substitui o HUD intrusivo quando em modo 'discreto'.
     """
     
@@ -26,7 +26,7 @@ class MiniOrb(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedSize(100, 100)
         
-        # Posição inicial (canto superior direito por padrão, mas salvo depois)
+        # PosiÃ§Ã£o inicial (canto superior direito por padrÃ£o, mas salvo depois)
         # self.move(100, 100) 
         
         # Estado visual
@@ -38,7 +38,7 @@ class MiniOrb(QWidget):
         self.customContextMenuRequested.connect(self.show_context_menu)
         
     def setup_animations(self):
-        # Placeholder para animações futuras (QPropertyAnimation)
+        # Placeholder para animaÃ§Ãµes futuras (QPropertyAnimation)
         pass
         
     def paintEvent(self, event):
@@ -68,7 +68,7 @@ class MiniOrb(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(center, radius + 10, radius + 10)
         
-        # Desenha orb principal (Núcleo)
+        # Desenha orb principal (NÃºcleo)
         painter.setBrush(QBrush(color))
         painter.drawEllipse(center, radius, radius)
         
@@ -80,18 +80,18 @@ class MiniOrb(QWidget):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawEllipse(center, radius - 5, radius - 5)
         
-        # Ícone interno baseado no estado
+        # Ãcone interno baseado no estado
         icons = {
-            "idle": "⚡",
-            "listening": "🎤",
-            "thinking": "🧠",
-            "speaking": "🗣️",
-            "error": "⚠️"
+            "idle": "âš¡",
+            "listening": "ðŸŽ¤",
+            "thinking": "ðŸ§ ",
+            "speaking": "ðŸ—£ï¸",
+            "error": "âš ï¸"
         }
         
         painter.setFont(QFont("Segoe UI Emoji", 20))
         painter.setPen(QPen(Qt.GlobalColor.white))
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, icons.get(self.state, "⚡"))
+        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, icons.get(self.state, "âš¡"))
     
     def mousePressEvent(self, event):
         """Inicia arrasto"""
@@ -107,36 +107,36 @@ class MiniOrb(QWidget):
         """Finaliza arrasto"""
         self.drag_position = None
         
-        # Se foi clique rápido (sem arrasto significativo), alterna listening
-        # (Lógica simplificada aqui, idealmente mediria tempo/distância)
+        # Se foi clique rÃ¡pido (sem arrasto significativo), alterna listening
+        # (LÃ³gica simplificada aqui, idealmente mediria tempo/distÃ¢ncia)
     
     def show_context_menu(self, pos):
-        """Menu de contexto com ações rápidas"""
+        """Menu de contexto com aÃ§Ãµes rÃ¡pidas"""
         menu = QMenu(self)
         menu.setStyleSheet("""
             QMenu { background-color: #050a10; color: #fff; border: 1px solid #00c3ff; }
             QMenu::item:selected { background-color: #00c3ff; color: #000; }
         """)
         
-        toggle_listen = QAction("🎤 Alternar Escuta", self)
-        # Conectar ações reais depois
+        toggle_listen = QAction("ðŸŽ¤ Alternar Escuta", self)
+        # Conectar aÃ§Ãµes reais depois
         menu.addAction(toggle_listen)
         
         menu.addSeparator()
         
         from src.interface.window_manager import InterfaceMode
         
-        dash_action = QAction("🎛️ Abrir Painel", self)
+        dash_action = QAction("ðŸŽ›ï¸ Abrir Painel", self)
         dash_action.triggered.connect(lambda: self.mode_switch_requested.emit(InterfaceMode.DASHBOARD))
         menu.addAction(dash_action)
         
-        hud_action = QAction("🎯 Abrir HUD", self)
+        hud_action = QAction("ðŸŽ¯ Abrir HUD", self)
         hud_action.triggered.connect(lambda: self.mode_switch_requested.emit(InterfaceMode.HUD_OVERLAY))
         menu.addAction(hud_action)
         
         menu.addSeparator()
         
-        quit_action = QAction("🚪 Sair", self)
+        quit_action = QAction("ðŸšª Sair", self)
         app = QApplication.instance()
         if app:
             quit_action.triggered.connect(app.quit)

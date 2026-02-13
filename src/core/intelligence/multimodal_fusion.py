@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Multimodal Fusion System
 ======================================
-Sprint 3: Multimodal Básico
-Late fusion de contextos: texto + imagem + áudio
+Sprint 3: Multimodal BÃ¡sico
+Late fusion de contextos: texto + imagem + Ã¡udio
 
 USAGE: from src.core.multimodal_fusion import MultimodalFusion
 """
@@ -36,7 +36,7 @@ class MultimodalFusion:
     
     Combines embeddings from:
     - Text: Jina Embeddings v3 (1024-dim)
-    - Vision: Gemini Vision output → embed as text
+    - Vision: Gemini Vision output â†’ embed as text
     - Audio: Emotion scores as weights
     
     Fusion strategy: Weighted average
@@ -66,16 +66,16 @@ class MultimodalFusion:
             try:
                 logger.info(f"Loading Multimodal Fusion model: {embedding_model}")
                 self.embedding_model = SentenceTransformer(embedding_model)
-                logger.info(f"✅ Multimodal Fusion initialized ({embedding_model})")
+                logger.info(f"âœ… Multimodal Fusion initialized ({embedding_model})")
             except Exception as e:
                 logger.warning(f"Failed to load primary model {embedding_model}: {e}")
                 try:
                     alt_model = "jinaai/jina-embeddings-v3"
                     self.embedding_model = SentenceTransformer(alt_model, trust_remote_code=True)
                     self.embedding_dim = 1024
-                    logger.info(f"✅ Multimodal Fusion loaded with fallback: {alt_model}")
+                    logger.info(f"âœ… Multimodal Fusion loaded with fallback: {alt_model}")
                 except Exception as e2:
-                    logger.error(f"❌ All multimodal embedding models failed: {e2}")
+                    logger.error(f"âŒ All multimodal embedding models failed: {e2}")
         else:
             logger.error("sentence-transformers not available")
     
@@ -282,23 +282,23 @@ if __name__ == "__main__":
     fusion = MultimodalFusion()
     
     if not fusion.embedding_model:
-        print("❌ Failed to initialize multimodal fusion")
+        print("âŒ Failed to initialize multimodal fusion")
         sys.exit(1)
     
-    print("\n🔮 Multimodal Fusion - Examples")
+    print("\nðŸ”® Multimodal Fusion - Examples")
     print("="*70)
     
     # Example 1: Text only
-    print("\n1️⃣  Text only:")
-    text_emb = fusion.fuse_contexts(text="Como está o clima hoje?")
+    print("\n1ï¸âƒ£  Text only:")
+    text_emb = fusion.fuse_contexts(text="Como estÃ¡ o clima hoje?")
     if text_emb is not None:
         print(f"   Embedding shape: {text_emb.shape}")
         print(f"   Norm: {np.linalg.norm(text_emb):.4f}")
     
     # Example 2: Text + Image
-    print("\n2️⃣  Text + Image description:")
+    print("\n2ï¸âƒ£  Text + Image description:")
     multimodal_emb = fusion.fuse_contexts(
-        text="Mostre gráfico de vendas",
+        text="Mostre grÃ¡fico de vendas",
         image_description="A bar chart showing sales data with increasing trend from January to December"
     )
     if multimodal_emb is not None:
@@ -306,7 +306,7 @@ if __name__ == "__main__":
         print(f"   Similarity to text-only: {fusion.similarity(text_emb, multimodal_emb):.4f}")
     
     # Example 3: Text + Image + Audio
-    print("\n3️⃣  Text + Image + Audio emotion:")
+    print("\n3ï¸âƒ£  Text + Image + Audio emotion:")
     full_multimodal_emb = fusion.fuse_contexts(
         text="Preciso ajuda urgente",
         image_description="Error dialog box with red warning icon",
@@ -317,7 +317,7 @@ if __name__ == "__main__":
         print(f"   Similarity to text-only: {fusion.similarity(text_emb, full_multimodal_emb):.4f}")
     
     # Example 4: Adaptive fusion
-    print("\n4️⃣  Adaptive fusion (context: search):")
+    print("\n4ï¸âƒ£  Adaptive fusion (context: search):")
     search_emb = fusion.adaptive_fusion(
         text="Python tutorial",
         image_description="Screenshot of code editor",
@@ -326,4 +326,4 @@ if __name__ == "__main__":
     if search_emb is not None:
         print(f"   Embedding shape: {search_emb.shape}")
     
-    print("\n✅ Multimodal fusion examples complete!")
+    print("\nâœ… Multimodal fusion examples complete!")

@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Microsoft Account + Device Identification System
 =====================================================================
-Sistema completo de identificação da conta Microsoft real + hardware fingerprinting
-para autorizar dispositivos na rede democrática.
+Sistema completo de identificaÃ§Ã£o da conta Microsoft real + hardware fingerprinting
+para autorizar dispositivos na rede democrÃ¡tica.
 """
 
 import winreg
@@ -25,7 +25,7 @@ import os
 
 @dataclass
 class MicrosoftAccountInfo:
-    """📋 Informações da conta Microsoft"""
+    """ðŸ“‹ InformaÃ§Ãµes da conta Microsoft"""
     account_email: str
     account_type: str  # "local", "microsoft", "azure_ad", "work_school"
     display_name: str
@@ -36,7 +36,7 @@ class MicrosoftAccountInfo:
     
 @dataclass 
 class DeviceFingerprint:
-    """🔒 Fingerprint único do dispositivo"""
+    """ðŸ”’ Fingerprint Ãºnico do dispositivo"""
     device_id: str
     computer_name: str
     hardware_hash: str
@@ -49,7 +49,7 @@ class DeviceFingerprint:
 
 @dataclass
 class GoogleDriveAuth:
-    """☁️ Autenticação do Google Drive"""
+    """â˜ï¸ AutenticaÃ§Ã£o do Google Drive"""
     is_authenticated: bool
     account_email: str
     drive_path: Optional[str] = None
@@ -58,13 +58,13 @@ class GoogleDriveAuth:
 
 class MicrosoftDeviceIdentifier:
     """
-    🔐 MICROSOFT ACCOUNT + DEVICE IDENTIFICATION SYSTEM
+    ðŸ” MICROSOFT ACCOUNT + DEVICE IDENTIFICATION SYSTEM
     
     Identifica:
-    - Conta Microsoft real (não só usuário local)
-    - Hardware fingerprinting único
-    - Google Drive da mesma conta (se disponível)
-    - Autorização para rede democrática
+    - Conta Microsoft real (nÃ£o sÃ³ usuÃ¡rio local)
+    - Hardware fingerprinting Ãºnico
+    - Google Drive da mesma conta (se disponÃ­vel)
+    - AutorizaÃ§Ã£o para rede democrÃ¡tica
     """
     
     def __init__(self, config_path: str):
@@ -77,27 +77,27 @@ class MicrosoftDeviceIdentifier:
         self.device_fingerprint: Optional[DeviceFingerprint] = None
         self.google_drive_auth: Optional[GoogleDriveAuth] = None
         
-        # Cache para evitar detecções repetidas
+        # Cache para evitar detecÃ§Ãµes repetidas
         self._cache = {}
         
-        print("🔐 Microsoft Device Identifier inicializado")
+        print("ðŸ” Microsoft Device Identifier inicializado")
     
     def identify_complete_profile(self) -> Dict[str, Any]:
-        """🎯 IDENTIFICAÇÃO COMPLETA DO USUÁRIO + DISPOSITIVO"""
+        """ðŸŽ¯ IDENTIFICAÃ‡ÃƒO COMPLETA DO USUÃRIO + DISPOSITIVO"""
         
-        print("🔍 Iniciando identificação completa...")
+        print("ðŸ” Iniciando identificaÃ§Ã£o completa...")
         
         try:
             # 1. IDENTIFICAR CONTA MICROSOFT REAL
-            print("   👤 Detectando conta Microsoft...")
+            print("   ðŸ‘¤ Detectando conta Microsoft...")
             self.microsoft_account = self._detect_microsoft_account()
             
             # 2. CRIAR FINGERPRINT DO DISPOSITIVO
-            print("   🔒 Criando fingerprint do dispositivo...")
+            print("   ðŸ”’ Criando fingerprint do dispositivo...")
             self.device_fingerprint = self._create_device_fingerprint()
             
             # 3. VERIFICAR GOOGLE DRIVE
-            print("   ☁️ Verificando Google Drive...")
+            print("   â˜ï¸ Verificando Google Drive...")
             self.google_drive_auth = self._detect_google_drive()
             
             # 4. SALVAR CACHE
@@ -111,15 +111,15 @@ class MicrosoftDeviceIdentifier:
                 'is_authorized_for_democratic_network': self._is_authorized_for_democratic_network()
             }
             
-            print("✅ Identificação completa finalizada!")
+            print("âœ… IdentificaÃ§Ã£o completa finalizada!")
             return profile
             
         except Exception as e:
-            print(f"❌ Erro na identificação: {e}")
+            print(f"âŒ Erro na identificaÃ§Ã£o: {e}")
             return {'error': str(e)}
     
     def _detect_microsoft_account(self) -> MicrosoftAccountInfo:
-        """👤 DETECÇÃO AVANÇADA DA CONTA MICROSOFT"""
+        """ðŸ‘¤ DETECÃ‡ÃƒO AVANÃ‡ADA DA CONTA MICROSOFT"""
         
         account_info = MicrosoftAccountInfo(
             account_email="unknown",
@@ -129,23 +129,23 @@ class MicrosoftDeviceIdentifier:
         )
         
         try:
-            # 1. VERIFICAR SE É ADMINISTRADOR
+            # 1. VERIFICAR SE Ã‰ ADMINISTRADOR
             try:
                 import ctypes
                 account_info.is_administrator = ctypes.windll.shell32.IsUserAnAdmin() != 0
             except:
                 pass
             
-            # 2. TENTAR REGISTRY - LOGON UI (Última conta que fez login)
+            # 2. TENTAR REGISTRY - LOGON UI (Ãšltima conta que fez login)
             try:
                 key_path = r"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Authentication\\LogonUI"
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
                     try:
                         last_user, _ = winreg.QueryValueEx(key, "LastLoggedOnUser")
-                        if '@' in last_user:  # É uma conta Microsoft
+                        if '@' in last_user:  # Ã‰ uma conta Microsoft
                             account_info.account_email = last_user
                             account_info.account_type = "microsoft"
-                            print(f"   ✅ Conta Microsoft detectada: {last_user}")
+                            print(f"   âœ… Conta Microsoft detectada: {last_user}")
                     except FileNotFoundError:
                         pass
                     
@@ -155,7 +155,7 @@ class MicrosoftDeviceIdentifier:
                     except FileNotFoundError:
                         pass
             except Exception as e:
-                print(f"   ⚠️ Erro acessando Logon UI: {e}")
+                print(f"   âš ï¸ Erro acessando Logon UI: {e}")
             
             # 3. VERIFICAR AZURE AD JOIN
             try:
@@ -166,20 +166,20 @@ class MicrosoftDeviceIdentifier:
                         if tenant_id:
                             account_info.azure_tenant_id = tenant_id
                             account_info.account_type = "azure_ad"
-                            print(f"   🏢 Azure AD Tenant: {tenant_id}")
+                            print(f"   ðŸ¢ Azure AD Tenant: {tenant_id}")
                     except FileNotFoundError:
                         pass
             except FileNotFoundError:
-                pass  # Não é Azure AD joined
+                pass  # NÃ£o Ã© Azure AD joined
             
-            # 4. VERIFICAR VIA WMI (Contas de usuário)
+            # 4. VERIFICAR VIA WMI (Contas de usuÃ¡rio)
             try:
                 wmi_conn = wmi.WMI()
                 current_user = os.getenv('USERNAME')
                 
                 for user in wmi_conn.Win32_UserAccount():
                     if user.Name == current_user:
-                        if not user.LocalAccount:  # Conta de domínio/Microsoft
+                        if not user.LocalAccount:  # Conta de domÃ­nio/Microsoft
                             if account_info.account_email == "unknown":
                                 account_info.account_email = f"{user.Name}@{user.Domain}"
                                 account_info.account_type = "domain"
@@ -189,7 +189,7 @@ class MicrosoftDeviceIdentifier:
                         
                         break
             except Exception as e:
-                print(f"   ⚠️ Erro acessando WMI: {e}")
+                print(f"   âš ï¸ Erro acessando WMI: {e}")
             
             # 5. VERIFICAR WHOAMI (Fallback)
             try:
@@ -203,10 +203,10 @@ class MicrosoftDeviceIdentifier:
             except:
                 pass
             
-            # 6. SE AINDA É LOCAL, TENTAR DETECTAR VIA REGISTRY USERS
+            # 6. SE AINDA Ã‰ LOCAL, TENTAR DETECTAR VIA REGISTRY USERS
             if account_info.account_type == "local":
                 try:
-                    # Verificar se há contas Microsoft conectadas
+                    # Verificar se hÃ¡ contas Microsoft conectadas
                     users_key = r"SOFTWARE\\Microsoft\\IdentityCRL\\UserExtendedProperties"
                     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, users_key) as key:
                         # Enumerar subkeys para encontrar contas Microsoft
@@ -217,35 +217,35 @@ class MicrosoftDeviceIdentifier:
                                 if '@' in subkey_name:  # Parece email
                                     account_info.account_email = subkey_name
                                     account_info.account_type = "microsoft"
-                                    print(f"   ✅ Conta Microsoft via Identity: {subkey_name}")
+                                    print(f"   âœ… Conta Microsoft via Identity: {subkey_name}")
                                     break
                                 i += 1
                             except OSError:
                                 break
                 except Exception as e:
-                    print(f"   ⚠️ Erro acessando Identity Registry: {e}")
+                    print(f"   âš ï¸ Erro acessando Identity Registry: {e}")
             
-            # 7. FALLBACK: USAR INFORMAÇÕES BÁSICAS
+            # 7. FALLBACK: USAR INFORMAÃ‡Ã•ES BÃSICAS
             if account_info.account_email == "unknown":
                 account_info.account_email = f"{os.getenv('USERNAME', 'unknown')}@local"
                 account_info.display_name = os.getenv('USERNAME', 'unknown')
             
-            print(f"   📋 Resultado: {account_info.account_type} - {account_info.account_email}")
+            print(f"   ðŸ“‹ Resultado: {account_info.account_type} - {account_info.account_email}")
             
             return account_info
             
         except Exception as e:
-            print(f"❌ Erro detectando conta Microsoft: {e}")
+            print(f"âŒ Erro detectando conta Microsoft: {e}")
             return account_info
     
     def _create_device_fingerprint(self) -> DeviceFingerprint:
-        """🔒 CRIA FINGERPRINT ÚNICO DO DISPOSITIVO"""
+        """ðŸ”’ CRIA FINGERPRINT ÃšNICO DO DISPOSITIVO"""
         
         try:
-            # Informações básicas
+            # InformaÃ§Ãµes bÃ¡sicas
             computer_name = socket.gethostname()
             
-            # Coletar informações de hardware via WMI
+            # Coletar informaÃ§Ãµes de hardware via WMI
             fingerprint_data = {
                 'computer_name': computer_name,
                 'cpu_info': '',
@@ -287,12 +287,12 @@ class MicrosoftDeviceIdentifier:
                     break
                     
             except Exception as e:
-                print(f"   ⚠️ Erro coletando WMI: {e}")
-                # Fallback para métodos alternativos
+                print(f"   âš ï¸ Erro coletando WMI: {e}")
+                # Fallback para mÃ©todos alternativos
                 fingerprint_data['cpu_info'] = platform.processor()
                 fingerprint_data['motherboard_serial'] = str(uuid.getnode())  # MAC como fallback
             
-            # Criar hash único baseado no hardware
+            # Criar hash Ãºnico baseado no hardware
             hardware_string = (
                 f"{fingerprint_data['cpu_info']}_"
                 f"{fingerprint_data['motherboard_serial']}_"
@@ -303,11 +303,11 @@ class MicrosoftDeviceIdentifier:
             
             hardware_hash = hashlib.sha256(hardware_string.encode()).hexdigest()[:16]
             
-            # Gerar device_id único
+            # Gerar device_id Ãºnico
             device_id = f"{computer_name}_{hardware_hash}"
             
-            print(f"   🔒 Device ID: {device_id}")
-            print(f"   💾 Hardware Hash: {hardware_hash}")
+            print(f"   ðŸ”’ Device ID: {device_id}")
+            print(f"   ðŸ’¾ Hardware Hash: {hardware_hash}")
             
             return DeviceFingerprint(
                 device_id=device_id,
@@ -321,8 +321,8 @@ class MicrosoftDeviceIdentifier:
             )
             
         except Exception as e:
-            print(f"❌ Erro criando fingerprint: {e}")
-            # Fallback mínimo
+            print(f"âŒ Erro criando fingerprint: {e}")
+            # Fallback mÃ­nimo
             return DeviceFingerprint(
                 device_id=f"{socket.gethostname()}_{hashlib.md5(str(uuid.getnode()).encode()).hexdigest()[:8]}",
                 computer_name=socket.gethostname(),
@@ -334,7 +334,7 @@ class MicrosoftDeviceIdentifier:
             )
     
     def _detect_google_drive(self) -> GoogleDriveAuth:
-        """☁️ DETECTA GOOGLE DRIVE E AUTENTICAÇÃO"""
+        """â˜ï¸ DETECTA GOOGLE DRIVE E AUTENTICAÃ‡ÃƒO"""
         
         drive_auth = GoogleDriveAuth(
             is_authenticated=False,
@@ -343,7 +343,7 @@ class MicrosoftDeviceIdentifier:
         )
         
         try:
-            # 1. VERIFICAR SE GOOGLE DRIVE ESTÁ INSTALADO
+            # 1. VERIFICAR SE GOOGLE DRIVE ESTÃ INSTALADO
             possible_paths = [
                 os.path.expanduser("~\\Google Drive"),
                 os.path.expanduser("~\\GoogleDrive"),
@@ -394,7 +394,7 @@ class MicrosoftDeviceIdentifier:
                 except FileNotFoundError:
                     pass
             except Exception as e:
-                print(f"   ⚠️ Erro verificando Registry Google Drive: {e}")
+                print(f"   âš ï¸ Erro verificando Registry Google Drive: {e}")
             
             # 4. VERIFICAR VIA CREDSTORE (Windows Credential Manager)
             try:
@@ -418,28 +418,28 @@ class MicrosoftDeviceIdentifier:
                                     break
                                     
             except Exception as e:
-                print(f"   ⚠️ Erro verificando Credential Manager: {e}")
+                print(f"   âš ï¸ Erro verificando Credential Manager: {e}")
             
             if drive_auth.is_authenticated:
-                print(f"   ✅ Google Drive detectado: {drive_auth.account_email}")
+                print(f"   âœ… Google Drive detectado: {drive_auth.account_email}")
                 if drive_auth.drive_path:
-                    print(f"   📁 Path: {drive_auth.drive_path}")
+                    print(f"   ðŸ“ Path: {drive_auth.drive_path}")
             else:
-                print(f"   ❌ Google Drive não autenticado")
+                print(f"   âŒ Google Drive nÃ£o autenticado")
             
             return drive_auth
             
         except Exception as e:
-            print(f"❌ Erro detectando Google Drive: {e}")
+            print(f"âŒ Erro detectando Google Drive: {e}")
             return drive_auth
     
     def _is_authorized_for_democratic_network(self) -> bool:
-        """🏛️ VERIFICA SE DISPOSITIVO ESTÁ AUTORIZADO PARA REDE DEMOCRÁTICA"""
+        """ðŸ›ï¸ VERIFICA SE DISPOSITIVO ESTÃ AUTORIZADO PARA REDE DEMOCRÃTICA"""
         
         if not self.microsoft_account:
             return False
         
-        # Verificar se é uma das contas autorizadas
+        # Verificar se Ã© uma das contas autorizadas
         authorized_accounts = [
             "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + "",
             "williamkelvem64@outlook.com", 
@@ -447,24 +447,24 @@ class MicrosoftDeviceIdentifier:
             "williamkelvem64@live.com"
         ]
         
-        # Verificar email exato ou se contém o usuário autorizado
+        # Verificar email exato ou se contÃ©m o usuÃ¡rio autorizado
         account_email = self.microsoft_account.account_email.lower()
         
         for authorized in authorized_accounts:
             if authorized in account_email or account_email in authorized:
                 return True
         
-        # Verificar se o usuário local é 'willi' (fallback)
+        # Verificar se o usuÃ¡rio local Ã© 'willi' (fallback)
         if 'willi' in account_email.lower():
             return True
         
         return False
     
     def create_device_authorization_token(self) -> Optional[str]:
-        """🎟️ CRIA TOKEN DE AUTORIZAÇÃO PARA O DISPOSITIVO"""
+        """ðŸŽŸï¸ CRIA TOKEN DE AUTORIZAÃ‡ÃƒO PARA O DISPOSITIVO"""
         
         if not self._is_authorized_for_democratic_network():
-            print("❌ Dispositivo não autorizado para rede democrática")
+            print("âŒ Dispositivo nÃ£o autorizado para rede democrÃ¡tica")
             return None
         
         try:
@@ -497,21 +497,21 @@ class MicrosoftDeviceIdentifier:
             
             token = f"JARVIS_DEMOCRATIC_{token_hash[:32]}"
             
-            print(f"🎟️ Token de autorização criado: {token[:20]}...")
+            print(f"ðŸŽŸï¸ Token de autorizaÃ§Ã£o criado: {token[:20]}...")
             return token
             
         except Exception as e:
-            print(f"❌ Erro criando token: {e}")
+            print(f"âŒ Erro criando token: {e}")
             return None
     
     def get_google_drive_jarvis_folder(self) -> Optional[str]:
-        """📁 RETORNA PASTA JARVIS NO GOOGLE DRIVE (SE DISPONÍVEL)"""
+        """ðŸ“ RETORNA PASTA JARVIS NO GOOGLE DRIVE (SE DISPONÃVEL)"""
         
         if not (self.google_drive_auth and self.google_drive_auth.sync_enabled):
             return None
         
         try:
-            # Determinar usuário para pasta
+            # Determinar usuÃ¡rio para pasta
             if self.microsoft_account:
                 username = self.microsoft_account.account_email.split('@')[0]
             else:
@@ -521,7 +521,7 @@ class MicrosoftDeviceIdentifier:
             if self.google_drive_auth and self.google_drive_auth.drive_path:
                 jarvis_folder = Path(self.google_drive_auth.drive_path) / f"JARVIS_{username}"
                 
-                # Criar pasta se não existir
+                # Criar pasta se nÃ£o existir
                 jarvis_folder.mkdir(exist_ok=True)
                 
                 # Criar subpastas
@@ -529,16 +529,16 @@ class MicrosoftDeviceIdentifier:
                 for subfolder in subfolders:
                     (jarvis_folder / subfolder).mkdir(exist_ok=True)
                 
-                print(f"📁 Pasta JARVIS: {jarvis_folder}")
+                print(f"ðŸ“ Pasta JARVIS: {jarvis_folder}")
                 return str(jarvis_folder)
             return None
             
         except Exception as e:
-            print(f"❌ Erro criando pasta JARVIS no Google Drive: {e}")
+            print(f"âŒ Erro criando pasta JARVIS no Google Drive: {e}")
             return None
     
     def _save_identity_cache(self):
-        """💾 SALVA CACHE DE IDENTIDADE"""
+        """ðŸ’¾ SALVA CACHE DE IDENTIDADE"""
         
         try:
             cache_data = {
@@ -552,10 +552,10 @@ class MicrosoftDeviceIdentifier:
                 json.dump(cache_data, f, indent=2, ensure_ascii=False)
             
         except Exception as e:
-            print(f"❌ Erro salvando cache: {e}")
+            print(f"âŒ Erro salvando cache: {e}")
     
     def load_cached_identity(self) -> bool:
-        """📁 CARREGA IDENTIDADE DO CACHE"""
+        """ðŸ“ CARREGA IDENTIDADE DO CACHE"""
         
         if not self.cache_path.exists():
             return False
@@ -564,7 +564,7 @@ class MicrosoftDeviceIdentifier:
             with open(self.cache_path, 'r', encoding='utf-8') as f:
                 cache_data = json.load(f)
             
-            # Verificar se cache não é muito antigo (1 hora)
+            # Verificar se cache nÃ£o Ã© muito antigo (1 hora)
             last_update = datetime.fromisoformat(cache_data.get('last_update', '2000-01-01'))
             if (datetime.now() - last_update).total_seconds() > 3600:
                 return False
@@ -579,17 +579,17 @@ class MicrosoftDeviceIdentifier:
             if cache_data.get('google_drive_auth'):
                 self.google_drive_auth = GoogleDriveAuth(**cache_data['google_drive_auth'])
             
-            print("📁 Identidade carregada do cache")
+            print("ðŸ“ Identidade carregada do cache")
             return True
             
         except Exception as e:
-            print(f"❌ Erro carregando cache: {e}")
+            print(f"âŒ Erro carregando cache: {e}")
             return False
     
-    # ===== MÉTODOS PÚBLICOS =====
+    # ===== MÃ‰TODOS PÃšBLICOS =====
     
     def initialize(self) -> bool:
-        """🚀 INICIALIZA IDENTIFICAÇÃO"""
+        """ðŸš€ INICIALIZA IDENTIFICAÃ‡ÃƒO"""
         if self.load_cached_identity():
             return True
         
@@ -597,29 +597,29 @@ class MicrosoftDeviceIdentifier:
         return "error" not in result
 
     def is_authorized_device(self) -> bool:
-        """✅ VERIFICA SE DISPOSITIVO ESTÁ AUTORIZADO"""
+        """âœ… VERIFICA SE DISPOSITIVO ESTÃ AUTORIZADO"""
         if not self.microsoft_account:
             return False
         return self._is_authorized_for_democratic_network()
     
     def get_identity_summary(self) -> str:
-        """📋 RESUMO DA IDENTIDADE DO DISPOSITIVO"""
+        """ðŸ“‹ RESUMO DA IDENTIDADE DO DISPOSITIVO"""
         
         if not (self.microsoft_account and self.device_fingerprint):
-            return "❌ Identidade não detectada"
+            return "âŒ Identidade nÃ£o detectada"
         
-        auth_status = "✅ AUTORIZADO" if self.is_authorized_device() else "❌ NÃO AUTORIZADO"
-        google_status = "✅ CONECTADO" if (self.google_drive_auth and self.google_drive_auth.is_authenticated) else "❌ DESCONECTADO"
+        auth_status = "âœ… AUTORIZADO" if self.is_authorized_device() else "âŒ NÃƒO AUTORIZADO"
+        google_status = "âœ… CONECTADO" if (self.google_drive_auth and self.google_drive_auth.is_authenticated) else "âŒ DESCONECTADO"
         
         summary = f"""
-🔐 IDENTIDADE DO DISPOSITIVO
-════════════════════════════════════
-👤 Conta Microsoft: {self.microsoft_account.account_email}
-🏷️ Tipo: {self.microsoft_account.account_type}
-📱 Dispositivo: {self.device_fingerprint.computer_name}
-🔒 Device ID: {self.device_fingerprint.device_id}
-🏛️ Rede Democrática: {auth_status}
-☁️ Google Drive: {google_status}
+ðŸ” IDENTIDADE DO DISPOSITIVO
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+ðŸ‘¤ Conta Microsoft: {self.microsoft_account.account_email}
+ðŸ·ï¸ Tipo: {self.microsoft_account.account_type}
+ðŸ“± Dispositivo: {self.device_fingerprint.computer_name}
+ðŸ”’ Device ID: {self.device_fingerprint.device_id}
+ðŸ›ï¸ Rede DemocrÃ¡tica: {auth_status}
+â˜ï¸ Google Drive: {google_status}
 """
         return summary
 

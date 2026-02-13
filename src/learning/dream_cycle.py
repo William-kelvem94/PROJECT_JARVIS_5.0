@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dream Cycle for JARVIS AGI Machine Learning Core.
 
 This module implements autonomous nighttime training through idle detection,
@@ -482,7 +482,7 @@ class DreamCycle:
         
         gaps = self.gap_analyzer.analyze_gaps()
         if not gaps:
-            reflect_logger.reflect("✨ Neural saturation complete. No gaps detected.", layer="AGI-RESEARCH")
+            reflect_logger.reflect("âœ¨ Neural saturation complete. No gaps detected.", layer="AGI-RESEARCH")
             return
 
         reflect_logger.reflect(f"Detected {len(gaps)} cognitive vacuums. Processing priority topics.", layer="AGI-RESEARCH")
@@ -492,7 +492,7 @@ class DreamCycle:
             topic = plan['topic']
             priority = gap['priority']
             
-            reflect_logger.reflect(f"🔬 TOPIC: {topic.upper()}\nPriority: {priority}/10", layer="RESEARCH-INIT")
+            reflect_logger.reflect(f"ðŸ”¬ TOPIC: {topic.upper()}\nPriority: {priority}/10", layer="RESEARCH-INIT")
             
             # 1. HUB_DISCOVERY (Strict Source: Hugging Face)
             try:
@@ -533,16 +533,16 @@ class DreamCycle:
             try:
                 from src.core.intelligence.ai_agent import ai_agent
                 
-                teacher_model = "llama3.1:8b" # Modelo superior para síntese
+                teacher_model = "llama3.1:8b" # Modelo superior para sÃ­ntese
                 reflect_logger.reflect(f"Requesting Knowledge Distillation from {teacher_model.upper()} (Ollama)...", layer="TEACHER-DISTILL")
                 
-                # Gera dados sintéticos usando o agente local
+                # Gera dados sintÃ©ticos usando o agente local
                 self._generate_synthetic_data(topic, context=web_context, teacher_model=teacher_model)
                 
             except Exception as e:
                 logger.error(f"Distillation failed: {e}")
             
-            logger.info(f"✅ Research for '{topic}' completed. Knowledge synthesized.")
+            logger.info(f"âœ… Research for '{topic}' completed. Knowledge synthesized.")
 
     def _generate_synthetic_data(self, topic: str, context: str = "", teacher_model: str = "llama3.1:8b"):
         """Generates synthetic preference pairs for the local brain using gathered context"""
@@ -559,9 +559,9 @@ class DreamCycle:
         prompt = f"Com base no seguinte contexto sobre {topic}: '{context}', gere um par DPO (Chosen/Rejected) para treinamento de uma IA. Retorne apenas JSON no formato: {{\"chosen\": \"...\", \"rejected\": \"...\"}}"
         
         try:
-            raw_response = ai_agent._call_ollama(prompt, model=teacher_model, system_prompt="Você é um Professor de IA especializado em Synthetic Data Generation.")
+            raw_response = ai_agent._call_ollama(prompt, model=teacher_model, system_prompt="VocÃª Ã© um Professor de IA especializado em Synthetic Data Generation.")
             
-            # Limpar resposta para JSON se necessário
+            # Limpar resposta para JSON se necessÃ¡rio
             import re
             json_match = re.search(r'\{.*\}', raw_response, re.DOTALL)
             if json_match:
@@ -569,11 +569,11 @@ class DreamCycle:
             else:
                 distilled_data = {
                     "chosen": raw_response,
-                    "rejected": f"Eu acho que {topic} é algo irrelevante."
+                    "rejected": f"Eu acho que {topic} Ã© algo irrelevante."
                 }
             
             dummy_data = {
-                "prompt": f"Explique o conceito de {topic} com base na documentação oficial.",
+                "prompt": f"Explique o conceito de {topic} com base na documentaÃ§Ã£o oficial.",
                 "chosen": distilled_data.get("chosen", ""),
                 "rejected": distilled_data.get("rejected", "")
             }

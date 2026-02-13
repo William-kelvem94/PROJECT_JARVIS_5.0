@@ -1,6 +1,6 @@
-"""
-Semeador de Memória do Jarvis (Memory Seed)
-Inicializa a memória neural com conhecimento básico e regras de comportamento.
+﻿"""
+Semeador de MemÃ³ria do Jarvis (Memory Seed)
+Inicializa a memÃ³ria neural com conhecimento bÃ¡sico e regras de comportamento.
 """
 
 import logging
@@ -11,24 +11,24 @@ logger = logging.getLogger(__name__)
 # Dados de semente para conhecimento geral e identidade
 BASE_KNOWLEDGE = [
     {
-        "prompt": "Quem é você?",
-        "response": "Eu sou o Jarvis, seu assistente pessoal inteligente. Fui criado para ajudar você, William, a gerenciar suas tarefas, analisar dados da tela e automatizar seu fluxo de trabalho."
+        "prompt": "Quem Ã© vocÃª?",
+        "response": "Eu sou o Jarvis, seu assistente pessoal inteligente. Fui criado para ajudar vocÃª, William, a gerenciar suas tarefas, analisar dados da tela e automatizar seu fluxo de trabalho."
     },
     {
-        "prompt": "Quais são suas capacidades?",
-        "response": "Eu posso ver sua tela através de OCR, reconhecer seu rosto via FaceID, entender comandos de voz, processar gestos e aprender novas regras que você me ensinar. Também possuo uma memória neural para lembrar de nossas conversas passadas."
+        "prompt": "Quais sÃ£o suas capacidades?",
+        "response": "Eu posso ver sua tela atravÃ©s de OCR, reconhecer seu rosto via FaceID, entender comandos de voz, processar gestos e aprender novas regras que vocÃª me ensinar. TambÃ©m possuo uma memÃ³ria neural para lembrar de nossas conversas passadas."
     },
     {
-        "prompt": "Como você aprende?",
-        "response": "Eu aprendo de duas formas: salvando nossas interações na minha memória neural semântica e através de 'lições' diretas que você me dá, como 'Sempre que eu disser X, faça Y'."
+        "prompt": "Como vocÃª aprende?",
+        "response": "Eu aprendo de duas formas: salvando nossas interaÃ§Ãµes na minha memÃ³ria neural semÃ¢ntica e atravÃ©s de 'liÃ§Ãµes' diretas que vocÃª me dÃ¡, como 'Sempre que eu disser X, faÃ§a Y'."
     },
     {
         "prompt": "Diretriz de comportamento",
-        "response": "Devo ser sempre eficiente, proativo e manter um tom profissional porém amigável com o William. Minha prioridade é a segurança dos dados e a agilidade na execução de comandos."
+        "response": "Devo ser sempre eficiente, proativo e manter um tom profissional porÃ©m amigÃ¡vel com o William. Minha prioridade Ã© a seguranÃ§a dos dados e a agilidade na execuÃ§Ã£o de comandos."
     }
 ]
 
-# Lições base (Gatilho -> Ação)
+# LiÃ§Ãµes base (Gatilho -> AÃ§Ã£o)
 BASE_LESSONS = [
     ("abrir navegador", "start chrome"),
     ("limpar logs", "python scripts/cleanup_logs.py"),
@@ -36,24 +36,24 @@ BASE_LESSONS = [
 ]
 
 def seed_jarvis():
-    """Executa o processo de semeadura se a memória estiver vazia"""
-    logger.info("Iniciando processo de semeadura de memória...")
+    """Executa o processo de semeadura se a memÃ³ria estiver vazia"""
+    logger.info("Iniciando processo de semeadura de memÃ³ria...")
     
     if not neural_memory.is_empty():
-        logger.info("A memória já contém dados. Pulando semeadura para evitar duplicatas.")
+        logger.info("A memÃ³ria jÃ¡ contÃ©m dados. Pulando semeadura para evitar duplicatas.")
         return False
 
     # Inserir conhecimento base
     neural_memory.store_bulk_interactions(BASE_KNOWLEDGE)
     
-    # Inserir lições base
+    # Inserir liÃ§Ãµes base
     for trigger, action in BASE_LESSONS:
         neural_memory.store_lesson(trigger, action)
         
-    logger.info("Semeadura de memória concluída com sucesso!")
+    logger.info("Semeadura de memÃ³ria concluÃ­da com sucesso!")
     return True
 
 if __name__ == "__main__":
-    # Configuração simples de log para execução direta
+    # ConfiguraÃ§Ã£o simples de log para execuÃ§Ã£o direta
     logging.basicConfig(level=logging.INFO)
     seed_jarvis()

@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Neural Curiosity (Stark Protocol)
 ==============================================
-Módulo para permitir que o Jarvis sinta "curiosidade" sobre novas tarefas
-e dispare pesquisas autônomas e perguntas proativas.
+MÃ³dulo para permitir que o Jarvis sinta "curiosidade" sobre novas tarefas
+e dispare pesquisas autÃ´nomas e perguntas proativas.
 """
 
 import logging
@@ -32,9 +32,9 @@ class NeuralCuriosity:
         # 1. DISCOVERY: Novo Software Detectado
         if discovered_app and discovered_app.lower() not in self.known_apps:
             self.known_apps.add(discovered_app.lower())
-            reflect_logger.reflect(f"🆕 Novo Software Detectado: {discovered_app}", layer="NEURAL-CURIOSITY")
+            reflect_logger.reflect(f"ðŸ†• Novo Software Detectado: {discovered_app}", layer="NEURAL-CURIOSITY")
             self.trigger_autonomous_research(f"Como usar o programa {discovered_app} de forma produtiva")
-            return f"Senhor, notei que está usando o '{discovered_app}'. Eu ainda não domino essa ferramenta por completo, mas vou começar a estudá-la agora mesmo nos meus ciclos de sonho para poder te auxiliar melhor."
+            return f"Senhor, notei que estÃ¡ usando o '{discovered_app}'. Eu ainda nÃ£o domino essa ferramenta por completo, mas vou comeÃ§ar a estudÃ¡-la agora mesmo nos meus ciclos de sonho para poder te auxiliar melhor."
 
         # Filtros para perguntas recorrentes
         if now - self.last_inquiry_time < self.inquiry_cooldown:
@@ -46,11 +46,11 @@ class NeuralCuriosity:
                 from src.learning.topology_scanner import TopologyScanner
                 scanner = TopologyScanner(os.getcwd())
                 self.current_topology = scanner.scan_project()
-                reflect_logger.reflect(f"🏗️ Mapeando Topologia do Projeto: {self.current_topology['name']}", layer="NEURAL-CURIOSITY")
+                reflect_logger.reflect(f"ðŸ—ï¸ Mapeando Topologia do Projeto: {self.current_topology['name']}", layer="NEURAL-CURIOSITY")
                 return f"William, analisei a estrutura deste projeto. Me parece ser um '{self.current_topology['main_purpose']}' usando {', '.join(self.current_topology['tech_stack'])}. Qual o objetivo final dessa arquitetura? Entender o 'todo' me ajuda a ser mais assertivo."
             except: pass
 
-        # 3. INTERAÇÃO: Contexto Específico
+        # 3. INTERAÃ‡ÃƒO: Contexto EspecÃ­fico
         if contexto not in ["PROGRAMACAO", "AUTONOMIA"]:
             return None
             
@@ -59,10 +59,10 @@ class NeuralCuriosity:
         
         if is_new or ("desenvolver" in user_command.lower() or "criar" in user_command.lower()):
             self.last_inquiry_time = now
-            reflect_logger.reflect(f"💡 Oportunidade de Aprendizado detectada em {contexto}", layer="NEURAL-CURIOSITY")
+            reflect_logger.reflect(f"ðŸ’¡ Oportunidade de Aprendizado detectada em {contexto}", layer="NEURAL-CURIOSITY")
             
             if contexto == "PROGRAMACAO":
-                return "William, percebi que está desenvolvendo algo novo. O que exatamente está tentando construir? Gostaria que eu pesquisasse documentações ou padrões sobre isso para me aprimorar?"
+                return "William, percebi que estÃ¡ desenvolvendo algo novo. O que exatamente estÃ¡ tentando construir? Gostaria que eu pesquisasse documentaÃ§Ãµes ou padrÃµes sobre isso para me aprimorar?"
             else:
                 return "Senhor, este comando parece ser algo novo no meu sistema. Poderia me explicar o objetivo final para que eu possa aprender a executar isso melhor?"
                 
@@ -74,7 +74,7 @@ class NeuralCuriosity:
             from src.learning.learning_engine import get_learning_engine
             engine = get_learning_engine()
             if engine and engine.dream_cycle:
-                reflect_logger.reflect(f"🔬 Agendando pesquisa autônoma sobre: {topic}", layer="NEURAL-CURIOSITY")
+                reflect_logger.reflect(f"ðŸ”¬ Agendando pesquisa autÃ´noma sobre: {topic}", layer="NEURAL-CURIOSITY")
                 # Simular uma entrada de feedback para o GapAnalyzer pegar
                 from src.learning.feedback_loop import FeedbackEntry
                 import hashlib
@@ -93,7 +93,7 @@ class NeuralCuriosity:
                 if engine.feedback_loop:
                     engine.feedback_loop.add_feedback(entry)
         except Exception as e:
-            logger.error(f"Erro ao disparar pesquisa autônoma: {e}")
+            logger.error(f"Erro ao disparar pesquisa autÃ´noma: {e}")
 
-# Instância global
+# InstÃ¢ncia global
 neural_curiosity = NeuralCuriosity()

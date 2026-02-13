@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Structured Google Drive Integration
 ================================================================
-Sistema de integração estruturada com Google Drive que evita 
+Sistema de integraÃ§Ã£o estruturada com Google Drive que evita 
 conflitos com contas compartilhadas e organiza dados hierarquicamente.
 """
 
@@ -51,7 +51,7 @@ except ImportError:
     Credentials = MockGoogleAPI
     InstalledAppFlow = MockGoogleAPI
     GOOGLE_API_AVAILABLE = False
-    print("⚠️ Google API não disponível - funcionalidade limitada")
+    print("âš ï¸ Google API nÃ£o disponÃ­vel - funcionalidade limitada")
 
 # Local imports
 from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier
@@ -60,19 +60,19 @@ logger = logging.getLogger(__name__)
 
 class StructuredGoogleDriveManager:
     """
-    ☁️ GERENCIADOR ESTRUTURADO DO GOOGLE DRIVE
+    â˜ï¸ GERENCIADOR ESTRUTURADO DO GOOGLE DRIVE
     
     Funcionalidades:
-    - Detecção automática do Google Drive local
-    - Estrutura hierárquica organizada por usuário
-    - Sincronização inteligente sem conflitos
-    - Backup automático de modelos treinados
-    - Consolidação de dados entre dispositivos
+    - DetecÃ§Ã£o automÃ¡tica do Google Drive local
+    - Estrutura hierÃ¡rquica organizada por usuÃ¡rio
+    - SincronizaÃ§Ã£o inteligente sem conflitos
+    - Backup automÃ¡tico de modelos treinados
+    - ConsolidaÃ§Ã£o de dados entre dispositivos
     - Cache local para performance
-    - Monitoramento de mudanças
+    - Monitoramento de mudanÃ§as
     """
     
-    # Scopes necessários para Google Drive API
+    # Scopes necessÃ¡rios para Google Drive API
     SCOPES = ['https://www.googleapis.com/auth/drive']
     
     def __init__(self, jarvis_core, microsoft_identifier: MicrosoftDeviceIdentifier):
@@ -85,7 +85,7 @@ class StructuredGoogleDriveManager:
         self.cache_path = self.data_path / "google_drive_cache"
         self.credentials_path = self.data_path / "google_credentials"
         
-        # Criar diretórios necessários
+        # Criar diretÃ³rios necessÃ¡rios
         self.cache_path.mkdir(parents=True, exist_ok=True)
         self.credentials_path.mkdir(parents=True, exist_ok=True)
         
@@ -96,7 +96,7 @@ class StructuredGoogleDriveManager:
         self.sync_active = False
         self.last_sync: Optional[datetime] = None
         
-        # Configurações
+        # ConfiguraÃ§Ãµes
         self.user_folder_name = "JARVIS_default"
         self.sync_interval_minutes = 15
         self.auto_sync_enabled = True
@@ -106,44 +106,44 @@ class StructuredGoogleDriveManager:
         self.sync_thread: Optional[threading.Thread] = None
         self.stop_sync = threading.Event()
         
-        print("☁️ Structured Google Drive Manager inicializado")
+        print("â˜ï¸ Structured Google Drive Manager inicializado")
     
     def initialize(self) -> bool:
-        """🚀 INICIALIZA O SISTEMA GOOGLE DRIVE"""
+        """ðŸš€ INICIALIZA O SISTEMA GOOGLE DRIVE"""
         
-        print("🔍 Inicializando integração Google Drive...")
+        print("ðŸ” Inicializando integraÃ§Ã£o Google Drive...")
         
         try:
             # 1. Detectar Google Drive local
             if not self._detect_local_drive():
-                print("📂 Google Drive local não detectado")
+                print("ðŸ“‚ Google Drive local nÃ£o detectado")
                 return False
             
-            # 2. Configurar nome da pasta do usuário
+            # 2. Configurar nome da pasta do usuÃ¡rio
             self._setup_user_folder_name()
             
-            # 3. Configurar API do Google Drive (se disponível)
+            # 3. Configurar API do Google Drive (se disponÃ­vel)
             if GOOGLE_API_AVAILABLE:
                 self._setup_google_api()
             
             # 4. Criar estrutura de pastas
             self._create_folder_structure()
             
-            # 5. Iniciar sincronização automática
+            # 5. Iniciar sincronizaÃ§Ã£o automÃ¡tica
             if self.auto_sync_enabled:
                 self._start_auto_sync()
             
-            print("✅ Google Drive configurado com sucesso")
+            print("âœ… Google Drive configurado com sucesso")
             return True
             
         except Exception as e:
-            print(f"❌ Erro inicializando Google Drive: {e}")
+            print(f"âŒ Erro inicializando Google Drive: {e}")
             return False
     
     def _detect_local_drive(self) -> bool:
-        """📂 DETECTA PASTA LOCAL DO GOOGLE DRIVE"""
+        """ðŸ“‚ DETECTA PASTA LOCAL DO GOOGLE DRIVE"""
         
-        print("   🔍 Procurando pasta local do Google Drive...")
+        print("   ðŸ” Procurando pasta local do Google Drive...")
         
         try:
             # Caminhos comuns do Google Drive
@@ -158,24 +158,24 @@ class StructuredGoogleDriveManager:
             
             for path in common_paths:
                 if path.exists() and path.is_dir():
-                    # Verificar se é realmente uma pasta do Google Drive
+                    # Verificar se Ã© realmente uma pasta do Google Drive
                     if self._is_google_drive_folder(path):
                         self.local_drive_path = path
-                        print(f"   ✅ Google Drive encontrado: {path}")
+                        print(f"   âœ… Google Drive encontrado: {path}")
                         return True
             
-            print("   ❌ Pasta local do Google Drive não encontrada")
+            print("   âŒ Pasta local do Google Drive nÃ£o encontrada")
             return False
             
         except Exception as e:
-            print(f"   ❌ Erro detectando Google Drive local: {e}")
+            print(f"   âŒ Erro detectando Google Drive local: {e}")
             return False
     
     def _is_google_drive_folder(self, path: Path) -> bool:
-        """🔍 VERIFICA SE É PASTA DO GOOGLE DRIVE"""
+        """ðŸ” VERIFICA SE Ã‰ PASTA DO GOOGLE DRIVE"""
         
         try:
-            # Verificar arquivos/pastas características do Google Drive
+            # Verificar arquivos/pastas caracterÃ­sticas do Google Drive
             indicators = [
                 path / ".tmp.drivedownload",
                 path / "desktop.ini"
@@ -186,11 +186,11 @@ class StructuredGoogleDriveManager:
                 if indicator.exists():
                     return True
             
-            # Verificar se tem estrutura típica do Google Drive
-            # (pastas com muitos arquivos, estrutura específica)
+            # Verificar se tem estrutura tÃ­pica do Google Drive
+            # (pastas com muitos arquivos, estrutura especÃ­fica)
             subdirs = [d for d in path.iterdir() if d.is_dir()]
             
-            # Se tem muitas pastas, provavelmente é Google Drive
+            # Se tem muitas pastas, provavelmente Ã© Google Drive
             if len(subdirs) > 3:
                 return True
             
@@ -201,7 +201,7 @@ class StructuredGoogleDriveManager:
             return False
     
     def _setup_user_folder_name(self):
-        """👤 CONFIGURA NOME DA PASTA DO USUÁRIO"""
+        """ðŸ‘¤ CONFIGURA NOME DA PASTA DO USUÃRIO"""
         
         try:
             if self.microsoft_identifier.microsoft_account:
@@ -209,7 +209,7 @@ class StructuredGoogleDriveManager:
                 email = self.microsoft_identifier.microsoft_account.account_email
                 username = email.split('@')[0]
                 
-                # Criar nome limpo e único
+                # Criar nome limpo e Ãºnico
                 self.user_folder_name = f"JARVIS_{username}"
                 
             else:
@@ -217,16 +217,16 @@ class StructuredGoogleDriveManager:
                 computer_name = os.getenv('COMPUTERNAME', 'unknown')
                 self.user_folder_name = f"JARVIS_{computer_name}"
             
-            print(f"   📁 Nome da pasta do usuário: {self.user_folder_name}")
+            print(f"   ðŸ“ Nome da pasta do usuÃ¡rio: {self.user_folder_name}")
             
         except Exception as e:
-            print(f"❌ Erro configurando nome da pasta: {e}")
+            print(f"âŒ Erro configurando nome da pasta: {e}")
             self.user_folder_name = "JARVIS_default"
     
     def _setup_google_api(self):
-        """🔑 CONFIGURA API DO GOOGLE DRIVE"""
+        """ðŸ”‘ CONFIGURA API DO GOOGLE DRIVE"""
         
-        print("   🔑 Configurando API Google Drive...")
+        print("   ðŸ”‘ Configurando API Google Drive...")
         
         try:
             creds = None
@@ -237,7 +237,7 @@ class StructuredGoogleDriveManager:
             if token_file.exists():
                 creds = Credentials.from_authorized_user_file(str(token_file), self.SCOPES)
             
-            # Se não há credenciais válidas
+            # Se nÃ£o hÃ¡ credenciais vÃ¡lidas
             if not creds or not creds.valid:
                 if creds and creds.expired and creds.refresh_token:
                     creds.refresh(Request())
@@ -247,46 +247,46 @@ class StructuredGoogleDriveManager:
                             str(credentials_file), self.SCOPES)
                         creds = flow.run_local_server(port=0)
                     else:
-                        print("   ⚠️ Arquivo credentials.json não encontrado")
-                        print("   📝 Para habilitar API: https://developers.google.com/drive/api/quickstart/python")
+                        print("   âš ï¸ Arquivo credentials.json nÃ£o encontrado")
+                        print("   ðŸ“ Para habilitar API: https://developers.google.com/drive/api/quickstart/python")
                         return False
                 
                 # Salvar credenciais
                 with open(token_file, 'w') as token:
                     token.write(creds.to_json())
             
-            # Criar serviço
+            # Criar serviÃ§o
             self.google_service = build('drive', 'v3', credentials=creds)
-            print("   ✅ API Google Drive configurada")
+            print("   âœ… API Google Drive configurada")
             return True
             
         except Exception as e:
-            print(f"   ❌ Erro configurando API: {e}")
+            print(f"   âŒ Erro configurando API: {e}")
             return False
     
     def _create_folder_structure(self):
-        """📁 CRIA ESTRUTURA DE PASTAS HIERÁRQUICA"""
+        """ðŸ“ CRIA ESTRUTURA DE PASTAS HIERÃRQUICA"""
         
         if not self.local_drive_path:
             return
         
-        print("   📁 Criando estrutura de pastas...")
+        print("   ðŸ“ Criando estrutura de pastas...")
         
         try:
-            # Pasta principal do usuário
+            # Pasta principal do usuÃ¡rio
             user_folder = self.local_drive_path / self.user_folder_name
             user_folder.mkdir(exist_ok=True)
             
             # Subpastas organizadas
             subfolders = {
-                "models": "🧠 Modelos treinados",
-                "datasets": "📊 Datasets de treinamento", 
-                "configs": "⚙️ Configurações",
-                "logs": "📝 Logs do sistema",
-                "backups": "💾 Backups automáticos",
-                "sync": "🔄 Sincronização entre dispositivos",
-                "exports": "📤 Exportações e relatórios",
-                "temp": "🗂️ Arquivos temporários"
+                "models": "ðŸ§  Modelos treinados",
+                "datasets": "ðŸ“Š Datasets de treinamento", 
+                "configs": "âš™ï¸ ConfiguraÃ§Ãµes",
+                "logs": "ðŸ“ Logs do sistema",
+                "backups": "ðŸ’¾ Backups automÃ¡ticos",
+                "sync": "ðŸ”„ SincronizaÃ§Ã£o entre dispositivos",
+                "exports": "ðŸ“¤ ExportaÃ§Ãµes e relatÃ³rios",
+                "temp": "ðŸ—‚ï¸ Arquivos temporÃ¡rios"
             }
             
             for folder_name, description in subfolders.items():
@@ -298,25 +298,25 @@ class StructuredGoogleDriveManager:
                 if not readme_path.exists():
                     readme_content = f"# {description}\n\n"
                     readme_content += f"Pasta criada automaticamente pelo JARVIS.\n"
-                    readme_content += f"Usuário: {self.user_folder_name}\n"
+                    readme_content += f"UsuÃ¡rio: {self.user_folder_name}\n"
                     readme_content += f"Criado em: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
                     
                     with open(readme_path, 'w', encoding='utf-8') as f:
                         f.write(readme_content)
             
-            print(f"   ✅ Estrutura criada em: {user_folder}")
+            print(f"   âœ… Estrutura criada em: {user_folder}")
             
         except Exception as e:
-            print(f"❌ Erro criando estrutura: {e}")
+            print(f"âŒ Erro criando estrutura: {e}")
     
     def sync_models_to_drive(self, models_data: Dict[str, Any]) -> bool:
-        """🧠 SINCRONIZA MODELOS PARA O DRIVE"""
+        """ðŸ§  SINCRONIZA MODELOS PARA O DRIVE"""
         
-        print("🧠 Sincronizando modelos para o Google Drive...")
+        print("ðŸ§  Sincronizando modelos para o Google Drive...")
         
         try:
             if not self.local_drive_path:
-                print("❌ Google Drive local não disponível")
+                print("âŒ Google Drive local nÃ£o disponÃ­vel")
                 return False
             
             models_folder = self.local_drive_path / self.user_folder_name / "models"
@@ -341,24 +341,24 @@ class StructuredGoogleDriveManager:
                         "model_data": model_data
                     }, f, indent=2, ensure_ascii=False)
                 
-                print(f"   ✅ Modelo salvo: {model_name}")
+                print(f"   âœ… Modelo salvo: {model_name}")
             
             # Salvar metadata geral
             metadata_file = models_folder / "sync_metadata.json"
             with open(metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, indent=2, ensure_ascii=False)
             
-            print("✅ Modelos sincronizados com sucesso")
+            print("âœ… Modelos sincronizados com sucesso")
             return True
             
         except Exception as e:
-            print(f"❌ Erro sincronizando modelos: {e}")
+            print(f"âŒ Erro sincronizando modelos: {e}")
             return False
     
     def sync_configs_to_drive(self) -> bool:
-        """⚙️ SINCRONIZA CONFIGURAÇÕES PARA O DRIVE"""
+        """âš™ï¸ SINCRONIZA CONFIGURAÃ‡Ã•ES PARA O DRIVE"""
         
-        print("⚙️ Sincronizando configurações...")
+        print("âš™ï¸ Sincronizando configuraÃ§Ãµes...")
         
         try:
             if not self.local_drive_path:
@@ -366,7 +366,7 @@ class StructuredGoogleDriveManager:
             
             configs_folder = self.local_drive_path / self.user_folder_name / "configs"
             
-            # Arquivos de configuração para sincronizar
+            # Arquivos de configuraÃ§Ã£o para sincronizar
             config_files = [
                 self.base_path / "config" / "ai_config.yaml",
                 self.base_path / "config" / "auto_healing.yaml", 
@@ -381,7 +381,7 @@ class StructuredGoogleDriveManager:
             
             for config_file in config_files:
                 if config_file.exists():
-                    # Criar nome único para evitar conflitos
+                    # Criar nome Ãºnico para evitar conflitos
                     timestamp = int(time.time())
                     device_id = self.microsoft_identifier.device_fingerprint.device_id[:8] if self.microsoft_identifier.device_fingerprint else "unknown"
                     
@@ -396,9 +396,9 @@ class StructuredGoogleDriveManager:
                         "size": target_path.stat().st_size
                     })
                     
-                    print(f"   ✅ Config sincronizado: {config_file.name}")
+                    print(f"   âœ… Config sincronizado: {config_file.name}")
             
-            # Salvar informações de sincronização
+            # Salvar informaÃ§Ãµes de sincronizaÃ§Ã£o
             sync_file = configs_folder / f"sync_info_{int(time.time())}.json"
             with open(sync_file, 'w', encoding='utf-8') as f:
                 json.dump(sync_info, f, indent=2, ensure_ascii=False)
@@ -406,13 +406,13 @@ class StructuredGoogleDriveManager:
             return True
             
         except Exception as e:
-            print(f"❌ Erro sincronizando configurações: {e}")
+            print(f"âŒ Erro sincronizando configuraÃ§Ãµes: {e}")
             return False
     
     def backup_system_to_drive(self) -> bool:
-        """💾 CRIA BACKUP COMPLETO NO DRIVE"""
+        """ðŸ’¾ CRIA BACKUP COMPLETO NO DRIVE"""
         
-        print("💾 Criando backup completo no Google Drive...")
+        print("ðŸ’¾ Criando backup completo no Google Drive...")
         
         try:
             if not self.local_drive_path:
@@ -452,7 +452,7 @@ class StructuredGoogleDriveManager:
                                         added_files += 1
                                         total_size += file_path.stat().st_size
                                     except Exception:
-                                        continue  # Pular arquivos problemáticos
+                                        continue  # Pular arquivos problemÃ¡ticos
             
             # Criar arquivo de metadados do backup
             metadata = {
@@ -470,20 +470,20 @@ class StructuredGoogleDriveManager:
             with open(metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, indent=2, ensure_ascii=False)
             
-            print(f"✅ Backup criado: {backup_file.name}")
-            print(f"   📁 {added_files} arquivos, {total_size/1024/1024:.1f} MB")
-            print(f"   📦 Compactado para {backup_file.stat().st_size/1024/1024:.1f} MB")
+            print(f"âœ… Backup criado: {backup_file.name}")
+            print(f"   ðŸ“ {added_files} arquivos, {total_size/1024/1024:.1f} MB")
+            print(f"   ðŸ“¦ Compactado para {backup_file.stat().st_size/1024/1024:.1f} MB")
             
             return True
             
         except Exception as e:
-            print(f"❌ Erro criando backup: {e}")
+            print(f"âŒ Erro criando backup: {e}")
             return False
     
     def consolidate_data_from_devices(self) -> Dict[str, Any]:
-        """🔄 CONSOLIDA DADOS DE MÚLTIPLOS DISPOSITIVOS"""
+        """ðŸ”„ CONSOLIDA DADOS DE MÃšLTIPLOS DISPOSITIVOS"""
         
-        print("🔄 Consolidando dados de dispositivos...")
+        print("ðŸ”„ Consolidando dados de dispositivos...")
         
         try:
             if not self.local_drive_path:
@@ -521,7 +521,7 @@ class StructuredGoogleDriveManager:
                     except Exception:
                         continue
             
-            # Buscar configurações
+            # Buscar configuraÃ§Ãµes
             configs_folder = self.local_drive_path / self.user_folder_name / "configs"
             if configs_folder.exists():
                 for config_file in configs_folder.glob("*.json"):
@@ -543,17 +543,17 @@ class StructuredGoogleDriveManager:
             with open(consolidated_file, 'w', encoding='utf-8') as f:
                 json.dump(consolidated_data, f, indent=2, ensure_ascii=False)
             
-            print(f"✅ Dados consolidados de {len(consolidated_data['models'])} modelos")
-            print(f"   📱 {len(consolidated_data['configs'])} dispositivos encontrados")
+            print(f"âœ… Dados consolidados de {len(consolidated_data['models'])} modelos")
+            print(f"   ðŸ“± {len(consolidated_data['configs'])} dispositivos encontrados")
             
             return consolidated_data
             
         except Exception as e:
-            print(f"❌ Erro consolidando dados: {e}")
+            print(f"âŒ Erro consolidando dados: {e}")
             return {}
     
     def _start_auto_sync(self):
-        """🔄 INICIA SINCRONIZAÇÃO AUTOMÁTICA"""
+        """ðŸ”„ INICIA SINCRONIZAÃ‡ÃƒO AUTOMÃTICA"""
         
         if self.sync_active:
             return
@@ -564,32 +564,32 @@ class StructuredGoogleDriveManager:
         self.sync_thread = threading.Thread(target=self._auto_sync_loop, daemon=True)
         self.sync_thread.start()
         
-        print(f"🔄 Sincronização automática iniciada (intervalo: {self.sync_interval_minutes} minutos)")
+        print(f"ðŸ”„ SincronizaÃ§Ã£o automÃ¡tica iniciada (intervalo: {self.sync_interval_minutes} minutos)")
     
     def _auto_sync_loop(self):
-        """🔁 LOOP DE SINCRONIZAÇÃO AUTOMÁTICA"""
+        """ðŸ” LOOP DE SINCRONIZAÃ‡ÃƒO AUTOMÃTICA"""
         
         while not self.stop_sync.wait(self.sync_interval_minutes * 60):
             try:
-                print("🔄 Executando sincronização automática...")
+                print("ðŸ”„ Executando sincronizaÃ§Ã£o automÃ¡tica...")
                 
-                # Sincronizar configurações
+                # Sincronizar configuraÃ§Ãµes
                 self.sync_configs_to_drive()
                 
-                # Criar backup periódico (a cada 4 horas)
+                # Criar backup periÃ³dico (a cada 4 horas)
                 if (self.last_sync is None or 
                     datetime.now() - self.last_sync > timedelta(hours=4)):
                     self.backup_system_to_drive()
                 
                 self.last_sync = datetime.now()
-                print("✅ Sincronização automática concluída")
+                print("âœ… SincronizaÃ§Ã£o automÃ¡tica concluÃ­da")
                 
             except Exception as e:
-                print(f"❌ Erro na sincronização automática: {e}")
+                print(f"âŒ Erro na sincronizaÃ§Ã£o automÃ¡tica: {e}")
                 time.sleep(60)  # Aguardar 1 minuto antes de tentar novamente
     
     def stop_auto_sync(self):
-        """⏹️ PARA SINCRONIZAÇÃO AUTOMÁTICA"""
+        """â¹ï¸ PARA SINCRONIZAÃ‡ÃƒO AUTOMÃTICA"""
         
         if not self.sync_active:
             return
@@ -600,10 +600,10 @@ class StructuredGoogleDriveManager:
         if self.sync_thread and self.sync_thread.is_alive():
             self.sync_thread.join(timeout=5)
         
-        print("⏹️ Sincronização automática parada")
+        print("â¹ï¸ SincronizaÃ§Ã£o automÃ¡tica parada")
     
     def get_drive_status(self) -> Dict[str, Any]:
-        """📊 STATUS DO GOOGLE DRIVE"""
+        """ðŸ“Š STATUS DO GOOGLE DRIVE"""
         
         try:
             if not self.local_drive_path:
@@ -611,7 +611,7 @@ class StructuredGoogleDriveManager:
             
             user_folder = self.local_drive_path / self.user_folder_name
             
-            # Calcular estatísticas
+            # Calcular estatÃ­sticas
             total_size = 0
             file_count = 0
             
@@ -641,14 +641,14 @@ class StructuredGoogleDriveManager:
             return {"status": "error", "error": str(e)}
     
     def manual_sync(self) -> bool:
-        """🔄 SINCRONIZAÇÃO MANUAL COMPLETA"""
+        """ðŸ”„ SINCRONIZAÃ‡ÃƒO MANUAL COMPLETA"""
         
-        print("🔄 Executando sincronização manual completa...")
+        print("ðŸ”„ Executando sincronizaÃ§Ã£o manual completa...")
         
         try:
             success = True
             
-            # 1. Sincronizar configurações
+            # 1. Sincronizar configuraÃ§Ãµes
             if not self.sync_configs_to_drive():
                 success = False
             
@@ -659,17 +659,17 @@ class StructuredGoogleDriveManager:
             # 3. Consolidar dados
             consolidated = self.consolidate_data_from_devices()
             if not consolidated:
-                print("⚠️ Nenhum dado para consolidar")
+                print("âš ï¸ Nenhum dado para consolidar")
             
             if success:
-                print("✅ Sincronização manual concluída com sucesso")
+                print("âœ… SincronizaÃ§Ã£o manual concluÃ­da com sucesso")
             else:
-                print("⚠️ Sincronização manual concluída com alguns erros")
+                print("âš ï¸ SincronizaÃ§Ã£o manual concluÃ­da com alguns erros")
             
             return success
             
         except Exception as e:
-            print(f"❌ Erro na sincronização manual: {e}")
+            print(f"âŒ Erro na sincronizaÃ§Ã£o manual: {e}")
             return False
 
 # Exemplo de uso:

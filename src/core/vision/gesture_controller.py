@@ -1,6 +1,6 @@
-"""
+﻿"""
 Controlador de Gestos (Hands)
-Utiliza MediaPipe para rastreamento de mãos e reconhecimento de gestos.
+Utiliza MediaPipe para rastreamento de mÃ£os e reconhecimento de gestos.
 """
 
 import os
@@ -17,7 +17,7 @@ try:
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
-    logging.warning(f"⚠️ cv2 not available in gesture_controller: {e}")
+    logging.warning(f"âš ï¸ cv2 not available in gesture_controller: {e}")
 
 try:
     import numpy as np
@@ -25,7 +25,7 @@ try:
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
     np = None
-    logging.warning(f"⚠️ numpy not available in gesture_controller: {e}")
+    logging.warning(f"âš ï¸ numpy not available in gesture_controller: {e}")
 
 from src.utils.config import config
 from src.core.actions.action_controller import action_controller
@@ -51,7 +51,7 @@ def _ensure_mediapipe():
         except (ImportError, OSError) as e:
             MEDIAPIPE_AVAILABLE = False
             mp = None
-            logger.debug(f"MediaPipe não encontrado. Controle por gestos desativado: {e}")
+            logger.debug(f"MediaPipe nÃ£o encontrado. Controle por gestos desativado: {e}")
 
 try:
     # Just check if mediapipe can be imported without actually importing it
@@ -65,17 +65,17 @@ except:
     MEDIAPIPE_AVAILABLE = False
 
 class GestureController:
-    """Detecta gestos e comanda ações"""
+    """Detecta gestos e comanda aÃ§Ãµes"""
 
     def __init__(self):
         global MEDIAPIPE_AVAILABLE
         self.is_running = False
         
-        # Singularity Edition: Registro de Gestos Dinâmico
+        # Singularity Edition: Registro de Gestos DinÃ¢mico
         self.gesture_registry = {
             "Open Palm": {"action": "playpause", "desc": "Play/Pause Media"},
             "Thumbs Up": {"action": "enter", "desc": "Confirmar"},
-            "Fist": {"action": None, "desc": "Sem ação"},
+            "Fist": {"action": None, "desc": "Sem aÃ§Ã£o"},
             "Pinch": {"action": "volume", "desc": "Controle de Volume"}
         }
 
@@ -99,7 +99,7 @@ class GestureController:
                     logger.warning("MediaPipe failed to load during initialization")
                     return
                     
-                # Tentativa 1: Import padrão (Legacy Solutions)
+                # Tentativa 1: Import padrÃ£o (Legacy Solutions)
                 if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'hands'):
                     logger.info("Usando MediaPipe Legacy Solutions.")
                     self.mp_hands = mp.solutions.hands
@@ -113,17 +113,17 @@ class GestureController:
                 
                 # Tentativa 2: MediaPipe Tasks (Modern API)
                 else:
-                    logger.info("Legacy Solutions indisponível. Tentando MediaPipe Tasks (Modern API)...")
+                    logger.info("Legacy Solutions indisponÃ­vel. Tentando MediaPipe Tasks (Modern API)...")
                     from mediapipe.tasks import python
                     from mediapipe.tasks.python import vision
                     
-                    # Carregar modelo (precisa baixar o arquivo .task se não existir)
+                    # Carregar modelo (precisa baixar o arquivo .task se nÃ£o existir)
                     model_path = config.get_setting('sensory.hand_landmarker_path', 'models/vision/hand_landmarker.task')
                     
                     if not os.path.exists(model_path):
-                         logger.warning(f"Modelo Task não encontrado em {model_path}. Tentando baixar/localizar...")
+                         logger.warning(f"Modelo Task nÃ£o encontrado em {model_path}. Tentando baixar/localizar...")
                          # Link para download: https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
-                         # Como não podemos baixar facilmente agora, marcamos como indisponível se falhar
+                         # Como nÃ£o podemos baixar facilmente agora, marcamos como indisponÃ­vel se falhar
                     
                     base_options = python.BaseOptions(model_asset_path=model_path)
                     options = vision.HandLandmarkerOptions(
@@ -138,13 +138,13 @@ class GestureController:
                     logger.info("MediaPipe Tasks (Landmarker) carregado com SUCESSO.")
 
             except Exception as e:
-                logger.error(f"FALHA CRÍTICA ao carregar MediaPipe: {e}")
-                logger.warning("O controle por gestos será DESATIVADO.")
+                logger.error(f"FALHA CRÃTICA ao carregar MediaPipe: {e}")
+                logger.warning("O controle por gestos serÃ¡ DESATIVADO.")
                 MEDIAPIPE_AVAILABLE = False
                 self.mp_hands = None
                 self.hands = None
         
-        # Suavização e Tracking
+        # SuavizaÃ§Ã£o e Tracking
         self.gesture_buffer = deque(maxlen=5)
         self.pos_history = deque(maxlen=10) # Para detectar Swipe
         self.last_pinch_dist = 0
@@ -177,10 +177,10 @@ class GestureController:
                 raw_gesture = self._classify_gesture(hand_landmarks)
                 self.gesture_buffer.append(raw_gesture)
                 
-                # Aplicar suavização
+                # Aplicar suavizaÃ§Ã£o
                 gesture_name = self._get_smoothed_gesture()
                 
-                # AÇÕES ESPECIAIS (Contínuas ou Tracking)
+                # AÃ‡Ã•ES ESPECIAIS (ContÃ­nuas ou Tracking)
                 # 1. Pinch (Volume)
                 if raw_gesture == "Pinch":
                     self._handle_pinch_volume(hand_landmarks)
@@ -191,29 +191,29 @@ class GestureController:
                     self._execute_swipe_action(swipe_detected)
                     gesture_name = f"Swipe {swipe_detected}"
                 
-                # Ações discretas (Cooldown)
+                # AÃ§Ãµes discretas (Cooldown)
                 self._execute_gesture_action(gesture_name)
 
         return frame, gesture_name
 
     def _classify_gesture(self, landmarks) -> str:
-        """Classifica o gesto baseado nos pontos da mão"""
+        """Classifica o gesto baseado nos pontos da mÃ£o"""
         # Extrair coordenadas Y dos dedos (Top vs Bottom)
-        # Pontos: 4 (Dedão), 8 (Indicador), 12 (Médio), 16 (Anelar), 20 (Mínimo)
+        # Pontos: 4 (DedÃ£o), 8 (Indicador), 12 (MÃ©dio), 16 (Anelar), 20 (MÃ­nimo)
         
         points = landmarks.landmark
         
-        # Lógica simples de dedos levantados
+        # LÃ³gica simples de dedos levantados
         fingers = []
         
-        # Dedão (Lógica horizontal/vertical depende da mão, simplificando)
-        # Se a ponta do dedão (4) está à esquerda/direita da base (2)
-        if points[4].x < points[3].x: # Mão direita vista da camera
+        # DedÃ£o (LÃ³gica horizontal/vertical depende da mÃ£o, simplificando)
+        # Se a ponta do dedÃ£o (4) estÃ¡ Ã  esquerda/direita da base (2)
+        if points[4].x < points[3].x: # MÃ£o direita vista da camera
             fingers.append(1)
         else:
             fingers.append(0)
 
-        # Outros 4 dedos (Se a ponta está acima da junta)
+        # Outros 4 dedos (Se a ponta estÃ¡ acima da junta)
         # Lembre-se: Y cresce para baixo na imagem (0 = topo)
         for tip_id in [8, 12, 16, 20]:
             if points[tip_id].y < points[tip_id - 2].y:
@@ -221,12 +221,12 @@ class GestureController:
             else:
                 fingers.append(0)
         
-        # Classificação básica
+        # ClassificaÃ§Ã£o bÃ¡sica
         total_fingers = fingers.count(1)
         
-        # Detecção de PINCH (Ponta do dedão 4 e indicador 8)
+        # DetecÃ§Ã£o de PINCH (Ponta do dedÃ£o 4 e indicador 8)
         dist = math.sqrt((points[4].x - points[8].x)**2 + (points[4].y - points[8].y)**2)
-        if dist < 0.05: # Threshold para pinça
+        if dist < 0.05: # Threshold para pinÃ§a
             return "Pinch"
             
         if total_fingers == 5:
@@ -245,7 +245,7 @@ class GestureController:
         return "Unknown"
 
     def _get_smoothed_gesture(self) -> str:
-        """Retorna o gesto mais frequente no buffer para evitar oscilações"""
+        """Retorna o gesto mais frequente no buffer para evitar oscilaÃ§Ãµes"""
         if not self.gesture_buffer:
             return "None"
         
@@ -261,7 +261,7 @@ class GestureController:
         return self.last_gesture if self.last_gesture != "Unknown" else "None"
 
     def _execute_gesture_action(self, gesture: str):
-        """Executa ação vinculada ao gesto"""
+        """Executa aÃ§Ã£o vinculada ao gesto"""
         if gesture == "None" or gesture == "Unknown":
             return
             
@@ -278,15 +278,15 @@ class GestureController:
         self.last_gesture = gesture
         self.last_gesture_time = time.time()
         
-        # Mapeamento de Ações
+        # Mapeamento de AÃ§Ãµes
         if gesture == "Open Palm":
             # Play / Pause Media
             action_controller.press_key('playpause')
-            logger.info("⏯️ Gesto: Play/Pause")
+            logger.info("â¯ï¸ Gesto: Play/Pause")
 
     def _handle_pinch_volume(self, landmarks):
-        """Controla volume baseado na distância lateral/vertical entre dedos ou movimento"""
-        # Simplificação: Usar a altura da mão para aumentar/diminuir volume enquanto pinça
+        """Controla volume baseado na distÃ¢ncia lateral/vertical entre dedos ou movimento"""
+        # SimplificaÃ§Ã£o: Usar a altura da mÃ£o para aumentar/diminuir volume enquanto pinÃ§a
         p4 = landmarks.landmark[4]
         p8 = landmarks.landmark[8]
         
@@ -305,7 +305,7 @@ class GestureController:
             self._last_pinch_y = curr_y
 
     def _detect_swipe(self) -> Optional[str]:
-        """Detecta movimento lateral rápido"""
+        """Detecta movimento lateral rÃ¡pido"""
         if len(self.pos_history) < 5: return None
         
         first_x = self.pos_history[0][0]
@@ -318,19 +318,19 @@ class GestureController:
         return None
 
     def _execute_swipe_action(self, direction: str):
-        """Executa ação de Swipe"""
+        """Executa aÃ§Ã£o de Swipe"""
         if direction == "Right":
             action_controller.hotkey('alt', 'tab')
-            logger.info("📑 Swipe Right: Alt+Tab")
+            logger.info("ðŸ“‘ Swipe Right: Alt+Tab")
         else:
             action_controller.press_key('nexttrack')
-            logger.info("⏭️ Swipe Left: Next Track")
+            logger.info("â­ï¸ Swipe Left: Next Track")
 
-# Instância global (Singleton) - Lazy initialization
+# InstÃ¢ncia global (Singleton) - Lazy initialization
 _gesture_controller_instance = None
 
 def get_gesture_controller():
-    """Retorna a instância singleton do gesture controller (lazy)"""
+    """Retorna a instÃ¢ncia singleton do gesture controller (lazy)"""
     global _gesture_controller_instance
     if _gesture_controller_instance is None:
         _gesture_controller_instance = GestureController()

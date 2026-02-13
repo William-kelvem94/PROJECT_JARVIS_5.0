@@ -1,5 +1,5 @@
-"""
-Security Manager - Sistema de Segurança Avançado
+﻿"""
+Security Manager - Sistema de SeguranÃ§a AvanÃ§ado
 Implementa criptografia, controle de acesso e modo privado
 """
 
@@ -19,7 +19,7 @@ from cryptography.hazmat.backends import default_backend
 logger = logging.getLogger(__name__)
 
 class SecurityLevel:
-    """Níveis de segurança"""
+    """NÃ­veis de seguranÃ§a"""
     PUBLIC = 0
     LOW = 1
     MEDIUM = 2
@@ -27,7 +27,7 @@ class SecurityLevel:
     CRITICAL = 4
 
 class SecurityManager:
-    """Gerenciador de segurança e privacidade"""
+    """Gerenciador de seguranÃ§a e privacidade"""
     
     def __init__(self, config_dir: str = ".jarvis_security"):
         self.config_dir = Path(config_dir)
@@ -40,9 +40,9 @@ class SecurityManager:
         
         self.permissions = {
             "file_read": True,
-            "file_write": False,  # Requer confirmação
-            "file_delete": False,  # Requer confirmação
-            "system_control": False,  # Requer confirmação
+            "file_write": False,  # Requer confirmaÃ§Ã£o
+            "file_delete": False,  # Requer confirmaÃ§Ã£o
+            "system_control": False,  # Requer confirmaÃ§Ã£o
             "network_access": True,
         }
         
@@ -57,7 +57,7 @@ class SecurityManager:
             if key_file.exists():
                 with open(key_file, 'rb') as f:
                     self.encryption_key = f.read()
-                logger.info("✅ Chave de criptografia carregada")
+                logger.info("âœ… Chave de criptografia carregada")
             else:
                 # Gerar nova chave
                 self.encryption_key = Fernet.generate_key()
@@ -65,7 +65,7 @@ class SecurityManager:
                     f.write(self.encryption_key)
                 # Proteger arquivo (apenas leitura)
                 os.chmod(key_file, 0o400)
-                logger.info("✅ Nova chave de criptografia gerada")
+                logger.info("âœ… Nova chave de criptografia gerada")
         except Exception as e:
             logger.error(f"Erro ao gerenciar chave: {e}")
     
@@ -73,7 +73,7 @@ class SecurityManager:
         """Inicializa log de auditoria"""
         if not self.audit_log_path.exists():
             self.audit_log_path.touch()
-            logger.info("✅ Log de auditoria criado")
+            logger.info("âœ… Log de auditoria criado")
     
     def encrypt_data(self, data: str) -> Optional[str]:
         """
@@ -130,7 +130,7 @@ class SecurityManager:
         elif algorithm == "md5":
             return hashlib.md5(data.encode()).hexdigest()
         else:
-            raise ValueError(f"Algoritmo não suportado: {algorithm}")
+            raise ValueError(f"Algoritmo nÃ£o suportado: {algorithm}")
     
     def validate_file_action(
         self,
@@ -139,30 +139,30 @@ class SecurityManager:
         require_confirmation: bool = True
     ) -> bool:
         """
-        Valida se uma ação em arquivo é permitida
+        Valida se uma aÃ§Ã£o em arquivo Ã© permitida
         
         Args:
             file_path: Caminho do arquivo
             action: 'read', 'write', 'delete'
-            require_confirmation: Se True, requer confirmação do usuário
+            require_confirmation: Se True, requer confirmaÃ§Ã£o do usuÃ¡rio
         
         Returns:
             True se permitido
         """
         # Verificar modo privado
         if self.private_mode and action in ['write', 'delete']:
-            logger.warning(f"🔒 Ação bloqueada em modo privado: {action} em {file_path}")
+            logger.warning(f"ðŸ”’ AÃ§Ã£o bloqueada em modo privado: {action} em {file_path}")
             self.log_audit("BLOCKED", f"{action} em {file_path} (modo privado)")
             return False
         
-        # Verificar permissões
+        # Verificar permissÃµes
         permission_key = f"file_{action}"
         if not self.permissions.get(permission_key, False):
-            logger.warning(f"🔒 Permissão negada: {action} em {file_path}")
+            logger.warning(f"ðŸ”’ PermissÃ£o negada: {action} em {file_path}")
             self.log_audit("DENIED", f"{action} em {file_path}")
             return False
         
-        # Verificar caminhos sensíveis
+        # Verificar caminhos sensÃ­veis
         sensitive_paths = [
             "C:\\Windows",
             "C:\\Program Files",
@@ -173,11 +173,11 @@ class SecurityManager:
         
         for sensitive in sensitive_paths:
             if file_path.startswith(sensitive):
-                logger.warning(f"🔒 Caminho sensível bloqueado: {file_path}")
-                self.log_audit("BLOCKED", f"{action} em caminho sensível: {file_path}")
+                logger.warning(f"ðŸ”’ Caminho sensÃ­vel bloqueado: {file_path}")
+                self.log_audit("BLOCKED", f"{action} em caminho sensÃ­vel: {file_path}")
                 return False
         
-        # Log da ação
+        # Log da aÃ§Ã£o
         self.log_audit("ALLOWED", f"{action} em {file_path}")
         return True
     
@@ -187,7 +187,7 @@ class SecurityManager:
         self.permissions["file_write"] = False
         self.permissions["file_delete"] = False
         self.permissions["network_access"] = False
-        logger.info("🔒 Modo privado ATIVADO")
+        logger.info("ðŸ”’ Modo privado ATIVADO")
         self.log_audit("MODE_CHANGE", "Modo privado ativado")
     
     def disable_private_mode(self):
@@ -195,7 +195,7 @@ class SecurityManager:
         self.private_mode = False
         self.permissions["file_write"] = True
         self.permissions["network_access"] = True
-        logger.info("🔓 Modo privado DESATIVADO")
+        logger.info("ðŸ”“ Modo privado DESATIVADO")
         self.log_audit("MODE_CHANGE", "Modo privado desativado")
     
     def log_audit(self, event_type: str, description: str):
@@ -204,7 +204,7 @@ class SecurityManager:
         
         Args:
             event_type: Tipo do evento (ALLOWED, DENIED, BLOCKED, etc)
-            description: Descrição do evento
+            description: DescriÃ§Ã£o do evento
         """
         if not self.audit_log_enabled:
             return
@@ -225,10 +225,10 @@ class SecurityManager:
     
     def get_audit_log(self, limit: int = 100) -> List[Dict[str, Any]]:
         """
-        Retorna últimas entradas do log de auditoria
+        Retorna Ãºltimas entradas do log de auditoria
         
         Args:
-            limit: Número máximo de entradas
+            limit: NÃºmero mÃ¡ximo de entradas
         
         Returns:
             Lista de eventos
@@ -237,7 +237,7 @@ class SecurityManager:
             with open(self.audit_log_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             
-            # Pegar últimas N linhas
+            # Pegar Ãºltimas N linhas
             recent_lines = lines[-limit:]
             
             events = []
@@ -256,22 +256,22 @@ class SecurityManager:
     
     def authenticate_user(self, face_encoding=None, password: str = None) -> bool:
         """
-        Autentica usuário via FaceID ou senha
+        Autentica usuÃ¡rio via FaceID ou senha
         
         Args:
-            face_encoding: Encoding facial (se disponível)
+            face_encoding: Encoding facial (se disponÃ­vel)
             password: Senha (fallback)
         
         Returns:
             True se autenticado
         """
-        # TODO: Implementar autenticação real
+        # TODO: Implementar autenticaÃ§Ã£o real
         # Por enquanto, sempre retorna True
-        self.log_audit("AUTH", "Tentativa de autenticação")
+        self.log_audit("AUTH", "Tentativa de autenticaÃ§Ã£o")
         return True
     
     def get_security_status(self) -> Dict[str, Any]:
-        """Retorna status de segurança do sistema"""
+        """Retorna status de seguranÃ§a do sistema"""
         return {
             "private_mode": self.private_mode,
             "encryption_enabled": self.encryption_key is not None,
@@ -281,5 +281,5 @@ class SecurityManager:
         }
 
 
-# Instância global removida para evitar execução durante import
+# InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # security_manager = SecurityManager(config_dir="data/security")

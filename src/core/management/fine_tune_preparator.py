@@ -1,6 +1,6 @@
-"""
-Preparador de Fine-Tuning (Evolução Neural)
-Converte o histórico do Jarvis em formato de treinamento para modelos locais.
+﻿"""
+Preparador de Fine-Tuning (EvoluÃ§Ã£o Neural)
+Converte o histÃ³rico do Jarvis em formato de treinamento para modelos locais.
 """
 
 import json
@@ -29,7 +29,7 @@ class FineTunePreparator:
                 for line in f:
                     data = json.loads(line)
                     dataset.append({
-                        "instruction": "Você é o Jarvis, assistente virtual. Responda ao comando baseado na tela.",
+                        "instruction": "VocÃª Ã© o Jarvis, assistente virtual. Responda ao comando baseado na tela.",
                         "input": data['prompt'],
                         "output": data['response']
                     })
@@ -40,7 +40,7 @@ class FineTunePreparator:
             return f"Dataset neural preparado com {len(dataset)} exemplos em {self.output_file}"
         except Exception as e:
             logger.error(f"Erro ao preparar dataset: {e}")
-            return f"Erro na preparação: {str(e)}"
+            return f"Erro na preparaÃ§Ã£o: {str(e)}"
 
-# Instância global
+# InstÃ¢ncia global
 fine_tune_preparator = FineTunePreparator()

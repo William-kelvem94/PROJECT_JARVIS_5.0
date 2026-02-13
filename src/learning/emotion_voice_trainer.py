@@ -1,10 +1,10 @@
-"""
+﻿"""
 JARVIS 5.0 - Emotion Voice Trainer (CNN 1D)
 ============================================
 Sprint 1: Refinamento Fase 1
-Treina modelo CNN 1D para classificar emoções vocais
+Treina modelo CNN 1D para classificar emoÃ§Ãµes vocais
 
-DATASET: RAVDESS ou TESS (português)
+DATASET: RAVDESS ou TESS (portuguÃªs)
 OUTPUT: models/emotion_voice.pth (~500KB)
 USAGE: python src/learning/emotion_voice_trainer.py
 """
@@ -32,9 +32,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 class EmotionVoiceCNN(nn.Module):
     """
-    CNN 1D para classificação de emoções vocais
+    CNN 1D para classificaÃ§Ã£o de emoÃ§Ãµes vocais
     Input: features MFCC (40 coeficientes, 128 frames)
-    Output: 7 emoções (neutro, feliz, triste, raiva, medo, surpresa, nojo)
+    Output: 7 emoÃ§Ãµes (neutro, feliz, triste, raiva, medo, surpresa, nojo)
     """
     def __init__(self, num_emotions=7):
         super(EmotionVoiceCNN, self).__init__()
@@ -82,7 +82,7 @@ class EmotionVoiceCNN(nn.Module):
 
 
 class AudioEmotionDataset(Dataset):
-    """Dataset para emoções vocais com features MFCC"""
+    """Dataset para emoÃ§Ãµes vocais com features MFCC"""
     
     def __init__(self, audio_paths, labels, sr=22050, n_mfcc=40, max_len=128):
         self.audio_paths = audio_paths
@@ -122,7 +122,7 @@ class AudioEmotionDataset(Dataset):
 
 def load_dataset(dataset_path):
     """
-    Carrega dataset de emoções
+    Carrega dataset de emoÃ§Ãµes
     Suporta estrutura: dataset_path/emotion_name/*.wav
     
     Exemplo:
@@ -180,12 +180,12 @@ def load_dataset(dataset_path):
 
 def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=0.001):
     """
-    Treina modelo CNN 1D para classificação de emoções
+    Treina modelo CNN 1D para classificaÃ§Ã£o de emoÃ§Ãµes
     
     Args:
-        dataset_path: Caminho para dataset de emoções
+        dataset_path: Caminho para dataset de emoÃ§Ãµes
         output_path: Caminho para salvar modelo .pth
-        epochs: Número de épocas
+        epochs: NÃºmero de Ã©pocas
         batch_size: Tamanho do batch
         lr: Learning rate
     
@@ -194,15 +194,15 @@ def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=
         label_encoder: Encoder de labels
     """
     logger.info("="*70)
-    logger.info("🎭 JARVIS Emotion Voice Training - Sprint 1")
+    logger.info("ðŸŽ­ JARVIS Emotion Voice Training - Sprint 1")
     logger.info("="*70)
     
     # Load dataset
-    logger.info("\n📦 Loading dataset...")
+    logger.info("\nðŸ“¦ Loading dataset...")
     audio_paths, labels, emotion_names = load_dataset(dataset_path)
     
     if audio_paths is None:
-        logger.error("❌ Failed to load dataset")
+        logger.error("âŒ Failed to load dataset")
         return None, None
     
     # Encode labels
@@ -210,14 +210,14 @@ def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=
     encoded_labels = label_encoder.fit_transform(labels)
     num_emotions = len(label_encoder.classes_)
     
-    logger.info(f"\n🏷️  Emotions: {list(label_encoder.classes_)}")
+    logger.info(f"\nðŸ·ï¸  Emotions: {list(label_encoder.classes_)}")
     
     # Split dataset
     X_train, X_test, y_train, y_test = train_test_split(
         audio_paths, encoded_labels, test_size=0.2, random_state=42, stratify=encoded_labels
     )
     
-    logger.info(f"📊 Train: {len(X_train)} | Test: {len(X_test)}")
+    logger.info(f"ðŸ“Š Train: {len(X_train)} | Test: {len(X_test)}")
     
     # Create datasets
     train_dataset = AudioEmotionDataset(X_train, y_train)
@@ -228,7 +228,7 @@ def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=
     
     # Create model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"\n🔧 Device: {device}")
+    logger.info(f"\nðŸ”§ Device: {device}")
     
     model = EmotionVoiceCNN(num_emotions=num_emotions).to(device)
     criterion = nn.CrossEntropyLoss()
@@ -236,7 +236,7 @@ def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=5, factor=0.5)
     
     # Training loop
-    logger.info(f"\n🏋️  Training for {epochs} epochs...")
+    logger.info(f"\nðŸ‹ï¸  Training for {epochs} epochs...")
     best_acc = 0.0
     
     for epoch in range(epochs):
@@ -302,22 +302,22 @@ def train_emotion_model(dataset_path, output_path, epochs=50, batch_size=32, lr=
                 'accuracy': best_acc
             }, output_path)
     
-    logger.info(f"\n✅ Training complete! Best accuracy: {best_acc:.2f}%")
-    logger.info(f"💾 Model saved to: {output_path}")
-    logger.info(f"📦 Model size: {os.path.getsize(output_path) / 1024:.2f} KB")
+    logger.info(f"\nâœ… Training complete! Best accuracy: {best_acc:.2f}%")
+    logger.info(f"ðŸ’¾ Model saved to: {output_path}")
+    logger.info(f"ðŸ“¦ Model size: {os.path.getsize(output_path) / 1024:.2f} KB")
     
     return model, label_encoder
 
 
 def test_inference(model_path, test_audio_path):
     """
-    Testa inferência do modelo com um áudio
+    Testa inferÃªncia do modelo com um Ã¡udio
     
     Args:
         model_path: Caminho para modelo .pth
-        test_audio_path: Caminho para áudio de teste
+        test_audio_path: Caminho para Ã¡udio de teste
     """
-    logger.info("\n🧪 Testing inference...")
+    logger.info("\nðŸ§ª Testing inference...")
     
     if not os.path.exists(model_path):
         logger.error(f"Model not found: {model_path}")
@@ -356,13 +356,13 @@ def test_inference(model_path, test_audio_path):
         probs = torch.softmax(output, dim=1)[0]
     
     # Results
-    logger.info(f"🎭 Emotion prediction for: {test_audio_path}")
+    logger.info(f"ðŸŽ­ Emotion prediction for: {test_audio_path}")
     for emotion, prob in zip(emotions, probs):
         logger.info(f"  {emotion}: {prob.item()*100:.2f}%")
     
     predicted_emotion = emotions[probs.argmax().item()]
     confidence = probs.max().item()
-    logger.info(f"\n✨ Predicted: {predicted_emotion} (confidence: {confidence*100:.2f}%)")
+    logger.info(f"\nâœ¨ Predicted: {predicted_emotion} (confidence: {confidence*100:.2f}%)")
 
 
 if __name__ == "__main__":

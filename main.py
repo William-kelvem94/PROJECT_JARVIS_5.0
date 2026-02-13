@@ -19,6 +19,11 @@ except locale.Error:
     except locale.Error:
         pass  # Use system default if UTF-8 not available
 
+# 🛡️ BLINDAGEM DE UNICODE DEFINITIVA (Ignorar erros de codificação no terminal)
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 # 🛡️ EARLY WARNING SUPPRESSION (Must be before any heavy imports)
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 warnings.filterwarnings('ignore', message='.*openvino.runtime.*')
@@ -86,12 +91,8 @@ try:
     STARK_ORCHESTRATOR_AVAILABLE = True
 except (ImportError, AttributeError) as e:
     logger.warning(f"⚠️ StarkOrchestrator not available via management: {e}")
-    try:
-        from src.core import StarkOrchestrator
-        STARK_ORCHESTRATOR_AVAILABLE = True
-    except:
-        StarkOrchestrator = None
-        STARK_ORCHESTRATOR_AVAILABLE = False
+    StarkOrchestrator = None
+    STARK_ORCHESTRATOR_AVAILABLE = False
 
 from src.web.web_server import start_server
 from src.utils.web_emitter import emit_telemetry_sync, emit_log_sync

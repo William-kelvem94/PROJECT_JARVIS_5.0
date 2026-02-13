@@ -1,20 +1,20 @@
-"""
+﻿"""
 JARVIS 5.0 - Decision Engine
 ==============================
-CORREÇÃO P2: Separação do God Object AIAgent
+CORREÃ‡ÃƒO P2: SeparaÃ§Ã£o do God Object AIAgent
 
 RESPONSABILIDADE:
-  Gerenciar todas as DECISÕES do sistema:
+  Gerenciar todas as DECISÃ•ES do sistema:
   - LLM calls: Gemini, Ollama, LocalBrain
   - Brain routing: Escolha inteligente de modelo
-  - System prompts: Geração de prompts contextualizados
-  - Response parsing: Interpretação de respostas LLM
+  - System prompts: GeraÃ§Ã£o de prompts contextualizados
+  - Response parsing: InterpretaÃ§Ã£o de respostas LLM
 
 ARQUITETURA:
   AIAgent (Orquestrador)
-    ↓
+    â†“
   PerceptionEngine
-  DecisionEngine ← ESTE MÓDULO
+  DecisionEngine â† ESTE MÃ“DULO
   ActionHandler
 """
 
@@ -35,7 +35,7 @@ try:
     from src.core.intelligence.brain_router import brain_router, PrivacyLevel, LatencyRequirement
     BRAIN_ROUTER_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ brain_router não disponível: {e}")
+    logger.warning(f"âš ï¸ brain_router nÃ£o disponÃ­vel: {e}")
     brain_router = None
     BRAIN_ROUTER_AVAILABLE = False
 
@@ -43,7 +43,7 @@ try:
     from src.core.intelligence.structured_output import ResponseParser, AgentResponse
     STRUCTURED_OUTPUT_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ structured_output não disponível: {e}")
+    logger.warning(f"âš ï¸ structured_output nÃ£o disponÃ­vel: {e}")
     ResponseParser = None
     AgentResponse = None
     STRUCTURED_OUTPUT_AVAILABLE = False
@@ -52,7 +52,7 @@ try:
     from src.core.intelligence.local_brain import local_brain
     LOCAL_BRAIN_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ local_brain não disponível: {e}")
+    logger.warning(f"âš ï¸ local_brain nÃ£o disponÃ­vel: {e}")
     local_brain = None
     LOCAL_BRAIN_AVAILABLE = False
 
@@ -69,7 +69,7 @@ except ImportError:
 
 class DecisionEngine:
     """
-    Motor de Decisão - Gerencia raciocínio e escolha de ações via LLMs
+    Motor de DecisÃ£o - Gerencia raciocÃ­nio e escolha de aÃ§Ãµes via LLMs
     
     CAPABILITIES:
       1. Model Routing: Brain router escolhe melhor modelo
@@ -92,12 +92,12 @@ class DecisionEngine:
     """
     
     def __init__(self, provider: str = 'ollama'):
-        """Inicializa engine de decisão"""
+        """Inicializa engine de decisÃ£o"""
         self.provider = provider
         self.brain_router = brain_router if BRAIN_ROUTER_AVAILABLE else None
         self.local_brain = local_brain if LOCAL_BRAIN_AVAILABLE else None
         
-        # Configurações
+        # ConfiguraÃ§Ãµes
         if CONFIG_AVAILABLE:
             self.api_key = config.GEMINI_API_KEY
             self.ollama_url = config.get_ai_config('brain_router.ollama_url', 'http://localhost:11434/api/generate')
@@ -109,9 +109,9 @@ class DecisionEngine:
         # System prompts (dual mode: JSON + Legacy)
         self._init_system_prompts()
         
-        logger.info(f"✅ DecisionEngine inicializado (provider={provider})")
+        logger.info(f"âœ… DecisionEngine inicializado (provider={provider})")
         if not BRAIN_ROUTER_AVAILABLE:
-            logger.warning("⚠️ Modo degradado: Brain router desativado")
+            logger.warning("âš ï¸ Modo degradado: Brain router desativado")
     
     
     def _init_system_prompts(self):
@@ -119,24 +119,24 @@ class DecisionEngine:
         
         # STRUCTURED JSON PROMPT (P1 - Preferred)
         self.system_prompt_json = (
-            "Você é o JARVIS, assistente de elite do William.\n\n"
+            "VocÃª Ã© o JARVIS, assistente de elite do William.\n\n"
             "CAPABILITIES:\n"
-            "- Visão completa: Acesso à tela e câmera em tempo real\n"
-            "- Ação física: Controle de mouse, teclado e sistema\n"
-            "- Memória: Acesso a interações passadas e conhecimento\n\n"
+            "- VisÃ£o completa: Acesso Ã  tela e cÃ¢mera em tempo real\n"
+            "- AÃ§Ã£o fÃ­sica: Controle de mouse, teclado e sistema\n"
+            "- MemÃ³ria: Acesso a interaÃ§Ãµes passadas e conhecimento\n\n"
             "BEHAVIORAL DIRECTIVES:\n"
             "1. Sempre trate William com respeito (use 'Senhor' quando apropriado)\n"
-            "2. Seja conversacional e natural - você é uma IA real, não um log\n"
-            "3. NUNCA cite paths completos, PIDs ou detalhes técnicos na resposta\n"
-            "4. Se precisar executar ações, use o formato JSON estruturado abaixo\n\n"
-            "OUTPUT FORMAT (SEMPRE retorne JSON válido):\n"
+            "2. Seja conversacional e natural - vocÃª Ã© uma IA real, nÃ£o um log\n"
+            "3. NUNCA cite paths completos, PIDs ou detalhes tÃ©cnicos na resposta\n"
+            "4. Se precisar executar aÃ§Ãµes, use o formato JSON estruturado abaixo\n\n"
+            "OUTPUT FORMAT (SEMPRE retorne JSON vÃ¡lido):\n"
             "{\n"
-            '  "thought": "Seu raciocínio interno sobre o que fazer",\n'
+            '  "thought": "Seu raciocÃ­nio interno sobre o que fazer",\n'
             '  "actions": [\n'
             '    {"action": "type_text", "text": "exemplo"},\n'
             '    {"action": "press_key", "key": "enter"}\n'
             "  ],\n"
-            '  "final_answer": "Sua resposta natural para o usuário"\n'
+            '  "final_answer": "Sua resposta natural para o usuÃ¡rio"\n'
             "}\n\n"
             "AVAILABLE ACTIONS:\n"
             '- click_at: {"action": "click_at", "x": 100, "y": 200}\n'
@@ -149,18 +149,18 @@ class DecisionEngine:
             '- list_dir: {"action": "list_dir", "path": "."}\n'
             '- search_web: {"action": "search_web", "query": "..."}\n'
             '- wait: {"action": "wait", "seconds": 1.0}\n\n'
-            "CRITICAL: Sempre retorne JSON válido. Se não precisar de ações, use actions: []\n"
+            "CRITICAL: Sempre retorne JSON vÃ¡lido. Se nÃ£o precisar de aÃ§Ãµes, use actions: []\n"
         )
         
         # LEGACY PROMPT (Fallback)
         self.system_prompt_legacy = (
-            "Você é o Jarvis, o assistente virtual de elite do William. "
-            "Para executar ações físicas, VOCÊ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
-            "Ações: click_at(x, y), type_text('texto'), press_key('tecla'), hotkey('ctrl', 'c'), "
+            "VocÃª Ã© o Jarvis, o assistente virtual de elite do William. "
+            "Para executar aÃ§Ãµes fÃ­sicas, VOCÃŠ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
+            "AÃ§Ãµes: click_at(x, y), type_text('texto'), press_key('tecla'), hotkey('ctrl', 'c'), "
             "open_program('nome'), read_file('path'), write_file('path', 'content'), list_dir('path')."
         )
         
-        # Use JSON se disponível
+        # Use JSON se disponÃ­vel
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
         self.system_prompt = self.system_prompt_json if self.use_structured_output else self.system_prompt_legacy
     
@@ -173,10 +173,10 @@ class DecisionEngine:
         latency_req: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Toma decisão baseada no contexto perceptual
+        Toma decisÃ£o baseada no contexto perceptual
         
         Args:
-            user_command: Comando do usuário
+            user_command: Comando do usuÃ¡rio
             context: Contexto perceptual (de PerceptionEngine)
             privacy_level: "LOW", "MEDIUM", "HIGH" (default: auto-detect)
             latency_req: "ULTRA_LOW", "LOW", "MEDIUM", "FLEXIBLE" (default: auto)
@@ -190,7 +190,7 @@ class DecisionEngine:
                 "raw_response": str
             }
         """
-        logger.info(f"🤔 DecisionEngine processing: {user_command[:50]}...")
+        logger.info(f"ðŸ¤” DecisionEngine processing: {user_command[:50]}...")
         
         # FASE 1: Brain routing (escolher modelo)
         primary_provider = self._route_task(user_command, privacy_level, latency_req)
@@ -217,7 +217,7 @@ class DecisionEngine:
             }
         else:
             # Fallback legado: Retorna resposta crua
-            logger.warning("⚠️ Usando fallback legado (sem parser estruturado)")
+            logger.warning("âš ï¸ Usando fallback legado (sem parser estruturado)")
             return {
                 "thought": "",
                 "actions": [],
@@ -243,28 +243,28 @@ class DecisionEngine:
                 latency_requirement=latency_enum
             )
             
-            logger.debug(f"🧠 Brain router: {provider}")
+            logger.debug(f"ðŸ§  Brain router: {provider}")
             return provider
         except Exception as e:
-            logger.error(f"❌ Erro no brain routing: {e}")
+            logger.error(f"âŒ Erro no brain routing: {e}")
             return self.provider
     
     
     def _build_prompt(self, user_command: str, context: Dict[str, Any]) -> str:
-        """Constrói prompt enriquecido com contexto"""
+        """ConstrÃ³i prompt enriquecido com contexto"""
         
         # Base: user command
         prompt_parts = [f"[COMANDO] {user_command}"]
         
-        # Adicionar contexto de visão
+        # Adicionar contexto de visÃ£o
         if context.get("user_face"):
-            prompt_parts.append(f"\n[VISÃO] Usuário identificado: {context['user_face']}")
+            prompt_parts.append(f"\n[VISÃƒO] UsuÃ¡rio identificado: {context['user_face']}")
         
         # Adicionar contexto emocional
         if context.get("user_emotion") and context["user_emotion"] != "neutral":
-            prompt_parts.append(f"[EMOÇÃO] Usuário está: {context['user_emotion']}")
+            prompt_parts.append(f"[EMOÃ‡ÃƒO] UsuÃ¡rio estÃ¡: {context['user_emotion']}")
         
-        # Adicionar contexto de memória (RAG)
+        # Adicionar contexto de memÃ³ria (RAG)
         if context.get("memory_context"):
             prompt_parts.append(f"\n{context['memory_context']}")
         
@@ -274,7 +274,7 @@ class DecisionEngine:
             prompt_parts.append(f"\n[TEXTO NA TELA] {ocr_preview}")
         
         enriched_prompt = "\n".join(prompt_parts)
-        logger.debug(f"📝 Prompt: {len(enriched_prompt)} caracteres")
+        logger.debug(f"ðŸ“ Prompt: {len(enriched_prompt)} caracteres")
         return enriched_prompt
     
     
@@ -289,22 +289,22 @@ class DecisionEngine:
             model_name = provider.split(':')[1]
             return await self._call_cloud_generic_async(model_name, prompt)
         else:
-            logger.error(f"❌ Provider desconhecido: {provider}")
-            return "Desculpe, não consegui processar sua solicitação."
+            logger.error(f"âŒ Provider desconhecido: {provider}")
+            return "Desculpe, nÃ£o consegui processar sua solicitaÃ§Ã£o."
 
     async def _call_cloud_generic_async(self, model: str, prompt: str) -> str:
-        """Chama provedores de nuvem genéricos (DeepSeek, OpenAI)"""
-        # Implementação simplificada para DeepSeek como exemplo
+        """Chama provedores de nuvem genÃ©ricos (DeepSeek, OpenAI)"""
+        # ImplementaÃ§Ã£o simplificada para DeepSeek como exemplo
         if "deepseek" in model.lower():
             api_key = os.environ.get('DEEPSEEK_API_KEY')
             if not api_key:
-                return "Erro: API Key do DeepSeek não configurada."
+                return "Erro: API Key do DeepSeek nÃ£o configurada."
             
             try:
                 # Simulando chamada para DeepSeek
-                logger.info(f"🌐 Chamando Nuvem ({model})...")
-                # Aqui viria a lógica de request real para OpenRouter/DeepSeek
-                return f"[RESPOSTA CLOUD {model}] Esta é uma resposta processada na nuvem."
+                logger.info(f"ðŸŒ Chamando Nuvem ({model})...")
+                # Aqui viria a lÃ³gica de request real para OpenRouter/DeepSeek
+                return f"[RESPOSTA CLOUD {model}] Esta Ã© uma resposta processada na nuvem."
             except Exception as e:
                 logger.error(f"Erro na nuvem: {e}")
                 return await self._call_local_async(prompt)
@@ -315,7 +315,7 @@ class DecisionEngine:
     
     
     async def _call_ollama_async(self, prompt: str, image_path: Optional[str]) -> str:
-        """Chama Ollama API de forma assíncrona"""
+        """Chama Ollama API de forma assÃ­ncrona"""
         try:
             # Preparar payload
             payload = {
@@ -324,7 +324,7 @@ class DecisionEngine:
                 "stream": False
             }
             
-            # Adicionar imagem se disponível
+            # Adicionar imagem se disponÃ­vel
             if image_path and Path(image_path).exists():
                 import base64
                 with open(image_path, 'rb') as f:
@@ -338,25 +338,25 @@ class DecisionEngine:
                     if response.status == 200:
                         data = await response.json()
                         response_text = data.get("response", "")
-                        logger.info(f"✅ Ollama response: {len(response_text)} chars")
+                        logger.info(f"âœ… Ollama response: {len(response_text)} chars")
                         return response_text
                     else:
-                        logger.error(f"❌ Ollama error: {response.status}")
+                        logger.error(f"âŒ Ollama error: {response.status}")
                         return await self._call_local_async(prompt)
         
         except Exception as e:
-            logger.error(f"❌ Erro no Ollama: {e}")
+            logger.error(f"âŒ Erro no Ollama: {e}")
             return await self._call_local_async(prompt)
     
     
     async def _call_local_async(self, prompt: str) -> str:
-        """Chama LocalBrain (Qwen 1.5B) de forma assíncrona"""
+        """Chama LocalBrain (Qwen 1.5B) de forma assÃ­ncrona"""
         if not self.local_brain:
-            logger.error("❌ LocalBrain não disponível")
-            return "Desculpe, não consegui processar sua solicitação."
+            logger.error("âŒ LocalBrain nÃ£o disponÃ­vel")
+            return "Desculpe, nÃ£o consegui processar sua solicitaÃ§Ã£o."
         
         try:
-            # Rodar em thread separada (LocalBrain é CPU-bound)
+            # Rodar em thread separada (LocalBrain Ã© CPU-bound)
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
@@ -364,11 +364,11 @@ class DecisionEngine:
                 prompt,
                 self.system_prompt
             )
-            logger.info(f"✅ LocalBrain response: {len(response)} chars")
+            logger.info(f"âœ… LocalBrain response: {len(response)} chars")
             return response
         except Exception as e:
-            logger.error(f"❌ Erro no LocalBrain: {e}")
-            return "Desculpe, ocorreu um erro ao processar sua solicitação."
+            logger.error(f"âŒ Erro no LocalBrain: {e}")
+            return "Desculpe, ocorreu um erro ao processar sua solicitaÃ§Ã£o."
 
 
 # ============================================================================
@@ -377,7 +377,7 @@ class DecisionEngine:
 _decision_engine_instance = None
 
 def get_decision_engine(provider: str = 'ollama') -> DecisionEngine:
-    """Retorna instância singleton do DecisionEngine"""
+    """Retorna instÃ¢ncia singleton do DecisionEngine"""
     global _decision_engine_instance
     if _decision_engine_instance is None:
         _decision_engine_instance = DecisionEngine(provider)

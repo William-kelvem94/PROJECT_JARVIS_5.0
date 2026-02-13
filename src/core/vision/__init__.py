@@ -1,20 +1,20 @@
-"""
-🎥 JARVIS Vision System - Sistema de Visão Computacional
+﻿"""
+ðŸŽ¥ JARVIS Vision System - Sistema de VisÃ£o Computacional
 =======================================================
 
-Este módulo contém todas as funcionalidades de processamento visual do JARVIS,
-incluindo captura de tela, OCR, reconhecimento de gestos, detecção de UI e
-processamento avançado de imagens.
+Este mÃ³dulo contÃ©m todas as funcionalidades de processamento visual do JARVIS,
+incluindo captura de tela, OCR, reconhecimento de gestos, detecÃ§Ã£o de UI e
+processamento avanÃ§ado de imagens.
 
-Módulos Principais:
-- vision_system: Sistema central de visão
+MÃ³dulos Principais:
+- vision_system: Sistema central de visÃ£o
 - screen_capture: Captura e processamento de tela
-- ocr_processor: Reconhecimento óptico de caracteres
+- ocr_processor: Reconhecimento Ã³ptico de caracteres
 - gesture_recognizer: Reconhecimento de gestos
-- ui_detector: Detecção de elementos de interface
-- camera_controller: Controle de câmera
+- ui_detector: DetecÃ§Ã£o de elementos de interface
+- camera_controller: Controle de cÃ¢mera
 - vision_enhancer: Melhorias de imagem
-- vision_language_model: Integração visão-linguagem
+- vision_language_model: IntegraÃ§Ã£o visÃ£o-linguagem
 
 Exemplo de uso:
     from src.core.vision import VisionSystem, ScreenCapture

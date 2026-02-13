@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Enhanced Biometric Identity Verification System
 ===================================================================
-Sistema aprimorado de verificação biométrica (facial + vocal) integrado
-com identificação Microsoft para autorização democrática.
+Sistema aprimorado de verificaÃ§Ã£o biomÃ©trica (facial + vocal) integrado
+com identificaÃ§Ã£o Microsoft para autorizaÃ§Ã£o democrÃ¡tica.
 """
 
 import cv2
@@ -19,23 +19,23 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import logging
 
-# Imports obrigatórios de face recognition
+# Imports obrigatÃ³rios de face recognition
 import face_recognition
 
-# Imports obrigatórios de áudio
+# Imports obrigatÃ³rios de Ã¡udio
 import pyaudio
 import wave
 import librosa
 import numpy as np
 
-# Import do sistema de identificação Microsoft
+# Import do sistema de identificaÃ§Ã£o Microsoft
 from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier
 
 logger = logging.getLogger(__name__)
 
 @dataclass
 class BiometricProfile:
-    """👤 Perfil biométrico completo do usuário"""
+    """ðŸ‘¤ Perfil biomÃ©trico completo do usuÃ¡rio"""
     user_id: str
     microsoft_account: str
     # Face recognition
@@ -54,7 +54,7 @@ class BiometricProfile:
 
 @dataclass
 class VerificationResult:
-    """✅ Resultado de uma verificação biométrica"""
+    """âœ… Resultado de uma verificaÃ§Ã£o biomÃ©trica"""
     success: bool
     confidence_score: float
     verification_type: str  # "face", "voice", "both"
@@ -65,15 +65,15 @@ class VerificationResult:
 
 class EnhancedBiometricVerifier:
     """
-    🔐 SISTEMA APRIMORADO DE VERIFICAÇÃO BIOMÉTRICA
+    ðŸ” SISTEMA APRIMORADO DE VERIFICAÃ‡ÃƒO BIOMÃ‰TRICA
     
     Funcionalidades:
-    - Reconhecimento facial com múltiplas amostras
-    - Verificação vocal com features avançadas
-    - Integração com identificação Microsoft
-    - Sistema de confiança adaptativo
-    - Cache de verificações para performance
-    - Anti-spoofing básico
+    - Reconhecimento facial com mÃºltiplas amostras
+    - VerificaÃ§Ã£o vocal com features avanÃ§adas
+    - IntegraÃ§Ã£o com identificaÃ§Ã£o Microsoft
+    - Sistema de confianÃ§a adaptativo
+    - Cache de verificaÃ§Ãµes para performance
+    - Anti-spoofing bÃ¡sico
     """
     
     def __init__(self, jarvis_core, microsoft_identifier: MicrosoftDeviceIdentifier):
@@ -87,16 +87,16 @@ class EnhancedBiometricVerifier:
         self.is_monitoring = False
         self.last_verification: Optional[VerificationResult] = None
         
-        # Cache de verificação
+        # Cache de verificaÃ§Ã£o
         self.verification_cache = {}
         self.cache_duration_minutes = 30
         
-        # Configurações de face
+        # ConfiguraÃ§Ãµes de face
         self.face_detection_model = "hog"  # ou "cnn" para GPU
-        self.face_samples_needed = 3  # Mínimo de amostras de face
+        self.face_samples_needed = 3  # MÃ­nimo de amostras de face
         self.face_confidence_threshold = 0.6
         
-        # Configurações de voz
+        # ConfiguraÃ§Ãµes de voz
         self.voice_samples_needed = 2
         self.voice_confidence_threshold = 0.7
         self.audio_format = pyaudio.paInt16
@@ -113,30 +113,30 @@ class EnhancedBiometricVerifier:
         self.on_verification_failed: Optional[Callable] = None
         self.on_unauthorized_access: Optional[Callable] = None
         
-        print("🔐 Enhanced Biometric Verifier inicializado")
+        print("ðŸ” Enhanced Biometric Verifier inicializado")
     
     def setup_user_profile(self, force_recreate: bool = False) -> bool:
-        """👤 CONFIGURA PERFIL BIOMÉTRICO DO USUÁRIO"""
+        """ðŸ‘¤ CONFIGURA PERFIL BIOMÃ‰TRICO DO USUÃRIO"""
         
-        print("👤 Configurando perfil biométrico...")
+        print("ðŸ‘¤ Configurando perfil biomÃ©trico...")
         
         try:
-            # Obter informações da identificação Microsoft
+            # Obter informaÃ§Ãµes da identificaÃ§Ã£o Microsoft
             if not self.microsoft_identifier.microsoft_account:
-                print("❌ Conta Microsoft não identificada")
+                print("âŒ Conta Microsoft nÃ£o identificada")
                 return False
                 
             if not self.microsoft_identifier.device_fingerprint:
-                print("❌ Device fingerprint não identificado")
+                print("âŒ Device fingerprint nÃ£o identificado")
                 return False
             
             account_email = self.microsoft_identifier.microsoft_account.account_email
             device_id = self.microsoft_identifier.device_fingerprint.device_id
             
-            # Gerar user_id único
+            # Gerar user_id Ãºnico
             user_id = hashlib.sha256(f"{account_email}_{device_id}".encode()).hexdigest()[:16]
             
-            # Verificar se perfil já existe
+            # Verificar se perfil jÃ¡ existe
             profile_path = self.config_path / f"{user_id}_profile.json"
             
             if profile_path.exists() and not force_recreate:
@@ -149,34 +149,34 @@ class EnhancedBiometricVerifier:
                 profile_data['last_updated'] = datetime.fromisoformat(profile_data['last_updated'])
                 
                 self.current_user_profile = BiometricProfile(**profile_data)
-                print(f"✅ Perfil carregado: {len(self.current_user_profile.face_encodings)} faces, {self.current_user_profile.voice_samples_count} voice samples")
+                print(f"âœ… Perfil carregado: {len(self.current_user_profile.face_encodings)} faces, {self.current_user_profile.voice_samples_count} voice samples")
                 return True
             
             # Criar novo perfil
-            print("🆕 Criando novo perfil biométrico...")
+            print("ðŸ†• Criando novo perfil biomÃ©trico...")
             return self._create_new_profile(user_id, account_email)
             
         except Exception as e:
-            print(f"❌ Erro configurando perfil: {e}")
+            print(f"âŒ Erro configurando perfil: {e}")
             return False
     
     def _create_new_profile(self, user_id: str, account_email: str) -> bool:
-        """🆕 CRIA NOVO PERFIL BIOMÉTRICO"""
+        """ðŸ†• CRIA NOVO PERFIL BIOMÃ‰TRICO"""
         
-        print("📸 Iniciando coleta de amostras biométricas...")
+        print("ðŸ“¸ Iniciando coleta de amostras biomÃ©tricas...")
         
         try:
             # 1. COLETAR AMOSTRAS DE FACE
-            print(f"   📷 Coletando {self.face_samples_needed} amostras de face...")
+            print(f"   ðŸ“· Coletando {self.face_samples_needed} amostras de face...")
             face_encodings = self._collect_face_samples()
             
             # 2. COLETAR AMOSTRAS DE VOZ
-            print(f"   🎤 Coletando {self.voice_samples_needed} amostras de voz...")
+            print(f"   ðŸŽ¤ Coletando {self.voice_samples_needed} amostras de voz...")
             voice_features, voice_samples_count = self._collect_voice_samples()
             
             # 3. CRIAR PERFIL
             if len(face_encodings) == 0 and voice_features is None:
-                print("❌ Nenhuma amostra biométrica coletada")
+                print("âŒ Nenhuma amostra biomÃ©trica coletada")
                 return False
             
             self.current_user_profile = BiometricProfile(
@@ -198,29 +198,29 @@ class EnhancedBiometricVerifier:
             if hasattr(self, '_save_profile') and callable(getattr(self, '_save_profile')):
                 self._save_profile()
             
-            print(f"✅ Perfil criado com sucesso:")
-            print(f"   📷 {len(face_encodings)} amostras de face")
-            print(f"   🎤 {voice_samples_count} amostras de voz")
+            print(f"âœ… Perfil criado com sucesso:")
+            print(f"   ðŸ“· {len(face_encodings)} amostras de face")
+            print(f"   ðŸŽ¤ {voice_samples_count} amostras de voz")
             
             return True
             
         except Exception as e:
-            print(f"❌ Erro criando perfil: {e}")
+            print(f"âŒ Erro criando perfil: {e}")
             return False
     
     def _collect_face_samples(self) -> List[List[float]]:
-        """📷 COLETA AMOSTRAS DE FACE DO USUÁRIO"""
+        """ðŸ“· COLETA AMOSTRAS DE FACE DO USUÃRIO"""
         
         face_encodings = []
         
         try:
             cap = cv2.VideoCapture(0)
             if not cap.isOpened():
-                print("❌ Não foi possível acessar a webcam")
+                print("âŒ NÃ£o foi possÃ­vel acessar a webcam")
                 return []
             
-            print("   👀 Olhe para a câmera e mantenha o rosto visível")
-            print("   📸 Pressione ESPAÇO para capturar amostra (ESC para cancelar)")
+            print("   ðŸ‘€ Olhe para a cÃ¢mera e mantenha o rosto visÃ­vel")
+            print("   ðŸ“¸ Pressione ESPAÃ‡O para capturar amostra (ESC para cancelar)")
             
             samples_collected = 0
             
@@ -236,7 +236,7 @@ class EnhancedBiometricVerifier:
                 # Detectar faces
                 face_locations = face_recognition.face_locations(rgb_small_frame, model=self.face_detection_model)
                 
-                # Desenhar retângulos nas faces
+                # Desenhar retÃ¢ngulos nas faces
                 for top, right, bottom, left in face_locations:
                     # Escalar de volta para o tamanho original
                     top *= 4
@@ -246,12 +246,12 @@ class EnhancedBiometricVerifier:
                     
                     cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
                 
-                # Mostrar instruções
+                # Mostrar instruÃ§Ãµes
                 cv2.putText(frame, f"Amostras: {samples_collected}/{self.face_samples_needed}", 
                            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 
                 if len(face_locations) > 0:
-                    cv2.putText(frame, "ESPAÇO para capturar", (10, 70), 
+                    cv2.putText(frame, "ESPAÃ‡O para capturar", (10, 70), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 else:
                     cv2.putText(frame, "Nenhum rosto detectado", (10, 70), 
@@ -265,7 +265,7 @@ class EnhancedBiometricVerifier:
                     face_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
                     face_encodings.append(face_encoding.tolist())
                     samples_collected += 1
-                    print(f"   ✅ Amostra {samples_collected} capturada")
+                    print(f"   âœ… Amostra {samples_collected} capturada")
                     
                 elif key == 27:  # ESC
                     break
@@ -276,11 +276,11 @@ class EnhancedBiometricVerifier:
             return face_encodings
             
         except Exception as e:
-            print(f"❌ Erro coletando amostras de face: {e}")
+            print(f"âŒ Erro coletando amostras de face: {e}")
             return []
     
     def _collect_voice_samples(self) -> Tuple[Optional[List[float]], int]:
-        """🎤 COLETA AMOSTRAS DE VOZ DO USUÁRIO"""
+        """ðŸŽ¤ COLETA AMOSTRAS DE VOZ DO USUÃRIO"""
         
         try:
             voice_features_list = []
@@ -288,12 +288,12 @@ class EnhancedBiometricVerifier:
             p = pyaudio.PyAudio()
             
             for i in range(self.voice_samples_needed):
-                print(f"   🎤 Amostra de voz {i+1}/{self.voice_samples_needed}")
-                print("   🗣️ Fale por 3 segundos quando começar a gravar...")
+                print(f"   ðŸŽ¤ Amostra de voz {i+1}/{self.voice_samples_needed}")
+                print("   ðŸ—£ï¸ Fale por 3 segundos quando comeÃ§ar a gravar...")
                 
-                input("   Pressione ENTER para começar a gravação...")
+                input("   Pressione ENTER para comeÃ§ar a gravaÃ§Ã£o...")
                 
-                # Gravar áudio
+                # Gravar Ã¡udio
                 audio_format = self.audio_format if self.audio_format is not None else pyaudio.paInt16
                 stream = p.open(
                     format=audio_format,
@@ -303,7 +303,7 @@ class EnhancedBiometricVerifier:
                     frames_per_buffer=self.audio_chunk
                 )
                 
-                print("   🔴 GRAVANDO... (3 segundos)")
+                print("   ðŸ”´ GRAVANDO... (3 segundos)")
                 
                 frames = []
                 for _ in range(int(self.audio_rate / self.audio_chunk * 3)):  # 3 segundos
@@ -322,11 +322,11 @@ class EnhancedBiometricVerifier:
                 voice_features = np.mean(mfccs, axis=1).tolist()
                 voice_features_list.append(voice_features)
                 
-                print(f"   ✅ Amostra {i+1} coletada")
+                print(f"   âœ… Amostra {i+1} coletada")
             
             p.terminate()
             
-            # Calcular features médias
+            # Calcular features mÃ©dias
             if voice_features_list:
                 avg_features = np.mean(voice_features_list, axis=0).tolist()
                 return avg_features, len(voice_features_list)
@@ -334,14 +334,14 @@ class EnhancedBiometricVerifier:
             return None, 0
             
         except Exception as e:
-            print(f"❌ Erro coletando amostras de voz: {e}")
+            print(f"âŒ Erro coletando amostras de voz: {e}")
             return None, 0
     
     def verify_user_identity(self, 
                             use_face: bool = True, 
                             use_voice: bool = False,
                             timeout_seconds: int = 10) -> VerificationResult:
-        """🔐 VERIFICA IDENTIDADE DO USUÁRIO"""
+        """ðŸ” VERIFICA IDENTIDADE DO USUÃRIO"""
         
         if not self.current_user_profile:
             return VerificationResult(
@@ -351,7 +351,7 @@ class EnhancedBiometricVerifier:
                 user_id="unknown",
                 timestamp=datetime.now(),
                 device_id=getattr(self.microsoft_identifier.device_fingerprint, 'device_id', 'unknown') if self.microsoft_identifier.device_fingerprint else "unknown",
-                additional_info={"error": "Perfil biométrico não configurado"}
+                additional_info={"error": "Perfil biomÃ©trico nÃ£o configurado"}
             )
         
         verification_type = []
@@ -360,7 +360,7 @@ class EnhancedBiometricVerifier:
         additional_info = {}
         
         try:
-            # VERIFICAÇÃO FACIAL
+            # VERIFICAÃ‡ÃƒO FACIAL
             if use_face and self.current_user_profile.face_encodings:
                 if hasattr(self, '_verify_face') and callable(getattr(self, '_verify_face')):
                     face_confidence = self._verify_face(timeout_seconds)
@@ -370,7 +370,7 @@ class EnhancedBiometricVerifier:
                         verification_count += 1
                         additional_info["face_confidence"] = face_confidence
             
-            # VERIFICAÇÃO VOCAL
+            # VERIFICAÃ‡ÃƒO VOCAL
             if use_voice and self.current_user_profile.voice_features:
                 if hasattr(self, '_verify_voice') and callable(getattr(self, '_verify_voice')):
                     voice_confidence = self._verify_voice(timeout_seconds)
@@ -387,7 +387,7 @@ class EnhancedBiometricVerifier:
             else:
                 final_confidence = total_confidence / verification_count
                 
-                # Threshold dinâmico baseado no tipo de verificação
+                # Threshold dinÃ¢mico baseado no tipo de verificaÃ§Ã£o
                 if len(verification_type) == 2:  # Face + Voice
                     threshold = min(self.face_confidence_threshold, self.voice_confidence_threshold)
                 elif "face" in verification_type:
@@ -399,7 +399,7 @@ class EnhancedBiometricVerifier:
                 
                 success = final_confidence >= threshold
             
-            # Atualizar estatísticas do perfil
+            # Atualizar estatÃ­sticas do perfil
             self.current_user_profile.total_verifications += 1
             if success:
                 self.current_user_profile.successful_verifications += 1
@@ -446,7 +446,7 @@ class EnhancedBiometricVerifier:
             )
     
     def _verify_face(self, timeout_seconds: int) -> Optional[float]:
-        """📷 VERIFICA IDENTIDADE FACIAL"""
+        """ðŸ“· VERIFICA IDENTIDADE FACIAL"""
         
         try:
             cap = cv2.VideoCapture(0)
@@ -493,18 +493,18 @@ class EnhancedBiometricVerifier:
                             
                             if distances:
                                 min_distance = min(distances)
-                                confidence = 1.0 - min_distance  # Converter distância em confiança
+                                confidence = 1.0 - min_distance  # Converter distÃ¢ncia em confianÃ§a
                                 best_confidence = max(best_confidence, confidence)
                 
                 # Mostrar feedback visual (opcional)
                 cv2.putText(frame, f"Verificando... {best_confidence:.2f}", 
                            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.imshow('Verificação Facial', frame)
+                cv2.imshow('VerificaÃ§Ã£o Facial', frame)
                 
                 if cv2.waitKey(1) & 0xFF == 27:  # ESC
                     break
                 
-                # Se alcançou confiança alta, pode parar cedo
+                # Se alcanÃ§ou confianÃ§a alta, pode parar cedo
                 if best_confidence >= 0.8:
                     break
             
@@ -514,18 +514,18 @@ class EnhancedBiometricVerifier:
             return best_confidence
             
         except Exception as e:
-            print(f"❌ Erro na verificação facial: {e}")
+            print(f"âŒ Erro na verificaÃ§Ã£o facial: {e}")
             return None
     
     def _verify_voice(self, timeout_seconds: int) -> Optional[float]:
-        """🎤 VERIFICA IDENTIDADE VOCAL"""
+        """ðŸŽ¤ VERIFICA IDENTIDADE VOCAL"""
         
         try:
-            print("🎤 Fale por 3 segundos para verificação...")
+            print("ðŸŽ¤ Fale por 3 segundos para verificaÃ§Ã£o...")
             
             p = pyaudio.PyAudio()
             
-            # Gravar áudio
+            # Gravar Ã¡udio
             audio_format = self.audio_format if self.audio_format is not None else pyaudio.paInt16
             stream = p.open(
                 format=audio_format,
@@ -544,7 +544,7 @@ class EnhancedBiometricVerifier:
             stream.close()
             p.terminate()
             
-            # Processar áudio
+            # Processar Ã¡udio
             audio_data = b''.join(frames)
             audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
             
@@ -556,23 +556,23 @@ class EnhancedBiometricVerifier:
             if self.current_user_profile and self.current_user_profile.voice_features:
                 known_features = np.array(self.current_user_profile.voice_features)
                 
-                # Calcular similaridade (distância cosine invertida)
+                # Calcular similaridade (distÃ¢ncia cosine invertida)
                 similarity = np.dot(known_features, voice_features) / (
                     np.linalg.norm(known_features) * np.linalg.norm(voice_features)
                 )
                 
-                # Converter similaridade em confiança
+                # Converter similaridade em confianÃ§a
                 confidence = max(0.0, similarity)
                 return confidence
             
             return None
             
         except Exception as e:
-            print(f"❌ Erro na verificação vocal: {e}")
+            print(f"âŒ Erro na verificaÃ§Ã£o vocal: {e}")
             return None
     
     def _save_profile(self):
-        """💾 SALVA PERFIL BIOMÉTRICO"""
+        """ðŸ’¾ SALVA PERFIL BIOMÃ‰TRICO"""
         
         if not self.current_user_profile:
             return
@@ -590,12 +590,12 @@ class EnhancedBiometricVerifier:
                 json.dump(profile_data, f, indent=2, ensure_ascii=False)
             
         except Exception as e:
-            print(f"❌ Erro salvando perfil: {e}")
+            print(f"âŒ Erro salvando perfil: {e}")
     
-    # ===== MÉTODOS PÚBLICOS =====
+    # ===== MÃ‰TODOS PÃšBLICOS =====
     
     def start_continuous_monitoring(self):
-        """👁️ INICIA MONITORAMENTO CONTÍNUO"""
+        """ðŸ‘ï¸ INICIA MONITORAMENTO CONTÃNUO"""
         
         if self.is_monitoring:
             return
@@ -606,10 +606,10 @@ class EnhancedBiometricVerifier:
         self.monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitor_thread.start()
         
-        print("👁️ Monitoramento biométrico iniciado")
+        print("ðŸ‘ï¸ Monitoramento biomÃ©trico iniciado")
     
     def stop_continuous_monitoring(self):
-        """⏹️ PARA MONITORAMENTO CONTÍNUO"""
+        """â¹ï¸ PARA MONITORAMENTO CONTÃNUO"""
         
         if not self.is_monitoring:
             return
@@ -620,27 +620,27 @@ class EnhancedBiometricVerifier:
         if self.monitor_thread and self.monitor_thread.is_alive():
             self.monitor_thread.join(timeout=5)
         
-        print("⏹️ Monitoramento biométrico parado")
+        print("â¹ï¸ Monitoramento biomÃ©trico parado")
     
     def _monitoring_loop(self):
-        """🔄 LOOP DE MONITORAMENTO CONTÍNUO"""
+        """ðŸ”„ LOOP DE MONITORAMENTO CONTÃNUO"""
         
         while not self.stop_monitoring.wait(30):  # Verificar a cada 30 segundos
             try:
-                # Verificação automática se detectar presença
+                # VerificaÃ§Ã£o automÃ¡tica se detectar presenÃ§a
                 result = self.verify_user_identity(use_face=True, use_voice=False, timeout_seconds=5)
                 
                 if not result.success:
-                    print(f"⚠️ Verificação falhou: {result.confidence_score:.2f}")
+                    print(f"âš ï¸ VerificaÃ§Ã£o falhou: {result.confidence_score:.2f}")
                     if self.on_unauthorized_access:
                         self.on_unauthorized_access(result)
                 
             except Exception as e:
-                print(f"❌ Erro no monitoramento: {e}")
+                print(f"âŒ Erro no monitoramento: {e}")
                 time.sleep(5)
     
     def get_verification_status(self) -> Dict[str, Any]:
-        """📊 STATUS DO SISTEMA DE VERIFICAÇÃO"""
+        """ðŸ“Š STATUS DO SISTEMA DE VERIFICAÃ‡ÃƒO"""
         
         if not self.current_user_profile:
             return {"status": "not_configured"}

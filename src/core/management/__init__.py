@@ -1,17 +1,17 @@
-"""
-⚙️ JARVIS Management System - Sistema de Gerenciamento
+﻿"""
+âš™ï¸ JARVIS Management System - Sistema de Gerenciamento
 ====================================================
 
-Este módulo contém todas as funcionalidades de gerenciamento e manutenção do JARVIS,
-incluindo recuperação automática, controle de dispositivos, otimização de performance
-e gerenciamento de dependências.
+Este mÃ³dulo contÃ©m todas as funcionalidades de gerenciamento e manutenÃ§Ã£o do JARVIS,
+incluindo recuperaÃ§Ã£o automÃ¡tica, controle de dispositivos, otimizaÃ§Ã£o de performance
+e gerenciamento de dependÃªncias.
 
-Módulos Principais:
+MÃ³dulos Principais:
 - device_manager: Gerenciamento de dispositivos
 - hardware_manager: Controle de hardware
-- auto_recovery_system: Recuperação automática
-- performance_optimizer: Otimização de performance
-- dependency_manager: Gerenciamento de dependências
+- auto_recovery_system: RecuperaÃ§Ã£o automÃ¡tica
+- performance_optimizer: OtimizaÃ§Ã£o de performance
+- dependency_manager: Gerenciamento de dependÃªncias
 - shutdown_manager: Controle de desligamento
 - system_controller: Controle geral do sistema
 

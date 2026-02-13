@@ -1,4 +1,4 @@
-"""
+﻿"""
 Dependency Manager for JARVIS Learning Systems.
 
 Centralizes optional dependency handling to avoid scattered try/except blocks
@@ -47,7 +47,7 @@ class DependencyManager:
                 version=torch.__version__,
                 capabilities={'training', 'inference', 'gpu' if torch.cuda.is_available() else 'cpu'}
             )
-            logger.debug(f"✅ PyTorch {torch.__version__} available with {'GPU' if torch.cuda.is_available() else 'CPU'}")
+            logger.debug(f"âœ… PyTorch {torch.__version__} available with {'GPU' if torch.cuda.is_available() else 'CPU'}")
         except Exception as e:
             self._status['torch'] = DependencyStatus(
                 available=False,
@@ -55,7 +55,7 @@ class DependencyManager:
                 fallback_available=True,  # Can use CPU-only inference
                 capabilities=set()
             )
-            logger.warning(f"⚠️ PyTorch not available: {e}")
+            logger.warning(f"âš ï¸ PyTorch not available: {e}")
     
     def _check_transformers(self):
         """Check Transformers library."""

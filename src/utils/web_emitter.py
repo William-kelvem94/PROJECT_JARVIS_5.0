@@ -1,10 +1,10 @@
-import asyncio
+﻿import asyncio
 import logging
 import json
 
 logger = logging.getLogger(__name__)
 
-# Referência global para o servidor web (opcional, se precisarmos de acesso direto)
+# ReferÃªncia global para o servidor web (opcional, se precisarmos de acesso direto)
 _web_server_ref = None
 
 def set_web_server(server):
@@ -15,7 +15,7 @@ def set_web_server(server):
 _subscribers = []
 
 def register_subscriber(callback):
-    """Registra uma função callback(event_type, data)"""
+    """Registra uma funÃ§Ã£o callback(event_type, data)"""
     if callback not in _subscribers:
         _subscribers.append(callback)
 
@@ -53,7 +53,7 @@ async def emit_telemetry(cpu: float, memory: float):
 
 async def emit_status(status: str, details: str = "", model: str = None, tier: str = "balanced"):
     """
-    Novo: Emite mudança de status cognitivo
+    Novo: Emite mudanÃ§a de status cognitivo
     Ex: status="thinking", details="Analisando logs...", model="llama3", tier="ultra"
     """
     data = {
@@ -72,7 +72,7 @@ async def emit_status(status: str, details: str = "", model: str = None, tier: s
     _notify_subscribers("status", data)
 
 def emit_status_sync(status: str, details: str = "", model: str = None, tier: str = "balanced"):
-    """Versão síncrona para emit_status"""
+    """VersÃ£o sÃ­ncrona para emit_status"""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -80,18 +80,18 @@ def emit_status_sync(status: str, details: str = "", model: str = None, tier: st
         else:
             loop.run_until_complete(emit_status(status, details, model, tier))
     except Exception:
-        # Fallback se não houver loop
+        # Fallback se nÃ£o houver loop
         _notify_subscribers("status", {
             "status": status, "details": details, "model": model, "tier": tier
         })
 
 def emit_context(app_name: str, window_title: str):
-    """Novo: Emite mudança de contexto (Janela Ativa)"""
+    """Novo: Emite mudanÃ§a de contexto (Janela Ativa)"""
     data = {"app": app_name, "title": window_title}
     _notify_subscribers("context", data)
 
 def emit_log_sync(message: str, level: str = "INFO"):
-    """Versão síncrona para ser chamada de qualquer lugar"""
+    """VersÃ£o sÃ­ncrona para ser chamada de qualquer lugar"""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():
@@ -102,7 +102,7 @@ def emit_log_sync(message: str, level: str = "INFO"):
         _notify_subscribers("log", {"message": message, "level": level})
 
 def emit_telemetry_sync(cpu: float, memory: float):
-    """Versão síncrona para telemetria"""
+    """VersÃ£o sÃ­ncrona para telemetria"""
     try:
         loop = asyncio.get_event_loop()
         if loop.is_running():

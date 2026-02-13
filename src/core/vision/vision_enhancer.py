@@ -1,7 +1,7 @@
-# ============================================================================
+﻿# ============================================================================
 # JARVIS SINGULARITY - Vision Enhancer (Phase 4: Vision Enhancement)
 # ============================================================================
-# Detecção avançada de UI com YOLO + OCR
+# DetecÃ§Ã£o avanÃ§ada de UI com YOLO + OCR
 # Permite JARVIS "ver" e entender elementos na tela
 # ============================================================================
 
@@ -21,21 +21,21 @@ try:
     YOLO_AVAILABLE = True
 except ImportError:
     YOLO_AVAILABLE = False
-    logger.warning("⚠️ Ultralytics YOLO não disponível - detecção avançada desabilitada")
+    logger.warning("âš ï¸ Ultralytics YOLO nÃ£o disponÃ­vel - detecÃ§Ã£o avanÃ§ada desabilitada")
 
 try:
     import easyocr
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
-    logger.warning("⚠️ EasyOCR não disponível - OCR desabilitado")
+    logger.warning("âš ï¸ EasyOCR nÃ£o disponÃ­vel - OCR desabilitado")
 
 try:
     from PIL import Image
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
-    logger.warning("⚠️ PIL não disponível")
+    logger.warning("âš ï¸ PIL nÃ£o disponÃ­vel")
 
 
 # ============================================================================
@@ -43,12 +43,12 @@ except ImportError:
 # ============================================================================
 class VisionEnhancer:
     """
-    Visão computacional avançada para JARVIS.
+    VisÃ£o computacional avanÃ§ada para JARVIS.
     
     CAPACIDADES:
-    - Detecção de UI elements com YOLO
+    - DetecÃ§Ã£o de UI elements com YOLO
     - OCR para extrair texto
-    - Identificação de botões, inputs, menus
+    - IdentificaÃ§Ã£o de botÃµes, inputs, menus
     - Coordenadas precisas para cliques
     """
     
@@ -59,7 +59,7 @@ class VisionEnhancer:
         Args:
             model_size: Tamanho do modelo YOLO (n=nano, s=small, m=medium)
         """
-        logger.info("👁️ Inicializando Vision Enhancer...")
+        logger.info("ðŸ‘ï¸ Inicializando Vision Enhancer...")
         
         self.yolo_model = None
         self.ocr_reader = None
@@ -68,23 +68,23 @@ class VisionEnhancer:
         # Inicializar YOLO
         if YOLO_AVAILABLE:
             try:
-                # Usar modelo pré-treinado YOLO no diretório correto
+                # Usar modelo prÃ©-treinado YOLO no diretÃ³rio correto
                 model_path = f"models/vision/yolov8{model_size}.pt"
                 self.yolo_model = YOLO(model_path)
-                logger.info(f"✅ YOLO {model_size} carregado de {model_path}")
+                logger.info(f"âœ… YOLO {model_size} carregado de {model_path}")
             except Exception as e:
-                logger.warning(f"⚠️ Erro ao carregar YOLO: {e}")
+                logger.warning(f"âš ï¸ Erro ao carregar YOLO: {e}")
         
         # Inicializar OCR
         if OCR_AVAILABLE:
             try:
-                # Suporte para português e inglês
+                # Suporte para portuguÃªs e inglÃªs
                 self.ocr_reader = easyocr.Reader(['pt', 'en'], gpu=False)
-                logger.info("✅ EasyOCR carregado (PT/EN)")
+                logger.info("âœ… EasyOCR carregado (PT/EN)")
             except Exception as e:
-                logger.warning(f"⚠️ Erro ao carregar OCR: {e}")
+                logger.warning(f"âš ï¸ Erro ao carregar OCR: {e}")
         
-        logger.info("✅ Vision Enhancer online")
+        logger.info("âœ… Vision Enhancer online")
     
     def analyze_screen(
         self,
@@ -93,7 +93,7 @@ class VisionEnhancer:
         extract_text: bool = True
     ) -> Dict[str, Any]:
         """
-        Análise completa da tela.
+        AnÃ¡lise completa da tela.
         
         Args:
             image_path: Path da screenshot
@@ -113,15 +113,15 @@ class VisionEnhancer:
         try:
             # Carregar imagem
             if not Path(image_path).exists():
-                logger.error(f"❌ Imagem não encontrada: {image_path}")
+                logger.error(f"âŒ Imagem nÃ£o encontrada: {image_path}")
                 return result
             
             image = cv2.imread(image_path)
             if image is None:
-                logger.error(f"❌ Erro ao carregar imagem: {image_path}")
+                logger.error(f"âŒ Erro ao carregar imagem: {image_path}")
                 return result
             
-            # 1. Detecção de UI com YOLO
+            # 1. DetecÃ§Ã£o de UI com YOLO
             if detect_ui and self.yolo_model:
                 ui_elements = self._detect_ui_elements(image)
                 result["ui_elements"] = ui_elements
@@ -135,13 +135,13 @@ class VisionEnhancer:
             # 3. Gerar resumo
             result["summary"] = self._generate_summary(result)
             
-            logger.info(f"👁️ Análise completa: {len(result['ui_elements'])} elementos UI, "
-                       f"{len(result['text_regions'])} regiões de texto")
+            logger.info(f"ðŸ‘ï¸ AnÃ¡lise completa: {len(result['ui_elements'])} elementos UI, "
+                       f"{len(result['text_regions'])} regiÃµes de texto")
             
             return result
         
         except Exception as e:
-            logger.error(f"❌ Erro na análise: {e}")
+            logger.error(f"âŒ Erro na anÃ¡lise: {e}")
             return result
     
     def _detect_ui_elements(self, image: np.ndarray) -> List[Dict[str, Any]]:
@@ -149,14 +149,14 @@ class VisionEnhancer:
         elements = []
         
         try:
-            # Executar detecção
+            # Executar detecÃ§Ã£o
             results = self.yolo_model(image, verbose=False)
             
             # Processar resultados
             for result in results:
                 boxes = result.boxes
                 for box in boxes:
-                    # Extrair informações
+                    # Extrair informaÃ§Ãµes
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf = float(box.conf[0])
                     cls = int(box.cls[0])
@@ -180,10 +180,10 @@ class VisionEnhancer:
                         "area": int((x2 - x1) * (y2 - y1))
                     })
             
-            logger.info(f"🔍 Detectados {len(elements)} elementos UI")
+            logger.info(f"ðŸ” Detectados {len(elements)} elementos UI")
         
         except Exception as e:
-            logger.error(f"❌ Erro na detecção UI: {e}")
+            logger.error(f"âŒ Erro na detecÃ§Ã£o UI: {e}")
         
         return elements
     
@@ -218,18 +218,18 @@ class VisionEnhancer:
                     "confidence": conf
                 })
             
-            logger.info(f"📝 Extraídas {len(text_regions)} regiões de texto")
+            logger.info(f"ðŸ“ ExtraÃ­das {len(text_regions)} regiÃµes de texto")
         
         except Exception as e:
-            logger.error(f"❌ Erro no OCR: {e}")
+            logger.error(f"âŒ Erro no OCR: {e}")
         
         return text_regions
     
     def _extract_clickable_areas(self, ui_elements: List[Dict]) -> List[Dict[str, Any]]:
-        """Extrai áreas clicáveis dos elementos UI"""
+        """Extrai Ã¡reas clicÃ¡veis dos elementos UI"""
         clickable = []
         
-        # Classes consideradas clicáveis
+        # Classes consideradas clicÃ¡veis
         clickable_classes = ["button", "link", "icon", "menu", "checkbox", "radio"]
         
         for elem in ui_elements:
@@ -243,7 +243,7 @@ class VisionEnhancer:
         return clickable
     
     def _generate_summary(self, analysis: Dict[str, Any]) -> str:
-        """Gera resumo da análise visual"""
+        """Gera resumo da anÃ¡lise visual"""
         parts = []
         
         # UI Elements
@@ -264,7 +264,7 @@ class VisionEnhancer:
         # Text
         if analysis["text_regions"]:
             text_count = len(analysis["text_regions"])
-            parts.append(f"{text_count} regiões de texto")
+            parts.append(f"{text_count} regiÃµes de texto")
             
             # Texto mais longo
             longest = max(analysis["text_regions"], key=lambda x: len(x["text"]))
@@ -274,7 +274,7 @@ class VisionEnhancer:
         # Clickable
         if analysis["clickable_areas"]:
             click_count = len(analysis["clickable_areas"])
-            parts.append(f"{click_count} áreas clicáveis")
+            parts.append(f"{click_count} Ã¡reas clicÃ¡veis")
         
         return " | ".join(parts) if parts else "Nenhum elemento detectado"
     
@@ -313,7 +313,7 @@ class VisionEnhancer:
         return None
     
     def get_stats(self) -> Dict[str, Any]:
-        """Obtém estatísticas do Vision Enhancer"""
+        """ObtÃ©m estatÃ­sticas do Vision Enhancer"""
         return {
             "yolo_available": bool(self.yolo_model),
             "ocr_available": bool(self.ocr_reader),

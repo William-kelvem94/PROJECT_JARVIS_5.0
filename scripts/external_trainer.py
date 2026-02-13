@@ -39,8 +39,29 @@ logging.basicConfig(
 )
 logger = logging.getLogger("EXTERNAL-TRAINER")
 
+# Configurar web_emitter para logs em tempo real
+try:
+    from src.utils.web_emitter import emit_log_sync
+    WEB_EMITTER_AVAILABLE = True
+    
+    class WebEmitterHandler(logging.Handler):
+        def emit(self, record):
+            try:
+                emit_log_sync(self.format(record), record.levelname)
+            except Exception:
+                pass  # Silenciar erros do web emitter
+    
+    # Adicionar handler do web emitter
+    web_handler = WebEmitterHandler()
+    web_handler.setLevel(logging.INFO)
+    logger.addHandler(web_handler)
+    
+except ImportError:
+    WEB_EMITTER_AVAILABLE = False
+    logger.warning("Web emitter não disponível - logs não serão transmitidos em tempo real")
+
 # Adicionar diretório raiz ao path
-project_root = Path(__file__).parent
+project_root = Path(__file__).parent.parent  # Vai para o diretório raiz do projeto
 sys.path.insert(0, str(project_root))
 
 def load_config(config_path: str) -> dict:
@@ -213,10 +234,9 @@ def train_emotion(config: dict):
     return True
 
 def train_study(config: dict, topic: Optional[str] = None):
-    """Treina baseado em estudo de tópicos."""
+    """Treina baseado em estudo de tópicos - VERSÃO REAL COM FINE-TUNING"""
     try:
-        from src.learning.knowledge_distiller import KnowledgeDistiller
-        from pathlib import Path
+        from src.learning.real_trainer import train_with_real_learning
 
         if not topic:
             topic = config.get('topic', 'Inteligência Artificial')
@@ -224,55 +244,25 @@ def train_study(config: dict, topic: Optional[str] = None):
         # Garantir que topic é string
         topic = str(topic)
 
-        data_dir = Path(config.get('data_dir', 'data/learning'))
-        distiller = KnowledgeDistiller(data_dir=data_dir)
+        logger.info(f"🧠 INICIANDO TREINAMENTO REAL PARA: {topic}")
+        logger.info("🎯 Este treinamento usa fine-tuning real, não apenas destilação!")
 
-        logger.info(f"📚 Inicializando estudo sobre: {topic}")
+        # Treinamento REAL com fine-tuning
+        result = train_with_real_learning(topic, config)
 
-        # Simular uma interação para destilar conhecimento
-        user_command = f"Explique {topic} em detalhes"
-        thought = f"Preciso fornecer uma explicação abrangente sobre {topic}"
-        actions = [{"type": "research", "topic": topic}]
-        
-        distiller.distill_interaction(
-            user_command=user_command,
-            thought=thought,
-            actions=actions,
-            success=True
-        )
+        if result['status'] == 'success':
+            logger.info(f"✅ TREINAMENTO REAL CONCLUÍDO!")
+            logger.info(f"📁 Modelo treinado salvo em: {result.get('model_path')}")
+            logger.info(f"📊 Loss final: {result.get('training_loss', 'N/A')}")
+            logger.info(f"🔢 Parâmetros ajustados: {result.get('trainable_params', 'N/A')}")
+        else:
+            logger.error(f"❌ Falha no treinamento real: {result}")
 
-        # Gerar dados simulados
-        training_data = {
-            "topic": topic,
-            "examples": [
-                {
-                    "instruction": f"Explique o conceito de {topic}",
-                    "input": "",
-                    "output": f"{topic} é um campo fundamental da ciência da computação..."
-                }
-            ],
-            "metadata": {
-                "generated_at": "2026-02-13",
-                "total_examples": 1,
-                "method": "knowledge_distillation"
-            }
-        }
-
-        # Salvar dados gerados
-        output_dir = Path(config.get('output_dir', 'data/learning/training_data'))
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-        data_file = output_dir / f"study_{topic.replace(' ', '_')}.json"
-        with open(data_file, 'w', encoding='utf-8') as f:
-            json.dump(training_data, f, indent=2, ensure_ascii=False)
-
-        logger.info(f"✅ Dados de estudo gerados e salvos em: {data_file}")
-        logger.info(f"📊 Total de exemplos gerados: {len(training_data.get('examples', []))}")
+        return result['status'] == 'success'
 
     except Exception as e:
-        logger.error(f"Erro no estudo: {e}")
+        logger.error(f"Erro no treinamento real: {e}")
         return False
-    return True
 
 def main():
     parser = argparse.ArgumentParser(description="Treinamento Externo JARVIS 5.0")

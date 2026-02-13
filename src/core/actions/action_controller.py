@@ -1,6 +1,6 @@
-"""
-Controlador de ações do sistema
-Habilita interação com mouse e teclado via PyAutoGUI
+﻿"""
+Controlador de aÃ§Ãµes do sistema
+Habilita interaÃ§Ã£o com mouse e teclado via PyAutoGUI
 """
 
 import pyautogui
@@ -11,15 +11,15 @@ from src.core.security.security_manager import SecurityManager
 
 logger = logging.getLogger(__name__)
 
-# Configurações de segurança do PyAutoGUI
+# ConfiguraÃ§Ãµes de seguranÃ§a do PyAutoGUI
 pyautogui.PAUSE = 0.5
 pyautogui.FAILSAFE = True
 
 class ActionController:
-    """Classe para executar ações físicas no sistema"""
+    """Classe para executar aÃ§Ãµes fÃ­sicas no sistema"""
 
     def click_at(self, x: int, y: int, clicks: int = 1, button: str = 'left'):
-        """Clica em uma coordenada específica"""
+        """Clica em uma coordenada especÃ­fica"""
         try:
             logger.info(f"Clicando em ({x}, {y}) - {clicks}x {button}")
             pyautogui.click(x=x, y=y, clicks=clicks, button=button)
@@ -49,7 +49,7 @@ class ActionController:
             return False
 
     def hotkey(self, *args):
-        """Executa combinação de teclas (ex: 'ctrl', 'c')"""
+        """Executa combinaÃ§Ã£o de teclas (ex: 'ctrl', 'c')"""
         try:
             logger.info(f"Executando hotkey: {args}")
             pyautogui.hotkey(*args)
@@ -70,7 +70,7 @@ class ActionController:
             return False
 
     def move_to(self, x: int, y: int, duration: float = 0.5):
-        """Move o cursor para uma posição específica"""
+        """Move o cursor para uma posiÃ§Ã£o especÃ­fica"""
         try:
             pyautogui.moveTo(x, y, duration=duration)
             return True
@@ -80,7 +80,7 @@ class ActionController:
 
     def click_text(self, target_text: str, ocr_regions: List[Dict[str, Any]]) -> bool:
         """
-        Encontra um texto nas regiões OCR e clica no centro dele.
+        Encontra um texto nas regiÃµes OCR e clica no centro dele.
         Suporta busca parcial (case-insensitive).
         """
         try:
@@ -88,7 +88,7 @@ class ActionController:
             for region in ocr_regions:
                 text = region.get('text', '').lower()
                 if target_lower in text:
-                    # Calcular centro da região
+                    # Calcular centro da regiÃ£o
                     x = region['x'] + (region['width'] // 2)
                     y = region['y'] + (region['height'] // 2)
                     
@@ -96,14 +96,14 @@ class ActionController:
                     self.click_at(x, y)
                     return True
             
-            logger.warning(f"Texto '{target_text}' não encontrado nas regiões OCR.")
+            logger.warning(f"Texto '{target_text}' nÃ£o encontrado nas regiÃµes OCR.")
             return False
         except Exception as e:
             logger.error(f"Erro ao clicar no texto: {e}")
             return False
 
     def read_clipboard(self) -> str:
-        """Lê o conteúdo atual da área de transferência com retry"""
+        """LÃª o conteÃºdo atual da Ã¡rea de transferÃªncia com retry"""
         for _ in range(3):
             try:
                 import pyperclip
@@ -114,7 +114,7 @@ class ActionController:
             except Exception:
                 time.sleep(0.1)
         
-        # Fallback se pyperclip falhar ou não existir
+        # Fallback se pyperclip falhar ou nÃ£o existir
         try:
              import tkinter as tk
              root = tk.Tk()
@@ -133,9 +133,9 @@ class ActionController:
         from pathlib import Path
 
         try:
-            logger.info(f"🧠 Organizando via IA em: {target_path}")
+            logger.info(f"ðŸ§  Organizando via IA em: {target_path}")
             if not SecurityManager.validate_path_access(target_path):
-                logger.error(f"🛡️ Bloqueio Anti-Genesis: Caminho proibido {target_path}")
+                logger.error(f"ðŸ›¡ï¸ Bloqueio Anti-Genesis: Caminho proibido {target_path}")
                 return False
 
             target = Path(target_path)
@@ -151,15 +151,15 @@ class ActionController:
                     shutil.move(str(file_path), str(dest_dir / filename))
                     count += 1
             
-            logger.info(f"✅ {count} arquivos movidos com lógica soberana.")
+            logger.info(f"âœ… {count} arquivos movidos com lÃ³gica soberana.")
             return True
         except Exception as e:
-            logger.error(f"Erro na organização soberana: {e}")
+            logger.error(f"Erro na organizaÃ§Ã£o soberana: {e}")
             return False
 
     def fill_field(self, field_label: str, value: str, ocr_regions: List[Dict[str, Any]]) -> bool:
         """
-        Tenta encontrar um rótulo (ex: 'Email') e clica no campo à direita ou abaixo para preencher.
+        Tenta encontrar um rÃ³tulo (ex: 'Email') e clica no campo Ã  direita ou abaixo para preencher.
         """
         try:
             target_lower = field_label.lower()
@@ -171,7 +171,7 @@ class ActionController:
                     break
             
             if label_region:
-                # Estratégia: Clicar 100 pixels à direita do centro do label (comum para inputs)
+                # EstratÃ©gia: Clicar 100 pixels Ã  direita do centro do label (comum para inputs)
                 x = label_region['x'] + label_region['width'] + 50
                 y = label_region['y'] + (label_region['height'] // 2)
                 
@@ -186,5 +186,5 @@ class ActionController:
             logger.error(f"Erro ao preencher campo: {e}")
             return False
 
-# Instância global
+# InstÃ¢ncia global
 action_controller = ActionController()

@@ -1,7 +1,7 @@
-"""
-Cérebro Local do Jarvis 5.0 (Local Brain)
+﻿"""
+CÃ©rebro Local do Jarvis 5.0 (Local Brain)
 Implementa um modelo de linguagem reduzido (Micro-LLM) rodando nativamente.
-Fase 5: Modernização Definitiva via Optimum-Intel.
+Fase 5: ModernizaÃ§Ã£o Definitiva via Optimum-Intel.
 """
 
 import logging
@@ -9,7 +9,7 @@ import os
 import threading
 from typing import List, Dict, Optional, Callable
 
-# 🛡️ MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
+# ðŸ›¡ï¸ MONKEY PATCH: CorreÃ§Ã£o CrÃ­tica para OpenVINO/Optimum-Intel
 try:
     import sys
     import openvino
@@ -34,10 +34,10 @@ except Exception:
 
 from src.utils.stability import model_load_lock
 
-# Configuração de Logs
+# ConfiguraÃ§Ã£o de Logs
 logger = logging.getLogger(__name__)
 
-# Dependências Críticas
+# DependÃªncias CrÃ­ticas
 try:
     import torch
     TORCH_AVAILABLE = True
@@ -59,7 +59,7 @@ except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
 class LocalBrain:
-    """Cérebro local Híbrido especializado em aceleração Intel (GPU/OpenVINO)"""
+    """CÃ©rebro local HÃ­brido especializado em aceleraÃ§Ã£o Intel (GPU/OpenVINO)"""
     
     def __init__(self, model_id: str = "Qwen/Qwen2.5-1.5B-Instruct"):
         from src.utils.config import config
@@ -92,25 +92,25 @@ class LocalBrain:
             with self._load_lock:
                 if self._is_loaded: return
                 
-                # Trava de Segurança Stark
+                # Trava de SeguranÃ§a Stark
                 model_load_lock.acquire(f"LocalBrain ({self.model_id})")
-                logger.info(f"🧠 [LOCAL BRAIN] Iniciando motor neural: {self.model_id}")
+                logger.info(f"ðŸ§  [LOCAL BRAIN] Iniciando motor neural: {self.model_id}")
                 
                 # 1. Carregar Tokenizer
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True)
                 
-                # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache Inteligente
+                # 2. Tentar AceleraÃ§Ã£o OpenVINO (Optimum Intel) com Cache Inteligente
                 if OPENVINO_AVAILABLE and os.environ.get("JARVIS_DISABLE_OPENVINO") != "1":
                     cache_dir = "data/models/ov_cache"
                     os.makedirs(cache_dir, exist_ok=True)
                     
                     try:
-                        logger.info("⚡ Tentando Aceleração OpenVINO via GPU Intel...")
+                        logger.info("âš¡ Tentando AceleraÃ§Ã£o OpenVINO via GPU Intel...")
                         self.model = OVModelForCausalLM.from_pretrained(
                             self.model_id,
                             export=True,
                             device="GPU", 
-                            compile=False,  # Evita recompilação desnecessária
+                            compile=False,  # Evita recompilaÃ§Ã£o desnecessÃ¡ria
                             trust_remote_code=True,
                             ov_config={
                                 "PERFORMANCE_HINT": "LATENCY",
@@ -120,15 +120,15 @@ class LocalBrain:
                         )
                         self.device = "GPU"
                         self.provider_name = "OpenVINO (GPU)"
-                        logger.info("✅ Aceleração OpenVINO Ativa (GPU)")
+                        logger.info("âœ… AceleraÃ§Ã£o OpenVINO Ativa (GPU)")
                     except Exception as e:
-                        logger.warning(f"⚠️ GPU indisponível ou falhou ({e}). Tentando OpenVINO CPU...")
+                        logger.warning(f"âš ï¸ GPU indisponÃ­vel ou falhou ({e}). Tentando OpenVINO CPU...")
                         try:
                             self.model = OVModelForCausalLM.from_pretrained(
                                 self.model_id,
                                 export=True,
                                 device="CPU",
-                                compile=False,  # Evita recompilação
+                                compile=False,  # Evita recompilaÃ§Ã£o
                                 trust_remote_code=True,
                                 ov_config={
                                     "PERFORMANCE_HINT": "THROUGHPUT",
@@ -137,17 +137,17 @@ class LocalBrain:
                             )
                             self.device = "CPU"
                             self.provider_name = "OpenVINO (CPU)"
-                            logger.info("✅ Aceleração OpenVINO Ativa (CPU)")
+                            logger.info("âœ… AceleraÃ§Ã£o OpenVINO Ativa (CPU)")
                         except Exception as e2:
-                            logger.error(f"❌ Falha total no OpenVINO: {e2}. Ativando fallback PyTorch.")
+                            logger.error(f"âŒ Falha total no OpenVINO: {e2}. Ativando fallback PyTorch.")
                             self.model = None
 
-                # 3. Fallback PyTorch Nativo (Se OpenVINO falhou ou indisponível)
+                # 3. Fallback PyTorch Nativo (Se OpenVINO falhou ou indisponÃ­vel)
                 if self.model is None:
-                    logger.info("🏠 Usando motor PyTorch Nativo (CPU)...")
+                    logger.info("ðŸ  Usando motor PyTorch Nativo (CPU)...")
                     self.model = AutoModelForCausalLM.from_pretrained(
                         self.model_id,
-                        torch_dtype=torch.float32 if torch else None,
+                        dtype=torch.float32 if torch else None,
                         trust_remote_code=True
                     )
                     self.device = "CPU"
@@ -156,11 +156,11 @@ class LocalBrain:
                 self._is_loaded = True
                 self._is_loading = False
                 self._load_event.set()
-                logger.info(f"💎 Cérebro Local PRONTO: {self.provider_name}")
+                logger.info(f"ðŸ’Ž CÃ©rebro Local PRONTO: {self.provider_name}")
                 
         except Exception as e:
             self._is_loading = False
-            logger.error(f"⚠️ Falha catastrófica no LocalBrain: {e}")
+            logger.error(f"âš ï¸ Falha catastrÃ³fica no LocalBrain: {e}")
         finally:
             model_load_lock.release()
 
@@ -168,7 +168,7 @@ class LocalBrain:
         if not self._is_loaded:
             if not self._is_loading: self.load_async()
             if not self._load_event.wait(timeout=60):
-                return "Cérebro local ainda está inicializando, Senhor."
+                return "CÃ©rebro local ainda estÃ¡ inicializando, Senhor."
 
         try:
             # Prepara conversa
@@ -193,11 +193,11 @@ class LocalBrain:
             return response.strip()
 
         except Exception as e:
-            logger.error(f"Erro na geração neural: {e}")
+            logger.error(f"Erro na geraÃ§Ã£o neural: {e}")
             return f"Erro no processamento neural: {e}"
 
     def wait_for_load(self, timeout: float = 30.0):
         return self._load_event.wait(timeout)
 
-# Instância global
+# InstÃ¢ncia global
 local_brain = LocalBrain()

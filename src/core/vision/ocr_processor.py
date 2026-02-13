@@ -1,6 +1,6 @@
-"""
-Processador OCR para extração de texto de imagens
-Suporta múltiplos engines: Tesseract, EasyOCR e integração com APIs
+﻿"""
+Processador OCR para extraÃ§Ã£o de texto de imagens
+Suporta mÃºltiplos engines: Tesseract, EasyOCR e integraÃ§Ã£o com APIs
 """
 
 import time
@@ -26,7 +26,7 @@ def _ensure_easyocr():
         except (ImportError, OSError) as e:
             EASYOCR_AVAILABLE = False
             easyocr = None
-            logger.debug(f"EasyOCR não encontrado. OCR limitado: {e}")
+            logger.debug(f"EasyOCR nÃ£o encontrado. OCR limitado: {e}")
 
 try:
     # Just check if easyocr can be imported without actually importing it
@@ -53,7 +53,7 @@ class OCRProcessor:
         self.easyocr_available = False
         self.easyocr_reader = None
 
-        # Configurações
+        # ConfiguraÃ§Ãµes
         self.ocr_engine = config.get_setting('ocr.engine', 'tesseract')
         self.languages = config.get_setting('ocr.languages', ['por', 'eng'])
         self.confidence_threshold = config.get_setting('ocr.confidence_threshold', 60)
@@ -66,7 +66,7 @@ class OCRProcessor:
         logger.info("Processador OCR inicializado")
 
     def _initialize_engines(self):
-        """Inicializa engines OCR disponíveis"""
+        """Inicializa engines OCR disponÃ­veis"""
         try:
             # Inicializar Tesseract
             tesseract_config = config.get_ocr_config('tesseract')
@@ -77,23 +77,23 @@ class OCRProcessor:
                 self.tesseract_available = True
                 logger.info("Tesseract OCR inicializado")
             else:
-                # Tentar caminho padrão
+                # Tentar caminho padrÃ£o
                 try:
                     pytesseract.get_tesseract_version()
                     self.tesseract_available = True
                     logger.info("Tesseract OCR encontrado no PATH")
                 except Exception:
-                    logger.warning("Tesseract não encontrado")
+                    logger.warning("Tesseract nÃ£o encontrado")
 
-            # Marcar EasyOCR como disponível mas não inicializar ainda (lazy)
+            # Marcar EasyOCR como disponÃ­vel mas nÃ£o inicializar ainda (lazy)
             if EASYOCR_AVAILABLE:
                 self.easyocr_available = True
-                logger.info("EasyOCR disponível (lazy loading)")
+                logger.info("EasyOCR disponÃ­vel (lazy loading)")
             else:
-                logger.warning("EasyOCR não encontrado")
+                logger.warning("EasyOCR nÃ£o encontrado")
 
         except Exception as e:
-            logger.error(f"Erro na inicialização dos engines OCR: {e}")
+            logger.error(f"Erro na inicializaÃ§Ã£o dos engines OCR: {e}")
 
     def _ensure_easyocr_reader(self):
         """Initialize EasyOCR reader only when needed (lazy)"""
@@ -129,7 +129,7 @@ class OCRProcessor:
             engine: Engine OCR a usar (opcional)
 
         Returns:
-            Dicionário com resultados ou None se erro
+            DicionÃ¡rio com resultados ou None se erro
         """
         try:
             start_time = time.time()
@@ -137,7 +137,7 @@ class OCRProcessor:
             # Carregar imagem
             image = Image.open(image_path)
 
-            # Pré-processar se necessário
+            # PrÃ©-processar se necessÃ¡rio
             if self.preprocessing:
                 image = ImageHelper.preprocess_image(image)
 
@@ -152,7 +152,7 @@ class OCRProcessor:
             elif selected_engine == 'hybrid' and self.tesseract_available and self.easyocr_available:
                 result = self._process_hybrid(image)
             else:
-                logger.error(f"Engine OCR '{selected_engine}' não disponível")
+                logger.error(f"Engine OCR '{selected_engine}' nÃ£o disponÃ­vel")
                 return None
 
             processing_time = time.time() - start_time
@@ -180,7 +180,7 @@ class OCRProcessor:
     def _process_with_tesseract(self, image: Image.Image) -> Dict[str, Any]:
         """Processa imagem usando Tesseract"""
         try:
-            # Configuração Tesseract
+            # ConfiguraÃ§Ã£o Tesseract
             tesseract_config = config.get_ocr_config('tesseract')
             custom_config = tesseract_config.get('config', '--oem 3 --psm 6')
 
@@ -201,11 +201,11 @@ class OCRProcessor:
                 timeout=self.timeout
             )
 
-            # Calcular confiança média
+            # Calcular confianÃ§a mÃ©dia
             confidences = [int(conf) for conf in ocr_data['conf'] if conf != '-1']
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
-            # Extrair regiões de texto
+            # Extrair regiÃµes de texto
             text_regions = []
             for i, conf in enumerate(ocr_data['conf']):
                 if conf != '-1' and int(conf) >= self.confidence_threshold:
@@ -311,14 +311,14 @@ class OCRProcessor:
             }
 
     def _process_hybrid(self, image: Image.Image) -> Dict[str, Any]:
-        """Processa imagem usando abordagem híbrida"""
+        """Processa imagem usando abordagem hÃ­brida"""
         try:
             # Processar com ambos os engines
             tesseract_result = self._process_with_tesseract(image)
             easyocr_result = self._process_with_easyocr(image)
 
             # Combinar resultados
-            # Usar o texto com maior confiança média
+            # Usar o texto com maior confianÃ§a mÃ©dia
             if tesseract_result['confidence_score'] >= easyocr_result['confidence_score']:
                 primary_result = tesseract_result
                 secondary_result = easyocr_result
@@ -326,14 +326,14 @@ class OCRProcessor:
                 primary_result = easyocr_result
                 secondary_result = tesseract_result
 
-            # Melhorar texto combinando regiões
+            # Melhorar texto combinando regiÃµes
             combined_regions = primary_result['text_regions'] + secondary_result['text_regions']
-            combined_regions.sort(key=lambda x: (x['y'], x['x']))  # Ordenar por posição
+            combined_regions.sort(key=lambda x: (x['y'], x['x']))  # Ordenar por posiÃ§Ã£o
 
-            # Remover duplicatas próximas
+            # Remover duplicatas prÃ³ximas
             filtered_regions = []
             for region in combined_regions:
-                # Verificar se região similar já existe
+                # Verificar se regiÃ£o similar jÃ¡ existe
                 duplicate = False
                 for existing in filtered_regions:
                     if (abs(region['x'] - existing['x']) < 20 and
@@ -358,7 +358,7 @@ class OCRProcessor:
             }
 
         except Exception as e:
-            logger.error(f"Erro no processamento híbrido: {e}")
+            logger.error(f"Erro no processamento hÃ­brido: {e}")
             return {
                 'raw_text': '',
                 'cleaned_text': '',
@@ -394,10 +394,10 @@ class OCRProcessor:
 
         Args:
             image_paths: Lista de caminhos de imagens
-            max_workers: Número máximo de threads
+            max_workers: NÃºmero mÃ¡ximo de threads
 
         Returns:
-            Dicionário com resultados por imagem
+            DicionÃ¡rio com resultados por imagem
         """
         results = {}
         start_time = time.time()
@@ -429,7 +429,7 @@ class OCRProcessor:
         return results
 
     def get_available_engines(self) -> List[str]:
-        """Retorna lista de engines OCR disponíveis"""
+        """Retorna lista de engines OCR disponÃ­veis"""
         engines = []
         if self.tesseract_available:
             engines.append('tesseract')
@@ -471,13 +471,13 @@ class OCRProcessor:
         else:
             results['easyocr'] = False
 
-        # Testar híbrido
+        # Testar hÃ­brido
         results['hybrid'] = results.get('tesseract', False) and results.get('easyocr', False)
 
         return results
 
     def get_engine_info(self) -> Dict[str, Any]:
-        """Retorna informações sobre os engines disponíveis"""
+        """Retorna informaÃ§Ãµes sobre os engines disponÃ­veis"""
         return {
             'available_engines': self.get_available_engines(),
             'default_engine': self.ocr_engine,
@@ -488,5 +488,5 @@ class OCRProcessor:
             'engine_status': self.test_engines()
         }
 
-# Instância global removida para evitar execução durante import
+# InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # ocr_processor = OCRProcessor()
