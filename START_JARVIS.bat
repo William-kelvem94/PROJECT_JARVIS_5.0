@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 :: JARVIS 5.0 - SINGULARITY LAUNCHER v10.0 (Admin + Ollama Auto-Setup)
 :: Use this if the system closes unexpectedly.
 
@@ -24,7 +25,7 @@ echo   Elite Search: ACTIVE
 echo   Hardware Lock: MANDATORY
 echo ========================================================================
 echo.
-echo [INFO] 🚀 STARK ARCHITECTURE v2.0 - HARDWARE ALIGNMENT MANDATORY
+echo [INFO] ✨ STARK ARCHITECTURE v2.0 - HARDWARE ALIGNMENT MANDATORY
 echo [INFO] 👑 CONTROLE TOTAL HABILITADO
 echo [INFO] Starting in 2 seconds...
 timeout /t 2 /nobreak >nul

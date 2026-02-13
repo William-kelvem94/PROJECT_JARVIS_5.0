@@ -17,9 +17,9 @@ try:
     from utils.env_manager import get_config
     config = get_config()
     OLLAMA_SERVER_URL = config.ollama_url
-    logger.info(f"✅ [CONFIG] URL Ollama carregada: {OLLAMA_SERVER_URL}")
+    logger.info(f"[OK] [CONFIG] URL Ollama carregada: {OLLAMA_SERVER_URL}")
 except Exception as e:
-    logger.warning(f"⚠️ [CONFIG] Erro ao carregar configuração, usando padrão: {e}")
+    logger.warning(f"[WARN] [CONFIG] Erro ao carregar configuracao, usando padrao: {e}")
     OLLAMA_SERVER_URL = "http://localhost:11434"
 
 OLLAMA_INSTALLER_URL = "https://ollama.com/download/OllamaSetup.exe"
@@ -33,10 +33,10 @@ if os.path.exists(os.path.join(PROJECT_ROOT, "main.py")):
 def ensure_ollama_installed():
     """Verifica se Ollama está instalado, caso contrário instala automaticamente."""
     if shutil.which('ollama'):
-        logger.info("✅ [INFRA] Ollama detectado no sistema.")
+        logger.info("[OK] [INFRA] Ollama detectado no sistema.")
         return True
 
-    logger.warning("⚠️ [INFRA] Ollama não detectado. Iniciando Protocolo de Instalação Automática...")
+    logger.warning("[WARN] [INFRA] Ollama nao detectado. Iniciando Protocolo de Instalacao Automatica...")
     
     try:
         temp_dir = tempfile.gettempdir()
@@ -77,23 +77,23 @@ def ensure_ollama_installed():
 
         # Agora faz a verificação final
         if shutil.which('ollama'):
-            logger.info("✅ [INFRA] Instalação concluída e PATH atualizado.")
+            logger.info("[OK] [INFRA] Instalacao concluida e PATH atualizado.")
             return True
         else:
-            logger.error("❌ [ERRO] Falha na verificação pós-instalação. O comando 'ollama' ainda não foi encontrado.")
+            logger.error("[ERR] [ERRO] Falha na verificacao pos-instalacao. O comando 'ollama' ainda nao foi encontrado.")
             sys.exit(1)
             
     except Exception as e:
-        logger.error(f"❌ [ERRO CRÍTICO] Falha no protocolo de instalação: {e}")
+        logger.error(f"[ERR] [ERRO CRITICO] Falha no protocolo de instalacao: {e}")
         sys.exit(1)
 
 def ensure_ollama_running():
     """Garante que o servidor Ollama está ativo, iniciando-o de forma invisível se necessário."""
     try:
         urllib.request.urlopen(OLLAMA_SERVER_URL, timeout=2)
-        logger.info("✅ [INFRA] Servidor Neural Online.")
+        logger.info("[OK] [INFRA] Servidor Neural Online.")
     except Exception:
-        logger.warning("⚠️ [INFRA] Servidor Neural Offline. Inicializando motor local...")
+        logger.warning("[WARN] [INFRA] Servidor Neural Offline. Inicializando motor local...")
         
         try:
             # Usar creationflags para ocultar a janela no Windows
@@ -104,31 +104,31 @@ def ensure_ollama_running():
             subprocess.Popen(["ollama", "serve"], creationflags=creationflags)
             
             # Health Check loop (15 segundos)
-            logger.info("⏳ Aguardando ativação do motor (Health Check)...")
+            logger.info("[WAIT] Aguardando ativacao do motor (Health Check)...")
             start_time = time.time()
             while time.time() - start_time < 15:
                 try:
                     urllib.request.urlopen(OLLAMA_SERVER_URL, timeout=1)
-                    logger.info("🚀 [INFRA] Motor Neural ativado e pronto.")
+                    logger.info("[OK] [INFRA] Motor Neural ativado e pronto.")
                     return True
                 except:
                     time.sleep(1)
             
-            logger.error("❌ [ERRO] O servidor Ollama demorou demais para responder.")
+            logger.error("[ERR] [ERRO] O servidor Ollama demorou demais para responder.")
             sys.exit(1)
             
         except Exception as e:
-            logger.error(f"❌ [ERRO CRÍTICO] Falha ao iniciar Ollama: {e}")
+            logger.error(f"[ERR] [ERRO CRITICO] Falha ao iniciar Ollama: {e}")
             sys.exit(1)
 
 def main():
     print("\n" + "="*80)
-    print("🔥 [LAUNCHER] PROTOCOLO JARVIS STARK 2.0 SINGULARITY v5.0")
+    print("✨ [LAUNCHER] PROTOCOLO JARVIS STARK 2.0 SINGULARITY v5.0")
     print("="*80)
     print(f"💎 Ambiente: {sys.executable}")
-    print(f"🌐 Modo: Híbrido (Local + Elite Search)")
+    print(f"🌐 Modo: Hibrido (Local + Elite Search)")
     print(f"🔒 Identificação: Biometric + Identity Guard")
-    print(f"🚀 Status: Tronco Encefálico Ativo")
+    print(f"🚀 Status: Tronco Encefalico Ativo")
     print("="*80)
 
     # ========================================================================
@@ -159,8 +159,7 @@ def main():
     # ========================================================================
     # PRÉ-INICIALIZAÇÃO STARK
     # ========================================================================
-    print("\n🔥 [STARK] Inicializando Sequência de Boot Stark 2.0...")
-
+    print("\n✨ [STARK] Inicializando Sequencia de Boot Stark 2.0...")
     try:
         # Detectar Microsoft Account e dispositivo (com timeout reduzido)
         print("🆔 [IDENT] Verificando Identidade Stark...")
@@ -186,21 +185,21 @@ def main():
                 device = device_line.split(':', 1)[1]
 
                 if account != "None" and device != "None":
-                    print(f"   ✅ Conta: {account}")
-                    print(f"   ✅ Dispositivo: {device[:16]}...")
+                    print(f"   [OK] Conta: {account}")
+                    print(f"   [OK] Dispositivo: {device[:16]}...")
                 else:
-                    print("   ⚠️ Identificação parcial - continuando...")
+                    print(f"   [WARN] Identificacao parcial - continuando...")
             else:
-                print("   ⚠️ Resposta inesperada - continuando...")
+                print(f"   [WARN] Resposta inesperada - continuando...")
         else:
-            print("   ⚠️ Falha na detecção - continuando sem identificação...")
+            print(f"   [WARN] Falha na deteccao - continuando sem identificacao...")
 
     except subprocess.TimeoutExpired:
-        print("   ⚠️ Timeout na identificação - pulando para inicialização rápida...")
+        print("   [WARN] Timeout na identificacao - pulando para inicializacao rapida...")
     except Exception as e:
-        print(f"   ⚠️ Erro na identificação: {e} - pulando para inicialização rápida...")
+        print(f"   [WARN] Erro na identificacao: {e} - pulando para inicializacao rapida...")
 
-    print("🚀 [LAUNCHER] Indo direto para inicialização do JARVIS...")
+    print(">> [LAUNCHER] Indo direto para inicializacao do JARVIS...")
 
     # Configurar ambiente para main.py
     env = os.environ.copy()
@@ -211,42 +210,42 @@ def main():
     # Executar main.py diretamente
     args = [sys.executable, "main.py"]
 
-    print("🔄 [LAUNCHER] Inicializando JARVIS completo...")
+    print("++ [LAUNCHER] Inicializando JARVIS completo...")
     result = subprocess.run(args, env=env)
 
     # Verificar resultado
     exit_code = result.returncode
 
     if exit_code == 123: # Código personalizado para Rebirth se necessário
-        print("\n🧬 [EVOLUÇÃO] Atualização Stark detectada. Reiniciando Matriz...")
+        print("\n[*] [EVOLUCAO] Atualizacao Stark detectada. Reiniciando Matriz...")
         time.sleep(2)
         os.execv(sys.executable, [sys.executable] + sys.argv)
     elif exit_code == 0:
-        print("🛑 [SISTEMA] JARVIS encerrado normalmente.")
+        print("[!] [SISTEMA] JARVIS encerrado normalmente.")
     else:
-        print(f"⚠️ [AVISO] JARVIS encerrou com código {exit_code}. Verifique os logs.")
+        print(f"[WARN] [AVISO] JARVIS encerrou com codigo {exit_code}. Verifique os logs.")
         print("\n" + "="*80)
-        print("🔧 [DIAGNÓSTICO] POSSÍVEIS CAUSAS E SOLUÇÕES:")
+        print("++ [DIAGNOSTICO] POSSIVEIS CAUSAS E SOLUCOES:")
         print("="*80)
-        print("1. 🚨 DEPENDÊNCIAS PROBLEMÁTICAS:")
-        print("   • PyTorch/Torchvision com conflitos de versão")
-        print("   • Transformers/Faster-Whisper com encoding UTF-8")
-        print("   • Conflitos entre bibliotecas ML")
+        print("1. [ERR] DEPENDENCIAS PROBLEMATICAS:")
+        print("   * PyTorch/Torchvision com conflitos de versao")
+        print("   * Transformers/Faster-Whisper com encoding UTF-8")
+        print("   * Conflitos entre bibliotecas ML")
         print()
-        print("2. 🛠️ SOLUÇÕES RECOMENDADAS:")
+        print("2. [FIX] SOLUCOES RECOMENDADAS:")
         print("   • Execute: pip install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu")
         print("   • Execute: pip install --upgrade transformers faster-whisper")
         print("   • Execute: pip install --upgrade --force-reinstall torch")
         print("   • Verifique se há múltiplas versões do Python/PyTorch")
         print()
-        print("3. 🔍 DIAGNÓSTICO DETALHADO:")
-        print("   • Execute: python scripts/dependency_doctor.py")
-        print("   • Execute: python scripts/validate_dependencies.py")
-        print("   • Execute: python -c \"import torch; print('Torch OK:', torch.__version__)\"")
+        print("3. [SCAN] DIAGNOSTICO DETALHADO:")
+        print("   * Execute: python scripts/dependency_doctor.py")
+        print("   * Execute: python scripts/validate_dependencies.py")
+        print("   * Execute: python -c \"import torch; print('Torch OK:', torch.__version__)\"")
         print()
-        print("4. 🚀 SOLUÇÃO TEMPORÁRIA:")
-        print("   • Use o JARVIS Lite: python main_lite.py")
-        print("   • Funciona sem dependências pesadas de ML")
+        print("4. >> SOLUCAO TEMPORARIA:")
+        print("   * Use o JARVIS Lite: python main_lite.py")
+        print("   * Funciona sem dependencias pesadas de ML")
         print("="*80)
         input("Pressione Enter para continuar...")
 

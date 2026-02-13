@@ -1,5 +1,5 @@
 """
-🔧 JARVIS Auto-Configurator - Sistema de Configuração Automática
+STARK Auto-Configurator - Sistema de Configuracao Automatica
 Resolve problemas comuns do ambiente Windows automaticamente
 """
 import os
@@ -44,13 +44,13 @@ class AutoConfigurator:
             key_path = r"SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
             key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path)
             winreg.CloseKey(key)
-            self.log('OK', '  ✅ Visual C++ already installed')
+            self.log('OK', '  [OK] Visual C++ already installed')
             return True
         except:
             pass
         
         if not self.is_admin:
-            self.log('WARN', '  ⚠️  Need admin rights to install Visual C++')
+            self.log('WARN', '  [WARN] Need admin rights to install Visual C++')
             self.log('WARN', '  Please manually install: https://aka.ms/vs/17/release/vc_redist.x64.exe')
             self.warnings.append('vcredist')
             return False
@@ -69,10 +69,10 @@ class AutoConfigurator:
             os.remove(temp_file)
             
             self.fixed.append('vcredist')
-            self.log('OK', '  ✅ Visual C++ installed!')
+            self.log('OK', '  [OK] Visual C++ installed!')
             return True
         except Exception as e:
-            self.log('ERROR', f'  ❌ Failed to install: {e}')
+            self.log('ERROR', f'  [ERR] Failed to install: {e}')
             self.warnings.append('vcredist')
             return False
     
@@ -90,10 +90,10 @@ class AutoConfigurator:
             current = os.environ.get(var)
             if current != value:
                 os.environ[var] = value
-                self.log('OK', f'  ✅ Set {var}={value}')
+                self.log('OK', f'  [OK] Set {var}={value}')
                 self.fixed.append(f'env_{var}')
             else:
-                self.log('OK', f'  ✅ {var} already configured')
+                self.log('OK', f'  [OK] {var} already configured')
         
         return True
     
@@ -105,7 +105,7 @@ class AutoConfigurator:
         try:
             res = subprocess.run(['where', 'ollama'], capture_output=True, text=False)
             if res.returncode == 0:
-                self.log('OK', '  ✅ Ollama already in PATH')
+                self.log('OK', '  [OK] Ollama already in PATH')
                 return True
         except:
             pass
@@ -121,10 +121,10 @@ class AutoConfigurator:
                 self.log('INFO', f'  Found Ollama at {path}')
                 os.environ['PATH'] = str(path) + os.pathsep + os.environ['PATH']
                 self.fixed.append('ollama_path')
-                self.log('OK', '  ✅ Added Ollama to PATH')
+                self.log('OK', '  [OK] Added Ollama to PATH')
                 return True
         
-        self.log('WARN', '  ⚠️  Ollama not found - will be installed by launcher')
+        self.log('WARN', '  [WARN] Ollama not found - will be installed by launcher')
         return False
     
     def optimize_pip_config(self):
@@ -151,12 +151,12 @@ trusted-host = pypi.org
                 with open(pip_config_file, 'w') as f:
                     f.write(config_content)
                 self.fixed.append('pip_config')
-                self.log('OK', '  ✅ Pip configuration optimized')
+                self.log('OK', '  [OK] Pip configuration optimized')
             else:
-                self.log('OK', '  ✅ Pip already configured')
+                self.log('OK', '  [OK] Pip already configured')
             return True
         except Exception as e:
-            self.log('WARN', f'  ⚠️  Could not optimize pip config: {e}')
+            self.log('WARN', f'  [WARN] Could not optimize pip config: {e}')
             return False
     
     def check_python_version(self):
@@ -165,10 +165,10 @@ trusted-host = pypi.org
         
         version = sys.version_info
         if version.major == 3 and 10 <= version.minor <= 12:
-            self.log('OK', f'  ✅ Python {version.major}.{version.minor} is compatible')
+            self.log('OK', f'  [OK] Python {version.major}.{version.minor} is compatible')
             return True
         else:
-            self.log('WARN', f'  ⚠️  Python {version.major}.{version.minor} may have compatibility issues')
+            self.log('WARN', f'  [WARN] Python {version.major}.{version.minor} may have compatibility issues')
             self.log('WARN', '  Recommended: Python 3.10, 3.11, or 3.12')
             self.warnings.append('python_version')
             return False
@@ -191,7 +191,7 @@ trusted-host = pypi.org
             
             stdout_text = result.stdout.decode('utf-8', errors='replace').strip()
             if stdout_text:
-                self.log('OK', '  ✅ VENV already excluded from Windows Defender')
+                self.log('OK', '  [OK] VENV already excluded from Windows Defender')
                 return True
             
             # Tenta adicionar exclusão
@@ -199,26 +199,26 @@ trusted-host = pypi.org
             subprocess.run(['powershell', '-ExecutionPolicy', 'Bypass', '-Command', ps_cmd], 
                          check=True, capture_output=True, text=False, timeout=15)
             self.fixed.append('defender_exclusion')
-            self.log('OK', '  ✅ VENV excluded from Windows Defender')
+            self.log('OK', '  [OK] VENV excluded from Windows Defender')
             return True
             
         except subprocess.TimeoutExpired:
-            self.log('WARN', '  ⚠️  Windows Defender configuration timed out')
+            self.log('WARN', '  [WARN] Windows Defender configuration timed out')
             return False
         except subprocess.CalledProcessError as e:
             if e.returncode == 1:
-                self.log('WARN', '  ⚠️  Windows Defender: Access denied or policy restriction')
+                self.log('WARN', '  [WARN] Windows Defender: Access denied or policy restriction')
             else:
-                self.log('WARN', f'  ⚠️  Windows Defender error (code {e.returncode})')
+                self.log('WARN', f'  [WARN] Windows Defender error (code {e.returncode})')
             return False
         except Exception as e:
-            self.log('WARN', f'  ⚠️  Could not configure Defender: {str(e)[:50]}...')
+            self.log('WARN', f'  [WARN] Could not configure Defender: {str(e)[:50]}...')
             return False
     
     def auto_configure_all(self):
         """Executa todas as configurações automáticas"""
         self.log('INFO', '\n' + '='*70)
-        self.log('INFO', '🔧 JARVIS AUTO-CONFIGURATOR - Starting...')
+        self.log('INFO', 'STARK AUTO-CONFIGURATOR - Starting...')
         self.log('INFO', '='*70 + '\n')
         
         if self.is_admin:
@@ -248,12 +248,12 @@ trusted-host = pypi.org
         # Relatório final
         self.log('INFO', '='*70)
         if self.fixed:
-            self.log('OK', f'✅ AUTO-CONFIGURATOR: Applied {len(self.fixed)} optimizations:')
+            self.log('OK', f'[OK] AUTO-CONFIGURATOR: Applied {len(self.fixed)} optimizations:')
             for item in self.fixed:
                 print(f'   - {item}')
         
         if self.warnings:
-            self.log('WARN', f'\n⚠️  {len(self.warnings)} items need attention:')
+            self.log('WARN', f'\n[WARN] {len(self.warnings)} items need attention:')
             for item in self.warnings:
                 print(f'   - {item}')
             
@@ -262,7 +262,7 @@ trusted-host = pypi.org
                 self.log('WARN', '   https://aka.ms/vs/17/release/vc_redist.x64.exe')
         
         if not self.fixed and not self.warnings:
-            self.log('OK', '✅ System already optimally configured!')
+            self.log('OK', '[OK] System already optimally configured!')
         
         self.log('INFO', '='*70 + '\n')
         return True
