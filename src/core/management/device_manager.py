@@ -1216,13 +1216,20 @@ class AdvancedDeviceManager:
             logger.error(f"❌ Erro ao obter dados S.M.A.R.T.: {e}")
         return None
     
-    def analyze_disk_space(self, path: str = "C:\\") -> Dict[str, Any]:
+    def analyze_disk_space(self, path: Optional[str] = None) -> Dict[str, Any]:
         """
         Analisa uso de espaço em disco
+        
+        Args:
+            path: Caminho do disco (None para detectar automaticamente)
         
         Returns:
             Dict com total, usado, livre, arquivos grandes, etc
         """
+        if path is None:
+            # Detectar disco principal automaticamente
+            path = 'C:\\' if os.name == 'nt' else '/'  # Windows vs Unix-like
+        
         try:
             usage = psutil.disk_usage(path)
             

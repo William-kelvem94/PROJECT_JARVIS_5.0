@@ -12,6 +12,11 @@ from pathlib import Path
 from typing import Dict, Any, List
 from datetime import datetime
 
+try:
+    from src.utils.env_manager import get_config
+except ImportError:
+    get_config = lambda: None
+
 logger = logging.getLogger("JARVIS-SANITY-CHECK")
 
 class SanityChecker:
@@ -67,7 +72,12 @@ class SanityChecker:
         """Verifica se o serviço Ollama está respondendo"""
         try:
             import requests
-            response = requests.get("http://localhost:11434/api/tags", timeout=2)
+            
+            # Usar URL configurada ou fallback
+            config = get_config()
+            ollama_url = config.ollama_url if config else "http://localhost:11434"
+            
+            response = requests.get(f"{ollama_url}/api/tags", timeout=2)
             if response.status_code == 200:
                 models = response.json().get('models', [])
                 return len(models) > 0, f"Ollama Online ({len(models)} models available)"

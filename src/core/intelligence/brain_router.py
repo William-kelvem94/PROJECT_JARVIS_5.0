@@ -116,13 +116,24 @@ class BrainRouter:
     def _discover_ollama_models(self):
         """Detecta quais modelos estão instalados no Ollama localmente"""
         try:
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=self.ollama_timeout)
+            # Aumentar timeout para descoberta inicial
+            response = requests.get(f"{self.ollama_url}/api/tags", timeout=5.0)  # 5 segundos
             if response.status_code == 200:
                 models = response.json().get('models', [])
                 self.ollama_available_models = [m['name'] for m in models]
                 logger.info(f"✅ Ollama: {len(self.ollama_available_models)} modelos instalados.")
             else:
                 self.ollama_available_models = []
+                logger.warning(f"⚠️ Ollama respondeu com status {response.status_code}")
+        except requests.exceptions.Timeout:
+            self.ollama_available_models = []
+            logger.warning("⚠️ Ollama não respondeu dentro do timeout (5s) - será detectado posteriormente")
+        except requests.exceptions.ConnectionError:
+            self.ollama_available_models = []
+            logger.warning("⚠️ Ollama não está acessível - será detectado posteriormente")
+        except Exception as e:
+            self.ollama_available_models = []
+            logger.warning(f"⚠️ Erro ao detectar modelos Ollama: {e}")
         except Exception:
             self.ollama_available_models = []
             logger.debug("Ollama não está rodando no momento.")
