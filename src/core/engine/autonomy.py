@@ -1,4 +1,4 @@
-"""
+﻿"""
 Autonomy Core for JARVIS AGI Machine Learning Core.
 
 This module implements the AI consciousness layer including decision engine,
@@ -248,15 +248,15 @@ class DecisionEngine:
         ADAPTIVE MODE - Tudo em 1: Combina todos os comportamentos dinamicamente.
         
         Este modo integra automaticamente:
-        - Modo Ativo: Responde imediatamente com alta confiança
-        - Modo Passivo: Observa e aprende padrões
+        - Modo Ativo: Responde imediatamente com alta confianÃ§a
+        - Modo Passivo: Observa e aprende padrÃµes
         - Modo Aprendizagem: Busca ativamente melhorar
-        - Modo Exploração: Tenta novas abordagens quando seguro
-        - Modo Seguro: Apenas ações comprovadas em situações críticas
+        - Modo ExploraÃ§Ã£o: Tenta novas abordagens quando seguro
+        - Modo Seguro: Apenas aÃ§Ãµes comprovadas em situaÃ§Ãµes crÃ­ticas
         
-        A decisão é baseada em múltiplos fatores contextuais.
+        A decisÃ£o Ã© baseada em mÃºltiplos fatores contextuais.
         """
-        # Avaliar confiança para diferentes ações
+        # Avaliar confianÃ§a para diferentes aÃ§Ãµes
         respond_confidence = self.confidence_assessor.assess_confidence(
             context, "respond"
         )
@@ -267,43 +267,43 @@ class DecisionEngine:
             context, "explore"
         )
         
-        # Determinar urgência da situação
+        # Determinar urgÃªncia da situaÃ§Ã£o
         is_urgent = context.user_input is not None and any(
             word in context.user_input.lower()
-            for word in ['urgente', 'rápido', 'agora', 'imediato', 'urgent', 'now', 'quick']
+            for word in ['urgente', 'rÃ¡pido', 'agora', 'imediato', 'urgent', 'now', 'quick']
         )
         
-        # Determinar se é situação crítica (erros, problemas)
+        # Determinar se Ã© situaÃ§Ã£o crÃ­tica (erros, problemas)
         is_critical = context.user_input is not None and any(
             word in context.user_input.lower()
-            for word in ['erro', 'error', 'problema', 'problem', 'crítico', 'critical', 'falha', 'failure']
+            for word in ['erro', 'error', 'problema', 'problem', 'crÃ­tico', 'critical', 'falha', 'failure']
         )
         
-        # === DECISÃO ADAPTATIVA ===
+        # === DECISÃƒO ADAPTATIVA ===
         
-        # 1. MODO SEGURO: Situação crítica + baixa confiança = só ações comprovadas
+        # 1. MODO SEGURO: SituaÃ§Ã£o crÃ­tica + baixa confianÃ§a = sÃ³ aÃ§Ãµes comprovadas
         if is_critical and respond_confidence < 0.7:
             return Decision(
                 decision_id=self._generate_decision_id(),
                 decision_type=DecisionType.DEFER,
                 action="request_clarification",
                 confidence=respond_confidence,
-                reasoning="[ADAPTIVE-SAFE] Situação crítica com baixa confiança - pedindo esclarecimento",
+                reasoning="[ADAPTIVE-SAFE] SituaÃ§Ã£o crÃ­tica com baixa confianÃ§a - pedindo esclarecimento",
                 context=context
             )
         
-        # 2. MODO ATIVO: Alta confiança + input do usuário = responder imediatamente
+        # 2. MODO ATIVO: Alta confianÃ§a + input do usuÃ¡rio = responder imediatamente
         if context.user_input and respond_confidence >= 0.8:
             return Decision(
                 decision_id=self._generate_decision_id(),
                 decision_type=DecisionType.RESPOND,
                 action="generate_response",
                 confidence=respond_confidence,
-                reasoning="[ADAPTIVE-ACTIVE] Alta confiança - respondendo imediatamente",
+                reasoning="[ADAPTIVE-ACTIVE] Alta confianÃ§a - respondendo imediatamente",
                 context=context
             )
         
-        # 3. MODO EXPLORAÇÃO: Confiança média + não urgente = tentar nova abordagem
+        # 3. MODO EXPLORAÃ‡ÃƒO: ConfianÃ§a mÃ©dia + nÃ£o urgente = tentar nova abordagem
         if not is_urgent and not is_critical and 0.5 <= respond_confidence < 0.8:
             # 30% de chance de explorar
             if random.random() < 0.3:
@@ -312,33 +312,33 @@ class DecisionEngine:
                     decision_type=DecisionType.RESPOND,
                     action="experimental_response",
                     confidence=respond_confidence,
-                    reasoning="[ADAPTIVE-EXPLORE] Confiança média - tentando abordagem exploratória",
+                    reasoning="[ADAPTIVE-EXPLORE] ConfianÃ§a mÃ©dia - tentando abordagem exploratÃ³ria",
                     context=context
                 )
         
-        # 4. MODO ATIVO: Input do usuário + confiança adequada = responder
+        # 4. MODO ATIVO: Input do usuÃ¡rio + confianÃ§a adequada = responder
         if context.user_input and respond_confidence >= self.confidence_threshold:
             return Decision(
                 decision_id=self._generate_decision_id(),
                 decision_type=DecisionType.RESPOND,
                 action="generate_response",
                 confidence=respond_confidence,
-                reasoning="[ADAPTIVE-ACTIVE] Confiança adequada - respondendo",
+                reasoning="[ADAPTIVE-ACTIVE] ConfianÃ§a adequada - respondendo",
                 context=context
             )
         
-        # 5. MODO APRENDIZAGEM: Input do usuário + baixa confiança = aprender
+        # 5. MODO APRENDIZAGEM: Input do usuÃ¡rio + baixa confianÃ§a = aprender
         if context.user_input and respond_confidence < self.confidence_threshold:
             return Decision(
                 decision_id=self._generate_decision_id(),
                 decision_type=DecisionType.LEARN,
                 action="observe_and_ask",
                 confidence=respond_confidence,
-                reasoning="[ADAPTIVE-LEARNING] Baixa confiança - aprendendo e pedindo orientação",
+                reasoning="[ADAPTIVE-LEARNING] Baixa confianÃ§a - aprendendo e pedindo orientaÃ§Ã£o",
                 context=context
             )
         
-        # 6. MODO ATIVO: Sem input mas alta confiança para sugestão = sugerir proativamente
+        # 6. MODO ATIVO: Sem input mas alta confianÃ§a para sugestÃ£o = sugerir proativamente
         if not context.user_input and suggest_confidence >= 0.7:
             # 20% de chance de sugerir proativamente
             if random.random() < 0.2:
@@ -347,17 +347,17 @@ class DecisionEngine:
                     decision_type=DecisionType.SUGGEST,
                     action="proactive_suggestion",
                     confidence=suggest_confidence,
-                    reasoning="[ADAPTIVE-ACTIVE] Alta confiança - sugerindo proativamente",
+                    reasoning="[ADAPTIVE-ACTIVE] Alta confianÃ§a - sugerindo proativamente",
                     context=context
                 )
         
-        # 7. MODO PASSIVO: Sem input = observar e aprender padrões
+        # 7. MODO PASSIVO: Sem input = observar e aprender padrÃµes
         return Decision(
             decision_id=self._generate_decision_id(),
             decision_type=DecisionType.OBSERVE,
             action="monitor_and_learn",
             confidence=1.0,
-            reasoning="[ADAPTIVE-PASSIVE] Observando e aprendendo padrões",
+            reasoning="[ADAPTIVE-PASSIVE] Observando e aprendendo padrÃµes",
             context=context
         )
     

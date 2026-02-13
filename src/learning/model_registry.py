@@ -1,4 +1,4 @@
-"""
+﻿"""
 Model Registry for JARVIS Learning Systems.
 
 Provides versioning, rollback, A/B testing, and lifecycle management
@@ -135,7 +135,7 @@ class ModelRegistry:
                     deployment = DeploymentConfig(**data)
                     self._deployments[f"{deployment.model_id}_{deployment.environment}"] = deployment
             
-            logger.info(f"📚 Loaded {len(self._models)} models and {len(self._deployments)} deployments")
+            logger.info(f"ðŸ“š Loaded {len(self._models)} models and {len(self._deployments)} deployments")
             
         except Exception as e:
             logger.error(f"Failed to load model registry: {e}")
@@ -241,7 +241,7 @@ class ModelRegistry:
             # Store in memory
             self._models[model_id] = metadata
             
-            logger.info(f"✅ Registered model: {model_id} ({name} {version})")
+            logger.info(f"âœ… Registered model: {model_id} ({name} {version})")
             return model_id
             
         except Exception as e:
@@ -296,7 +296,7 @@ class ModelRegistry:
             with open(metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(self._models[model_id].to_dict(), f, indent=2, ensure_ascii=False)
             
-            logger.info(f"✅ Updated model {model_id} status to {status.value}")
+            logger.info(f"âœ… Updated model {model_id} status to {status.value}")
             return True
             
         except Exception as e:
@@ -335,7 +335,7 @@ class ModelRegistry:
             if environment == "production":
                 self.update_model_status(model_id, ModelStatus.PRODUCTION)
             
-            logger.info(f"✅ Deployed model {model_id} to {environment} ({traffic_percentage}% traffic)")
+            logger.info(f"âœ… Deployed model {model_id} to {environment} ({traffic_percentage}% traffic)")
             return True
             
         except Exception as e:
@@ -396,7 +396,7 @@ class ModelRegistry:
             if success:
                 # Mark current model as deprecated
                 self.update_model_status(current_model.model_id, ModelStatus.DEPRECATED)
-                logger.info(f"🔄 Rolled back {environment} from {current_model.model_id} to {target_model.model_id}")
+                logger.info(f"ðŸ”„ Rolled back {environment} from {current_model.model_id} to {target_model.model_id}")
             
             return success
             
@@ -439,7 +439,7 @@ class ModelRegistry:
             )
             
             if success_a and success_b:
-                logger.info(f"🧪 A/B test setup: {model_a_id} ({traffic_split}%) vs {model_b_id} ({100-traffic_split}%)")
+                logger.info(f"ðŸ§ª A/B test setup: {model_a_id} ({traffic_split}%) vs {model_b_id} ({100-traffic_split}%)")
                 
                 # Create A/B test metadata
                 ab_test_file = self.deployments_dir / f"ab_test_{environment}.json"
@@ -554,7 +554,7 @@ class ModelRegistry:
                         del self._models[model.model_id]
                         cleaned_count += 1
                         
-                        logger.info(f"🗑️ Cleaned up old model: {model.model_id}")
+                        logger.info(f"ðŸ—‘ï¸ Cleaned up old model: {model.model_id}")
                         
                     except Exception as e:
                         logger.error(f"Failed to cleanup model {model.model_id}: {e}")

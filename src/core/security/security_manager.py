@@ -1,9 +1,9 @@
-import os
+﻿import os
 
 class SecurityManager:
     """
-    As Leis da Robótica - Singularity Edition.
-    Regras imutáveis de proteção para caminhos críticos e exfiltração de dados.
+    As Leis da RobÃ³tica - Singularity Edition.
+    Regras imutÃ¡veis de proteÃ§Ã£o para caminhos crÃ­ticos e exfiltraÃ§Ã£o de dados.
     """
     FORBIDDEN_PATHS = [
         r"C:\Windows", r"C:\Program Files", r"C:\Program Files (x86)",
@@ -27,6 +27,6 @@ class SecurityManager:
 
     @staticmethod
     def validate_web_request(url: str) -> bool:
-        """Bloqueia exfiltração de dados para domínios desconhecidos"""
+        """Bloqueia exfiltraÃ§Ã£o de dados para domÃ­nios desconhecidos"""
         allowed = ["google.com", "googleapis.com", "openai.com", "localhost", "127.0.0.1"]
         return any(domain in url for domain in allowed)

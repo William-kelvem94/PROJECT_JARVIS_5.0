@@ -1,4 +1,4 @@
-"""
+﻿"""
 JARVIS 5.0 - Continual Learner System
 Automates the feedback-to-training loop using DPO and preference pairs.
 """
@@ -58,19 +58,19 @@ class ContinualLearner:
             )
             return True
         except Exception as e:
-            logger.error(f"❌ Could not initialize learner dependencies: {e}")
+            logger.error(f"âŒ Could not initialize learner dependencies: {e}")
             return False
 
     def start(self):
         """Start the autonomous monitoring loop in a background thread"""
         if not self._ensure_dependencies():
-            logger.warning("🧠 Learning systems hibernating (missing components)")
+            logger.warning("ðŸ§  Learning systems hibernating (missing components)")
             return
             
         self.is_running = True
         thread = threading.Thread(target=self._monitoring_loop, daemon=True, name="ContinualLearner-Pulse")
         thread.start()
-        logger.info("🧠 JARVIS Learning Systems: Engaged (Threshold: %d)", self.feedback_threshold)
+        logger.info("ðŸ§  JARVIS Learning Systems: Engaged (Threshold: %d)", self.feedback_threshold)
 
     def _monitoring_loop(self):
         """Checks for feedback clusters and executes training cycles"""
@@ -80,7 +80,7 @@ class ContinualLearner:
                 pending = self.feedback_db.count_pending() if hasattr(self.feedback_db, 'count_pending') else 0
                 
                 if pending >= self.feedback_threshold:
-                    logger.info(f"🎯 Significant feedback cluster detected: {pending} interactions. Initiating cycle...")
+                    logger.info(f"ðŸŽ¯ Significant feedback cluster detected: {pending} interactions. Initiating cycle...")
                     self._execute_training_cycle()
                 
                 time.sleep(self.check_interval)
@@ -90,7 +90,7 @@ class ContinualLearner:
 
     def _execute_training_cycle(self):
         """Executes a DPO training session and updates the model index"""
-        logger.info("🚀 [TRAINING CYCLE START] Optimizing Neural Weights...")
+        logger.info("ðŸš€ [TRAINING CYCLE START] Optimizing Neural Weights...")
         start_time = time.time()
         
         try:
@@ -98,7 +98,7 @@ class ContinualLearner:
             pairs = self.feedback_db.generate_preference_pairs(n_pairs=self.feedback_threshold)
             
             if len(pairs) < 10:
-                logger.warning("⚠️ Insufficient valid preference pairs for quality DPO. Skipping cycle.")
+                logger.warning("âš ï¸ Insufficient valid preference pairs for quality DPO. Skipping cycle.")
                 return
                 
             # Prepare dataset
@@ -127,10 +127,10 @@ class ContinualLearner:
                 
             self.training_cycles += 1
             duration = time.time() - start_time
-            logger.info(f"✅ [TRAINING CYCLE COMPLETE] Cycle {self.training_cycles} successful. Duration: {duration:.2f}s")
+            logger.info(f"âœ… [TRAINING CYCLE COMPLETE] Cycle {self.training_cycles} successful. Duration: {duration:.2f}s")
             
         except Exception as e:
-            logger.error(f"❌ Critical failure during training cycle: {e}")
+            logger.error(f"âŒ Critical failure during training cycle: {e}")
 
 # Singleton Pattern
 _learner = None

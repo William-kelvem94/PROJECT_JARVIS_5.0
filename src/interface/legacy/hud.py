@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS HUD - Interface Transparente Estilo Iron Man
@@ -18,13 +18,13 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont
 try:
     from .modern_hud import ModernHUD as JarvisHUD
     from .modern_hud import ArcReactorWidget as ReactorWidget
-    print("✅ Using enhanced Modern HUD")
+    print("âœ… Using enhanced Modern HUD")
 except ImportError:
-    print("⚠️ Modern HUD not available, using legacy HUD")
+    print("âš ï¸ Modern HUD not available, using legacy HUD")
     
     # Legacy HUD implementation follows...
     class ReactorWidget(QWidget):
-        """Widget do Reator Arc - Núcleo Visual do JARVIS"""
+        """Widget do Reator Arc - NÃºcleo Visual do JARVIS"""
         
         def __init__(self, parent=None):
             super().__init__(parent)
@@ -33,13 +33,13 @@ except ImportError:
             self.status_color = QColor(0, 255, 255, 200)  # Ciano
             self.status_text = "ONLINE"
             
-            # Animação suave (60 FPS)
+            # AnimaÃ§Ã£o suave (60 FPS)
             self.timer = QTimer(self)
             self.timer.timeout.connect(self.animate)
             self.timer.start(16)  # ~60 FPS
 
         def animate(self):
-            """Animação de pulsação do reator"""
+            """AnimaÃ§Ã£o de pulsaÃ§Ã£o do reator"""
             if self.growing:
                 self.pulse += 1
                 if self.pulse >= 20:
@@ -103,7 +103,7 @@ except ImportError:
                 int(radius * 2)
             )
             
-            # Anel Intermediário
+            # Anel IntermediÃ¡rio
             painter.setPen(QPen(self.status_color, 2))
             inner_radius = 35
             painter.drawEllipse(
@@ -113,7 +113,7 @@ except ImportError:
                 int(inner_radius * 2)
             )
             
-            # Núcleo Sólido
+            # NÃºcleo SÃ³lido
             painter.setBrush(QBrush(self.status_color))
             painter.drawEllipse(
                 int(center_x - 10),
@@ -152,14 +152,14 @@ except ImportError:
     class JarvisHUD(QMainWindow):
         """HUD Principal - Overlay Transparente"""
         
-        # Sinais para comunicação thread-safe
+        # Sinais para comunicaÃ§Ã£o thread-safe
         status_changed = pyqtSignal(str)
         response_ready = pyqtSignal(str)
         
         def __init__(self):
             super().__init__()
             
-            # Configuração de Transparência Total e Click-Through
+            # ConfiguraÃ§Ã£o de TransparÃªncia Total e Click-Through
             self.setWindowFlags(
                 Qt.WindowType.FramelessWindowHint | 
                 Qt.WindowType.WindowStaysOnTopHint | 
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     hud = JarvisHUD()
     
-    # Teste de animação
+    # Teste de animaÃ§Ã£o
     import time
     states = ["listening", "thinking", "speaking", "idle"]
     

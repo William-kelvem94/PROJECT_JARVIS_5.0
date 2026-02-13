@@ -1,6 +1,6 @@
-"""
-Módulo de Detecção de Elementos de Interface (UI Detector)
-Usa o YOLOv8 para identificar ícones, botões e outros componentes visuais.
+﻿"""
+MÃ³dulo de DetecÃ§Ã£o de Elementos de Interface (UI Detector)
+Usa o YOLOv8 para identificar Ã­cones, botÃµes e outros componentes visuais.
 """
 
 import os
@@ -21,7 +21,7 @@ from src.utils.config import config
 logger = logging.getLogger(__name__)
 
 class UIDetector:
-    """Classe para detecção de objetos de interface usando YOLOv8"""
+    """Classe para detecÃ§Ã£o de objetos de interface usando YOLOv8"""
 
     def __init__(self, model_path: Optional[str] = None):
         self.enabled = config.get_setting('vision.yolo_enabled', True)
@@ -29,7 +29,7 @@ class UIDetector:
         
         if self.enabled and ULTRALYTICS_AVAILABLE:
             try:
-                # Se não houver modelo customizado, usa o YOLOv8n (nano) na pasta models
+                # Se nÃ£o houver modelo customizado, usa o YOLOv8n (nano) na pasta models
                 path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
                 # Garantir caminho absoluto para estabilidade
                 if not os.path.isabs(path):
@@ -42,13 +42,13 @@ class UIDetector:
                 self.enabled = False
         else:
             if not ULTRALYTICS_AVAILABLE:
-                logger.warning("Ultralytics não instalado. YOLO UI Detector desativado.")
+                logger.warning("Ultralytics nÃ£o instalado. YOLO UI Detector desativado.")
             self.enabled = False
 
     def detect_elements(self, image_path: str) -> List[Dict[str, Any]]:
         """
         Detecta elementos de UI na imagem
-        Returns: Lista de dicionários com {label, confidence, x, y, w, h}
+        Returns: Lista de dicionÃ¡rios com {label, confidence, x, y, w, h}
         """
         if not self.enabled or self.model is None:
             return []
@@ -84,13 +84,13 @@ class UIDetector:
             return detections
 
         except Exception as e:
-            logger.error(f"Erro na detecção YOLO: {e}")
+            logger.error(f"Erro na detecÃ§Ã£o YOLO: {e}")
             return []
 
     def get_summary(self, detections: List[Dict[str, Any]]) -> str:
-        """Gera uma descrição textual do que foi visto"""
+        """Gera uma descriÃ§Ã£o textual do que foi visto"""
         if not detections:
-            return "Nenhum elemento visual identificado além de texto."
+            return "Nenhum elemento visual identificado alÃ©m de texto."
             
         summary_parts = []
         labels = [d['label'] for d in detections]
@@ -102,5 +102,5 @@ class UIDetector:
             
         return "Elementos visuais identificados: " + ", ".join(summary_parts)
 
-# Instância global
+# InstÃ¢ncia global
 ui_detector = UIDetector()

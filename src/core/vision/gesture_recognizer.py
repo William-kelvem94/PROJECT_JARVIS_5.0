@@ -1,4 +1,4 @@
-"""
+﻿"""
 Gesture Recognition System - Reconhecimento de Gestos com MediaPipe
 Permite controle hands-free do JARVIS
 """
@@ -13,7 +13,7 @@ try:
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
-    logging.warning(f"⚠️ cv2 not available in gesture_recognizer: {e}")
+    logging.warning(f"âš ï¸ cv2 not available in gesture_recognizer: {e}")
 
 try:
     import numpy as np
@@ -21,7 +21,7 @@ try:
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
     np = None
-    logging.warning(f"⚠️ numpy not available in gesture_recognizer: {e}")
+    logging.warning(f"âš ï¸ numpy not available in gesture_recognizer: {e}")
 
 # Lazy import mediapipe to avoid startup issues
 MEDIAPIPE_AVAILABLE = False
@@ -36,7 +36,7 @@ def _ensure_mediapipe():
         except (ImportError, OSError) as e:
             MEDIAPIPE_AVAILABLE = False
             mp = None
-            logger.debug(f"MediaPipe não encontrado. Reconhecimento de gestos desativado: {e}")
+            logger.debug(f"MediaPipe nÃ£o encontrado. Reconhecimento de gestos desativado: {e}")
 
 try:
     # Just check if mediapipe can be imported without actually importing it
@@ -90,7 +90,7 @@ class GestureRecognizer:
             self.mp_hands = mp.solutions.hands
             self.mp_drawing = mp.solutions.drawing_utils
             
-            # Configurar detector de mãos
+            # Configurar detector de mÃ£os
             self.hands = self.mp_hands.Hands(
                 static_image_mode=False,
                 max_num_hands=2,
@@ -99,19 +99,19 @@ class GestureRecognizer:
             )
             
             self.mediapipe_available = True
-            logger.info("✅ MediaPipe Hands inicializado")
+            logger.info("âœ… MediaPipe Hands inicializado")
             
         except ImportError:
-            logger.warning("⚠️ MediaPipe não disponível. Instale: pip install mediapipe")
+            logger.warning("âš ï¸ MediaPipe nÃ£o disponÃ­vel. Instale: pip install mediapipe")
         except Exception as e:
-            logger.warning(f"⚠️ Erro ao inicializar MediaPipe: {e}")
+            logger.warning(f"âš ï¸ Erro ao inicializar MediaPipe: {e}")
     
     def detect_gesture(self, frame) -> Optional[GestureType]:
         """
         Detecta gesto em um frame
         
         Args:
-            frame: Frame de vídeo (BGR)
+            frame: Frame de vÃ­deo (BGR)
         
         Returns:
             Tipo de gesto detectado ou None
@@ -129,13 +129,13 @@ class GestureRecognizer:
             if not results.multi_hand_landmarks:
                 return GestureType.NONE
             
-            # Analisar primeira mão detectada
+            # Analisar primeira mÃ£o detectada
             hand_landmarks = results.multi_hand_landmarks[0]
             
             # Classificar gesto baseado em landmarks
             gesture = self._classify_gesture(hand_landmarks)
             
-            # Atualizar histórico
+            # Atualizar histÃ³rico
             if gesture != self.last_gesture:
                 self.gesture_history.append(gesture)
                 if len(self.gesture_history) > 10:
@@ -154,7 +154,7 @@ class GestureRecognizer:
             return None
     
     def _classify_gesture(self, landmarks) -> GestureType:
-        """Classifica gesto baseado em landmarks da mão"""
+        """Classifica gesto baseado em landmarks da mÃ£o"""
         # Extrair coordenadas dos dedos
         thumb_tip = landmarks.landmark[4]
         index_tip = landmarks.landmark[8]
@@ -164,16 +164,16 @@ class GestureRecognizer:
         
         wrist = landmarks.landmark[0]
         
-        # Calcular se dedos estão estendidos
+        # Calcular se dedos estÃ£o estendidos
         fingers_up = []
         
-        # Polegar (comparação horizontal)
+        # Polegar (comparaÃ§Ã£o horizontal)
         if thumb_tip.x < landmarks.landmark[3].x:
             fingers_up.append(1)
         else:
             fingers_up.append(0)
         
-        # Outros dedos (comparação vertical)
+        # Outros dedos (comparaÃ§Ã£o vertical)
         for tip_id in [8, 12, 16, 20]:
             if landmarks.landmark[tip_id].y < landmarks.landmark[tip_id - 2].y:
                 fingers_up.append(1)
@@ -216,10 +216,10 @@ class GestureRecognizer:
     def register_gesture_callback(self, gesture: GestureType, callback: Callable):
         """Registra callback para um gesto"""
         self.gesture_callbacks[gesture] = callback
-        logger.info(f"✅ Callback registrado para gesto: {gesture.value}")
+        logger.info(f"âœ… Callback registrado para gesto: {gesture.value}")
     
     def draw_landmarks(self, frame: np.ndarray, landmarks) -> np.ndarray:
-        """Desenha landmarks da mão no frame"""
+        """Desenha landmarks da mÃ£o no frame"""
         if not self.mediapipe_available:
             return frame
         
@@ -235,21 +235,21 @@ class GestureRecognizer:
         return frame
     
     def get_gesture_name(self, gesture: GestureType) -> str:
-        """Retorna nome amigável do gesto"""
+        """Retorna nome amigÃ¡vel do gesto"""
         names = {
-            GestureType.THUMBS_UP: "👍 Polegar para cima",
-            GestureType.THUMBS_DOWN: "👎 Polegar para baixo",
-            GestureType.PEACE: "✌️ Paz",
-            GestureType.OK: "👌 OK",
-            GestureType.POINTING: "👉 Apontando",
-            GestureType.OPEN_PALM: "🖐️ Palma aberta",
-            GestureType.FIST: "✊ Punho fechado",
+            GestureType.THUMBS_UP: "ðŸ‘ Polegar para cima",
+            GestureType.THUMBS_DOWN: "ðŸ‘Ž Polegar para baixo",
+            GestureType.PEACE: "âœŒï¸ Paz",
+            GestureType.OK: "ðŸ‘Œ OK",
+            GestureType.POINTING: "ðŸ‘‰ Apontando",
+            GestureType.OPEN_PALM: "ðŸ–ï¸ Palma aberta",
+            GestureType.FIST: "âœŠ Punho fechado",
             GestureType.NONE: "Nenhum"
         }
         return names.get(gesture, gesture.value)
 
 
-# Instância global removida para evitar execução durante import
+# InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # gesture_recognizer = GestureRecognizer()
 
 
@@ -257,10 +257,10 @@ class GestureRecognizer:
 if __name__ == "__main__":
     # Registrar callbacks
     def on_thumbs_up():
-        print("👍 Gesto: Polegar para cima!")
+        print("ðŸ‘ Gesto: Polegar para cima!")
     
     def on_peace():
-        print("✌️ Gesto: Paz!")
+        print("âœŒï¸ Gesto: Paz!")
     
     gesture_recognizer.register_gesture_callback(GestureType.THUMBS_UP, on_thumbs_up)
     gesture_recognizer.register_gesture_callback(GestureType.PEACE, on_peace)

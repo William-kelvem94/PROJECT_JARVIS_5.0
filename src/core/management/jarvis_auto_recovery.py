@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Local Auto-Recovery System  
 ===============================================
 Sistema de auto-recovery REAL integrado com o JARVIS local.
-Funciona em conjunto com a rede local para recovery distribuído.
+Funciona em conjunto com a rede local para recovery distribuÃ­do.
 """
 
 import asyncio
@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 from pathlib import Path
 
-# Imports específicos para monitoramento
+# Imports especÃ­ficos para monitoramento
 import threading
 import subprocess
 import sys
@@ -57,7 +57,7 @@ class FailureEvent:
 
 @dataclass
 class RecoveryAction:
-    """Ação de recovery executada"""
+    """AÃ§Ã£o de recovery executada"""
     action_id: str
     strategy: RecoveryStrategy
     target_module: str
@@ -68,14 +68,14 @@ class RecoveryAction:
 
 class JarvisAutoRecovery:
     """
-    🔧 SISTEMA DE AUTO-RECOVERY REAL PARA JARVIS
+    ðŸ”§ SISTEMA DE AUTO-RECOVERY REAL PARA JARVIS
     
     Recursos:
-    - Monitoramento contínuo de saúde do sistema
-    - Detecção automática de falhas
+    - Monitoramento contÃ­nuo de saÃºde do sistema
+    - DetecÃ§Ã£o automÃ¡tica de falhas
     - Recovery inteligente por tipo de problema
-    - Integração com rede local para backup
-    - Aprendizado das estratégias mais eficazes
+    - IntegraÃ§Ã£o com rede local para backup
+    - Aprendizado das estratÃ©gias mais eficazes
     """
     
     def __init__(self, jarvis_core):
@@ -89,7 +89,7 @@ class JarvisAutoRecovery:
         self.recovery_history: List[RecoveryAction] = []
         self.current_failures: Dict[str, FailureEvent] = {}
         
-        # Estratégias de recovery
+        # EstratÃ©gias de recovery
         self.recovery_strategies: Dict[FailureType, List[RecoveryStrategy]] = {
             FailureType.MEMORY_LEAK: [
                 RecoveryStrategy.CLEAR_MEMORY,
@@ -118,17 +118,17 @@ class JarvisAutoRecovery:
             ]
         }
         
-        # Métricas de sucesso por estratégia (aprender qual funciona melhor)
+        # MÃ©tricas de sucesso por estratÃ©gia (aprender qual funciona melhor)
         self.strategy_success_rates: Dict[RecoveryStrategy, float] = {}
         
         # Threading para monitoramento
         self.monitor_thread = None
         self.monitor_stop_event = threading.Event()
         
-        print("🔧 Auto-Recovery inicializado")
+        print("ðŸ”§ Auto-Recovery inicializado")
         
     def start_monitoring(self):
-        """🚀 INICIA MONITORAMENTO CONTÍNUO"""
+        """ðŸš€ INICIA MONITORAMENTO CONTÃNUO"""
         if self.is_monitoring:
             return
         
@@ -137,10 +137,10 @@ class JarvisAutoRecovery:
         self.monitor_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitor_thread.start()
         
-        print("👁️ Auto-Recovery: Monitoramento ativado")
+        print("ðŸ‘ï¸ Auto-Recovery: Monitoramento ativado")
     
     def stop_monitoring(self):
-        """⏹️ PARA MONITORAMENTO"""
+        """â¹ï¸ PARA MONITORAMENTO"""
         if not self.is_monitoring:
             return
         
@@ -150,13 +150,13 @@ class JarvisAutoRecovery:
         if self.monitor_thread and self.monitor_thread.is_alive():
             self.monitor_thread.join(timeout=5)
         
-        print("🛑 Auto-Recovery: Monitoramento parado")
+        print("ðŸ›‘ Auto-Recovery: Monitoramento parado")
     
     def _monitoring_loop(self):
-        """🔄 LOOP PRINCIPAL DE MONITORAMENTO"""
+        """ðŸ”„ LOOP PRINCIPAL DE MONITORAMENTO"""
         while not self.monitor_stop_event.is_set():
             try:
-                # Coletar métricas do sistema
+                # Coletar mÃ©tricas do sistema
                 metrics = self._collect_system_metrics()
                 
                 # Detectar falhas
@@ -166,17 +166,17 @@ class JarvisAutoRecovery:
                 for failure in failures:
                     asyncio.run(self._handle_failure(failure))
                 
-                # Aguardar próxima verificação
+                # Aguardar prÃ³xima verificaÃ§Ã£o
                 self.monitor_stop_event.wait(10)  # Check a cada 10 segundos
                 
             except Exception as e:
-                print(f"❌ Erro no monitoramento: {e}")
+                print(f"âŒ Erro no monitoramento: {e}")
                 self.monitor_stop_event.wait(30)  # Aguardar mais tempo em caso de erro
     
     def _collect_system_metrics(self) -> Dict[str, Any]:
-        """📊 COLETA MÉTRICAS DO SISTEMA"""
+        """ðŸ“Š COLETA MÃ‰TRICAS DO SISTEMA"""
         try:
-            # Métricas básicas do sistema
+            # MÃ©tricas bÃ¡sicas do sistema
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
@@ -187,7 +187,7 @@ class JarvisAutoRecovery:
                 if 'python' in proc.info['name'].lower():
                     python_processes.append(proc.info)
             
-            # Métricas específicas do JARVIS
+            # MÃ©tricas especÃ­ficas do JARVIS
             jarvis_modules = self._get_jarvis_modules_status()
             
             metrics = {
@@ -206,11 +206,11 @@ class JarvisAutoRecovery:
             return metrics
             
         except Exception as e:
-            print(f"❌ Erro coletando métricas: {e}")
+            print(f"âŒ Erro coletando mÃ©tricas: {e}")
             return {}
     
     def _get_jarvis_modules_status(self) -> Dict[str, Dict]:
-        """📋 VERIFICA STATUS DOS MÓDULOS DO JARVIS"""
+        """ðŸ“‹ VERIFICA STATUS DOS MÃ“DULOS DO JARVIS"""
         modules_status = {}
         
         try:
@@ -222,16 +222,16 @@ class JarvisAutoRecovery:
                         'last_activity': self._get_module_last_activity(module_name)
                     }
         except Exception as e:
-            print(f"⚠️ Erro verificando módulos: {e}")
+            print(f"âš ï¸ Erro verificando mÃ³dulos: {e}")
         
         return modules_status
     
     def _check_module_responsive(self, module_name: str) -> bool:
-        """🔍 VERIFICA SE MÓDULO ESTÁ RESPONSIVO"""
+        """ðŸ” VERIFICA SE MÃ“DULO ESTÃ RESPONSIVO"""
         try:
-            # Verificações específicas por módulo
+            # VerificaÃ§Ãµes especÃ­ficas por mÃ³dulo
             if module_name == 'ai_agent' and hasattr(self.jarvis_core, 'ai_agent'):
-                # Teste básico do AI Agent
+                # Teste bÃ¡sico do AI Agent
                 return self.jarvis_core.ai_agent is not None
             
             elif module_name == 'voice' and hasattr(self.jarvis_core, 'voice_controller'):
@@ -240,19 +240,19 @@ class JarvisAutoRecovery:
             elif module_name == 'vision' and hasattr(self.jarvis_core, 'vision_enhancer'):
                 return self.jarvis_core.vision_enhancer is not None
             
-            # Para outros módulos, assumir que estar inicializado = responsivo
+            # Para outros mÃ³dulos, assumir que estar inicializado = responsivo
             return True
             
         except Exception:
             return False
     
     def _get_module_last_activity(self, module_name: str) -> Optional[str]:
-        """⏰ OBTÉM ÚLTIMA ATIVIDADE DO MÓDULO"""
-        # Implementação básica - pode ser expandida
+        """â° OBTÃ‰M ÃšLTIMA ATIVIDADE DO MÃ“DULO"""
+        # ImplementaÃ§Ã£o bÃ¡sica - pode ser expandida
         return datetime.now().isoformat()
     
     def _detect_failures(self, metrics: Dict[str, Any]) -> List[FailureEvent]:
-        """🚨 DETECTA FALHAS BASEADO NAS MÉTRICAS"""
+        """ðŸš¨ DETECTA FALHAS BASEADO NAS MÃ‰TRICAS"""
         failures = []
         timestamp = datetime.now()
         
@@ -263,7 +263,7 @@ class JarvisAutoRecovery:
                 failure_type=FailureType.MEMORY_LEAK,
                 severity=8 if metrics['memory_usage'] > 90 else 6,
                 module_affected="system",
-                error_message=f"Uso de memória crítico: {metrics['memory_usage']:.1f}%",
+                error_message=f"Uso de memÃ³ria crÃ­tico: {metrics['memory_usage']:.1f}%",
                 system_metrics=metrics,
                 timestamp=timestamp
             )
@@ -304,7 +304,7 @@ class JarvisAutoRecovery:
                     failure_type=FailureType.SERVICE_UNRESPONSIVE,
                     severity=8,
                     module_affected=module_name,
-                    error_message=f"Módulo {module_name} não está responsivo",
+                    error_message=f"MÃ³dulo {module_name} nÃ£o estÃ¡ responsivo",
                     system_metrics=metrics,
                     timestamp=timestamp
                 )
@@ -313,7 +313,7 @@ class JarvisAutoRecovery:
         return failures
     
     async def _handle_failure(self, failure: FailureEvent):
-        """🔧 TRATA FALHA DETECTADA"""
+        """ðŸ”§ TRATA FALHA DETECTADA"""
         
         # Evitar processamento duplicado
         if failure.failure_id in self.current_failures:
@@ -322,36 +322,36 @@ class JarvisAutoRecovery:
         self.current_failures[failure.failure_id] = failure
         self.failure_history.append(failure)
         
-        print(f"\n🚨 FALHA DETECTADA: {failure.failure_type.value}")
-        print(f"   📍 Módulo: {failure.module_affected}")
-        print(f"   ⚠️ Severidade: {failure.severity}/10")
-        print(f"   💬 Erro: {failure.error_message}")
+        print(f"\nðŸš¨ FALHA DETECTADA: {failure.failure_type.value}")
+        print(f"   ðŸ“ MÃ³dulo: {failure.module_affected}")
+        print(f"   âš ï¸ Severidade: {failure.severity}/10")
+        print(f"   ðŸ’¬ Erro: {failure.error_message}")
         
-        # Selecionar estratégias de recovery
+        # Selecionar estratÃ©gias de recovery
         strategies = self._get_recovery_strategies(failure.failure_type)
         
-        # Executar estratégias em ordem de prioridade
+        # Executar estratÃ©gias em ordem de prioridade
         recovery_success = False
         for strategy in strategies:
             try:
-                print(f"   🔧 Tentando: {strategy.value}")
+                print(f"   ðŸ”§ Tentando: {strategy.value}")
                 
                 success = await self._execute_recovery_strategy(failure, strategy)
                 
-                # Registrar ação
+                # Registrar aÃ§Ã£o
                 action = RecoveryAction(
                     action_id=f"rec_{int(time.time())}",
                     strategy=strategy,
                     target_module=failure.module_affected,
                     success=success,
                     execution_time=1.0,  # Simplificado
-                    error_details=None if success else "Estratégia falhou",
+                    error_details=None if success else "EstratÃ©gia falhou",
                     timestamp=datetime.now()
                 )
                 self.recovery_history.append(action)
                 
                 if success:
-                    print(f"   ✅ Recovery bem-sucedido com: {strategy.value}")
+                    print(f"   âœ… Recovery bem-sucedido com: {strategy.value}")
                     recovery_success = True
                     self._update_strategy_success_rate(strategy, True)
                     break
@@ -359,7 +359,7 @@ class JarvisAutoRecovery:
                     self._update_strategy_success_rate(strategy, False)
                     
             except Exception as e:
-                print(f"   ❌ Erro na estratégia {strategy.value}: {e}")
+                print(f"   âŒ Erro na estratÃ©gia {strategy.value}: {e}")
                 self._update_strategy_success_rate(strategy, False)
         
         # Se recovery local falhou, pedir ajuda da rede
@@ -370,10 +370,10 @@ class JarvisAutoRecovery:
         if recovery_success and failure.failure_id in self.current_failures:
             del self.current_failures[failure.failure_id]
         
-        print(f"   🏁 Recovery {'✅ concluído' if recovery_success else '❌ falhou'}")
+        print(f"   ðŸ Recovery {'âœ… concluÃ­do' if recovery_success else 'âŒ falhou'}")
     
     def _get_recovery_strategies(self, failure_type: FailureType) -> List[RecoveryStrategy]:
-        """📋 OBTÉM ESTRATÉGIAS ORDENADAS POR EFICÁCIA"""
+        """ðŸ“‹ OBTÃ‰M ESTRATÃ‰GIAS ORDENADAS POR EFICÃCIA"""
         strategies = self.recovery_strategies.get(failure_type, [])
         
         # Ordenar por taxa de sucesso (aprendizado)
@@ -384,7 +384,7 @@ class JarvisAutoRecovery:
         return sorted(strategies, key=strategy_priority)
     
     async def _execute_recovery_strategy(self, failure: FailureEvent, strategy: RecoveryStrategy) -> bool:
-        """⚡ EXECUTA ESTRATÉGIA DE RECOVERY"""
+        """âš¡ EXECUTA ESTRATÃ‰GIA DE RECOVERY"""
         
         try:
             if strategy == RecoveryStrategy.CLEAR_MEMORY:
@@ -411,33 +411,33 @@ class JarvisAutoRecovery:
             return False
             
         except Exception as e:
-            print(f"❌ Erro executando {strategy.value}: {e}")
+            print(f"âŒ Erro executando {strategy.value}: {e}")
             return False
     
     async def _clear_memory(self) -> bool:
-        """🧹 LIMPA MEMÓRIA DO SISTEMA"""
+        """ðŸ§¹ LIMPA MEMÃ“RIA DO SISTEMA"""
         try:
-            # Forçar garbage collection
+            # ForÃ§ar garbage collection
             import gc
             gc.collect()
             
-            # Limpar caches se disponíveis
+            # Limpar caches se disponÃ­veis
             if hasattr(self.jarvis_core, 'clear_caches'):
                 await self.jarvis_core.clear_caches()
             
-            print("🧹 Memória limpa")
+            print("ðŸ§¹ MemÃ³ria limpa")
             return True
             
         except Exception as e:
-            print(f"❌ Erro limpando memória: {e}")
+            print(f"âŒ Erro limpando memÃ³ria: {e}")
             return False
     
     async def _restart_service(self, module_name: str) -> bool:
-        """🔄 REINICIA SERVIÇO ESPECÍFICO"""
+        """ðŸ”„ REINICIA SERVIÃ‡O ESPECÃFICO"""
         try:
-            print(f"🔄 Reiniciando módulo: {module_name}")
+            print(f"ðŸ”„ Reiniciando mÃ³dulo: {module_name}")
             
-            # Implementação específica por módulo
+            # ImplementaÃ§Ã£o especÃ­fica por mÃ³dulo
             if module_name == "ai_agent":
                 return await self._restart_ai_agent()
             elif module_name == "voice":
@@ -449,11 +449,11 @@ class JarvisAutoRecovery:
                 return await self._restart_generic_module(module_name)
             
         except Exception as e:
-            print(f"❌ Erro reiniciando {module_name}: {e}")
+            print(f"âŒ Erro reiniciando {module_name}: {e}")
             return False
     
     async def _restart_ai_agent(self) -> bool:
-        """🤖 REINICIA AI AGENT"""
+        """ðŸ¤– REINICIA AI AGENT"""
         try:
             if hasattr(self.jarvis_core, 'ai_agent'):
                 # Parar current agent
@@ -462,66 +462,66 @@ class JarvisAutoRecovery:
                 
                 # Reinicializar
                 await asyncio.sleep(2)
-                # Aqui você chamaria o método de inicialização do AI agent
-                print("🤖 AI Agent reiniciado")
+                # Aqui vocÃª chamaria o mÃ©todo de inicializaÃ§Ã£o do AI agent
+                print("ðŸ¤– AI Agent reiniciado")
                 return True
             return False
         except Exception:
             return False
     
     async def _restart_voice_controller(self) -> bool:
-        """🎤 REINICIA CONTROLADOR DE VOZ"""
+        """ðŸŽ¤ REINICIA CONTROLADOR DE VOZ"""
         try:
             if hasattr(self.jarvis_core, 'voice_controller'):
-                # Lógica de reinicialização
-                print("🎤 Voice Controller reiniciado")
+                # LÃ³gica de reinicializaÃ§Ã£o
+                print("ðŸŽ¤ Voice Controller reiniciado")
                 return True
             return False  
         except Exception:
             return False
     
     async def _restart_vision_enhancer(self) -> bool:
-        """👁️ REINICIA VISION ENHANCER"""
+        """ðŸ‘ï¸ REINICIA VISION ENHANCER"""
         try:
             if hasattr(self.jarvis_core, 'vision_enhancer'):
-                # Lógica de reinicialização
-                print("👁️ Vision Enhancer reiniciado")
+                # LÃ³gica de reinicializaÃ§Ã£o
+                print("ðŸ‘ï¸ Vision Enhancer reiniciado")
                 return True
             return False
         except Exception:
             return False
     
     async def _restart_generic_module(self, module_name: str) -> bool:
-        """🔄 REINICIALIZAÇÃO GENÉRICA"""
+        """ðŸ”„ REINICIALIZAÃ‡ÃƒO GENÃ‰RICA"""
         try:
-            # Implementação genérica para outros módulos
-            print(f"🔄 Módulo {module_name} reiniciado genericamente")
+            # ImplementaÃ§Ã£o genÃ©rica para outros mÃ³dulos
+            print(f"ðŸ”„ MÃ³dulo {module_name} reiniciado genericamente")
             return True
         except Exception:
             return False
     
     async def _reduce_system_load(self) -> bool:
-        """📉 REDUZ CARGA DO SISTEMA"""
+        """ðŸ“‰ REDUZ CARGA DO SISTEMA"""
         try:
-            # Parar processos não críticos
+            # Parar processos nÃ£o crÃ­ticos
             if hasattr(self.jarvis_core, 'reduce_load'):
                 await self.jarvis_core.reduce_load()
             
-            # Reduzir configurações de performance
-            print("📉 Carga do sistema reduzida")
+            # Reduzir configuraÃ§Ãµes de performance
+            print("ðŸ“‰ Carga do sistema reduzida")
             return True
             
         except Exception:
             return False
     
     async def _reinitialize_module(self, module_name: str) -> bool:
-        """🔄 REINICIALIZA MÓDULO COMPLETAMENTE"""
+        """ðŸ”„ REINICIALIZA MÃ“DULO COMPLETAMENTE"""
         try:
-            # Reinicialização completa do módulo
+            # ReinicializaÃ§Ã£o completa do mÃ³dulo
             if hasattr(self.jarvis_core, f'initialize_{module_name}'):
                 init_method = getattr(self.jarvis_core, f'initialize_{module_name}')
                 await init_method()
-                print(f"🔄 Módulo {module_name} reinicializado")
+                print(f"ðŸ”„ MÃ³dulo {module_name} reinicializado")
                 return True
             
             return await self._restart_service(module_name)
@@ -530,11 +530,11 @@ class JarvisAutoRecovery:
             return False
     
     async def _activate_fallback_mode(self, module_name: str) -> bool:
-        """🛡️ ATIVA MODO FALLBACK"""
+        """ðŸ›¡ï¸ ATIVA MODO FALLBACK"""
         try:
-            print(f"🛡️ Ativando fallback para {module_name}")
+            print(f"ðŸ›¡ï¸ Ativando fallback para {module_name}")
             
-            # Implementar fallback específico por módulo
+            # Implementar fallback especÃ­fico por mÃ³dulo
             if hasattr(self.jarvis_core, 'activate_fallback'):
                 await self.jarvis_core.activate_fallback(module_name)
             
@@ -544,9 +544,9 @@ class JarvisAutoRecovery:
             return False
     
     async def _request_network_recovery(self, failure: FailureEvent) -> bool:
-        """📡 SOLICITA AJUDA DA REDE LOCAL"""
+        """ðŸ“¡ SOLICITA AJUDA DA REDE LOCAL"""
         try:
-            # Integração com LocalNetworkIntelligence
+            # IntegraÃ§Ã£o com LocalNetworkIntelligence
             if hasattr(self.jarvis_core, 'network_mesh'):
                 await self.jarvis_core.network_mesh.emergency_broadcast(
                     "auto_recovery_failure",
@@ -557,7 +557,7 @@ class JarvisAutoRecovery:
                         "needs_assistance": True
                     }
                 )
-                print("📡 Solicitação de ajuda enviada para rede")
+                print("ðŸ“¡ SolicitaÃ§Ã£o de ajuda enviada para rede")
                 return True
             
             return False
@@ -566,14 +566,14 @@ class JarvisAutoRecovery:
             return False
     
     async def _emergency_shutdown(self) -> bool:
-        """🚨 SHUTDOWN DE EMERGÊNCIA"""
+        """ðŸš¨ SHUTDOWN DE EMERGÃŠNCIA"""
         try:
-            print("🚨 SHUTDOWN DE EMERGÊNCIA INICIADO")
+            print("ðŸš¨ SHUTDOWN DE EMERGÃŠNCIA INICIADO")
             
-            # Salvar estado crítico
+            # Salvar estado crÃ­tico
             await self._save_emergency_state()
             
-            # Parar módulos não críticos
+            # Parar mÃ³dulos nÃ£o crÃ­ticos
             if hasattr(self.jarvis_core, 'emergency_stop'):
                 await self.jarvis_core.emergency_stop()
             
@@ -583,7 +583,7 @@ class JarvisAutoRecovery:
             return False
     
     async def _save_emergency_state(self):
-        """💾 SALVA ESTADO DE EMERGÊNCIA"""
+        """ðŸ’¾ SALVA ESTADO DE EMERGÃŠNCIA"""
         try:
             emergency_state = {
                 'timestamp': datetime.now().isoformat(),
@@ -596,13 +596,13 @@ class JarvisAutoRecovery:
             with open(emergency_file, 'w', encoding='utf-8') as f:
                 json.dump(emergency_state, f, indent=2, default=str)
             
-            print("💾 Estado de emergência salvo")
+            print("ðŸ’¾ Estado de emergÃªncia salvo")
             
         except Exception as e:
-            print(f"❌ Erro salvando estado de emergência: {e}")
+            print(f"âŒ Erro salvando estado de emergÃªncia: {e}")
     
     def _update_strategy_success_rate(self, strategy: RecoveryStrategy, success: bool):
-        """📊 ATUALIZA TAXA DE SUCESSO DA ESTRATÉGIA (APRENDIZADO)"""
+        """ðŸ“Š ATUALIZA TAXA DE SUCESSO DA ESTRATÃ‰GIA (APRENDIZADO)"""
         current_rate = self.strategy_success_rates.get(strategy, 0.5)
         
         # Weighted moving average (dar mais peso para resultados recentes)
@@ -612,7 +612,7 @@ class JarvisAutoRecovery:
         self.strategy_success_rates[strategy] = max(0.0, min(1.0, new_rate))
     
     def get_health_report(self) -> Dict[str, Any]:
-        """📊 RELATÓRIO DE SAÚDE DO SISTEMA"""
+        """ðŸ“Š RELATÃ“RIO DE SAÃšDE DO SISTEMA"""
         return {
             'monitoring_active': self.is_monitoring,
             'current_failures': len(self.current_failures),
@@ -624,30 +624,30 @@ class JarvisAutoRecovery:
         }
 
 # ============================================================================
-# INTEGRAÇÃO COM JARVIS CORE
+# INTEGRAÃ‡ÃƒO COM JARVIS CORE
 # ============================================================================
 
 class AutoRecoveryIntegration:
-    """🔗 CLASSE PARA INTEGRAÇÃO COM O JARVIS CORE"""
+    """ðŸ”— CLASSE PARA INTEGRAÃ‡ÃƒO COM O JARVIS CORE"""
     
     def __init__(self, jarvis_core):
         self.jarvis_core = jarvis_core
         self.auto_recovery = JarvisAutoRecovery(jarvis_core)
     
     async def initialize(self):
-        """🚀 INICIALIZA AUTO-RECOVERY"""
-        print("🔧 Inicializando Auto-Recovery...")
+        """ðŸš€ INICIALIZA AUTO-RECOVERY"""
+        print("ðŸ”§ Inicializando Auto-Recovery...")
         self.auto_recovery.start_monitoring()
-        print("✅ Auto-Recovery ativo")
+        print("âœ… Auto-Recovery ativo")
     
     async def shutdown(self):
-        """⏹️ PARA AUTO-RECOVERY"""
-        print("🛑 Parando Auto-Recovery...")
+        """â¹ï¸ PARA AUTO-RECOVERY"""
+        print("ðŸ›‘ Parando Auto-Recovery...")
         self.auto_recovery.stop_monitoring()
-        print("✅ Auto-Recovery parado")
+        print("âœ… Auto-Recovery parado")
     
     def get_status(self) -> Dict[str, Any]:
-        """📊 STATUS DO AUTO-RECOVERY"""
+        """ðŸ“Š STATUS DO AUTO-RECOVERY"""
         return self.auto_recovery.get_health_report()
 
 # Para uso em jarvis_core.py:

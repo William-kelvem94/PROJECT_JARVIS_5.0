@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Enhanced Audio Processing
@@ -38,7 +38,7 @@ except ImportError:
         from src.utils.config import Config
         config = Config()
     except Exception as e:
-        logger.warning(f"⚠️ Config module unavailable: {e}. Using defaults.")
+        logger.warning(f"âš ï¸ Config module unavailable: {e}. Using defaults.")
         # Mock config object
         class MoackConfig:
             @staticmethod
@@ -59,7 +59,7 @@ try:
     FASTER_WHISPER_AVAILABLE = True
 except (ImportError, OSError, AttributeError) as e:
     FASTER_WHISPER_AVAILABLE = False
-    logger.warning(f"⚠️ faster-whisper not available - STT disabled: {e}")
+    logger.warning(f"âš ï¸ faster-whisper not available - STT disabled: {e}")
 
 try:
     import torch
@@ -67,7 +67,7 @@ try:
     TORCH_AVAILABLE = True
 except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
-    logger.warning(f"⚠️ torch not available - advanced audio features disabled: {e}")
+    logger.warning(f"âš ï¸ torch not available - advanced audio features disabled: {e}")
 
 import soundfile as sf
 SOUNDFILE_AVAILABLE = True
@@ -81,14 +81,14 @@ try:
     RESEMBLYZER_AVAILABLE = True
 except (ImportError, OSError) as e:
     RESEMBLYZER_AVAILABLE = False
-    logger.warning(f"⚠️ resemblyzer not available - speaker verification disabled: {e}")
+    logger.warning(f"âš ï¸ resemblyzer not available - speaker verification disabled: {e}")
 
 try:
     import pvporcupine
     PORCUPINE_AVAILABLE = True
 except (ImportError, OSError):
     PORCUPINE_AVAILABLE = False
-    logger.warning("⚠️ Wake Word detection (Porcupine) disabled - requirements missing")
+    logger.warning("âš ï¸ Wake Word detection (Porcupine) disabled - requirements missing")
 
 # ============ P1: NOISE REDUCTION ============
 try:
@@ -96,7 +96,7 @@ try:
     NOISEREDUCE_AVAILABLE = True
 except (ImportError, OSError):
     NOISEREDUCE_AVAILABLE = False
-    logger.warning("⚠️ Noise reduction disabled - install noisereduce")
+    logger.warning("âš ï¸ Noise reduction disabled - install noisereduce")
 
 
 # ============================================================================
@@ -205,8 +205,8 @@ class EnhancedAudioSystem:
         # Wake word state
         self.porcupine = None
         self.wake_word_active = config.get_setting('audio.wake_word_enabled', True)
-        # 🆕 ALWAYS LISTENING MODE: Se não tiver wake word, fica sempre acordado
-        self.is_awake = not self.wake_word_active  # Começa acordado se wake word desabilitado
+        # ðŸ†• ALWAYS LISTENING MODE: Se nÃ£o tiver wake word, fica sempre acordado
+        self.is_awake = not self.wake_word_active  # ComeÃ§a acordado se wake word desabilitado
         
         # Readiness flags for heavy models
         self._whisper_ready = False
@@ -217,54 +217,54 @@ class EnhancedAudioSystem:
         self._initialize_basic_components()
         
         # Start heavy models in background to avoid 0xC0000005 during boot
-        # 🆕 PASSIVE INIT: Do not start threads in __init__. Call start_background_loading() later.
+        # ðŸ†• PASSIVE INIT: Do not start threads in __init__. Call start_background_loading() later.
         # threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
-        logger.info("✅ Enhanced Audio System initialized (Passive Mode)")
-        logger.info(f"   Faster-Whisper: {'✅' if FASTER_WHISPER_AVAILABLE else '❌'}")
-        logger.info(f"   PyAudio: {'✅' if PYAUDIO_AVAILABLE else '❌'}")
-        logger.info(f"   Speaker Verification: {'✅' if RESEMBLYZER_AVAILABLE else '❌'}")
+        logger.info("âœ… Enhanced Audio System initialized (Passive Mode)")
+        logger.info(f"   Faster-Whisper: {'âœ…' if FASTER_WHISPER_AVAILABLE else 'âŒ'}")
+        logger.info(f"   PyAudio: {'âœ…' if PYAUDIO_AVAILABLE else 'âŒ'}")
+        logger.info(f"   Speaker Verification: {'âœ…' if RESEMBLYZER_AVAILABLE else 'âŒ'}")
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
-        logger.info("🚀 Audio System: Iniciando carregamento neural post-boot...")
+        logger.info("ðŸš€ Audio System: Iniciando carregamento neural post-boot...")
         threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
     def _initialize_basic_components(self):
         """Initialize lightweight audio components (device checks, VAD gate)"""
-        # 🆕 FREE WAKE WORD: VAD-based Energy Gate
+        # ðŸ†• FREE WAKE WORD: VAD-based Energy Gate
         # Instead of Porcupine (paid), we use Silero-VAD + Energy Threshold
         if self.wake_word_active:
-            logger.info("✅ VAD-based Wake Word enabled (Always Listen Mode)")
+            logger.info("âœ… VAD-based Wake Word enabled (Always Listen Mode)")
             self.porcupine = None # Disable Porcupine explicitly
             # self.is_awake = False # Start asleep, wait for VAD
         else:
-            logger.info("ℹ️ Wake Word disabled (Push-to-Talk Mode)")
+            logger.info("â„¹ï¸ Wake Word disabled (Push-to-Talk Mode)")
 
     def _load_models_background(self):
         """Load heavy AI models in background to prevent 0xC0000005 during boot"""
         # 1. Faster-Whisper
         if FASTER_WHISPER_AVAILABLE:
             try:
-                # 🆕 GLOBAL NEURAL LOCK: Serialize heavy loads
+                # ðŸ†• GLOBAL NEURAL LOCK: Serialize heavy loads
                 model_load_lock.acquire("Whisper (Audio Core)")
                 try:
                     with self._models_lock:
-                        logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
+                        logger.info(f"ðŸ§  Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
                         
                         # CRITICAL: Import here to avoid init-time conflicts
                         from faster_whisper import WhisperModel
                         
-                        # 4. Abstração de Hardware (Universalidade)
+                        # 4. AbstraÃ§Ã£o de Hardware (Universalidade)
                         try:
                             if torch.cuda.is_available():
                                 device = "cuda"
                                 compute_type = "float16"
-                                logger.info(f"   🚀 GPU NVIDIA Detectada: Usando CUDA + Float16")
+                                logger.info(f"   ðŸš€ GPU NVIDIA Detectada: Usando CUDA + Float16")
                             else:
                                 device = "cpu"
                                 compute_type = "int8"
-                                logger.info(f"   💻 CPU Detectada: Usando INT8 para economia de memória")
+                                logger.info(f"   ðŸ’» CPU Detectada: Usando INT8 para economia de memÃ³ria")
                         except Exception:
                             device = "cpu"
                             compute_type = "int8"
@@ -279,12 +279,12 @@ class EnhancedAudioSystem:
                             num_workers=1   # Single worker to prevent pool crashes
                         )
                         self._whisper_ready = True
-                        logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
+                        logger.info(f"âœ… Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
                 finally:
                     model_load_lock.release()
             except Exception as e:
                 self._whisper_ready = False
-                logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
+                logger.error(f"âŒ Audio Core: Falha no Whisper: {e}")
                 import traceback
                 logger.error(traceback.format_exc())
 
@@ -294,7 +294,7 @@ class EnhancedAudioSystem:
                 model_load_lock.acquire("Silero-VAD (Audio Core)")
                 try:
                     with self._models_lock:
-                        logger.info("🧠 Audio Core: Carregando Silero-VAD...")
+                        logger.info("ðŸ§  Audio Core: Carregando Silero-VAD...")
                         result = torch.hub.load(
                             repo_or_dir='snakers4/silero-vad',
                             model='silero_vad',
@@ -309,27 +309,27 @@ class EnhancedAudioSystem:
                             self.vad_utils = None
                             
                         self._vad_ready = True
-                        logger.info("✅ Audio Core: Silero-VAD pronto")
+                        logger.info("âœ… Audio Core: Silero-VAD pronto")
                 finally:
                     model_load_lock.release()
             except Exception as e:
                 self._vad_ready = False
-                logger.warning(f"❌ Audio Core: Falha no VAD: {e}")
+                logger.warning(f"âŒ Audio Core: Falha no VAD: {e}")
 
     def wait_for_models(self, timeout: float = 30.0) -> bool:
         """Wait for background model loading to complete"""
         import time
         start_time = time.time()
-        logger.info("⏳ Waiting for audio models to initialize...")
+        logger.info("â³ Waiting for audio models to initialize...")
         
         while time.time() - start_time < timeout:
             with self._models_lock:
                 if self._whisper_ready and (self._vad_ready or not TORCH_AVAILABLE):
-                    logger.info("✅ Audio models initialized and ready")
+                    logger.info("âœ… Audio models initialized and ready")
                     return True
             time.sleep(0.5)
             
-        logger.warning("⚠️ Timeout waiting for audio models - system may be degraded")
+        logger.warning("âš ï¸ Timeout waiting for audio models - system may be degraded")
         return self._whisper_ready
 
     def _load_voice_signatures(self):
@@ -346,31 +346,31 @@ class EnhancedAudioSystem:
                 speaker_name = sig_file.stem
                 self.known_speakers[speaker_name] = embedding
                 count += 1
-                logger.info(f"   ✅ Loaded: {speaker_name}")
+                logger.info(f"   âœ… Loaded: {speaker_name}")
             except Exception as e:
-                logger.error(f"   ❌ Failed to load {sig_file.name}: {e}")
+                logger.error(f"   âŒ Failed to load {sig_file.name}: {e}")
                 
-        logger.info(f"✅ Loaded {count} voice signatures")
+        logger.info(f"âœ… Loaded {count} voice signatures")
     
     def calibrate_vad_threshold(self, duration: float = 3.0):
         """
-        🔥 Auto-calibra threshold de VAD baseado no ruído ambiente.
-        Mede RMS médio do ambiente por 'duration' segundos e ajusta threshold.
+        ðŸ”¥ Auto-calibra threshold de VAD baseado no ruÃ­do ambiente.
+        Mede RMS mÃ©dio do ambiente por 'duration' segundos e ajusta threshold.
         
         Args:
-            duration: Tempo de medição em segundos (padrão: 3.0s)
+            duration: Tempo de mediÃ§Ã£o em segundos (padrÃ£o: 3.0s)
         """
         if not PYAUDIO_AVAILABLE:
-            logger.warning("PyAudio não disponível - pulando calibração VAD")
+            logger.warning("PyAudio nÃ£o disponÃ­vel - pulando calibraÃ§Ã£o VAD")
             return
         
-        logger.info(f"🎤 Iniciando calibração VAD ({duration}s de medição)...")
+        logger.info(f"ðŸŽ¤ Iniciando calibraÃ§Ã£o VAD ({duration}s de mediÃ§Ã£o)...")
         
         try:
             import pyaudio
             p = pyaudio.PyAudio()
             
-            # Abrir stream temporário para calibração
+            # Abrir stream temporÃ¡rio para calibraÃ§Ã£o
             temp_stream = p.open(
                 format=pyaudio.paInt16,
                 channels=1,
@@ -382,7 +382,7 @@ class EnhancedAudioSystem:
             ambient_samples = []
             start_time = time.time()
             
-            # Coletar amostras de ruído ambiente
+            # Coletar amostras de ruÃ­do ambiente
             while time.time() - start_time < duration:
                 try:
                     data = temp_stream.read(self.chunk_size, exception_on_overflow=False)
@@ -400,28 +400,28 @@ class EnhancedAudioSystem:
                 ambient_rms_mean = np.mean(ambient_samples)
                 ambient_rms_std = np.std(ambient_samples)
                 
-                # 🔥 Threshold dinâmico: média + 2.5 * desvio padrão
-                # Isso captura apenas áudio SIGNIFICATIVAMENTE mais alto que ambiente
+                # ðŸ”¥ Threshold dinÃ¢mico: mÃ©dia + 2.5 * desvio padrÃ£o
+                # Isso captura apenas Ã¡udio SIGNIFICATIVAMENTE mais alto que ambiente
                 dynamic_threshold = ambient_rms_mean + (2.5 * ambient_rms_std)
                 
-                # Clamp entre 1000 e 5000 para segurança
+                # Clamp entre 1000 e 5000 para seguranÃ§a
                 dynamic_threshold = max(1000, min(5000, dynamic_threshold))
                 
-                logger.info(f"📊 Ruído ambiente medido: RMS médio = {ambient_rms_mean:.1f}, std = {ambient_rms_std:.1f}")
-                logger.info(f"🎯 Threshold VAD ajustado: {dynamic_threshold:.1f} (era 2000)")
+                logger.info(f"ðŸ“Š RuÃ­do ambiente medido: RMS mÃ©dio = {ambient_rms_mean:.1f}, std = {ambient_rms_std:.1f}")
+                logger.info(f"ðŸŽ¯ Threshold VAD ajustado: {dynamic_threshold:.1f} (era 2000)")
                 
                 # Atualizar threshold global usado em _check_voice_activity
-                # Note: Isso afeta apenas o fallback RMS quando VAD model não disponível
+                # Note: Isso afeta apenas o fallback RMS quando VAD model nÃ£o disponÃ­vel
                 self._dynamic_rms_threshold = dynamic_threshold
                 
                 return dynamic_threshold
             else:
-                logger.warning("⚠️ Nenhuma amostra coletada durante calibração")
-                return 2000  # Fallback padrão
+                logger.warning("âš ï¸ Nenhuma amostra coletada durante calibraÃ§Ã£o")
+                return 2000  # Fallback padrÃ£o
                 
         except Exception as e:
-            logger.error(f"❌ Erro na calibração VAD: {e}")
-            return 2000  # Fallback padrão
+            logger.error(f"âŒ Erro na calibraÃ§Ã£o VAD: {e}")
+            return 2000  # Fallback padrÃ£o
         
     def start_listening(self):
         """Start listening for audio input"""
@@ -448,7 +448,7 @@ class EnhancedAudioSystem:
             # Start audio stream
             self._start_audio_stream()
             
-            logger.info("✅ Audio listening started")
+            logger.info("âœ… Audio listening started")
             return True
             
         except Exception as e:
@@ -472,7 +472,7 @@ class EnhancedAudioSystem:
             self._process_thread.join(timeout=2)
             
         self.state = AudioState.IDLE
-        logger.info("✅ Audio listening stopped")
+        logger.info("âœ… Audio listening stopped")
         
     def _start_audio_stream(self):
         """Start PyAudio stream"""
@@ -521,12 +521,12 @@ class EnhancedAudioSystem:
                     chunk = self.audio_queue.get(timeout=0.1)
                     audio_buffer.append(chunk)
                 except queue.Empty:
-                    # 🔒 Mesmo sem dados, checar timeout de silêncio para flush do buffer
+                    # ðŸ”’ Mesmo sem dados, checar timeout de silÃªncio para flush do buffer
                     if voice_detected_in_buffer and (time.time() - last_voice_time) > silence_threshold:
                         if voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         else:
-                            pass  # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mín: {MIN_VOICE_FRAMES})")
+                            pass  # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mÃ­n: {MIN_VOICE_FRAMES})")
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
@@ -541,56 +541,56 @@ class EnhancedAudioSystem:
                     has_voice = self._check_voice_activity(audio)
                     
                     if has_voice:
-                        last_voice_time = time.time()  # 🔒 Tempo REAL
+                        last_voice_time = time.time()  # ðŸ”’ Tempo REAL
                         voice_detected_in_buffer = True
                         voice_frame_count += 1
                         
-                        # 🆕 FREE WAKE WORD LOGIC (VAD GATE)
+                        # ðŸ†• FREE WAKE WORD LOGIC (VAD GATE)
                         if self.wake_word_active and not self.is_awake:
                             # Se detectar voz clara e forte, acorda automaticamente
                             # Isso substitui "Hey Jarvis" por "Qualquer fala humana clara"
-                            # Para evitar disparos falsos, exigimos confiança alta do VAD
+                            # Para evitar disparos falsos, exigimos confianÃ§a alta do VAD
                             
-                            logger.debug("⚡ VAD Trigger: Voz detectada, acordando sistema...")
+                            logger.debug("âš¡ VAD Trigger: Voz detectada, acordando sistema...")
                             self.is_awake = True
                             self.state = AudioState.LISTENING
                             if self.on_wake_word_detected:
                                 self.on_wake_word_detected()
                             
-                            # Não quebramos o loop, continuamos processando o buffer atual como comando
+                            # NÃ£o quebramos o loop, continuamos processando o buffer atual como comando
                             # break  <-- REMOVIDO para capturar o comando "acordar" junto
                         
                         if self.is_awake or not self.wake_word_active:
                             self.state = AudioState.LISTENING
                             
-                            # 🔥 FAST-PATH (Fase 5): Se a energia for muito alta e o buffer curto, 
-                            # podemos antecipar o processamento se for um comando de interrupção
-                            if len(audio_buffer) < 15: # ~300ms de áudio
+                            # ðŸ”¥ FAST-PATH (Fase 5): Se a energia for muito alta e o buffer curto, 
+                            # podemos antecipar o processamento se for um comando de interrupÃ§Ã£o
+                            if len(audio_buffer) < 15: # ~300ms de Ã¡udio
                                 rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
                                 if rms > 5000: # Grito ou comando muito alto/claro
-                                    logger.debug("⚡ Fast-Path: Disparando processamento imediato por energia alta")
+                                    logger.debug("âš¡ Fast-Path: Disparando processamento imediato por energia alta")
                                     self._process_audio_buffer(audio_buffer)
                                     audio_buffer = []
                                     voice_detected_in_buffer = False
                                     voice_frame_count = 0
                                     continue
                     
-                    # 🔒 Processar quando silêncio REAL ultrapassar threshold
+                    # ðŸ”’ Processar quando silÃªncio REAL ultrapassar threshold
                     elapsed_silence = time.time() - last_voice_time
                     if elapsed_silence > silence_threshold and len(audio_buffer) > 0:
                         if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         elif len(audio_buffer) > 0:
                             # Silencioso descartado - log removido para evitar pollution (~300 linhas/min)
-                            pass  # logger.debug(f"🔇 Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
+                            pass  # logger.debug(f"ðŸ”‡ Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
                     
-                    # 🔒 Limite máximo de buffer para evitar acúmulo infinito (30s)
+                    # ðŸ”’ Limite mÃ¡ximo de buffer para evitar acÃºmulo infinito (30s)
                     max_buffer_chunks = int(30 * self.sample_rate / 1024)  # ~30 segundos
                     if len(audio_buffer) > max_buffer_chunks:
-                        logger.warning("⚠️ Buffer de áudio excedeu 30s, forçando flush")
+                        logger.warning("âš ï¸ Buffer de Ã¡udio excedeu 30s, forÃ§ando flush")
                         if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         audio_buffer = []
@@ -604,9 +604,9 @@ class EnhancedAudioSystem:
     def _check_voice_activity(self, audio: np.ndarray) -> bool:
         """Check if audio contains voice using VAD"""
         if not self.vad_model:
-            # 🔒 Sem VAD: usar RMS energy como fallback simples
-            # AUMENTADO de 500 para 2000 para evitar capturar ruído
-            # Se calibração dinâmica foi feita, usa threshold calibrado
+            # ðŸ”’ Sem VAD: usar RMS energy como fallback simples
+            # AUMENTADO de 500 para 2000 para evitar capturar ruÃ­do
+            # Se calibraÃ§Ã£o dinÃ¢mica foi feita, usa threshold calibrado
             threshold = getattr(self, '_dynamic_rms_threshold', 2000)
             rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
             return rms > threshold
@@ -685,9 +685,9 @@ class EnhancedAudioSystem:
                         y=audio_float,
                         sr=self.sample_rate,
                         stationary=True,
-                        prop_decrease=0.6  # Reduzido de 0.8 para 0.6 para evitar voz 'robótica'
+                        prop_decrease=0.6  # Reduzido de 0.8 para 0.6 para evitar voz 'robÃ³tica'
                     )
-                    logger.debug("✅ Noise reduction applied (+20% accuracy)")
+                    logger.debug("âœ… Noise reduction applied (+20% accuracy)")
                 except Exception as e:
                     logger.warning(f"Noise reduction failed: {e}")
             
@@ -700,12 +700,12 @@ class EnhancedAudioSystem:
                 speaker_verified = (confidence > self.speaker_threshold)
                 
                 if speaker_verified:
-                    logger.info(f"✅ Speaker verified: {speaker_id} ({confidence:.2f})")
+                    logger.info(f"âœ… Speaker verified: {speaker_id} ({confidence:.2f})")
                     
                     if self.on_speaker_detected:
                         self.on_speaker_detected(speaker_id, confidence)
                 else:
-                    logger.warning(f"⚠️ Unknown speaker detected (confidence: {confidence:.2f})")
+                    logger.warning(f"âš ï¸ Unknown speaker detected (confidence: {confidence:.2f})")
             else:
                 # No speaker verification configured - allow transcription
                 speaker_verified = True
@@ -769,14 +769,14 @@ class EnhancedAudioSystem:
         try:
             start_time = time.time()
             
-            # Transcribe (Forçado em PT-BR para comando do usuário)
+            # Transcribe (ForÃ§ado em PT-BR para comando do usuÃ¡rio)
             # beam_size=5 increases accuracy significantly on CPU
-            # 🔥 VAD threshold aumentado de 0.5 para 0.7 (mais rigoroso)
+            # ðŸ”¥ VAD threshold aumentado de 0.5 para 0.7 (mais rigoroso)
             segments, info = self.whisper_model.transcribe(
                 audio,
                 language="pt", 
                 beam_size=5,
-                initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, português do Brasil.", 
+                initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, portuguÃªs do Brasil.", 
                 vad_filter=True,
                 vad_parameters=dict(threshold=0.5, min_silence_duration_ms=500)  # VAD mais equilibrado
             )
@@ -807,7 +807,7 @@ class EnhancedAudioSystem:
                 processing_time=processing_time
             )
             
-            logger.info(f"✅ Transcription: \"{result.text}\" ({processing_time:.2f}s)")
+            logger.info(f"âœ… Transcription: \"{result.text}\" ({processing_time:.2f}s)")
             
             return result
             
@@ -904,7 +904,7 @@ class EnhancedAudioSystem:
             # Add to known speakers
             self.known_speakers[speaker_name] = embedding
             
-            logger.info(f"✅ Speaker enrolled: {speaker_name}")
+            logger.info(f"âœ… Speaker enrolled: {speaker_name}")
             return True
             
         except Exception as e:
@@ -914,7 +914,7 @@ class EnhancedAudioSystem:
     def cleanup(self):
         """Cleanup resources"""
         self.stop_listening()
-        logger.info("✅ Enhanced Audio System cleaned up")
+        logger.info("âœ… Enhanced Audio System cleaned up")
 
 
 # Singleton instance
@@ -955,7 +955,7 @@ if __name__ == "__main__":
     
     # Test transcription callback
     def on_transcription(result: TranscriptionResult):
-        print(f"\n📝 Transcription: {result.text}")
+        print(f"\nðŸ“ Transcription: {result.text}")
         print(f"   Language: {result.language}")
         print(f"   Confidence: {result.confidence:.2f}")
         print(f"   Time: {result.processing_time:.2f}s")
@@ -965,14 +965,14 @@ if __name__ == "__main__":
     
     # Test speaker detection
     def on_speaker(speaker_id: str, confidence: float):
-        print(f"🎤 Speaker detected: {speaker_id} (confidence: {confidence:.2f})")
+        print(f"ðŸŽ¤ Speaker detected: {speaker_id} (confidence: {confidence:.2f})")
         
     audio.on_speaker_detected = on_speaker
     
-    print("\n✅ Audio system ready")
-    print("   Faster-Whisper:", "✅" if FASTER_WHISPER_AVAILABLE else "❌")
-    print("   VAD:", "✅" if audio.vad_model else "❌")
-    print("   Speaker Verification:", "✅" if RESEMBLYZER_AVAILABLE else "❌")
+    print("\nâœ… Audio system ready")
+    print("   Faster-Whisper:", "âœ…" if FASTER_WHISPER_AVAILABLE else "âŒ")
+    print("   VAD:", "âœ…" if audio.vad_model else "âŒ")
+    print("   Speaker Verification:", "âœ…" if RESEMBLYZER_AVAILABLE else "âŒ")
     print("   Known speakers:", len(audio.known_speakers))
     
     print("\n" + "="*60 + "\n")

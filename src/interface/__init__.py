@@ -1,4 +1,4 @@
-"""
+﻿"""
 Interface Module - HUD and Visual Components
 """
 

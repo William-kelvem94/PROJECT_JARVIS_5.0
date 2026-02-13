@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS 5.0 - Stark Nexus (Research & Web Expansion)
 ====================================================
-Módulo para busca externa no Google e Hugging Face.
+MÃ³dulo para busca externa no Google e Hugging Face.
 Foca em datasets de conhecimento (.md) e Markdowns de estudo.
 """
 
@@ -17,7 +17,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 class StarkNexus:
-    """O portal de expansão do JARVIS para a internet"""
+    """O portal de expansÃ£o do JARVIS para a internet"""
     
     def __init__(self, download_path: str = "data/knowledge/nexus"):
         self.download_path = Path(download_path)
@@ -29,12 +29,12 @@ class StarkNexus:
         """Pesquisa conhecimento externo baseado no contexto"""
         if not self.is_enabled: return []
         
-        logger.info(f"🛰️ Nexus ativado: Pesquisando '{termo}' no contexto {contexto}")
+        logger.info(f"ðŸ›°ï¸ Nexus ativado: Pesquisando '{termo}' no contexto {contexto}")
         
         resultados = []
         # No futuro, integrar Serper ou Google Search API aqui
-        # Por enquanto, simulação de retorno de fontes seguras
-        if "programação" in contexto.lower() or "desenvolver" in termo.lower():
+        # Por enquanto, simulaÃ§Ã£o de retorno de fontes seguras
+        if "programaÃ§Ã£o" in contexto.lower() or "desenvolver" in termo.lower():
             resultados.append({"title": "GitHub Knowledge Base", "url": "https://github.com/topics/knowledge-base"})
         
         return resultados
@@ -46,7 +46,7 @@ class StarkNexus:
             if response.status_code == 200:
                 content = response.text
                 
-                # SANITIZAÇÃO (Segurança Stark)
+                # SANITIZAÃ‡ÃƒO (SeguranÃ§a Stark)
                 # Remove scripts, iframes e tags perigosas
                 content = re.sub(r'<script.*?>.*?</script>', '', content, flags=re.DOTALL)
                 content = re.sub(r'<iframe.*?>.*?</iframe>', '', content, flags=re.DOTALL)
@@ -55,11 +55,11 @@ class StarkNexus:
                 with open(self.download_path / filename, "w", encoding="utf-8") as f:
                     f.write(content)
                 
-                logger.info(f"✅ Conhecimento baixado e sanitizado: {filename}")
+                logger.info(f"âœ… Conhecimento baixado e sanitizado: {filename}")
                 return True
         except Exception as e:
-            logger.error(f"❌ Falha no Nexus ao baixar {url}: {e}")
+            logger.error(f"âŒ Falha no Nexus ao baixar {url}: {e}")
         return False
 
-# Instância global
+# InstÃ¢ncia global
 stark_nexus = StarkNexus()

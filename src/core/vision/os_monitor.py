@@ -1,4 +1,4 @@
-"""
+﻿"""
 O Olho no Sistema (OS Monitor)
 Monitoramento de processos e janelas ativas sem uso de OCR (Custo Zero de Performance).
 """
@@ -11,7 +11,7 @@ import logging
 # Logger setup
 logger = logging.getLogger(__name__)
 
-# Cache de Contexto para evitar emissões duplicadas
+# Cache de Contexto para evitar emissÃµes duplicadas
 _last_window_title = None
 
 try:
@@ -24,7 +24,7 @@ try:
     PYWIN32_AVAILABLE = True
 except ImportError:
     PYWIN32_AVAILABLE = False
-    logger.warning("⚠️ pywin32 não encontrado. Usando fallback ctypes (menos preciso).")
+    logger.warning("âš ï¸ pywin32 nÃ£o encontrado. Usando fallback ctypes (menos preciso).")
     import ctypes
 
 def get_active_window_context() -> dict:
@@ -57,14 +57,14 @@ def get_active_window_context() -> dict:
             buf = ctypes.create_unicode_buffer(length + 1)
             ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
             
-            # PID no ctypes é mais chato sem pywin32, pegando apenas Título
+            # PID no ctypes Ã© mais chato sem pywin32, pegando apenas TÃ­tulo
             context["title"] = buf.value
             context["executable"] = "Unknown (Install pywin32)"
             
     except Exception as e:
         logger.error(f"Erro ao capturar janela ativa: {e}")
         
-    # 🆕 FASE 5: Emitir sinal se o contexto mudou
+    # ðŸ†• FASE 5: Emitir sinal se o contexto mudou
     global _last_window_title
     current_title = context.get("title", "Unknown")
     if current_title != _last_window_title:
@@ -75,8 +75,8 @@ def get_active_window_context() -> dict:
 
 def analyze_process_health(process_name: str) -> dict:
     """
-    Analisa saúde de processos pelo nome (ex: 'chrome.exe').
-    Retorna agregado de CPU/RAM se houver múltiplas instâncias.
+    Analisa saÃºde de processos pelo nome (ex: 'chrome.exe').
+    Retorna agregado de CPU/RAM se houver mÃºltiplas instÃ¢ncias.
     """
     stats = {
         "name": process_name,
@@ -113,8 +113,8 @@ def analyze_process_health(process_name: str) -> dict:
     return stats
 
 if __name__ == "__main__":
-    # Teste rápido
-    print("Módulo OS Monitor - Teste")
+    # Teste rÃ¡pido
+    print("MÃ³dulo OS Monitor - Teste")
     time.sleep(1) # Tempo para focar janela
     print(f"Janela Ativa: {get_active_window_context()}")
     print(f"Status Python: {analyze_process_health('python')}")

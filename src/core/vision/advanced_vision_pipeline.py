@@ -1,6 +1,6 @@
-"""
-Advanced Vision Pipeline - Visão Computacional Multi-Nível
-Implementa pipeline de 3 níveis para análise visual progressiva
+﻿"""
+Advanced Vision Pipeline - VisÃ£o Computacional Multi-NÃ­vel
+Implementa pipeline de 3 nÃ­veis para anÃ¡lise visual progressiva
 """
 
 import logging
@@ -14,7 +14,7 @@ try:
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
-    logging.warning(f"⚠️ cv2 not available in advanced_vision_pipeline: {e}")
+    logging.warning(f"âš ï¸ cv2 not available in advanced_vision_pipeline: {e}")
 
 try:
     import numpy as np
@@ -22,15 +22,15 @@ try:
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
     np = None
-    logging.warning(f"⚠️ numpy not available in advanced_vision_pipeline: {e}")
+    logging.warning(f"âš ï¸ numpy not available in advanced_vision_pipeline: {e}")
 
 logger = logging.getLogger(__name__)
 
 class AdvancedVisionPipeline:
-    """Pipeline de visão computacional com 3 níveis de processamento"""
+    """Pipeline de visÃ£o computacional com 3 nÃ­veis de processamento"""
     
     def __init__(self):
-        self.level1_available = True  # YOLO + UI Detector (sempre disponível)
+        self.level1_available = True  # YOLO + UI Detector (sempre disponÃ­vel)
         self.level2_available = False  # EasyOCR + SAM
         self.level3_available = False  # LLaVA/Gemini
         
@@ -38,25 +38,25 @@ class AdvancedVisionPipeline:
         self._init_level3()
     
     def _init_level2(self):
-        """Inicializa processadores de nível 2"""
+        """Inicializa processadores de nÃ­vel 2"""
         try:
             import easyocr
             self.easyocr_reader = easyocr.Reader(['pt', 'en'], gpu=False)
             self.level2_available = True
-            logger.info("✅ EasyOCR inicializado (Nível 2)")
+            logger.info("âœ… EasyOCR inicializado (NÃ­vel 2)")
         except ImportError:
-            logger.warning("⚠️ EasyOCR não disponível. Instale: pip install easyocr")
+            logger.warning("âš ï¸ EasyOCR nÃ£o disponÃ­vel. Instale: pip install easyocr")
         except Exception as e:
-            logger.warning(f"⚠️ Erro ao inicializar EasyOCR: {e}")
+            logger.warning(f"âš ï¸ Erro ao inicializar EasyOCR: {e}")
     
     def _init_level3(self):
-        """Inicializa processadores de nível 3 (Híbrido)"""
+        """Inicializa processadores de nÃ­vel 3 (HÃ­brido)"""
         from src.core.intelligence.brain_router import brain_router
         self.level3_available = brain_router.cloud_available
         if self.level3_available:
-            logger.info("✅ Visão de Nível 3 Habilitada (Nuvem Disponível)")
+            logger.info("âœ… VisÃ£o de NÃ­vel 3 Habilitada (Nuvem DisponÃ­vel)")
         else:
-            logger.info("ℹ️ Nível 3 operando em modo reduzido ou desativado")
+            logger.info("â„¹ï¸ NÃ­vel 3 operando em modo reduzido ou desativado")
     
     def analyze(self, image_path: str, complexity: str = "auto") -> Dict[str, Any]:
         """
@@ -67,12 +67,12 @@ class AdvancedVisionPipeline:
             complexity: "fast", "balanced", "deep", ou "auto"
         
         Returns:
-            Dicionário com resultados da análise
+            DicionÃ¡rio com resultados da anÃ¡lise
         """
         if not Path(image_path).exists():
-            return {"error": "Imagem não encontrada"}
+            return {"error": "Imagem nÃ£o encontrada"}
         
-        # Determinar nível de processamento
+        # Determinar nÃ­vel de processamento
         if complexity == "auto":
             complexity = self._auto_detect_complexity(image_path)
         
@@ -89,7 +89,7 @@ class AdvancedVisionPipeline:
             "level_used": 1
         }
         
-        # Nível 1: Detecção rápida
+        # NÃ­vel 1: DetecÃ§Ã£o rÃ¡pida
         if target_level >= 1:
             results.update(self._level1_analysis(image_path))
             results["level_used"] = 1
@@ -101,44 +101,44 @@ class AdvancedVisionPipeline:
             is_throttled = hardware_manager.is_throttled
         except: pass
 
-        # Nível 2: Análise intermediária
+        # NÃ­vel 2: AnÃ¡lise intermediÃ¡ria
         if target_level >= 2 and self.level2_available and not is_throttled:
             results.update(self._level2_analysis(image_path))
             results["level_used"] = 2
         elif is_throttled and target_level >= 2:
-            logger.warning("🚀 Vision Throttling: Skipping Level 2 analysis")
+            logger.warning("ðŸš€ Vision Throttling: Skipping Level 2 analysis")
         
-        # Nível 3: Compreensão profunda
+        # NÃ­vel 3: CompreensÃ£o profunda
         if target_level >= 3 and self.level3_available and not is_throttled:
             results.update(self._level3_analysis(image_path))
             results["level_used"] = 3
         elif is_throttled and target_level >= 3:
-            logger.warning("🚀 Vision Throttling: Skipping Level 3 analysis")
+            logger.warning("ðŸš€ Vision Throttling: Skipping Level 3 analysis")
         
         return results
     
     def _auto_detect_complexity(self, image_path: str) -> str:
-        """Detecta automaticamente a complexidade necessária"""
+        """Detecta automaticamente a complexidade necessÃ¡ria"""
         try:
             img = cv2.imread(image_path)
             if img is None:
                 return "fast"
             
-            # Calcular métricas de complexidade
+            # Calcular mÃ©tricas de complexidade
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             
             # Quantidade de texto (usando gradientes)
             edges = cv2.Canny(gray, 50, 150)
             edge_density = np.sum(edges > 0) / edges.size
             
-            # Complexidade visual (variância)
+            # Complexidade visual (variÃ¢ncia)
             variance = np.var(gray)
             
-            # Decisão baseada em heurísticas
+            # DecisÃ£o baseada em heurÃ­sticas
             if edge_density > 0.1 or variance > 5000:
                 return "deep"  # Imagem complexa
             elif edge_density > 0.05 or variance > 2000:
-                return "balanced"  # Complexidade média
+                return "balanced"  # Complexidade mÃ©dia
             else:
                 return "fast"  # Imagem simples
                 
@@ -147,7 +147,7 @@ class AdvancedVisionPipeline:
             return "fast"
     
     def _level1_analysis(self, image_path: str) -> Dict[str, Any]:
-        """Nível 1: Detecção rápida com YOLO + UI Detector"""
+        """NÃ­vel 1: DetecÃ§Ã£o rÃ¡pida com YOLO + UI Detector"""
         results = {}
         
         try:
@@ -156,21 +156,21 @@ class AdvancedVisionPipeline:
             ui_elements = ui_detector.detect_ui_elements(image_path)
             results["ui_elements"] = ui_elements
             
-            # OCR básico com Tesseract
+            # OCR bÃ¡sico com Tesseract
             from src.core.vision.ocr_processor import ocr_processor
             ocr_result = ocr_processor.extract_text(image_path)
             results["text_basic"] = ocr_result.get("text", "")
             
-            logger.info(f"✅ Nível 1: {len(ui_elements)} elementos UI, {len(results['text_basic'])} chars")
+            logger.info(f"âœ… NÃ­vel 1: {len(ui_elements)} elementos UI, {len(results['text_basic'])} chars")
             
         except Exception as e:
-            logger.error(f"Erro no Nível 1: {e}")
+            logger.error(f"Erro no NÃ­vel 1: {e}")
             results["error_level1"] = str(e)
         
         return results
     
     def _level2_analysis(self, image_path: str) -> Dict[str, Any]:
-        """Nível 2: Análise intermediária com EasyOCR"""
+        """NÃ­vel 2: AnÃ¡lise intermediÃ¡ria com EasyOCR"""
         results = {}
         
         try:
@@ -191,31 +191,31 @@ class AdvancedVisionPipeline:
             results["text_confidences"] = confidences
             results["text_count"] = len(text_advanced)
             
-            logger.info(f"✅ Nível 2: {len(text_advanced)} blocos de texto detectados")
+            logger.info(f"âœ… NÃ­vel 2: {len(text_advanced)} blocos de texto detectados")
             
         except Exception as e:
-            logger.error(f"Erro no Nível 2: {e}")
+            logger.error(f"Erro no NÃ­vel 2: {e}")
             results["error_level2"] = str(e)
         
         return results
     
     def _level3_analysis(self, image_path: str) -> Dict[str, Any]:
-        """Nível 3: Compreensão profunda com Gemini Vision"""
+        """NÃ­vel 3: CompreensÃ£o profunda com Gemini Vision"""
         results = {}
         
         try:
             from src.core.intelligence.ai_agent import ai_agent
             
-            # Usar Gemini Vision para análise profunda
+            # Usar Gemini Vision para anÃ¡lise profunda
             prompt = (
                 "Analise esta imagem em detalhes. Descreva:\n"
-                "1. O que você vê (objetos, pessoas, texto)\n"
-                "2. O contexto (tipo de aplicação, documento, etc)\n"
-                "3. Ações possíveis que o usuário pode querer fazer\n"
-                "4. Qualquer informação importante ou erro visível"
+                "1. O que vocÃª vÃª (objetos, pessoas, texto)\n"
+                "2. O contexto (tipo de aplicaÃ§Ã£o, documento, etc)\n"
+                "3. AÃ§Ãµes possÃ­veis que o usuÃ¡rio pode querer fazer\n"
+                "4. Qualquer informaÃ§Ã£o importante ou erro visÃ­vel"
             )
             
-            # Usar Decision Engine para análise profunda via Cloud Seletivo
+            # Usar Decision Engine para anÃ¡lise profunda via Cloud Seletivo
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -223,10 +223,10 @@ class AdvancedVisionPipeline:
             description = loop.run_until_complete(ai_agent._call_smart_brain(prompt, image_path))
             results["deep_description"] = description
             
-            logger.info(f"✅ Nível 3: Análise profunda concluída")
+            logger.info(f"âœ… NÃ­vel 3: AnÃ¡lise profunda concluÃ­da")
             
         except Exception as e:
-            logger.error(f"Erro no Nível 3: {e}")
+            logger.error(f"Erro no NÃ­vel 3: {e}")
             results["error_level3"] = str(e)
         
         return results
@@ -248,20 +248,20 @@ class AdvancedVisionPipeline:
             # Combinar linhas
             table_structure = cv2.add(horizontal_lines, vertical_lines)
             
-            # Encontrar contornos (células)
+            # Encontrar contornos (cÃ©lulas)
             contours, _ = cv2.findContours(table_structure, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             
-            # Ordenar células e extrair texto
+            # Ordenar cÃ©lulas e extrair texto
             cells = []
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
-                if w > 20 and h > 20:  # Filtrar células muito pequenas
+                if w > 20 and h > 20:  # Filtrar cÃ©lulas muito pequenas
                     cells.append((x, y, w, h))
             
-            # Ordenar células (esquerda para direita, cima para baixo)
+            # Ordenar cÃ©lulas (esquerda para direita, cima para baixo)
             cells = sorted(cells, key=lambda c: (c[1], c[0]))
             
-            # Extrair texto de cada célula com EasyOCR
+            # Extrair texto de cada cÃ©lula com EasyOCR
             if self.level2_available:
                 table_data = []
                 current_row = []
@@ -273,10 +273,10 @@ class AdvancedVisionPipeline:
                         table_data.append(current_row)
                         current_row = []
                     
-                    # Extrair região da célula
+                    # Extrair regiÃ£o da cÃ©lula
                     cell_img = img[y:y+h, x:x+w]
                     
-                    # OCR na célula
+                    # OCR na cÃ©lula
                     cell_results = self.easyocr_reader.readtext(cell_img)
                     cell_text = " ".join([text for _, text, _ in cell_results])
                     
@@ -286,7 +286,7 @@ class AdvancedVisionPipeline:
                 if current_row:
                     table_data.append(current_row)
                 
-                logger.info(f"✅ Tabela extraída: {len(table_data)} linhas")
+                logger.info(f"âœ… Tabela extraÃ­da: {len(table_data)} linhas")
                 return table_data
             
         except Exception as e:
@@ -295,7 +295,7 @@ class AdvancedVisionPipeline:
         return None
     
     def analyze_document(self, image_path: str) -> Dict[str, Any]:
-        """Análise especializada para documentos"""
+        """AnÃ¡lise especializada para documentos"""
         results = {
             "document_type": "unknown",
             "text": "",
@@ -304,7 +304,7 @@ class AdvancedVisionPipeline:
         }
         
         try:
-            # Análise completa
+            # AnÃ¡lise completa
             analysis = self.analyze(image_path, complexity="balanced")
             results["text"] = analysis.get("text_advanced", analysis.get("text_basic", ""))
             
@@ -322,7 +322,7 @@ class AdvancedVisionPipeline:
             if tables:
                 results["tables"] = tables
             
-            logger.info(f"✅ Documento analisado: {results['document_type']}")
+            logger.info(f"âœ… Documento analisado: {results['document_type']}")
             
         except Exception as e:
             logger.error(f"Erro ao analisar documento: {e}")
@@ -331,5 +331,5 @@ class AdvancedVisionPipeline:
         return results
 
 
-# Instância global
+# InstÃ¢ncia global
 advanced_vision_pipeline = AdvancedVisionPipeline()

@@ -1,19 +1,19 @@
-"""
+﻿"""
 JARVIS 5.0 - Perception Engine
 ================================
-CORREÇÃO P2: Separação do God Object AIAgent
+CORREÃ‡ÃƒO P2: SeparaÃ§Ã£o do God Object AIAgent
 
 RESPONSABILIDADE:
   Gerenciar todas as ENTRADAS perceptuais do sistema:
-  - Visão: Captura de tela, OCR, UI Detection
-  - Áudio: Processamento de voz
-  - Câmera: Detecção facial, emoções
-  - Memória: Busca em neural memory
+  - VisÃ£o: Captura de tela, OCR, UI Detection
+  - Ãudio: Processamento de voz
+  - CÃ¢mera: DetecÃ§Ã£o facial, emoÃ§Ãµes
+  - MemÃ³ria: Busca em neural memory
 
 ARQUITETURA:
   AIAgent (Orquestrador)
-    ↓
-  PerceptionEngine ← ESTE MÓDULO
+    â†“
+  PerceptionEngine â† ESTE MÃ“DULO
   DecisionEngine
   ActionHandler
 """
@@ -26,13 +26,13 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# SAFE IMPORTS - Graceful degradation se dependências não disponíveis
+# SAFE IMPORTS - Graceful degradation se dependÃªncias nÃ£o disponÃ­veis
 # ============================================================================
 try:
     from src.core.vision.screen_capture import screen_capture
     SCREEN_CAPTURE_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ screen_capture não disponível: {e}")
+    logger.warning(f"âš ï¸ screen_capture nÃ£o disponÃ­vel: {e}")
     screen_capture = None
     SCREEN_CAPTURE_AVAILABLE = False
 
@@ -40,7 +40,7 @@ try:
     from src.core.vision.camera_controller import camera_controller
     CAMERA_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ camera_controller não disponível: {e}")
+    logger.warning(f"âš ï¸ camera_controller nÃ£o disponÃ­vel: {e}")
     camera_controller = None
     CAMERA_AVAILABLE = False
 
@@ -48,7 +48,7 @@ try:
     from src.core.intelligence.neural_memory import neural_memory
     NEURAL_MEMORY_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ neural_memory não disponível: {e}")
+    logger.warning(f"âš ï¸ neural_memory nÃ£o disponÃ­vel: {e}")
     neural_memory = None
     NEURAL_MEMORY_AVAILABLE = False
 
@@ -56,7 +56,7 @@ try:
     from src.core.vision.ui_detector import ui_detector
     UI_DETECTOR_AVAILABLE = True
 except (ImportError, Exception) as e:
-    logger.warning(f"⚠️ ui_detector não disponível: {e}")
+    logger.warning(f"âš ï¸ ui_detector nÃ£o disponÃ­vel: {e}")
     ui_detector = None
     UI_DETECTOR_AVAILABLE = False
 
@@ -64,7 +64,7 @@ try:
     from src.core.intelligence.emotion_detector import emotion_detector
     EMOTION_DETECTOR_AVAILABLE = True
 except (ImportError, Exception) as e:
-    logger.warning(f"⚠️ emotion_detector não disponível: {e}")
+    logger.warning(f"âš ï¸ emotion_detector nÃ£o disponÃ­vel: {e}")
     emotion_detector = None
     EMOTION_DETECTOR_AVAILABLE = False
 
@@ -72,7 +72,7 @@ try:
     from src.database.models import db_manager, OCRResult
     DATABASE_AVAILABLE = True
 except (ImportError, Exception) as e:
-    logger.warning(f"⚠️ database não disponível: {e}")
+    logger.warning(f"âš ï¸ database nÃ£o disponÃ­vel: {e}")
     db_manager = None
     OCRResult = None
     DATABASE_AVAILABLE = False
@@ -80,13 +80,13 @@ except (ImportError, Exception) as e:
 
 class PerceptionEngine:
     """
-    Motor de Percepção - Gerencia todas as entradas sensoriais do JARVIS
+    Motor de PercepÃ§Ã£o - Gerencia todas as entradas sensoriais do JARVIS
     
     CAPABILITIES:
-      1. Visão: Screenshot + OCR + UI Detection
-      2. Câmera: Face detection + Emotion recognition
-      3. Memória: RAG search em neural memory
-      4. Contexto: Agregação de todos os dados perceptuais
+      1. VisÃ£o: Screenshot + OCR + UI Detection
+      2. CÃ¢mera: Face detection + Emotion recognition
+      3. MemÃ³ria: RAG search em neural memory
+      4. Contexto: AgregaÃ§Ã£o de todos os dados perceptuais
     
     USAGE:
       perception = PerceptionEngine()
@@ -101,7 +101,7 @@ class PerceptionEngine:
     """
     
     def __init__(self):
-        """Inicializa engine com verificação de dependências"""
+        """Inicializa engine com verificaÃ§Ã£o de dependÃªncias"""
         self.screen_capture = screen_capture if SCREEN_CAPTURE_AVAILABLE else None
         self.camera = camera_controller if CAMERA_AVAILABLE else None
         self.neural_memory = neural_memory if NEURAL_MEMORY_AVAILABLE else None
@@ -114,13 +114,13 @@ class PerceptionEngine:
         self.last_user_detected: Optional[str] = None
         self.last_emotion: str = "neutral"
         
-        logger.info("✅ PerceptionEngine inicializado")
+        logger.info("âœ… PerceptionEngine inicializado")
         if not SCREEN_CAPTURE_AVAILABLE:
-            logger.warning("⚠️ Modo degradado: Visão desativada")
+            logger.warning("âš ï¸ Modo degradado: VisÃ£o desativada")
         if not CAMERA_AVAILABLE:
-            logger.warning("⚠️ Modo degradado: Câmera desativada")
+            logger.warning("âš ï¸ Modo degradado: CÃ¢mera desativada")
         if not NEURAL_MEMORY_AVAILABLE:
-            logger.warning("⚠️ Modo degradado: Memória desativada")
+            logger.warning("âš ï¸ Modo degradado: MemÃ³ria desativada")
     
     
     async def gather_context(self, user_command: str, enable_vision: bool = True) -> Dict[str, Any]:
@@ -128,11 +128,11 @@ class PerceptionEngine:
         Coleta TODO contexto perceptual de forma paralela
         
         Args:
-            user_command: Comando do usuário (para busca em memória)
+            user_command: Comando do usuÃ¡rio (para busca em memÃ³ria)
             enable_vision: Se True, captura screenshot (default: True)
         
         Returns:
-            Dicionário com todos os dados perceptuais:
+            DicionÃ¡rio com todos os dados perceptuais:
             {
                 "screenshot_path": str ou None,
                 "user_face": str ou "Unknown",
@@ -143,9 +143,9 @@ class PerceptionEngine:
                 "timestamp": float
             }
         """
-        logger.info("🔍 Gathering perceptual context...")
+        logger.info("ðŸ” Gathering perceptual context...")
         
-        # FASE 1: Lançar tasks em paralelo
+        # FASE 1: LanÃ§ar tasks em paralelo
         tasks = []
         
         if enable_vision and self.screen_capture:
@@ -170,10 +170,10 @@ class PerceptionEngine:
                 timeout=10.0  # Timeout global de 10s
             )
         except asyncio.TimeoutError:
-            logger.error("❌ Timeout em gather_context (10s)")
+            logger.error("âŒ Timeout em gather_context (10s)")
             results = [None, None, None]
         except Exception as e:
-            logger.error(f"❌ Erro em gather_context: {e}")
+            logger.error(f"âŒ Erro em gather_context: {e}")
             results = [None, None, None]
         
         screenshot_path = results[0] if isinstance(results[0], (str, type(None))) else None
@@ -190,7 +190,7 @@ class PerceptionEngine:
         if screenshot_path and self.db_manager:
             ocr_text = await self._extract_ocr(screenshot_path)
         
-        # FASE 4: Detectar emoção
+        # FASE 4: Detectar emoÃ§Ã£o
         user_emotion = self.last_emotion
         if self.camera and hasattr(self.camera, 'current_emotion'):
             user_emotion = self.camera.current_emotion
@@ -207,17 +207,17 @@ class PerceptionEngine:
             "timestamp": asyncio.get_event_loop().time()
         }
         
-        logger.info(f"✅ Context gathered: vision={bool(screenshot_path)}, user={user_face}, emotion={user_emotion}")
+        logger.info(f"âœ… Context gathered: vision={bool(screenshot_path)}, user={user_face}, emotion={user_emotion}")
         return context
     
     
     async def _capture_screen(self) -> Optional[str]:
-        """Captura screenshot de forma assíncrona com timeout"""
+        """Captura screenshot de forma assÃ­ncrona com timeout"""
         if not self.screen_capture:
             return None
         
         try:
-            # Rodar captura síncrona em thread separada com timeout de 5s
+            # Rodar captura sÃ­ncrona em thread separada com timeout de 5s
             loop = asyncio.get_event_loop()
             screenshot_path = await asyncio.wait_for(
                 loop.run_in_executor(
@@ -228,34 +228,34 @@ class PerceptionEngine:
                 timeout=5.0
             )
             self.last_screenshot_path = screenshot_path
-            logger.debug(f"📸 Screenshot: {screenshot_path}")
+            logger.debug(f"ðŸ“¸ Screenshot: {screenshot_path}")
             return screenshot_path
         except asyncio.TimeoutError:
-            logger.error("❌ Timeout ao capturar tela (5s)")
+            logger.error("âŒ Timeout ao capturar tela (5s)")
             return None
         except Exception as e:
-            logger.error(f"❌ Erro ao capturar tela: {e}")
+            logger.error(f"âŒ Erro ao capturar tela: {e}")
             return None
     
     
     async def _detect_user(self) -> str:
-        """Detecta usuário pela câmera"""
+        """Detecta usuÃ¡rio pela cÃ¢mera"""
         if not self.camera:
             return "Unknown"
         
         try:
-            # Se camera_controller tem detecção async, usar
+            # Se camera_controller tem detecÃ§Ã£o async, usar
             if hasattr(self.camera, 'detect_faces_async'):
                 user = await self.camera.detect_faces_async()
             else:
-                # Fallback: rodar síncrono em thread
+                # Fallback: rodar sÃ­ncrono em thread
                 loop = asyncio.get_event_loop()
                 user = await loop.run_in_executor(None, lambda: self.camera.last_seen_user)
             
             self.last_user_detected = user if user else "Unknown"
             return self.last_user_detected
         except Exception as e:
-            logger.error(f"❌ Erro ao detectar usuário: {e}")
+            logger.error(f"âŒ Erro ao detectar usuÃ¡rio: {e}")
             return "Unknown"
     
     
@@ -276,11 +276,11 @@ class PerceptionEngine:
             
             if results:
                 memory_text = "\n".join([f"- {r['text']}" for r in results[:top_k]])
-                logger.debug(f"🧠 Memory: {len(results)} resultados")
-                return f"[MEMÓRIA RELEVANTE]\n{memory_text}"
+                logger.debug(f"ðŸ§  Memory: {len(results)} resultados")
+                return f"[MEMÃ“RIA RELEVANTE]\n{memory_text}"
             return ""
         except Exception as e:
-            logger.error(f"❌ Erro ao buscar memória: {e}")
+            logger.error(f"âŒ Erro ao buscar memÃ³ria: {e}")
             return ""
     
     
@@ -296,10 +296,10 @@ class PerceptionEngine:
                 self.ui_detector.detect,
                 screenshot_path
             )
-            logger.debug(f"🎯 UI: {len(elements)} elementos detectados")
+            logger.debug(f"ðŸŽ¯ UI: {len(elements)} elementos detectados")
             return elements or []
         except Exception as e:
-            logger.error(f"❌ Erro ao detectar UI: {e}")
+            logger.error(f"âŒ Erro ao detectar UI: {e}")
             return []
     
     
@@ -323,15 +323,15 @@ class PerceptionEngine:
             ocr_text = await loop.run_in_executor(None, _get_ocr)
             
             if ocr_text:
-                logger.debug(f"📝 OCR: {len(ocr_text)} caracteres")
+                logger.debug(f"ðŸ“ OCR: {len(ocr_text)} caracteres")
             return ocr_text
         except Exception as e:
-            logger.error(f"❌ Erro ao extrair OCR: {e}")
+            logger.error(f"âŒ Erro ao extrair OCR: {e}")
             return ""
     
     
     def get_emotional_modifier(self) -> Dict[str, Any]:
-        """Retorna modificador de personalidade baseado em emoção"""
+        """Retorna modificador de personalidade baseado em emoÃ§Ã£o"""
         if not self.emotion_detector:
             return {"prefix": "", "tone": "neutral"}
         
@@ -339,7 +339,7 @@ class PerceptionEngine:
             modifier = self.emotion_detector.get_personality_modifier(self.last_emotion)
             return modifier
         except Exception as e:
-            logger.error(f"❌ Erro ao obter modificador emocional: {e}")
+            logger.error(f"âŒ Erro ao obter modificador emocional: {e}")
             return {"prefix": "", "tone": "neutral"}
 
 
@@ -349,7 +349,7 @@ class PerceptionEngine:
 _perception_engine_instance = None
 
 def get_perception_engine() -> PerceptionEngine:
-    """Retorna instância singleton do PerceptionEngine"""
+    """Retorna instÃ¢ncia singleton do PerceptionEngine"""
     global _perception_engine_instance
     if _perception_engine_instance is None:
         _perception_engine_instance = PerceptionEngine()

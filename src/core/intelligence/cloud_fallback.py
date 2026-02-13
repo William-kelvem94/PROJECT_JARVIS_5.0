@@ -1,4 +1,4 @@
-import os
+﻿import os
 import requests
 import logging
 import base64
@@ -8,14 +8,14 @@ logger = logging.getLogger(__name__)
 
 class CloudFallback:
     """
-    Backup da integração cloud (Gemini).
+    Backup da integraÃ§Ã£o cloud (Gemini).
     Removido do fluxo principal para estabilidade.
     """
     
     @staticmethod
     def call_gemini(prompt: str, api_key: str, image_path: Optional[str] = None, system_prompt: str = ""):
         if not api_key:
-            return "Erro: API Key não fornecida."
+            return "Erro: API Key nÃ£o fornecida."
 
         try:
             inline_data = None

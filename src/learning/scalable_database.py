@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Database Layer for JARVIS Learning Systems.
 
 Provides scalable database backends with automatic migration from SQLite
@@ -288,7 +288,7 @@ class PostgreSQLDatabase(DatabaseInterface):
             conn.close()
             self.connection_pool.putconn(conn)
             
-            logger.info(f"✅ Connected to PostgreSQL: {self.config.database}")
+            logger.info(f"âœ… Connected to PostgreSQL: {self.config.database}")
             return True
             
         except Exception as e:
@@ -513,7 +513,7 @@ class VectorDatabase(DatabaseInterface):
                 metadata={"hnsw:space": "cosine"}
             )
             
-            logger.info(f"✅ Connected to ChromaDB: {self.db_path}")
+            logger.info(f"âœ… Connected to ChromaDB: {self.db_path}")
             return True
             
         except Exception as e:
@@ -695,7 +695,7 @@ class ScalableDatabase:
                 # Auto-migrate if threshold exceeded and PostgreSQL available
                 if (count > self.config.auto_migrate_threshold and 
                     dependency_manager.is_available('database', 'postgresql')):
-                    logger.info(f"🔄 Auto-migrating to PostgreSQL ({count:,} records)")
+                    logger.info(f"ðŸ”„ Auto-migrating to PostgreSQL ({count:,} records)")
                     self._migrate_to_postgresql()
                     return
                     
@@ -707,7 +707,7 @@ class ScalableDatabase:
             self.current_backend = SQLiteDatabase(sqlite_path)
             if self.current_backend.connect():
                 self.current_backend.create_tables()
-                logger.info("📊 Using SQLite database backend")
+                logger.info("ðŸ“Š Using SQLite database backend")
             else:
                 logger.error("Failed to initialize SQLite backend")
         except Exception as e:
@@ -747,7 +747,7 @@ class ScalableDatabase:
                 sqlite_backend.close()
                 self.current_backend = pg_backend
                 
-                logger.info(f"✅ Migration complete. Backup saved: {backup_path}")
+                logger.info(f"âœ… Migration complete. Backup saved: {backup_path}")
             
         except Exception as e:
             logger.error(f"Migration failed: {e}")

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Predictive Engine for JARVIS AGI Machine Learning Core.
 
 This module implements pattern prediction using LSTM/Transformer models,

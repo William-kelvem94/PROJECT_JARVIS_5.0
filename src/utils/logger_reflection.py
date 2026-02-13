@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import sys
 from datetime import datetime
 from typing import Optional
@@ -38,7 +38,7 @@ class ReflectionLogger:
         lines = thought.split('\n')
         for line in lines:
             if not line.strip(): continue
-            print(f"  {self.GLOW}⚡ {line.strip()}{self.RESET}")
+            print(f"  {self.GLOW}âš¡ {line.strip()}{self.RESET}")
             
         print(f"{self.CYAN}{'-' * 60}{self.RESET}\n")
 
@@ -47,7 +47,7 @@ class ReflectionLogger:
         if not self.enabled:
             return
             
-        print(f"  {self.MAGENTA}{self.BOLD}🎯 INTENTED TRAJECTORY:{self.RESET}")
+        print(f"  {self.MAGENTA}{self.BOLD}ðŸŽ¯ INTENTED TRAJECTORY:{self.RESET}")
         for i, action in enumerate(actions):
             print(f"    {i+1}. {self.YELLOW}{action}{self.RESET}")
         print("")
@@ -57,7 +57,7 @@ class ReflectionLogger:
         if not self.enabled: return
         
         timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"\n{self.GREEN}🗣️  JARVIS [{timestamp}]: {self.RESET}\"{self.YELLOW}{text}{self.RESET}\"\n")
+        print(f"\n{self.GREEN}ðŸ—£ï¸  JARVIS [{timestamp}]: {self.RESET}\"{self.YELLOW}{text}{self.RESET}\"\n")
 
 # Global Instance
 reflect_logger = ReflectionLogger()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Control Dashboard
@@ -115,7 +115,7 @@ class ControlDashboard(QMainWindow):
         # Start monitoring
         self._start_monitoring()
         
-        logger.info("✅ Control Dashboard initialized")
+        logger.info("âœ… Control Dashboard initialized")
         
     def _load_config(self) -> Dict:
         """Load configuration from file with project root awareness"""
@@ -152,7 +152,7 @@ class ControlDashboard(QMainWindow):
         try:
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4)
-            logger.info("✅ Configuration saved")
+            logger.info("âœ… Configuration saved")
             self.config_changed.emit(self.config)
         except Exception as e:
             logger.error(f"Failed to save config: {e}")
@@ -195,13 +195,13 @@ class ControlDashboard(QMainWindow):
         self.stack = QStackedWidget()
         
         sections = [
-            ("🧠 BRAIN", self._create_brain_tab()),
-            ("🎤 VOICE", self._create_voice_tab()),
-            ("👁️ VISION", self._create_vision_tab()),
-            ("🎓 LEARNING", self._create_learning_tab()),
-            ("💾 MEMORY", self._create_memory_tab()),
-            ("📋 LOGS", self._create_logs_tab()),
-            ("⚙️ SYSTEM", self._create_system_tab())
+            ("ðŸ§  BRAIN", self._create_brain_tab()),
+            ("ðŸŽ¤ VOICE", self._create_voice_tab()),
+            ("ðŸ‘ï¸ VISION", self._create_vision_tab()),
+            ("ðŸŽ“ LEARNING", self._create_learning_tab()),
+            ("ðŸ’¾ MEMORY", self._create_memory_tab()),
+            ("ðŸ“‹ LOGS", self._create_logs_tab()),
+            ("âš™ï¸ SYSTEM", self._create_system_tab())
         ]
         
         for i, (name, widget) in enumerate(sections):
@@ -355,7 +355,7 @@ class ControlDashboard(QMainWindow):
         layout.addWidget(prompt_group)
         
         # Save button
-        save_btn = QPushButton("💾 Save Configuration")
+        save_btn = QPushButton("ðŸ’¾ Save Configuration")
         save_btn.clicked.connect(self._save_brain_config)
         save_btn.setStyleSheet("""
             QPushButton {
@@ -445,7 +445,7 @@ class ControlDashboard(QMainWindow):
         self.speaker_verify_check.setChecked(True)
         speaker_layout.addWidget(self.speaker_verify_check)
         
-        enroll_btn = QPushButton("🎙️ Enroll New Voice")
+        enroll_btn = QPushButton("ðŸŽ™ï¸ Enroll New Voice")
         enroll_btn.clicked.connect(self._enroll_voice)
         speaker_layout.addWidget(enroll_btn)
         
@@ -457,7 +457,7 @@ class ControlDashboard(QMainWindow):
         layout.addWidget(speaker_group)
         
         # Save button
-        save_btn = QPushButton("💾 Save Voice Settings")
+        save_btn = QPushButton("ðŸ’¾ Save Voice Settings")
         save_btn.clicked.connect(self._save_voice_config)
         save_btn.setStyleSheet("""
             QPushButton {
@@ -495,11 +495,11 @@ class ControlDashboard(QMainWindow):
         
         # Face management
         face_mgmt_layout = QHBoxLayout()
-        add_face_btn = QPushButton("📸 Add New Face")
+        add_face_btn = QPushButton("ðŸ“¸ Add New Face")
         add_face_btn.clicked.connect(self._add_face)
         face_mgmt_layout.addWidget(add_face_btn)
         
-        remove_face_btn = QPushButton("🗑️ Remove Face")
+        remove_face_btn = QPushButton("ðŸ—‘ï¸ Remove Face")
         remove_face_btn.clicked.connect(self._remove_face)
         face_mgmt_layout.addWidget(remove_face_btn)
         
@@ -549,7 +549,7 @@ class ControlDashboard(QMainWindow):
         layout.addWidget(yolo_group)
         
         # Save button
-        save_btn = QPushButton("💾 Save Vision Settings")
+        save_btn = QPushButton("ðŸ’¾ Save Vision Settings")
         save_btn.clicked.connect(self._save_vision_config)
         save_btn.setStyleSheet("""
             QPushButton {
@@ -590,7 +590,7 @@ class ControlDashboard(QMainWindow):
         controls.addWidget(self.log_level_combo)
         
         # Clear button
-        clear_btn = QPushButton("🗑️ Clear")
+        clear_btn = QPushButton("ðŸ—‘ï¸ Clear")
         clear_btn.clicked.connect(self._clear_logs)
         controls.addWidget(clear_btn)
         
@@ -668,7 +668,7 @@ class ControlDashboard(QMainWindow):
         self.process_table.setAlternatingRowColors(True)
         process_layout.addWidget(self.process_table)
         
-        refresh_btn = QPushButton("🔄 Refresh Processes")
+        refresh_btn = QPushButton("ðŸ”„ Refresh Processes")
         refresh_btn.clicked.connect(self._refresh_processes)
         process_layout.addWidget(refresh_btn)
         
@@ -749,15 +749,15 @@ class ControlDashboard(QMainWindow):
         tg_layout = QVBoxLayout()
         tg_layout.addWidget(QLabel("Force immediate neural weights update or backup current state."))
         
-        self.trigger_training_btn = QPushButton("🚀 EXECUTE DPO TRAINING")
+        self.trigger_training_btn = QPushButton("ðŸš€ EXECUTE DPO TRAINING")
         self.trigger_training_btn.clicked.connect(self._trigger_training)
         tg_layout.addWidget(self.trigger_training_btn)
         
-        self.backup_model_btn = QPushButton("💾 ARCHIVE NEURAL STATE")
+        self.backup_model_btn = QPushButton("ðŸ’¾ ARCHIVE NEURAL STATE")
         self.backup_model_btn.clicked.connect(self._backup_model)
         tg_layout.addWidget(self.backup_model_btn)
         
-        self.cog_research_btn = QPushButton("🛰️ SCAN KNOWLEDGE GAPS")
+        self.cog_research_btn = QPushButton("ðŸ›°ï¸ SCAN KNOWLEDGE GAPS")
         self.cog_research_btn.clicked.connect(self._scan_knowledge_gaps)
         self.cog_research_btn.setStyleSheet("background: rgba(112, 0, 255, 0.1); border: 1px solid #7000FF;")
         tg_layout.addWidget(self.cog_research_btn)
@@ -769,8 +769,8 @@ class ControlDashboard(QMainWindow):
         feedback_group = QGroupBox("RLHF INTERFACE (HUMAN FEEDBACK)")
         fg_layout = QVBoxLayout()
         buttons = QHBoxLayout()
-        self.thumbs_up_btn = QPushButton("👍 VALID")
-        self.thumbs_down_btn = QPushButton("👎 INVALID")
+        self.thumbs_up_btn = QPushButton("ðŸ‘ VALID")
+        self.thumbs_down_btn = QPushButton("ðŸ‘Ž INVALID")
         buttons.addWidget(self.thumbs_up_btn)
         buttons.addWidget(self.thumbs_down_btn)
         fg_layout.addLayout(buttons)
@@ -780,7 +780,7 @@ class ControlDashboard(QMainWindow):
         self.correction_edit.setMaximumHeight(60)
         fg_layout.addWidget(self.correction_edit)
         
-        self.reflection_toggle = QCheckBox("ATIVAR LOGS DE REFLEXÃO NEURAL (RAIO-X)")
+        self.reflection_toggle = QCheckBox("ATIVAR LOGS DE REFLEXÃƒO NEURAL (RAIO-X)")
         self.reflection_toggle.setChecked(True)
         self.reflection_toggle.setStyleSheet("color: #00F2FF; font-weight: bold;")
         self.reflection_toggle.stateChanged.connect(self._toggle_neural_reflection)
@@ -828,9 +828,9 @@ class ControlDashboard(QMainWindow):
                 components_online = sum(1 for v in status['components'].values() if v)
                 total_components = len(status['components'])
                 
-                status_text = f"✅ ONLINE - {components_online}/{total_components} systems active\n\n"
+                status_text = f"âœ… ONLINE - {components_online}/{total_components} systems active\n\n"
                 for component, active in status['components'].items():
-                    icon = "✅" if active else "❌"
+                    icon = "âœ…" if active else "âŒ"
                     name = component.replace('_', ' ').title()
                     status_text += f"{icon} {name}\n"
                 
@@ -841,10 +841,10 @@ class ControlDashboard(QMainWindow):
                 self.training_cycles_label.setText(str(status.get('training_cycles', 0)))
                 
             else:
-                self.learning_status_label.setText("❌ OFFLINE - Learning systems not initialized")
+                self.learning_status_label.setText("âŒ OFFLINE - Learning systems not initialized")
                 
         except Exception as e:
-            self.learning_status_label.setText(f"⚠️ ERROR - {str(e)}")
+            self.learning_status_label.setText(f"âš ï¸ ERROR - {str(e)}")
             logger.error(f"Failed to refresh learning status: {e}")
     
     def _refresh_golden_commands(self):
@@ -967,7 +967,7 @@ class ControlDashboard(QMainWindow):
         footer = QWidget()
         layout = QHBoxLayout(footer)
         
-        self.status_label = QLabel("✅ Ready")
+        self.status_label = QLabel("âœ… Ready")
         self.status_label.setStyleSheet("color: #4CAF50;")
         layout.addWidget(self.status_label)
         
@@ -1101,7 +1101,7 @@ class ControlDashboard(QMainWindow):
         self.monitor_thread.stats_updated.connect(self._update_system_stats)
         self.monitor_thread.start()
         
-        logger.info("✅ System monitoring started")
+        logger.info("âœ… System monitoring started")
         
     @pyqtSlot(dict)
     def _update_system_stats(self, stats: Dict):

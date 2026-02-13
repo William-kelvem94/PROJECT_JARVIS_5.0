@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Neural Systems Loader
@@ -53,7 +53,7 @@ class NeuralSystemsLoader:
         self.systems = {}
         self.status = {}
         
-        logger.info("🧠 Initializing Neural Systems Loader...")
+        logger.info("ðŸ§  Initializing Neural Systems Loader...")
         
         # Load systems
         self._load_knowledge_graph()
@@ -64,13 +64,13 @@ class NeuralSystemsLoader:
         # Report
         active = len([s for s in self.status.values() if s.loaded])
         total = len(self.status)
-        logger.info(f"✅ Neural Systems: {active}/{total} active")
+        logger.info(f"âœ… Neural Systems: {active}/{total} active")
         
         for name, status in self.status.items():
             if status.loaded:
-                logger.info(f"   ✅ {name}")
+                logger.info(f"   âœ… {name}")
             elif status.error:
-                logger.warning(f"   ⚠️ {name}: {status.error}")
+                logger.warning(f"   âš ï¸ {name}: {status.error}")
     
     def _load_knowledge_graph(self):
         """Load Knowledge Graph system"""
@@ -86,7 +86,7 @@ class NeuralSystemsLoader:
             )
             
         except Exception as e:
-            logger.warning(f"⚠️ Knowledge Graph unavailable: {e}")
+            logger.warning(f"âš ï¸ Knowledge Graph unavailable: {e}")
             self.status['Knowledge Graph'] = NeuralSystemStatus(
                 name='Knowledge Graph',
                 loaded=False,
@@ -106,7 +106,7 @@ class NeuralSystemsLoader:
             )
             
         except Exception as e:
-            logger.warning(f"⚠️ Multimodal Fusion unavailable: {e}")
+            logger.warning(f"âš ï¸ Multimodal Fusion unavailable: {e}")
             self.status['Multimodal Fusion'] = NeuralSystemStatus(
                 name='Multimodal Fusion',
                 loaded=False,
@@ -147,7 +147,7 @@ class NeuralSystemsLoader:
                 )
             
         except Exception as e:
-            logger.warning(f"⚠️ Vision QA unavailable: {e}")
+            logger.warning(f"âš ï¸ Vision QA unavailable: {e}")
             self.status['Vision QA'] = NeuralSystemStatus(
                 name='Vision QA',
                 loaded=False,
@@ -188,7 +188,7 @@ class NeuralSystemsLoader:
                 )
             
         except Exception as e:
-            logger.warning(f"⚠️ ReAct Agent unavailable: {e}")
+            logger.warning(f"âš ï¸ ReAct Agent unavailable: {e}")
             self.status['ReAct Agent'] = NeuralSystemStatus(
                 name='ReAct Agent',
                 loaded=False,

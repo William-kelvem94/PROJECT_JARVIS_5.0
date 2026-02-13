@@ -14,19 +14,17 @@ if %errorLevel% neq 0 (
 
 echo.
 echo ========================================================================
-echo   JARVIS 5.0 - SINGULARITY LAUNCHER [DEMOCRATIC MODE]
+echo   JARVIS 5.0 - SINGULARITY LAUNCHER [STARK 2.0]
 echo ========================================================================
 echo   Status: Running as Administrator
-echo   Mode: Democratic Network Intelligence (POWER TOTAL)
+echo   Mode: Stark Architecture (POWER TOTAL)
 echo   Auto-Config: ENABLED
 echo   Self-Healing: ENABLED
-echo   Microsoft ID: AUTO-DETECT
-echo   Biometric: ENHANCED VERIFICATION  
-echo   Google Drive: STRUCTURED SYNC
-echo   Network: DEMOCRATIC DISTRIBUTED
+echo   Elite Search: ACTIVE
+echo   Hardware Lock: MANDATORY
 echo ========================================================================
 echo.
-echo [INFO] 🔥 MODO DEMOCRÁTICO - SEM PRÉ-CONFIGURAÇÕES
+echo [INFO] 🚀 STARK ARCHITECTURE v2.0 - HARDWARE ALIGNMENT MANDATORY
 echo [INFO] 👑 CONTROLE TOTAL HABILITADO
 echo [INFO] Starting in 2 seconds...
 timeout /t 2 /nobreak >nul
@@ -85,37 +83,25 @@ if "%ERRORLEVEL%"=="0" (
 )
 
 :: =======================================
-:: 3.5 DEMOCRATIC SYSTEMS VERIFICATION
+:: 3.5 CORE SYSTEMS VERIFICATION
 :: =======================================
 echo.
-echo [SYSTEM] 🔥 Verificando Sistemas Democráticos...
+echo [SYSTEM] 🛡️ Verificando Integridade do Sistema...
 
 :: Verificar Microsoft Account
-echo [CHECK] 🆔 Conta Microsoft...
+echo [CHECK] 🆔 Identidade Stark...
 if exist "%ROOT%data\microsoft_device_identifier.json" (
     echo [OK] ✅ Perfil de dispositivo detectado.
 ) else (
     echo [INFO] 📝 Primeiro uso - perfil será criado automaticamente.
 )
 
-:: Verificar Google Drive
-echo [CHECK] ☁️ Google Drive...
-if exist "%USERPROFILE%\Google Drive" (
-    echo [OK] ✅ Google Drive detectado.
+:: Verificar Python Environment
+echo [CHECK] 🐍 Ambiente Jarvis...
+if exist "%ROOT%src\core\intelligence\ai_agent.py" (
+    echo [OK] ✅ Núcleo de Inteligência disponível.
 ) else (
-    if exist "C:\GoogleDrive" (
-        echo [OK] ✅ Google Drive detectado (C:\).
-    ) else (
-        echo [INFO] 📝 Google Drive não detectado - sincronização desabilitada.
-    )
-)
-
-:: Verificar Python Environment para sistemas democráticos
-echo [CHECK] 🐍 Ambiente democrático...
-if exist "%ROOT%src\core\democratic_core.py" (
-    echo [OK] ✅ Núcleo democrático disponível.
-) else (
-    echo [WARNING] ⚠️ Sistemas democráticos não encontrados - modo limitado.
+    echo [WARNING] ⚠️ AIAgent não encontrado - modo limitado.
 )
 
 :: =======================================

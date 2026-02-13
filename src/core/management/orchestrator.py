@@ -1,5 +1,7 @@
-import logging
+﻿import logging
 import threading
+import time
+import os
 from typing import Dict, Any, Optional
 
 from src.core.management.shutdown_manager import ShutdownManager
@@ -24,13 +26,37 @@ class StarkOrchestrator:
         
     def initialize_stark_system(self):
         """Inicializa todo o sistema Stark 2.0 em ordem de dependência"""
-        logger.info("🚀 Inicializando Protocolo Stark 2.0...")
+        logger.info("🚀 [STAGE 1] Ativando Tronco Encefálico...")
+        
+        # 1. Instanciar Orquestradores de Baixo Nível
+        from src.core.management.compute_orchestrator import compute_orchestrator
+        from src.core.management.maintenance_manager import MaintenanceManager
+        
+        self.maintenance_manager = MaintenanceManager()
+        
+        # 2. Bloqueio de Hardware: Verificação de Aceleração
+        max_retries = 3
+        for i in range(max_retries):
+            if compute_orchestrator.verify_acceleration():
+                logger.info("✅ Hardware Alignment Successful (Acceleration Active)")
+                break
+            logger.warning(f"⚠️ Hardware Alignment Attempt {i+1}/{max_retries} failed...")
+            time.sleep(1)
+        else:
+            if os.environ.get("JARVIS_HARDWARE_FALLBACK") != "1":
+                raise RuntimeError("CRITICAL: Hardware Alignment Failed. OpenVINO/CUDA requirement not met.")
+
+        # 3. Sincronização de Modelos (Síncrono)
+        if not self.maintenance_manager.check_requirements():
+            raise RuntimeError("CRITICAL: System Requirements Check Failed. Models missing.")
+
+        logger.info("🚀 [STAGE 2] Iniciando Sequência de Boot Stark 2.0...")
         
         initialization_sequence = [
             ("🛡️ Sanitizer", self._init_sanitizers),
-            ("� Auto-Recovery System", self._init_auto_recovery),
-            ("�🔐 Security", self._init_security),
-            ("🎤 Voice Filter", self._init_voice_filter),
+            ("🔄 Auto-Recovery System", self._init_auto_recovery),
+            ("🔒 Security", self._init_security),
+            ("🎙️ Voice Filter", self._init_voice_filter),
             ("🛡️ Fallback System", self._init_fallback_system),
             ("🏠 IoT Manager", self._init_iot),
             ("⚙️ Management", self._init_management),
@@ -42,15 +68,12 @@ class StarkOrchestrator:
         
         for name, init_func in initialization_sequence:
             try:
-                # logger.info(f"⚡ [INIT] {name}...")
                 init_func()
-                # logger.info(f"✅ [OK] {name}")
                 success_count += 1
             except Exception as e:
                 logger.error(f"❌ [FALHA] {name}: {e}")
                 critical_failures.append((name, str(e)))
-                # Não paramos a inicialização, mas logamos erro crítico
-                
+                 
         self.is_ready = (success_count == len(initialization_sequence))
         
         if critical_failures:
@@ -89,11 +112,6 @@ class StarkOrchestrator:
             # Don't raise - auto-recovery is optional enhancement
         
     def _init_sanitizers(self):
-        # Sanitizers são estáticos/classe, mas podemos configurar algo se necessário
-        # Se tivessem estado, instanciariamos aqui.
-        pass
-        # Sanitizers são estáticos/classe, mas podemos configurar algo se necessário
-        # Se tivessem estado, instanciariamos aqui.
         pass
         
     def _init_security(self):
@@ -101,7 +119,7 @@ class StarkOrchestrator:
         try:
             self.security = SecurityManager()
             self.components["security"] = self.security
-            logger.info("🔐 Sistema de Segurança inicializado")
+            logger.info("🔒 Sistema de Segurança inicializado")
         except Exception as e:
             logger.error(f"❌ Falha na inicialização do Security: {e}")
             raise
@@ -120,45 +138,28 @@ class StarkOrchestrator:
                 logger.warning("🏠 IoT Manager inicializado mas não configurado (adicione iot.ha_token)")
         except Exception as e:
             logger.error(f"❌ Falha na inicialização do IoT: {e}")
-            # IoT não é crítico, então não interrompemos
         
     def _init_fallback_system(self):
         self.fallback_system = FallbackSystem(self.jarvis)
         self.components["fallback"] = self.fallback_system
         
-        # Injeta fallback no AIAgent se possível
         if hasattr(self.jarvis, 'ai_agent') and self.jarvis.ai_agent:
             self.jarvis.ai_agent.fallback_system = self.fallback_system
             
     def _init_management(self):
-        # Shutdown Manager já é inicializado no main, mas podemos registrar aqui
         if hasattr(self.jarvis, 'shutdown_manager'):
             self.components["shutdown"] = self.jarvis.shutdown_manager
             
     def _init_interface_orchestration(self):
         if hasattr(self.jarvis, 'window_manager') and self.jarvis.window_manager:
             wm = self.jarvis.window_manager
-            # Configura callbacks ou estados iniciais
             self.components["window_manager"] = wm
-            
-            # Se quisermos iniciar com o menu flutuante ou algo assim
-            # wm.switch_mode(InterfaceMode.ORB) # Exemplo
     
     def get_module_status(self, module_name: str) -> str:
-        """
-        Retorna status real do módulo baseado em health checks
-        
-        Args:
-            module_name: Nome do módulo (vision, audio, intelligence, actions, infrastructure)
-        
-        Returns:
-            str: ONLINE (totalmente funcional), DEGRADED (parcial), OFFLINE (inoperante)
-        """
         try:
             if module_name == "vision":
                 from src.core.vision.vision_system import vision_system
                 if vision_system and hasattr(vision_system, 'is_ready'):
-                    # Verifica se componentes críticos estão disponíveis
                     has_ocr = hasattr(vision_system, 'ocr_reader') and vision_system.ocr_reader is not None
                     has_yolo = hasattr(vision_system, 'yolo_model') and vision_system.yolo_model is not None
                     if has_ocr and has_yolo:
@@ -170,7 +171,6 @@ class StarkOrchestrator:
             elif module_name == "audio":
                 from src.core.audio.voice_controller import voice_controller
                 if voice_controller:
-                    # Verifica se STT e TTS estão operacionais
                     has_stt = hasattr(voice_controller, 'recognizer')
                     has_tts = hasattr(voice_controller, 'tts_engine')
                     if has_stt and has_tts:
@@ -202,11 +202,10 @@ class StarkOrchestrator:
                     if hasattr(iot_mgr, 'is_configured') and iot_mgr.is_configured:
                         return "ONLINE"
                     else:
-                        return "DEGRADED"  # Inicializado mas não configurado
+                        return "DEGRADED"
                 return "OFFLINE"
                 
             elif module_name == "infrastructure":
-                # Verifica componentes básicos
                 if self.is_ready and len(self.components) > 0:
                     return "ONLINE"
                 return "DEGRADED"
@@ -221,35 +220,14 @@ class StarkOrchestrator:
             return "UNKNOWN"
     
     def get_system_health(self) -> Dict[str, str]:
-        """
-        Retorna status de todos os módulos principais
-        
-        Returns:
-            Dict[str, str]: Dicionário com status de cada módulo
-        """
         modules = ["vision", "audio", "intelligence", "actions", "security", "iot", "infrastructure"]
         return {module: self.get_module_status(module) for module in modules}
     
     def is_system_healthy(self) -> bool:
-        """
-        Verifica se o sistema está saudável (nenhum módulo OFFLINE)
-        
-        Returns:
-            bool: True se todos módulos estão ONLINE ou DEGRADED
-        """
         health = self.get_system_health()
         return all(status != "OFFLINE" for status in health.values())
     
     def restart_component(self, component_name: str) -> bool:
-        """
-        Reinicializa um componente específico
-        
-        Args:
-            component_name: Nome do componente (security, iot, fallback, etc.)
-            
-        Returns:
-            bool: True se reinicialização foi bem-sucedida
-        """
         init_methods = {
             "security": self._init_security,
             "iot": self._init_iot,
@@ -263,11 +241,9 @@ class StarkOrchestrator:
         
         try:
             logger.info(f"🔄 Reinicializando {component_name}...")
-            # Remove componente anterior se existir
             if component_name in self.components:
                 del self.components[component_name]
             
-            # Reinicializa
             init_methods[component_name]()
             logger.info(f"✅ {component_name} reinicializado com sucesso")
             return True
@@ -276,12 +252,6 @@ class StarkOrchestrator:
             return False
     
     def get_system_info(self) -> Dict[str, Any]:
-        """
-        Retorna informações detalhadas sobre o sistema
-        
-        Returns:
-            Dict com informações completas do sistema
-        """
         return {
             "is_ready": self.is_ready,
             "components_count": len(self.components),

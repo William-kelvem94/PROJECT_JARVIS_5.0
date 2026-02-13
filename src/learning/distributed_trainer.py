@@ -1,4 +1,4 @@
-"""
+﻿"""
 Distributed Training Manager for JARVIS Learning Systems.
 
 Supports multi-GPU training, gradient synchronization, and distributed
@@ -285,20 +285,26 @@ class DistributedTrainer:
     def _run_single_gpu_worker(self, job: TrainingJob, rank: int):
         """Worker function for single GPU training."""
         try:
+            # Check if GPUs are allocated
+            if not job.gpu_allocation:
+                logger.warning(f"No GPUs allocated for job {job.job_id}, skipping GPU training")
+                job.status = "completed"  # Mark as completed since no GPU training needed
+                return
+
             gpu_id = job.gpu_allocation[0]
             torch.cuda.set_device(gpu_id)
-            
+
             logger.info(f"Started single GPU training on GPU {gpu_id} for job {job.job_id}")
-            
+
             # Create model
             model = self._create_single_gpu_model(job.model_config)
-            
+
             # Load dataset
             train_loader = self._create_single_gpu_dataloader(job.dataset_path)
-            
+
             # Training loop
             self._single_gpu_training_loop(model, train_loader, job)
-            
+
         except Exception as e:
             logger.error(f"Single GPU training failed for job {job.job_id}: {e}")
             job.status = "failed"

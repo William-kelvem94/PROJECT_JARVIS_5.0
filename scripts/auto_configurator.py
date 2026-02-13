@@ -102,9 +102,13 @@ class AutoConfigurator:
         self.log('INFO', '[AUTO-CONFIG] Checking Ollama in PATH...')
         
         # Verifica se ollama já está no PATH
-        if subprocess.run(['where', 'ollama'], capture_output=True).returncode == 0:
-            self.log('OK', '  ✅ Ollama already in PATH')
-            return True
+        try:
+            res = subprocess.run(['where', 'ollama'], capture_output=True, text=False)
+            if res.returncode == 0:
+                self.log('OK', '  ✅ Ollama already in PATH')
+                return True
+        except:
+            pass
         
         # Procura instalação padrão
         default_paths = [
@@ -183,16 +187,17 @@ trusted-host = pypi.org
             # Primeiro verifica se já está excluído
             check_cmd = f'Get-MpPreference | Select-Object -ExpandProperty ExclusionPath | Where-Object {{$_ -eq "{venv_path}"}}'
             result = subprocess.run(['powershell', '-Command', check_cmd], 
-                                   capture_output=True, text=True, timeout=15)
+                                   capture_output=True, text=False, timeout=15)
             
-            if result.stdout.strip():
+            stdout_text = result.stdout.decode('utf-8', errors='replace').strip()
+            if stdout_text:
                 self.log('OK', '  ✅ VENV already excluded from Windows Defender')
                 return True
             
             # Tenta adicionar exclusão
             ps_cmd = f'Add-MpPreference -ExclusionPath "{venv_path}"'
             subprocess.run(['powershell', '-ExecutionPolicy', 'Bypass', '-Command', ps_cmd], 
-                         check=True, capture_output=True, timeout=15)
+                         check=True, capture_output=True, text=False, timeout=15)
             self.fixed.append('defender_exclusion')
             self.log('OK', '  ✅ VENV excluded from Windows Defender')
             return True

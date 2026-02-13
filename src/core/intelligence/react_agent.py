@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - ReAct Agent (Reasoning + Acting)
 ==============================================
 Sprint 4: Predictive & Autonomous
-Loop ReAct explícito com Gemini function calling
+Loop ReAct explÃ­cito com Gemini function calling
 
 USAGE: from src.core.react_agent import ReActAgent
 """
@@ -36,21 +36,21 @@ class ReActAgent:
     """
     ReAct Agent (Reasoning + Acting)
     
-    Loop explícito:
-    1. **Thought**: Raciocinar sobre próximo passo
+    Loop explÃ­cito:
+    1. **Thought**: Raciocinar sobre prÃ³ximo passo
     2. **Action**: Escolher e executar tool
     3. **Observation**: Observar resultado
-    4. Repeat até resposta final
+    4. Repeat atÃ© resposta final
     
-    Max 5 iterações para evitar loops infinitos
+    Max 5 iteraÃ§Ãµes para evitar loops infinitos
     
-    Tools disponíveis:
+    Tools disponÃ­veis:
     - file_read: Ler arquivo
     - file_write: Escrever arquivo
     - web_search: Buscar na web (via Gemini)
     - vision_qa: Analisar imagem
-    - code_exec: Executar código Python (sandbox)
-    - calculate: Calcular expressão matemática
+    - code_exec: Executar cÃ³digo Python (sandbox)
+    - calculate: Calcular expressÃ£o matemÃ¡tica
     """
     
     def __init__(self, api_key: Optional[str] = None, model='gemini-2.0-flash-exp', max_iterations=5):
@@ -76,7 +76,7 @@ class ReActAgent:
             self.api_key = os.getenv('GEMINI_API_KEY')
         
         if not self.api_key:
-            logger.warning("⚠️ No Gemini API key provided - ReAct Agent will operate in LOCAL mode only.")
+            logger.warning("âš ï¸ No Gemini API key provided - ReAct Agent will operate in LOCAL mode only.")
             return # Local reasoning handled in run() fallback
         
         # Configure
@@ -157,10 +157,10 @@ class ReActAgent:
             )
             
             self.tools_list = [t['name'] for t in function_declarations]
-            logger.info(f"✅ ReAct Agent initialized ({model}, {len(function_declarations)} tools)")
+            logger.info(f"âœ… ReAct Agent initialized ({model}, {len(function_declarations)} tools)")
         
         except Exception as e:
-            logger.info(f"ℹ️ ReAct Agent (Gemini) indisponível: {e}. Usando Local Brain.")
+            logger.info(f"â„¹ï¸ ReAct Agent (Gemini) indisponÃ­vel: {e}. Usando Local Brain.")
             self.model = None
             self.tools_list = []
     
@@ -175,7 +175,7 @@ class ReActAgent:
         Returns:
             Tool output as string
         """
-        logger.info(f"🔧 Executing tool: {tool_name}")
+        logger.info(f"ðŸ”§ Executing tool: {tool_name}")
         logger.debug(f"   Parameters: {parameters}")
         
         try:
@@ -231,9 +231,9 @@ class ReActAgent:
         # Original Gemini loop...
         if verbose:
             logger.info("="*70)
-            logger.info("🤖 ReAct Agent Starting (GEMINI MODE)")
+            logger.info("ðŸ¤– ReAct Agent Starting (GEMINI MODE)")
             logger.info("="*70)
-            logger.info(f"📋 Task: {task}")
+            logger.info(f"ðŸ“‹ Task: {task}")
             logger.info("")
         
         # Start chat
@@ -264,7 +264,7 @@ Task: {task}
                 
                 if verbose:
                     logger.info(f"{'='*70}")
-                    logger.info(f"🔄 Iteration {iteration}/{self.max_iterations}")
+                    logger.info(f"ðŸ”„ Iteration {iteration}/{self.max_iterations}")
                     logger.info(f"{'='*70}")
                 
                 # Check if function call
@@ -276,8 +276,8 @@ Task: {task}
                     
                     if verbose:
                         reflect_logger.reflect(f"Analyzing function call for tool '{tool_name}'", layer="LOGIC")
-                        logger.info(f"💭 Thought: Using tool '{tool_name}'")
-                        logger.info(f"🔧 Action: {tool_name}({json.dumps(parameters, indent=2)})")
+                        logger.info(f"ðŸ’­ Thought: Using tool '{tool_name}'")
+                        logger.info(f"ðŸ”§ Action: {tool_name}({json.dumps(parameters, indent=2)})")
                         
                         # Explicitly log the thought for distillation
                         self.last_thought = f"Decided to use {tool_name} to address {task}"
@@ -286,7 +286,7 @@ Task: {task}
                     tool_result = self._execute_tool(tool_name, parameters)
                     
                     if verbose:
-                        logger.info(f"👁️  Observation: {tool_result[:200]}...")
+                        logger.info(f"ðŸ‘ï¸  Observation: {tool_result[:200]}...")
                     
                     steps.append({
                         'iteration': iteration,
@@ -310,7 +310,7 @@ Task: {task}
                     
                     if verbose:
                         logger.info(f"\n{'='*70}")
-                        logger.info("✅ Final Answer")
+                        logger.info("âœ… Final Answer")
                         logger.info(f"{'='*70}")
                         logger.info(answer)
                         logger.info("")
@@ -324,7 +324,7 @@ Task: {task}
             
             # Max iterations reached
             if verbose:
-                logger.warning(f"⚠️  Max iterations ({self.max_iterations}) reached")
+                logger.warning(f"âš ï¸  Max iterations ({self.max_iterations}) reached")
             
             return {
                 'success': False,
@@ -352,9 +352,9 @@ Task: {task}
             
             if verbose:
                 logger.info("="*70)
-                logger.info("🤖 ReAct Agent Starting (LOCAL OFFLINE MODE)")
+                logger.info("ðŸ¤– ReAct Agent Starting (LOCAL OFFLINE MODE)")
                 logger.info("="*70)
-                logger.info(f"📋 Task: {task}")
+                logger.info(f"ðŸ“‹ Task: {task}")
             
             # Simplified ReAct prompt for smaller models
             prompt = f"""You are JARVIS, an autonomous agent. Complete this task.
@@ -393,7 +393,7 @@ if __name__ == "__main__":
     agent = ReActAgent(api_key=args.api_key, max_iterations=args.max_iterations)
     
     if not agent.model:
-        print("❌ Failed to initialize ReAct agent")
+        print("âŒ Failed to initialize ReAct agent")
         sys.exit(1)
     
     # Run task
@@ -401,7 +401,7 @@ if __name__ == "__main__":
     
     # Print summary
     print("\n" + "="*70)
-    print("📊 Summary")
+    print("ðŸ“Š Summary")
     print("="*70)
     print(f"Success: {result['success']}")
     print(f"Iterations: {result['iterations']}")

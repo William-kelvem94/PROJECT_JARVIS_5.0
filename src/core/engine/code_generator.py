@@ -1,7 +1,7 @@
-# ============================================================================
+﻿# ============================================================================
 # JARVIS SINGULARITY - Code Generator (Phase 2: Auto-Programming)
 # ============================================================================
-# Gera e executa código Python sob demanda
+# Gera e executa cÃ³digo Python sob demanda
 # ============================================================================
 
 import os
@@ -20,68 +20,68 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 class CodeGenerator:
     """
-    Gera código Python sob demanda usando LLM.
+    Gera cÃ³digo Python sob demanda usando LLM.
     
     CAPACIDADES:
-    - Gerar scripts Python a partir de descrição
+    - Gerar scripts Python a partir de descriÃ§Ã£o
     - Validar sintaxe antes de executar
     - Salvar scripts gerados
-    - Executar scripts com segurança
+    - Executar scripts com seguranÃ§a
     """
     
     def __init__(self):
         """Inicializa o Code Generator"""
-        logger.info("🔧 Inicializando Code Generator...")
+        logger.info("ðŸ”§ Inicializando Code Generator...")
         
         # Pasta para scripts gerados
         self.scripts_dir = Path("data/generated_scripts")
         self.scripts_dir.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"✅ Code Generator online - Scripts em: {self.scripts_dir}")
+        logger.info(f"âœ… Code Generator online - Scripts em: {self.scripts_dir}")
     
     def generate_script(self, task_description: str, llm_client=None) -> Optional[str]:
         """
-        Gera código Python a partir de descrição.
+        Gera cÃ³digo Python a partir de descriÃ§Ã£o.
         
         Args:
-            task_description: Descrição da tarefa
+            task_description: DescriÃ§Ã£o da tarefa
             llm_client: Cliente LLM (local_brain ou gemini)
         
         Returns:
-            Código Python gerado ou None
+            CÃ³digo Python gerado ou None
         """
         try:
-            # Prompt para geração de código
-            prompt = f"""Você é um programador Python expert. Gere um script Python completo e funcional para a seguinte tarefa:
+            # Prompt para geraÃ§Ã£o de cÃ³digo
+            prompt = f"""VocÃª Ã© um programador Python expert. Gere um script Python completo e funcional para a seguinte tarefa:
 
 TAREFA: {task_description}
 
 REQUISITOS:
-1. Código deve ser completo e executável
-2. Incluir imports necessários
+1. CÃ³digo deve ser completo e executÃ¡vel
+2. Incluir imports necessÃ¡rios
 3. Adicionar tratamento de erros
 4. Incluir docstrings
-5. Usar boas práticas Python
-6. NÃO incluir markdown ou explicações, APENAS código Python puro
+5. Usar boas prÃ¡ticas Python
+6. NÃƒO incluir markdown ou explicaÃ§Ãµes, APENAS cÃ³digo Python puro
 
-CÓDIGO:"""
+CÃ“DIGO:"""
             
-            # Usar LLM para gerar código
+            # Usar LLM para gerar cÃ³digo
             if llm_client:
                 response = llm_client.generate(prompt)
                 code = self._extract_code_from_response(response)
             else:
-                logger.warning("⚠️ LLM não disponível - usando template básico")
+                logger.warning("âš ï¸ LLM nÃ£o disponÃ­vel - usando template bÃ¡sico")
                 code = self._generate_basic_template(task_description)
             
             return code
         
         except Exception as e:
-            logger.error(f"❌ Erro ao gerar script: {e}")
+            logger.error(f"âŒ Erro ao gerar script: {e}")
             return None
     
     def _extract_code_from_response(self, response: str) -> str:
-        """Extrai código Python de resposta LLM"""
+        """Extrai cÃ³digo Python de resposta LLM"""
         # Remover markdown code blocks se existirem
         if "```python" in response:
             code = response.split("```python")[1].split("```")[0].strip()
@@ -93,7 +93,7 @@ CÓDIGO:"""
         return code
     
     def _generate_basic_template(self, task: str) -> str:
-        """Gera template básico quando LLM não disponível"""
+        """Gera template bÃ¡sico quando LLM nÃ£o disponÃ­vel"""
         return f'''"""
 Script gerado automaticamente pelo JARVIS
 Tarefa: {task}
@@ -101,10 +101,10 @@ Data: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 """
 
 def main():
-    """Função principal"""
+    """FunÃ§Ã£o principal"""
     print("Script gerado pelo JARVIS")
     print(f"Tarefa: {task}")
-    # TODO: Implementar lógica aqui
+    # TODO: Implementar lÃ³gica aqui
     pass
 
 if __name__ == "__main__":
@@ -113,10 +113,10 @@ if __name__ == "__main__":
     
     def validate_code(self, code: str) -> Dict[str, Any]:
         """
-        Valida sintaxe do código Python.
+        Valida sintaxe do cÃ³digo Python.
         
         Args:
-            code: Código Python
+            code: CÃ³digo Python
         
         Returns:
             Dict com 'valid' (bool) e 'error' (str ou None)
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         Salva script gerado.
         
         Args:
-            code: Código Python
+            code: CÃ³digo Python
             filename: Nome do arquivo (opcional)
         
         Returns:
@@ -159,11 +159,11 @@ if __name__ == "__main__":
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(code)
             
-            logger.info(f"✅ Script salvo: {filepath}")
+            logger.info(f"âœ… Script salvo: {filepath}")
             return filepath
         
         except Exception as e:
-            logger.error(f"❌ Erro ao salvar script: {e}")
+            logger.error(f"âŒ Erro ao salvar script: {e}")
             raise
     
     def execute_script(self, filepath: Path, timeout: int = 30) -> Dict[str, Any]:
@@ -217,12 +217,12 @@ if __name__ == "__main__":
         Pipeline completo: gera, valida, salva e opcionalmente executa.
         
         Args:
-            task_description: Descrição da tarefa
+            task_description: DescriÃ§Ã£o da tarefa
             llm_client: Cliente LLM
             auto_execute: Se True, executa automaticamente
         
         Returns:
-            Dict com código, filepath, validation, execution
+            Dict com cÃ³digo, filepath, validation, execution
         """
         result = {
             "code": None,
@@ -231,45 +231,45 @@ if __name__ == "__main__":
             "execution": None
         }
         
-        # 1. Gerar código
-        logger.info(f"📝 Gerando código para: '{task_description}'")
+        # 1. Gerar cÃ³digo
+        logger.info(f"ðŸ“ Gerando cÃ³digo para: '{task_description}'")
         code = self.generate_script(task_description, llm_client)
         
         if not code:
-            logger.error("❌ Falha ao gerar código")
+            logger.error("âŒ Falha ao gerar cÃ³digo")
             return result
         
         result["code"] = code
         
         # 2. Validar
-        logger.info("🔍 Validando código...")
+        logger.info("ðŸ” Validando cÃ³digo...")
         validation = self.validate_code(code)
         result["validation"] = validation
         
         if not validation["valid"]:
-            logger.error(f"❌ Código inválido: {validation['error']}")
+            logger.error(f"âŒ CÃ³digo invÃ¡lido: {validation['error']}")
             return result
         
-        logger.info("✅ Código válido")
+        logger.info("âœ… CÃ³digo vÃ¡lido")
         
         # 3. Salvar
         try:
             filepath = self.save_script(code)
             result["filepath"] = str(filepath)
         except Exception as e:
-            logger.error(f"❌ Erro ao salvar: {e}")
+            logger.error(f"âŒ Erro ao salvar: {e}")
             return result
         
         # 4. Executar (se solicitado)
         if auto_execute:
-            logger.info("▶️ Executando script...")
+            logger.info("â–¶ï¸ Executando script...")
             execution = self.execute_script(filepath)
             result["execution"] = execution
             
             if execution["success"]:
-                logger.info("✅ Script executado com sucesso")
+                logger.info("âœ… Script executado com sucesso")
             else:
-                logger.error(f"❌ Erro na execução: {execution['stderr']}")
+                logger.error(f"âŒ Erro na execuÃ§Ã£o: {execution['stderr']}")
         
         return result
 

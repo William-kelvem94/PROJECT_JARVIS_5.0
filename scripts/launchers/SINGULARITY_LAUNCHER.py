@@ -123,12 +123,12 @@ def ensure_ollama_running():
 
 def main():
     print("\n" + "="*80)
-    print("🔥 [LAUNCHER] PROTOCOLO JARVIS DEMOCRÁTICO SINGULARITY v5.0")
+    print("🔥 [LAUNCHER] PROTOCOLO JARVIS STARK 2.0 SINGULARITY v5.0")
     print("="*80)
     print(f"💎 Ambiente: {sys.executable}")
-    print(f"🌐 Modo: DEMOCRÁTICO - Rede Inteligente")
-    print(f"🔒 Identificação: Microsoft Account + Biometric")
-    print(f"☁️ Sincronização: Google Drive Estruturado")
+    print(f"🌐 Modo: Híbrido (Local + Elite Search)")
+    print(f"🔒 Identificação: Biometric + Identity Guard")
+    print(f"🚀 Status: Tronco Encefálico Ativo")
     print("="*80)
 
     # ========================================================================
@@ -157,13 +157,13 @@ def main():
     ensure_ollama_running()
     
     # ========================================================================
-    # PRÉ-INICIALIZAÇÃO DEMOCRÁTICA (OPCIONAL - Pula se falhar)
+    # PRÉ-INICIALIZAÇÃO STARK
     # ========================================================================
-    print("\n🔥 [DEMOCRÁTICO] Inicializando Sistema de Poder Total...")
+    print("\n🔥 [STARK] Inicializando Sequência de Boot Stark 2.0...")
 
     try:
         # Detectar Microsoft Account e dispositivo (com timeout reduzido)
-        print("🆔 [IDENT] Detectando conta Microsoft...")
+        print("🆔 [IDENT] Verificando Identidade Stark...")
         result = subprocess.run([
             sys.executable, "-c",
             "from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier; "
@@ -173,10 +173,11 @@ def main():
             "print(f'ACCOUNT:{mi.microsoft_account.account_email if mi.microsoft_account else \"None\"}'); "
             "print(f'DEVICE:{mi.device_fingerprint.device_id if mi.device_fingerprint else \"None\"}'); "
             "sys.exit(0 if success else 1)"
-        ], capture_output=True, text=True, timeout=10)  # Timeout reduzido
+        ], capture_output=True, text=False, timeout=10)  # Timeout reduzido e text=False para evitar crash
 
         if result.returncode == 0:
-            lines = result.stdout.strip().split('\n')
+            stdout_text = result.stdout.decode('utf-8', errors='replace')
+            lines = stdout_text.strip().split('\n')
             account_line = next((line for line in lines if line.startswith('ACCOUNT:')), None)
             device_line = next((line for line in lines if line.startswith('DEVICE:')), None)
 
@@ -199,31 +200,6 @@ def main():
     except Exception as e:
         print(f"   ⚠️ Erro na identificação: {e} - pulando para inicialização rápida...")
 
-    # Verificar Google Drive (mais rápido)
-    print("☁️ [DRIVE] Verificando integração Google Drive...")
-    try:
-        import os
-        from pathlib import Path
-
-        # Caminhos comuns do Google Drive
-        drive_paths = [
-            Path.home() / "Google Drive",
-            Path("C:") / "Users" / os.getenv("USERNAME", "") / "Google Drive"
-        ]
-
-        drive_found = False
-        for path in drive_paths:
-            if path.exists():
-                print(f"   ✅ Google Drive detectado: {path}")
-                drive_found = True
-                break
-
-        if not drive_found:
-            print("   ⚠️ Google Drive não detectado - funcionalidade limitada")
-
-    except Exception as e:
-        print(f"   ⚠️ Erro verificando Drive: {e}")
-
     print("🚀 [LAUNCHER] Indo direto para inicialização do JARVIS...")
 
     # Configurar ambiente para main.py
@@ -235,20 +211,15 @@ def main():
     # Executar main.py diretamente
     args = [sys.executable, "main.py"]
 
-    # Adicionar flags democráticos
-    if "--democratic" not in sys.argv:
-        args.append("--democratic")
-
     print("🔄 [LAUNCHER] Inicializando JARVIS completo...")
     result = subprocess.run(args, env=env)
 
     # Verificar resultado
     exit_code = result.returncode
 
-    if exit_code == EXIT_CODE_REBIRTH:
-        print("\n🧬 [EVOLUÇÃO] Atualização democrática detectada. Reiniciando Matriz...")
+    if exit_code == 123: # Código personalizado para Rebirth se necessário
+        print("\n🧬 [EVOLUÇÃO] Atualização Stark detectada. Reiniciando Matriz...")
         time.sleep(2)
-        # Reiniciar o processo
         os.execv(sys.executable, [sys.executable] + sys.argv)
     elif exit_code == 0:
         print("🛑 [SISTEMA] JARVIS encerrado normalmente.")

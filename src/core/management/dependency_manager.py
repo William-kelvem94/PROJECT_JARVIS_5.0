@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Dependency Manager - Safe Import System with Mock Fallbacks
@@ -45,7 +45,7 @@ class MockObject:
     def __init__(self, module_name: str, reason: str = "not available"):
         self._mock_module_name = module_name
         self._mock_reason = reason
-        logger.warning(f"⚠️  Using mock for '{module_name}': {reason}")
+        logger.warning(f"âš ï¸  Using mock for '{module_name}': {reason}")
     
     def __call__(self, *args, **kwargs):
         """Accept any call."""
@@ -158,13 +158,13 @@ class DependencyManager:
         try:
             module = __import__(module_name)
             self.import_cache[module_name] = module
-            logger.debug(f"✓ Imported {module_name}")
+            logger.debug(f"âœ“ Imported {module_name}")
             return module
             
         except ImportError as e:
             # Handle import failure
             if strategy == 'REQUIRED':
-                logger.error(f"❌ Required module '{module_name}' not available!")
+                logger.error(f"âŒ Required module '{module_name}' not available!")
                 raise
             
             if mock_fallback:
@@ -269,7 +269,7 @@ def get_profile() -> str:
 
 # Example usage
 if __name__ == '__main__':
-    print("🛡️  Dependency Manager Test\n")
+    print("ðŸ›¡ï¸  Dependency Manager Test\n")
     
     manager = get_dependency_manager()
     print(f"Profile: {manager.get_profile()}")
@@ -297,5 +297,5 @@ if __name__ == '__main__':
     model = unsloth.FastLanguageModel.from_pretrained("test")
     print(f"Mock call result: {type(model)}")
     
-    print("\n✅ All tests passed! No crashes.")
+    print("\nâœ… All tests passed! No crashes.")
     print(f"\nStatistics: {manager.get_statistics()}")

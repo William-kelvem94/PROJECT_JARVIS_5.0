@@ -1,4 +1,4 @@
-import os
+﻿import os
 import signal
 import logging
 import threading
@@ -8,9 +8,9 @@ logger = logging.getLogger(__name__)
 
 class KillSwitch:
     """
-    Monitor de Interrupção de Emergência (Kill Switch).
+    Monitor de InterrupÃ§Ã£o de EmergÃªncia (Kill Switch).
     Atalho: Ctrl + Shift + Space.
-    Ação: Para imediatamente todas as threads de controle físico/automação.
+    AÃ§Ã£o: Para imediatamente todas as threads de controle fÃ­sico/automaÃ§Ã£o.
     """
     def __init__(self):
         self.listener = None
@@ -24,31 +24,31 @@ class KillSwitch:
             })
             self.listener.start()
             self.is_active = True
-            logger.info("🛡️ Kill Switch Ativo: [Ctrl + Shift + Space] para emergência.")
+            logger.info("ðŸ›¡ï¸ Kill Switch Ativo: [Ctrl + Shift + Space] para emergÃªncia.")
         except Exception as e:
-            logger.error(f"Não foi possível iniciar o Kill Switch: {e}")
+            logger.error(f"NÃ£o foi possÃ­vel iniciar o Kill Switch: {e}")
 
     def _emergency_stop(self):
         """Para o sistema imediatamente"""
-        logger.critical("🔥 INTERRUPÇÃO DE EMERGÊNCIA ATIVADA PELA TECLA DE ATALHO!")
+        logger.critical("ðŸ”¥ INTERRUPÃ‡ÃƒO DE EMERGÃŠNCIA ATIVADA PELA TECLA DE ATALHO!")
         
         # 1. Parar PyAutoGUI
         try:
             import pyautogui
             pyautogui.FAILSAFE = True
-            # Forçar erro movendo mouse para o canto (se possível)
+            # ForÃ§ar erro movendo mouse para o canto (se possÃ­vel)
             pyautogui.moveTo(0, 0)
         except: pass
 
-        # 2. Notificar o usuário via logs/hud
+        # 2. Notificar o usuÃ¡rio via logs/hud
         print("\n" + "!"*50)
-        print("!!! EMERGÊNCIA: CONTROLE FÍSICO ENCERRADO !!!")
+        print("!!! EMERGÃŠNCIA: CONTROLE FÃSICO ENCERRADO !!!")
         print("!"*50 + "\n")
 
-        # 3. Encerrar o processo se necessário ou apenas threads de ação
-        # No Singularity, queremos manter a consciência (áudio) se possível,
-        # mas aqui vamos forçar um sinal SIGINT para segurança total.
+        # 3. Encerrar o processo se necessÃ¡rio ou apenas threads de aÃ§Ã£o
+        # No Singularity, queremos manter a consciÃªncia (Ã¡udio) se possÃ­vel,
+        # mas aqui vamos forÃ§ar um sinal SIGINT para seguranÃ§a total.
         os.kill(os.getpid(), signal.SIGINT)
 
-# Instância global
+# InstÃ¢ncia global
 kill_switch = KillSwitch()

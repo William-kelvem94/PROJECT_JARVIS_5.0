@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Vision System (Omni-Vision)
@@ -97,7 +97,7 @@ class VisionSystem:
         """
         from src.utils.config import config
         if CV2_AVAILABLE:
-            # 🆕 ADAPTIVE THREADING: Only limit on weak CPUs
+            # ðŸ†• ADAPTIVE THREADING: Only limit on weak CPUs
             if hardware_manager.get_tier() in ["LITE", "BALANCED"]:
                  cv2.setNumThreads(1) 
             # On FAST/ULTRA, let it fly (default OMP behavior)
@@ -143,29 +143,29 @@ class VisionSystem:
         self.sct = None
         self._initialize_components()
         
-        # 🆕 PASSIVE INIT: Do not start loading in __init__
+        # ðŸ†• PASSIVE INIT: Do not start loading in __init__
         # self.load_heavy_models_async()
         
-        logger.info("✅ Vision System initialized (Passive Mode)")
-        logger.info(f"   FaceID: ✅")
-        logger.info(f"   OCR: {'✅' if EASYOCR_AVAILABLE else '❌'}")
-        logger.info(f"   YOLO: {'✅' if YOLO_AVAILABLE else '❌'}")
-        logger.info(f"   Screen Capture: {'✅' if MSS_AVAILABLE else '❌'}")
+        logger.info("âœ… Vision System initialized (Passive Mode)")
+        logger.info(f"   FaceID: âœ…")
+        logger.info(f"   OCR: {'âœ…' if EASYOCR_AVAILABLE else 'âŒ'}")
+        logger.info(f"   YOLO: {'âœ…' if YOLO_AVAILABLE else 'âŒ'}")
+        logger.info(f"   Screen Capture: {'âœ…' if MSS_AVAILABLE else 'âŒ'}")
         
     def _initialize_components(self):
         """Initialize vision components"""
-        # 🆕 PASSIVE: Do nothing here. Wait for start_background_loading()
+        # ðŸ†• PASSIVE: Do nothing here. Wait for start_background_loading()
         pass
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
         # Guard: prevent double-call
         if getattr(self, '_loading_started', False):
-            logger.warning("⚠️ Vision: start_background_loading já chamado, ignorando")
+            logger.warning("âš ï¸ Vision: start_background_loading jÃ¡ chamado, ignorando")
             return
         self._loading_started = True
-        logger.info("🚀 Vision System: Iniciando carregamento neural post-boot...")
-        # 🔒 Setar flags ANTES de iniciar thread para que wait_for_models saiba que há loading pendente
+        logger.info("ðŸš€ Vision System: Iniciando carregamento neural post-boot...")
+        # ðŸ”’ Setar flags ANTES de iniciar thread para que wait_for_models saiba que hÃ¡ loading pendente
         if EASYOCR_AVAILABLE and not self._ocr_ready:
             self._ocr_loading = True
         if YOLO_AVAILABLE and not self._yolo_ready:
@@ -177,18 +177,18 @@ class VisionSystem:
         # 1. FaceID
         self._load_known_faces()
             
-        # 2. EasyOCR (flags já setadas por start_background_loading)
+        # 2. EasyOCR (flags jÃ¡ setadas por start_background_loading)
         if EASYOCR_AVAILABLE and not self._ocr_ready:
             self._load_ocr_background()
             
-        # 3. YOLO (flags já setadas por start_background_loading)
+        # 3. YOLO (flags jÃ¡ setadas por start_background_loading)
         if YOLO_AVAILABLE and not self._yolo_ready:
             self._load_yolo_background()
 
     def _load_ocr_background(self):
         """Load EasyOCR in background"""
         try:
-            # 🆕 GLOBAL NEURAL LOCK
+            # ðŸ†• GLOBAL NEURAL LOCK
             with hardware_manager.neural_lock:
                 with self._models_lock:
                     self._ocr_loading = True
@@ -198,19 +198,19 @@ class VisionSystem:
                     device = hardware_manager.get_device()
                     use_gpu = (device == "cuda")
                     
-                    logger.info(f"🧠 Vision: Carregando EasyOCR (GPU: {use_gpu})...")
+                    logger.info(f"ðŸ§  Vision: Carregando EasyOCR (GPU: {use_gpu})...")
                     self.ocr_reader = easyocr.Reader(['en', 'pt'], gpu=use_gpu)
                     self._ocr_ready = True
                     self._ocr_loading = False
-                    logger.info(f"✅ Vision: EasyOCR pronto (Aceleração: {device.upper()})")
+                    logger.info(f"âœ… Vision: EasyOCR pronto (AceleraÃ§Ã£o: {device.upper()})")
         except Exception as e:
             self._ocr_loading = False
-            logger.error(f"❌ Vision: Erro ao carregar EasyOCR: {e}")
+            logger.error(f"âŒ Vision: Erro ao carregar EasyOCR: {e}")
 
     def _load_yolo_background(self):
         """Load YOLO in background"""
         try:
-            # 🆕 GLOBAL NEURAL LOCK
+            # ðŸ†• GLOBAL NEURAL LOCK
             with hardware_manager.neural_lock:
                 with self._models_lock:
                     self._yolo_loading = True
@@ -219,17 +219,17 @@ class VisionSystem:
                     
                     device = hardware_manager.get_device()
                     
-                    logger.info("🧠 Vision: Carregando YOLOv8 em background...")
+                    logger.info("ðŸ§  Vision: Carregando YOLOv8 em background...")
                     model_path = self.models_dir / "vision" / "yolov8n.pt"
                     self.yolo_model = YOLO(str(model_path))
                     self.yolo_model.to(device)
                 
                 self._yolo_ready = True
                 self._yolo_loading = False
-                logger.info(f"✅ Vision: YOLOv8 pronto (Backend: {device.upper()})")
+                logger.info(f"âœ… Vision: YOLOv8 pronto (Backend: {device.upper()})")
         except Exception as e:
             self._yolo_loading = False
-            logger.error(f"❌ Vision: Erro ao carregar YOLO: {e}")
+            logger.error(f"âŒ Vision: Erro ao carregar YOLO: {e}")
     
     def wait_for_models(self, timeout: float = 30.0) -> Dict[str, bool]:
         """
@@ -243,7 +243,7 @@ class VisionSystem:
         """
         start_time = time.time()
         
-        logger.info("⏳ Waiting for background model loading...")
+        logger.info("â³ Waiting for background model loading...")
         
         while time.time() - start_time < timeout:
             with self._models_lock:
@@ -251,22 +251,22 @@ class VisionSystem:
                 yolo_done = self._yolo_ready or not YOLO_AVAILABLE or not self._yolo_loading
                 
                 if ocr_done and yolo_done:
-                    logger.info(f"✅ Models ready! OCR: {self._ocr_ready}, YOLO: {self._yolo_ready}")
+                    logger.info(f"âœ… Models ready! OCR: {self._ocr_ready}, YOLO: {self._yolo_ready}")
                     return {'ocr_ready': self._ocr_ready, 'yolo_ready': self._yolo_ready}
             
             time.sleep(0.1)
         
         # Timeout
-        logger.warning(f"⚠️ Model loading timeout after {timeout}s")
+        logger.warning(f"âš ï¸ Model loading timeout after {timeout}s")
         return {'ocr_ready': self._ocr_ready, 'yolo_ready': self._yolo_ready}
             
     def _load_known_faces(self):
         """Load authorized faces for FaceID"""
-        # 🆕 GLOBAL NEURAL LOCK: Prevent Dlib/BLAS conflict with Torch
+        # ðŸ†• GLOBAL NEURAL LOCK: Prevent Dlib/BLAS conflict with Torch
         with hardware_manager.neural_lock:
             # Face recognition is now mandatory, no need for lazy import
             
-            logger.info(f"🧠 Vision: Sincronizando faces de {self.faces_dir}...")
+            logger.info(f"ðŸ§  Vision: Sincronizando faces de {self.faces_dir}...")
             
             count = 0
             self.known_face_encodings = []
@@ -285,22 +285,22 @@ class VisionSystem:
                 
                 if encodings:
                     self.known_face_encodings.append(encodings[0])
-                    self.known_face_names.append(face_file.stem.split('_')[0]) # Remover sufixo de ângulo se houver
+                    self.known_face_names.append(face_file.stem.split('_')[0]) # Remover sufixo de Ã¢ngulo se houver
                     count += 1
-                    logger.info(f"   👤 FaceID: Carregada biometria de '{face_file.stem}'")
+                    logger.info(f"   ðŸ‘¤ FaceID: Carregada biometria de '{face_file.stem}'")
                 else:
-                    # TRATAMENTO: Mover para quarentena se não houver face
-                    logger.error(f"   ❌ FaceID: Nenhuma face detectável em '{face_file.name}'. Movendo para quarentena.")
+                    # TRATAMENTO: Mover para quarentena se nÃ£o houver face
+                    logger.error(f"   âŒ FaceID: Nenhuma face detectÃ¡vel em '{face_file.name}'. Movendo para quarentena.")
                     quarantine_dir.mkdir(parents=True, exist_ok=True)
                     shutil.move(str(face_file), str(quarantine_dir / face_file.name))
                     
             except Exception as e:
-                logger.error(f"   ❌ FaceID: Falha técnica ao processar {face_file.name}: {e}")
+                logger.error(f"   âŒ FaceID: Falha tÃ©cnica ao processar {face_file.name}: {e}")
                 
         if count == 0:
-            logger.warning("   🔶 FaceID: Nenhum perfil facial ativo. Use o HUD ou diga 'Jarvis, cadastrar meu rosto'.")
+            logger.warning("   ðŸ”¶ FaceID: Nenhum perfil facial ativo. Use o HUD ou diga 'Jarvis, cadastrar meu rosto'.")
         else:
-            logger.info(f"✅ FaceID: {count} perfis biométricos sincronizados.")
+            logger.info(f"âœ… FaceID: {count} perfis biomÃ©tricos sincronizados.")
         
     def start_monitoring(self):
         """Start continuous webcam monitoring in background thread"""
@@ -318,7 +318,7 @@ class VisionSystem:
         )
         self._monitor_thread.start()
         
-        logger.info("✅ Vision monitoring started")
+        logger.info("âœ… Vision monitoring started")
         
     def stop_monitoring(self):
         """Stop continuous monitoring"""
@@ -332,7 +332,7 @@ class VisionSystem:
             self.camera = None
             
         self.mode = VisionMode.IDLE
-        logger.info("✅ Vision monitoring stopped")
+        logger.info("âœ… Vision monitoring stopped")
         
     def _monitor_loop(self):
         """Background monitoring loop"""
@@ -345,7 +345,7 @@ class VisionSystem:
                 self.mode = VisionMode.ERROR
                 return
                 
-            logger.info("📹 Camera opened, monitoring started")
+            logger.info("ðŸ“¹ Camera opened, monitoring started")
             
             frame_count = 0
             check_interval = 30  # Check every 30 frames (~1 second at 30fps)
@@ -421,7 +421,7 @@ class VisionSystem:
                         'user': name
                     }
                     
-                    logger.debug(f"✅ Authorized user detected: {name}")
+                    logger.debug(f"âœ… Authorized user detected: {name}")
                     return
                     
             # Face detected but not authorized
@@ -430,7 +430,7 @@ class VisionSystem:
                 'face_detected': True,
                 'authorized': False
             }
-            logger.warning("⚠️ Unauthorized face detected")
+            logger.warning("âš ï¸ Unauthorized face detected")
             
         except Exception as e:
             logger.error(f"Error in face check: {e}")
@@ -584,7 +584,7 @@ class VisionSystem:
         if not self._ocr_ready:
             if not self._ocr_loading:
                 self.load_heavy_models_async()
-            return "OCR ainda está carregando..."
+            return "OCR ainda estÃ¡ carregando..."
             
         try:
             # ============ P1: SEMANTIC CACHING ============
@@ -600,7 +600,7 @@ class VisionSystem:
                 
                 if age < self.ocr_cache_ttl:
                     self.ocr_cache_hits += 1
-                    logger.debug(f"📦 OCR Cache HIT ({self.ocr_cache_hits}/{self.ocr_cache_hits + self.ocr_cache_misses})")
+                    logger.debug(f"ðŸ“¦ OCR Cache HIT ({self.ocr_cache_hits}/{self.ocr_cache_hits + self.ocr_cache_misses})")
                     return cached_text
             
             # Cache miss - extract text
@@ -705,7 +705,7 @@ class VisionSystem:
             self.known_face_encodings.append(encodings[0])
             self.known_face_names.append(name)
             
-            logger.info(f"✅ Registered new face: {name}")
+            logger.info(f"âœ… Registered new face: {name}")
             return True
             
         except Exception as e:
@@ -725,7 +725,7 @@ class VisionSystem:
         
         # Stop camera if exists
         # self.stop_monitoring() # This line was a duplicate and is removed.
-        logger.info("✅ Vision System cleaned up")
+        logger.info("âœ… Vision System cleaned up")
 
 
 # Singleton instance
@@ -768,9 +768,9 @@ if __name__ == "__main__":
     print("\n1. Testing screen capture...")
     screenshot = vision.capture_screen()
     if screenshot is not None:
-        print(f"   ✅ Captured: {screenshot.shape}")
+        print(f"   âœ… Captured: {screenshot.shape}")
     else:
-        print("   ❌ Failed")
+        print("   âŒ Failed")
         
     # Test screen analysis
     print("\n2. Testing screen analysis...")
@@ -784,9 +784,9 @@ if __name__ == "__main__":
     print("\n3. Testing webcam...")
     frame = vision.capture_webcam_frame()
     if frame is not None:
-        print(f"   ✅ Captured: {frame.shape}")
+        print(f"   âœ… Captured: {frame.shape}")
     else:
-        print("   ❌ Failed")
+        print("   âŒ Failed")
         
     # Start monitoring
     print("\n4. Starting face monitoring (5 seconds)...")

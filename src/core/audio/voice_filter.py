@@ -1,11 +1,11 @@
-import re
+﻿import re
 import random
 import logging
 
 logger = logging.getLogger(__name__)
 
 class AtomicVoiceFilter:
-    """Filtro final que garante 100% voz natural, bloqueando falas técnicas."""
+    """Filtro final que garante 100% voz natural, bloqueando falas tÃ©cnicas."""
     
     WAKE_WORDS = [
         'jarvis', 'james', 'gerber', 'javis', 'jarvi', 'star', 'stark', 'singularity'
@@ -30,7 +30,7 @@ class AtomicVoiceFilter:
 
     @classmethod
     def add_nickname(cls, nickname: str) -> bool:
-        """Adiciona um novo apelido e persiste na configuração"""
+        """Adiciona um novo apelido e persiste na configuraÃ§Ã£o"""
         cls._ensure_initialized()
         nick_lower = nickname.lower().strip()
         if not nick_lower:
@@ -52,24 +52,24 @@ class AtomicVoiceFilter:
         return False
 
     TECH_BLOCKLIST = [
-        # Palavras técnicas em inglês que vazam com frequência
+        # Palavras tÃ©cnicas em inglÃªs que vazam com frequÃªncia
         'speak', 'say', 'tell', 'command', 'execute', 'run',
         'http', 'https', 'www', 'localhost', '127.0.0.1',
         'C:', 'D:', 'E:', 'F:', 'G:', 'Z:', 'program files',
         '\\', '//',
         
-        # Termos de programação
+        # Termos de programaÃ§Ã£o
         'function', 'method', 'class', 'object', 'variable',
         'array', 'list', 'dict', 'tuple', 'set',
         'import', 'export', 'require', 'include',
         'null', 'undefined', 'nan', 'void',
         
-        # IDs e números técnicos
+        # IDs e nÃºmeros tÃ©cnicos
         'PID', 'UID', 'GUID', 'UUID',
         '0x', '0b', '0o'
     ]
     
-    # Padrões que indicam fala "suja"
+    # PadrÃµes que indicam fala "suja"
     PATTERN_BLOCKERS = [
         r'[a-zA-Z]:\\[^ ]+',  # Caminhos Windows
         r'/[^ ]+',            # Caminhos Unix
@@ -81,52 +81,52 @@ class AtomicVoiceFilter:
     
     @classmethod
     def filter_response(cls, raw_response: str) -> str:
-        """Filtra qualquer resquício técnico da resposta"""
+        """Filtra qualquer resquÃ­cio tÃ©cnico da resposta"""
         if not raw_response:
             return ""
             
-        # 1. Verificação rápida - palavras bloqueadas
+        # 1. VerificaÃ§Ã£o rÃ¡pida - palavras bloqueadas
         lower_response = raw_response.lower()
         
         # Ignora blocklist se for uma frase muito curta e comum (ex: "Run" pode ser correr, mas aqui bloqueamos pelo contexto de IA)
-        # Mas para garantir, vamos bloquear tudo que for estritamente técnico
+        # Mas para garantir, vamos bloquear tudo que for estritamente tÃ©cnico
         
         for blocked in cls.TECH_BLOCKLIST:
             # Verifica palavra exata para evitar falsos positivos (ex: "say" em "ensaiar")
-            # Mas caminhos como C: são bloqueio imediato
+            # Mas caminhos como C: sÃ£o bloqueio imediato
             if blocked in lower_response:
-                # Se for caminho de drive, é crítico
+                # Se for caminho de drive, Ã© crÃ­tico
                 if blocked[1] == ':' and len(blocked) == 2:
-                     logger.warning(f"🔇 Filtro Atômico acionado: Drive Letter detectado ({blocked})")
+                     logger.warning(f"ðŸ”‡ Filtro AtÃ´mico acionado: Drive Letter detectado ({blocked})")
                      return cls._generate_safe_fallback()
                 
                 # Para palavras comuns, verifica limites de palavra
                 if re.search(r'\b' + re.escape(blocked) + r'\b', lower_response):
-                    logger.warning(f"🔇 Filtro Atômico acionado: Termo técnico '{blocked}'")
-                    # Tenta apenas remover a frase técnica se possível, ou fallback total
+                    logger.warning(f"ðŸ”‡ Filtro AtÃ´mico acionado: Termo tÃ©cnico '{blocked}'")
+                    # Tenta apenas remover a frase tÃ©cnica se possÃ­vel, ou fallback total
                     return cls._generate_safe_fallback()
         
-        # 2. Verificação de padrões regex
+        # 2. VerificaÃ§Ã£o de padrÃµes regex
         for pattern in cls.PATTERN_BLOCKERS:
             if re.search(pattern, raw_response, re.IGNORECASE):
-                logger.warning(f"🔇 Filtro Atômico acionado: Padrão regex detectado")
+                logger.warning(f"ðŸ”‡ Filtro AtÃ´mico acionado: PadrÃ£o regex detectado")
                 return cls._generate_safe_fallback()
         
         # 3. Limpeza de caracteres especiais soltos
-        # Remove caracteres que não fazem sentido na fala (ex: *, #, _, @)
+        # Remove caracteres que nÃ£o fazem sentido na fala (ex: *, #, _, @)
         clean_response = re.sub(r'[*_#@$]', '', raw_response)
         
         return clean_response.strip()
     
     @classmethod
     def has_wake_word(cls, text: str) -> bool:
-        """Verifica se o nome do JARVIS ou palavra de ativação está presente na frase."""
+        """Verifica se o nome do JARVIS ou palavra de ativaÃ§Ã£o estÃ¡ presente na frase."""
         cls._ensure_initialized()
         if not text:
             return False
             
         lower_text = text.lower()
-        # Verifica se alguma palavra de ativação está presente
+        # Verifica se alguma palavra de ativaÃ§Ã£o estÃ¡ presente
         for word in cls.WAKE_WORDS:
             if word in lower_text:
                 return True
@@ -134,12 +134,12 @@ class AtomicVoiceFilter:
     
     @staticmethod
     def _generate_safe_fallback() -> str:
-        """Retorna uma resposta segura quando detecta técnico"""
+        """Retorna uma resposta segura quando detecta tÃ©cnico"""
         fallbacks = [
-            "Analisei os dados técnicos solicitados.",
-            "Processamento concluído com sucesso, senhor.",
-            "As informações foram carregadas no sistema.",
-            "Tenho os detalhes técnicos aqui, caso precise visualizar.",
-            "Operação realizada. O sistema está estável."
+            "Analisei os dados tÃ©cnicos solicitados.",
+            "Processamento concluÃ­do com sucesso, senhor.",
+            "As informaÃ§Ãµes foram carregadas no sistema.",
+            "Tenho os detalhes tÃ©cnicos aqui, caso precise visualizar.",
+            "OperaÃ§Ã£o realizada. O sistema estÃ¡ estÃ¡vel."
         ]
         return random.choice(fallbacks)

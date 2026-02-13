@@ -1,7 +1,7 @@
-# ============================================================================
+﻿# ============================================================================
 # JARVIS SINGULARITY - Performance Optimizer (Phase 5: Final Phase)
 # ============================================================================
-# Otimizações para respostas rápidas (<5s) e uso eficiente de recursos
+# OtimizaÃ§Ãµes para respostas rÃ¡pidas (<5s) e uso eficiente de recursos
 # ============================================================================
 
 import logging
@@ -31,15 +31,15 @@ class ResponseCache:
         Inicializa o cache.
         
         Args:
-            cache_dir: Diretório para cache
+            cache_dir: DiretÃ³rio para cache
             ttl_minutes: Time-to-live em minutos
         """
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.ttl = timedelta(minutes=ttl_minutes)
-        self.memory_cache = {}  # Cache em memória (rápido)
+        self.memory_cache = {}  # Cache em memÃ³ria (rÃ¡pido)
         
-        logger.info(f"💾 Cache inicializado - TTL: {ttl_minutes}min")
+        logger.info(f"ðŸ’¾ Cache inicializado - TTL: {ttl_minutes}min")
     
     def _get_key(self, command: str) -> str:
         """Gera chave hash do comando"""
@@ -49,11 +49,11 @@ class ResponseCache:
         """Busca resposta no cache"""
         key = self._get_key(command)
         
-        # 1. Tentar memória primeiro (mais rápido)
+        # 1. Tentar memÃ³ria primeiro (mais rÃ¡pido)
         if key in self.memory_cache:
             cached = self.memory_cache[key]
             if datetime.now() - cached['timestamp'] < self.ttl:
-                logger.info(f"⚡ Cache HIT (memória): {command[:30]}...")
+                logger.info(f"âš¡ Cache HIT (memÃ³ria): {command[:30]}...")
                 return cached['response']
             else:
                 del self.memory_cache[key]
@@ -66,14 +66,14 @@ class ResponseCache:
                     cached = pickle.load(f)
                 
                 if datetime.now() - cached['timestamp'] < self.ttl:
-                    # Promover para memória
+                    # Promover para memÃ³ria
                     self.memory_cache[key] = cached
-                    logger.info(f"⚡ Cache HIT (disco): {command[:30]}...")
+                    logger.info(f"âš¡ Cache HIT (disco): {command[:30]}...")
                     return cached['response']
                 else:
                     cache_file.unlink()
             except Exception as e:
-                logger.warning(f"⚠️ Erro ao ler cache: {e}")
+                logger.warning(f"âš ï¸ Erro ao ler cache: {e}")
         
         return None
     
@@ -86,22 +86,22 @@ class ResponseCache:
             'timestamp': datetime.now()
         }
         
-        # Salvar em memória
+        # Salvar em memÃ³ria
         self.memory_cache[key] = cached
         
-        # Salvar em disco (assíncrono)
+        # Salvar em disco (assÃ­ncrono)
         cache_file = self.cache_dir / f"{key}.pkl"
         try:
             with open(cache_file, 'wb') as f:
                 pickle.dump(cached, f)
         except Exception as e:
-            logger.warning(f"⚠️ Erro ao salvar cache: {e}")
+            logger.warning(f"âš ï¸ Erro ao salvar cache: {e}")
     
     def clear_old(self):
         """Remove entradas expiradas"""
         count = 0
         
-        # Limpar memória
+        # Limpar memÃ³ria
         expired_keys = [
             k for k, v in self.memory_cache.items()
             if datetime.now() - v['timestamp'] >= self.ttl
@@ -122,7 +122,7 @@ class ResponseCache:
                 pass
         
         if count > 0:
-            logger.info(f"🗑️ Removidas {count} entradas expiradas do cache")
+            logger.info(f"ðŸ—‘ï¸ Removidas {count} entradas expiradas do cache")
 
 
 # ============================================================================
@@ -132,16 +132,16 @@ class PerformanceOptimizer:
     """
     Otimizador de performance do JARVIS.
     
-    OTIMIZAÇÕES:
+    OTIMIZAÃ‡Ã•ES:
     - Cache de respostas
     - Preload de modelos
-    - Medição de tempo
+    - MediÃ§Ã£o de tempo
     - Throttling de recursos
     """
     
     def __init__(self):
         """Inicializa o otimizador"""
-        logger.info("⚡ Inicializando Performance Optimizer...")
+        logger.info("âš¡ Inicializando Performance Optimizer...")
         
         self.cache = ResponseCache(ttl_minutes=60)
         self.metrics = {
@@ -152,11 +152,11 @@ class PerformanceOptimizer:
         }
         self._lock = threading.Lock()
         
-        logger.info("✅ Performance Optimizer online")
+        logger.info("âœ… Performance Optimizer online")
     
     def measure_time(self, func: Callable) -> Callable:
         """
-        Decorator para medir tempo de execução.
+        Decorator para medir tempo de execuÃ§Ã£o.
         
         Usage:
             @optimizer.measure_time
@@ -172,9 +172,9 @@ class PerformanceOptimizer:
             self._record_time(elapsed)
             
             if elapsed > 5.0:
-                logger.warning(f"⚠️ {func.__name__} demorou {elapsed:.2f}s (meta: <5s)")
+                logger.warning(f"âš ï¸ {func.__name__} demorou {elapsed:.2f}s (meta: <5s)")
             else:
-                logger.info(f"⚡ {func.__name__} completou em {elapsed:.2f}s")
+                logger.info(f"âš¡ {func.__name__} completou em {elapsed:.2f}s")
             
             return result
         return wrapper
@@ -184,11 +184,11 @@ class PerformanceOptimizer:
         with self._lock:
             self.metrics['response_times'].append(elapsed)
             
-            # Manter apenas últimas 100 medições
+            # Manter apenas Ãºltimas 100 mediÃ§Ãµes
             if len(self.metrics['response_times']) > 100:
                 self.metrics['response_times'].pop(0)
             
-            # Recalcular média
+            # Recalcular mÃ©dia
             self.metrics['avg_response_time'] = sum(self.metrics['response_times']) / len(self.metrics['response_times'])
     
     def get_cached_response(self, command: str) -> Optional[str]:
@@ -196,7 +196,7 @@ class PerformanceOptimizer:
         Tenta obter resposta do cache.
         
         Args:
-            command: Comando do usuário
+            command: Comando do usuÃ¡rio
         
         Returns:
             Resposta em cache ou None
@@ -217,13 +217,13 @@ class PerformanceOptimizer:
         Salva resposta no cache.
         
         Args:
-            command: Comando do usuário
+            command: Comando do usuÃ¡rio
             response: Resposta gerada
         """
         self.cache.set(command, response)
     
     def get_stats(self) -> Dict[str, Any]:
-        """Obtém estatísticas de performance"""
+        """ObtÃ©m estatÃ­sticas de performance"""
         with self._lock:
             cache_hit_rate = 0.0
             if self.metrics['total_requests'] > 0:
@@ -240,21 +240,21 @@ class PerformanceOptimizer:
     
     def optimize_startup(self):
         """
-        Otimiza tempo de inicialização.
-        Carrega modelos críticos em paralelo.
+        Otimiza tempo de inicializaÃ§Ã£o.
+        Carrega modelos crÃ­ticos em paralelo.
         """
-        logger.info("🚀 Otimizando startup...")
+        logger.info("ðŸš€ Otimizando startup...")
         
         def preload_models():
             """Preload de modelos em background"""
             try:
-                # Aqui você pode adicionar preload de modelos pesados
+                # Aqui vocÃª pode adicionar preload de modelos pesados
                 # Por exemplo: YOLO, embeddings, etc.
-                logger.info("📦 Preloading modelos...")
+                logger.info("ðŸ“¦ Preloading modelos...")
                 time.sleep(0.1)  # Placeholder
-                logger.info("✅ Modelos preloaded")
+                logger.info("âœ… Modelos preloaded")
             except Exception as e:
-                logger.warning(f"⚠️ Erro no preload: {e}")
+                logger.warning(f"âš ï¸ Erro no preload: {e}")
         
         # Executar em thread separada
         thread = threading.Thread(target=preload_models, daemon=True)
@@ -262,9 +262,9 @@ class PerformanceOptimizer:
     
     def cleanup(self):
         """Limpeza de recursos"""
-        logger.info("🧹 Limpando cache antigo...")
+        logger.info("ðŸ§¹ Limpando cache antigo...")
         self.cache.clear_old()
-        logger.info("✅ Cleanup completo")
+        logger.info("âœ… Cleanup completo")
 
 
 # ============================================================================
@@ -284,14 +284,14 @@ def timed(func: Callable) -> Callable:
         start = time.time()
         result = func(*args, **kwargs)
         elapsed = time.time() - start
-        logger.info(f"⏱️ {func.__name__}: {elapsed:.3f}s")
+        logger.info(f"â±ï¸ {func.__name__}: {elapsed:.3f}s")
         return result
     return wrapper
 
 
 def cached(ttl_minutes: int = 60):
     """
-    Decorator para cache de função.
+    Decorator para cache de funÃ§Ã£o.
     
     Usage:
         @cached(ttl_minutes=30)
@@ -312,10 +312,10 @@ def cached(ttl_minutes: int = 60):
             if key in cache:
                 cached_result, timestamp = cache[key]
                 if datetime.now() - timestamp < timedelta(minutes=ttl_minutes):
-                    logger.debug(f"⚡ Cache hit: {func.__name__}")
+                    logger.debug(f"âš¡ Cache hit: {func.__name__}")
                     return cached_result
             
-            # Executar função
+            # Executar funÃ§Ã£o
             result = func(*args, **kwargs)
             
             # Salvar no cache
@@ -329,5 +329,5 @@ def cached(ttl_minutes: int = 60):
 # ============================================================================
 # SINGLETON INSTANCE
 # ============================================================================
-# Instância global
+# InstÃ¢ncia global
 performance_optimizer = PerformanceOptimizer()

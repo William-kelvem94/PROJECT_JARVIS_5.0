@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Real-time Audio Stream com Silero-VAD
 ===================================================
 Sprint 1: Real-time Transcription
-Pipeline: áudio stream → Silero VAD → buffer circular (3s) → faster-whisper → callback
+Pipeline: Ã¡udio stream â†’ Silero VAD â†’ buffer circular (3s) â†’ faster-whisper â†’ callback
 
 DEPENDENCIES: pip install silero-vad
 USAGE: from src.core.realtime_transcription import RealtimeTranscriber
@@ -74,7 +74,7 @@ class AudioStream:
             )
             self.is_recording = True
             self.stream.start_stream()
-            logger.info(f"✅ Audio stream started (SR: {self.sample_rate}Hz)")
+            logger.info(f"âœ… Audio stream started (SR: {self.sample_rate}Hz)")
             return True
         except Exception as e:
             logger.error(f"Failed to start audio stream: {e}")
@@ -119,7 +119,7 @@ class AudioStream:
             self.stream.close()
         if self.audio:
             self.audio.terminate()
-        logger.info("🛑 Audio stream stopped")
+        logger.info("ðŸ›‘ Audio stream stopped")
 
 
 class SileroVAD:
@@ -144,7 +144,7 @@ class SileroVAD:
             self.model = model
             self.utils = utils
             self.get_speech_timestamps = utils[0]
-            logger.info("✅ Silero VAD loaded")
+            logger.info("âœ… Silero VAD loaded")
         except Exception as e:
             logger.error(f"Failed to load Silero VAD: {e}")
     
@@ -203,7 +203,7 @@ class SileroVAD:
 class RealtimeTranscriber:
     """
     Real-time speech transcription system
-    Pipeline: AudioStream → Silero VAD → Buffer → Faster-Whisper → Callback
+    Pipeline: AudioStream â†’ Silero VAD â†’ Buffer â†’ Faster-Whisper â†’ Callback
     """
     def __init__(
         self,
@@ -238,7 +238,7 @@ class RealtimeTranscriber:
                     device='cuda' if torch.cuda.is_available() else 'cpu',
                     compute_type='float16' if torch.cuda.is_available() else 'int8'
                 )
-                logger.info(f"✅ Whisper {model_size} loaded")
+                logger.info(f"âœ… Whisper {model_size} loaded")
             except Exception as e:
                 logger.error(f"Failed to load Whisper: {e}")
                 self.whisper = None
@@ -258,7 +258,7 @@ class RealtimeTranscriber:
             return False
         
         logger.info("="*70)
-        logger.info("🎙️  Starting Real-time Transcription")
+        logger.info("ðŸŽ™ï¸  Starting Real-time Transcription")
         logger.info("="*70)
         
         # Start audio stream
@@ -270,7 +270,7 @@ class RealtimeTranscriber:
         self.processing_thread = threading.Thread(target=self._processing_loop, daemon=True)
         self.processing_thread.start()
         
-        logger.info("✅ Real-time transcription active")
+        logger.info("âœ… Real-time transcription active")
         return True
     
     def _processing_loop(self):
@@ -303,7 +303,7 @@ class RealtimeTranscriber:
                         text = " ".join([seg.text.strip() for seg in segments])
                         
                         if text:
-                            logger.info(f"🎯 {text}")
+                            logger.info(f"ðŸŽ¯ {text}")
                             
                             # Call callback
                             if self.callback:
@@ -322,21 +322,21 @@ class RealtimeTranscriber:
     
     def stop(self):
         """Stop real-time transcription"""
-        logger.info("🛑 Stopping transcription...")
+        logger.info("ðŸ›‘ Stopping transcription...")
         self.is_running = False
         
         if self.processing_thread:
             self.processing_thread.join(timeout=2.0)
         
         self.audio_stream.stop()
-        logger.info("✅ Transcription stopped")
+        logger.info("âœ… Transcription stopped")
 
 
 # Example usage
 if __name__ == "__main__":
     def on_transcription(text):
         """Callback for transcribed text"""
-        print(f"\n📝 Transcribed: {text}")
+        print(f"\nðŸ“ Transcribed: {text}")
     
     # Create transcriber
     transcriber = RealtimeTranscriber(
@@ -348,7 +348,7 @@ if __name__ == "__main__":
     
     # Start
     if transcriber.start():
-        print("\n🎙️  Speak now... (Ctrl+C to stop)")
+        print("\nðŸŽ™ï¸  Speak now... (Ctrl+C to stop)")
         try:
             while True:
                 time.sleep(1)

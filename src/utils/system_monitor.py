@@ -1,4 +1,4 @@
-"""
+﻿"""
 Monitoramento persistente do sistema JARVIS 5.0 (OTIMIZADO)
 """
 import time
@@ -10,7 +10,7 @@ from datetime import datetime
 import logging
 
 class JarvisSystemMonitor:
-    """Monitora e persiste métricas do sistema com baixo consumo"""
+    """Monitora e persiste mÃ©tricas do sistema com baixo consumo"""
     
     def __init__(self, data_dir="data/monitoring"):
         self.project_root = Path(__file__).parent.parent.parent
@@ -35,7 +35,7 @@ class JarvisSystemMonitor:
             daemon=True
         )
         self.monitor_thread.start()
-        self.logger.info(f"✅ Monitoring started (Interval: {self.interval}s)")
+        self.logger.info(f"âœ… Monitoring started (Interval: {self.interval}s)")
         return self
     
     def _monitor_loop(self):

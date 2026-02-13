@@ -78,9 +78,10 @@ class TotalInstaller:
         """Instala PyTorch versão CORRETA (>=2.4)"""
         self.logger.info("🧠 Instalando PyTorch 2.4+...")
         
-        # REMOVE versão antiga para evitar conflitos
+        # REMOVE versão antiga para evitar conflitos (Seguro contra encoding)
         try:
-            subprocess.run([sys.executable, "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "-y"], capture_output=True)
+            subprocess.run([sys.executable, "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "-y"], 
+                           capture_output=True, text=False)
         except:
             pass
         
@@ -200,9 +201,15 @@ class TotalInstaller:
             "screen-brightness-control"
         ]
         
-        # Resemblyzer separado (no-deps)
-        try: self.run_command([sys.executable, "-m", "pip", "install", "resemblyzer", "--no-deps"], skip_capture=True)
-        except: pass
+        # Resemblyzer e suas dependências críticas
+        try:
+            self.logger.info("📦 Instalando dependências críticas para Resemblyzer...")
+            # 'typing' é um backport, em 3.11 pode causar confusão mas alguns pacotes legados pedem
+            for d in ["webrtcvad-wheels", "typing"]:
+                self.run_command([sys.executable, "-m", "pip", "install", d], skip_capture=True)
+            self.run_command([sys.executable, "-m", "pip", "install", "resemblyzer", "--no-deps"], skip_capture=True)
+        except:
+            pass
 
         for dep in remaining:
             try: self.run_command([sys.executable, "-m", "pip", "install", dep], skip_capture=True)

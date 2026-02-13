@@ -1,11 +1,11 @@
-from PyQt6.QtWidgets import QWidget
+﻿from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import Qt, QTimer, QPointF, QRectF
 from PyQt6.QtGui import QPainter, QColor, QPen, QPolygonF
 import collections
 
 class RealtimeChart(QWidget):
     """
-    Gráfico de linha simples em tempo real para monitoramento de recursos.
+    GrÃ¡fico de linha simples em tempo real para monitoramento de recursos.
     """
     def __init__(self, title, max_points=60, parent=None):
         super().__init__(parent)
@@ -26,7 +26,7 @@ class RealtimeChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Fundo já desenhado pelo styleSheet ou custom aqui se quiser
+        # Fundo jÃ¡ desenhado pelo styleSheet ou custom aqui se quiser
         # painter.fillRect(self.rect(), QColor(10, 15, 20))
         
         width = self.width()
@@ -41,7 +41,7 @@ class RealtimeChart(QWidget):
         plot_width = width - margin_left - margin_right
         plot_height = height - margin_top - margin_bottom
         
-        # Título
+        # TÃ­tulo
         painter.setPen(QColor(200, 200, 200))
         painter.drawText(10, 15, self.title)
         
@@ -62,7 +62,7 @@ class RealtimeChart(QWidget):
             y = (margin_top + plot_height) - y_norm
             points.append(QPointF(x, y))
             
-        # Desenhar Polígono (Preenchimento)
+        # Desenhar PolÃ­gono (Preenchimento)
         poly_points = [QPointF(margin_left, margin_top + plot_height)] + points + [QPointF(width - margin_right, margin_top + plot_height)]
         painter.setBrush(self.fill_color)
         painter.setPen(Qt.PenStyle.NoPen)

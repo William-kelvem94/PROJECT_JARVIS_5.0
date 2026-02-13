@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS 5.0 - Advanced Device & System Manager
@@ -8,9 +8,9 @@ Controle total do sistema operacional Windows:
 - Rede (Interfaces, Firewall, Bandwidth)
 - Energia (Power Plans, Shutdown, Sleep, Hibernate)
 - Registro do Windows
-- Serviços do Windows
-- Segurança e Privilégios
-- Monitoramento de Saúde do Sistema
+- ServiÃ§os do Windows
+- SeguranÃ§a e PrivilÃ©gios
+- Monitoramento de SaÃºde do Sistema
 """
 
 import logging
@@ -71,7 +71,7 @@ class PowerPlan(Enum):
     POWER_SAVER = "a1841308-3541-4fab-bc81-f71556f20b4a"
 
 class ServiceAction(Enum):
-    """Ações para serviços Windows"""
+    """AÃ§Ãµes para serviÃ§os Windows"""
     START = "start"
     STOP = "stop"
     RESTART = "restart"
@@ -91,7 +91,7 @@ class ProcessPriority(Enum):
 
 class AdvancedDeviceManager:
     """
-    Gerenciador Avançado com Controle Total do Sistema Windows
+    Gerenciador AvanÃ§ado com Controle Total do Sistema Windows
     
     Features:
     - Hardware monitoring (CPU, GPU, RAM, Disk, Network)
@@ -107,32 +107,32 @@ class AdvancedDeviceManager:
     """
     
     def __init__(self):
-        """Inicializa o gerenciador com verificações de dependências"""
+        """Inicializa o gerenciador com verificaÃ§Ãµes de dependÃªncias"""
         self.wmi_interface = None
         self.audio_interface = None
         self.is_admin = self._check_admin_rights()
         
-        # Inicializa WMI se disponível
+        # Inicializa WMI se disponÃ­vel
         if WMI_AVAILABLE:
             try:
                 self.wmi_interface = wmi.WMI()
             except Exception as e:
-                logger.warning(f"⚠️ Falha ao inicializar WMI: {e}")
+                logger.warning(f"âš ï¸ Falha ao inicializar WMI: {e}")
         
-        # Inicializa interface de áudio se disponível
+        # Inicializa interface de Ã¡udio se disponÃ­vel
         if PYCAW_AVAILABLE:
             try:
                 self.audio_interface = self._get_audio_interface()
             except Exception as e:
-                logger.warning(f"⚠️ Falha ao inicializar controle de áudio: {e}")
+                logger.warning(f"âš ï¸ Falha ao inicializar controle de Ã¡udio: {e}")
         
-        logger.info(f"🎛️ DeviceManager inicializado (Admin: {self.is_admin})")
+        logger.info(f"ðŸŽ›ï¸ DeviceManager inicializado (Admin: {self.is_admin})")
     
     # ==================== HARDWARE MONITORING ====================
     
     def get_system_info(self) -> Dict[str, Any]:
         """
-        Coleta informações completas do sistema
+        Coleta informaÃ§Ãµes completas do sistema
         
         Returns:
             Dict com CPU, RAM, Disk, Network, GPU, Battery info
@@ -149,11 +149,11 @@ class AdvancedDeviceManager:
             }
             return info
         except Exception as e:
-            logger.error(f"❌ Erro ao coletar info do sistema: {e}")
+            logger.error(f"âŒ Erro ao coletar info do sistema: {e}")
             return {}
     
     def _get_cpu_info(self) -> Dict[str, Any]:
-        """Informações detalhadas da CPU"""
+        """InformaÃ§Ãµes detalhadas da CPU"""
         try:
             cpu_freq = psutil.cpu_freq()
             return {
@@ -185,7 +185,7 @@ class AdvancedDeviceManager:
         return None
     
     def _get_memory_info(self) -> Dict[str, Any]:
-        """Informações de memória RAM e SWAP"""
+        """InformaÃ§Ãµes de memÃ³ria RAM e SWAP"""
         try:
             vm = psutil.virtual_memory()
             swap = psutil.swap_memory()
@@ -204,11 +204,11 @@ class AdvancedDeviceManager:
                 }
             }
         except Exception as e:
-            logger.error(f"Erro ao obter info de memória: {e}")
+            logger.error(f"Erro ao obter info de memÃ³ria: {e}")
             return {}
     
     def _get_disk_info(self) -> List[Dict[str, Any]]:
-        """Informações de todos os discos"""
+        """InformaÃ§Ãµes de todos os discos"""
         disks = []
         try:
             for partition in psutil.disk_partitions():
@@ -230,7 +230,7 @@ class AdvancedDeviceManager:
         return disks
     
     def _get_gpu_info(self) -> List[Dict[str, Any]]:
-        """Informações das GPUs (via WMI)"""
+        """InformaÃ§Ãµes das GPUs (via WMI)"""
         gpus = []
         if not self.wmi_interface:
             return gpus
@@ -249,7 +249,7 @@ class AdvancedDeviceManager:
         return gpus
     
     def _get_battery_info(self) -> Optional[Dict[str, Any]]:
-        """Informações da bateria (se houver)"""
+        """InformaÃ§Ãµes da bateria (se houver)"""
         try:
             battery = psutil.sensors_battery()
             if battery:
@@ -266,10 +266,10 @@ class AdvancedDeviceManager:
     
     def get_network_info(self) -> Dict[str, Any]:
         """
-        Informações completas de rede
+        InformaÃ§Ãµes completas de rede
         
         Returns:
-            Dict com interfaces, conexões ativas e estatísticas
+            Dict com interfaces, conexÃµes ativas e estatÃ­sticas
         """
         try:
             info = {
@@ -310,10 +310,10 @@ class AdvancedDeviceManager:
     
     def list_network_connections(self, kind: str = 'inet') -> List[Dict[str, Any]]:
         """
-        Lista conexões de rede ativas
+        Lista conexÃµes de rede ativas
         
         Args:
-            kind: Tipo de conexão ('inet', 'tcp', 'udp', etc)
+            kind: Tipo de conexÃ£o ('inet', 'tcp', 'udp', etc)
         """
         connections = []
         try:
@@ -328,13 +328,13 @@ class AdvancedDeviceManager:
                     'pid': conn.pid
                 })
         except (psutil.AccessDenied, PermissionError):
-            logger.warning("⚠️ Sem permissão para listar todas as conexões")
+            logger.warning("âš ï¸ Sem permissÃ£o para listar todas as conexÃµes")
         except Exception as e:
-            logger.error(f"Erro ao listar conexões: {e}")
+            logger.error(f"Erro ao listar conexÃµes: {e}")
         return connections
     
     def _get_network_stats(self) -> Dict[str, Any]:
-        """Estatísticas de tráfego de rede"""
+        """EstatÃ­sticas de trÃ¡fego de rede"""
         try:
             stats = psutil.net_io_counters()
             return {
@@ -363,7 +363,7 @@ class AdvancedDeviceManager:
             True se bem-sucedido
         """
         if not self.is_admin:
-            logger.error("❌ Requer privilégios administrativos")
+            logger.error("âŒ Requer privilÃ©gios administrativos")
             return False
         
         try:
@@ -375,32 +375,32 @@ class AdvancedDeviceManager:
                 timeout=10
             )
             if result.returncode == 0:
-                logger.info(f"✅ Interface {interface_name} {action}d")
+                logger.info(f"âœ… Interface {interface_name} {action}d")
                 return True
             else:
-                logger.error(f"❌ Erro ao {action} interface: {result.stderr}")
+                logger.error(f"âŒ Erro ao {action} interface: {result.stderr}")
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao modificar interface: {e}")
+            logger.error(f"âŒ Erro ao modificar interface: {e}")
             return False
     
     def block_process_network(self, pid: int, program_path: Optional[str] = None) -> bool:
         """
-        Bloqueia conexões de rede de um processo via Firewall do Windows
+        Bloqueia conexÃµes de rede de um processo via Firewall do Windows
         
         Args:
             pid: ID do processo
-            program_path: Caminho do executável (opcional, será detectado)
+            program_path: Caminho do executÃ¡vel (opcional, serÃ¡ detectado)
             
         Returns:
             True se bloqueado com sucesso
         """
         if not self.is_admin:
-            logger.error("❌ Requer privilégios administrativos")
+            logger.error("âŒ Requer privilÃ©gios administrativos")
             return False
         
         try:
-            # Obtém caminho do executável se não fornecido
+            # ObtÃ©m caminho do executÃ¡vel se nÃ£o fornecido
             if not program_path:
                 proc = psutil.Process(pid)
                 program_path = proc.exe()
@@ -417,19 +417,19 @@ class AdvancedDeviceManager:
             ], capture_output=True, text=True, timeout=15)
             
             if result.returncode == 0:
-                logger.info(f"🔥 Processo {pid} bloqueado no firewall")
+                logger.info(f"ðŸ”¥ Processo {pid} bloqueado no firewall")
                 return True
             else:
-                logger.error(f"❌ Erro ao criar regra de firewall: {result.stderr}")
+                logger.error(f"âŒ Erro ao criar regra de firewall: {result.stderr}")
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao bloquear processo: {e}")
+            logger.error(f"âŒ Erro ao bloquear processo: {e}")
             return False
     
     def unblock_process_network(self, rule_name: str) -> bool:
         """Remove regra de bloqueio do firewall"""
         if not self.is_admin:
-            logger.error("❌ Requer privilégios administrativos")
+            logger.error("âŒ Requer privilÃ©gios administrativos")
             return False
         
         try:
@@ -441,7 +441,7 @@ class AdvancedDeviceManager:
             )
             return result.returncode == 0
         except Exception as e:
-            logger.error(f"❌ Erro ao remover regra de firewall: {e}")
+            logger.error(f"âŒ Erro ao remover regra de firewall: {e}")
             return False
     
     # ==================== POWER MANAGEMENT ====================
@@ -451,8 +451,8 @@ class AdvancedDeviceManager:
         Desliga o sistema
         
         Args:
-            force: Força o desligamento sem salvar
-            timeout: Tempo em segundos até o desligamento
+            force: ForÃ§a o desligamento sem salvar
+            timeout: Tempo em segundos atÃ© o desligamento
             
         Returns:
             True se comando foi executado
@@ -463,7 +463,7 @@ class AdvancedDeviceManager:
                 if force:
                     flags |= win32con.EWX_FORCE
                 win32api.ExitWindowsEx(flags, 0)
-                logger.info("🔌 Sistema desligando...")
+                logger.info("ðŸ”Œ Sistema desligando...")
                 return True
             else:
                 # Fallback usando shutdown.exe
@@ -476,10 +476,10 @@ class AdvancedDeviceManager:
                     cmd.extend(['/t', '0'])
                 
                 subprocess.Popen(cmd)
-                logger.info(f"🔌 Desligamento agendado em {timeout}s")
+                logger.info(f"ðŸ”Œ Desligamento agendado em {timeout}s")
                 return True
         except Exception as e:
-            logger.error(f"❌ Erro ao desligar sistema: {e}")
+            logger.error(f"âŒ Erro ao desligar sistema: {e}")
             return False
     
     def restart(self, force: bool = False, timeout: int = 30) -> bool:
@@ -487,8 +487,8 @@ class AdvancedDeviceManager:
         Reinicia o sistema
         
         Args:
-            force: Força o reinício sem salvar
-            timeout: Tempo em segundos até o reinício
+            force: ForÃ§a o reinÃ­cio sem salvar
+            timeout: Tempo em segundos atÃ© o reinÃ­cio
         """
         try:
             if PYWIN32_AVAILABLE and timeout == 0:
@@ -496,7 +496,7 @@ class AdvancedDeviceManager:
                 if force:
                     flags |= win32con.EWX_FORCE
                 win32api.ExitWindowsEx(flags, 0)
-                logger.info("🔄 Sistema reiniciando...")
+                logger.info("ðŸ”„ Sistema reiniciando...")
                 return True
             else:
                 cmd = ['shutdown', '/r']
@@ -508,10 +508,10 @@ class AdvancedDeviceManager:
                     cmd.extend(['/t', '0'])
                 
                 subprocess.Popen(cmd)
-                logger.info(f"🔄 Reinício agendado em {timeout}s")
+                logger.info(f"ðŸ”„ ReinÃ­cio agendado em {timeout}s")
                 return True
         except Exception as e:
-            logger.error(f"❌ Erro ao reiniciar sistema: {e}")
+            logger.error(f"âŒ Erro ao reiniciar sistema: {e}")
             return False
     
     def cancel_shutdown(self) -> bool:
@@ -519,11 +519,11 @@ class AdvancedDeviceManager:
         try:
             result = subprocess.run(['shutdown', '/a'], capture_output=True, text=True)
             if result.returncode == 0:
-                logger.info("✅ Shutdown cancelado")
+                logger.info("âœ… Shutdown cancelado")
                 return True
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao cancelar shutdown: {e}")
+            logger.error(f"âŒ Erro ao cancelar shutdown: {e}")
             return False
     
     def sleep(self) -> bool:
@@ -531,14 +531,14 @@ class AdvancedDeviceManager:
         try:
             if PYWIN32_AVAILABLE:
                 ctypes.windll.powrprof.SetSuspendState(0, 1, 0)
-                logger.info("💤 Sistema entrando em sleep...")
+                logger.info("ðŸ’¤ Sistema entrando em sleep...")
                 return True
             else:
                 # Fallback
                 subprocess.run(['rundll32.exe', 'powrprof.dll,SetSuspendState', '0,1,0'])
                 return True
         except Exception as e:
-            logger.error(f"❌ Erro ao colocar sistema em sleep: {e}")
+            logger.error(f"âŒ Erro ao colocar sistema em sleep: {e}")
             return False
     
     def hibernate(self) -> bool:
@@ -546,13 +546,13 @@ class AdvancedDeviceManager:
         try:
             if PYWIN32_AVAILABLE:
                 ctypes.windll.powrprof.SetSuspendState(1, 1, 0)
-                logger.info("💤 Sistema hibernando...")
+                logger.info("ðŸ’¤ Sistema hibernando...")
                 return True
             else:
                 subprocess.run(['shutdown', '/h'])
                 return True
         except Exception as e:
-            logger.error(f"❌ Erro ao hibernar sistema: {e}")
+            logger.error(f"âŒ Erro ao hibernar sistema: {e}")
             return False
     
     def set_power_plan(self, plan: PowerPlan) -> bool:
@@ -570,13 +570,13 @@ class AdvancedDeviceManager:
                 timeout=10
             )
             if result.returncode == 0:
-                logger.info(f"⚡ Plano de energia alterado para {plan.name}")
+                logger.info(f"âš¡ Plano de energia alterado para {plan.name}")
                 return True
             else:
-                logger.error(f"❌ Erro ao definir plano: {result.stderr}")
+                logger.error(f"âŒ Erro ao definir plano: {result.stderr}")
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao definir plano de energia: {e}")
+            logger.error(f"âŒ Erro ao definir plano de energia: {e}")
             return False
     
     def get_active_power_plan(self) -> Optional[str]:
@@ -602,7 +602,7 @@ class AdvancedDeviceManager:
     
     def read_registry(self, hive: int, key_path: str, value_name: str) -> Optional[Any]:
         """
-        Lê valor do registro do Windows
+        LÃª valor do registro do Windows
         
         Args:
             hive: winreg.HKEY_* (HKEY_LOCAL_MACHINE, HKEY_CURRENT_USER, etc)
@@ -610,19 +610,19 @@ class AdvancedDeviceManager:
             value_name: Nome do valor
             
         Returns:
-            Valor lido ou None se não encontrado
+            Valor lido ou None se nÃ£o encontrado
         """
         try:
             key = winreg.OpenKey(hive, key_path, 0, winreg.KEY_READ)
             value, reg_type = winreg.QueryValueEx(key, value_name)
             winreg.CloseKey(key)
-            logger.info(f"📖 Lido do registro: {key_path}\\{value_name}")
+            logger.info(f"ðŸ“– Lido do registro: {key_path}\\{value_name}")
             return value
         except FileNotFoundError:
-            logger.warning(f"⚠️ Chave ou valor não encontrado: {key_path}\\{value_name}")
+            logger.warning(f"âš ï¸ Chave ou valor nÃ£o encontrado: {key_path}\\{value_name}")
             return None
         except Exception as e:
-            logger.error(f"❌ Erro ao ler registro: {e}")
+            logger.error(f"âŒ Erro ao ler registro: {e}")
             return None
     
     def write_registry(self, hive: int, key_path: str, value_name: str, 
@@ -643,7 +643,7 @@ class AdvancedDeviceManager:
             True se bem-sucedido
         """
         if not self.is_admin:
-            logger.warning("⚠️ Modificação do registro pode requerer privilégios administrativos")
+            logger.warning("âš ï¸ ModificaÃ§Ã£o do registro pode requerer privilÃ©gios administrativos")
         
         try:
             # Backup se solicitado
@@ -657,13 +657,13 @@ class AdvancedDeviceManager:
             winreg.SetValueEx(key, value_name, 0, value_type, value)
             winreg.CloseKey(key)
             
-            logger.info(f"✏️ Escrito no registro: {key_path}\\{value_name}")
+            logger.info(f"âœï¸ Escrito no registro: {key_path}\\{value_name}")
             return True
         except PermissionError:
-            logger.error("❌ Sem permissão para modificar registro (requer admin)")
+            logger.error("âŒ Sem permissÃ£o para modificar registro (requer admin)")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao escrever no registro: {e}")
+            logger.error(f"âŒ Erro ao escrever no registro: {e}")
             return False
     
     def _backup_registry_value(self, hive: int, key_path: str, 
@@ -685,15 +685,15 @@ class AdvancedDeviceManager:
             with open(backup_dir / filename, 'w', encoding='utf-8') as f:
                 json.dump(backup_data, f, indent=2)
             
-            logger.info(f"💾 Backup do registro salvo: {filename}")
+            logger.info(f"ðŸ’¾ Backup do registro salvo: {filename}")
         except Exception as e:
-            logger.warning(f"⚠️ Falha ao fazer backup do registro: {e}")
+            logger.warning(f"âš ï¸ Falha ao fazer backup do registro: {e}")
     
     def delete_registry_value(self, hive: int, key_path: str, value_name: str,
                              backup: bool = True) -> bool:
         """Remove um valor do registro (com backup opcional)"""
         if not self.is_admin:
-            logger.warning("⚠️ Deleção do registro pode requerer privilégios administrativos")
+            logger.warning("âš ï¸ DeleÃ§Ã£o do registro pode requerer privilÃ©gios administrativos")
         
         try:
             # Backup se solicitado
@@ -706,19 +706,19 @@ class AdvancedDeviceManager:
             winreg.DeleteValue(key, value_name)
             winreg.CloseKey(key)
             
-            logger.info(f"🗑️ Valor removido do registro: {key_path}\\{value_name}")
+            logger.info(f"ðŸ—‘ï¸ Valor removido do registro: {key_path}\\{value_name}")
             return True
         except FileNotFoundError:
-            logger.warning(f"⚠️ Valor não existe: {key_path}\\{value_name}")
+            logger.warning(f"âš ï¸ Valor nÃ£o existe: {key_path}\\{value_name}")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao deletar valor: {e}")
+            logger.error(f"âŒ Erro ao deletar valor: {e}")
             return False
     
     # ==================== WINDOWS SERVICES ====================
     
     def list_services(self) -> List[Dict[str, Any]]:
-        """Lista todos os serviços do Windows"""
+        """Lista todos os serviÃ§os do Windows"""
         services = []
         
         if self.wmi_interface:
@@ -734,7 +734,7 @@ class AdvancedDeviceManager:
                         'process_id': service.ProcessId
                     })
             except Exception as e:
-                logger.error(f"Erro ao listar serviços via WMI: {e}")
+                logger.error(f"Erro ao listar serviÃ§os via WMI: {e}")
         else:
             # Fallback: usa sc query
             try:
@@ -745,25 +745,25 @@ class AdvancedDeviceManager:
                     timeout=30
                 )
                 # Parse output (simplificado)
-                logger.info("📋 Serviços listados via sc query")
+                logger.info("ðŸ“‹ ServiÃ§os listados via sc query")
             except Exception as e:
-                logger.error(f"Erro ao listar serviços: {e}")
+                logger.error(f"Erro ao listar serviÃ§os: {e}")
         
         return services
     
     def control_service(self, service_name: str, action: ServiceAction) -> bool:
         """
-        Controla um serviço do Windows
+        Controla um serviÃ§o do Windows
         
         Args:
-            service_name: Nome do serviço
+            service_name: Nome do serviÃ§o
             action: ServiceAction enum (START, STOP, RESTART, etc)
             
         Returns:
             True se comando foi bem-sucedido
         """
         if not self.is_admin:
-            logger.error("❌ Controle de serviços requer privilégios administrativos")
+            logger.error("âŒ Controle de serviÃ§os requer privilÃ©gios administrativos")
             return False
         
         try:
@@ -782,21 +782,21 @@ class AdvancedDeviceManager:
             )
             
             if result.returncode == 0:
-                logger.info(f"✅ Serviço {service_name} - {action.value}")
+                logger.info(f"âœ… ServiÃ§o {service_name} - {action.value}")
                 return True
             else:
-                # Pode já estar no estado desejado
-                if "already" in result.stdout.lower() or "já" in result.stdout.lower():
-                    logger.info(f"ℹ️ Serviço {service_name} já está no estado desejado")
+                # Pode jÃ¡ estar no estado desejado
+                if "already" in result.stdout.lower() or "jÃ¡" in result.stdout.lower():
+                    logger.info(f"â„¹ï¸ ServiÃ§o {service_name} jÃ¡ estÃ¡ no estado desejado")
                     return True
-                logger.error(f"❌ Erro ao controlar serviço: {result.stderr}")
+                logger.error(f"âŒ Erro ao controlar serviÃ§o: {result.stderr}")
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao controlar serviço {service_name}: {e}")
+            logger.error(f"âŒ Erro ao controlar serviÃ§o {service_name}: {e}")
             return False
     
     def get_service_dependencies(self, service_name: str) -> List[str]:
-        """Retorna lista de dependências de um serviço"""
+        """Retorna lista de dependÃªncias de um serviÃ§o"""
         dependencies = []
         try:
             result = subprocess.run(
@@ -806,13 +806,13 @@ class AdvancedDeviceManager:
                 timeout=10
             )
             if result.returncode == 0:
-                # Parse output para extrair nomes de serviços
+                # Parse output para extrair nomes de serviÃ§os
                 for line in result.stdout.split('\n'):
                     if 'SERVICE_NAME:' in line:
                         dep_name = line.split(':')[1].strip()
                         dependencies.append(dep_name)
         except Exception as e:
-            logger.error(f"Erro ao obter dependências do serviço: {e}")
+            logger.error(f"Erro ao obter dependÃªncias do serviÃ§o: {e}")
         return dependencies
     
     # ==================== DISPLAY CONTROL ====================
@@ -822,7 +822,7 @@ class AdvancedDeviceManager:
         Ajusta o brilho do monitor (0-100) com fallback WMI.
         
         Args:
-            level: Nível de brilho (0-100)
+            level: NÃ­vel de brilho (0-100)
         """
         level = max(0, min(100, level))
         
@@ -830,21 +830,21 @@ class AdvancedDeviceManager:
         if SBC_AVAILABLE:
             try:
                 sbc.set_brightness(level)
-                logger.info(f"💡 Brilho ajustado para {level}% via SBC")
+                logger.info(f"ðŸ’¡ Brilho ajustado para {level}% via SBC")
                 return True
             except Exception as e:
-                logger.warning(f"⚠️ Falha no SBC: {e}. Tentando fallback WMI...")
+                logger.warning(f"âš ï¸ Falha no SBC: {e}. Tentando fallback WMI...")
 
-        # 2. Fallback Definitive: WMI (Força o hardware do notebook - Samsung Fix)
+        # 2. Fallback Definitive: WMI (ForÃ§a o hardware do notebook - Samsung Fix)
         try:
             import wmi
             wmi_inst = wmi.WMI(namespace='wmi')
             methods = wmi_inst.WmiMonitorBrightnessMethods()[0]
-            methods.WmiSetBrightness(1, level) # Timeout 1, Nível level
-            logger.info(f"💡 Brilho ajustado para {level}% via WMI (Hardware Direct/Samsung Mode)")
+            methods.WmiSetBrightness(1, level) # Timeout 1, NÃ­vel level
+            logger.info(f"ðŸ’¡ Brilho ajustado para {level}% via WMI (Hardware Direct/Samsung Mode)")
             return True
         except Exception as e:
-            logger.error(f"❌ Falha crítica no controle de brilho WMI: {e}")
+            logger.error(f"âŒ Falha crÃ­tica no controle de brilho WMI: {e}")
         
         return False
     
@@ -860,7 +860,7 @@ class AdvancedDeviceManager:
             return None
     
     def get_display_info(self) -> List[Dict[str, Any]]:
-        """Informações dos monitores conectados"""
+        """InformaÃ§Ãµes dos monitores conectados"""
         displays = []
         
         if self.wmi_interface:
@@ -885,15 +885,15 @@ class AdvancedDeviceManager:
     def set_display_resolution(self, width: int, height: int, 
                               refresh_rate: int = 60) -> bool:
         """
-        Altera resolução e taxa de atualização do display
+        Altera resoluÃ§Ã£o e taxa de atualizaÃ§Ã£o do display
         
         Args:
             width: Largura em pixels
             height: Altura em pixels
-            refresh_rate: Taxa de atualização em Hz
+            refresh_rate: Taxa de atualizaÃ§Ã£o em Hz
         """
         if not PYWIN32_AVAILABLE:
-            logger.error("❌ pywin32 não disponível")
+            logger.error("âŒ pywin32 nÃ£o disponÃ­vel")
             return False
         
         try:
@@ -906,26 +906,26 @@ class AdvancedDeviceManager:
             result = win32api.ChangeDisplaySettings(devmode, 0)
             
             if result == win32con.DISP_CHANGE_SUCCESSFUL:
-                logger.info(f"🖥️ Resolução alterada para {width}x{height}@{refresh_rate}Hz")
+                logger.info(f"ðŸ–¥ï¸ ResoluÃ§Ã£o alterada para {width}x{height}@{refresh_rate}Hz")
                 return True
             else:
                 error_msgs = {
-                    win32con.DISP_CHANGE_RESTART: "Requer reinicialização",
-                    win32con.DISP_CHANGE_BADFLAGS: "Flags inválidas",
-                    win32con.DISP_CHANGE_BADPARAM: "Parâmetros inválidos",
+                    win32con.DISP_CHANGE_RESTART: "Requer reinicializaÃ§Ã£o",
+                    win32con.DISP_CHANGE_BADFLAGS: "Flags invÃ¡lidas",
+                    win32con.DISP_CHANGE_BADPARAM: "ParÃ¢metros invÃ¡lidos",
                     win32con.DISP_CHANGE_FAILED: "Falha ao alterar",
-                    win32con.DISP_CHANGE_BADMODE: "Modo não suportado"
+                    win32con.DISP_CHANGE_BADMODE: "Modo nÃ£o suportado"
                 }
-                logger.error(f"❌ {error_msgs.get(result, 'Erro desconhecido')}")
+                logger.error(f"âŒ {error_msgs.get(result, 'Erro desconhecido')}")
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao alterar resolução: {e}")
+            logger.error(f"âŒ Erro ao alterar resoluÃ§Ã£o: {e}")
             return False
     
     # ==================== AUDIO CONTROL ====================
     
     def _get_audio_interface(self):
-        """Obtém interface de controle de áudio do Windows"""
+        """ObtÃ©m interface de controle de Ã¡udio do Windows"""
         try:
             devices = AudioUtilities.GetSpeakers()
             # pycaw moderno retorna AudioDevice wrapper com .EndpointVolume
@@ -940,10 +940,10 @@ class AdvancedDeviceManager:
                 interface = devices._dev.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
                 return cast(interface, POINTER(IAudioEndpointVolume))
             else:
-                logger.warning("⚠️ Não foi possível obter interface de volume (API pycaw desconhecida)")
+                logger.warning("âš ï¸ NÃ£o foi possÃ­vel obter interface de volume (API pycaw desconhecida)")
                 return None
         except Exception as e:
-            logger.error(f"Erro ao obter interface de áudio: {e}")
+            logger.error(f"Erro ao obter interface de Ã¡udio: {e}")
             return None
     
     def set_volume(self, level: float) -> bool:
@@ -951,16 +951,16 @@ class AdvancedDeviceManager:
         Define volume do sistema (0.0 a 1.0)
         
         Args:
-            level: Nível de volume (0.0 = mudo, 1.0 = máximo)
+            level: NÃ­vel de volume (0.0 = mudo, 1.0 = mÃ¡ximo)
         """
         if self.audio_interface:
             try:
                 level = max(0.0, min(1.0, level))
                 self.audio_interface.SetMasterVolumeLevelScalar(level, None)
-                logger.info(f"🔊 Volume ajustado para {int(level * 100)}%")
+                logger.info(f"ðŸ”Š Volume ajustado para {int(level * 100)}%")
                 return True
             except Exception as e:
-                logger.error(f"❌ Erro ao definir volume: {e}")
+                logger.error(f"âŒ Erro ao definir volume: {e}")
                 return False
         else:
             # Fallback PowerShell (menos preciso)
@@ -969,10 +969,10 @@ class AdvancedDeviceManager:
                 level_percent = max(0, min(100, level_percent))
                 cmd = f"(new-object -com wscript.shell).SendKeys([char]174)*50; (new-object -com wscript.shell).SendKeys([char]175)*{level_percent//2}"
                 subprocess.run(["powershell", "-Command", cmd], capture_output=True, timeout=5)
-                logger.info(f"🔊 Volume ajustado para aproximadamente {level_percent}%")
+                logger.info(f"ðŸ”Š Volume ajustado para aproximadamente {level_percent}%")
                 return True
             except Exception as e:
-                logger.error(f"❌ Falha ao ajustar volume: {e}")
+                logger.error(f"âŒ Falha ao ajustar volume: {e}")
                 return False
     
     def get_volume(self) -> Optional[float]:
@@ -985,21 +985,21 @@ class AdvancedDeviceManager:
         return None
     
     def mute(self, muted: bool = True) -> bool:
-        """Silencia/ativa áudio de saída (Speakers)"""
+        """Silencia/ativa Ã¡udio de saÃ­da (Speakers)"""
         if self.audio_interface:
             try:
                 self.audio_interface.SetMute(1 if muted else 0, None)
-                logger.info(f"🔇 Áudio de saída {'mutado' if muted else 'desmutado'}")
+                logger.info(f"ðŸ”‡ Ãudio de saÃ­da {'mutado' if muted else 'desmutado'}")
                 return True
             except Exception as e:
-                logger.error(f"❌ Erro ao mutar áudio: {e}")
+                logger.error(f"âŒ Erro ao mutar Ã¡udio: {e}")
                 return False
         return False
 
     def mute_microphone(self, muted: bool = True) -> bool:
         """
-        Silencia/ativa o microfone padrão do sistema.
-        Útil para comandos de 'Privacidade' ou 'Ficar em silêncio'.
+        Silencia/ativa o microfone padrÃ£o do sistema.
+        Ãštil para comandos de 'Privacidade' ou 'Ficar em silÃªncio'.
         """
         try:
             from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -1007,33 +1007,33 @@ class AdvancedDeviceManager:
             
             devices = AudioUtilities.GetMicrophone()
             if not devices:
-                logger.warning("⚠️ Nenhum microfone encontrado para mutar.")
+                logger.warning("âš ï¸ Nenhum microfone encontrado para mutar.")
                 return False
                 
             interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
             volume = cast(interface, POINTER(IAudioEndpointVolume))
             volume.SetMute(1 if muted else 0, None)
-            logger.info(f"🎙️ Microfone {'mutado' if muted else 'desmutado'}")
+            logger.info(f"ðŸŽ™ï¸ Microfone {'mutado' if muted else 'desmutado'}")
             return True
         except Exception as e:
-            logger.error(f"❌ Falha ao mutar microfone: {e}")
+            logger.error(f"âŒ Falha ao mutar microfone: {e}")
             return False
 
     def lock_workstation(self) -> bool:
         """
         Bloqueia a tela do Windows instantaneamente (Win + L).
-        Ação Física Real via user32.dll.
+        AÃ§Ã£o FÃ­sica Real via user32.dll.
         """
         try:
-            logger.info("🔒 Bloqueando estação de trabalho...")
+            logger.info("ðŸ”’ Bloqueando estaÃ§Ã£o de trabalho...")
             ctypes.windll.user32.LockWorkStation()
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao bloquear tela: {e}")
+            logger.error(f"âŒ Erro ao bloquear tela: {e}")
             return False
     
     def list_audio_devices(self) -> List[Dict[str, Any]]:
-        """Lista dispositivos de áudio disponíveis"""
+        """Lista dispositivos de Ã¡udio disponÃ­veis"""
         devices = []
         if PYCAW_AVAILABLE:
             try:
@@ -1044,7 +1044,7 @@ class AdvancedDeviceManager:
                         'state': str(device.state)
                     })
             except Exception as e:
-                logger.error(f"Erro ao listar dispositivos de áudio: {e}")
+                logger.error(f"Erro ao listar dispositivos de Ã¡udio: {e}")
         return devices
     
     # ==================== PROCESS MANAGEMENT ====================
@@ -1066,7 +1066,7 @@ class AdvancedDeviceManager:
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         
-        # Ordenação
+        # OrdenaÃ§Ã£o
         if sort_by == 'cpu':
             processes.sort(key=lambda x: x.get('cpu_percent', 0), reverse=True)
         elif sort_by == 'memory':
@@ -1082,8 +1082,8 @@ class AdvancedDeviceManager:
         
         Args:
             pid: ID do processo
-            force: True para kill forçado, False para terminate gracioso
-            timeout: Tempo de espera para término gracioso
+            force: True para kill forÃ§ado, False para terminate gracioso
+            timeout: Tempo de espera para tÃ©rmino gracioso
         """
         try:
             proc = psutil.Process(pid)
@@ -1091,25 +1091,25 @@ class AdvancedDeviceManager:
             
             if force:
                 proc.kill()
-                logger.info(f"💀 Processo {proc_name} (PID: {pid}) forçado a terminar")
+                logger.info(f"ðŸ’€ Processo {proc_name} (PID: {pid}) forÃ§ado a terminar")
             else:
                 proc.terminate()
                 proc.wait(timeout=timeout)
-                logger.info(f"✋ Processo {proc_name} (PID: {pid}) terminado graciosamente")
+                logger.info(f"âœ‹ Processo {proc_name} (PID: {pid}) terminado graciosamente")
             
             return True
         except psutil.NoSuchProcess:
-            logger.warning(f"⚠️ Processo {pid} não existe")
+            logger.warning(f"âš ï¸ Processo {pid} nÃ£o existe")
             return False
         except psutil.TimeoutExpired:
-            logger.warning(f"⚠️ Timeout ao terminar processo {pid}, forçando...")
+            logger.warning(f"âš ï¸ Timeout ao terminar processo {pid}, forÃ§ando...")
             try:
                 proc.kill()
                 return True
             except:
                 return False
         except Exception as e:
-            logger.error(f"❌ Erro ao encerrar processo {pid}: {e}")
+            logger.error(f"âŒ Erro ao encerrar processo {pid}: {e}")
             return False
     
     def set_process_priority(self, pid: int, priority: ProcessPriority) -> bool:
@@ -1143,20 +1143,20 @@ class AdvancedDeviceManager:
                     nice_value = 19
                 proc.nice(nice_value)
             
-            logger.info(f"⚖️ Prioridade do processo {pid} alterada para {priority.name}")
+            logger.info(f"âš–ï¸ Prioridade do processo {pid} alterada para {priority.name}")
             return True
         except psutil.NoSuchProcess:
-            logger.error(f"❌ Processo {pid} não existe")
+            logger.error(f"âŒ Processo {pid} nÃ£o existe")
             return False
         except psutil.AccessDenied:
-            logger.error(f"❌ Sem permissão para alterar prioridade do processo {pid}")
+            logger.error(f"âŒ Sem permissÃ£o para alterar prioridade do processo {pid}")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao definir prioridade: {e}")
+            logger.error(f"âŒ Erro ao definir prioridade: {e}")
             return False
     
     def get_process_info(self, pid: int) -> Optional[Dict[str, Any]]:
-        """Informações detalhadas de um processo"""
+        """InformaÃ§Ãµes detalhadas de um processo"""
         try:
             proc = psutil.Process(pid)
             with proc.oneshot():
@@ -1176,30 +1176,30 @@ class AdvancedDeviceManager:
                     'nice': proc.nice()
                 }
         except psutil.NoSuchProcess:
-            logger.error(f"❌ Processo {pid} não existe")
+            logger.error(f"âŒ Processo {pid} nÃ£o existe")
             return None
         except psutil.AccessDenied:
-            logger.error(f"❌ Acesso negado ao processo {pid}")
+            logger.error(f"âŒ Acesso negado ao processo {pid}")
             return None
         except Exception as e:
-            logger.error(f"❌ Erro ao obter info do processo: {e}")
+            logger.error(f"âŒ Erro ao obter info do processo: {e}")
             return None
     
     # ==================== DISK HEALTH ====================
     
     def get_disk_smart_data(self, disk_path: str = "C:") -> Optional[Dict[str, Any]]:
         """
-        Obtém dados S.M.A.R.T. do disco (via WMI)
+        ObtÃ©m dados S.M.A.R.T. do disco (via WMI)
         
         Args:
             disk_path: Caminho do disco (ex: "C:", "D:")
         """
         if not self.wmi_interface:
-            logger.warning("⚠️ WMI não disponível para S.M.A.R.T.")
+            logger.warning("âš ï¸ WMI nÃ£o disponÃ­vel para S.M.A.R.T.")
             return None
         
         try:
-            # Obtém informações do disco físico
+            # ObtÃ©m informaÃ§Ãµes do disco fÃ­sico
             for disk in self.wmi_interface.Win32_DiskDrive():
                 smart_data = {
                     'model': disk.Model,
@@ -1213,12 +1213,12 @@ class AdvancedDeviceManager:
                 }
                 return smart_data
         except Exception as e:
-            logger.error(f"❌ Erro ao obter dados S.M.A.R.T.: {e}")
+            logger.error(f"âŒ Erro ao obter dados S.M.A.R.T.: {e}")
         return None
     
     def analyze_disk_space(self, path: Optional[str] = None) -> Dict[str, Any]:
         """
-        Analisa uso de espaço em disco
+        Analisa uso de espaÃ§o em disco
         
         Args:
             path: Caminho do disco (None para detectar automaticamente)
@@ -1247,7 +1247,7 @@ class AdvancedDeviceManager:
                 try:
                     large_files = []
                     for root, dirs, files in os.walk(path):
-                        for file in files[:100]:  # Limita a 100 para não travar
+                        for file in files[:100]:  # Limita a 100 para nÃ£o travar
                             try:
                                 filepath = os.path.join(root, file)
                                 size = os.path.getsize(filepath)
@@ -1263,22 +1263,22 @@ class AdvancedDeviceManager:
                     
                     analysis['large_files'] = sorted(large_files, key=lambda x: x['size_mb'], reverse=True)[:10]
                 except Exception as e:
-                    logger.warning(f"⚠️ Não foi possível analisar arquivos grandes: {e}")
+                    logger.warning(f"âš ï¸ NÃ£o foi possÃ­vel analisar arquivos grandes: {e}")
             
             return analysis
         except Exception as e:
-            logger.error(f"❌ Erro ao analisar disco: {e}")
+            logger.error(f"âŒ Erro ao analisar disco: {e}")
             return {}
     
     def defragment_disk(self, drive_letter: str) -> bool:
         """
-        Inicia desfragmentação de disco (Windows 10+)
+        Inicia desfragmentaÃ§Ã£o de disco (Windows 10+)
         
         Args:
             drive_letter: Letra da unidade (ex: "C")
         """
         if not self.is_admin:
-            logger.error("❌ Desfragmentação requer privilégios administrativos")
+            logger.error("âŒ DesfragmentaÃ§Ã£o requer privilÃ©gios administrativos")
             return False
         
         try:
@@ -1291,22 +1291,22 @@ class AdvancedDeviceManager:
             )
             
             if result.returncode == 0:
-                logger.info(f"✅ Desfragmentação do disco {drive_letter}: concluída")
+                logger.info(f"âœ… DesfragmentaÃ§Ã£o do disco {drive_letter}: concluÃ­da")
                 return True
             else:
-                logger.error(f"❌ Erro na desfragmentação: {result.stderr}")
+                logger.error(f"âŒ Erro na desfragmentaÃ§Ã£o: {result.stderr}")
                 return False
         except subprocess.TimeoutExpired:
-            logger.warning("⚠️ Desfragmentação ultrapassou timeout de 1 hora")
+            logger.warning("âš ï¸ DesfragmentaÃ§Ã£o ultrapassou timeout de 1 hora")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao desfragmentar: {e}")
+            logger.error(f"âŒ Erro ao desfragmentar: {e}")
             return False
     
     # ==================== SECURITY & PRIVILEGES ====================
     
     def _check_admin_rights(self) -> bool:
-        """Verifica se o processo tem privilégios administrativos"""
+        """Verifica se o processo tem privilÃ©gios administrativos"""
         try:
             return ctypes.windll.shell32.IsUserAnAdmin() != 0
         except Exception:
@@ -1314,15 +1314,15 @@ class AdvancedDeviceManager:
     
     def request_admin_elevation(self) -> bool:
         """
-        Solicita elevação de privilégios (UAC)
-        ATENÇÃO: Reinicia o script com privilégios elevados
+        Solicita elevaÃ§Ã£o de privilÃ©gios (UAC)
+        ATENÃ‡ÃƒO: Reinicia o script com privilÃ©gios elevados
         """
         if self.is_admin:
-            logger.info("✅ Já executando com privilégios administrativos")
+            logger.info("âœ… JÃ¡ executando com privilÃ©gios administrativos")
             return True
         
         try:
-            logger.info("🔐 Solicitando elevação de privilégios...")
+            logger.info("ðŸ” Solicitando elevaÃ§Ã£o de privilÃ©gios...")
             ctypes.windll.shell32.ShellExecuteW(
                 None, 
                 "runas", 
@@ -1331,27 +1331,27 @@ class AdvancedDeviceManager:
                 None, 
                 1
             )
-            sys.exit(0)  # Encerra instância atual
+            sys.exit(0)  # Encerra instÃ¢ncia atual
         except Exception as e:
-            logger.error(f"❌ Erro ao solicitar elevação: {e}")
+            logger.error(f"âŒ Erro ao solicitar elevaÃ§Ã£o: {e}")
             return False
     
     def get_user_privileges(self) -> List[str]:
-        """Lista privilégios do usuário/processo atual"""
+        """Lista privilÃ©gios do usuÃ¡rio/processo atual"""
         privileges = []
         
         if not PYWIN32_AVAILABLE:
-            logger.warning("⚠️ pywin32 não disponível para listar privilégios")
+            logger.warning("âš ï¸ pywin32 nÃ£o disponÃ­vel para listar privilÃ©gios")
             return privileges
         
         try:
-            # Obtém token do processo atual
+            # ObtÃ©m token do processo atual
             token = win32security.OpenProcessToken(
                 win32api.GetCurrentProcess(),
                 win32security.TOKEN_QUERY
             )
             
-            # Lista privilégios
+            # Lista privilÃ©gios
             privs = win32security.GetTokenInformation(
                 token, 
                 win32security.TokenPrivileges
@@ -1366,12 +1366,12 @@ class AdvancedDeviceManager:
             
             win32api.CloseHandle(token)
         except Exception as e:
-            logger.error(f"❌ Erro ao obter privilégios: {e}")
+            logger.error(f"âŒ Erro ao obter privilÃ©gios: {e}")
         
         return privileges
     
     def check_uac_enabled(self) -> Optional[bool]:
-        """Verifica se UAC está habilitado"""
+        """Verifica se UAC estÃ¡ habilitado"""
         try:
             value = self.read_registry(
                 winreg.HKEY_LOCAL_MACHINE,
@@ -1387,7 +1387,7 @@ class AdvancedDeviceManager:
     
     def open_browser(self, query: str = "", url: str = None) -> bool:
         """
-        Abre o navegador padrão
+        Abre o navegador padrÃ£o
         
         Args:
             query: Termo de pesquisa (Google/YouTube)
@@ -1397,7 +1397,7 @@ class AdvancedDeviceManager:
             if url:
                 target_url = url
             elif query:
-                if "música" in query.lower() or "tocar" in query.lower():
+                if "mÃºsica" in query.lower() or "tocar" in query.lower():
                     target_url = f"https://music.youtube.com/search?q={query}"
                 else:
                     target_url = f"https://www.google.com/search?q={query}"
@@ -1405,15 +1405,15 @@ class AdvancedDeviceManager:
                 target_url = "https://www.google.com"
             
             webbrowser.open(target_url)
-            logger.info(f"🌐 Navegador aberto: {target_url}")
+            logger.info(f"ðŸŒ Navegador aberto: {target_url}")
             return True
         except Exception as e:
-            logger.error(f"❌ Falha ao abrir navegador: {e}")
+            logger.error(f"âŒ Falha ao abrir navegador: {e}")
             return False
     
     def get_foreground_window_info(self) -> Dict[str, Any]:
         """
-        Retorna informações sobre a janela atualmente em primeiro plano.
+        Retorna informaÃ§Ãµes sobre a janela atualmente em primeiro plano.
         """
         info = {'title': 'Desconhecido', 'process_name': 'Desconhecido', 'pid': 0}
         
@@ -1444,10 +1444,10 @@ class AdvancedDeviceManager:
     
     def get_system_health_report(self) -> Dict[str, Any]:
         """
-        Gera relatório completo de saúde do sistema
+        Gera relatÃ³rio completo de saÃºde do sistema
         
         Returns:
-            Dict com todas as métricas importantes
+            Dict com todas as mÃ©tricas importantes
         """
         report = {
             'timestamp': datetime.now().isoformat(),
@@ -1458,23 +1458,23 @@ class AdvancedDeviceManager:
             'uptime_seconds': int(datetime.now().timestamp() - psutil.boot_time())
         }
         
-        # Adiciona alertas se necessário
+        # Adiciona alertas se necessÃ¡rio
         alerts = []
         if report['system_info'].get('memory', {}).get('ram', {}).get('percent', 0) > 90:
-            alerts.append("⚠️ Uso de RAM crítico (>90%)")
+            alerts.append("âš ï¸ Uso de RAM crÃ­tico (>90%)")
         if report['system_info'].get('cpu', {}).get('usage_percent', 0) > 90:
-            alerts.append("⚠️ Uso de CPU crítico (>90%)")
+            alerts.append("âš ï¸ Uso de CPU crÃ­tico (>90%)")
         
         for disk in report['system_info'].get('disk', []):
             if disk.get('percent', 0) > 90:
-                alerts.append(f"⚠️ Disco {disk.get('mountpoint')} quase cheio (>90%)")
+                alerts.append(f"âš ï¸ Disco {disk.get('mountpoint')} quase cheio (>90%)")
         
         report['alerts'] = alerts
         
         return report
     
     def export_system_report(self, filepath: Optional[str] = None) -> bool:
-        """Exporta relatório de sistema para arquivo JSON"""
+        """Exporta relatÃ³rio de sistema para arquivo JSON"""
         try:
             if not filepath:
                 reports_dir = Path("data/system_reports")
@@ -1486,16 +1486,16 @@ class AdvancedDeviceManager:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
             
-            logger.info(f"📄 Relatório exportado: {filepath}")
+            logger.info(f"ðŸ“„ RelatÃ³rio exportado: {filepath}")
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao exportar relatório: {e}")
+            logger.error(f"âŒ Erro ao exportar relatÃ³rio: {e}")
             return False
 
 # ==================== SINGLETON PATTERN ====================
 
-# Instância global do gerenciador avançado
+# InstÃ¢ncia global do gerenciador avanÃ§ado
 device_manager = AdvancedDeviceManager()
 
-# Manter compatibilidade com código antigo
+# Manter compatibilidade com cÃ³digo antigo
 __all__ = ['device_manager', 'AdvancedDeviceManager', 'PowerPlan', 'ServiceAction', 'ProcessPriority']

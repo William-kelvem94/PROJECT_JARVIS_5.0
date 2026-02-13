@@ -1,8 +1,8 @@
-# ============================================================================
+﻿# ============================================================================
 # JARVIS SINGULARITY - System Controller (God Mode)
 # ============================================================================
-# Controle profundo do Windows via API programática
-# Prioriza comandos diretos sobre automação visual
+# Controle profundo do Windows via API programÃ¡tica
+# Prioriza comandos diretos sobre automaÃ§Ã£o visual
 # ============================================================================
 
 import os
@@ -33,14 +33,14 @@ try:
     PYWIN32_AVAILABLE = True
 except ImportError:
     PYWIN32_AVAILABLE = False
-    logging.warning("⚠️ pywin32 não disponível - funcionalidades Win32 desabilitadas")
+    logging.warning("âš ï¸ pywin32 nÃ£o disponÃ­vel - funcionalidades Win32 desabilitadas")
 
 try:
     import wmi
     WMI_AVAILABLE = True
 except ImportError:
     WMI_AVAILABLE = False
-    logging.warning("⚠️ WMI não disponível - funcionalidades de hardware desabilitadas")
+    logging.warning("âš ï¸ WMI nÃ£o disponÃ­vel - funcionalidades de hardware desabilitadas")
 
 try:
     from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -48,9 +48,9 @@ try:
     PYCAW_AVAILABLE = True
 except ImportError:
     PYCAW_AVAILABLE = False
-    logging.warning("⚠️ pycaw não disponível - controle de áudio desabilitado")
+    logging.warning("âš ï¸ pycaw nÃ£o disponÃ­vel - controle de Ã¡udio desabilitado")
 
-import psutil  # Sempre disponível (fallback)
+import psutil  # Sempre disponÃ­vel (fallback)
 
 # -------------------------------------------------------------------------
 # LOGGER
@@ -66,39 +66,39 @@ class SystemController:
     Controle profundo do Windows via API.
     
     FILOSOFIA:
-    - Prioriza API/CLI (rápido, invisível, robusto)
-    - Fallback para automação visual apenas quando necessário
+    - Prioriza API/CLI (rÃ¡pido, invisÃ­vel, robusto)
+    - Fallback para automaÃ§Ã£o visual apenas quando necessÃ¡rio
     
     CAPACIDADES:
     - Gerenciamento de processos (kill, list, info)
     - Controle de janelas (find, focus, minimize, close)
-    - Controle de áudio (volume global, volume por app)
-    - Informações de hardware (CPU, RAM, disco, BIOS)
-    - Execução de comandos shell
+    - Controle de Ã¡udio (volume global, volume por app)
+    - InformaÃ§Ãµes de hardware (CPU, RAM, disco, BIOS)
+    - ExecuÃ§Ã£o de comandos shell
     """
     
     def __init__(self):
         """Inicializa o System Controller"""
-        logger.info("🔧 Inicializando System Controller...")
+        logger.info("ðŸ”§ Inicializando System Controller...")
         
         # Verificar capacidades
         self.capabilities = {
             "win32": PYWIN32_AVAILABLE,
             "wmi": WMI_AVAILABLE,
             "pycaw": PYCAW_AVAILABLE,
-            "psutil": True  # Sempre disponível
+            "psutil": True  # Sempre disponÃ­vel
         }
         
-        # Inicializar WMI se disponível
+        # Inicializar WMI se disponÃ­vel
         self.wmi_client = None
         if WMI_AVAILABLE:
             try:
                 self.wmi_client = wmi.WMI()
-                logger.info("✅ WMI inicializado")
+                logger.info("âœ… WMI inicializado")
             except Exception as e:
-                logger.warning(f"⚠️ Erro ao inicializar WMI: {e}")
+                logger.warning(f"âš ï¸ Erro ao inicializar WMI: {e}")
         
-        logger.info(f"✅ System Controller online - Capacidades: {self.capabilities}")
+        logger.info(f"âœ… System Controller online - Capacidades: {self.capabilities}")
     
     # -------------------------------------------------------------------------
     # PROCESS MANAGEMENT
@@ -106,7 +106,7 @@ class SystemController:
     
     def kill_process_by_name(self, name: str) -> bool:
         """
-        Mata processo por nome usando API (não Task Manager).
+        Mata processo por nome usando API (nÃ£o Task Manager).
         
         Args:
             name: Nome do processo (ex: "notepad.exe")
@@ -119,16 +119,16 @@ class SystemController:
             for proc in psutil.process_iter(['name', 'pid']):
                 if proc.info['name'].lower() == name.lower():
                     proc.kill()
-                    logger.info(f"🔪 Processo {name} (PID {proc.info['pid']}) terminado")
+                    logger.info(f"ðŸ”ª Processo {name} (PID {proc.info['pid']}) terminado")
                     killed = True
         except Exception as e:
-            logger.error(f"❌ Erro ao matar processo {name}: {e}")
+            logger.error(f"âŒ Erro ao matar processo {name}: {e}")
         
         return killed
     
     def list_processes(self) -> List[Dict[str, Any]]:
         """
-        Lista todos os processos em execução.
+        Lista todos os processos em execuÃ§Ã£o.
         
         Returns:
             Lista de dicts com info de processos
@@ -138,26 +138,26 @@ class SystemController:
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
                 processes.append(proc.info)
         except Exception as e:
-            logger.error(f"❌ Erro ao listar processos: {e}")
+            logger.error(f"âŒ Erro ao listar processos: {e}")
         
         return processes
     
     def get_process_info(self, name: str) -> Optional[Dict[str, Any]]:
         """
-        Obtém informações de um processo específico.
+        ObtÃ©m informaÃ§Ãµes de um processo especÃ­fico.
         
         Args:
             name: Nome do processo
         
         Returns:
-            Dict com info ou None se não encontrado
+            Dict com info ou None se nÃ£o encontrado
         """
         try:
             for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'status']):
                 if proc.info['name'].lower() == name.lower():
                     return proc.info
         except Exception as e:
-            logger.error(f"❌ Erro ao obter info de {name}: {e}")
+            logger.error(f"âŒ Erro ao obter info de {name}: {e}")
         
         return None
     
@@ -167,17 +167,17 @@ class SystemController:
     
     def find_window_by_title(self, title: str, partial: bool = True) -> Optional[int]:
         """
-        Encontra janela por título usando Win32 API.
+        Encontra janela por tÃ­tulo usando Win32 API.
         
         Args:
-            title: Título da janela
+            title: TÃ­tulo da janela
             partial: Se True, busca parcial
         
         Returns:
             Handle da janela ou None
         """
         if not PYWIN32_AVAILABLE:
-            logger.warning("⚠️ pywin32 não disponível")
+            logger.warning("âš ï¸ pywin32 nÃ£o disponÃ­vel")
             return None
         
         def callback(hwnd, windows):
@@ -195,7 +195,7 @@ class SystemController:
             win32gui.EnumWindows(callback, windows)
             return windows[0] if windows else None
         except Exception as e:
-            logger.error(f"❌ Erro ao buscar janela '{title}': {e}")
+            logger.error(f"âŒ Erro ao buscar janela '{title}': {e}")
             return None
     
     def close_window(self, hwnd: int) -> bool:
@@ -213,10 +213,10 @@ class SystemController:
         
         try:
             win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
-            logger.info(f"✅ Janela {hwnd} fechada")
+            logger.info(f"âœ… Janela {hwnd} fechada")
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao fechar janela {hwnd}: {e}")
+            logger.error(f"âŒ Erro ao fechar janela {hwnd}: {e}")
             return False
     
     def minimize_window(self, hwnd: int) -> bool:
@@ -228,7 +228,7 @@ class SystemController:
             win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao minimizar janela: {e}")
+            logger.error(f"âŒ Erro ao minimizar janela: {e}")
             return False
     
     # -------------------------------------------------------------------------
@@ -246,7 +246,7 @@ class SystemController:
             True se definiu com sucesso
         """
         if not PYCAW_AVAILABLE:
-            logger.warning("⚠️ pycaw não disponível - usando fallback")
+            logger.warning("âš ï¸ pycaw nÃ£o disponÃ­vel - usando fallback")
             return self._set_volume_fallback(level)
         
         try:
@@ -254,15 +254,15 @@ class SystemController:
             interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
             volume = cast(interface, POINTER(IAudioEndpointVolume))
             volume.SetMasterVolumeLevelScalar(level, None)
-            logger.info(f"🔊 Volume mestre: {int(level * 100)}%")
+            logger.info(f"ðŸ”Š Volume mestre: {int(level * 100)}%")
             return True
         except Exception as e:
-            logger.error(f"❌ Erro ao definir volume: {e}")
+            logger.error(f"âŒ Erro ao definir volume: {e}")
             return False
     
     def set_app_volume(self, app_name: str, level: float) -> bool:
         """
-        Define volume de aplicativo específico.
+        Define volume de aplicativo especÃ­fico.
         
         Args:
             app_name: Nome do app (ex: "spotify.exe")
@@ -272,7 +272,7 @@ class SystemController:
             True se definiu com sucesso
         """
         if not PYCAW_AVAILABLE:
-            logger.warning("⚠️ pycaw não disponível - controle por app indisponível")
+            logger.warning("âš ï¸ pycaw nÃ£o disponÃ­vel - controle por app indisponÃ­vel")
             return False
         
         try:
@@ -281,17 +281,17 @@ class SystemController:
                 if session.Process and session.Process.name().lower() == app_name.lower():
                     volume = session.SimpleAudioVolume
                     volume.SetMasterVolume(level, None)
-                    logger.info(f"🔊 Volume de {app_name}: {int(level * 100)}%")
+                    logger.info(f"ðŸ”Š Volume de {app_name}: {int(level * 100)}%")
                     return True
             
-            logger.warning(f"⚠️ App {app_name} não encontrado")
+            logger.warning(f"âš ï¸ App {app_name} nÃ£o encontrado")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao definir volume de {app_name}: {e}")
+            logger.error(f"âŒ Erro ao definir volume de {app_name}: {e}")
             return False
     
     def _set_volume_fallback(self, level: float) -> bool:
-        """Fallback: usa NirCmd se disponível"""
+        """Fallback: usa NirCmd se disponÃ­vel"""
         try:
             volume_int = int(level * 65535)
             subprocess.run(['nircmd.exe', 'setsysvolume', str(volume_int)], 
@@ -306,7 +306,7 @@ class SystemController:
     
     def get_hardware_info(self) -> Dict[str, Any]:
         """
-        Obtém informações de hardware via WMI.
+        ObtÃ©m informaÃ§Ãµes de hardware via WMI.
         
         Returns:
             Dict com info de CPU, RAM, disco, BIOS
@@ -318,7 +318,7 @@ class SystemController:
             "bios": {}
         }
         
-        # CPU e RAM (psutil - sempre disponível)
+        # CPU e RAM (psutil - sempre disponÃ­vel)
         try:
             info["cpu"] = {
                 "percent": psutil.cpu_percent(interval=1),
@@ -340,9 +340,9 @@ class SystemController:
                 "percent": disk.percent
             }
         except Exception as e:
-            logger.error(f"❌ Erro ao obter info básica: {e}")
+            logger.error(f"âŒ Erro ao obter info bÃ¡sica: {e}")
         
-        # BIOS (WMI - se disponível)
+        # BIOS (WMI - se disponÃ­vel)
         if self.wmi_client:
             try:
                 for bios in self.wmi_client.Win32_BIOS():
@@ -353,7 +353,7 @@ class SystemController:
                     }
                     break
             except Exception as e:
-                logger.error(f"❌ Erro ao obter info BIOS: {e}")
+                logger.error(f"âŒ Erro ao obter info BIOS: {e}")
         
         return info
     

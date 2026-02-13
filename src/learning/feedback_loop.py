@@ -1,4 +1,4 @@
-"""
+﻿"""
 Feedback Loop for JARVIS AGI Machine Learning Core.
 
 This module implements RLHF/DPO through explicit and implicit feedback
@@ -88,17 +88,17 @@ class FeedbackDatabase:
         # Ensure parent directory exists with proper error handling
         try:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
-            logger.info(f"📁 Feedback database path: {self.db_path}")
+            logger.info(f"ðŸ“ Feedback database path: {self.db_path}")
         except Exception as e:
             logger.error(f"Failed to create database directory: {e}")
             # Fallback to temp directory
             import tempfile
             self.db_path = Path(tempfile.gettempdir()) / "jarvis_feedback.db"
-            logger.warning(f"⚠️ Using fallback database path: {self.db_path}")
+            logger.warning(f"âš ï¸ Using fallback database path: {self.db_path}")
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
         
         self.conn: Optional[sqlite3.Connection] = None
-        self._db_lock = threading.Lock()  # 🔒 Proteção contra escritas simultâneas
+        self._db_lock = threading.Lock()  # ðŸ”’ ProteÃ§Ã£o contra escritas simultÃ¢neas
         self._init_database()
     
     def _init_database(self) -> None:
@@ -792,7 +792,7 @@ if __name__ == "__main__":
         user_input="What is the weather?",
         ai_response="I cannot check the weather.",
         rating=-0.5,
-        correction="Let me check the weather API for you. The current temperature is 72°F.",
+        correction="Let me check the weather API for you. The current temperature is 72Â°F.",
         metadata={"category": "weather"}
     )
     
