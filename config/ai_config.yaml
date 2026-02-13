@@ -67,6 +67,12 @@ brain_router:
       min_ram_gb: 1.5
       min_vram_gb: 0.0
   
+  # Required models for maintenance checks
+  required_models:
+    - "deepseek-r1:8b"
+    - "qwen2.5:7b"
+    - "gemma3:4b"
+  
   # Cloud models (Selective - Gemini Removed)
   cloud_models:
     tier_ultra:
