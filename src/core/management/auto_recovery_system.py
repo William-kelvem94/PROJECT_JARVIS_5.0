@@ -164,7 +164,8 @@ class AutoRecoverySystem:
         self.recovery_in_progress = False
         self.max_recovery_attempts = 3
         self.recovery_cooldown = 60  # seconds between attempts
-        
+        self.is_emergency_mode = False # Stark Protocol Active?
+
         # Integration points
         self.fallback_system = None  # Will be injected
         
@@ -172,7 +173,44 @@ class AutoRecoverySystem:
         self._load_historical_data()
         
         logger.info("✅ Auto-Recovery System initialized")
-    
+
+    def trigger_emergency_mode(self, active: bool = True):
+        """
+        Ativa/Desativa o modo de emergência (Stark Protocol).
+        Reduz drasticamente o consumo de recursos para manter a vida do sistema.
+        """
+        if active == self.is_emergency_mode:
+            return
+
+        self.is_emergency_mode = active
+        state = "ATIVADO" if active else "DESATIVADO"
+        logger.critical(f"🚨 CLASSIFIED: Modo de Emergência {state}!")
+
+        try:
+            # 1. Ajustar Prioridade de Hardware
+            from src.core.management.hardware_manager import hardware_manager
+            if active:
+                hardware_manager.set_power_plan("POWER_SAVER")
+                # Reduz threads do torch para 1 (mínimo vital)
+                import torch
+                torch.set_num_threads(1)
+            else:
+                hardware_manager.set_power_plan("BALANCED")
+                # Restaurar threads baseado no tier
+                tier = hardware_manager.get_tier()
+                import psutil
+                logical_cores = psutil.cpu_count(logical=True) or 4
+                threads = logical_cores if tier == "FAST" else max(1, logical_cores - 2)
+                import torch
+                torch.set_num_threads(threads)
+
+            # 2. Notificar interface
+            from src.utils.web_emitter import emit_log_sync
+            emit_log_sync(f"SISTEMA: Protocolo de Sobrevivência {state}", level="CRITICAL")
+            
+        except Exception as e:
+            logger.error(f"Erro ao alternar modo de emergência: {e}")
+
     def set_fallback_system(self, fallback_system):
         """Inject fallback system for integration"""
         self.fallback_system = fallback_system
@@ -763,11 +801,17 @@ class AutoRecoverySystem:
                 "total_failures": len(self.failure_history)
             }
             
-            with open(history_file, 'w', encoding='utf-8') as f:
+            # Use local reference to open to avoid shutdown errors
+            import builtins
+            with builtins.open(history_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
                 
         except Exception as e:
-            logger.error(f"❌ Could not save historical data: {e}")
+            # Avoid logging if logger might be gone
+            try:
+                logger.error(f"❌ Could not save historical data: {e}")
+            except:
+                pass
     
     def get_recovery_stats(self) -> Dict[str, Any]:
         """Get comprehensive recovery statistics"""

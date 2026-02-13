@@ -13,10 +13,31 @@ try:
 except ImportError:
     pytesseract = None
 
+# Lazy import heavy OCR libraries to avoid startup issues
+EASYOCR_AVAILABLE = False
+easyocr = None
+
+def _ensure_easyocr():
+    global EASYOCR_AVAILABLE, easyocr
+    if not EASYOCR_AVAILABLE and easyocr is None:
+        try:
+            import easyocr
+            EASYOCR_AVAILABLE = True
+        except (ImportError, OSError) as e:
+            EASYOCR_AVAILABLE = False
+            easyocr = None
+            logger.debug(f"EasyOCR não encontrado. OCR limitado: {e}")
+
 try:
-    import easyocr
-except ImportError:
-    easyocr = None
+    # Just check if easyocr can be imported without actually importing it
+    import importlib
+    easyocr_spec = importlib.util.find_spec("easyocr")
+    if easyocr_spec is not None:
+        EASYOCR_AVAILABLE = True
+    else:
+        EASYOCR_AVAILABLE = False
+except:
+    EASYOCR_AVAILABLE = False
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.utils.config import config
 from src.utils.helpers import ImageHelper, TextHelper
@@ -64,9 +85,22 @@ class OCRProcessor:
                 except Exception:
                     logger.warning("Tesseract não encontrado")
 
-            # Inicializar EasyOCR
-            if config.get_setting('ocr.engine') in ['easyocr', 'hybrid']:
-                try:
+            # Marcar EasyOCR como disponível mas não inicializar ainda (lazy)
+            if EASYOCR_AVAILABLE:
+                self.easyocr_available = True
+                logger.info("EasyOCR disponível (lazy loading)")
+            else:
+                logger.warning("EasyOCR não encontrado")
+
+        except Exception as e:
+            logger.error(f"Erro na inicialização dos engines OCR: {e}")
+
+    def _ensure_easyocr_reader(self):
+        """Initialize EasyOCR reader only when needed (lazy)"""
+        if self.easyocr_reader is None and self.easyocr_available:
+            try:
+                _ensure_easyocr()
+                if EASYOCR_AVAILABLE and easyocr:
                     easyocr_config = config.get_ocr_config('easyocr')
                     self.easyocr_reader = easyocr.Reader(
                         lang_list=self.languages,
@@ -77,13 +111,12 @@ class OCRProcessor:
                         recog_network=easyocr_config.get('recog_network', 'crnn'),
                         download_enabled=easyocr_config.get('download_enabled', True)
                     )
-                    self.easyocr_available = True
-                    logger.info("EasyOCR inicializado")
-                except Exception as e:
-                    logger.error(f"Erro ao inicializar EasyOCR: {e}")
-
-        except Exception as e:
-            logger.error(f"Erro na inicialização dos engines OCR: {e}")
+                    logger.info("EasyOCR reader initialized on demand")
+                else:
+                    self.easyocr_available = False
+            except Exception as e:
+                logger.error(f"Erro ao inicializar EasyOCR reader: {e}")
+                self.easyocr_available = False
 
     def process_image(self, image_path: str, capture_id: Optional[int] = None,
                      engine: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -212,6 +245,18 @@ class OCRProcessor:
     def _process_with_easyocr(self, image: Image.Image) -> Dict[str, Any]:
         """Processa imagem usando EasyOCR"""
         try:
+            # Ensure EasyOCR reader is initialized
+            self._ensure_easyocr_reader()
+            
+            if self.easyocr_reader is None:
+                return {
+                    'text': '',
+                    'confidence': 0,
+                    'language': '+'.join(self.languages),
+                    'engine': 'easyocr',
+                    'error': 'EasyOCR reader not available'
+                }
+            
             # Converter para array numpy
             cv_image = ImageHelper.image_to_cv2(image)
 
@@ -413,10 +458,14 @@ class OCRProcessor:
         # Testar EasyOCR
         if self.easyocr_available:
             try:
-                test_image = Image.new('RGB', (100, 50), color='white')
-                cv_image = ImageHelper.image_to_cv2(test_image)
-                test_results = self.easyocr_reader.readtext(cv_image)
-                results['easyocr'] = True
+                self._ensure_easyocr_reader()
+                if self.easyocr_reader is None:
+                    results['easyocr'] = False
+                else:
+                    test_image = Image.new('RGB', (100, 50), color='white')
+                    cv_image = ImageHelper.image_to_cv2(test_image)
+                    test_results = self.easyocr_reader.readtext(cv_image)
+                    results['easyocr'] = True
             except Exception:
                 results['easyocr'] = False
         else:

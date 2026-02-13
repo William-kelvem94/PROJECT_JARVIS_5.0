@@ -15,6 +15,12 @@ EXIT_CODE_REBIRTH = 777
 OLLAMA_SERVER_URL = "http://localhost:11434"
 OLLAMA_INSTALLER_URL = "https://ollama.com/download/OllamaSetup.exe"
 
+# Ajustar CWD para o root do projeto se disparado de dentro de /scripts/launchers
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if os.path.exists(os.path.join(PROJECT_ROOT, "main.py")):
+    os.chdir(PROJECT_ROOT)
+    logger.info(f"📂 [INFRA] Diretório de trabalho ajustado para: {PROJECT_ROOT}")
+
 def ensure_ollama_installed():
     """Verifica se Ollama está instalado, caso contrário instala automaticamente."""
     if shutil.which('ollama'):
@@ -115,21 +121,42 @@ def main():
     print(f"🔒 Identificação: Microsoft Account + Biometric")
     print(f"☁️ Sincronização: Google Drive Estruturado")
     print("="*80)
-    
+
+    # ========================================================================
+    # FIX: Configurar encoding UTF-8 para evitar erros de codificação
+    # ========================================================================
+    import locale
+    import os
+
+    # Forçar UTF-8 no ambiente
+    os.environ['PYTHONUTF8'] = '1'
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+
+    # Tentar definir locale para UTF-8
+    try:
+        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+    except locale.Error:
+        try:
+            locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        except locale.Error:
+            pass  # Usar locale padrão se UTF-8 não estiver disponível
+
+    print(f"🔤 Encoding configurado: {locale.getpreferredencoding()}")
+
     # Validação de Infraestrutura
     ensure_ollama_installed()
     ensure_ollama_running()
     
     # ========================================================================
-    # NOVO: PRÉ-INICIALIZAÇÃO DEMOCRÁTICA
+    # PRÉ-INICIALIZAÇÃO DEMOCRÁTICA (OPCIONAL - Pula se falhar)
     # ========================================================================
     print("\n🔥 [DEMOCRÁTICO] Inicializando Sistema de Poder Total...")
-    
+
     try:
-        # Detectar Microsoft Account e dispositivo
+        # Detectar Microsoft Account e dispositivo (com timeout reduzido)
         print("🆔 [IDENT] Detectando conta Microsoft...")
         result = subprocess.run([
-            sys.executable, "-c", 
+            sys.executable, "-c",
             "from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier; "
             "import sys; "
             "mi = MicrosoftDeviceIdentifier('./data'); "
@@ -137,17 +164,17 @@ def main():
             "print(f'ACCOUNT:{mi.microsoft_account.account_email if mi.microsoft_account else \"None\"}'); "
             "print(f'DEVICE:{mi.device_fingerprint.device_id if mi.device_fingerprint else \"None\"}'); "
             "sys.exit(0 if success else 1)"
-        ], capture_output=True, text=True, timeout=30)
-        
+        ], capture_output=True, text=True, timeout=10)  # Timeout reduzido
+
         if result.returncode == 0:
             lines = result.stdout.strip().split('\n')
             account_line = next((line for line in lines if line.startswith('ACCOUNT:')), None)
             device_line = next((line for line in lines if line.startswith('DEVICE:')), None)
-            
+
             if account_line and device_line:
                 account = account_line.split(':', 1)[1]
                 device = device_line.split(':', 1)[1]
-                
+
                 if account != "None" and device != "None":
                     print(f"   ✅ Conta: {account}")
                     print(f"   ✅ Dispositivo: {device[:16]}...")
@@ -157,68 +184,91 @@ def main():
                 print("   ⚠️ Resposta inesperada - continuando...")
         else:
             print("   ⚠️ Falha na detecção - continuando sem identificação...")
-        
+
     except subprocess.TimeoutExpired:
-        print("   ⚠️ Timeout na identificação - continuando...")
+        print("   ⚠️ Timeout na identificação - pulando para inicialização rápida...")
     except Exception as e:
-        print(f"   ⚠️ Erro na identificação: {e} - continuando...")
-    
-    # Verificar Google Drive
+        print(f"   ⚠️ Erro na identificação: {e} - pulando para inicialização rápida...")
+
+    # Verificar Google Drive (mais rápido)
     print("☁️ [DRIVE] Verificando integração Google Drive...")
     try:
         import os
         from pathlib import Path
-        
+
         # Caminhos comuns do Google Drive
         drive_paths = [
             Path.home() / "Google Drive",
             Path("C:") / "Users" / os.getenv("USERNAME", "") / "Google Drive"
         ]
-        
+
         drive_found = False
         for path in drive_paths:
             if path.exists():
                 print(f"   ✅ Google Drive detectado: {path}")
                 drive_found = True
                 break
-        
+
         if not drive_found:
             print("   ⚠️ Google Drive não detectado - funcionalidade limitada")
-        
+
     except Exception as e:
         print(f"   ⚠️ Erro verificando Drive: {e}")
-    
-    print("\n🚀 [SISTEMA] Iniciando Arquitetura Democrática...")
-    
-    while True:
-        try:
-            # Roda o main.py no ambiente atual com args democráticos
-            args = [sys.executable, "main.py"]
-            
-            # Adicionar flags democráticos
-            if "--democratic" not in sys.argv:
-                args.append("--democratic")
-            
-            process = subprocess.Popen(args)
-            exit_code = process.wait()
-            
-            if exit_code == EXIT_CODE_REBIRTH:
-                print("\n🧬 [EVOLUÇÃO] Atualização democrática detectada. Reiniciando Matriz...")
-                time.sleep(2)
-                continue 
-            elif exit_code == 0:
-                print("🛑 [SISTEMA] Sistema democrático encerrado normalmente.")
-                break
-            else:
-                print(f"⚠️ [AVISO] O JARVIS democrático encerrou com código {exit_code}. Reiniciando em 5s...")
-                time.sleep(5)
-                
-        except KeyboardInterrupt:
-            print("\n🛑 [SISTEMA] Interrupção manual detectada. Launcher democrático desligando...")
-            break
-        except Exception as e:
-            logger.error(f"❌ [ERRO] Falha no loop de execução democrática: {e}")
-            time.sleep(5)
+
+    print("🚀 [LAUNCHER] Indo direto para inicialização do JARVIS...")
+
+    # Configurar ambiente para main.py
+    env = os.environ.copy()
+    env['PYTHONUTF8'] = '1'
+    env['PYTHONIOENCODING'] = 'utf-8'
+    env['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
+    # Executar main.py diretamente
+    args = [sys.executable, "main.py"]
+
+    # Adicionar flags democráticos
+    if "--democratic" not in sys.argv:
+        args.append("--democratic")
+
+    print("🔄 [LAUNCHER] Inicializando JARVIS completo...")
+    result = subprocess.run(args, env=env)
+
+    # Verificar resultado
+    exit_code = result.returncode
+
+    if exit_code == EXIT_CODE_REBIRTH:
+        print("\n🧬 [EVOLUÇÃO] Atualização democrática detectada. Reiniciando Matriz...")
+        time.sleep(2)
+        # Reiniciar o processo
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    elif exit_code == 0:
+        print("🛑 [SISTEMA] JARVIS encerrado normalmente.")
+    else:
+        print(f"⚠️ [AVISO] JARVIS encerrou com código {exit_code}. Verifique os logs.")
+        print("\n" + "="*80)
+        print("🔧 [DIAGNÓSTICO] POSSÍVEIS CAUSAS E SOLUÇÕES:")
+        print("="*80)
+        print("1. 🚨 DEPENDÊNCIAS PROBLEMÁTICAS:")
+        print("   • PyTorch/Torchvision com conflitos de versão")
+        print("   • Transformers/Faster-Whisper com encoding UTF-8")
+        print("   • Conflitos entre bibliotecas ML")
+        print()
+        print("2. 🛠️ SOLUÇÕES RECOMENDADAS:")
+        print("   • Execute: pip install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu")
+        print("   • Execute: pip install --upgrade transformers faster-whisper")
+        print("   • Execute: pip install --upgrade --force-reinstall torch")
+        print("   • Verifique se há múltiplas versões do Python/PyTorch")
+        print()
+        print("3. 🔍 DIAGNÓSTICO DETALHADO:")
+        print("   • Execute: python scripts/dependency_doctor.py")
+        print("   • Execute: python scripts/validate_dependencies.py")
+        print("   • Execute: python -c \"import torch; print('Torch OK:', torch.__version__)\"")
+        print()
+        print("4. 🚀 SOLUÇÃO TEMPORÁRIA:")
+        print("   • Use o JARVIS Lite: python main_lite.py")
+        print("   • Funciona sem dependências pesadas de ML")
+        print("="*80)
+        input("Pressione Enter para continuar...")
 
 if __name__ == "__main__":
     main()

@@ -20,9 +20,31 @@ from src.core.management.hardware_manager import hardware_manager
 
 logger = logging.getLogger(__name__)
 
-# Face recognition is now mandatory
-import face_recognition
-FACE_REC_AVAILABLE = True
+# Lazy import face_recognition to avoid startup issues
+FACE_REC_AVAILABLE = False
+face_recognition = None
+
+def _ensure_face_recognition():
+    global FACE_REC_AVAILABLE, face_recognition
+    if not FACE_REC_AVAILABLE and face_recognition is None:
+        try:
+            import face_recognition
+            FACE_REC_AVAILABLE = True
+        except (ImportError, OSError) as e:
+            FACE_REC_AVAILABLE = False
+            face_recognition = None
+            logger.debug(f"Face recognition não encontrado: {e}")
+
+try:
+    # Just check if face_recognition can be imported without actually importing it
+    import importlib
+    face_rec_spec = importlib.util.find_spec("face_recognition")
+    if face_rec_spec is not None:
+        FACE_REC_AVAILABLE = True
+    else:
+        FACE_REC_AVAILABLE = False
+except:
+    FACE_REC_AVAILABLE = False
 
 class CameraController:
     """Controla a webcam e processa visão computacional"""
@@ -79,6 +101,12 @@ class CameraController:
 
     def _load_known_faces(self):
         """Carrega faces da pasta de dados para reconhecimento"""
+        # Ensure face recognition is loaded
+        _ensure_face_recognition()
+        if not FACE_REC_AVAILABLE or face_recognition is None:
+            logger.warning("Face recognition not available, skipping face loading")
+            return
+            
         # Usar caminho absoluto centralizado
         faces_dir = config.DATA_DIR / 'faces'
         faces_dir.mkdir(parents=True, exist_ok=True)
@@ -207,11 +235,16 @@ class CameraController:
                 if is_active_mode and getattr(self, '_faceid_failures', 0) < 5:
                     if process_this_frame:
                         try:
-                            small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
-                            rgb_small_frame = small_frame[:, :, ::-1]
-                            
-                            # Buscar faces com HOG
-                            face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+                            # Ensure face recognition is loaded
+                            _ensure_face_recognition()
+                            if not FACE_REC_AVAILABLE or face_recognition is None:
+                                logger.debug("Face recognition not available, skipping frame processing")
+                            else:
+                                small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+                                rgb_small_frame = small_frame[:, :, ::-1]
+                                
+                                # Buscar faces com HOG
+                                face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
                             
                             if face_locations:
                                 try:
@@ -252,10 +285,13 @@ class CameraController:
                 # Processamento de Gestos (apenas em modo ativo)
                 if is_active_mode:
                     try:
-                        # Safe check for gesture controller
-                        if gesture_controller:
+                        # Lazy load gesture controller
+                        from src.core.vision.gesture_controller import get_gesture_controller
+                        gesture_ctrl = get_gesture_controller()
+                        
+                        if gesture_ctrl:
                             # Retorna frame desenhado se MediaPipe ativo
-                            processed_frame, gesture = gesture_controller.process_frame(frame)
+                            processed_frame, gesture = gesture_ctrl.process_frame(frame)
                             
                             if self.on_frame_ready:
                                 # Enviar para UI (converter BGR para RGB para tkinter)
@@ -285,6 +321,12 @@ class CameraController:
     def register_new_face(self, name: str) -> bool:
         """Tira fotos de múltiplos ângulos para mapear o usuário de forma inteligente"""
         try:
+            # Ensure face recognition is loaded
+            _ensure_face_recognition()
+            if not FACE_REC_AVAILABLE or face_recognition is None:
+                logger.error("Face recognition not available for registration")
+                return False
+                
             from src.core.audio.voice_controller import voice_controller
             # 🆕 DIRECTSHOW
             video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
@@ -399,5 +441,5 @@ def get_camera_controller():
         _camera_controller = CameraController()
     return _camera_controller
 
-# Global instance removida para evitar execução durante import
-# camera_controller = get_camera_controller()
+# Global instance
+camera_controller = get_camera_controller()

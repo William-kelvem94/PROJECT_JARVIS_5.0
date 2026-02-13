@@ -181,6 +181,7 @@ try:
         AgentResponse,
     )
     from src.core.intelligence.action_executor import get_action_executor
+    from src.core.intelligence.action_handler import get_action_handler
     STRUCTURED_OUTPUT_AVAILABLE = True
     logger.info("✅ Structured Output & Action Executor carregados (P1)")
 except ImportError as e:
@@ -990,147 +991,33 @@ class AIAgent:
             # FALLBACK: PARSER LEGADO (Regex) - Mantido para compatibilidade
             # =====================================================================
             if not self.use_structured_output or structured_result is None:
-                logger.debug("Usando parser legado (regex)")
+                # 🆕 CORREÇÃO P2: ActionHandler Unificado (Modularização)
+                reflect_logger.reflect("Cascading response to legacy handler...", layer="FALLBACK")
+                handler = get_action_handler()
+                if handler:
+                   results = handler.execute_actions_sync([response])
+                   
+                   # Feedback loop para o próximo ciclo ReAct
+                   action_executed_in_legacy = False
+                   for r in results:
+                       if r["status"] in ["success", "partial_success"]:
+                           action_executed_in_legacy = True
+                           res_text = r.get('result', 'Ação completada')
+                           # Enriquecer contexto para o próximo "pense" do agente
+                           enriched_command += f"\n\n[SISTEMA] Sucesso em {r['action']}: {res_text}"
+                       elif r["status"] == "blocked":
+                           enriched_command += f"\n\n[SEGURANÇA] Ação BLOQUEADA: {r.get('error')}"
+                       else:
+                           # Falha técnica ou parse
+                           if r['action'] != "parse": # Se não for erro de parse (que acontece se não houver ações)
+                               enriched_command += f"\n\n[SISTEMA] Erro em {r['action']}: {r.get('error')}"
+                   
+                   if action_executed_in_legacy:
+                       current_turn += 1
+                       continue
                 
-                # 1. Verificar Busca Web
-                if "[SEARCH:" in response:
-                    self._handle_search(response, enriched_command)
-                    current_turn += 1
-                    continue
-
-                # 2. Verificar Ações Físicas (LEGADO - Regex)
-                actions = re.findall(r'\[ACTION: (.*?)\]', response)
-                if actions:
-                    for action_str in actions:
-                        logger.info(f"Executando ação física: {action_str}")
-                        try:
-                            # Parsing rudimentar seguro
-                            if "click_at" in action_str:
-                                coords = re.findall(r'\d+', action_str)
-                                if len(coords) >= 2:
-                                    action_controller.click_at(int(coords[0]), int(coords[1]))
-                                    
-                            elif "type_text" in action_str:
-                                text = re.search(r"'(.*?)'", action_str)
-                                if text: action_controller.type_text(text.group(1))
-                                    
-                            elif "press_key" in action_str:
-                                key = re.search(r"'(.*?)'", action_str)
-                                if key: action_controller.press_key(key.group(1))
-                                
-                            elif "hotkey" in action_str:
-                                keys = re.findall(r"'(.*?)'", action_str)
-                                if keys: action_controller.hotkey(*keys)
-                            
-                            # --- SELF-PROGRAMMING ACTIONS (Phase 31) ---
-                            elif "read_file" in action_str:
-                                path_match = re.search(r"read_file\('(.+?)'\)", action_str)
-                                if path_match:
-                                    p = path_match.group(1)
-                                    # Lazy Load Security Manager
-                                    sec_man = self._get_security_manager()
-                                    if sec_man.validate_file_action(p, 'read'):
-                                        try:
-                                            if os.path.exists(p):
-                                                with open(p, 'r', encoding='utf-8', errors='ignore') as f:
-                                                    content = f.read()
-                                                limit = 3000
-                                                snippet = content[:limit] + ("\n... (truncado)" if len(content) > limit else "")
-                                                enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}':\n```\n{snippet}\n```"
-                                            else:
-                                                enriched_command += f"\n\n[SISTEMA] Arquivo não encontrado: {p}"
-                                        except Exception as e:
-                                            enriched_command += f"\n\n[SISTEMA] Erro ao ler '{p}': {e}"
-                            
-                            elif "write_file" in action_str:
-                                args = re.search(r"write_file\('(.+?)',\s*'(.+?)'\)", action_str)
-                                if args:
-                                    p, content = args.group(1), args.group(2)
-                                    content = content.replace('\\n', '\n') 
-                                    
-                                    # 🆕 FASE 3: Jaula de Vidro + Auto-Backup + HITL
-                                    if action_validator:
-                                        try:
-                                            # Checagem de Risco para HITL
-                                            is_risky = p.endswith(".py") or p.endswith(".bat") or "delete" in p.lower()
-                                            
-                                            if is_risky:
-                                                if not self._request_human_authorization(f"Modificar arquivo sensível {os.path.basename(p)}"):
-                                                    raise PermissionError("Autorização humana negada.")
-                                            
-                                            # Validação + Backup + Escrita
-                                            action_validator.safe_file_edit(p, content)
-                                            enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso (Backup criado)."
-                                        except Exception as e:
-                                            logger.error(f"Bloqueio de Segurança: {e}")
-                                            enriched_command += f"\n\n[SEGURANÇA] Ação Bloqueada: {e}"
-                                            voice_controller.speak("Acesso negado pelos protocolos de segurança.")
-                                    else:
-                                        # Fallback (Legacy Security)
-                                        sec_man = self._get_security_manager()
-                                        if sec_man.validate_file_action(p, 'write'):
-                                            try:
-                                                os.makedirs(os.path.dirname(p), exist_ok=True)
-                                                with open(p, 'w', encoding='utf-8') as f:
-                                                    f.write(content)
-                                                enriched_command += f"\n\n[SISTEMA] Arquivo '{p}' escrito com sucesso."
-                                            except Exception as e:
-                                                enriched_command += f"\n\n[SISTEMA] Erro ao escrever '{p}': {e}"
-
-                            
-                            elif "list_dir" in action_str:
-                                 path_match = re.search(r"list_dir\('(.+?)'\)", action_str)
-                                 if path_match:
-                                     p = path_match.group(1)
-                                     try:
-                                         if os.path.isdir(p):
-                                             items = os.listdir(p)
-                                             enriched_command += f"\n\n[SISTEMA] Conteúdo de '{p}': {items[:50]}"
-                                         else:
-                                             enriched_command += f"\n\n[SISTEMA] Diretório não encontrado: {p}"
-                                     except Exception as e:
-                                         enriched_command += f"\n\n[SISTEMA] Erro ao listar: {e}"
-
-                            elif "open_program" in action_str:
-                                prog = re.search(r"'(.*?)'", action_str)
-                                if prog:
-                                    program_name = prog.group(1)
-                                    # 🆕 FASE 3: Validação de Comandos + HITL
-                                    safe, reason = action_validator.validate_action("shell_command", program_name) if action_validator else (True, "No Validator")
-                                    
-                                    if safe:
-                                        # 🛡️ 2ª Opinião: Sentinel Cognitivo
-                                        if action_validator.check_intent_safety(program_name):
-                                            # HITL para comandos shell (sempre considerar risco médio/alto)
-                                            if self._request_human_authorization(f"Executar comando {program_name}"):
-                                                action_controller.hotkey('win', 'r')
-                                                time.sleep(0.5)
-                                                action_controller.type_text(program_name)
-                                                action_controller.press_key('enter')
-                                            else:
-                                                logger.warning(f"Execução bloqueada pelo usuário: {program_name}")
-                                                enriched_command += f"\n\n[SEGURANÇA] Execução cancelada pelo usuário."
-                                        else:
-                                            logger.critical(f"Execução bloqueada pelo SENTINEL: {program_name}")
-                                            voice_controller.speak("O Sentinela identificou risco neste comando. Bloqueado.")
-                                            enriched_command += f"\n\n[SEGURANÇA] Ação considerada MALICIOSA pela IA."
-                                    else:
-                                        logger.warning(f"Execução bloqueada: {program_name}")
-                                        voice_controller.speak("Não posso executar esse comando, senhor.")
-                                        enriched_command += f"\n\n[SEGURANÇA] Execução negada: {reason}"
-                                    
-                            action_executed = True
-                        except Exception as e:
-                            logger.error(f"Erro ao executar ação '{action_str}': {e}")
-                
-                # Se executou ação, adiciona ao contexto e reitera (Agentic Loop)
-                if action_executed:
-                    enriched_command += f"\n\n[SISTEMA] Ações executadas: {actions}. O que mais?"
-                    current_turn += 1
-                    continue
-            
-            # Se não houve ação nem busca, é a resposta final
-            break
+                # Se não houver ações para executar, paramos o loop
+                break
 
         # ... (Step 6-7 unchanged) ...
         # 6. Salvar nova interação na memória neural e dataset

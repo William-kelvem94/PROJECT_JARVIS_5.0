@@ -7,6 +7,7 @@ Retorna exit code 0 se OK, 1 se faltam dependências
 import sys
 import subprocess
 
+CRITICAL_DEPS = [
     ('PyQt6', 'PyQt6', False),
     ('cv2', 'opencv-python', False),
     ('numpy', 'numpy', False),
@@ -73,7 +74,7 @@ def main():
     missing = []
     broken = []
     
-    for import_name, pip_name, use_pip_show in CRITICAL_PACKAGES:
+    for import_name, pip_name, use_pip_show in CRITICAL_DEPS:
         try:
             installed, pkg = check_package(import_name, pip_name, use_pip_show)
             

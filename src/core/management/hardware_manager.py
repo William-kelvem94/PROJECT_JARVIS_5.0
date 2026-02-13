@@ -30,13 +30,20 @@ try:
 except Exception:
     pass
 
-try:
-    import torch
-    TORCH_AVAILABLE = True
-except (ImportError, OSError) as e:
-    TORCH_AVAILABLE = False
-    torch = None
-    logging.warning(f"⚠️ torch not available in hardware_manager: {e}")
+# Lazy import torch to avoid startup issues
+TORCH_AVAILABLE = False
+torch = None
+
+def _ensure_torch():
+    global TORCH_AVAILABLE, torch
+    if not TORCH_AVAILABLE and torch is None:
+        try:
+            import torch
+            TORCH_AVAILABLE = True
+        except (ImportError, OSError) as e:
+            TORCH_AVAILABLE = False
+            torch = None
+            logging.warning(f"⚠️ torch not available in hardware_manager: {e}")
 
 try:
     import openvino as ov
@@ -67,72 +74,96 @@ class HardwareManager:
         if self._initialized: return
         with self._lock:
             if self._initialized: return
+
+        # Initialize basic attributes without loading torch yet
+        self.device = "cpu"
+        self.accelerator = None
+        self.memory_gb = 0
+        self.cpu_count = 0
+        self.gpu_available = False
+        self.torch_device = None
+        self.openvino_available = OPENVINO_AVAILABLE
+        self.system = platform.system()
+        self.tier = "BALANCED"  # Default tier
+        self.gpu_name = "None"
         
-        if TORCH_AVAILABLE and torch and torch.cuda.is_available():
-            self.device = "cuda"
-            self.accelerator = "cuda"
-            self.gpu_name = torch.cuda.get_device_name(0)
-        elif OPENVINO_AVAILABLE:
-            # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
-            try:
-                core = ov.Core()
-                devices = core.available_devices
-                if "GPU" in devices:
-                    self.device = "cpu" # Torch device string (cpu/cuda). OpenVINO acts as a compiler/accelerator on top of CPU.
-                    self.accelerator = "openvino"
-                    self.gpu_name = "Intel Iris Xe / Arc (OpenVINO Accelerator)"
-                else:
+        # Mark as initialized but defer heavy hardware detection
+        self._hardware_initialized = False
+        self._initialized = True
+
+    def _ensure_hardware_initialized(self):
+        """Initialize hardware detection only when needed (lazy)"""
+        if self._hardware_initialized:
+            return
+            
+        with self._lock:
+            if self._hardware_initialized:
+                return
+                
+            # Now perform the heavy hardware detection
+            if TORCH_AVAILABLE and torch and torch.cuda.is_available():
+                self.device = "cuda"
+                self.accelerator = "cuda"
+                self.gpu_name = torch.cuda.get_device_name(0)
+            elif OPENVINO_AVAILABLE:
+                # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
+                try:
+                    core = ov.Core()
+                    devices = core.available_devices
+                    if "GPU" in devices:
+                        self.device = "cpu" # Torch device string (cpu/cuda). OpenVINO acts as a compiler/accelerator on top of CPU.
+                        self.accelerator = "openvino"
+                        self.gpu_name = "Intel Iris Xe / Arc (OpenVINO Accelerator)"
+                    else:
+                        self.device = "cpu"
+                        self.accelerator = None
+                        self.gpu_name = "None"
+                except:
                     self.device = "cpu"
                     self.accelerator = None
                     self.gpu_name = "None"
-            except:
+            else:
                 self.device = "cpu"
                 self.accelerator = None
                 self.gpu_name = "None"
-        else:
-            self.device = "cpu"
-            self.accelerator = None
-            self.gpu_name = "None"
-        self.system = platform.system()
-        
-        # 🆕 COMPUTE TIERING (Military Grade Scaling)
-        self.tier = "BALANCED"
-        if self.device == "cuda" or (hasattr(self, 'accelerator') and self.accelerator == "openvino"):
-            self.tier = "ULTRA"
-        else:
-            import psutil
-            logical_cores = psutil.cpu_count(logical=True) or 4
-            physical_cores = psutil.cpu_count(logical=False) or 2
             
-            if logical_cores >= 12: self.tier = "FAST"
-            elif logical_cores >= 6: self.tier = "BALANCED"
-            else: self.tier = "LITE"
-
-        if TORCH_AVAILABLE and torch and self.device == "cuda":
-            torch.backends.cudnn.benchmark = True
-            logger.info(f"🏛️ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
-        else:
-            import psutil
-            logical_cores = psutil.cpu_count(logical=True) or 4
-            
-            # ADAPTIVE THREADING: Unlock full potential while preserving GUI responsiveness
-            # Previous "Safe Mode" capped at 1 thread or half cores. 
-            # New Staged Boot Protocol allows us to be more aggressive.
-            
-            if self.tier == "FAST":
-                threads = logical_cores
-            elif self.tier == "BALANCED":
-                threads = max(1, logical_cores - 2) # Leave 2 threads for GUI/OS
+            # 🆕 COMPUTE TIERING (Military Grade Scaling)
+            if self.device == "cuda" or (hasattr(self, 'accelerator') and self.accelerator == "openvino"):
+                self.tier = "ULTRA"
             else:
-                threads = max(1, logical_cores // 2) # LITE mode still conservative
-            
-            if TORCH_AVAILABLE and torch:
-                torch.set_num_threads(threads)
+                import psutil
+                logical_cores = psutil.cpu_count(logical=True) or 4
+                physical_cores = psutil.cpu_count(logical=False) or 2
                 
-            logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
-            
-        self._start_monitoring_thread()
-        self._initialized = True
+                if logical_cores >= 12: self.tier = "FAST"
+                elif logical_cores >= 6: self.tier = "BALANCED"
+                else: self.tier = "LITE"
+
+            if TORCH_AVAILABLE and torch and self.device == "cuda":
+                torch.backends.cudnn.benchmark = True
+                logger.info(f"🏛️ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
+            else:
+                import psutil
+                logical_cores = psutil.cpu_count(logical=True) or 4
+                
+                # ADAPTIVE THREADING: Unlock full potential while preserving GUI responsiveness
+                # Previous "Safe Mode" capped at 1 thread or half cores. 
+                # New Staged Boot Protocol allows us to be more aggressive.
+                
+                if self.tier == "FAST":
+                    threads = logical_cores
+                elif self.tier == "BALANCED":
+                    threads = max(1, logical_cores - 2) # Leave 2 threads for GUI/OS
+                else:
+                    threads = max(1, logical_cores // 2) # LITE mode still conservative
+                
+                if TORCH_AVAILABLE and torch:
+                    torch.set_num_threads(threads)
+                    
+                logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
+                
+            self._start_monitoring_thread()
+            self._hardware_initialized = True
 
     def _start_monitoring_thread(self):
         """Inicia monitoramento em background para alertas proativos"""
@@ -175,16 +206,45 @@ class HardwareManager:
                 logger.debug(f"Erro no monitoramento de hardware: {e}")
                 time.sleep(30)
 
+    @property
+    def is_throttled(self) -> bool:
+        """
+        Returns True if the system is under heavy load and should reduce intensity.
+        Thresholds: CPU > 85%, RAM < 1.0 GB, or Emergency Mode active.
+        """
+        try:
+            # Check Emergency Mode first (Stark Protocol)
+            try:
+                from src.core.management.auto_recovery_system import auto_recovery_system
+                if getattr(auto_recovery_system, 'is_emergency_mode', False):
+                    return True
+            except: pass
+
+            import psutil
+            cpu = psutil.cpu_percent(interval=None)
+            ram = psutil.virtual_memory().available / (1024**3)
+            
+            throttled = cpu > 85 or ram < 1.0
+            if throttled:
+                logger.warning(f"⚠️ THROWTLING ACTIVE: CPU={cpu}%, RAM={ram:.1f}GB")
+            return throttled
+        except:
+            return False
+
     def get_tier(self) -> str:
         """Retorna o nível de processamento (ULTRA, FAST, BALANCED, LITE)"""
+        self._ensure_hardware_initialized()
         return self.tier
 
     def get_device(self) -> str:
         """Retorna 'cuda' ou 'cpu'"""
+        self._ensure_hardware_initialized()
         return self.device
 
     def get_torch_device(self):
         """Retorna o objeto torch.device atual"""
+        self._ensure_hardware_initialized()
+        _ensure_torch()
         if TORCH_AVAILABLE and torch:
             # openvino is not a native torch device string
             dev = self.device
@@ -195,6 +255,7 @@ class HardwareManager:
 
     def get_compute_type(self) -> str:
         """Retorna tipo de float mais rápido para o hardware (bfloat16/float16/float32)"""
+        self._ensure_hardware_initialized()
         if self.device == "cuda":
             # Verificar suporte a bfloat16 (GPUs Ampere+)
             if TORCH_AVAILABLE and torch and torch.cuda.is_bf16_supported():
@@ -213,8 +274,10 @@ class HardwareManager:
 
     def clear_gpu_cache(self):
         """Limpa cache de memória da GPU e aciona GC"""
+        self._ensure_hardware_initialized()
         import gc
         gc.collect()
+        _ensure_torch()
         if TORCH_AVAILABLE and torch and self.device == "cuda":
             torch.cuda.empty_cache()
             logger.info("🧹 VRAM Cache limpo com sucesso.")
@@ -228,12 +291,14 @@ class HardwareManager:
 
     def get_memory_status(self) -> Dict[str, float]:
         """Retorna RAM livre (GB) e VRAM livre (GB)"""
+        self._ensure_hardware_initialized()
         import psutil
         ram = psutil.virtual_memory()
         free_ram_gb = ram.available / (1024**3)
-        
+
         free_vram_gb = 0.0
         if self.device == "cuda":
+            _ensure_torch()
             # torch.cuda.mem_get_info() retorna (free, total) em bytes
             free, total = torch.cuda.mem_get_info()
             free_vram_gb = free / (1024**3)
@@ -245,7 +310,9 @@ class HardwareManager:
 
     def get_status(self) -> Dict[str, Any]:
         """Retorna status humano do hardware"""
+        self._ensure_hardware_initialized()
         mem = self.get_memory_status()
+        _ensure_torch()
         threads = torch.get_num_threads() if (TORCH_AVAILABLE and torch) else 0
         cuda_avail = torch.cuda.is_available() if (TORCH_AVAILABLE and torch) else False
         
@@ -330,8 +397,18 @@ class HardwareManager:
             return "Sugestão: O sistema está sob carga pesada. Recomendo alterar para o modo 'GAMER/HIGH_PERFORMANCE' e reduzir prioridade de processos em background."
         elif status["ram_free_gb"] < 2.0:
             return "Sugestão: Pouca memória RAM disponível. Recomendo fechar aplicações não essenciais ou limpar cache de VRAM."
-        
+
         return "Sistema operando em parâmetros ideais."
 
-# Instância global (Singleton)
-hardware_manager = HardwareManager()
+# Instância global (Singleton) - Lazy initialization
+_hardware_manager_instance = None
+
+def get_hardware_manager():
+    """Retorna a instância singleton do hardware manager (lazy)"""
+    global _hardware_manager_instance
+    if _hardware_manager_instance is None:
+        _hardware_manager_instance = HardwareManager()
+    return _hardware_manager_instance
+
+# Instância global
+hardware_manager = get_hardware_manager()

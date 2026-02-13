@@ -421,7 +421,18 @@ class ActionExecutor:
         )
         return "Drag and drop executado" if success else "Falha no drag and drop"
 
-        return f"Comando IoT '{action.command}' enviado para '{action.device}'" if success else "Falha no comando IoT"
+    def _execute_iot_control(self, action: Any) -> str:
+        """Handler para IOTControlAction"""
+        try:
+            from src.core.iot.iot_manager import iot_manager
+            success = iot_manager.control_device(
+                device_id=action.device,
+                command=action.command,
+                params=action.params
+            )
+            return f"Comando IoT '{action.command}' enviado para '{action.device}'" if success else "Falha no comando IoT"
+        except ImportError:
+            raise RuntimeError("iot_manager não disponível")
 
     def _execute_analyze_and_organize(self, action: Any) -> str:
         """Handler para AnalyzeAndOrganizeAction"""

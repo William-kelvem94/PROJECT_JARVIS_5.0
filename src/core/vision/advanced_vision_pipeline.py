@@ -94,15 +94,26 @@ class AdvancedVisionPipeline:
             results.update(self._level1_analysis(image_path))
             results["level_used"] = 1
         
+        # RESOURCE GUARD: Check if system is throttled
+        is_throttled = False
+        try:
+            from src.core.management.hardware_manager import hardware_manager
+            is_throttled = hardware_manager.is_throttled
+        except: pass
+
         # Nível 2: Análise intermediária
-        if target_level >= 2 and self.level2_available:
+        if target_level >= 2 and self.level2_available and not is_throttled:
             results.update(self._level2_analysis(image_path))
             results["level_used"] = 2
+        elif is_throttled and target_level >= 2:
+            logger.warning("🚀 Vision Throttling: Skipping Level 2 analysis")
         
         # Nível 3: Compreensão profunda
-        if target_level >= 3 and self.level3_available:
+        if target_level >= 3 and self.level3_available and not is_throttled:
             results.update(self._level3_analysis(image_path))
             results["level_used"] = 3
+        elif is_throttled and target_level >= 3:
+            logger.warning("🚀 Vision Throttling: Skipping Level 3 analysis")
         
         return results
     
@@ -320,5 +331,5 @@ class AdvancedVisionPipeline:
         return results
 
 
-# Instância global removida para evitar execução durante import
-# advanced_vision_pipeline = AdvancedVisionPipeline()
+# Instância global
+advanced_vision_pipeline = AdvancedVisionPipeline()

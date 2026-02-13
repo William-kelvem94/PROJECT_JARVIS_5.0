@@ -32,18 +32,37 @@ from src.core.actions.action_controller import action_controller
 
 logger = logging.getLogger(__name__)
 
+# Lazy import mediapipe to avoid startup issues
+MEDIAPIPE_AVAILABLE = False
+mp = None
+
+def _ensure_mediapipe():
+    global MEDIAPIPE_AVAILABLE, mp
+    if not MEDIAPIPE_AVAILABLE and mp is None:
+        try:
+            # Silenciar logs internos do MediaPipe/GLOG/ABS
+            os.environ['GLOG_minloglevel'] = '3'
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+            import absl.logging
+            absl.logging.set_verbosity(absl.logging.ERROR)
+            
+            import mediapipe as mp
+            MEDIAPIPE_AVAILABLE = True
+        except (ImportError, OSError) as e:
+            MEDIAPIPE_AVAILABLE = False
+            mp = None
+            logger.debug(f"MediaPipe não encontrado. Controle por gestos desativado: {e}")
+
 try:
-    # Silenciar logs internos do MediaPipe/GLOG/ABS
-    os.environ['GLOG_minloglevel'] = '3'
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    import absl.logging
-    absl.logging.set_verbosity(absl.logging.ERROR)
-    
-    import mediapipe as mp
-    MEDIAPIPE_AVAILABLE = True
-except (ImportError, OSError) as e:
+    # Just check if mediapipe can be imported without actually importing it
+    import importlib
+    mediapipe_spec = importlib.util.find_spec("mediapipe")
+    if mediapipe_spec is not None:
+        MEDIAPIPE_AVAILABLE = True
+    else:
+        MEDIAPIPE_AVAILABLE = False
+except:
     MEDIAPIPE_AVAILABLE = False
-    logger.debug(f"MediaPipe não encontrado. Controle por gestos desativado.")
 
 class GestureController:
     """Detecta gestos e comanda ações"""
@@ -74,6 +93,12 @@ class GestureController:
 
         if MEDIAPIPE_AVAILABLE:
             try:
+                # Ensure mediapipe is loaded
+                _ensure_mediapipe()
+                if not MEDIAPIPE_AVAILABLE or mp is None:
+                    logger.warning("MediaPipe failed to load during initialization")
+                    return
+                    
                 # Tentativa 1: Import padrão (Legacy Solutions)
                 if hasattr(mp, 'solutions') and hasattr(mp.solutions, 'hands'):
                     logger.info("Usando MediaPipe Legacy Solutions.")
@@ -301,5 +326,15 @@ class GestureController:
             action_controller.press_key('nexttrack')
             logger.info("⏭️ Swipe Left: Next Track")
 
-# Instância global
-gesture_controller = GestureController()
+# Instância global (Singleton) - Lazy initialization
+_gesture_controller_instance = None
+
+def get_gesture_controller():
+    """Retorna a instância singleton do gesture controller (lazy)"""
+    global _gesture_controller_instance
+    if _gesture_controller_instance is None:
+        _gesture_controller_instance = GestureController()
+    return _gesture_controller_instance
+
+# Para compatibilidade, manter gesture_controller como alias (inicialmente None)
+gesture_controller = None
