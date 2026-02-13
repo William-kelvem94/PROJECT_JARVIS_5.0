@@ -1,4 +1,4 @@
-import json
+﻿import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Set
@@ -26,7 +26,7 @@ class KnowledgeGapAnalyzer:
         Scans data to find topics where JARVIS failed or was corrected.
         Returns a list of 'Research Needs'.
         """
-        logger.info("🔍 Analyzing cognitive gaps in neural history...")
+        logger.info("ðŸ” Analyzing cognitive gaps in neural history...")
         
         # 1. Analyze failed interactions from log
         failed_commands = self._get_failed_commands()

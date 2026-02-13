@@ -1,6 +1,6 @@
-"""
+﻿"""
 Model Upgrader - Sistema de Upgrade de Modelos de IA
-Gerencia download e upgrade de modelos avançados
+Gerencia download e upgrade de modelos avanÃ§ados
 """
 
 import logging
@@ -26,7 +26,7 @@ class ModelUpgrader:
                     "name": "Qwen 2.5 0.5B",
                     "size": "500MB",
                     "url": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF",
-                    "installed": True  # Já instalado
+                    "installed": True  # JÃ¡ instalado
                 },
                 "3B": {
                     "name": "Qwen 2.5 3B",
@@ -60,7 +60,7 @@ class ModelUpgrader:
         }
     
     def check_ollama_installed(self) -> bool:
-        """Verifica se Ollama está instalado"""
+        """Verifica se Ollama estÃ¡ instalado"""
         try:
             result = subprocess.run(
                 ["ollama", "--version"],
@@ -73,16 +73,16 @@ class ModelUpgrader:
     
     def upgrade_qwen_to_3b(self) -> bool:
         """Upgrade do Qwen 0.5B para 3B via Ollama"""
-        logger.info("🔄 Iniciando upgrade Qwen 0.5B → 3B...")
+        logger.info("ðŸ”„ Iniciando upgrade Qwen 0.5B â†’ 3B...")
         
         if not self.check_ollama_installed():
-            logger.error("❌ Ollama não está instalado")
-            logger.info("📥 Instale Ollama: https://ollama.ai/download")
+            logger.error("âŒ Ollama nÃ£o estÃ¡ instalado")
+            logger.info("ðŸ“¥ Instale Ollama: https://ollama.ai/download")
             return False
         
         try:
             # Pull do modelo Qwen 2.5 3B
-            logger.info("📥 Baixando Qwen 2.5 3B (pode levar alguns minutos)...")
+            logger.info("ðŸ“¥ Baixando Qwen 2.5 3B (pode levar alguns minutos)...")
             
             result = subprocess.run(
                 ["ollama", "pull", "qwen2.5:3b"],
@@ -92,30 +92,30 @@ class ModelUpgrader:
             )
             
             if result.returncode == 0:
-                logger.info("✅ Qwen 2.5 3B instalado com sucesso!")
+                logger.info("âœ… Qwen 2.5 3B instalado com sucesso!")
                 self.available_models["qwen"]["3B"]["installed"] = True
                 return True
             else:
-                logger.error(f"❌ Erro ao instalar: {result.stderr}")
+                logger.error(f"âŒ Erro ao instalar: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error("❌ Timeout ao baixar modelo (>10min)")
+            logger.error("âŒ Timeout ao baixar modelo (>10min)")
             return False
         except Exception as e:
-            logger.error(f"❌ Erro ao fazer upgrade: {e}")
+            logger.error(f"âŒ Erro ao fazer upgrade: {e}")
             return False
     
     def install_llava_1_6(self) -> bool:
         """Instala LLaVA 1.6 via Ollama"""
-        logger.info("🔄 Instalando LLaVA 1.6...")
+        logger.info("ðŸ”„ Instalando LLaVA 1.6...")
         
         if not self.check_ollama_installed():
-            logger.error("❌ Ollama não está instalado")
+            logger.error("âŒ Ollama nÃ£o estÃ¡ instalado")
             return False
         
         try:
-            logger.info("📥 Baixando LLaVA 1.6 (pode levar alguns minutos)...")
+            logger.info("ðŸ“¥ Baixando LLaVA 1.6 (pode levar alguns minutos)...")
             
             result = subprocess.run(
                 ["ollama", "pull", "llava:7b"],
@@ -125,24 +125,24 @@ class ModelUpgrader:
             )
             
             if result.returncode == 0:
-                logger.info("✅ LLaVA 1.6 instalado com sucesso!")
+                logger.info("âœ… LLaVA 1.6 instalado com sucesso!")
                 self.available_models["llava"]["1.6-7B"]["installed"] = True
                 return True
             else:
-                logger.error(f"❌ Erro ao instalar: {result.stderr}")
+                logger.error(f"âŒ Erro ao instalar: {result.stderr}")
                 return False
                 
         except Exception as e:
-            logger.error(f"❌ Erro ao instalar LLaVA: {e}")
+            logger.error(f"âŒ Erro ao instalar LLaVA: {e}")
             return False
     
     def install_xtts_v2(self) -> bool:
         """Instala XTTS-v2 para TTS neural"""
-        logger.info("🔄 Instalando XTTS-v2...")
+        logger.info("ðŸ”„ Instalando XTTS-v2...")
         
         try:
             # Instalar via pip
-            logger.info("📥 Instalando TTS (Coqui)...")
+            logger.info("ðŸ“¥ Instalando TTS (Coqui)...")
             
             result = subprocess.run(
                 ["pip", "install", "TTS"],
@@ -152,25 +152,25 @@ class ModelUpgrader:
             )
             
             if result.returncode == 0:
-                logger.info("✅ XTTS-v2 instalado com sucesso!")
+                logger.info("âœ… XTTS-v2 instalado com sucesso!")
                 self.available_models["xtts"]["v2"]["installed"] = True
                 
                 # Baixar modelo
-                logger.info("📥 Baixando modelo XTTS-v2...")
+                logger.info("ðŸ“¥ Baixando modelo XTTS-v2...")
                 try:
                     from TTS.api import TTS
                     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-                    logger.info("✅ Modelo XTTS-v2 baixado!")
+                    logger.info("âœ… Modelo XTTS-v2 baixado!")
                 except Exception as e:
-                    logger.warning(f"⚠️ Modelo será baixado no primeiro uso: {e}")
+                    logger.warning(f"âš ï¸ Modelo serÃ¡ baixado no primeiro uso: {e}")
                 
                 return True
             else:
-                logger.error(f"❌ Erro ao instalar: {result.stderr}")
+                logger.error(f"âŒ Erro ao instalar: {result.stderr}")
                 return False
                 
         except Exception as e:
-            logger.error(f"❌ Erro ao instalar XTTS-v2: {e}")
+            logger.error(f"âŒ Erro ao instalar XTTS-v2: {e}")
             return False
     
     def get_model_status(self) -> Dict[str, Any]:
@@ -190,7 +190,7 @@ class ModelUpgrader:
     
     def upgrade_all(self) -> Dict[str, bool]:
         """Tenta fazer upgrade de todos os modelos"""
-        logger.info("🚀 Iniciando upgrade completo de modelos...")
+        logger.info("ðŸš€ Iniciando upgrade completo de modelos...")
         
         results = {
             "qwen_3b": self.upgrade_qwen_to_3b(),
@@ -201,67 +201,67 @@ class ModelUpgrader:
         success_count = sum(results.values())
         total = len(results)
         
-        logger.info(f"✅ Upgrade completo: {success_count}/{total} modelos instalados")
+        logger.info(f"âœ… Upgrade completo: {success_count}/{total} modelos instalados")
         
         return results
     
     def get_recommendations(self) -> List[str]:
-        """Retorna recomendações de upgrade"""
+        """Retorna recomendaÃ§Ãµes de upgrade"""
         recommendations = []
         
         # Verificar Ollama
         if not self.check_ollama_installed():
             recommendations.append(
-                "📥 Instale Ollama para modelos locais: https://ollama.ai/download"
+                "ðŸ“¥ Instale Ollama para modelos locais: https://ollama.ai/download"
             )
         
-        # Verificar modelos não instalados
+        # Verificar modelos nÃ£o instalados
         if not self.available_models["qwen"]["3B"]["installed"]:
             recommendations.append(
-                "🧠 Upgrade Qwen para 3B para melhor performance"
+                "ðŸ§  Upgrade Qwen para 3B para melhor performance"
             )
         
         if not self.available_models["llava"]["1.6-7B"]["installed"]:
             recommendations.append(
-                "👁️ Instale LLaVA 1.6 para visão multimodal avançada"
+                "ðŸ‘ï¸ Instale LLaVA 1.6 para visÃ£o multimodal avanÃ§ada"
             )
         
         if not self.available_models["xtts"]["v2"]["installed"]:
             recommendations.append(
-                "🗣️ Instale XTTS-v2 para TTS de alta qualidade"
+                "ðŸ—£ï¸ Instale XTTS-v2 para TTS de alta qualidade"
             )
         
         return recommendations
 
 
 
-# Instância global removida para evitar execução durante import
+# InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # model_upgrader = ModelUpgrader()
 
 
 # Exemplo de uso
 if __name__ == "__main__":
-    print("🔍 Verificando status dos modelos...\n")
+    print("ðŸ” Verificando status dos modelos...\n")
     
     status = model_upgrader.get_model_status()
     
     for model_type, versions in status.items():
         print(f"\n{model_type.upper()}:")
         for version, info in versions.items():
-            status_icon = "✅" if info["installed"] else "❌"
+            status_icon = "âœ…" if info["installed"] else "âŒ"
             print(f"  {status_icon} {info['name']} ({info['size']})")
     
-    print("\n📋 Recomendações:")
+    print("\nðŸ“‹ RecomendaÃ§Ãµes:")
     for rec in model_upgrader.get_recommendations():
         print(f"  {rec}")
     
     # Perguntar se quer fazer upgrade
-    print("\n🚀 Deseja fazer upgrade de todos os modelos? (s/n)")
+    print("\nðŸš€ Deseja fazer upgrade de todos os modelos? (s/n)")
     choice = input().lower()
     
     if choice == 's':
         results = model_upgrader.upgrade_all()
-        print("\n📊 Resultados:")
+        print("\nðŸ“Š Resultados:")
         for model, success in results.items():
-            icon = "✅" if success else "❌"
+            icon = "âœ…" if success else "âŒ"
             print(f"  {icon} {model}")

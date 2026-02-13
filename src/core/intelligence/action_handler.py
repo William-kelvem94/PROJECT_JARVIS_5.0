@@ -1,21 +1,21 @@
-"""
+﻿"""
 JARVIS 5.0 - Action Handler
 ============================
-CORREÇÃO P2: Separação do God Object AIAgent
+CORREÃ‡ÃƒO P2: SeparaÃ§Ã£o do God Object AIAgent
 
 RESPONSABILIDADE:
-  Gerenciar todas as AÇÕES do sistema:
-  - Parsing de ações (JSON ou regex legado)
-  - Execução via ActionExecutor
-  - Validação de segurança
+  Gerenciar todas as AÃ‡Ã•ES do sistema:
+  - Parsing de aÃ§Ãµes (JSON ou regex legado)
+  - ExecuÃ§Ã£o via ActionExecutor
+  - ValidaÃ§Ã£o de seguranÃ§a
   - Web search, file I/O, system commands
 
 ARQUITETURA:
   AIAgent (Orquestrador)
-    ↓
+    â†“
   PerceptionEngine
   DecisionEngine
-  ActionHandler ← ESTE MÓDULO
+  ActionHandler â† ESTE MÃ“DULO
 """
 
 import logging
@@ -36,11 +36,11 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 try:
     from src.core.intelligence.action_executor import get_action_executor, ActionExecutor
-    # 🆕 PROTEÇÃO: Importamos um símbolo válido para garantir que o módulo existe
+    # ðŸ†• PROTEÃ‡ÃƒO: Importamos um sÃ­mbolo vÃ¡lido para garantir que o mÃ³dulo existe
     from src.core.intelligence.structured_output import ActionType as _AT
     ACTION_EXECUTOR_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ action_executor não disponível: {e}")
+    logger.warning(f"âš ï¸ action_executor nÃ£o disponÃ­vel: {e}")
     get_action_executor = None
     ActionExecutor = None
     ActionUnion = None
@@ -50,7 +50,7 @@ try:
     from src.utils.web_search_tool import web_search_tool
     WEB_SEARCH_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ web_search_tool não disponível: {e}")
+    logger.warning(f"âš ï¸ web_search_tool nÃ£o disponÃ­vel: {e}")
     web_search_tool = None
     WEB_SEARCH_AVAILABLE = False
 
@@ -58,20 +58,20 @@ try:
     from src.core.security.security_manager import security_manager
     SECURITY_MANAGER_AVAILABLE = True
 except ImportError as e:
-    logger.warning(f"⚠️ security_manager não disponível: {e}")
+    logger.warning(f"âš ï¸ security_manager nÃ£o disponÃ­vel: {e}")
     security_manager = None
     SECURITY_MANAGER_AVAILABLE = False
 
 
 class ActionHandler:
     """
-    Manipulador de Ações - Executa ações estruturadas ou legadas
+    Manipulador de AÃ§Ãµes - Executa aÃ§Ãµes estruturadas ou legadas
     
     CAPABILITIES:
       1. Structured Actions: Executa via ActionExecutor (P1)
       2. Legacy Actions: Regex parsing [ACTION: ...]
-      3. Security Validation: Valida cada ação antes de executar
-      4. Web Search: Integração com web_search_tool
+      3. Security Validation: Valida cada aÃ§Ã£o antes de executar
+      4. Web Search: IntegraÃ§Ã£o com web_search_tool
       5. File I/O: Read/Write/List com sandboxing
     
     USAGE:
@@ -89,9 +89,9 @@ class ActionHandler:
         self.web_search = web_search_tool if WEB_SEARCH_AVAILABLE else None
         self.security = security_manager if SECURITY_MANAGER_AVAILABLE else None
         
-        logger.info("✅ ActionHandler inicializado")
+        logger.info("âœ… ActionHandler inicializado")
         if not ACTION_EXECUTOR_AVAILABLE:
-            logger.warning("⚠️ Modo degradado: Action executor desativado")
+            logger.warning("âš ï¸ Modo degradado: Action executor desativado")
     
     
     async def execute_actions(
@@ -100,7 +100,7 @@ class ActionHandler:
         context: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Executa lista de ações (estruturadas ou legadas)
+        Executa lista de aÃ§Ãµes (estruturadas ou legadas)
         
         Args:
             actions: Lista de ActionUnion (estruturado) ou strings (legado)
@@ -121,7 +121,7 @@ class ActionHandler:
         if not actions:
             return []
         
-        logger.info(f"🚀 Executing {len(actions)} actions...")
+        logger.info(f"ðŸš€ Executing {len(actions)} actions...")
         results = []
         
         for action in actions:
@@ -138,13 +138,13 @@ class ActionHandler:
                     result = {
                         "status": "failed",
                         "action": "unknown",
-                        "error": f"Tipo de ação desconhecido: {type(action)}"
+                        "error": f"Tipo de aÃ§Ã£o desconhecido: {type(action)}"
                     }
                 
                 results.append(result)
                 
             except Exception as e:
-                logger.error(f"❌ Erro ao executar ação: {e}")
+                logger.error(f"âŒ Erro ao executar aÃ§Ã£o: {e}")
                 results.append({
                     "status": "failed",
                     "action": str(action)[:50],
@@ -152,19 +152,19 @@ class ActionHandler:
                 })
         
         success_count = sum(1 for r in results if r["status"] == "success")
-        logger.info(f"✅ Actions executed: {success_count}/{len(results)} successful")
+        logger.info(f"âœ… Actions executed: {success_count}/{len(results)} successful")
         return results
     
     def execute_actions_sync(self, actions: List, context: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """Versão síncrona para compatibilidade com AIAgent legado"""
+        """VersÃ£o sÃ­ncrona para compatibilidade com AIAgent legado"""
         try:
             import asyncio
-            # Se já houver um loop rodando nesta thread, precisamos de uma abordagem diferente
-            # mas geralmente background threads de worker não têm loop.
+            # Se jÃ¡ houver um loop rodando nesta thread, precisamos de uma abordagem diferente
+            # mas geralmente background threads de worker nÃ£o tÃªm loop.
             try:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
-                    # Usar o loop existente se possível (approach delicado)
+                    # Usar o loop existente se possÃ­vel (approach delicado)
                     # Por simplicidade, assumimos que threads de worker podem criar seu loop
                     import nest_asyncio
                     nest_asyncio.apply()
@@ -174,14 +174,14 @@ class ActionHandler:
             except RuntimeError:
                 return asyncio.run(self.execute_actions(actions, context))
         except Exception as e:
-            logger.error(f"Erro na execução síncrona de ações: {e}")
+            logger.error(f"Erro na execuÃ§Ã£o sÃ­ncrona de aÃ§Ãµes: {e}")
             return [{"status": "failed", "action": "sync_wrapper", "error": str(e)}]
     
     
     async def _execute_structured_action(self, action: 'ActionUnion') -> Dict[str, Any]:
-        """Executa ação estruturada (Pydantic model)"""
+        """Executa aÃ§Ã£o estruturada (Pydantic model)"""
         
-        # Validação de segurança
+        # ValidaÃ§Ã£o de seguranÃ§a
         if self.security:
             is_safe = self._validate_security(action)
             if not is_safe:
@@ -196,11 +196,11 @@ class ActionHandler:
             return {
                 "status": "failed",
                 "action": action.action,
-                "error": "ActionExecutor não disponível"
+                "error": "ActionExecutor nÃ£o disponÃ­vel"
             }
         
         try:
-            # Rodar executor síncrono em thread separada
+            # Rodar executor sÃ­ncrono em thread separada
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(
                 None,
@@ -211,7 +211,7 @@ class ActionHandler:
             return result
         
         except Exception as e:
-            logger.error(f"❌ Structured action failed: {e}")
+            logger.error(f"âŒ Structured action failed: {e}")
             return {
                 "status": "failed",
                 "action": action.action,
@@ -220,20 +220,20 @@ class ActionHandler:
     
     
     async def _execute_legacy_action(self, action_str: str) -> Dict[str, Any]:
-        """Executa ação legada ([ACTION: ...])"""
+        """Executa aÃ§Ã£o legada ([ACTION: ...])"""
         
-        logger.debug(f"🔧 Legacy action parsing: {action_str[:100]}...")
+        logger.debug(f"ðŸ”§ Legacy action parsing: {action_str[:100]}...")
         
-        # 1. Tentar extrair todas as ações no formato [ACTION: cmd]
+        # 1. Tentar extrair todas as aÃ§Ãµes no formato [ACTION: cmd]
         actions = re.findall(r'\[ACTION: (.*?)\]', action_str)
         if not actions:
-            # Tentar formato SEARCH: se não houver ACTION:
+            # Tentar formato SEARCH: se nÃ£o houver ACTION:
             if "SEARCH:" in action_str:
                 return await self._handle_web_search(action_str)
             return {
                 "status": "failed",
                 "action": "parse",
-                "error": "Nenhuma ação encontrada no formato [ACTION: ...]"
+                "error": "Nenhuma aÃ§Ã£o encontrada no formato [ACTION: ...]"
             }
         
         combined_results = []
@@ -311,7 +311,7 @@ class ActionHandler:
                     result = {
                         "status": "failed",
                         "action": cmd,
-                        "error": "Comando legado desconhecido ou não mapeado"
+                        "error": "Comando legado desconhecido ou nÃ£o mapeado"
                     }
                 
                 combined_results.append(result)
@@ -320,7 +320,7 @@ class ActionHandler:
                 logger.error(f"Erro ao processar comando legado: {e}")
                 combined_results.append({"status": "failed", "action": cmd, "error": str(e)})
         
-        # Retornar o último resultado ou um consolidado
+        # Retornar o Ãºltimo resultado ou um consolidado
         if len(combined_results) == 1:
             return combined_results[0]
         
@@ -332,7 +332,7 @@ class ActionHandler:
     
     
     def _validate_security(self, action) -> bool:
-        """Valida ação contra security manager"""
+        """Valida aÃ§Ã£o contra security manager"""
         if not self.security:
             return True  # Sem security manager = permitir tudo
         
@@ -347,14 +347,14 @@ class ActionHandler:
             
             # Command execution
             elif action_type in ['run_command', 'open_program']:
-                # TODO: Implementar validação de comandos
+                # TODO: Implementar validaÃ§Ã£o de comandos
                 return True
             
-            # Outras ações são safe
+            # Outras aÃ§Ãµes sÃ£o safe
             return True
         
         except Exception as e:
-            logger.error(f"❌ Security validation error: {e}")
+            logger.error(f"âŒ Security validation error: {e}")
             return False
     
     
@@ -364,7 +364,7 @@ class ActionHandler:
             return {
                 "status": "failed",
                 "action": "search_web",
-                "error": "Web search não disponível"
+                "error": "Web search nÃ£o disponÃ­vel"
             }
         
         try:
@@ -374,7 +374,7 @@ class ActionHandler:
                 return {
                     "status": "failed",
                     "action": "search_web",
-                    "error": "Query não encontrada"
+                    "error": "Query nÃ£o encontrada"
                 }
             
             query = query_match.group(1)
@@ -394,7 +394,7 @@ class ActionHandler:
             }
         
         except Exception as e:
-            logger.error(f"❌ Web search failed: {e}")
+            logger.error(f"âŒ Web search failed: {e}")
             return {
                 "status": "failed",
                 "action": "search_web",
@@ -403,7 +403,7 @@ class ActionHandler:
     
     
     async def _handle_read_file(self, command: str) -> Dict[str, Any]:
-        """Lê arquivo"""
+        """LÃª arquivo"""
         try:
             # Extrair path
             path_match = re.search(r"read_file\(['\"](.+?)['\"]\)", command)
@@ -411,12 +411,12 @@ class ActionHandler:
                 return {
                     "status": "failed",
                     "action": "read_file",
-                    "error": "Path não encontrado"
+                    "error": "Path nÃ£o encontrado"
                 }
             
             file_path = path_match.group(1)
             
-            # Validar segurança
+            # Validar seguranÃ§a
             if self.security and not self.security.validate_file_action(file_path, 'read'):
                 return {
                     "status": "blocked",
@@ -430,10 +430,10 @@ class ActionHandler:
                 return {
                     "status": "failed",
                     "action": "read_file",
-                    "error": f"Arquivo não encontrado: {file_path}"
+                    "error": f"Arquivo nÃ£o encontrado: {file_path}"
                 }
             
-            # Usar aiofiles para I/O assíncrono nativo com timeout
+            # Usar aiofiles para I/O assÃ­ncrono nativo com timeout
             async with aiofiles.open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 # Adicionar timeout de 5s para leitura
                 content = await asyncio.wait_for(f.read(), timeout=5.0)
@@ -449,7 +449,7 @@ class ActionHandler:
             }
         
         except Exception as e:
-            logger.error(f"❌ Read file failed: {e}")
+            logger.error(f"âŒ Read file failed: {e}")
             return {
                 "status": "failed",
                 "action": "read_file",
@@ -466,13 +466,13 @@ class ActionHandler:
                 return {
                     "status": "failed",
                     "action": "write_file",
-                    "error": "Args não encontrados"
+                    "error": "Args nÃ£o encontrados"
                 }
             
             file_path = args_match.group(1)
             content = args_match.group(2).replace('\\n', '\n')
             
-            # Validar segurança
+            # Validar seguranÃ§a
             if self.security and not self.security.validate_file_action(file_path, 'write'):
                 return {
                     "status": "blocked",
@@ -483,10 +483,10 @@ class ActionHandler:
             # Escrever arquivo (AsyncIO nativo com aiofiles)
             path_obj = Path(file_path)
             
-            # Criar diretório se não existe (síncrono OK)
+            # Criar diretÃ³rio se nÃ£o existe (sÃ­ncrono OK)
             path_obj.parent.mkdir(parents=True, exist_ok=True)
             
-            # Usar aiofiles para escrita assíncrona
+            # Usar aiofiles para escrita assÃ­ncrona
             async with aiofiles.open(file_path, 'w', encoding='utf-8') as f:
                 await f.write(content)
             
@@ -497,7 +497,7 @@ class ActionHandler:
             }
         
         except Exception as e:
-            logger.error(f"❌ Write file failed: {e}")
+            logger.error(f"âŒ Write file failed: {e}")
             return {
                 "status": "failed",
                 "action": "write_file",
@@ -506,7 +506,7 @@ class ActionHandler:
     
     
     async def _handle_list_dir(self, command: str) -> Dict[str, Any]:
-        """Lista diretório"""
+        """Lista diretÃ³rio"""
         try:
             # Extrair path
             path_match = re.search(r"list_dir\(['\"](.+?)['\"]\)", command)
@@ -514,14 +514,14 @@ class ActionHandler:
                 return {
                     "status": "failed",
                     "action": "list_dir",
-                    "error": "Path não encontrado"
+                    "error": "Path nÃ£o encontrado"
                 }
             
             dir_path = path_match.group(1)
             
-            # Listar (mantém síncrono - os.listdir é rápido)
+            # Listar (mantÃ©m sÃ­ncrono - os.listdir Ã© rÃ¡pido)
             if not os.path.isdir(dir_path):
-                raise FileNotFoundError(f"Diretório não encontrado: {dir_path}")
+                raise FileNotFoundError(f"DiretÃ³rio nÃ£o encontrado: {dir_path}")
             
             items = os.listdir(dir_path)
             # Limitar a 50 items
@@ -530,11 +530,11 @@ class ActionHandler:
             return {
                 "status": "success",
                 "action": "list_dir",
-                "result": f"[DIRETÓRIO: {dir_path}]\n{', '.join(items)}"
+                "result": f"[DIRETÃ“RIO: {dir_path}]\n{', '.join(items)}"
             }
         
         except Exception as e:
-            logger.error(f"❌ List dir failed: {e}")
+            logger.error(f"âŒ List dir failed: {e}")
             return {
                 "status": "failed",
                 "action": "list_dir",
@@ -548,7 +548,7 @@ class ActionHandler:
 _action_handler_instance = None
 
 def get_action_handler() -> ActionHandler:
-    """Retorna instância singleton do ActionHandler"""
+    """Retorna instÃ¢ncia singleton do ActionHandler"""
     global _action_handler_instance
     if _action_handler_instance is None:
         _action_handler_instance = ActionHandler()

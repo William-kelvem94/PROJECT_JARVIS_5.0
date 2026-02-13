@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget
+﻿from PyQt6.QtWidgets import QWidget
 from PyQt6.QtCore import Qt, QRectF
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont, QBrush
 
@@ -16,7 +16,7 @@ class CircularGauge(QWidget):
         self.unit = unit
         self.setMinimumSize(150, 150)
         
-        # Cores (Padrão Stark: Azul Ciano / Branco)
+        # Cores (PadrÃ£o Stark: Azul Ciano / Branco)
         self.color_track = QColor(20, 30, 40)
         self.color_active = QColor(0, 195, 255)
         self.color_text = QColor(255, 255, 255)
@@ -44,8 +44,8 @@ class CircularGauge(QWidget):
         
         # Desenha arco de valor
         percent = (self.value - self.min_val) / (self.max_val - self.min_val)
-        start_angle = 270 * 16 # Começa no topo (270 graus)
-        span_angle = -percent * 360 * 16 # Sentido horário
+        start_angle = 270 * 16 # ComeÃ§a no topo (270 graus)
+        span_angle = -percent * 360 * 16 # Sentido horÃ¡rio
         
         active_pen = QPen(self.color_active, pen_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap)
         painter.setPen(active_pen)
@@ -66,6 +66,6 @@ class CircularGauge(QWidget):
         unit_rect = QRectF(center.x() - radius, center.y() + 15, radius*2, 20)
         painter.drawText(unit_rect, Qt.AlignmentFlag.AlignCenter, self.unit)
         
-        # Texto: Título (topo)
+        # Texto: TÃ­tulo (topo)
         title_rect = QRectF(center.x() - radius, center.y() - 50, radius*2, 30)
         painter.drawText(title_rect, Qt.AlignmentFlag.AlignCenter, self.title)

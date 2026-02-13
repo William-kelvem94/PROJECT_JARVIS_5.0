@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Memory Manager
 ===========================
-Gerencia memória persistente usando ChromaDB e embeddings.
-Suporta Gold Memories para Destilação Neural (QI Adjacente).
+Gerencia memÃ³ria persistente usando ChromaDB e embeddings.
+Suporta Gold Memories para DestilaÃ§Ã£o Neural (QI Adjacente).
 """
 
 import os
@@ -21,8 +21,8 @@ try:
 except (ImportError, OSError):
     CHROMA_AVAILABLE = False
 
-# Lazy loading: imports pesados serão feitos sob demanda
-EMBEDDINGS_AVAILABLE = None  # Será verificado na primeira tentativa
+# Lazy loading: imports pesados serÃ£o feitos sob demanda
+EMBEDDINGS_AVAILABLE = None  # SerÃ¡ verificado na primeira tentativa
 CROSSENCODER_AVAILABLE = None
 SentenceTransformer = None
 CrossEncoder = None
@@ -46,37 +46,37 @@ class MemoryManager:
         self.reranker = None
         self.reranking_enabled = True
         self.memory_cache = {}  # Fallback RAM
-        self.prompt_cache = {}  # 🆕 Phase 2: Prompt caching (LRU-like)
+        self.prompt_cache = {}  # ðŸ†• Phase 2: Prompt caching (LRU-like)
         self.max_cache_size = 50
         self._models_loaded = False  # Flag para lazy loading
-        self._graph_lock = threading.Lock()  # 🔒 Proteção para I/O concorrente do Grafo JSON
-        self._chroma_lock = threading.Lock() # 🔒 Proteção para o ChromaDB
+        self._graph_lock = threading.Lock()  # ðŸ”’ ProteÃ§Ã£o para I/O concorrente do Grafo JSON
+        self._chroma_lock = threading.Lock() # ðŸ”’ ProteÃ§Ã£o para o ChromaDB
         self._initialize_db()
         self._start_maintenance_thread()
         self._initialized = True
 
     def _start_maintenance_thread(self):
-        """Inicia thread de manutenção periódica (TTL)"""
+        """Inicia thread de manutenÃ§Ã£o periÃ³dica (TTL)"""
         def maintenance_loop():
             while True:
                 try:
-                    # Limpar memórias com mais de 30 dias (Phase 2 TTL)
+                    # Limpar memÃ³rias com mais de 30 dias (Phase 2 TTL)
                     self.purge_old_memories(days=30)
                 except Exception as e:
-                    # Ignorar erros de schema silenciosamente na thread de manutenção
+                    # Ignorar erros de schema silenciosamente na thread de manutenÃ§Ã£o
                     if "Expected operand value" not in str(e):
-                        logger.error(f"Erro na limpeza de memória: {e}")
+                        logger.error(f"Erro na limpeza de memÃ³ria: {e}")
                 
-                # Dormir por 24 horas (fora do try para evitar loop infinito em caso de sucesso rápido)
+                # Dormir por 24 horas (fora do try para evitar loop infinito em caso de sucesso rÃ¡pido)
                 time.sleep(24 * 3600)
         
         thread = threading.Thread(target=maintenance_loop, daemon=True)
         thread.start()
-        logger.info("🧹 Thread de manutenção de memória iniciada (TTL: 30 dias)")
+        logger.info("ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)")
 
     def _initialize_db(self):
         if not CHROMA_AVAILABLE:
-            logger.warning("ChromaDB não disponível. Memória em modo fallback (RAM).")
+            logger.warning("ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).")
             return
         
         db_path = os.path.join(os.getcwd(), "data", "memory")
@@ -85,7 +85,7 @@ class MemoryManager:
         try:
             self.client = chromadb.PersistentClient(path=db_path)
             
-            # Tentar criar/acessar coleção com auto-healing
+            # Tentar criar/acessar coleÃ§Ã£o com auto-healing
             try:
                 self.collection = self.client.get_or_create_collection(
                     name="jarvis_memory",
@@ -93,14 +93,14 @@ class MemoryManager:
                 )
                 # Testar se funciona
                 count = self.collection.count()
-                logger.info(f"✅ ChromaDB inicializado: {count} memórias")
+                logger.info(f"âœ… ChromaDB inicializado: {count} memÃ³rias")
             except Exception as e:
                 error_msg = str(e).lower()
                 is_schema_error = any(kw in error_msg for kw in ['column', 'table', 'schema', 'sqlite'])
                 
                 if is_schema_error:
-                    logger.warning(f"🔧 Schema corrompido detectado: {e}")
-                    logger.info("🔄 Resetando ChromaDB...")
+                    logger.warning(f"ðŸ”§ Schema corrompido detectado: {e}")
+                    logger.info("ðŸ”„ Resetando ChromaDB...")
                     
                     # Reset completo do banco
                     try:
@@ -108,14 +108,14 @@ class MemoryManager:
                         backup_path = os.path.join(os.getcwd(), "data", f"memory_backup_{int(datetime.now().timestamp())}")
                         if os.path.exists(db_path):
                             shutil.move(db_path, backup_path)
-                            logger.info(f"📦 Backup criado: {backup_path}")
+                            logger.info(f"ðŸ“¦ Backup criado: {backup_path}")
                         
                         os.makedirs(db_path, exist_ok=True)
                         self.client = chromadb.PersistentClient(path=db_path)
                     except:
                         pass
                 
-                # Criar nova coleção
+                # Criar nova coleÃ§Ã£o
                 try:
                     self.client.delete_collection("jarvis_memory")
                 except:
@@ -125,19 +125,19 @@ class MemoryManager:
                     name="jarvis_memory",
                     metadata={"description": "JARVIS conversation memory (Singularity 11.2 - Reset)"}
                 )
-                logger.info("✅ ChromaDB coleção recriada com sucesso")
+                logger.info("âœ… ChromaDB coleÃ§Ã£o recriada com sucesso")
             
-            # Modelos serão carregados sob demanda (lazy loading)
+            # Modelos serÃ£o carregados sob demanda (lazy loading)
                 
         except Exception as e:
-            logger.error(f"Erro ao inicializar memória: {e}")
+            logger.error(f"Erro ao inicializar memÃ³ria: {e}")
             self.collection = None
 
     def _generate_id(self, command: str, timestamp: str) -> str:
         return hashlib.md5(f"{command}{timestamp}".encode()).hexdigest()
 
     def _ensure_models_loaded(self) -> bool:
-        """Lazy loading: Carrega modelos de embedding apenas quando necessário"""
+        """Lazy loading: Carrega modelos de embedding apenas quando necessÃ¡rio"""
         global EMBEDDINGS_AVAILABLE, CROSSENCODER_AVAILABLE, SentenceTransformer, CrossEncoder
         
         if self._models_loaded:
@@ -145,14 +145,14 @@ class MemoryManager:
         
         if EMBEDDINGS_AVAILABLE is None:
             try:
-                logger.info("⏳ Carregando modelos de embedding (primeira vez)...")
+                logger.info("â³ Carregando modelos de embedding (primeira vez)...")
                 from sentence_transformers import SentenceTransformer as ST, CrossEncoder as CE
                 SentenceTransformer = ST
                 CrossEncoder = CE
                 EMBEDDINGS_AVAILABLE = True
                 CROSSENCODER_AVAILABLE = True
             except (ImportError, OSError) as e:
-                logger.warning(f"Modelos de embedding não disponíveis: {e}")
+                logger.warning(f"Modelos de embedding nÃ£o disponÃ­veis: {e}")
                 EMBEDDINGS_AVAILABLE = False
                 CROSSENCODER_AVAILABLE = False
                 return False
@@ -163,11 +163,11 @@ class MemoryManager:
         try:
             if self.embedding_model is None:
                 self.embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-                logger.info("✅ Embedding model carregado")
+                logger.info("âœ… Embedding model carregado")
             
             if self.reranker is None and CROSSENCODER_AVAILABLE:
                 self.reranker = CrossEncoder('cross-encoder/ms-marco-TinyBERT-L-2-v2')
-                logger.info("✅ Reranker carregado")
+                logger.info("âœ… Reranker carregado")
             
             self._models_loaded = True
             return True
@@ -183,7 +183,7 @@ class MemoryManager:
         return None
 
     def remember(self, command: str, response: str, metadata: Dict = None, is_gold: bool = False):
-        """Salva uma interação. Se is_gold=True, marca como conhecimento destilado."""
+        """Salva uma interaÃ§Ã£o. Se is_gold=True, marca como conhecimento destilado."""
         timestamp = datetime.now().isoformat()
         mem_id = self._generate_id(command, timestamp)
         combined_text = f"USER: {command}\nJARVIS: {response}"
@@ -192,17 +192,17 @@ class MemoryManager:
         meta["timestamp"] = timestamp
         meta["is_gold"] = "true" if is_gold else "false"
         
-        # 🆕 Phase 2: Atualizar Cache de Prompts
+        # ðŸ†• Phase 2: Atualizar Cache de Prompts
         self.prompt_cache[command.strip().lower()] = response
         if len(self.prompt_cache) > self.max_cache_size:
-            # Remover o primeiro item inserido (estratégia simples para exemplo)
+            # Remover o primeiro item inserido (estratÃ©gia simples para exemplo)
             first_key = next(iter(self.prompt_cache))
             del self.prompt_cache[first_key]
         
         if self.collection:
             try:
                 embedding = self._create_embedding(combined_text)
-                # 🆕 Usar upsert ao invés de add para evitar warnings de IDs duplicados
+                # ðŸ†• Usar upsert ao invÃ©s de add para evitar warnings de IDs duplicados
                 with self._chroma_lock:
                     self.collection.upsert(
                         ids=[mem_id],
@@ -210,9 +210,9 @@ class MemoryManager:
                         metadatas=[meta],
                         embeddings=[embedding] if embedding else None
                     )
-                if is_gold: logger.info(f"✨ Memória de OURO destilada: {mem_id[:8]}")
+                if is_gold: logger.info(f"âœ¨ MemÃ³ria de OURO destilada: {mem_id[:8]}")
             except Exception as e:
-                logger.error(f"Erro ao salvar memória persistente: {e}")
+                logger.error(f"Erro ao salvar memÃ³ria persistente: {e}")
         else:
             self.memory_cache[mem_id] = {"text": combined_text, "meta": meta}
 
@@ -250,11 +250,11 @@ class MemoryManager:
             return ""
 
     def get_cached_response(self, query: str) -> Optional[str]:
-        """🆕 Retorna resposta do cache se houver match exato"""
+        """ðŸ†• Retorna resposta do cache se houver match exato"""
         return self.prompt_cache.get(query.strip().lower())
 
     def purge_old_memories(self, days: int = 30):
-        """🆕 Phase 2: Limpa memórias antigas (TTL)"""
+        """ðŸ†• Phase 2: Limpa memÃ³rias antigas (TTL)"""
         if not self.collection: return
         
         try:
@@ -266,7 +266,7 @@ class MemoryManager:
             
             # ChromaDB purge com tratamento de erros de schema (Robust Cleanup)
             try:
-                # Tentativa 1: Query direta (rápida)
+                # Tentativa 1: Query direta (rÃ¡pida)
                 with self._chroma_lock:
                     self.collection.delete(
                         where={"timestamp": {"$lt": cutoff_date}}
@@ -285,12 +285,12 @@ class MemoryManager:
                         for idx, meta in enumerate(all_data['metadatas']):
                             if meta and 'timestamp' in meta:
                                 ts = meta['timestamp']
-                                # Comparação de strings ISO funciona (YYYY-MM-DD...)
+                                # ComparaÃ§Ã£o de strings ISO funciona (YYYY-MM-DD...)
                                 if ts < cutoff_date:
                                     ids_to_delete.append(all_data['ids'][idx])
                     
                     if ids_to_delete:
-                        # Deletar em chunchs de 100 para não travar
+                        # Deletar em chunchs de 100 para nÃ£o travar
                         batch_size = 100
                         for i in range(0, len(ids_to_delete), batch_size):
                             batch = ids_to_delete[i:i + batch_size]
@@ -304,15 +304,15 @@ class MemoryManager:
                     raise e
 
         except Exception as e:
-            logger.error(f"Erro genérico ao limpar memória: {e}")
+            logger.error(f"Erro genÃ©rico ao limpar memÃ³ria: {e}")
 
     def save_to_vault(self, content: str, metadata: Dict[str, Any] = None):
         """
-        🆕 Fase 4: Cofre (Deep Storage)
-        Salva conteúdo bruto no ChromaDB para recuperação semântica futura.
+        ðŸ†• Fase 4: Cofre (Deep Storage)
+        Salva conteÃºdo bruto no ChromaDB para recuperaÃ§Ã£o semÃ¢ntica futura.
         """
         if not self.collection:
-            logger.warning("ChromaDB indisponível. Salvando apenas em log.")
+            logger.warning("ChromaDB indisponÃ­vel. Salvando apenas em log.")
             return
 
         try:
@@ -329,23 +329,23 @@ class MemoryManager:
                     metadatas=[meta],
                     ids=[doc_id]
                 )
-            logger.info(f"🔒 Conteúdo salvo no Cofre (Vault): {doc_id[:8]}...")
+            logger.info(f"ðŸ”’ ConteÃºdo salvo no Cofre (Vault): {doc_id[:8]}...")
         except Exception as e:
             logger.error(f"Erro ao salvar no Cofre: {e}")
 
     def extract_semantic_graph(self, text_content: str):
         """
-        🆕 Fase 4: Grafo (Fast Recall)
-        Extrai conceitos chave e salva em JSON leve para carga rápida na RAM.
+        ðŸ†• Fase 4: Grafo (Fast Recall)
+        Extrai conceitos chave e salva em JSON leve para carga rÃ¡pida na RAM.
         """
         try:
             import ollama
             
-            # Prompt para extração estruturada
+            # Prompt para extraÃ§Ã£o estruturada
             prompt = (
-                f"Extraia os conceitos principais deste texto em formato JSON simples prescrevendo relações.\n"
+                f"Extraia os conceitos principais deste texto em formato JSON simples prescrevendo relaÃ§Ãµes.\n"
                 f"Texto: {text_content[:2000]}...\n\n"
-                f"Saída esperada apenas JSON: {{\"Conceito\": \"Definição\", \"RelacionadoA\": \"OutroConceito\"}}"
+                f"SaÃ­da esperada apenas JSON: {{\"Conceito\": \"DefiniÃ§Ã£o\", \"RelacionadoA\": \"OutroConceito\"}}"
             )
             
             # Usar modelo leve (Tier Fast)
@@ -363,7 +363,7 @@ class MemoryManager:
             # Salvar em arquivo local (Grafo)
             graph_path = os.path.join(os.getcwd(), "data", "memory", "concepts_graph.json")
             
-            # 🔒 Thread-Safe I/O
+            # ðŸ”’ Thread-Safe I/O
             with self._graph_lock:
                 existing_graph = {}
                 if os.path.exists(graph_path):
@@ -376,16 +376,16 @@ class MemoryManager:
                 # Merge
                 existing_graph.update(graph_data)
                 
-                # ✂️ Pruning Inteligente (Limite de 500 conceitos para não explodir RAM)
+                # âœ‚ï¸ Pruning Inteligente (Limite de 500 conceitos para nÃ£o explodir RAM)
                 MAX_GRAPH_SIZE = 500
                 if len(existing_graph) > MAX_GRAPH_SIZE:
                     excess = len(existing_graph) - MAX_GRAPH_SIZE
                     # Remover os primeiros 'excess' itens (FIFO em Python 3.7+)
-                    # Não é perfeito (remove antigos), mas mantém o tamanho controlado
+                    # NÃ£o Ã© perfeito (remove antigos), mas mantÃ©m o tamanho controlado
                     keys_to_remove = list(existing_graph.keys())[:excess]
                     for k in keys_to_remove:
                         del existing_graph[k]
-                    logger.info(f"✂️ Grafo podado: {excess} conceitos antigos removidos.")
+                    logger.info(f"âœ‚ï¸ Grafo podado: {excess} conceitos antigos removidos.")
                 
                 # Write atomicamente (writes to temp then rename) para evitar leitura parcial
                 # Mas no Windows rename atomico tem caveats, vamos usar lock simples + write direto por enquanto
@@ -393,10 +393,10 @@ class MemoryManager:
                 with open(graph_path, 'w', encoding='utf-8') as f:
                     json.dump(existing_graph, f, indent=2, ensure_ascii=False)
                 
-            logger.info(f"🕸️ Grafo Semântico atualizado com {len(graph_data)} novos conceitos.")
+            logger.info(f"ðŸ•¸ï¸ Grafo SemÃ¢ntico atualizado com {len(graph_data)} novos conceitos.")
             
         except Exception as e:
-            logger.error(f"Falha na extração do Grafo Semântico: {e}")
+            logger.error(f"Falha na extraÃ§Ã£o do Grafo SemÃ¢ntico: {e}")
 
-# Instância global
+# InstÃ¢ncia global
 memory_manager = MemoryManager()

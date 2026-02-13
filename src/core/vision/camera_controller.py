@@ -1,6 +1,6 @@
-"""
-Controlador de Câmera (Eyes)
-Responsável por detecção de presença e reconhecimento facial
+﻿"""
+Controlador de CÃ¢mera (Eyes)
+ResponsÃ¡vel por detecÃ§Ã£o de presenÃ§a e reconhecimento facial
 """
 
 import cv2
@@ -33,7 +33,7 @@ def _ensure_face_recognition():
         except (ImportError, OSError) as e:
             FACE_REC_AVAILABLE = False
             face_recognition = None
-            logger.debug(f"Face recognition não encontrado: {e}")
+            logger.debug(f"Face recognition nÃ£o encontrado: {e}")
 
 try:
     # Just check if face_recognition can be imported without actually importing it
@@ -47,7 +47,7 @@ except:
     FACE_REC_AVAILABLE = False
 
 class CameraController:
-    """Controla a webcam e processa visão computacional"""
+    """Controla a webcam e processa visÃ£o computacional"""
 
     def __init__(self):
         self.camera_index = config.get_setting('sensory.camera_index', 0)
@@ -63,23 +63,23 @@ class CameraController:
         self.current_emotion = "neutral"
         self.emotion_history = []
         
-        # 🆕 FASE 1: FPS Adaptativo para economia de CPU
-        self.active_fps = 30  # FPS quando há movimento/usuário
-        self.idle_fps = 5     # FPS quando cenário estático
+        # ðŸ†• FASE 1: FPS Adaptativo para economia de CPU
+        self.active_fps = 30  # FPS quando hÃ¡ movimento/usuÃ¡rio
+        self.idle_fps = 5     # FPS quando cenÃ¡rio estÃ¡tico
         self.motion_threshold = 5000  # Threshold de pixels diferentes para detectar movimento
         self.previous_frame = None
         
-        # Otimização: Usar GPU se disponível
+        # OtimizaÃ§Ã£o: Usar GPU se disponÃ­vel
         if hardware_manager.get_device() == "cuda":
              if self.face_detection_model == 'hog':
-                 logger.info("GPU detectada. Ajustando FaceID para modo CNN para maior precisão.")
+                 logger.info("GPU detectada. Ajustando FaceID para modo CNN para maior precisÃ£o.")
                  self.face_detection_model = 'cnn'
         else:
             if self.face_detection_model == 'cnn':
-                logger.warning("Modelo CNN solicitado mas rodando em CPU. Isso será LENTO. Recomendo HOG para CPU.")
+                logger.warning("Modelo CNN solicitado mas rodando em CPU. Isso serÃ¡ LENTO. Recomendo HOG para CPU.")
                 self.face_detection_model = 'hog'
         
-        # 🆕 MEDIAPIPE FACE DETECTION: DISABLED FOR STABILITY
+        # ðŸ†• MEDIAPIPE FACE DETECTION: DISABLED FOR STABILITY
         self.mp_face_detection = None
         self.face_detector = None
         # try:
@@ -89,11 +89,11 @@ class CameraController:
         #         model_selection=0,
         #         min_detection_confidence=0.5
         #     )
-        #     logger.info("✅ MediaPipe Face Detection inicializado (Estável)")
+        #     logger.info("âœ… MediaPipe Face Detection inicializado (EstÃ¡vel)")
         # except Exception as e:
-        #     logger.warning(f"⚠️ Erro ao inicializar MediaPipe Face: {e}")
+        #     logger.warning(f"âš ï¸ Erro ao inicializar MediaPipe Face: {e}")
         
-        # Callback para enviar vídeo para GUI (se necessário)
+        # Callback para enviar vÃ­deo para GUI (se necessÃ¡rio)
         self.on_frame_ready: Optional[Callable[[Any], None]] = None
         
         # Carregar faces conhecidas em background
@@ -118,7 +118,7 @@ class CameraController:
         count = 0
         for file_path in list(faces_dir.glob("*.jpg")) + list(faces_dir.glob("*.png")) + list(faces_dir.glob("*.jpeg")):
             try:
-                # O nome do arquivo é o nome da pessoa (remove sufixo de ângulo)
+                # O nome do arquivo Ã© o nome da pessoa (remove sufixo de Ã¢ngulo)
                 raw_name = file_path.stem
                 name = raw_name.split('_')[0]
                 
@@ -129,32 +129,32 @@ class CameraController:
                     self.known_face_encodings.append(encodings[0])
                     self.known_face_names.append(name)
                     count += 1
-                    logger.info(f"   👤 FaceID: Carregada biometria de '{raw_name}'")
+                    logger.info(f"   ðŸ‘¤ FaceID: Carregada biometria de '{raw_name}'")
                 else:
-                    # TRATAMENTO: Mover para quarentena se não houver face
-                    logger.error(f"   ❌ FaceID: Rosto não identificado em '{file_path.name}'. Isolando em quarentena.")
+                    # TRATAMENTO: Mover para quarentena se nÃ£o houver face
+                    logger.error(f"   âŒ FaceID: Rosto nÃ£o identificado em '{file_path.name}'. Isolando em quarentena.")
                     quarantine_dir.mkdir(parents=True, exist_ok=True)
                     shutil.move(str(file_path), str(quarantine_dir / file_path.name))
             except Exception as e:
-                logger.error(f"   ❌ FaceID: Erro ao tratar {file_path.name}: {e}")
+                logger.error(f"   âŒ FaceID: Erro ao tratar {file_path.name}: {e}")
                 
         if count == 0:
-            logger.warning("   🔶 Camera: Nenhum perfil facial ativo.")
+            logger.warning("   ðŸ”¶ Camera: Nenhum perfil facial ativo.")
         else:
-            logger.info(f"✅ Camera: {count} perfis biométricos sincronizados.")
+            logger.info(f"âœ… Camera: {count} perfis biomÃ©tricos sincronizados.")
 
     def start_monitoring(self):
         """Inicia monitoramento em background"""
         if self.is_monitoring: return
         
-        # 🆕 SAFE START: Load faces only when monitoring starts
+        # ðŸ†• SAFE START: Load faces only when monitoring starts
         if not self.known_face_encodings:
              threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
 
         self.is_monitoring = True
         self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self.monitor_thread.start()
-        logger.info("Monitoramento de visão iniciado.")
+        logger.info("Monitoramento de visÃ£o iniciado.")
 
     def stop_monitoring(self):
         """Para monitoramento"""
@@ -163,17 +163,17 @@ class CameraController:
             self.monitor_thread.join(timeout=2)
 
     def _monitor_loop(self):
-        """Loop principal de visão com FPS adaptativo"""
-        # 🆕 SAFE DELAY: Garantir que a GUI e outros sistemas estejam prontos
+        """Loop principal de visÃ£o com FPS adaptativo"""
+        # ðŸ†• SAFE DELAY: Garantir que a GUI e outros sistemas estejam prontos
         time.sleep(2)
         
         video_capture = None
         try:
-            # 🆕 DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
-            # 🆕 GLOBAL NEURAL LOCK: Prevent conflicts with model loading
-            logger.info("📹 Opening camera with DirectShow backend...")
+            # ðŸ†• DIRECTSHOW: Force DSHOW backend to avoid MSMF conflicts with PyQt6
+            # ðŸ†• GLOBAL NEURAL LOCK: Prevent conflicts with model loading
+            logger.info("ðŸ“¹ Opening camera with DirectShow backend...")
             
-            # Tentar abrir a câmera com retry
+            # Tentar abrir a cÃ¢mera com retry
             for attempt in range(3):
                 try:
                     with hardware_manager.neural_lock:
@@ -181,17 +181,17 @@ class CameraController:
                     if video_capture and video_capture.isOpened():
                         break
                 except Exception as e:
-                    logger.warning(f"Tentativa {attempt+1} de abrir câmera falhou: {e}")
+                    logger.warning(f"Tentativa {attempt+1} de abrir cÃ¢mera falhou: {e}")
                     time.sleep(1)
             
             if not video_capture or not video_capture.isOpened():
-                logger.error(f"Não foi possível abrir a câmera {self.camera_index} após múltiplas tentativas.")
+                logger.error(f"NÃ£o foi possÃ­vel abrir a cÃ¢mera {self.camera_index} apÃ³s mÃºltiplas tentativas.")
                 return
                 
-            logger.info("✅ Camera opened successfully (FPS Adaptativo Ativo)")
+            logger.info("âœ… Camera opened successfully (FPS Adaptativo Ativo)")
 
             process_this_frame = True
-            is_active_mode = True  # Começa em modo ativo
+            is_active_mode = True  # ComeÃ§a em modo ativo
 
             while self.is_monitoring:
                 ret, frame = video_capture.read()
@@ -199,7 +199,7 @@ class CameraController:
                     time.sleep(1)
                     continue
 
-                # 🆕 FASE 1: Detecção de Movimento para FPS Adaptativo
+                # ðŸ†• FASE 1: DetecÃ§Ã£o de Movimento para FPS Adaptativo
                 motion_detected = False
                 try:
                     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -216,19 +216,19 @@ class CameraController:
                     
                     self.previous_frame = gray_frame
                 except Exception as e:
-                    logger.debug(f"Erro na detecção de movimento: {e}")
+                    logger.debug(f"Erro na detecÃ§Ã£o de movimento: {e}")
                     motion_detected = True  # Fallback: assume movimento
 
                 # Determinar modo (Ativo vs Idle)
                 idle_time = time.time() - self.last_seen_time if self.last_seen_time > 0 else 0
                 should_be_active = motion_detected or idle_time < 10  # 10s de grace period
                 
-                # Transição de modo com log
+                # TransiÃ§Ã£o de modo com log
                 if should_be_active and not is_active_mode:
-                    logger.info("⚡ Camera: Modo ATIVO (movimento detectado)")
+                    logger.info("âš¡ Camera: Modo ATIVO (movimento detectado)")
                     is_active_mode = True
                 elif not should_be_active and is_active_mode:
-                    logger.info("💤 Camera: Modo IDLE (cenário estático)")
+                    logger.info("ðŸ’¤ Camera: Modo IDLE (cenÃ¡rio estÃ¡tico)")
                     is_active_mode = False
 
                 # Processar Face Recognition APENAS em modo ativo
@@ -255,9 +255,9 @@ class CameraController:
                                         if True in match:
                                             name = self.known_face_names[match.index(True)]
                                         
-                                        # Log e atualização
+                                        # Log e atualizaÃ§Ã£o
                                         if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
-                                            logger.info(f"Usuário identificado: {name}")
+                                            logger.info(f"UsuÃ¡rio identificado: {name}")
                                             self.last_seen_user = name
                                         self.last_seen_time = time.time()
                                     self._faceid_failures = 0
@@ -266,7 +266,7 @@ class CameraController:
                         except Exception as e:
                             logger.debug(f"Erro FaceID: {e}")
             
-                # Emoção (apenas em modo ativo)
+                # EmoÃ§Ã£o (apenas em modo ativo)
                 if is_active_mode:
                     try:
                         emotion_data = emotion_detector.detect_emotion_from_frame(frame)
@@ -274,8 +274,8 @@ class CameraController:
                     except: pass
 
 
-                    # 🆕 BRILHO ADAPTATIVO (Stark Context) - DESATIVADO POR SOLICITAÇÃO
-                    # O Jarvis mantém o poder de controlar (via DeviceManager), mas não faz isso sozinho.
+                    # ðŸ†• BRILHO ADAPTATIVO (Stark Context) - DESATIVADO POR SOLICITAÃ‡ÃƒO
+                    # O Jarvis mantÃ©m o poder de controlar (via DeviceManager), mas nÃ£o faz isso sozinho.
                     # if getattr(self, '_brightness_counter', 0) % 100 == 0: # Check a cada ~3s
                     #     self._check_ambient_light(frame)
                     # self._brightness_counter = getattr(self, '_brightness_counter', 0) + 1
@@ -307,19 +307,19 @@ class CameraController:
                         # Silently ignore gesture errors to prevent log flooding
                         pass
 
-                # 🆕 FASE 1: FPS Adaptativo
+                # ðŸ†• FASE 1: FPS Adaptativo
                 sleep_time = (1.0 / self.active_fps) if is_active_mode else (1.0 / self.idle_fps)
                 time.sleep(sleep_time)
 
         except Exception as e:
-            logger.error(f"❌ Erro no loop de monitoramento: {e}")
+            logger.error(f"âŒ Erro no loop de monitoramento: {e}")
         finally:
             if video_capture:
                 video_capture.release()
-                logger.info("📹 Camera released")
+                logger.info("ðŸ“¹ Camera released")
 
     def register_new_face(self, name: str) -> bool:
-        """Tira fotos de múltiplos ângulos para mapear o usuário de forma inteligente"""
+        """Tira fotos de mÃºltiplos Ã¢ngulos para mapear o usuÃ¡rio de forma inteligente"""
         try:
             # Ensure face recognition is loaded
             _ensure_face_recognition()
@@ -328,24 +328,24 @@ class CameraController:
                 return False
                 
             from src.core.audio.voice_controller import voice_controller
-            # 🆕 DIRECTSHOW
+            # ðŸ†• DIRECTSHOW
             video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
             
             if not video_capture.isOpened():
-                logger.error("Não foi possível abrir a câmera para cadastro.")
+                logger.error("NÃ£o foi possÃ­vel abrir a cÃ¢mera para cadastro.")
                 return False
 
-            logger.info(f"🎭 Iniciando mapeamento facial dinâmico para: {name}")
-            voice_controller.speak(f"Iniciando mapeamento facial para {name}. Por favor, fique de frente para a câmera.")
+            logger.info(f"ðŸŽ­ Iniciando mapeamento facial dinÃ¢mico para: {name}")
+            voice_controller.speak(f"Iniciando mapeamento facial para {name}. Por favor, fique de frente para a cÃ¢mera.")
             
             faces_dir = config.DATA_DIR / 'faces'
             faces_dir.mkdir(parents=True, exist_ok=True)
             
             angles = [
-                {"msg": "Olhe diretamente para a câmera.", "suffix": "front"},
-                {"msg": "Agora, vire levemente a cabeça para a direita.", "suffix": "right"},
+                {"msg": "Olhe diretamente para a cÃ¢mera.", "suffix": "front"},
+                {"msg": "Agora, vire levemente a cabeÃ§a para a direita.", "suffix": "right"},
                 {"msg": "Perfeito. Agora para a esquerda.", "suffix": "left"},
-                {"msg": "Incline a cabeça um pouco para cima.", "suffix": "up"},
+                {"msg": "Incline a cabeÃ§a um pouco para cima.", "suffix": "up"},
                 {"msg": "E finalmente, um pouco para baixo.", "suffix": "down"}
             ]
             
@@ -353,14 +353,14 @@ class CameraController:
             for angle in angles:
                 voice_controller.speak(angle["msg"])
                 
-                # Aguardar detecção de face antes de capturar
+                # Aguardar detecÃ§Ã£o de face antes de capturar
                 face_found = False
                 attempts = 0
                 while not face_found and attempts < 30: # Max 30 frames (~3-5s)
                     ret, frame = video_capture.read()
                     if not ret: break
                     
-                    # Detecção rápida para confirmar presença
+                    # DetecÃ§Ã£o rÃ¡pida para confirmar presenÃ§a
                     small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
                     rgb_small = small_frame[:, :, ::-1]
                     locations = face_recognition.face_locations(rgb_small, model="hog")
@@ -369,24 +369,24 @@ class CameraController:
                         face_found = True
                         save_path = faces_dir / f"{name}_{angle['suffix']}.jpg"
                         cv2.imwrite(str(save_path), frame)
-                        logger.info(f"📸 Capturado ângulo: {angle['suffix']}")
+                        logger.info(f"ðŸ“¸ Capturado Ã¢ngulo: {angle['suffix']}")
                         captured_count += 1
-                        time.sleep(1) # Pausa para o usuário mudar a posição
+                        time.sleep(1) # Pausa para o usuÃ¡rio mudar a posiÃ§Ã£o
                     
                     attempts += 1
                     time.sleep(0.1)
                 
                 if not face_found:
-                    voice_controller.speak("Não consegui detectar seu rosto. Vamos tentar o próximo ângulo.")
+                    voice_controller.speak("NÃ£o consegui detectar seu rosto. Vamos tentar o prÃ³ximo Ã¢ngulo.")
 
             video_capture.release()
             
             if captured_count > 0:
-                voice_controller.speak(f"Mapeamento concluído com sucesso. Já te reconheço agora, {name}.")
-                # Hot-reload no controlador de câmera
+                voice_controller.speak(f"Mapeamento concluÃ­do com sucesso. JÃ¡ te reconheÃ§o agora, {name}.")
+                # Hot-reload no controlador de cÃ¢mera
                 self._load_known_faces()
                 
-                # Sincronizar com o Vision System (Singleton) se disponível
+                # Sincronizar com o Vision System (Singleton) se disponÃ­vel
                 try:
                     from src.core.vision.vision_system import get_vision_system
                     vs = get_vision_system()
@@ -395,7 +395,7 @@ class CameraController:
                 
                 return True
             else:
-                voice_controller.speak("Falha ao capturar biometria. Certifique-se de que há iluminação suficiente.")
+                voice_controller.speak("Falha ao capturar biometria. Certifique-se de que hÃ¡ iluminaÃ§Ã£o suficiente.")
                 return False
             
         except Exception as e:
@@ -403,7 +403,7 @@ class CameraController:
             return False
 
     def _check_ambient_light(self, frame):
-        """Ajusta o brilho do Windows baseado na luz detectada pela câmera"""
+        """Ajusta o brilho do Windows baseado na luz detectada pela cÃ¢mera"""
         try:
             from src.core.management.device_manager import device_manager
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -414,11 +414,11 @@ class CameraController:
             target_brightness = max(10, min(100, target_brightness))
             
             current_br = getattr(self, '_last_brightness', -1)
-            # Só muda se a diferença for > 15% para evitar flickering
+            # SÃ³ muda se a diferenÃ§a for > 15% para evitar flickering
             if abs(target_brightness - current_br) > 15:
                 device_manager.set_brightness(target_brightness)
                 self._last_brightness = target_brightness
-                logger.info(f"💡 Brilho adaptativo: Ambiente {avg_brightness:.1f} -> Tela {target_brightness}%")
+                logger.info(f"ðŸ’¡ Brilho adaptativo: Ambiente {avg_brightness:.1f} -> Tela {target_brightness}%")
         except Exception as e:
             logger.debug(f"Falha no brilho adaptativo: {e}")
 

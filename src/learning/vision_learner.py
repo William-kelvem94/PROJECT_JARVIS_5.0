@@ -1,4 +1,4 @@
-"""
+﻿"""
 Vision Learner for JARVIS AGI Machine Learning Core.
 
 This module implements few-shot learning for YOLO object detection,
@@ -584,7 +584,7 @@ class VisionLearner:
         ============================================================================
         - Smaller batch size (8) for UI screenshots (typically 1920x1080)
         - Higher image size (640) for small UI element detection
-        - Data augmentation: rotation (±10°), scaling (0.8-1.2x), flip
+        - Data augmentation: rotation (Â±10Â°), scaling (0.8-1.2x), flip
         - Mosaic augmentation: 4 UI screenshots combined for diverse contexts
         
         Args:
@@ -638,8 +638,8 @@ class VisionLearner:
                 "pretrained": True,
                 
                 # UI-specific augmentations
-                "degrees": 10.0,  # Rotation ±10°
-                "translate": 0.1,  # Translation ±10%
+                "degrees": 10.0,  # Rotation Â±10Â°
+                "translate": 0.1,  # Translation Â±10%
                 "scale": 0.5,  # Scaling 0.5-1.5x
                 "shear": 0.0,  # No shear (UI elements are rectangular)
                 "flipud": 0.0,  # No vertical flip (breaks UI orientation)

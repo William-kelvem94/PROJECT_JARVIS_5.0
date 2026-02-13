@@ -40,7 +40,6 @@
 PROJECT_JARVIS_5.0/
 ├── 📂 config/                    # Configurações do sistema
 │   ├── ai_config.yaml           # Configuração da IA
-│   ├── democratic_config.py     # Configuração do sistema democrático
 │   └── settings.json            # Configurações gerais
 ├── 📂 data/                     # Dados e recursos
 │   ├── logs/                    # Logs do sistema
@@ -51,7 +50,6 @@ PROJECT_JARVIS_5.0/
 ├── 📂 docs/                     # Documentação
 │   ├── ai_training/            # Guias de treinamento
 │   ├── technical/              # Documentação técnica
-│   ├── SISTEMA_DEMOCRATICO_PRONTO.md
 │   └── ...
 ├── 📂 scripts/                  # Scripts utilitários
 │   ├── translation/            # Scripts de tradução
@@ -113,25 +111,25 @@ O **JARVIS 5.0 (Singularity Edition)** representa o estado da arte em sistemas d
 - **👁️ Gestos Faciais**: Reconhecimento e autenticação biométrica
 - **⌨️ Chat Interface**: Interação textual avançada
 
-### 🏛️ Sistema Democrático de Inteligência
+### 🏛️ Stark Architecture 2.0 & Elite Search
 
-**Nova Arquitetura de IA Distribuída**: Implementação completa do sistema democrático com as seguintes capacidades:
+**Nova Arquitetura de IA Factual**: Implementação do protocolo Stark 2.0 com validação externa:
 
 | Componente | Descrição | Status |
 |------------|-----------|--------|
-| 🌐 **Network Mesh** | Rede democrática de dispositivos conectados | ✅ Implementado |
-| 🔄 **Auto-Recovery** | Sistema de recuperação automática inteligente | ✅ Implementado |
-| 📊 **Predictive Analytics** | Análise preditiva com ML para otimização | ✅ Implementado |
-| ⚖️ **Task Distribution** | Distribuição democrática de tarefas | ✅ Implementado |
-| 🔋 **Energy Optimization** | Otimização energética adaptiva | ✅ Implementado |
-| 📈 **Performance Monitoring** | Monitoramento contínuo de performance | ✅ Implementado |
+| 🌐 **Hardware Lock** | Bloqueio obrigatório para aceleração CUDA/OpenVINO | ✅ Implementado |
+| 🔄 **Auto-Recovery** | Sistema de auto-reparo síncrono no boot | ✅ Implementado |
+| ⚖️ **Elite Search** | Cross-referencing multi-engine (Google/Wiki/HF) | ✅ Implementado |
+| 🔋 **Power Management** | Otimização energética via hardware_manager | ✅ Implementado |
+| 📈 **Truth Voting** | Decisão de confiança baseada em votação 2 de 3 | ✅ Implementado |
+| 🧠 **Curiosity Eng.** | Detecção de dissonância e aprendizado ativo | ✅ Implementado |
 
-**Características do Sistema Democrático:**
-- **Eleições Automáticas**: Seleção dinâmica de líderes baseada em performance
-- **Redistribuição Inteligente**: Balanceamento de carga entre dispositivos
-- **Recuperação Autônoma**: Healing automático de falhas críticas
-- **Análise Preditiva**: Previsão de falhas e otimização preventiva
-- **Configuração Centralizada**: Gestão unificada via `democratic_config.py`
+**Características da Stark 2.0:**
+- **Fail Fast Protocol**: O sistema não sobe sem hardware alinhado
+- **Validação Semântica**: Comparação via Cosine Similarity para veracidade
+- **Busca de Elite**: Acesso em tempo real a ArXiv, HuggingFace e Google
+- **Aprendizado Ativo**: JARVIS pergunta ao usuário em caso de dados conflitantes
+- **Memória Unificada**: Rota absoluta de memória para evitar imports circulares
 
 ---
 

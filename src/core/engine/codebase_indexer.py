@@ -1,6 +1,6 @@
-"""
-Indexador de Código para RAG (Knowledge Graph)
-Varre o projeto para extrair conhecimento semântico e armazenar na memória neural.
+﻿"""
+Indexador de CÃ³digo para RAG (Knowledge Graph)
+Varre o projeto para extrair conhecimento semÃ¢ntico e armazenar na memÃ³ria neural.
 """
 
 import os
@@ -22,12 +22,12 @@ class CodebaseIndexer:
 
     def index_project(self):
         """Varre e indexa todos os arquivos suportados no projeto"""
-        logger.info(f"Iniciando indexação do projeto: {self.project_root}")
+        logger.info(f"Iniciando indexaÃ§Ã£o do projeto: {self.project_root}")
         
         files_indexed = 0
         try:
             for root, dirs, files in os.walk(self.project_root):
-                # Filtrar diretórios excluídos
+                # Filtrar diretÃ³rios excluÃ­dos
                 dirs[:] = [d for d in dirs if d not in self.exclude_dirs]
                 
                 for file in files:
@@ -36,14 +36,14 @@ class CodebaseIndexer:
                         self._index_file(file_path)
                         files_indexed += 1
             
-            logger.info(f"Indexação concluída. {files_indexed} arquivos processados.")
+            logger.info(f"IndexaÃ§Ã£o concluÃ­da. {files_indexed} arquivos processados.")
             return files_indexed
         except Exception as e:
-            logger.error(f"Erro durante a indexação: {e}")
+            logger.error(f"Erro durante a indexaÃ§Ã£o: {e}")
             return 0
 
     def _index_file(self, file_path: Path):
-        """Lê e armazena o conteúdo de um arquivo na memória neural"""
+        """LÃª e armazena o conteÃºdo de um arquivo na memÃ³ria neural"""
         try:
             # Relativizar caminho para facilitar leitura da IA
             rel_path = file_path.relative_to(self.project_root)
@@ -55,7 +55,7 @@ class CodebaseIndexer:
             if not content.strip():
                 return
 
-            # Dividir em chunks de ~1000 caracteres se necessário
+            # Dividir em chunks de ~1000 caracteres se necessÃ¡rio
             chunk_size = 1500
             chunks = [content[i:i+chunk_size] for i in range(0, len(content), chunk_size)]
             
@@ -73,10 +73,10 @@ class CodebaseIndexer:
         except Exception as e:
             logger.error(f"Erro ao indexar arquivo {file_path}: {e}")
 
-# Instância global
+# InstÃ¢ncia global
 codebase_indexer = CodebaseIndexer()
 
 if __name__ == "__main__":
-    # Teste de indexação
+    # Teste de indexaÃ§Ã£o
     logging.basicConfig(level=logging.INFO)
     codebase_indexer.index_project()

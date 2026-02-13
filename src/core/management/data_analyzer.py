@@ -1,5 +1,5 @@
-"""
-Analisador inteligente de dados extraídos
+﻿"""
+Analisador inteligente de dados extraÃ­dos
 Categoriza e processa dados usando IA e regras
 """
 
@@ -15,7 +15,7 @@ from src.database.models import db_manager, ExtractedData, DocumentCategory
 logger = logging.getLogger(__name__)
 
 class DataAnalyzer:
-    """Classe para análise inteligente de dados extraídos"""
+    """Classe para anÃ¡lise inteligente de dados extraÃ­dos"""
 
     def __init__(self):
         self.nlp = None
@@ -24,11 +24,11 @@ class DataAnalyzer:
         # Carregar modelo de linguagem natural
         self._load_nlp_model()
 
-        # Carregar padrões de extração
+        # Carregar padrÃµes de extraÃ§Ã£o
         self.extraction_patterns = config.EXTRACTION_PATTERNS.copy()
         self.data_categories = config.DATA_CATEGORIES.copy()
 
-        # Padrões de categorização por documento
+        # PadrÃµes de categorizaÃ§Ã£o por documento
         self.document_patterns = self._load_document_patterns()
 
         logger.info("Analisador de dados inicializado")
@@ -39,13 +39,13 @@ class DataAnalyzer:
             # Importar spacy primeiro
             import spacy
 
-            # Tentar carregar modelo para português
+            # Tentar carregar modelo para portuguÃªs
             self.nlp = spacy.load("pt_core_news_sm")
             logger.info("Modelo spaCy carregado com sucesso")
         except (OSError, ImportError):
-            logger.warning("Modelo spaCy não encontrado. Alguns recursos estarão limitados.")
+            logger.warning("Modelo spaCy nÃ£o encontrado. Alguns recursos estarÃ£o limitados.")
             try:
-                # Fallback para modelo básico
+                # Fallback para modelo bÃ¡sico
                 spacy.cli.download("pt_core_news_sm")
                 self.nlp = spacy.load("pt_core_news_sm")
             except Exception as e:
@@ -53,7 +53,7 @@ class DataAnalyzer:
                 self.nlp = None
 
     def _load_document_patterns(self) -> Dict[str, Dict[str, Any]]:
-        """Carrega padrões para categorização de documentos"""
+        """Carrega padrÃµes para categorizaÃ§Ã£o de documentos"""
         return {
             "receipt": {
                 "keywords": ["nota fiscal", "cupom fiscal", "recibo", "comprovante"],
@@ -61,23 +61,23 @@ class DataAnalyzer:
                 "confidence_boost": 0.8
             },
             "invoice": {
-                "keywords": ["fatura", "conta", "boleto", "cobrança"],
-                "patterns": [r"fatura\s+\w+", r"boleto\s+bancário", r"conta\s+de\s+luz|água|telefone"],
+                "keywords": ["fatura", "conta", "boleto", "cobranÃ§a"],
+                "patterns": [r"fatura\s+\w+", r"boleto\s+bancÃ¡rio", r"conta\s+de\s+luz|Ã¡gua|telefone"],
                 "confidence_boost": 0.7
             },
             "contract": {
-                "keywords": ["contrato", "acordo", "termo", "convenção"],
+                "keywords": ["contrato", "acordo", "termo", "convenÃ§Ã£o"],
                 "patterns": [r"contrato\s+de\s+\w+", r"termo\s+de\s+acordo"],
                 "confidence_boost": 0.9
             },
             "report": {
-                "keywords": ["relatório", "relatorio", "laudo", "parecer"],
-                "patterns": [r"relatório\s+\w+", r"laudo\s+técnico"],
+                "keywords": ["relatÃ³rio", "relatorio", "laudo", "parecer"],
+                "patterns": [r"relatÃ³rio\s+\w+", r"laudo\s+tÃ©cnico"],
                 "confidence_boost": 0.6
             },
             "form": {
-                "keywords": ["formulário", "formulario", "cadastro", "registro"],
-                "patterns": [r"formulário\s+de\s+\w+", r"cadastro\s+\w+"],
+                "keywords": ["formulÃ¡rio", "formulario", "cadastro", "registro"],
+                "patterns": [r"formulÃ¡rio\s+de\s+\w+", r"cadastro\s+\w+"],
                 "confidence_boost": 0.5
             },
             "id_document": {
@@ -86,22 +86,22 @@ class DataAnalyzer:
                 "confidence_boost": 0.9
             },
             "financial": {
-                "keywords": ["extrato", "saldo", "transferência", "transferencia", "pagamento"],
-                "patterns": [r"extrato\s+bancário", r"saldo\s+atual"],
+                "keywords": ["extrato", "saldo", "transferÃªncia", "transferencia", "pagamento"],
+                "patterns": [r"extrato\s+bancÃ¡rio", r"saldo\s+atual"],
                 "confidence_boost": 0.7
             }
         }
 
     def analyze_text(self, text: str, capture_id: Optional[int] = None) -> Dict[str, Any]:
         """
-        Analisa texto extraído e extrai dados estruturados
+        Analisa texto extraÃ­do e extrai dados estruturados
 
         Args:
             text: Texto a ser analisado
             capture_id: ID da captura no banco (opcional)
 
         Returns:
-            Dicionário com dados extraídos e categorização
+            DicionÃ¡rio com dados extraÃ­dos e categorizaÃ§Ã£o
         """
         try:
             if not text or not text.strip():
@@ -111,18 +111,18 @@ class DataAnalyzer:
             cleaned_text = TextHelper.clean_ocr_text(text)
             normalized_text = TextHelper.normalize_text(cleaned_text)
 
-            # Extrair dados usando padrões
+            # Extrair dados usando padrÃµes
             extracted_data = self._extract_data_with_patterns(cleaned_text)
 
             # Categorizar documento
             categories = self._categorize_document(cleaned_text, normalized_text)
 
-            # Análise adicional com NLP se disponível
+            # AnÃ¡lise adicional com NLP se disponÃ­vel
             if self.nlp:
                 nlp_analysis = self._analyze_with_nlp(cleaned_text)
                 extracted_data.extend(nlp_analysis.get('entities', []))
 
-            # Calcular confiança geral
+            # Calcular confianÃ§a geral
             avg_confidence = sum(item.get('confidence', 0) for item in extracted_data) / len(extracted_data) if extracted_data else 0
 
             result = {
@@ -137,25 +137,25 @@ class DataAnalyzer:
             if capture_id:
                 self._save_analysis_results(capture_id, result)
 
-            logger.info(f"Análise concluída: {len(extracted_data)} dados extraídos, {len(categories)} categorias")
+            logger.info(f"AnÃ¡lise concluÃ­da: {len(extracted_data)} dados extraÃ­dos, {len(categories)} categorias")
             return result
 
         except Exception as e:
-            logger.error(f"Erro na análise de texto: {e}")
+            logger.error(f"Erro na anÃ¡lise de texto: {e}")
             return {'extracted_data': [], 'categories': [], 'confidence': 0, 'error': str(e)}
 
     def _extract_data_with_patterns(self, text: str) -> List[Dict[str, Any]]:
-        """Extrai dados usando padrões regex"""
+        """Extrai dados usando padrÃµes regex"""
         extracted_data = []
 
-        # Extrair usando padrões pré-definidos
+        # Extrair usando padrÃµes prÃ©-definidos
         pattern_results = TextHelper.extract_patterns(text, self.extraction_patterns)
 
         for pattern_name, matches in pattern_results.items():
             data_type = self._get_data_type_for_pattern(pattern_name)
 
             for match in matches:
-                # Validar dados específicos
+                # Validar dados especÃ­ficos
                 validated_value = self._validate_extracted_data(pattern_name, match)
 
                 if validated_value:
@@ -175,7 +175,7 @@ class DataAnalyzer:
         return extracted_data
 
     def _get_data_type_for_pattern(self, pattern_name: str) -> str:
-        """Retorna o tipo de dados para um padrão"""
+        """Retorna o tipo de dados para um padrÃ£o"""
         pattern_to_type = {
             'cpf': 'personal',
             'cnpj': 'business',
@@ -189,14 +189,14 @@ class DataAnalyzer:
         return pattern_to_type.get(pattern_name, 'documents')
 
     def _validate_extracted_data(self, pattern_name: str, value: str) -> Optional[str]:
-        """Valida dados extraídos"""
+        """Valida dados extraÃ­dos"""
         try:
             if pattern_name == 'cpf':
                 return value if DataHelper.validate_cpf(value) else None
             elif pattern_name == 'cnpj':
                 return value if DataHelper.validate_cnpj(value) else None
             elif pattern_name == 'email':
-                # Validação básica de email
+                # ValidaÃ§Ã£o bÃ¡sica de email
                 if '@' in value and '.' in value.split('@')[1]:
                     return value.lower().strip()
             elif pattern_name == 'phone':
@@ -214,15 +214,15 @@ class DataAnalyzer:
                 parsed_date = DataHelper.parse_date(value)
                 return parsed_date.strftime('%d/%m/%Y') if parsed_date else None
 
-            # Para outros padrões, retornar valor limpo
+            # Para outros padrÃµes, retornar valor limpo
             return value.strip()
 
         except Exception as e:
-            logger.error(f"Erro na validação de {pattern_name}: {e}")
+            logger.error(f"Erro na validaÃ§Ã£o de {pattern_name}: {e}")
             return value.strip()
 
     def _calculate_pattern_confidence(self, pattern_name: str, value: str) -> float:
-        """Calcula confiança para dados extraídos"""
+        """Calcula confianÃ§a para dados extraÃ­dos"""
         base_confidence = {
             'cpf': 0.95,
             'cnpj': 0.95,
@@ -243,11 +243,11 @@ class DataAnalyzer:
         return min(confidence, 1.0)
 
     def _extract_contextual_data(self, text: str) -> List[Dict[str, Any]]:
-        """Extrai dados contextuais usando análise de texto"""
+        """Extrai dados contextuais usando anÃ¡lise de texto"""
         contextual_data = []
 
         try:
-            # Procurar por nomes próprios
+            # Procurar por nomes prÃ³prios
             name_patterns = [
                 r'Sr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
                 r'Sra\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)',
@@ -268,9 +268,9 @@ class DataAnalyzer:
                             'validated': False
                         })
 
-            # Procurar por endereços
+            # Procurar por endereÃ§os
             address_patterns = [
-                r'Endereço:?\s*([^\n\r]{10,80})',
+                r'EndereÃ§o:?\s*([^\n\r]{10,80})',
                 r'Rua\s+[^,]{5,50},\s*\d+',
                 r'Av\.?\s+[^,]{5,50},\s*\d+'
             ]
@@ -289,12 +289,12 @@ class DataAnalyzer:
                         })
 
         except Exception as e:
-            logger.error(f"Erro na extração contextual: {e}")
+            logger.error(f"Erro na extraÃ§Ã£o contextual: {e}")
 
         return contextual_data
 
     def _categorize_document(self, text: str, normalized_text: str) -> List[Dict[str, Any]]:
-        """Categoriza documento baseado no conteúdo"""
+        """Categoriza documento baseado no conteÃºdo"""
         categories = []
 
         try:
@@ -308,16 +308,16 @@ class DataAnalyzer:
                         confidence += 0.3
                         keywords_found.append(keyword)
 
-                # Verificar padrões regex
+                # Verificar padrÃµes regex
                 for pattern in patterns['patterns']:
                     if re.search(pattern, text, re.IGNORECASE):
                         confidence += 0.4
                         break
 
-                # Aplicar boost de confiança
+                # Aplicar boost de confianÃ§a
                 confidence *= patterns['confidence_boost']
 
-                # Adicionar categoria se confiança suficiente
+                # Adicionar categoria se confianÃ§a suficiente
                 if confidence >= 0.4:
                     categories.append({
                         'category_name': doc_type,
@@ -326,11 +326,11 @@ class DataAnalyzer:
                         'ai_suggestion': True
                     })
 
-            # Ordenar por confiança
+            # Ordenar por confianÃ§a
             categories.sort(key=lambda x: x['confidence_score'], reverse=True)
 
         except Exception as e:
-            logger.error(f"Erro na categorização: {e}")
+            logger.error(f"Erro na categorizaÃ§Ã£o: {e}")
 
         return categories[:3]  # Top 3 categorias
 
@@ -358,12 +358,12 @@ class DataAnalyzer:
                         'validated': False
                     })
 
-            # Análise de sentimento (básica)
+            # AnÃ¡lise de sentimento (bÃ¡sica)
             sentiment_score = self._calculate_basic_sentiment(doc)
             analysis_result['sentiment'] = sentiment_score
 
         except Exception as e:
-            logger.error(f"Erro na análise NLP: {e}")
+            logger.error(f"Erro na anÃ¡lise NLP: {e}")
 
         return analysis_result
 
@@ -372,7 +372,7 @@ class DataAnalyzer:
         mapping = {
             'PERSON': 'personal',
             'ORG': 'business',
-            'GPE': 'personal',  # Localizações geográficas
+            'GPE': 'personal',  # LocalizaÃ§Ãµes geogrÃ¡ficas
             'LOC': 'personal',
             'MONEY': 'financial',
             'DATE': 'documents',
@@ -381,9 +381,9 @@ class DataAnalyzer:
         return mapping.get(spacy_label)
 
     def _calculate_basic_sentiment(self, doc) -> float:
-        """Calcula sentimento básico baseado em palavras positivas/negativas"""
-        positive_words = {'bom', 'ótimo', 'excelente', 'positivo', 'aprovado', 'aceito'}
-        negative_words = {'ruim', 'péssimo', 'negativo', 'reprovado', 'recusado', 'erro'}
+        """Calcula sentimento bÃ¡sico baseado em palavras positivas/negativas"""
+        positive_words = {'bom', 'Ã³timo', 'excelente', 'positivo', 'aprovado', 'aceito'}
+        negative_words = {'ruim', 'pÃ©ssimo', 'negativo', 'reprovado', 'recusado', 'erro'}
 
         positive_count = sum(1 for token in doc if token.lemma_.lower() in positive_words)
         negative_count = sum(1 for token in doc if token.lemma_.lower() in negative_words)
@@ -397,9 +397,9 @@ class DataAnalyzer:
         return max(0, min(1, (sentiment + 1) / 2))  # Normalizar para 0-1
 
     def _save_analysis_results(self, capture_id: int, analysis_result: Dict[str, Any]):
-        """Salva resultados da análise no banco de dados"""
+        """Salva resultados da anÃ¡lise no banco de dados"""
         try:
-            # Salvar dados extraídos
+            # Salvar dados extraÃ­dos
             for data_item in analysis_result.get('extracted_data', []):
                 extracted_data = ExtractedData(
                     capture_id=capture_id,
@@ -412,7 +412,7 @@ class DataAnalyzer:
                 )
                 db_manager.execute_in_session(lambda session: session.add(extracted_data))
 
-            # Salvar categorizações
+            # Salvar categorizaÃ§Ãµes
             for category in analysis_result.get('categories', []):
                 doc_category = DocumentCategory(
                     capture_id=capture_id,
@@ -424,14 +424,14 @@ class DataAnalyzer:
                 db_manager.execute_in_session(lambda session: session.add(doc_category))
 
         except Exception as e:
-            logger.error(f"Erro ao salvar resultados da análise: {e}")
+            logger.error(f"Erro ao salvar resultados da anÃ¡lise: {e}")
 
     def get_data_summary(self, capture_id: int) -> Dict[str, Any]:
-        """Retorna resumo dos dados extraídos para uma captura"""
+        """Retorna resumo dos dados extraÃ­dos para uma captura"""
         try:
             session = db_manager.get_session()
 
-            # Buscar dados extraídos
+            # Buscar dados extraÃ­dos
             extracted = session.query(ExtractedData)\
                              .filter(ExtractedData.capture_id == capture_id)\
                              .all()
@@ -463,25 +463,25 @@ class DataAnalyzer:
 
     def improve_extraction_patterns(self, feedback_data: Dict[str, Any]):
         """
-        Aprende com feedback do usuário para melhorar padrões de extração
+        Aprende com feedback do usuÃ¡rio para melhorar padrÃµes de extraÃ§Ã£o
 
         Args:
-            feedback_data: Dados de feedback com correções
+            feedback_data: Dados de feedback com correÃ§Ãµes
         """
         try:
-            # Implementação básica de aprendizado
-            # Em produção, isso seria mais sofisticado
+            # ImplementaÃ§Ã£o bÃ¡sica de aprendizado
+            # Em produÃ§Ã£o, isso seria mais sofisticado
             for correction in feedback_data.get('corrections', []):
                 field_name = correction.get('field_name')
                 correct_value = correction.get('correct_value')
                 incorrect_value = correction.get('incorrect_value')
 
                 if field_name and correct_value and incorrect_value:
-                    # Atualizar padrões baseado no feedback
+                    # Atualizar padrÃµes baseado no feedback
                     logger.info(f"Aprendizado: {field_name} - '{incorrect_value}' -> '{correct_value}'")
 
         except Exception as e:
             logger.error(f"Erro no aprendizado: {e}")
 
-# Instância global
+# InstÃ¢ncia global
 data_analyzer = DataAnalyzer()

@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import logging
 from pathlib import Path
@@ -9,8 +9,8 @@ logger = logging.getLogger("JARVIS-DISTILLER")
 
 class KnowledgeDistiller:
     """
-    Analisa interações passadas para extrair 'Golden Commands'.
-    Golden Commands são sequências de ações que levaram ao sucesso
+    Analisa interaÃ§Ãµes passadas para extrair 'Golden Commands'.
+    Golden Commands sÃ£o sequÃªncias de aÃ§Ãµes que levaram ao sucesso
     e podem ser reutilizadas como contexto de alta prioridade.
     """
 
@@ -19,7 +19,7 @@ class KnowledgeDistiller:
         self.gold_memories_path = self.data_dir / "memories" / "gold_commands.json"
         self.log_path = self.data_dir / "logs" / "agent_interactions.jsonl"
         
-        # Garantir diretórios
+        # Garantir diretÃ³rios
         self.gold_memories_path.parent.mkdir(parents=True, exist_ok=True)
         
         self._load_gold_commands()
@@ -38,16 +38,16 @@ class KnowledgeDistiller:
 
     def distill_interaction(self, user_command: str, thought: str, actions: List[Dict[str, Any]], success: bool = True):
         """
-        Processa uma interação recente. Se for bem-sucedida, armazena como potencial 
+        Processa uma interaÃ§Ã£o recente. Se for bem-sucedida, armazena como potencial 
         exemplo de alta qualidade para o RAG.
         """
         if not success or not actions:
             return
 
-        # Normalizar comando para identificar padrões
+        # Normalizar comando para identificar padrÃµes
         cmd_key = user_command.lower().strip()
         
-        # Armazenar a melhor versão do raciocínio e ações para este comando
+        # Armazenar a melhor versÃ£o do raciocÃ­nio e aÃ§Ãµes para este comando
         interaction_data = {
             "command": user_command,
             "thought": thought,
@@ -59,8 +59,8 @@ class KnowledgeDistiller:
         self.gold_commands[cmd_key] = interaction_data
         self._save_gold_commands()
         
-        # Registrar no log de destilação
-        logger.info(f"✨ Conhecimento destilado para: '{user_command}'")
+        # Registrar no log de destilaÃ§Ã£o
+        logger.info(f"âœ¨ Conhecimento destilado para: '{user_command}'")
 
     def _save_gold_commands(self):
         """Salva a base de comandos de ouro"""
@@ -85,12 +85,12 @@ class KnowledgeDistiller:
         for match in matches:
             cmd_data = self.gold_commands[match]
             block = f"Comando: {cmd_data['command']}\n"
-            block += f"Raciocínio: {cmd_data['thought']}\n"
-            block += f"Ações: {json.dumps(cmd_data['actions'], ensure_ascii=False)}"
+            block += f"RaciocÃ­nio: {cmd_data['thought']}\n"
+            block += f"AÃ§Ãµes: {json.dumps(cmd_data['actions'], ensure_ascii=False)}"
             context_blocks.append(block)
             
         return "\n\n".join(context_blocks) + "\n"
 
-# Instância global
+# InstÃ¢ncia global
 from src.utils.config import config
 knowledge_distiller = KnowledgeDistiller(Path(config.PROJECT_ROOT) / "data")

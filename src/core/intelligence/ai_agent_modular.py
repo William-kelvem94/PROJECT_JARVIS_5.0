@@ -1,14 +1,14 @@
-"""
+﻿"""
 JARVIS 5.0 - AI Agent (Orquestrador Modular)
 ==============================================
-CORREÇÃO P2: God Object Refactoring - Versão Modular
+CORREÃ‡ÃƒO P2: God Object Refactoring - VersÃ£o Modular
 
-Este é o ORQUESTRADOR PRINCIPAL que coordena:
-  - PerceptionEngine: Coleta entradas (visão, áudio, memória)
-  - DecisionEngine: Toma decisões via LLMs
-  - ActionHandler: Executa ações físicas/virtuais
+Este Ã© o ORQUESTRADOR PRINCIPAL que coordena:
+  - PerceptionEngine: Coleta entradas (visÃ£o, Ã¡udio, memÃ³ria)
+  - DecisionEngine: Toma decisÃµes via LLMs
+  - ActionHandler: Executa aÃ§Ãµes fÃ­sicas/virtuais
 
-NOTA: Este arquivo substitui o ai_agent.py monolítico (1126 linhas)
+NOTA: Este arquivo substitui o ai_agent.py monolÃ­tico (1126 linhas)
       pela arquitetura modular (~300 linhas).
 
 USAGE:
@@ -30,7 +30,7 @@ try:
     from src.core.intelligence.perception_engine import get_perception_engine
     PERCEPTION_AVAILABLE = True
 except ImportError as e:
-    logger.error(f"❌ CRÍTICO: PerceptionEngine não disponível: {e}")
+    logger.error(f"âŒ CRÃTICO: PerceptionEngine nÃ£o disponÃ­vel: {e}")
     get_perception_engine = None
     PERCEPTION_AVAILABLE = False
 
@@ -38,7 +38,7 @@ try:
     from src.core.intelligence.decision_engine import get_decision_engine
     DECISION_AVAILABLE = True
 except ImportError as e:
-    logger.error(f"❌ CRÍTICO: DecisionEngine não disponível: {e}")
+    logger.error(f"âŒ CRÃTICO: DecisionEngine nÃ£o disponÃ­vel: {e}")
     get_decision_engine = None
     DECISION_AVAILABLE = False
 
@@ -46,17 +46,17 @@ try:
     from src.core.intelligence.action_handler import get_action_handler
     ACTION_HANDLER_AVAILABLE = True
 except ImportError as e:
-    logger.error(f"❌ CRÍTICO: ActionHandler não disponível: {e}")
+    logger.error(f"âŒ CRÃTICO: ActionHandler nÃ£o disponÃ­vel: {e}")
     get_action_handler = None
     ACTION_HANDLER_AVAILABLE = False
 
 try:
-    from src.utils.config import config
-    CONFIG_AVAILABLE = True
-except ImportError:
-    logger.warning("⚠️ Config não disponível")
-    config = None
-    CONFIG_AVAILABLE = False
+    from src.learning.semantic_feedback import process_interaction_feedback
+    SEMANTIC_FEEDBACK_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"âš ï¸ Semantic Feedback nÃ£o disponÃ­vel: {e}")
+    process_interaction_feedback = None
+    SEMANTIC_FEEDBACK_AVAILABLE = False
 
 
 class AIAgentModular:
@@ -66,15 +66,15 @@ class AIAgentModular:
     DESIGN PATTERN: Facade Pattern
       - Simplifica interface complexa de 3 subsistemas
       - Gerencia ciclo ReAct (Reasoning + Acting)
-      - Mantém histórico de conversação
+      - MantÃ©m histÃ³rico de conversaÃ§Ã£o
     
     USAGE:
       agent = AIAgentModular()
       
-      # Modo síncrono (para backward compatibility)
-      response = agent.process_command_sync("olá jarvis")
+      # Modo sÃ­ncrono (para backward compatibility)
+      response = agent.process_command_sync("olÃ¡ jarvis")
       
-      # Modo assíncrono (P1 AsyncIO - recomendado)
+      # Modo assÃ­ncrono (P1 AsyncIO - recomendado)
       response = await agent.process_command("abrir notepad")
     """
     
@@ -86,13 +86,13 @@ class AIAgentModular:
             provider: 'gemini', 'ollama', ou 'local'
         """
         logger.info("="*60)
-        logger.info("🚀 JARVIS 5.0 - AI Agent Modular (P2)")
+        logger.info("ðŸš€ JARVIS 5.0 - AI Agent Modular (P2)")
         logger.info("="*60)
         
-        # Verificar dependências críticas
+        # Verificar dependÃªncias crÃ­ticas
         if not PERCEPTION_AVAILABLE or not DECISION_AVAILABLE or not ACTION_HANDLER_AVAILABLE:
             raise ImportError(
-                "❌ CRÍTICO: Engines não disponíveis. "
+                "âŒ CRÃTICO: Engines nÃ£o disponÃ­veis. "
                 "Verifique PerceptionEngine, DecisionEngine e ActionHandler."
             )
         
@@ -101,7 +101,7 @@ class AIAgentModular:
         self.decision = get_decision_engine(provider)
         self.action_handler = get_action_handler()
         
-        # Configurações
+        # ConfiguraÃ§Ãµes
         if CONFIG_AVAILABLE:
             self.max_react_turns = config.get_ai_config('ai_agent.max_react_turns', 5)
             self.screenshot_timeout = config.get_ai_config('ai_agent.screenshot_timeout', 5.0)
@@ -113,11 +113,11 @@ class AIAgentModular:
         self.chat_history: List[Dict[str, str]] = []
         self.provider = provider
         
-        logger.info(f"✅ AIAgentModular inicializado (provider={provider})")
-        logger.info(f"  • PerceptionEngine: OK")
-        logger.info(f"  • DecisionEngine: OK")
-        logger.info(f"  • ActionHandler: OK")
-        logger.info(f"  • Max ReAct turns: {self.max_react_turns}")
+        logger.info(f"âœ… AIAgentModular inicializado (provider={provider})")
+        logger.info(f"  â€¢ PerceptionEngine: OK")
+        logger.info(f"  â€¢ DecisionEngine: OK")
+        logger.info(f"  â€¢ ActionHandler: OK")
+        logger.info(f"  â€¢ Max ReAct turns: {self.max_react_turns}")
     
     
     async def process_command(
@@ -128,7 +128,7 @@ class AIAgentModular:
         latency_req: Optional[str] = None
     ) -> str:
         """
-        Processa comando do usuário de forma assíncrona
+        Processa comando do usuÃ¡rio de forma assÃ­ncrona
         
         Args:
             user_command: Comando em linguagem natural
@@ -140,14 +140,14 @@ class AIAgentModular:
             Resposta final em linguagem natural
         
         FLOW:
-          1. PERCEPTION: Coleta contexto (visão + áudio + memória)
+          1. PERCEPTION: Coleta contexto (visÃ£o + Ã¡udio + memÃ³ria)
           2. DECISION: LLM decide o que fazer
-          3. ACTION: Executa ações retornadas
-          4. REACT: Se executou ações, volta para DECISION (loop)
-          5. FINAL: Resposta final quando não há mais ações
+          3. ACTION: Executa aÃ§Ãµes retornadas
+          4. REACT: Se executou aÃ§Ãµes, volta para DECISION (loop)
+          5. FINAL: Resposta final quando nÃ£o hÃ¡ mais aÃ§Ãµes
         """
         logger.info("="*60)
-        logger.info(f"🎙️ USER: {user_command}")
+        logger.info(f"ðŸŽ™ï¸ USER: {user_command}")
         logger.info("="*60)
         
         # Loop ReAct (Reasoning + Acting)
@@ -155,7 +155,7 @@ class AIAgentModular:
         enriched_command = user_command
         
         while current_turn < self.max_react_turns:
-            logger.info(f"🔄 ReAct Turn {current_turn+1}/{self.max_react_turns}")
+            logger.info(f"ðŸ”„ ReAct Turn {current_turn+1}/{self.max_react_turns}")
             
             # ================================================================
             # PHASE 1: PERCEPTION - Coletar contexto perceptual
@@ -165,9 +165,9 @@ class AIAgentModular:
                     user_command=enriched_command,
                     enable_vision=enable_vision
                 )
-                logger.info(f"✅ Context gathered: vision={bool(context['screenshot_path'])}")
+                logger.info(f"âœ… Context gathered: vision={bool(context['screenshot_path'])}")
             except Exception as e:
-                logger.error(f"❌ Erro no Perception: {e}")
+                logger.error(f"âŒ Erro no Perception: {e}")
                 context = {
                     "screenshot_path": None,
                     "user_face": "Unknown",
@@ -178,7 +178,7 @@ class AIAgentModular:
                 }
             
             # ================================================================
-            # PHASE 2: DECISION - LLM decide ações
+            # PHASE 2: DECISION - LLM decide aÃ§Ãµes
             # ================================================================
             try:
                 decision = await self.decision.decide(
@@ -187,13 +187,13 @@ class AIAgentModular:
                     privacy_level=privacy_level,
                     latency_req=latency_req
                 )
-                logger.info(f"✅ Decision: {len(decision['actions'])} ações planejadas")
+                logger.info(f"âœ… Decision: {len(decision['actions'])} aÃ§Ãµes planejadas")
             except Exception as e:
-                logger.error(f"❌ Erro no Decision: {e}")
-                return "Desculpe, ocorreu um erro ao processar sua solicitação."
+                logger.error(f"âŒ Erro no Decision: {e}")
+                return "Desculpe, ocorreu um erro ao processar sua solicitaÃ§Ã£o."
             
             # ================================================================
-            # PHASE 3: ACTION - Executar ações
+            # PHASE 3: ACTION - Executar aÃ§Ãµes
             # ================================================================
             if decision['actions']:
                 try:
@@ -203,52 +203,62 @@ class AIAgentModular:
                     )
                     
                     success_count = sum(1 for r in results if r['status'] == 'success')
-                    logger.info(f"✅ Actions: {success_count}/{len(results)} executadas com sucesso")
+                    logger.info(f"âœ… Actions: {success_count}/{len(results)} executadas com sucesso")
                     
                     # ================================================================
                     # PHASE 4: REACT - Enriquecer comando com resultados
                     # ================================================================
-                    # Adicionar resultados ao contexto para próximo turno
+                    # Adicionar resultados ao contexto para prÃ³ximo turno
                     feedback = self._build_feedback(results)
-                    enriched_command = f"{user_command}\n\n[SISTEMA] Ações executadas:\n{feedback}"
+                    enriched_command = f"{user_command}\n\n[SISTEMA] AÃ§Ãµes executadas:\n{feedback}"
                     
                     # Continuar loop ReAct
                     current_turn += 1
                     continue
                 
                 except Exception as e:
-                    logger.error(f"❌ Erro no ActionHandler: {e}")
-                    return "Desculpe, ocorreu um erro ao executar as ações."
+                    logger.error(f"âŒ Erro no ActionHandler: {e}")
+                    return "Desculpe, ocorreu um erro ao executar as aÃ§Ãµes."
             
             # ================================================================
-            # PHASE 5: FINAL ANSWER - Sem ações, resposta final
+            # PHASE 5: FINAL ANSWER - Sem aÃ§Ãµes, resposta final
             # ================================================================
             final_answer = decision['final_answer']
             
-            # Salvar no histórico
+            # Salvar no histÃ³rico
             self.chat_history.append({
                 "user": user_command,
                 "assistant": final_answer,
                 "provider": decision['provider']
             })
             
+            # ================================================================
+            # PHASE 6: SEMANTIC FEEDBACK - Auto-CorreÃ§Ã£o Evolutiva (InvisÃ­vel)
+            # ================================================================
+            if SEMANTIC_FEEDBACK_AVAILABLE and process_interaction_feedback:
+                try:
+                    # Processar feedback semÃ¢ntico de forma assÃ­ncrona (nÃ£o bloqueia resposta)
+                    asyncio.create_task(self._process_semantic_feedback_async(user_command, final_answer))
+                except Exception as e:
+                    logger.debug(f"âš ï¸ Erro no feedback semÃ¢ntico (nÃ£o crÃ­tico): {e}")
+            
             logger.info("="*60)
-            logger.info(f"🤖 JARVIS: {final_answer[:100]}...")
+            logger.info(f"ðŸ¤– JARVIS: {final_answer[:100]}...")
             logger.info("="*60)
             
             return final_answer
         
         # Max turns atingido
-        logger.warning(f"⚠️ Max ReAct turns ({self.max_react_turns}) atingido")
-        return "Desculpe, atingi o limite de iterações. Tente reformular sua solicitação."
+        logger.warning(f"âš ï¸ Max ReAct turns ({self.max_react_turns}) atingido")
+        return "Desculpe, atingi o limite de iteraÃ§Ãµes. Tente reformular sua solicitaÃ§Ã£o."
     
     
     def _build_feedback(self, results: List[Dict[str, Any]]) -> str:
-        """Constrói feedback das ações para próximo turno"""
+        """ConstrÃ³i feedback das aÃ§Ãµes para prÃ³ximo turno"""
         feedback_lines = []
         
         for r in results:
-            status_emoji = "✅" if r['status'] == 'success' else "❌"
+            status_emoji = "âœ…" if r['status'] == 'success' else "âŒ"
             action_name = r.get('action', 'unknown')
             
             if r['status'] == 'success':
@@ -263,10 +273,10 @@ class AIAgentModular:
     
     def process_command_sync(self, user_command: str, **kwargs) -> str:
         """
-        Versão síncrona (backward compatibility)
+        VersÃ£o sÃ­ncrona (backward compatibility)
         
         Args:
-            user_command: Comando do usuário
+            user_command: Comando do usuÃ¡rio
             **kwargs: Argumentos adicionais para process_command
         
         Returns:
@@ -276,7 +286,7 @@ class AIAgentModular:
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
-            # Criar novo loop se não existir
+            # Criar novo loop se nÃ£o existir
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         
@@ -284,23 +294,57 @@ class AIAgentModular:
     
     
     def get_chat_history(self, last_n: int = 10) -> List[Dict[str, str]]:
-        """Retorna histórico de conversação"""
+        """Retorna histÃ³rico de conversaÃ§Ã£o"""
         return self.chat_history[-last_n:]
     
     
+    async def _process_semantic_feedback_async(self, user_input: str, ai_response: str):
+        """
+        Processa feedback semÃ¢ntico de forma assÃ­ncrona
+        
+        Args:
+            user_input: Entrada do usuÃ¡rio
+            ai_response: Resposta da IA
+        """
+        try:
+            # Importar aqui para evitar dependÃªncias circulares
+            from src.learning.semantic_feedback import process_interaction_feedback
+            
+            # Processar feedback (operaÃ§Ã£o sÃ­ncrona em thread separado)
+            loop = asyncio.get_event_loop()
+            feedback_result = await loop.run_in_executor(
+                None, 
+                process_interaction_feedback, 
+                user_input, 
+                ai_response
+            )
+            
+            # Log discreto (nÃ£o interrompe usuÃ¡rio)
+            confidence = feedback_result.get('confidence_score', 0.5)
+            dissonance = feedback_result.get('dissonance_detected', False)
+            
+            if dissonance:
+                logger.debug(f"ðŸŽ¯ DissonÃ¢ncia detectada - ConfianÃ§a: {confidence:.2f}")
+            else:
+                logger.debug(f"âœ… InteraÃ§Ã£o positiva - ConfianÃ§a: {confidence:.2f}")
+                
+        except Exception as e:
+            logger.debug(f"âš ï¸ Erro no processamento de feedback semÃ¢ntico: {e}")
+    
+    
     def clear_history(self):
-        """Limpa histórico de conversação"""
+        """Limpa histÃ³rico de conversaÃ§Ã£o"""
         self.chat_history.clear()
-        logger.info("🗑️ Chat history cleared")
+        logger.info("ðŸ—‘ï¸ Chat history cleared")
 
 
 # ============================================================================
-# SINGLETON GETTER (para compatibilidade com código legado)
+# SINGLETON GETTER (para compatibilidade com cÃ³digo legado)
 # ============================================================================
 _ai_agent_modular_instance = None
 
 def get_ai_agent(provider: str = 'gemini') -> AIAgentModular:
-    """Retorna instância singleton do AIAgentModular"""
+    """Retorna instÃ¢ncia singleton do AIAgentModular"""
     global _ai_agent_modular_instance
     if _ai_agent_modular_instance is None:
         _ai_agent_modular_instance = AIAgentModular(provider)
@@ -310,5 +354,5 @@ def get_ai_agent(provider: str = 'gemini') -> AIAgentModular:
 # ============================================================================
 # BACKWARD COMPATIBILITY ALIAS
 # ============================================================================
-# Permitir importar como "AIAgent" (código legado)
+# Permitir importar como "AIAgent" (cÃ³digo legado)
 AIAgent = AIAgentModular

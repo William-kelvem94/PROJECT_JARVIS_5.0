@@ -1,6 +1,6 @@
-"""
+﻿"""
 A Jaula de Vidro (Security Middleware)
-Validação rigorosa de ações, proteção de sistema e backups automáticos.
+ValidaÃ§Ã£o rigorosa de aÃ§Ãµes, proteÃ§Ã£o de sistema e backups automÃ¡ticos.
 """
 
 import os
@@ -27,11 +27,11 @@ class ActionValidator:
             r"C:\Windows",
             r"C:\Program Files",
             r"C:\Program Files (x86)",
-            r"\.git", # Proteger repositório
+            r"\.git", # Proteger repositÃ³rio
         ]
         
         # 2. Zonas Seguras (Whitelist)
-        # O Jarvis só pode escrever aqui
+        # O Jarvis sÃ³ pode escrever aqui
         self.SAFE_ZONES = [
             os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")), # Project Root
             os.getenv("TEMP"),
@@ -42,12 +42,12 @@ class ActionValidator:
 
     def validate_action(self, action_type: str, target: str) -> Tuple[bool, str]:
         """
-        Valida se uma ação é segura.
+        Valida se uma aÃ§Ã£o Ã© segura.
         Retorna: (is_safe: bool, reason: str)
         """
         msg_prefix = f"[SECURITY SHIELD] Blocked {action_type}: "
         
-        # Validação de Comandos Shell
+        # ValidaÃ§Ã£o de Comandos Shell
         if action_type == "shell_command":
             for blocked in self.BLACKLIST_COMMANDS:
                 if blocked in target.lower():
@@ -55,18 +55,18 @@ class ActionValidator:
                     logger.critical(f"{msg_prefix} {reason}")
                     return False, f"Acesso negado: {reason}"
                     
-        # Validação de Manipulação de Arquivos
+        # ValidaÃ§Ã£o de ManipulaÃ§Ã£o de Arquivos
         if action_type in ["write_file", "delete_file", "move_file"]:
             target_path = os.path.abspath(target).lower()
             
             # Check Blacklist Paths
             for blocked_path in self.BLACKLIST_PATHS:
                 if blocked_path.lower() in target_path:
-                    reason = f"Tentativa de acesso a diretório protegido: '{blocked_path}'"
+                    reason = f"Tentativa de acesso a diretÃ³rio protegido: '{blocked_path}'"
                     logger.critical(f"{msg_prefix} {reason}")
                     return False, f"Acesso negado: {reason}"
             
-            # Check Whitelist Zones (Apenas para escrita/modificação)
+            # Check Whitelist Zones (Apenas para escrita/modificaÃ§Ã£o)
             is_in_safe_zone = False
             for safe_zone in self.SAFE_ZONES:
                 if target_path.startswith(safe_zone):
@@ -76,14 +76,14 @@ class ActionValidator:
             if not is_in_safe_zone:
                 reason = f"Caminho fora da zona segura: '{target}'"
                 logger.warning(f"{msg_prefix} {reason}")
-                return False, f"Acesso negado: Fora da zona de segurança do Jarvis."
+                return False, f"Acesso negado: Fora da zona de seguranÃ§a do Jarvis."
 
         return True, "Action Approved"
 
     def safe_file_edit(self, filepath: str, new_content: str, reason: str = "Unspecified autonomous update") -> bool:
         """
-        Edição segura com Backup Automático (.bak).
-        HITL Integration: Deve ser chamado apenas após validação.
+        EdiÃ§Ã£o segura com Backup AutomÃ¡tico (.bak).
+        HITL Integration: Deve ser chamado apenas apÃ³s validaÃ§Ã£o.
         """
         try:
             path = Path(filepath)
@@ -96,18 +96,18 @@ class ActionValidator:
                 logger.warning(f"Failed to log evolution event: {e}")
 
             if not path.exists():
-                # Arquivo novo não precisa de backup, mas precisa de validação de path
+                # Arquivo novo nÃ£o precisa de backup, mas precisa de validaÃ§Ã£o de path
                 safe, reason = self.validate_action("write_file", filepath)
                 if not safe: raise PermissionError(reason)
                 
-                # Criar diretórios se necessário
+                # Criar diretÃ³rios se necessÃ¡rio
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with open(path, 'w', encoding='utf-8') as f:
                     f.write(new_content)
-                logger.info(f"💾 Novo arquivo criado: {filepath}")
+                logger.info(f"ðŸ’¾ Novo arquivo criado: {filepath}")
                 return True
 
-            # Validação
+            # ValidaÃ§Ã£o
             safe, reason = self.validate_action("write_file", filepath)
             if not safe: raise PermissionError(reason)
 
@@ -115,42 +115,42 @@ class ActionValidator:
             backup_path = path.with_suffix(path.suffix + ".bak")
             
             if backup_path.exists():
-                # Rotacionar histórico simples (1 nível)
+                # Rotacionar histÃ³rico simples (1 nÃ­vel)
                 backup_history = path.with_suffix(path.suffix + ".bak.1")
                 shutil.copy2(backup_path, backup_history)
                 
             shutil.copy2(path, backup_path)
-            logger.info(f"🛡️ Backup de segurança criado: {backup_path}")
+            logger.info(f"ðŸ›¡ï¸ Backup de seguranÃ§a criado: {backup_path}")
 
-            # Escrever o novo conteúdo
+            # Escrever o novo conteÃºdo
             with open(path, 'w', encoding='utf-8') as f:
                 f.write(new_content)
                 
             return True
 
         except Exception as e:
-            logger.error(f"❌ Falha na edição segura de '{filepath}': {e}")
+            logger.error(f"âŒ Falha na ediÃ§Ã£o segura de '{filepath}': {e}")
             raise e
 
             raise e
 
     def check_intent_safety(self, command: str) -> bool:
         """
-        🛡️ Segurança Cognitiva (Sentinel)
-        Usa LLM leve para detectar intenções maliciosas em comandos ofuscados (base64, aliases, etc).
+        ðŸ›¡ï¸ SeguranÃ§a Cognitiva (Sentinel)
+        Usa LLM leve para detectar intenÃ§Ãµes maliciosas em comandos ofuscados (base64, aliases, etc).
         """
         try:
             import ollama
             
-            # Prompt de Segurança Estrita
+            # Prompt de SeguranÃ§a Estrita
             prompt = (
-                f"Analise o seguinte comando de sistema quanto a riscos de segurança, destruição de dados ou invasão de privacidade.\n"
+                f"Analise o seguinte comando de sistema quanto a riscos de seguranÃ§a, destruiÃ§Ã£o de dados ou invasÃ£o de privacidade.\n"
                 f"Comando: '{command}'\n\n"
                 f"Responda APENAS 'SAFE' se for seguro ou 'UNSAFE' se tiver risco (deletar arquivos, formatar, exfiltrar dados, reverse shell).\n"
-                f"Se estiver em dúvida, responda UNSAFE."
+                f"Se estiver em dÃºvida, responda UNSAFE."
             )
             
-            # Usar modelo Sentinela (Tier Fast) - Rápido e focado
+            # Usar modelo Sentinela (Tier Fast) - RÃ¡pido e focado
             response = ollama.chat(model='qwen2.5:3b', messages=[
                 {'role': 'system', 'content': 'You are a security sentinel. Output only SAFE or UNSAFE.'},
                 {'role': 'user', 'content': prompt}
@@ -159,19 +159,19 @@ class ActionValidator:
             verdict = response['message']['content'].strip().upper()
             
             if "UNSAFE" in verdict:
-                logger.critical(f"🚫 [SENTINEL] Comando bloqueado por IA: '{command}'")
+                logger.critical(f"ðŸš« [SENTINEL] Comando bloqueado por IA: '{command}'")
                 return False
                 
             if "SAFE" in verdict:
                 return True
                 
             # Default deny se a resposta for confusa
-            logger.warning(f"⚠️ [SENTINEL] Veredito confuso ('{verdict}'). Bloqueando por cautela.")
+            logger.warning(f"âš ï¸ [SENTINEL] Veredito confuso ('{verdict}'). Bloqueando por cautela.")
             return False
             
         except Exception as e:
-            logger.error(f"⚠️ Erro no Security Sentinel: {e}. Bloqueando por falha aberta.")
+            logger.error(f"âš ï¸ Erro no Security Sentinel: {e}. Bloqueando por falha aberta.")
             return False # Fail-safe closed
 
-# Instância Global
+# InstÃ¢ncia Global
 action_validator = ActionValidator()

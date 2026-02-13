@@ -1,5 +1,5 @@
-"""
-Organizador de dados extraídos
+﻿"""
+Organizador de dados extraÃ­dos
 Estrutura e salva dados em diferentes formatos
 """
 
@@ -23,17 +23,17 @@ from src.database.models import db_manager, ExtractedData, DocumentCategory, Exp
 logger = logging.getLogger(__name__)
 
 class DataOrganizer:
-    """Classe para organização e exportação de dados"""
+    """Classe para organizaÃ§Ã£o e exportaÃ§Ã£o de dados"""
 
     def __init__(self):
         self.exports_dir = config.DATA_DIR / "exports"
         self.templates_dir = config.DATA_DIR / "templates"
 
-        # Criar diretórios necessários
+        # Criar diretÃ³rios necessÃ¡rios
         self.exports_dir.mkdir(exist_ok=True)
         self.templates_dir.mkdir(exist_ok=True)
 
-        # Configurações de exportação
+        # ConfiguraÃ§Ãµes de exportaÃ§Ã£o
         self.export_formats = {
             'json': self._export_json,
             'csv': self._export_csv,
@@ -46,7 +46,7 @@ class DataOrganizer:
 
     def organize_capture_data(self, capture_id: int) -> Dict[str, Any]:
         """
-        Organiza dados de uma captura específica
+        Organiza dados de uma captura especÃ­fica
 
         Args:
             capture_id: ID da captura
@@ -57,7 +57,7 @@ class DataOrganizer:
         try:
             session = db_manager.get_session()
 
-            # Buscar dados extraídos
+            # Buscar dados extraÃ­dos
             extracted_data = session.query(ExtractedData)\
                                   .filter(ExtractedData.capture_id == capture_id)\
                                   .all()
@@ -94,7 +94,7 @@ class DataOrganizer:
 
             organized_data['data_sections'] = data_by_type
 
-            # Calcular estatísticas
+            # Calcular estatÃ­sticas
             organized_data['statistics'] = {
                 'total_fields': len(extracted_data),
                 'fields_by_type': {k: len(v) for k, v in data_by_type.items()},
@@ -122,28 +122,28 @@ class DataOrganizer:
         """
         try:
             if format_type not in self.export_formats:
-                raise ValueError(f"Formato não suportado: {format_type}")
+                raise ValueError(f"Formato nÃ£o suportado: {format_type}")
 
-            # Gerar nome de arquivo se não fornecido
+            # Gerar nome de arquivo se nÃ£o fornecido
             if not filename:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"export_{timestamp}.{format_type}"
 
             file_path = self.exports_dir / filename
 
-            # Executar exportação
+            # Executar exportaÃ§Ã£o
             export_func = self.export_formats[format_type]
             result_path = export_func(data, str(file_path))
 
             if result_path:
-                # Registrar exportação no banco
+                # Registrar exportaÃ§Ã£o no banco
                 self._register_export(format_type, result_path, data)
 
                 logger.info(f"Dados exportados: {result_path}")
                 return result_path
 
         except Exception as e:
-            logger.error(f"Erro na exportação: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o: {e}")
 
         return None
 
@@ -154,7 +154,7 @@ class DataOrganizer:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             return file_path
         except Exception as e:
-            logger.error(f"Erro na exportação JSON: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o JSON: {e}")
             return ""
 
     def _export_csv(self, data: Dict[str, Any], file_path: str) -> str:
@@ -165,7 +165,7 @@ class DataOrganizer:
 
             if not csv_data:
                 # Criar CSV vazio com headers
-                csv_data = [{'Campo': '', 'Valor': '', 'Tipo': '', 'Confiança': ''}]
+                csv_data = [{'Campo': '', 'Valor': '', 'Tipo': '', 'ConfianÃ§a': ''}]
 
             # Escrever CSV
             fieldnames = csv_data[0].keys()
@@ -177,7 +177,7 @@ class DataOrganizer:
             return file_path
 
         except Exception as e:
-            logger.error(f"Erro na exportação CSV: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o CSV: {e}")
             return ""
 
     def _export_excel(self, data: Dict[str, Any], file_path: str) -> str:
@@ -193,7 +193,7 @@ class DataOrganizer:
             return file_path
 
         except Exception as e:
-            logger.error(f"Erro na exportação Excel: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o Excel: {e}")
             return ""
 
     def _export_pdf(self, data: Dict[str, Any], file_path: str) -> str:
@@ -203,11 +203,11 @@ class DataOrganizer:
             styles = getSampleStyleSheet()
             story = []
 
-            # Título
-            title = Paragraph("Relatório de Dados Extraídos", styles['Heading1'])
+            # TÃ­tulo
+            title = Paragraph("RelatÃ³rio de Dados ExtraÃ­dos", styles['Heading1'])
             story.append(title)
 
-            # Informações básicas
+            # InformaÃ§Ãµes bÃ¡sicas
             info_text = f"""
             <b>Captura ID:</b> {data.get('capture_id', 'N/A')}<br/>
             <b>Data:</b> {data.get('timestamp', 'N/A')}<br/>
@@ -220,13 +220,13 @@ class DataOrganizer:
             csv_data = self._flatten_data_for_csv(data)
             if csv_data:
                 # Preparar dados para tabela
-                table_data = [['Campo', 'Valor', 'Tipo', 'Confiança']]
+                table_data = [['Campo', 'Valor', 'Tipo', 'ConfianÃ§a']]
                 for item in csv_data:
                     table_data.append([
                         item.get('Campo', ''),
                         item.get('Valor', ''),
                         item.get('Tipo', ''),
-                        f"{item.get('Confiança', 0):.2f}"
+                        f"{item.get('ConfianÃ§a', 0):.2f}"
                     ])
 
                 # Criar tabela
@@ -248,35 +248,35 @@ class DataOrganizer:
             return file_path
 
         except Exception as e:
-            logger.error(f"Erro na exportação PDF: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o PDF: {e}")
             return ""
 
     def _export_txt(self, data: Dict[str, Any], file_path: str) -> str:
         """Exporta dados em formato texto"""
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write("RELATÓRIO DE DADOS EXTRAÍDOS\n")
+                f.write("RELATÃ“RIO DE DADOS EXTRAÃDOS\n")
                 f.write("=" * 50 + "\n\n")
 
                 f.write(f"Captura ID: {data.get('capture_id', 'N/A')}\n")
                 f.write(f"Data: {data.get('timestamp', 'N/A')}\n")
                 f.write(f"Categoria: {data.get('primary_category', 'N/A')}\n\n")
 
-                # Escrever dados por seção
+                # Escrever dados por seÃ§Ã£o
                 for section_name, items in data.get('data_sections', {}).items():
                     f.write(f"[{section_name.upper()}]\n")
                     for item in items:
-                        f.write(f"  {item['field']}: {item['value']} (Confiança: {item['confidence']:.2f})\n")
+                        f.write(f"  {item['field']}: {item['value']} (ConfianÃ§a: {item['confidence']:.2f})\n")
                     f.write("\n")
 
             return file_path
 
         except Exception as e:
-            logger.error(f"Erro na exportação TXT: {e}")
+            logger.error(f"Erro na exportaÃ§Ã£o TXT: {e}")
             return ""
 
     def _flatten_data_for_csv(self, data: Dict[str, Any]) -> List[Dict[str, str]]:
-        """Prepara dados para exportação CSV/Excel"""
+        """Prepara dados para exportaÃ§Ã£o CSV/Excel"""
         flattened = []
 
         for section_name, items in data.get('data_sections', {}).items():
@@ -285,14 +285,14 @@ class DataOrganizer:
                     'Campo': item['field'],
                     'Valor': item['value'],
                     'Tipo': section_name,
-                    'Confiança': item['confidence'],
-                    'Validado': 'Sim' if item['validated'] else 'Não'
+                    'ConfianÃ§a': item['confidence'],
+                    'Validado': 'Sim' if item['validated'] else 'NÃ£o'
                 })
 
         return flattened
 
     def _register_export(self, format_type: str, file_path: str, data: Dict[str, Any]):
-        """Registra exportação no banco de dados"""
+        """Registra exportaÃ§Ã£o no banco de dados"""
         try:
             export_record = ExportHistory(
                 export_type=format_type,
@@ -304,11 +304,11 @@ class DataOrganizer:
             db_manager.execute_in_session(lambda session: session.add(export_record))
 
         except Exception as e:
-            logger.error(f"Erro ao registrar exportação: {e}")
+            logger.error(f"Erro ao registrar exportaÃ§Ã£o: {e}")
 
     def create_data_package(self, capture_ids: List[int], package_name: str) -> Optional[str]:
         """
-        Cria pacote completo de dados para múltiplas capturas
+        Cria pacote completo de dados para mÃºltiplas capturas
 
         Args:
             capture_ids: Lista de IDs de captura
@@ -318,7 +318,7 @@ class DataOrganizer:
             Caminho do pacote criado ou None se erro
         """
         try:
-            # Criar diretório do pacote
+            # Criar diretÃ³rio do pacote
             package_dir = self.exports_dir / package_name
             package_dir.mkdir(exist_ok=True)
 
@@ -369,7 +369,7 @@ class DataOrganizer:
             return None
 
     def get_export_history(self, limit: int = 50) -> List[Dict[str, Any]]:
-        """Retorna histórico de exportações"""
+        """Retorna histÃ³rico de exportaÃ§Ãµes"""
         try:
             session = db_manager.get_session()
             exports = session.query(ExportHistory)\
@@ -381,11 +381,11 @@ class DataOrganizer:
             return [exp.to_dict() for exp in exports]
 
         except Exception as e:
-            logger.error(f"Erro ao obter histórico de exportações: {e}")
+            logger.error(f"Erro ao obter histÃ³rico de exportaÃ§Ãµes: {e}")
             return []
 
     def cleanup_old_exports(self, days_to_keep: int = 30):
-        """Remove exportações antigas"""
+        """Remove exportaÃ§Ãµes antigas"""
         try:
             cutoff_date = datetime.now().timestamp() - (days_to_keep * 24 * 60 * 60)
 
@@ -394,13 +394,13 @@ class DataOrganizer:
                     file_age = export_file.stat().st_mtime
                     if file_age < cutoff_date:
                         export_file.unlink()
-                        logger.info(f"Exportação antiga removida: {export_file}")
+                        logger.info(f"ExportaÃ§Ã£o antiga removida: {export_file}")
 
         except Exception as e:
-            logger.error(f"Erro ao limpar exportações antigas: {e}")
+            logger.error(f"Erro ao limpar exportaÃ§Ãµes antigas: {e}")
 
     def get_data_templates(self) -> Dict[str, Dict[str, Any]]:
-        """Retorna templates disponíveis para organização de dados"""
+        """Retorna templates disponÃ­veis para organizaÃ§Ã£o de dados"""
         templates = {
             'invoice': {
                 'name': 'Fatura',
@@ -428,7 +428,7 @@ class DataOrganizer:
 
     def apply_template(self, data: Dict[str, Any], template_name: str) -> Dict[str, Any]:
         """
-        Aplica template de organização aos dados
+        Aplica template de organizaÃ§Ã£o aos dados
 
         Args:
             data: Dados a serem organizados
@@ -442,7 +442,7 @@ class DataOrganizer:
             template = templates.get(template_name)
 
             if not template:
-                logger.warning(f"Template não encontrado: {template_name}")
+                logger.warning(f"Template nÃ£o encontrado: {template_name}")
                 return data
 
             organized = {
@@ -465,7 +465,7 @@ class DataOrganizer:
                 else:
                     organized['organized_fields'][template_field] = None
 
-                    # Verificar se é campo obrigatório
+                    # Verificar se Ã© campo obrigatÃ³rio
                     if template_field in template['required_fields']:
                         organized['missing_required'].append(template_field)
 
@@ -475,5 +475,5 @@ class DataOrganizer:
             logger.error(f"Erro ao aplicar template {template_name}: {e}")
             return data
 
-# Instância global
+# InstÃ¢ncia global
 data_organizer = DataOrganizer()

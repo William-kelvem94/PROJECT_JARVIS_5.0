@@ -1,6 +1,6 @@
-"""
+﻿"""
 Productivity Tracker - Sistema de Rastreamento de Produtividade
-Monitora uso de aplicações e fornece insights
+Monitora uso de aplicaÃ§Ãµes e fornece insights
 """
 
 import logging
@@ -30,16 +30,16 @@ class ProductivityTracker:
             "POWERPNT.EXE": "Produtividade",
             "notion.exe": "Produtividade",
             
-            # Comunicação
-            "Teams.exe": "Comunicação",
-            "Slack.exe": "Comunicação",
-            "Discord.exe": "Comunicação",
-            "OUTLOOK.EXE": "Comunicação",
+            # ComunicaÃ§Ã£o
+            "Teams.exe": "ComunicaÃ§Ã£o",
+            "Slack.exe": "ComunicaÃ§Ã£o",
+            "Discord.exe": "ComunicaÃ§Ã£o",
+            "OUTLOOK.EXE": "ComunicaÃ§Ã£o",
             
-            # Navegação
-            "chrome.exe": "Navegação",
-            "firefox.exe": "Navegação",
-            "msedge.exe": "Navegação",
+            # NavegaÃ§Ã£o
+            "chrome.exe": "NavegaÃ§Ã£o",
+            "firefox.exe": "NavegaÃ§Ã£o",
+            "msedge.exe": "NavegaÃ§Ã£o",
             
             # Entretenimento
             "Spotify.exe": "Entretenimento",
@@ -66,7 +66,7 @@ class ProductivityTracker:
         self._load_today_stats()
     
     def _load_today_stats(self):
-        """Carrega estatísticas do dia atual"""
+        """Carrega estatÃ­sticas do dia atual"""
         today = datetime.now().strftime("%Y-%m-%d")
         stats_file = self.data_dir / f"stats_{today}.json"
         
@@ -74,12 +74,12 @@ class ProductivityTracker:
             try:
                 with open(stats_file, 'r') as f:
                     self.daily_stats = json.load(f)
-                logger.info(f"✅ Estatísticas do dia carregadas")
+                logger.info(f"âœ… EstatÃ­sticas do dia carregadas")
             except Exception as e:
-                logger.error(f"Erro ao carregar estatísticas: {e}")
+                logger.error(f"Erro ao carregar estatÃ­sticas: {e}")
     
     def _save_stats(self):
-        """Salva estatísticas do dia"""
+        """Salva estatÃ­sticas do dia"""
         today = datetime.now().strftime("%Y-%m-%d")
         stats_file = self.data_dir / f"stats_{today}.json"
         
@@ -87,7 +87,7 @@ class ProductivityTracker:
             with open(stats_file, 'w') as f:
                 json.dump(self.daily_stats, f, indent=2)
         except Exception as e:
-            logger.error(f"Erro ao salvar estatísticas: {e}")
+            logger.error(f"Erro ao salvar estatÃ­sticas: {e}")
     
     def get_active_window(self) -> Optional[str]:
         """Retorna nome da janela ativa"""
@@ -106,7 +106,7 @@ class ProductivityTracker:
             return process.name()
             
         except ImportError:
-            logger.warning("⚠️ pywin32 não disponível. Instale: pip install pywin32")
+            logger.warning("âš ï¸ pywin32 nÃ£o disponÃ­vel. Instale: pip install pywin32")
             return None
         except Exception as e:
             return None
@@ -119,14 +119,14 @@ class ProductivityTracker:
         current_time = time.time()
         elapsed = current_time - self.last_check
         
-        # Obter aplicação ativa
+        # Obter aplicaÃ§Ã£o ativa
         active_app = self.get_active_window()
         
         if active_app:
-            # Atualizar tempo da aplicação
+            # Atualizar tempo da aplicaÃ§Ã£o
             self.app_time[active_app] += elapsed
             
-            # Atualizar estatísticas diárias
+            # Atualizar estatÃ­sticas diÃ¡rias
             if active_app not in self.daily_stats["apps"]:
                 self.daily_stats["apps"][active_app] = {
                     "time": 0,
@@ -201,7 +201,7 @@ class ProductivityTracker:
         }
     
     def get_weekly_report(self) -> Dict[str, Any]:
-        """Gera relatório semanal"""
+        """Gera relatÃ³rio semanal"""
         today = datetime.now()
         week_start = today - timedelta(days=7)
         
@@ -220,7 +220,7 @@ class ProductivityTracker:
                 except:
                     pass
         
-        # Calcular médias
+        # Calcular mÃ©dias
         if not weekly_data:
             return {"error": "Sem dados da semana"}
         
@@ -248,16 +248,16 @@ class ProductivityTracker:
     def enable_tracking(self):
         """Ativa rastreamento"""
         self.tracking_enabled = True
-        logger.info("✅ Rastreamento de produtividade ativado")
+        logger.info("âœ… Rastreamento de produtividade ativado")
     
     def disable_tracking(self):
         """Desativa rastreamento"""
         self.tracking_enabled = False
         self._save_stats()
-        logger.info("⏸️ Rastreamento de produtividade pausado")
+        logger.info("â¸ï¸ Rastreamento de produtividade pausado")
 
 
-# Instância global removida para evitar execução durante import
+# InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # productivity_tracker = ProductivityTracker()
 
 
@@ -273,10 +273,10 @@ if __name__ == "__main__":
         
         if i % 10 == 0:
             summary = productivity_tracker.get_daily_summary()
-            print(f"\n📊 Resumo (após {i}s):")
+            print(f"\nðŸ“Š Resumo (apÃ³s {i}s):")
             print(f"  Tempo total: {summary['total_time']}")
             print(f"  Score: {summary['productivity_score']:.1f}%")
     
-    print("\n📈 Relatório Final:")
+    print("\nðŸ“ˆ RelatÃ³rio Final:")
     summary = productivity_tracker.get_daily_summary()
     print(json.dumps(summary, indent=2, ensure_ascii=False))

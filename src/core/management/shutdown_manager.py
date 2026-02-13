@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import time
 import threading
 from PyQt6.QtCore import QTimer, QCoreApplication
@@ -10,13 +10,13 @@ class ShutdownManager:
     """Gerencia shutdown ordenado de todos os componentes"""
     
     SHUTDOWN_SEQUENCE = [
-        ("🎤 Audio System", "stop_listening", 1.0),
-        ("👁️ Vision System", "stop_monitoring", 1.0),
-        ("🧠 Neural Systems", "shutdown", 2.0),
-        ("💾 Memory Systems", "flush_and_close", 3.0),
-        ("🖥️ GUI Systems", "shutdown", 1.0), # Alterado para chamar shutdown() do WindowManager
-        ("📊 Monitoring", "stop_all_monitors", 0.5),
-        ("⚙️ Core Engine", "shutdown_engine", 2.0),
+        ("ðŸŽ¤ Audio System", "stop_listening", 1.0),
+        ("ðŸ‘ï¸ Vision System", "stop_monitoring", 1.0),
+        ("ðŸ§  Neural Systems", "shutdown", 2.0),
+        ("ðŸ’¾ Memory Systems", "flush_and_close", 3.0),
+        ("ðŸ–¥ï¸ GUI Systems", "shutdown", 1.0), # Alterado para chamar shutdown() do WindowManager
+        ("ðŸ“Š Monitoring", "stop_all_monitors", 0.5),
+        ("âš™ï¸ Core Engine", "shutdown_engine", 2.0),
     ]
     
     def __init__(self, jarvis_core):
@@ -29,7 +29,7 @@ class ShutdownManager:
             return
             
         self.shutdown_in_progress = True
-        logger.info("🚀 Iniciando shutdown ordenado...")
+        logger.info("ðŸš€ Iniciando shutdown ordenado...")
         
         # Desativa hotkeys primeiro
         if hasattr(self.jarvis, 'window_manager') and self.jarvis.window_manager:
@@ -37,33 +37,33 @@ class ShutdownManager:
                 self.jarvis.window_manager.unregister_hotkeys()
             except Exception: pass
         
-        # Executa sequência de shutdown
+        # Executa sequÃªncia de shutdown
         for component_name, method_name, timeout in self.SHUTDOWN_SEQUENCE:
             try:
                 self._shutdown_component(component_name, method_name, timeout)
             except Exception as e:
-                logger.error(f"❌ Erro em {component_name}: {e}")
+                logger.error(f"âŒ Erro em {component_name}: {e}")
                 continue
         
-        logger.info("✅ Shutdown completado com sucesso. Encerrando aplicação Qt...")
+        logger.info("âœ… Shutdown completado com sucesso. Encerrando aplicaÃ§Ã£o Qt...")
         
-        # Fecha aplicação Qt com segurança
+        # Fecha aplicaÃ§Ã£o Qt com seguranÃ§a
         if QApplication.instance():
             QApplication.instance().quit()
             
     def _shutdown_component(self, name: str, method: str, timeout: float):
-        """Desliga um componente específico"""
-        logger.info(f"🔄 Desligando {name}...")
+        """Desliga um componente especÃ­fico"""
+        logger.info(f"ðŸ”„ Desligando {name}...")
         
         # Mapeamento de componentes para atributos do JarvisSingularity
         component_map = {
-            "🎤 Audio System": "audio_system",
-            "👁️ Vision System": "vision_system",
-            "🧠 Neural Systems": "neural_systems",
-            "💾 Memory Systems": "memory_manager",
-            "🖥️ GUI Systems": "window_manager",
-            "📊 Monitoring": "proactive_monitor",
-            # Core Engine geralmente refere-se ao próprio loop ou integração, pode não ter um método direto
+            "ðŸŽ¤ Audio System": "audio_system",
+            "ðŸ‘ï¸ Vision System": "vision_system",
+            "ðŸ§  Neural Systems": "neural_systems",
+            "ðŸ’¾ Memory Systems": "memory_manager",
+            "ðŸ–¥ï¸ GUI Systems": "window_manager",
+            "ðŸ“Š Monitoring": "proactive_monitor",
+            # Core Engine geralmente refere-se ao prÃ³prio loop ou integraÃ§Ã£o, pode nÃ£o ter um mÃ©todo direto
         }
         
         attr_name = component_map.get(name)
@@ -74,7 +74,7 @@ class ShutdownManager:
         
         if component:
             try:
-                # Se o método existir, chama
+                # Se o mÃ©todo existir, chama
                 if hasattr(component, method):
                     func = getattr(component, method)
                     func()
@@ -83,10 +83,10 @@ class ShutdownManager:
                 elif hasattr(component, 'cleanup'): # Outro fallback comum
                      component.cleanup()
                 
-                # Aguarda timeout (simulado para threads que não bloqueiam)
-                # Em um cenário real, join() seria ideal, mas timeout funciona para forçar progresso
-                # time.sleep(timeout) -> Removido para shutdown mais ágil, ou reduzido
+                # Aguarda timeout (simulado para threads que nÃ£o bloqueiam)
+                # Em um cenÃ¡rio real, join() seria ideal, mas timeout funciona para forÃ§ar progresso
+                # time.sleep(timeout) -> Removido para shutdown mais Ã¡gil, ou reduzido
                 
-                logger.info(f"✅ {name} desligado")
+                logger.info(f"âœ… {name} desligado")
             except Exception as e:
-                logger.warning(f"⚠️ {name} falhou: {e}")
+                logger.warning(f"âš ï¸ {name} falhou: {e}")

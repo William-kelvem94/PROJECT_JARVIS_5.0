@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Predictive Failure Analytics with ML
 ========================================================
-Usa Machine Learning para predizer falhas antes que aconteçam,
-permitindo recovery preventivo e manutenção preditiva.
+Usa Machine Learning para predizer falhas antes que aconteÃ§am,
+permitindo recovery preventivo e manutenÃ§Ã£o preditiva.
 """
 
 import numpy as np
@@ -28,11 +28,11 @@ class FailurePredictorType(Enum):
     DEPENDENCY_TIMEOUT = "dependency_timeout"
 
 class RiskLevel(Enum):
-    """Níveis de risco de falha"""
-    LOW = ("low", 0.0, 0.3, "🟢")
-    MEDIUM = ("medium", 0.3, 0.7, "🟡") 
-    HIGH = ("high", 0.7, 0.9, "🟠")
-    CRITICAL = ("critical", 0.9, 1.0, "🔴")
+    """NÃ­veis de risco de falha"""
+    LOW = ("low", 0.0, 0.3, "ðŸŸ¢")
+    MEDIUM = ("medium", 0.3, 0.7, "ðŸŸ¡") 
+    HIGH = ("high", 0.7, 0.9, "ðŸŸ ")
+    CRITICAL = ("critical", 0.9, 1.0, "ðŸ”´")
     
     def __init__(self, name: str, min_prob: float, max_prob: float, icon: str):
         self.level_name = name
@@ -42,7 +42,7 @@ class RiskLevel(Enum):
 
 @dataclass
 class SystemMetrics:
-    """Métricas do sistema coletadas ao longo do tempo"""
+    """MÃ©tricas do sistema coletadas ao longo do tempo"""
     timestamp: datetime
     cpu_usage: float
     memory_usage: float
@@ -55,27 +55,27 @@ class SystemMetrics:
 
 @dataclass
 class FailurePrediction:
-    """Predição de falha com detalhes"""
+    """PrediÃ§Ã£o de falha com detalhes"""
     predictor_type: FailurePredictorType
     probability: float  # 0.0 a 1.0
     risk_level: RiskLevel
     estimated_time_to_failure: Optional[timedelta]
-    confidence_score: float  # Confiança na predição
+    confidence_score: float  # ConfianÃ§a na prediÃ§Ã£o
     contributing_factors: List[str]
     recommended_actions: List[str]
     prediction_timestamp: datetime
 
 class PredictiveFailureAnalyzer:
     """
-    🧬 ANALISADOR PREDITIVO DE FALHAS com MACHINE LEARNING
+    ðŸ§¬ ANALISADOR PREDITIVO DE FALHAS com MACHINE LEARNING
     
-    Características:
-    - Time Series Analysis para detectar padrões temporais
+    CaracterÃ­sticas:
+    - Time Series Analysis para detectar padrÃµes temporais
     - Anomaly Detection usando isolation forests
-    - Regression models para predizer tempo até falha
-    - Ensemble methods para combinar múltiplos preditores
-    - Feature engineering dinâmica
-    - Online learning para adaptação contínua
+    - Regression models para predizer tempo atÃ© falha
+    - Ensemble methods para combinar mÃºltiplos preditores
+    - Feature engineering dinÃ¢mica
+    - Online learning para adaptaÃ§Ã£o contÃ­nua
     """
     
     def __init__(self, history_window: int = 1000):
@@ -83,7 +83,7 @@ class PredictiveFailureAnalyzer:
         self.prediction_history: List[FailurePrediction] = []
         self.history_window = history_window
         
-        # ML Models (simulados com matemática avançada)
+        # ML Models (simulados com matemÃ¡tica avanÃ§ada)
         self.trend_analyzers: Dict[FailurePredictorType, 'TrendAnalyzer'] = {}
         self.anomaly_detectors: Dict[FailurePredictorType, 'AnomalyDetector'] = {}
         self.time_series_models: Dict[FailurePredictorType, 'TimeSeriesPredictor'] = {}
@@ -100,7 +100,7 @@ class PredictiveFailureAnalyzer:
             'latency_degradation': 0.10
         }
         
-        # Simular histórico inicial para treinamento
+        # Simular histÃ³rico inicial para treinamento
         self._generate_training_data()
     
     def _initialize_ml_models(self):
@@ -111,26 +111,26 @@ class PredictiveFailureAnalyzer:
             self.time_series_models[predictor_type] = TimeSeriesPredictor(predictor_type)
     
     def _generate_training_data(self):
-        """Gera dados sintéticos para treinamento dos modelos"""
-        print("🎓 Gerando dados de treinamento históricos...")
+        """Gera dados sintÃ©ticos para treinamento dos modelos"""
+        print("ðŸŽ“ Gerando dados de treinamento histÃ³ricos...")
         
         base_time = datetime.now() - timedelta(days=30)
         
         for i in range(720):  # 30 dias * 24 horas
             timestamp = base_time + timedelta(hours=i)
             
-            # Simular métricas com padrões realistas
+            # Simular mÃ©tricas com padrÃµes realistas
             hour = timestamp.hour
             day_of_week = timestamp.weekday()
             
-            # Padrões circadianos e semanais
+            # PadrÃµes circadianos e semanais
             cpu_base = 30 + 20 * math.sin(2 * math.pi * hour / 24)  # Picos durante o dia
             if day_of_week >= 5:  # Weekend
                 cpu_base *= 0.7
             
-            # Adicionar ruído e tendências
+            # Adicionar ruÃ­do e tendÃªncias
             noise = random.gauss(0, 5)
-            trend = i * 0.01 if i > 500 else 0  # Degradação gradual após 500h
+            trend = i * 0.01 if i > 500 else 0  # DegradaÃ§Ã£o gradual apÃ³s 500h
             
             metrics = SystemMetrics(
                 timestamp=timestamp,
@@ -148,10 +148,10 @@ class PredictiveFailureAnalyzer:
         
         # Treinar modelos com dados gerados
         self._train_all_models()
-        print(f"✅ Modelos treinados com {len(self.metrics_history)} amostras históricas")
+        print(f"âœ… Modelos treinados com {len(self.metrics_history)} amostras histÃ³ricas")
     
     def _train_all_models(self):
-        """Treina todos os modelos ML com dados históricos"""
+        """Treina todos os modelos ML com dados histÃ³ricos"""
         for predictor_type in FailurePredictorType:
             self.trend_analyzers[predictor_type].train(self.metrics_history)
             self.anomaly_detectors[predictor_type].train(self.metrics_history)
@@ -159,64 +159,64 @@ class PredictiveFailureAnalyzer:
     
     async def analyze_and_predict(self, current_metrics: SystemMetrics) -> List[FailurePrediction]:
         """
-        🔮 ANÁLISE PREDITIVA PRINCIPAL
+        ðŸ”® ANÃLISE PREDITIVA PRINCIPAL
         
         Fluxo:
-        1. Atualiza histórico com métricas atuais
+        1. Atualiza histÃ³rico com mÃ©tricas atuais
         2. Executa feature engineering
         3. Roda todos os preditores em paralelo
-        4. Combina predições usando ensemble
-        5. Gera recomendações acionáveis
+        4. Combina prediÃ§Ãµes usando ensemble
+        5. Gera recomendaÃ§Ãµes acionÃ¡veis
         """
         
-        # Adicionar métricas ao histórico
+        # Adicionar mÃ©tricas ao histÃ³rico
         self.metrics_history.append(current_metrics)
         if len(self.metrics_history) > self.history_window:
             self.metrics_history.pop(0)
         
-        print(f"\n🔮 ANÁLISE PREDITIVA: {current_metrics.timestamp.strftime('%H:%M:%S')}")
-        print(f"📊 CPU: {current_metrics.cpu_usage:.1f}% | RAM: {current_metrics.memory_usage:.1f}% | Temp: {current_metrics.temperature:.1f}°C")
+        print(f"\nðŸ”® ANÃLISE PREDITIVA: {current_metrics.timestamp.strftime('%H:%M:%S')}")
+        print(f"ðŸ“Š CPU: {current_metrics.cpu_usage:.1f}% | RAM: {current_metrics.memory_usage:.1f}% | Temp: {current_metrics.temperature:.1f}Â°C")
         
         # Feature Engineering
         features = self._extract_advanced_features()
-        print(f"🧬 Features extraídas: {len(features)} características")
+        print(f"ðŸ§¬ Features extraÃ­das: {len(features)} caracterÃ­sticas")
         
         # Executar todos os preditores
         predictions = []
         
         for predictor_type in FailurePredictorType:
             prediction = await self._run_predictor(predictor_type, current_metrics, features)
-            if prediction and prediction.probability > 0.1:  # Filtrar predições muito baixas
+            if prediction and prediction.probability > 0.1:  # Filtrar prediÃ§Ãµes muito baixas
                 predictions.append(prediction)
         
         # Ensemble e refinamento
         refined_predictions = self._refine_predictions_with_ensemble(predictions)
         
-        # Atualizar histórico de predições
+        # Atualizar histÃ³rico de prediÃ§Ãµes
         self.prediction_history.extend(refined_predictions)
         
         return refined_predictions
     
     def _extract_advanced_features(self) -> Dict[str, float]:
         """
-        🧬 FEATURE ENGINEERING AVANÇADO
+        ðŸ§¬ FEATURE ENGINEERING AVANÃ‡ADO
         
-        Extrai características complexas dos dados brutos:
-        - Tendências temporais
-        - Padrões sazonais
-        - Anomalias estatísticas
-        - Correlações entre métricas
+        Extrai caracterÃ­sticas complexas dos dados brutos:
+        - TendÃªncias temporais
+        - PadrÃµes sazonais
+        - Anomalias estatÃ­sticas
+        - CorrelaÃ§Ãµes entre mÃ©tricas
         """
         
         if len(self.metrics_history) < 10:
             return {}
         
-        recent_data = self.metrics_history[-50:]  # Últimas 50 amostras
-        very_recent = self.metrics_history[-10:]  # Últimas 10 amostras
+        recent_data = self.metrics_history[-50:]  # Ãšltimas 50 amostras
+        very_recent = self.metrics_history[-10:]  # Ãšltimas 10 amostras
         
         features = {}
         
-        # 1. TENDÊNCIAS LINEARES
+        # 1. TENDÃŠNCIAS LINEARES
         cpu_values = [m.cpu_usage for m in recent_data]
         memory_values = [m.memory_usage for m in recent_data]
         
@@ -232,7 +232,7 @@ class PredictiveFailureAnalyzer:
         features['cpu_recent_max'] = max([m.cpu_usage for m in very_recent])
         features['memory_recent_max'] = max([m.memory_usage for m in very_recent])
         
-        # 4. CORRELAÇÕES CRÍTICAS
+        # 4. CORRELAÃ‡Ã•ES CRÃTICAS
         if len(recent_data) > 5:
             features['cpu_temp_correlation'] = self._calculate_correlation(
                 [m.cpu_usage for m in recent_data],
@@ -243,12 +243,12 @@ class PredictiveFailureAnalyzer:
                 [m.network_latency for m in recent_data]
             )
         
-        # 5. PADRÕES TEMPORAIS
+        # 5. PADRÃ•ES TEMPORAIS
         current_hour = self.metrics_history[-1].timestamp.hour
         features['is_peak_hour'] = 1 if 9 <= current_hour <= 17 else 0
         features['is_night'] = 1 if 22 <= current_hour or current_hour <= 6 else 0
         
-        # 6. TAXA DE MUDANÇA ACELERADA
+        # 6. TAXA DE MUDANÃ‡A ACELERADA
         if len(recent_data) >= 3:
             cpu_recent = [recent_data[-3].cpu_usage, recent_data[-2].cpu_usage, recent_data[-1].cpu_usage]
             features['cpu_acceleration'] = self._calculate_acceleration(cpu_recent)
@@ -256,7 +256,7 @@ class PredictiveFailureAnalyzer:
         return features
     
     def _calculate_linear_trend(self, values: List[float]) -> float:
-        """Calcula tendência linear usando regressão simples"""
+        """Calcula tendÃªncia linear usando regressÃ£o simples"""
         if len(values) < 2:
             return 0
         
@@ -272,7 +272,7 @@ class PredictiveFailureAnalyzer:
         return numerator / denominator if denominator != 0 else 0
     
     def _calculate_correlation(self, x: List[float], y: List[float]) -> float:
-        """Calcula correlação de Pearson"""
+        """Calcula correlaÃ§Ã£o de Pearson"""
         if len(x) != len(y) or len(x) < 2:
             return 0
         
@@ -288,19 +288,19 @@ class PredictiveFailureAnalyzer:
         return numerator / denominator if denominator != 0 else 0
     
     def _calculate_acceleration(self, values: List[float]) -> float:
-        """Calcula segunda derivada (aceleração da mudança)"""
+        """Calcula segunda derivada (aceleraÃ§Ã£o da mudanÃ§a)"""
         if len(values) != 3:
             return 0
         return values[0] - 2 * values[1] + values[2]
     
     async def _run_predictor(self, predictor_type: FailurePredictorType, 
                            metrics: SystemMetrics, features: Dict) -> Optional[FailurePrediction]:
-        """Executa um preditor específico"""
+        """Executa um preditor especÃ­fico"""
         
         # Simular processamento ML
         await asyncio.sleep(0.1)
         
-        # Lógica específica por tipo de preditor
+        # LÃ³gica especÃ­fica por tipo de preditor
         if predictor_type == FailurePredictorType.MEMORY_LEAK:
             return self._predict_memory_leak(metrics, features)
         
@@ -317,16 +317,16 @@ class PredictiveFailureAnalyzer:
         return None
     
     def _predict_memory_leak(self, metrics: SystemMetrics, features: Dict) -> Optional[FailurePrediction]:
-        """🧠 PREDITOR DE MEMORY LEAK usando tendências e volatilidade"""
+        """ðŸ§  PREDITOR DE MEMORY LEAK usando tendÃªncias e volatilidade"""
         
         memory_trend = features.get('memory_trend', 0)
         memory_volatility = features.get('memory_volatility', 0)
         current_usage = metrics.memory_usage
         
-        # Algoritmo de predição
+        # Algoritmo de prediÃ§Ã£o
         base_probability = 0
         
-        # Tendência crescente forte = risco alto
+        # TendÃªncia crescente forte = risco alto
         if memory_trend > 0.5:  # Crescimento > 0.5% por amostra
             base_probability += 0.4
         
@@ -336,7 +336,7 @@ class PredictiveFailureAnalyzer:
         elif current_usage > 60:
             base_probability += 0.1
         
-        # Baixa volatilidade + alta tendência = leak suspeito
+        # Baixa volatilidade + alta tendÃªncia = leak suspeito
         if memory_trend > 0.3 and memory_volatility < 5:
             base_probability += 0.3
         
@@ -345,15 +345,15 @@ class PredictiveFailureAnalyzer:
         if probability < 0.1:
             return None
         
-        # Calcular tempo estimado até falha
+        # Calcular tempo estimado atÃ© falha
         if memory_trend > 0:
-            remaining_memory = 95 - current_usage  # Até 95% de limite
+            remaining_memory = 95 - current_usage  # AtÃ© 95% de limite
             est_hours = remaining_memory / (memory_trend * 5)  # 5 amostras/hora estimado
             time_to_failure = timedelta(hours=max(0.5, est_hours))
         else:
             time_to_failure = None
         
-        # Determinar nível de risco
+        # Determinar nÃ­vel de risco
         risk_level = RiskLevel.LOW
         for level in [RiskLevel.CRITICAL, RiskLevel.HIGH, RiskLevel.MEDIUM, RiskLevel.LOW]:
             if level.min_probability <= probability <= level.max_probability:
@@ -362,21 +362,21 @@ class PredictiveFailureAnalyzer:
         
         contributing_factors = []
         if memory_trend > 0.3:
-            contributing_factors.append(f"Tendência crescente: +{memory_trend:.2f}%/amostra")
+            contributing_factors.append(f"TendÃªncia crescente: +{memory_trend:.2f}%/amostra")
         if memory_volatility < 5:
-            contributing_factors.append("Padrão consistente de crescimento")
+            contributing_factors.append("PadrÃ£o consistente de crescimento")
         if current_usage > 70:
             contributing_factors.append(f"Uso atual alto: {current_usage:.1f}%")
         
         recommended_actions = []
         if probability > 0.7:
-            recommended_actions.append("🚨 Reiniciar serviços com maior consumo")
-            recommended_actions.append("📊 Ativar profiling detalhado de memória")
+            recommended_actions.append("ðŸš¨ Reiniciar serviÃ§os com maior consumo")
+            recommended_actions.append("ðŸ“Š Ativar profiling detalhado de memÃ³ria")
         elif probability > 0.4:
-            recommended_actions.append("👁️ Monitoramento intensivo de heap")
-            recommended_actions.append("🔧 Verificar garbage collection")
+            recommended_actions.append("ðŸ‘ï¸ Monitoramento intensivo de heap")
+            recommended_actions.append("ðŸ”§ Verificar garbage collection")
         else:
-            recommended_actions.append("📈 Continuar monitoramento de tendências")
+            recommended_actions.append("ðŸ“ˆ Continuar monitoramento de tendÃªncias")
         
         return FailurePrediction(
             predictor_type=FailurePredictorType.MEMORY_LEAK,
@@ -390,7 +390,7 @@ class PredictiveFailureAnalyzer:
         )
     
     def _predict_cpu_degradation(self, metrics: SystemMetrics, features: Dict) -> Optional[FailurePrediction]:
-        """⚡ PREDITOR DE DEGRADAÇÃO DE CPU"""
+        """âš¡ PREDITOR DE DEGRADAÃ‡ÃƒO DE CPU"""
         
         cpu_trend = features.get('cpu_trend', 0)
         cpu_volatility = features.get('cpu_volatility', 0)
@@ -399,7 +399,7 @@ class PredictiveFailureAnalyzer:
         
         base_probability = 0
         
-        # Tendência crescente
+        # TendÃªncia crescente
         if cpu_trend > 1.0:  # +1% por amostra
             base_probability += 0.5
         elif cpu_trend > 0.5:
@@ -411,7 +411,7 @@ class PredictiveFailureAnalyzer:
         elif current_cpu > 75:
             base_probability += 0.2
         
-        # Aceleração (mudança da mudança)
+        # AceleraÃ§Ã£o (mudanÃ§a da mudanÃ§a)
         if cpu_acceleration > 2:
             base_probability += 0.3
         
@@ -433,13 +433,13 @@ class PredictiveFailureAnalyzer:
             risk_level=risk_level,
             estimated_time_to_failure=timedelta(hours=max(1, 10 - probability * 8)),
             confidence_score=0.7 + abs(cpu_trend) * 0.2,
-            contributing_factors=[f"CPU trend: +{cpu_trend:.2f}%", f"Aceleração: {cpu_acceleration:.2f}"],
-            recommended_actions=["⚡ Otimizar processos intensivos", "🔄 Considerar load balancing"],
+            contributing_factors=[f"CPU trend: +{cpu_trend:.2f}%", f"AceleraÃ§Ã£o: {cpu_acceleration:.2f}"],
+            recommended_actions=["âš¡ Otimizar processos intensivos", "ðŸ”„ Considerar load balancing"],
             prediction_timestamp=datetime.now()
         )
     
     def _predict_temperature_failure(self, metrics: SystemMetrics, features: Dict) -> Optional[FailurePrediction]:
-        """🌡️ PREDITOR DE SUPERAQUECIMENTO"""
+        """ðŸŒ¡ï¸ PREDITOR DE SUPERAQUECIMENTO"""
         
         current_temp = metrics.temperature
         temp_correlation = features.get('cpu_temp_correlation', 0)
@@ -454,7 +454,7 @@ class PredictiveFailureAnalyzer:
         elif current_temp > 60:
             base_probability += 0.1
         
-        # Correlação forte CPU-temperatura indica problema de cooling
+        # CorrelaÃ§Ã£o forte CPU-temperatura indica problema de cooling
         if temp_correlation > 0.8:
             base_probability += 0.2
         
@@ -475,13 +475,13 @@ class PredictiveFailureAnalyzer:
             risk_level=risk_level,
             estimated_time_to_failure=timedelta(hours=max(0.5, 5 - probability * 4)),
             confidence_score=0.8 if current_temp > 75 else 0.6,
-            contributing_factors=[f"Temperatura: {current_temp:.1f}°C", f"Correlação CPU-Temp: {temp_correlation:.2f}"],
-            recommended_actions=["🌬️ Verificar ventilação", "❄️ Reduzir carga do sistema"],
+            contributing_factors=[f"Temperatura: {current_temp:.1f}Â°C", f"CorrelaÃ§Ã£o CPU-Temp: {temp_correlation:.2f}"],
+            recommended_actions=["ðŸŒ¬ï¸ Verificar ventilaÃ§Ã£o", "â„ï¸ Reduzir carga do sistema"],
             prediction_timestamp=datetime.now()
         )
     
     def _predict_network_failure(self, metrics: SystemMetrics, features: Dict) -> Optional[FailurePrediction]:
-        """🌐 PREDITOR DE FALHAS DE REDE"""
+        """ðŸŒ PREDITOR DE FALHAS DE REDE"""
         
         latency_trend = features.get('latency_trend', 0)
         current_latency = metrics.network_latency
@@ -489,19 +489,19 @@ class PredictiveFailureAnalyzer:
         
         base_probability = 0
         
-        # Latência crescente
+        # LatÃªncia crescente
         if latency_trend > 2:  # +2ms por amostra
             base_probability += 0.4
         elif latency_trend > 1:
             base_probability += 0.2
         
-        # Latência absoluta
+        # LatÃªncia absoluta
         if current_latency > 100:
             base_probability += 0.5
         elif current_latency > 50:
             base_probability += 0.2
         
-        # Correlação erros-latência
+        # CorrelaÃ§Ã£o erros-latÃªncia
         if error_correlation > 0.6:
             base_probability += 0.3
         
@@ -522,16 +522,16 @@ class PredictiveFailureAnalyzer:
             risk_level=risk_level,
             estimated_time_to_failure=timedelta(hours=max(1, 8 - probability * 6)),
             confidence_score=0.75,
-            contributing_factors=[f"Latência: {current_latency:.1f}ms", f"Tendência: +{latency_trend:.2f}ms"],
-            recommended_actions=["🔄 Restart network services", "📡 Check network infrastructure"],
+            contributing_factors=[f"LatÃªncia: {current_latency:.1f}ms", f"TendÃªncia: +{latency_trend:.2f}ms"],
+            recommended_actions=["ðŸ”„ Restart network services", "ðŸ“¡ Check network infrastructure"],
             prediction_timestamp=datetime.now()
         )
     
     def _refine_predictions_with_ensemble(self, predictions: List[FailurePrediction]) -> List[FailurePrediction]:
         """
-        🎯 ENSEMBLE REFINEMENT
+        ðŸŽ¯ ENSEMBLE REFINEMENT
         
-        Combina múltiplas predições e refina usando:
+        Combina mÃºltiplas prediÃ§Ãµes e refina usando:
         - Cross-validation entre preditores
         - Weighted voting baseado em confidence
         - Temporal consistency checking
@@ -546,11 +546,11 @@ class PredictiveFailureAnalyzer:
         # Aplicar ensemble weights
         refined = []
         for prediction in predictions:
-            # Ajustar probabilidade baseado em confidence histórica
+            # Ajustar probabilidade baseado em confidence histÃ³rica
             historical_accuracy = self._get_historical_accuracy(prediction.predictor_type)
             adjusted_probability = prediction.probability * historical_accuracy
             
-            # Criar predição refinada
+            # Criar prediÃ§Ã£o refinada
             refined_pred = FailurePrediction(
                 predictor_type=prediction.predictor_type,
                 probability=adjusted_probability,
@@ -567,8 +567,8 @@ class PredictiveFailureAnalyzer:
         return refined
     
     def _get_historical_accuracy(self, predictor_type: FailurePredictorType) -> float:
-        """Retorna acurácia histórica de um preditor (simulada)"""
-        # Simular acurácias diferentes por tipo
+        """Retorna acurÃ¡cia histÃ³rica de um preditor (simulada)"""
+        # Simular acurÃ¡cias diferentes por tipo
         accuracies = {
             FailurePredictorType.MEMORY_LEAK: 0.89,
             FailurePredictorType.CPU_DEGRADATION: 0.82,
@@ -582,7 +582,7 @@ class PredictiveFailureAnalyzer:
 # ============================================================================
 
 class TrendAnalyzer:
-    """Analisa tendências temporais"""
+    """Analisa tendÃªncias temporais"""
     def __init__(self, predictor_type: FailurePredictorType):
         self.predictor_type = predictor_type
         self.trained = False
@@ -591,7 +591,7 @@ class TrendAnalyzer:
         self.trained = True
 
 class AnomalyDetector:
-    """Detecta anomalias estatísticas"""
+    """Detecta anomalias estatÃ­sticas"""
     def __init__(self, predictor_type: FailurePredictorType):
         self.predictor_type = predictor_type
         self.trained = False
@@ -600,7 +600,7 @@ class AnomalyDetector:
         self.trained = True
 
 class TimeSeriesPredictor:
-    """Predições baseadas em séries temporais"""
+    """PrediÃ§Ãµes baseadas em sÃ©ries temporais"""
     def __init__(self, predictor_type: FailurePredictorType):
         self.predictor_type = predictor_type
         self.trained = False
@@ -609,27 +609,27 @@ class TimeSeriesPredictor:
         self.trained = True
 
 # ============================================================================
-# DEMONSTRAÇÃO COMPLETA
+# DEMONSTRAÃ‡ÃƒO COMPLETA
 # ============================================================================
 
 async def predictive_analytics_demo():
-    """Demonstração completa do sistema preditivo"""
+    """DemonstraÃ§Ã£o completa do sistema preditivo"""
     
-    print("\n🧬 " + "="*60)
+    print("\nðŸ§¬ " + "="*60)
     print("    JARVIS PREDICTIVE ANALYTICS DEMO")  
     print("="*60 + "\n")
     
     analyzer = PredictiveFailureAnalyzer()
     
-    print("🎯 SIMULANDO CENÁRIOS DE DEGRADAÇÃO PROGRESSIVA")
+    print("ðŸŽ¯ SIMULANDO CENÃRIOS DE DEGRADAÃ‡ÃƒO PROGRESSIVA")
     print("-" * 60)
     
-    # Cenário 1: Memory Leak Progressivo
-    print("\n💭 CENÁRIO 1: Memory Leak Detectado")
+    # CenÃ¡rio 1: Memory Leak Progressivo
+    print("\nðŸ’­ CENÃRIO 1: Memory Leak Detectado")
     base_time = datetime.now()
     
     for i in range(5):
-        # Simular aumento progressivo de memória
+        # Simular aumento progressivo de memÃ³ria
         memory_usage = 55 + i * 8  # 55%, 63%, 71%, 79%, 87%
         
         metrics = SystemMetrics(
@@ -653,18 +653,18 @@ async def predictive_analytics_demo():
                 print(f"      Confidence: {pred.confidence_score:.1%}")
                 if pred.estimated_time_to_failure:
                     print(f"      Tempo estimado: {pred.estimated_time_to_failure}")
-                print(f"      Ações: {pred.recommended_actions[0] if pred.recommended_actions else 'N/A'}")
+                print(f"      AÃ§Ãµes: {pred.recommended_actions[0] if pred.recommended_actions else 'N/A'}")
         else:
-            print("   ✅ Nenhum risco detectado")
+            print("   âœ… Nenhum risco detectado")
         
         print()
     
-    # Cenário 2: CPU Degradation + Temperature Spike
-    print("\n⚡ CENÁRIO 2: CPU Degradation com Overheating")
+    # CenÃ¡rio 2: CPU Degradation + Temperature Spike
+    print("\nâš¡ CENÃRIO 2: CPU Degradation com Overheating")
     
     for i in range(4):
-        cpu_usage = 65 + i * 12  # 65%, 77%, 89%, 101% (impossível, mas para teste)
-        temp = 52 + i * 15       # 52°, 67°, 82°, 97°
+        cpu_usage = 65 + i * 12  # 65%, 77%, 89%, 101% (impossÃ­vel, mas para teste)
+        temp = 52 + i * 15       # 52Â°, 67Â°, 82Â°, 97Â°
         
         metrics = SystemMetrics(
             timestamp=base_time + timedelta(hours=1, minutes=i*15),
@@ -681,23 +681,23 @@ async def predictive_analytics_demo():
         predictions = await analyzer.analyze_and_predict(metrics)
         
         if predictions:
-            print(f"   🎯 RISCOS CRÍTICOS DETECTADOS ({len(predictions)} preditores):")
+            print(f"   ðŸŽ¯ RISCOS CRÃTICOS DETECTADOS ({len(predictions)} preditores):")
             for pred in predictions:
                 print(f"   {pred.risk_level.icon} {pred.predictor_type.value}")
-                print(f"      • Risco: {pred.probability:.1%} ({pred.risk_level.level_name})")
+                print(f"      â€¢ Risco: {pred.probability:.1%} ({pred.risk_level.level_name})")
                 if pred.estimated_time_to_failure:
                     hours = pred.estimated_time_to_failure.total_seconds() / 3600
-                    print(f"      • ETA: {hours:.1f}h até falha crítica")
-                print(f"      • Fatores: {'; '.join(pred.contributing_factors[:2])}")
+                    print(f"      â€¢ ETA: {hours:.1f}h atÃ© falha crÃ­tica")
+                print(f"      â€¢ Fatores: {'; '.join(pred.contributing_factors[:2])}")
                 print()
     
     # Resumo final
     print("="*60)
-    print("🏆 PREDICTIVE ANALYTICS: ENTERPRISE SUCCESS")
-    print(f"   🧠 {len(analyzer.prediction_history)} predições realizadas")
-    print(f"   🎯 Falhas detectadas ANTES de ocorrerem")
-    print(f"   ⚡ Tempo médio de antecedência: 2-8 horas")
-    print(f"   🛡️ Sistema pronto para recovery preventivo")
+    print("ðŸ† PREDICTIVE ANALYTICS: ENTERPRISE SUCCESS")
+    print(f"   ðŸ§  {len(analyzer.prediction_history)} prediÃ§Ãµes realizadas")
+    print(f"   ðŸŽ¯ Falhas detectadas ANTES de ocorrerem")
+    print(f"   âš¡ Tempo mÃ©dio de antecedÃªncia: 2-8 horas")
+    print(f"   ðŸ›¡ï¸ Sistema pronto para recovery preventivo")
 
 if __name__ == "__main__":
     asyncio.run(predictive_analytics_demo())

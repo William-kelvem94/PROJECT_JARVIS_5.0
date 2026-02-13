@@ -1,6 +1,6 @@
-"""Módulo Engine JARVIS
+﻿"""MÃ³dulo Engine JARVIS
 
-Motor de autonomia, geração de código e indexação de base de código.
+Motor de autonomia, geraÃ§Ã£o de cÃ³digo e indexaÃ§Ã£o de base de cÃ³digo.
 """
 
 from .autonomy import *

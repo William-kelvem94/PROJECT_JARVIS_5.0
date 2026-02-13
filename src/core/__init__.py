@@ -1,15 +1,15 @@
-"""JARVIS Core - Sistema Central de Inteligência Artificial
+﻿"""JARVIS Core - Sistema Central de InteligÃªncia Artificial
 
-Este módulo contém todos os componentes centrais do JARVIS, incluindo:
-- Orchestrator: Sistema de inicialização e monitoramento de saúde
-- Intelligence: Módulos de IA e processamento cognitivo
-- Vision: Processamento de visão computacional
-- Audio: Processamento de voz e áudio
-- Actions: Sistema de execução de comandos
+Este mÃ³dulo contÃ©m todos os componentes centrais do JARVIS, incluindo:
+- Orchestrator: Sistema de inicializaÃ§Ã£o e monitoramento de saÃºde
+- Intelligence: MÃ³dulos de IA e processamento cognitivo
+- Vision: Processamento de visÃ£o computacional
+- Audio: Processamento de voz e Ã¡udio
+- Actions: Sistema de execuÃ§Ã£o de comandos
 - Management: Gerenciamento de sistema e recursos
-- Security: Sistema de segurança e validação
+- Security: Sistema de seguranÃ§a e validaÃ§Ã£o
 - IoT: Controle de dispositivos inteligentes
-- Engine: Motor de autonomia e geração de código
+- Engine: Motor de autonomia e geraÃ§Ã£o de cÃ³digo
 """
 
 # Lazy import to avoid heavy dependencies at startup

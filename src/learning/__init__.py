@@ -1,16 +1,16 @@
-"""
+﻿"""
 JARVIS AGI - Machine Learning Core
 ==================================
 
-Este módulo implementa o sistema de aprendizado contínuo e evolução autônoma do JARVIS.
+Este mÃ³dulo implementa o sistema de aprendizado contÃ­nuo e evoluÃ§Ã£o autÃ´noma do JARVIS.
 
 Componentes:
-- dataset_builder: Coleta e formata interações para treinamento
+- dataset_builder: Coleta e formata interaÃ§Ãµes para treinamento
 - trainer: Fine-tuning local com LoRA/QLoRA
-- dream_cycle: Treinamento automático durante períodos ociosos
+- dream_cycle: Treinamento automÃ¡tico durante perÃ­odos ociosos
 - feedback_loop: RLHF simplificado com DPO
-- predictive_engine: Predição de necessidades do usuário
-- vision_learner: Aprendizado few-shot para visão
+- predictive_engine: PrediÃ§Ã£o de necessidades do usuÃ¡rio
+- vision_learner: Aprendizado few-shot para visÃ£o
 """
 
 from pathlib import Path

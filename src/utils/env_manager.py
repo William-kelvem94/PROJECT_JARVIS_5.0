@@ -1,10 +1,10 @@
-"""
+﻿"""
 JARVIS 5.0 - Environment Manager
 =================================
 
-Centraliza o carregamento e validação de variáveis de ambiente.
-Prioriza variáveis de sistema (JARVIS_*) antes de valores padrão.
-Garante segurança e flexibilidade para diferentes ambientes.
+Centraliza o carregamento e validaÃ§Ã£o de variÃ¡veis de ambiente.
+Prioriza variÃ¡veis de sistema (JARVIS_*) antes de valores padrÃ£o.
+Garante seguranÃ§a e flexibilidade para diferentes ambientes.
 """
 
 import os
@@ -19,7 +19,7 @@ logger = logging.getLogger("JARVIS-ENV-MANAGER")
 
 @dataclass
 class JarvisConfig:
-    """Configuração centralizada do JARVIS via environment."""
+    """ConfiguraÃ§Ã£o centralizada do JARVIS via environment."""
 
     # === CORE PATHS ===
     project_root: Path = field(default_factory=lambda: Path(__file__).parent.parent.parent)
@@ -55,22 +55,22 @@ class JarvisConfig:
     enable_metrics: bool = True
 
     def __post_init__(self):
-        """Validação pós-inicialização."""
+        """ValidaÃ§Ã£o pÃ³s-inicializaÃ§Ã£o."""
         # Garantir que paths sejam Path objects
         for attr in ['project_root', 'data_dir', 'config_dir', 'models_dir']:
             value = getattr(self, attr)
             if isinstance(value, str):
                 setattr(self, attr, Path(value))
 
-        # Criar diretórios se não existirem
+        # Criar diretÃ³rios se nÃ£o existirem
         for path_attr in ['data_dir', 'config_dir', 'models_dir']:
             path = getattr(self, path_attr)
             path.mkdir(parents=True, exist_ok=True)
 
 class EnvironmentManager:
-    """Gerenciador centralizado de configuração via ambiente."""
+    """Gerenciador centralizado de configuraÃ§Ã£o via ambiente."""
 
-    # Mapeamento de variáveis de ambiente para atributos da config
+    # Mapeamento de variÃ¡veis de ambiente para atributos da config
     ENV_MAPPING = {
         # Core paths
         'JARVIS_PROJECT_ROOT': 'project_root',
@@ -106,7 +106,7 @@ class EnvironmentManager:
         'JARVIS_ENABLE_METRICS': 'enable_metrics',
     }
 
-    # Valores padrão seguros
+    # Valores padrÃ£o seguros
     DEFAULTS = {
         'ollama_url': 'http://localhost:11434',
         'ollama_timeout': 30,
@@ -130,7 +130,7 @@ class EnvironmentManager:
         self._load_dotenv_if_available()
 
     def _load_dotenv_if_available(self):
-        """Carrega .env se disponível (opcional)."""
+        """Carrega .env se disponÃ­vel (opcional)."""
         try:
             from dotenv import load_dotenv
             project_root = Path(__file__).parent.parent.parent
@@ -140,19 +140,19 @@ class EnvironmentManager:
                 load_dotenv(env_file)
                 logger.info(f"Carregado arquivo .env: {env_file}")
             else:
-                logger.debug("Arquivo .env não encontrado, usando variáveis de ambiente do sistema")
+                logger.debug("Arquivo .env nÃ£o encontrado, usando variÃ¡veis de ambiente do sistema")
         except ImportError:
-            logger.debug("python-dotenv não disponível, usando apenas variáveis de ambiente do sistema")
+            logger.debug("python-dotenv nÃ£o disponÃ­vel, usando apenas variÃ¡veis de ambiente do sistema")
 
     def load_config(self) -> JarvisConfig:
-        """Carrega e valida configuração completa."""
+        """Carrega e valida configuraÃ§Ã£o completa."""
         if self.config is not None:
             return self.config
 
         # Inicializar com defaults
         config_dict = self.DEFAULTS.copy()
 
-        # Override com variáveis de ambiente
+        # Override com variÃ¡veis de ambiente
         for env_var, config_key in self.ENV_MAPPING.items():
             env_value = os.getenv(env_var)
             if env_value is not None:
@@ -162,13 +162,13 @@ class EnvironmentManager:
         # Processar paths especiais
         self._process_paths(config_dict)
 
-        # Criar objeto de configuração
+        # Criar objeto de configuraÃ§Ã£o
         self.config = JarvisConfig(**config_dict)
 
-        # Validação final
+        # ValidaÃ§Ã£o final
         self._validate_config()
 
-        logger.info("Configuração JARVIS carregada com sucesso")
+        logger.info("ConfiguraÃ§Ã£o JARVIS carregada com sucesso")
         return self.config
 
     def _parse_env_value(self, value: str, key: str) -> Any:
@@ -182,7 +182,7 @@ class EnvironmentManager:
             try:
                 return int(value)
             except ValueError:
-                logger.warning(f"Valor inválido para {key}: {value}, usando padrão")
+                logger.warning(f"Valor invÃ¡lido para {key}: {value}, usando padrÃ£o")
                 return self.DEFAULTS.get(key, 0)
 
         # Floats
@@ -190,7 +190,7 @@ class EnvironmentManager:
             try:
                 return float(value)
             except ValueError:
-                logger.warning(f"Valor inválido para {key}: {value}, usando padrão")
+                logger.warning(f"Valor invÃ¡lido para {key}: {value}, usando padrÃ£o")
                 return self.DEFAULTS.get(key, 0.0)
 
         # Lists (JSON)
@@ -198,7 +198,7 @@ class EnvironmentManager:
             try:
                 return json.loads(value)
             except (json.JSONDecodeError, TypeError):
-                # Se não for JSON, tratar como lista separada por vírgula
+                # Se nÃ£o for JSON, tratar como lista separada por vÃ­rgula
                 return [item.strip() for item in value.split(',') if item.strip()]
 
         # Strings (default)
@@ -226,7 +226,7 @@ class EnvironmentManager:
                         config_dict[key] = Path(path_value)
 
     def _validate_config(self):
-        """Valida configuração carregada."""
+        """Valida configuraÃ§Ã£o carregada."""
         # Validar URLs
         import re
         url_pattern = re.compile(r'^https?://.+$')
@@ -234,22 +234,22 @@ class EnvironmentManager:
         for url_key in ['ollama_url', 'ha_url']:
             url = getattr(self.config, url_key, '')
             if url and not url_pattern.match(url):
-                logger.warning(f"URL potencialmente inválida para {url_key}: {url}")
+                logger.warning(f"URL potencialmente invÃ¡lida para {url_key}: {url}")
 
         # Validar portas
         if self.config and hasattr(self.config, 'web_port') and not (1 <= self.config.web_port <= 65535):
-            logger.warning(f"Porta inválida: {self.config.web_port}, usando 5000")
+            logger.warning(f"Porta invÃ¡lida: {self.config.web_port}, usando 5000")
             self.config.web_port = 5000
 
         # Validar tiers de modelo
         valid_tiers = ['ultra', 'pro', 'fast']
         if self.config and hasattr(self.config, 'default_model_tier') and self.config.default_model_tier not in valid_tiers:
-            logger.warning(f"Tier inválido: {self.config.default_model_tier}, usando 'pro'")
+            logger.warning(f"Tier invÃ¡lido: {self.config.default_model_tier}, usando 'pro'")
             self.config.default_model_tier = 'pro'
 
     def get_model_for_tier(self, tier: str) -> str:
         """Retorna modelo apropriado para o tier."""
-        # Carregar do ai_config.yaml se disponível
+        # Carregar do ai_config.yaml se disponÃ­vel
         try:
             if self.config and hasattr(self.config, 'config_dir'):
                 config_file = self.config.config_dir / "ai_config.yaml"
@@ -263,7 +263,7 @@ class EnvironmentManager:
         except Exception as e:
             logger.debug(f"Erro ao carregar modelos do tier: {e}")
 
-        # Fallback para modelos hardcoded (por segurança)
+        # Fallback para modelos hardcoded (por seguranÃ§a)
         fallback_models = {
             'ultra': 'deepseek-r1:8b',
             'pro': 'gemma3:4b',
@@ -273,7 +273,7 @@ class EnvironmentManager:
         return fallback_models.get(tier, 'gemma3:4b')
 
     def save_config_template(self, output_path: Optional[Path] = None):
-        """Salva template de configuração .env."""
+        """Salva template de configuraÃ§Ã£o .env."""
         if output_path is None:
             if self.config and hasattr(self.config, 'project_root'):
                 output_path = self.config.project_root / '.env.template'
@@ -281,7 +281,7 @@ class EnvironmentManager:
                 output_path = Path.cwd() / '.env.template'
 
         template = """# JARVIS 5.0 - Environment Configuration Template
-# Copie este arquivo para .env e ajuste os valores conforme necessário
+# Copie este arquivo para .env e ajuste os valores conforme necessÃ¡rio
 
 # === CORE PATHS ===
 # JARVIS_PROJECT_ROOT=./
@@ -320,15 +320,15 @@ class EnvironmentManager:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(template)
 
-        logger.info(f"Template de configuração salvo em: {output_path}")
+        logger.info(f"Template de configuraÃ§Ã£o salvo em: {output_path}")
 
-# Instância global
+# InstÃ¢ncia global
 env_manager = EnvironmentManager()
 
 def get_config() -> JarvisConfig:
-    """Função de conveniência para obter configuração."""
+    """FunÃ§Ã£o de conveniÃªncia para obter configuraÃ§Ã£o."""
     return env_manager.load_config()
 
 def get_model_for_tier(tier: str) -> str:
-    """Função de conveniência para obter modelo por tier."""
+    """FunÃ§Ã£o de conveniÃªncia para obter modelo por tier."""
     return env_manager.get_model_for_tier(tier)

@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS 5.0 - Neural Dreaming Protocol
 ======================================
-Gerencia o treinamento autônomo e destilação de conhecimento.
+Gerencia o treinamento autÃ´nomo e destilaÃ§Ã£o de conhecimento.
 Ativado em IDLE ou por comando manual do William.
 """
 
@@ -28,14 +28,14 @@ class NeuralDreaming:
     def start_dream(self, topic: str, duration_min: int = 60, focus_mode: bool = False):
         """Inicia o processo de 'Sonho' (Treinamento/Estudo)"""
         if self.is_dreaming:
-            logger.warning("Jarvis já está em modo Dreaming.")
+            logger.warning("Jarvis jÃ¡ estÃ¡ em modo Dreaming.")
             return False
             
         self.is_dreaming = True
         self.current_topic = topic
         self.priority_mode = "FOCUS" if focus_mode else "BACKGROUND"
         
-        logger.info(f"💤 Protocolo SONHAR ativado: Estudo intenso sobre '{topic}' ({self.priority_mode})")
+        logger.info(f"ðŸ’¤ Protocolo SONHAR ativado: Estudo intenso sobre '{topic}' ({self.priority_mode})")
         
         self.dream_thread = threading.Thread(
             target=self._dream_loop, 
@@ -51,15 +51,15 @@ class NeuralDreaming:
         end_time = start_time + (duration_min * 60)
         
         try:
-            # 1. Pesquisa Nexus (se necessário)
+            # 1. Pesquisa Nexus (se necessÃ¡rio)
             from src.core.intelligence.stark_nexus import stark_nexus
-            logger.info(f"🛰️ Dreaming: Expandindo base de conhecimento sobre {topic}...")
+            logger.info(f"ðŸ›°ï¸ Dreaming: Expandindo base de conhecimento sobre {topic}...")
             stark_nexus.pesquisar("DREAMING", topic)
             
             # 2. Loop de Processamento (TREINO REAL)
             from src.learning.trainer import LocalTrainer, TrainingConfig
             
-            # Configuração de treino leve para o sonho
+            # ConfiguraÃ§Ã£o de treino leve para o sonho
             dream_config = TrainingConfig(
                 model_name="jarvis-dream-v1",
                 num_train_epochs=1,
@@ -73,35 +73,35 @@ class NeuralDreaming:
                 output_dir=Path("data/models/dream_checkpoints")
             )
             
-            logger.info(f"🧠 Início do Ciclo REM: Ajustando sinapses sobre '{topic}'...")
+            logger.info(f"ðŸ§  InÃ­cio do Ciclo REM: Ajustando sinapses sobre '{topic}'...")
             
-            # Simular dados baseados no tópico (Isso deveria vir da memória)
-            # Por enquanto, criamos um dataset sintético mínimo para exercitar os pesos
+            # Simular dados baseados no tÃ³pico (Isso deveria vir da memÃ³ria)
+            # Por enquanto, criamos um dataset sintÃ©tico mÃ­nimo para exercitar os pesos
             dummy_data = [
                 {"instruction": f"Explain {topic}", "input": "", "output": f"Refined understanding of {topic}."}
             ]
             
             while time.time() < end_time and self.is_dreaming:
                 try:
-                    # Executa um ciclo de treino real (o Safety Gate do trainer protegerá a CPU)
+                    # Executa um ciclo de treino real (o Safety Gate do trainer protegerÃ¡ a CPU)
                     trainer.train(train_data=dummy_data)
                     
                     elapsed = (time.time() - start_time) / 60
-                    logger.debug(f"💤 Dreaming progress: {elapsed:.1f}/{duration_min} min")
+                    logger.debug(f"ðŸ’¤ Dreaming progress: {elapsed:.1f}/{duration_min} min")
                     
                     # Pausa entre ciclos para respirar
                     time.sleep(30) 
                     
                 except RuntimeError as re:
-                    logger.warning(f"⏸️ Sonho pausado por carga do sistema: {re}")
+                    logger.warning(f"â¸ï¸ Sonho pausado por carga do sistema: {re}")
                     time.sleep(60) # Espera 1 min se o sistema estiver cheio
                 except Exception as e:
-                    logger.error(f"❌ Pesadelo (Erro no treino): {e}")
+                    logger.error(f"âŒ Pesadelo (Erro no treino): {e}")
                     break
 
-            logger.info(f"✅ Protocolo SONHAR finalizado para: {topic}")
+            logger.info(f"âœ… Protocolo SONHAR finalizado para: {topic}")
         except Exception as e:
-            logger.error(f"❌ Erro durante o Neural Dreaming: {e}")
+            logger.error(f"âŒ Erro durante o Neural Dreaming: {e}")
         finally:
             self.is_dreaming = False
             self.current_topic = None
@@ -109,7 +109,7 @@ class NeuralDreaming:
     def stop_dream(self):
         """Interrompe o sonho imediatamente"""
         self.is_dreaming = False
-        logger.info("⚠️ Protocolo SONHAR interrompido manualmente.")
+        logger.info("âš ï¸ Protocolo SONHAR interrompido manualmente.")
 
-# Instância global
+# InstÃ¢ncia global
 neural_dreaming = NeuralDreaming()

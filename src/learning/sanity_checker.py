@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Autonomous Sanity Checker
 =====================================
-Executa testes de integridade em tempo real nos subsistemas críticos.
-Fornece métricas quantitativas de 'Confiabilidade do Sistema'.
+Executa testes de integridade em tempo real nos subsistemas crÃ­ticos.
+Fornece mÃ©tricas quantitativas de 'Confiabilidade do Sistema'.
 """
 
 import time
@@ -57,7 +57,7 @@ class SanityChecker:
         return results
 
     def _check_disk_io(self):
-        """Verifica se consegue escrever e ler no diretório de data"""
+        """Verifica se consegue escrever e ler no diretÃ³rio de data"""
         test_file = self.project_root / "data" / ".sanity_test"
         try:
             test_file.parent.mkdir(parents=True, exist_ok=True)
@@ -69,7 +69,7 @@ class SanityChecker:
             return False, str(e)
 
     def _check_ollama(self):
-        """Verifica se o serviço Ollama está respondendo"""
+        """Verifica se o serviÃ§o Ollama estÃ¡ respondendo"""
         try:
             import requests
             
@@ -86,7 +86,7 @@ class SanityChecker:
             return False, f"Ollama connection failed: {e}"
 
     def _check_vision(self):
-        """Verifica se os modelos de visão estão carregados"""
+        """Verifica se os modelos de visÃ£o estÃ£o carregados"""
         try:
             from src.core.vision.advanced_vision_pipeline import advanced_vision_pipeline
             if advanced_vision_pipeline:
@@ -96,7 +96,7 @@ class SanityChecker:
             return False, str(e)
 
     def _check_memory(self):
-        """Verifica conexão com o banco de dados vetorial"""
+        """Verifica conexÃ£o com o banco de dados vetorial"""
         try:
             # Check if neural_memory is available
             try:
@@ -110,7 +110,7 @@ class SanityChecker:
             return False, str(e)
 
     def _check_security(self):
-        """Verifica se o validador de ações está ativo"""
+        """Verifica se o validador de aÃ§Ãµes estÃ¡ ativo"""
         try:
             from src.core.security.action_validator import action_validator
             if action_validator:

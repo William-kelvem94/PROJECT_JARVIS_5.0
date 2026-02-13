@@ -1,6 +1,6 @@
-"""
-Configurações globais do Jarvis 5.0
-Centraliza todas as configurações, caminhos e constantes do sistema
+﻿"""
+ConfiguraÃ§Ãµes globais do Jarvis 5.0
+Centraliza todas as configuraÃ§Ãµes, caminhos e constantes do sistema
 """
 
 import os
@@ -11,18 +11,18 @@ from typing import Dict, Any, Optional
 import logging
 import yaml
 
-# Configuração de logging gerenciada pelo LoggingConfig
+# ConfiguraÃ§Ã£o de logging gerenciada pelo LoggingConfig
 from src.utils.logging_config import LoggingConfig
 
-# Será inicializado no __init__ do Config para garantir paths corretos
-# (Removido basicConfig estático que causava conflitos)
+# SerÃ¡ inicializado no __init__ do Config para garantir paths corretos
+# (Removido basicConfig estÃ¡tico que causava conflitos)
 
 logger = logging.getLogger(__name__)
 
 import threading
 
 class Config:
-    """Classe singleton para configurações globais"""
+    """Classe singleton para configuraÃ§Ãµes globais"""
 
     _instance = None
     _lock = threading.Lock()
@@ -43,7 +43,7 @@ class Config:
                     self._initialized = True
 
     def _load_config(self):
-        """Carrega configurações do sistema"""
+        """Carrega configuraÃ§Ãµes do sistema"""
 
         # Caminhos base
         self.PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -56,30 +56,30 @@ class Config:
         # INICIALIZAR LOGGING EXTENDIDO
         try:
             LoggingConfig.setup_jarvis_logging(self.DATA_DIR)
-            logger.info("✅ Sistema de Logging Detalhado inicializado.")
+            logger.info("âœ… Sistema de Logging Detalhado inicializado.")
         except Exception as e:
             print(f"FATAL: Erro ao iniciar logs: {e}")
 
-        # Carregar variáveis de ambiente
+        # Carregar variÃ¡veis de ambiente
         from dotenv import load_dotenv
         env_path = self.PROJECT_ROOT / ".env"
         if env_path.exists():
             load_dotenv(dotenv_path=env_path, override=True)
-            # logger.info(f"✅ Variáveis de ambiente carregadas de {env_path}")
+            # logger.info(f"âœ… VariÃ¡veis de ambiente carregadas de {env_path}")
         else:
-            logger.warning(f"⚠️ Arquivo .env não encontrado em {env_path}")
+            logger.warning(f"âš ï¸ Arquivo .env nÃ£o encontrado em {env_path}")
 
-        # Diretórios de dados
+        # DiretÃ³rios de dados
         self.CAPTURES_DIR = self.DATA_DIR / "captures"
         self.PROCESSED_DIR = self.DATA_DIR / "processed"
         self.DATABASE_FILE = self.DATA_DIR / "jarvis.db"
 
-        # Arquivos de configuração
+        # Arquivos de configuraÃ§Ã£o
         self.SETTINGS_FILE = self.CONFIG_DIR / "settings.json"
         self.OCR_CONFIG_FILE = self.CONFIG_DIR / "ocr_config.json"
         self.AI_CONFIG_FILE = self.CONFIG_DIR / "ai_config.yaml"
 
-        # Informações do sistema
+        # InformaÃ§Ãµes do sistema
         self.SYSTEM_INFO = {
             "os": platform.system(),
             "os_version": platform.version(),
@@ -87,7 +87,7 @@ class Config:
             "architecture": platform.architecture()[0]
         }
 
-        # Configurações padrão
+        # ConfiguraÃ§Ãµes padrÃ£o
         self.DEFAULT_SETTINGS = {
             "app": {
                 "name": "Jarvis 5.0",
@@ -140,7 +140,7 @@ class Config:
             }
         }
 
-        # Configurações OCR específicas
+        # ConfiguraÃ§Ãµes OCR especÃ­ficas
         self.OCR_CONFIG = {
             "tesseract": {
                 "path": self._find_tesseract_path(),
@@ -159,7 +159,7 @@ class Config:
             }
         }
 
-        # Sugestão de motor baseada em hardware
+        # SugestÃ£o de motor baseada em hardware
         if self._has_gpu():
             self.DEFAULT_SETTINGS["ocr"]["engine"] = "easyocr"
         else:
@@ -183,18 +183,18 @@ class Config:
                 "fields": ["numero", "partes", "data", "objeto", "valor"]
             },
             "report": {
-                "name": "Relatório",
-                "patterns": ["relatório", "relatorio", "laudo"],
+                "name": "RelatÃ³rio",
+                "patterns": ["relatÃ³rio", "relatorio", "laudo"],
                 "fields": ["titulo", "data", "autor", "conteudo"]
             },
             "form": {
-                "name": "Formulário",
-                "patterns": ["formulário", "formulario", "cadastro"],
+                "name": "FormulÃ¡rio",
+                "patterns": ["formulÃ¡rio", "formulario", "cadastro"],
                 "fields": ["campos", "valores"]
             }
         }
 
-        # Padrões de extração de dados
+        # PadrÃµes de extraÃ§Ã£o de dados
         self.EXTRACTION_PATTERNS = {
             "cpf": r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b",
             "cnpj": r"\b\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}\b",
@@ -214,28 +214,28 @@ class Config:
             "documents": ["numero", "data", "validade", "codigo"]
         }
 
-        # Criar diretórios necessários
+        # Criar diretÃ³rios necessÃ¡rios
         self._create_directories()
 
-        # Carregar configurações do usuário
+        # Carregar configuraÃ§Ãµes do usuÃ¡rio
         self.user_settings = self._load_user_settings()
         
-        # Carregar configurações de IA
+        # Carregar configuraÃ§Ãµes de IA
         self.ai_config = self._load_ai_config()
 
     def _find_tesseract_path(self) -> Optional[str]:
         """Encontra o caminho do Tesseract instalado com busca agressiva"""
-        # 1. Verificar variável de ambiente customizada
+        # 1. Verificar variÃ¡vel de ambiente customizada
         env_path = os.environ.get("TESSERACT_PATH")
         if env_path and os.path.exists(env_path):
             return env_path
             
-        # 2. Verificar no próprio diretório do projeto (Portabilidade total)
+        # 2. Verificar no prÃ³prio diretÃ³rio do projeto (Portabilidade total)
         local_path = self.PROJECT_ROOT / "tools" / "Tesseract-OCR" / "tesseract.exe"
         if local_path.exists():
             return str(local_path)
 
-        # 3. Caminhos padrões Windows/Linux
+        # 3. Caminhos padrÃµes Windows/Linux
         possible_paths = [
             r"C:\Program Files\Tesseract-OCR\tesseract.exe",
             r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
@@ -257,13 +257,13 @@ class Config:
         return None
 
     def _has_gpu(self) -> bool:
-        """Verifica se há uma GPU NVIDIA disponível (sem circular import)"""
+        """Verifica se hÃ¡ uma GPU NVIDIA disponÃ­vel (sem circular import)"""
         try:
             import subprocess
             subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
             return True
         except:
-            # Fallback para torch se já estiver carregado em algum lugar
+            # Fallback para torch se jÃ¡ estiver carregado em algum lugar
             try:
                 import torch
                 return torch.cuda.is_available()
@@ -271,7 +271,7 @@ class Config:
                 return False
 
     def _create_directories(self):
-        """Cria diretórios necessários se não existirem"""
+        """Cria diretÃ³rios necessÃ¡rios se nÃ£o existirem"""
         directories = [
             self.CAPTURES_DIR,
             self.PROCESSED_DIR,
@@ -285,32 +285,32 @@ class Config:
             directory.mkdir(parents=True, exist_ok=True)
 
     def _load_user_settings(self) -> Dict[str, Any]:
-        """Carrega configurações do usuário do arquivo JSON"""
+        """Carrega configuraÃ§Ãµes do usuÃ¡rio do arquivo JSON"""
         if self.SETTINGS_FILE.exists():
             try:
                 with open(self.SETTINGS_FILE, 'r', encoding='utf-8') as f:
                     user_settings = json.load(f)
-                logger.info("Configurações do usuário carregadas com sucesso")
+                logger.info("ConfiguraÃ§Ãµes do usuÃ¡rio carregadas com sucesso")
                 return user_settings
             except Exception as e:
-                logger.error(f"Erro ao carregar configurações do usuário: {e}")
+                logger.error(f"Erro ao carregar configuraÃ§Ãµes do usuÃ¡rio: {e}")
                 return self.DEFAULT_SETTINGS.copy()
         else:
-            # Criar arquivo de configurações padrão
+            # Criar arquivo de configuraÃ§Ãµes padrÃ£o
             self.save_user_settings(self.DEFAULT_SETTINGS)
             return self.DEFAULT_SETTINGS.copy()
 
     def save_user_settings(self, settings: Dict[str, Any]):
-        """Salva configurações do usuário"""
+        """Salva configuraÃ§Ãµes do usuÃ¡rio"""
         try:
             with open(self.SETTINGS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
-            logger.info("Configurações do usuário salvas com sucesso")
+            logger.info("ConfiguraÃ§Ãµes do usuÃ¡rio salvas com sucesso")
         except Exception as e:
-            logger.error(f"Erro ao salvar configurações: {e}")
+            logger.error(f"Erro ao salvar configuraÃ§Ãµes: {e}")
 
     def get_setting(self, key_path: str, default=None):
-        """Obtém uma configuração específica usando notação de ponto"""
+        """ObtÃ©m uma configuraÃ§Ã£o especÃ­fica usando notaÃ§Ã£o de ponto"""
         keys = key_path.split('.')
         value = self.user_settings
 
@@ -323,11 +323,11 @@ class Config:
         return value
 
     def set_setting(self, key_path: str, value: Any):
-        """Define uma configuração específica"""
+        """Define uma configuraÃ§Ã£o especÃ­fica"""
         keys = key_path.split('.')
         config = self.user_settings
 
-        # Navegar até o penúltimo nível
+        # Navegar atÃ© o penÃºltimo nÃ­vel
         for key in keys[:-1]:
             if key not in config:
                 config[key] = {}
@@ -338,44 +338,44 @@ class Config:
         self.save_user_settings(self.user_settings)
 
     def get_ocr_config(self, engine: str) -> Dict[str, Any]:
-        """Obtém configuração específica do OCR"""
+        """ObtÃ©m configuraÃ§Ã£o especÃ­fica do OCR"""
         return self.OCR_CONFIG.get(engine, {})
 
     def get_document_type_config(self, doc_type: str) -> Dict[str, Any]:
-        """Obtém configuração de tipo de documento"""
+        """ObtÃ©m configuraÃ§Ã£o de tipo de documento"""
         return self.SUPPORTED_DOCUMENT_TYPES.get(doc_type, {})
 
     def get_extraction_pattern(self, pattern_name: str) -> str:
-        """Obtém padrão de extração regex"""
+        """ObtÃ©m padrÃ£o de extraÃ§Ã£o regex"""
         return self.EXTRACTION_PATTERNS.get(pattern_name, "")
 
     def get_data_categories(self) -> Dict[str, list]:
-        """Obtém categorias de dados"""
+        """ObtÃ©m categorias de dados"""
         return self.DATA_CATEGORIES.copy()
     
     def _load_ai_config(self) -> Dict[str, Any]:
-        """Carrega configurações de IA do arquivo YAML"""
+        """Carrega configuraÃ§Ãµes de IA do arquivo YAML"""
         if self.AI_CONFIG_FILE.exists():
             try:
                 with open(self.AI_CONFIG_FILE, 'r', encoding='utf-8') as f:
                     ai_config = yaml.safe_load(f)
-                logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
+                logger.info("âœ… ConfiguraÃ§Ãµes de IA carregadas de ai_config.yaml")
                 return ai_config
             except Exception as e:
-                logger.error(f"❌ Erro ao carregar ai_config.yaml: {e}")
+                logger.error(f"âŒ Erro ao carregar ai_config.yaml: {e}")
                 return {}
         else:
-            logger.warning(f"⚠️ ai_config.yaml não encontrado em {self.AI_CONFIG_FILE}")
+            logger.warning(f"âš ï¸ ai_config.yaml nÃ£o encontrado em {self.AI_CONFIG_FILE}")
             return {}
     
     def get_ai_config(self, key_path: str = None, default=None):
         """
-        Obtém configuração de IA usando notação de ponto.
+        ObtÃ©m configuraÃ§Ã£o de IA usando notaÃ§Ã£o de ponto.
         
         Exemplos:
             config.get_ai_config('ai_agent.max_react_turns')
             config.get_ai_config('brain_router.ollama_models.tier_ultra')
-            config.get_ai_config()  # Retorna toda a configuração
+            config.get_ai_config()  # Retorna toda a configuraÃ§Ã£o
         """
         if key_path is None:
             return self.ai_config
@@ -417,5 +417,5 @@ class Config:
             return os.getenv(env_var)
         return None
 
-# Instância global
+# InstÃ¢ncia global
 config = Config()

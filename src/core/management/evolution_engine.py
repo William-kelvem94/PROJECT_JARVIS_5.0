@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 import json
 from datetime import datetime
@@ -9,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class EvolutionEngine:
     """
-    O Cérebro de Autodiagnóstico e Evolução do JARVIS.
-    Monitora a saúde de todos os módulos e aprende com falhas de execução.
+    O CÃ©rebro de AutodiagnÃ³stico e EvoluÃ§Ã£o do JARVIS.
+    Monitora a saÃºde de todos os mÃ³dulos e aprende com falhas de execuÃ§Ã£o.
     """
 
     def __init__(self):
@@ -18,7 +18,7 @@ class EvolutionEngine:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.pulse_file = Path("data/SYSTEM_PULSE.md")
         
-        # Estado atual dos módulos
+        # Estado atual dos mÃ³dulos
         self.module_health = {
             "Vision": {"status": "UNKNOWN", "last_check": None, "error": None},
             "Audio": {"status": "UNKNOWN", "last_check": None, "error": None},
@@ -31,7 +31,7 @@ class EvolutionEngine:
         self._load_failures()
 
     def report_status(self, module: str, status: str, error: Optional[str] = None):
-        """Atualiza o status de um módulo específico"""
+        """Atualiza o status de um mÃ³dulo especÃ­fico"""
         if module in self.module_health:
             self.module_health[module] = {
                 "status": status,
@@ -41,7 +41,7 @@ class EvolutionEngine:
             logger.debug(f"EvolutionEngine: {module} reportou status {status}")
 
     def log_failure(self, task: str, error: str, provider: str):
-        """Registra uma falha técnica para análise de evolução"""
+        """Registra uma falha tÃ©cnica para anÃ¡lise de evoluÃ§Ã£o"""
         failure = {
             "timestamp": datetime.now().isoformat(),
             "task": task,
@@ -73,7 +73,7 @@ class EvolutionEngine:
         try:
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write(log_entry)
-            logger.info(f"🧬 Evolution logged for {file_path}")
+            logger.info(f"ðŸ§¬ Evolution logged for {file_path}")
         except Exception as e:
             logger.error(f"Failed to log evolution: {e}")
 
@@ -92,40 +92,40 @@ class EvolutionEngine:
             json.dump(self.failure_patterns[-100:], f, indent=2)
 
     def generate_pulse_report(self):
-        """Gera o relatório SYSTEM_PULSE.md organizado e limpo"""
+        """Gera o relatÃ³rio SYSTEM_PULSE.md organizado e limpo"""
         try:
             pulse_content = [
-                "# 🫀 JARVIS SYSTEM PULSE\n",
-                f"**Última Atualização:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n",
-                "## 🛠️ Status dos Módulos\n",
-                "| Módulo | Estado | Detalhes |",
+                "# ðŸ«€ JARVIS SYSTEM PULSE\n",
+                f"**Ãšltima AtualizaÃ§Ã£o:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n",
+                "## ðŸ› ï¸ Status dos MÃ³dulos\n",
+                "| MÃ³dulo | Estado | Detalhes |",
                 "| :--- | :--- | :--- |"
             ]
             
             for mod, data in self.module_health.items():
-                icon = "🟢" if data['status'] == "OK" else "🔴" if data['status'] == "FAIL" else "🟡"
+                icon = "ðŸŸ¢" if data['status'] == "OK" else "ðŸ”´" if data['status'] == "FAIL" else "ðŸŸ¡"
                 pulse_content.append(f"| {mod} | {icon} {data['status']} | {data['error'] or 'Operacional'} |")
             
-            pulse_content.append("\n## 🧠 Histórico de Aprendizado (Auto-Correção)\n")
+            pulse_content.append("\n## ðŸ§  HistÃ³rico de Aprendizado (Auto-CorreÃ§Ã£o)\n")
             if not self.failure_patterns:
-                pulse_content.append("*Nenhuma falha crítica detectada recentemente. Sistema estável.*")
+                pulse_content.append("*Nenhuma falha crÃ­tica detectada recentemente. Sistema estÃ¡vel.*")
             else:
                 for fail in self.failure_patterns[-5:]:
                     pulse_content.append(f"- **{fail['timestamp'][:16]}**: Falha no `{fail['provider']}` durante `{fail['task']}`. Erro: `{fail['error']}`")
             
-            pulse_content.append("\n## 📡 Sugestões de Melhoria Manual\n")
-            # Adicionar sugestão baseada em padrões de erro
+            pulse_content.append("\n## ðŸ“¡ SugestÃµes de Melhoria Manual\n")
+            # Adicionar sugestÃ£o baseada em padrÃµes de erro
             if len(self.failure_patterns) > 5:
-                pulse_content.append("- [ ] Detectamos instabilidade no provedor local. Sugestão: Verificar carga da CPU/GPU.")
+                pulse_content.append("- [ ] Detectamos instabilidade no provedor local. SugestÃ£o: Verificar carga da CPU/GPU.")
             else:
-                 pulse_content.append("- [ ] Continue o uso normal. O sistema está em fase de coleta de métricas.")
+                 pulse_content.append("- [ ] Continue o uso normal. O sistema estÃ¡ em fase de coleta de mÃ©tricas.")
 
             with open(self.pulse_file, 'w', encoding='utf-8') as f:
                 f.write("\n".join(pulse_content))
             
-            logger.info("✅ Relatório de Pulso atualizado.")
+            logger.info("âœ… RelatÃ³rio de Pulso atualizado.")
         except Exception as e:
             logger.error(f"Erro ao gerar pulso: {e}")
 
-# Instância Global
+# InstÃ¢ncia Global
 evolution_engine = EvolutionEngine()

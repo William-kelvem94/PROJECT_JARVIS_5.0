@@ -1,6 +1,6 @@
-"""
+﻿"""
 Gerenciador de Hardware do Jarvis 5.0
-Detecta e otimiza o uso de CPU/GPU para todos os módulos de IA.
+Detecta e otimiza o uso de CPU/GPU para todos os mÃ³dulos de IA.
 """
 
 import logging
@@ -9,7 +9,7 @@ import os
 import sys
 from typing import Dict, Any, List, Optional
 
-# 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
+# ðŸ›¡ï¸ GLOBAL MONKEY PATCH: CorreÃ§Ã£o CrÃ­tica para OpenVINO/Optimum-Intel
 try:
     import openvino
     # openvino.runtime is deprecated in favor of openvino
@@ -43,7 +43,7 @@ def _ensure_torch():
         except (ImportError, OSError) as e:
             TORCH_AVAILABLE = False
             torch = None
-            logging.warning(f"⚠️ torch not available in hardware_manager: {e}")
+            logging.warning(f"âš ï¸ torch not available in hardware_manager: {e}")
 
 try:
     import openvino as ov
@@ -106,7 +106,7 @@ class HardwareManager:
                 self.accelerator = "cuda"
                 self.gpu_name = torch.cuda.get_device_name(0)
             elif OPENVINO_AVAILABLE:
-                # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
+                # Detectar se hÃ¡ uma GPU Intel (Iris Xe / Arc) compatÃ­vel com OpenVINO
                 try:
                     core = ov.Core()
                     devices = core.available_devices
@@ -127,7 +127,7 @@ class HardwareManager:
                 self.accelerator = None
                 self.gpu_name = "None"
             
-            # 🆕 COMPUTE TIERING (Military Grade Scaling)
+            # ðŸ†• COMPUTE TIERING (Military Grade Scaling)
             if self.device == "cuda" or (hasattr(self, 'accelerator') and self.accelerator == "openvino"):
                 self.tier = "ULTRA"
             else:
@@ -141,7 +141,7 @@ class HardwareManager:
 
             if TORCH_AVAILABLE and torch and self.device == "cuda":
                 torch.backends.cudnn.benchmark = True
-                logger.info(f"🏛️ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
+                logger.info(f"ðŸ›ï¸ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
             else:
                 import psutil
                 logical_cores = psutil.cpu_count(logical=True) or 4
@@ -160,7 +160,7 @@ class HardwareManager:
                 if TORCH_AVAILABLE and torch:
                     torch.set_num_threads(threads)
                     
-                logger.info(f"🏛️ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
+                logger.info(f"ðŸ›ï¸ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
                 
             self._start_monitoring_thread()
             self._hardware_initialized = True
@@ -171,7 +171,7 @@ class HardwareManager:
         thread.start()
 
     def _monitoring_loop(self):
-        """Loop de monitoramento contínuo (Phase 3)"""
+        """Loop de monitoramento contÃ­nuo (Phase 3)"""
         import psutil
         import time
         from src.utils.web_emitter import emit_log_sync
@@ -184,7 +184,7 @@ class HardwareManager:
                 if cpu > 95:
                     now = time.time()
                     if now - last_alert > 60: # Evitar spam (1 alerta por minuto max)
-                        msg = f"ALERTA DE SISTEMA: Sobrecarga Crítica detectada ({cpu}%)"
+                        msg = f"ALERTA DE SISTEMA: Sobrecarga CrÃ­tica detectada ({cpu}%)"
                         logger.warning(msg)
                         
                         # 1. Dashboard Web
@@ -193,7 +193,7 @@ class HardwareManager:
                         # 2. HUD Overlay
                         try:
                             from src.interface.window_manager import get_window_manager
-                            # Só tenta acessar se o app Qt estiver rodando
+                            # SÃ³ tenta acessar se o app Qt estiver rodando
                             from PyQt6.QtWidgets import QApplication
                             if QApplication.instance():
                                 wm = get_window_manager()
@@ -226,13 +226,13 @@ class HardwareManager:
             
             throttled = cpu > 85 or ram < 1.0
             if throttled:
-                logger.warning(f"⚠️ THROWTLING ACTIVE: CPU={cpu}%, RAM={ram:.1f}GB")
+                logger.warning(f"âš ï¸ THROWTLING ACTIVE: CPU={cpu}%, RAM={ram:.1f}GB")
             return throttled
         except:
             return False
 
     def get_tier(self) -> str:
-        """Retorna o nível de processamento (ULTRA, FAST, BALANCED, LITE)"""
+        """Retorna o nÃ­vel de processamento (ULTRA, FAST, BALANCED, LITE)"""
         self._ensure_hardware_initialized()
         return self.tier
 
@@ -254,7 +254,7 @@ class HardwareManager:
         return None
 
     def get_compute_type(self) -> str:
-        """Retorna tipo de float mais rápido para o hardware (bfloat16/float16/float32)"""
+        """Retorna tipo de float mais rÃ¡pido para o hardware (bfloat16/float16/float32)"""
         self._ensure_hardware_initialized()
         if self.device == "cuda":
             # Verificar suporte a bfloat16 (GPUs Ampere+)
@@ -263,24 +263,24 @@ class HardwareManager:
             return "float16"
         
         # CPUs modernas frequentemente suportam bfloat16 (AVX-512 BF16)
-        # Em CPU, float32 ainda é o mais estável para Transformers pura, 
-        # mas bfloat16 pode ser usado se disponível no torch.
+        # Em CPU, float32 ainda Ã© o mais estÃ¡vel para Transformers pura, 
+        # mas bfloat16 pode ser usado se disponÃ­vel no torch.
         if TORCH_AVAILABLE and torch:
-             # Heurística: se for CPU mas tier for FAST, talvez valha bfloat16
-             # mas por segurança contra 0xC0000005, mantemos float32 como fallback
+             # HeurÃ­stica: se for CPU mas tier for FAST, talvez valha bfloat16
+             # mas por seguranÃ§a contra 0xC0000005, mantemos float32 como fallback
              pass
 
         return "float32"
 
     def clear_gpu_cache(self):
-        """Limpa cache de memória da GPU e aciona GC"""
+        """Limpa cache de memÃ³ria da GPU e aciona GC"""
         self._ensure_hardware_initialized()
         import gc
         gc.collect()
         _ensure_torch()
         if TORCH_AVAILABLE and torch and self.device == "cuda":
             torch.cuda.empty_cache()
-            logger.info("🧹 VRAM Cache limpo com sucesso.")
+            logger.info("ðŸ§¹ VRAM Cache limpo com sucesso.")
 
     @property
     def neural_lock(self):
@@ -360,7 +360,7 @@ class HardwareManager:
             }
             if level in levels:
                 p.nice(levels[level])
-                logger.info(f"🚀 Prioridade do processo {pid} alterada para {level}")
+                logger.info(f"ðŸš€ Prioridade do processo {pid} alterada para {level}")
                 return True
         except Exception as e:
             logger.error(f"Erro ao alterar prioridade: {e}")
@@ -371,7 +371,7 @@ class HardwareManager:
         if self.system != "Windows": return False
         
         import subprocess
-        # GUIDs padrão do Windows
+        # GUIDs padrÃ£o do Windows
         plans = {
             "GAMER": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c", # High Performance
             "BALANCED": "381b4222-f694-41f0-9685-ff5bb260df2e",
@@ -382,33 +382,33 @@ class HardwareManager:
             guid = plans.get(mode.upper())
             if guid:
                 subprocess.run(["powercfg", "/setactive", guid], check=True)
-                logger.info(f"🔋 Plano de energia alterado para: {mode}")
+                logger.info(f"ðŸ”‹ Plano de energia alterado para: {mode}")
                 return True
         except Exception as e:
             logger.error(f"Erro ao alterar plano de energia: {e}")
         return False
 
     def suggest_optimizations(self) -> str:
-        """Analisa o contexto e sugere otimizações soberanas"""
+        """Analisa o contexto e sugere otimizaÃ§Ãµes soberanas"""
         status = self.get_status()
         cpu_usage = psutil.cpu_percent()
         
         if cpu_usage > 85:
-            return "Sugestão: O sistema está sob carga pesada. Recomendo alterar para o modo 'GAMER/HIGH_PERFORMANCE' e reduzir prioridade de processos em background."
+            return "SugestÃ£o: O sistema estÃ¡ sob carga pesada. Recomendo alterar para o modo 'GAMER/HIGH_PERFORMANCE' e reduzir prioridade de processos em background."
         elif status["ram_free_gb"] < 2.0:
-            return "Sugestão: Pouca memória RAM disponível. Recomendo fechar aplicações não essenciais ou limpar cache de VRAM."
+            return "SugestÃ£o: Pouca memÃ³ria RAM disponÃ­vel. Recomendo fechar aplicaÃ§Ãµes nÃ£o essenciais ou limpar cache de VRAM."
 
-        return "Sistema operando em parâmetros ideais."
+        return "Sistema operando em parÃ¢metros ideais."
 
-# Instância global (Singleton) - Lazy initialization
+# InstÃ¢ncia global (Singleton) - Lazy initialization
 _hardware_manager_instance = None
 
 def get_hardware_manager():
-    """Retorna a instância singleton do hardware manager (lazy)"""
+    """Retorna a instÃ¢ncia singleton do hardware manager (lazy)"""
     global _hardware_manager_instance
     if _hardware_manager_instance is None:
         _hardware_manager_instance = HardwareManager()
     return _hardware_manager_instance
 
-# Instância global
+# InstÃ¢ncia global
 hardware_manager = get_hardware_manager()

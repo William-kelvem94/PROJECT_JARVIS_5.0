@@ -1,4 +1,4 @@
-"""
+﻿"""
 Local Trainer for JARVIS AGI Machine Learning Core.
 
 This module handles LoRA/QLoRA fine-tuning for various LLMs including
@@ -389,17 +389,17 @@ class LocalTrainer:
         """
         if not TORCH_AVAILABLE:
             raise ImportError(
-                "❌ LocalTrainer requer 'torch'.\n"
+                "âŒ LocalTrainer requer 'torch'.\n"
                 "Instale com: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121"
             )
         if not TRANSFORMERS_AVAILABLE:
             raise ImportError(
-                "❌ LocalTrainer requer 'transformers'.\n"
+                "âŒ LocalTrainer requer 'transformers'.\n"
                 "Instale com: pip install transformers"
             )
         if not PEFT_AVAILABLE:
             raise ImportError(
-                "❌ LocalTrainer requer 'peft' (Parameter-Efficient Fine-Tuning).\n"
+                "âŒ LocalTrainer requer 'peft' (Parameter-Efficient Fine-Tuning).\n"
                 "Instale com: pip install peft"
             )
         
@@ -478,7 +478,7 @@ class LocalTrainer:
             logger.info("Using MPS (Apple Silicon)")
         else:
             device = "cpu"
-            logger.info("ℹ️ GPU não detectada (usando CPU). Treinamento operacional mas limitado.")
+            logger.info("â„¹ï¸ GPU nÃ£o detectada (usando CPU). Treinamento operacional mas limitado.")
         
         return device
     
@@ -680,27 +680,27 @@ class LocalTrainer:
                 self.load_model_and_tokenizer()
             
             # =================================================================
-            # 🛡️ SAFETY GATE: PREVENT CPU MELTDOWN
+            # ðŸ›¡ï¸ SAFETY GATE: PREVENT CPU MELTDOWN
             # =================================================================
             import psutil
             cpu_usage = psutil.cpu_percent(interval=1)
             mem_usage = psutil.virtual_memory().percent
             
-            # Se não tiver GPU, usamos estratégia adaptativa (STEALTH MODE)
+            # Se nÃ£o tiver GPU, usamos estratÃ©gia adaptativa (STEALTH MODE)
             if self.device == "cpu":
                 if cpu_usage > 95 or mem_usage > 98:
                     # Zona de Perigo Extremo: Pausa total
-                    raise RuntimeError(f"⛔ SISTEMA CRÍTICO (CPU {cpu_usage}%), Treino adiado.")
+                    raise RuntimeError(f"â›” SISTEMA CRÃTICO (CPU {cpu_usage}%), Treino adiado.")
                 
                 elif cpu_usage > 60:
-                    # Zona de Alta Carga: Modo Stealth (Invisível)
-                    logger.warning(f"⚠️ Carga Alta ({cpu_usage}%). Ativando STEALTH MODE")
+                    # Zona de Alta Carga: Modo Stealth (InvisÃ­vel)
+                    logger.warning(f"âš ï¸ Carga Alta ({cpu_usage}%). Ativando STEALTH MODE")
                     self.config.per_device_train_batch_size = 1
                     self.config.gradient_accumulation_steps = 16 # Acumula mais para compensar
                     time.sleep(1.0) # Espera esfriar
                 
                 else:
-                    # Zona Livre: Modo Padrão CPU
+                    # Zona Livre: Modo PadrÃ£o CPU
                     self.config.per_device_train_batch_size = 2
                     self.config.gradient_accumulation_steps = 4
             
@@ -916,7 +916,7 @@ class LocalTrainer:
             self.model = AutoModelForCausalLM.from_pretrained(checkpoint_path)
             
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_path)
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)
             
             # Load config if exists
             config_path = checkpoint_path / "training_config.json"

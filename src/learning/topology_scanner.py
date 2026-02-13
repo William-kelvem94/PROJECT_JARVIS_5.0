@@ -1,7 +1,7 @@
-"""
+﻿"""
 JARVIS 5.0 - Topology Scanner
 ==============================
-Módulo para mapear a estrutura completa de um projeto e entender o "todo".
+MÃ³dulo para mapear a estrutura completa de um projeto e entender o "todo".
 """
 
 import os
@@ -28,7 +28,7 @@ class TopologyScanner:
         
         try:
             for root, dirs, files in os.walk(self.root):
-                # Filtrar diretórios ignorados
+                # Filtrar diretÃ³rios ignorados
                 dirs[:] = [d for d in dirs if d not in self.ignored_dirs]
                 
                 rel_path = os.path.relpath(root, self.root)
@@ -47,7 +47,7 @@ class TopologyScanner:
             topology["tech_stack"] = list(topology["tech_stack"])
             topology["main_purpose"] = self._infer_purpose(topology)
             
-            logger.info(f"📊 Topologia mapeada: {len(topology['structure'])} diretórios, Techs: {topology['tech_stack']}")
+            logger.info(f"ðŸ“Š Topologia mapeada: {len(topology['structure'])} diretÃ³rios, Techs: {topology['tech_stack']}")
             return topology
             
         except Exception as e:
@@ -67,11 +67,11 @@ class TopologyScanner:
     def _infer_purpose(self, topology: Dict[str, Any]) -> str:
         stack = topology["tech_stack"]
         if "Python" in stack and "SQL Database" in stack:
-            return "Aplicação Backend com Banco de Dados"
+            return "AplicaÃ§Ã£o Backend com Banco de Dados"
         if "JavaScript/TypeScript" in stack and "Node.js" in stack:
             return "Projeto Web/Fullstack"
         if "Python" in stack and "torch" in str(topology["structure"]):
             return "Desenvolvimento de IA/Machine Learning"
         return "Projeto de Software Geral"
 
-# Instância global será criada no LearningEngine ou Agent
+# InstÃ¢ncia global serÃ¡ criada no LearningEngine ou Agent

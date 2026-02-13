@@ -1,18 +1,18 @@
-"""
-🧠 JARVIS Intelligence System - Sistema de Inteligência
+﻿"""
+ðŸ§  JARVIS Intelligence System - Sistema de InteligÃªncia
 =====================================================
 
-Este módulo contém o núcleo inteligente do JARVIS, incluindo agentes de IA,
-processamento de linguagem natural, tomada de decisões, gerenciamento de memória
-e sistemas neurais avançados.
+Este mÃ³dulo contÃ©m o nÃºcleo inteligente do JARVIS, incluindo agentes de IA,
+processamento de linguagem natural, tomada de decisÃµes, gerenciamento de memÃ³ria
+e sistemas neurais avanÃ§ados.
 
-Módulos Principais:
+MÃ³dulos Principais:
 - ai_agent: Agente principal de IA
-- decision_engine: Motor de decisões
-- memory_manager: Gerenciamento de memória
-- context_sanitizer: Sanitização de contexto
+- decision_engine: Motor de decisÃµes
+- memory_manager: Gerenciamento de memÃ³ria
+- context_sanitizer: SanitizaÃ§Ã£o de contexto
 - neural_systems: Sistemas neurais
-- perception_engine: Motor de percepção
+- perception_engine: Motor de percepÃ§Ã£o
 - knowledge_graph: Grafo de conhecimento
 
 Exemplo de uso:

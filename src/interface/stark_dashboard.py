@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import psutil
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, 
@@ -20,7 +20,7 @@ except ImportError:
 class StarkDashboard(QMainWindow):
     """
     Janela principal do Control Panel (Stark Tech Style).
-    Permite monitoramento em tempo real e configuração manual do sistema.
+    Permite monitoramento em tempo real e configuraÃ§Ã£o manual do sistema.
     """
     
     # Signals
@@ -47,7 +47,7 @@ class StarkDashboard(QMainWindow):
         
         self.setup_ui()
         
-        # Timer para atualização de métricas
+        # Timer para atualizaÃ§Ã£o de mÃ©tricas
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_metrics)
         self.update_timer.start(1000) # 1s
@@ -65,9 +65,9 @@ class StarkDashboard(QMainWindow):
         # Status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("✅ Sistema JARVIS Online - Protocolo Stark Ativo")
+        self.status_bar.showMessage("âœ… Sistema JARVIS Online - Protocolo Stark Ativo")
         
-        # Menu Bar para troca rápida
+        # Menu Bar para troca rÃ¡pida
         menubar = self.menuBar()
         if menubar:
             view_menu = menubar.addMenu("Exibir")
@@ -82,7 +82,7 @@ class StarkDashboard(QMainWindow):
 
     def _request_mode_switch(self, mode_str):
         """Request interface mode change via WindowManager"""
-        # Para evitar dependência circular, importamos InterfaceMode apenas aqui
+        # Para evitar dependÃªncia circular, importamos InterfaceMode apenas aqui
         try:
             from src.interface.window_manager import InterfaceMode
             if mode_str == "hud":
@@ -92,7 +92,7 @@ class StarkDashboard(QMainWindow):
             elif mode_str == "hidden":
                 self.mode_switch_requested.emit(InterfaceMode.HIDDEN)
         except ImportError:
-            # Fallback se não conseguir importar (usar string)
+            # Fallback se nÃ£o conseguir importar (usar string)
             self.mode_switch_requested.emit(mode_str)
 
     def setup_monitor_tab(self):
@@ -100,8 +100,8 @@ class StarkDashboard(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout()
         
-        # Grid de métricas (Gauges)
-        metrics_group = QGroupBox("Métricas do Sistema")
+        # Grid de mÃ©tricas (Gauges)
+        metrics_group = QGroupBox("MÃ©tricas do Sistema")
         metrics_grid = QGridLayout()
         
         self.cpu_gauge = CircularGauge("CPU", 0, 100, "%")
@@ -110,15 +110,15 @@ class StarkDashboard(QMainWindow):
         self.ram_gauge = CircularGauge("RAM", 0, 100, "%")
         metrics_grid.addWidget(self.ram_gauge, 0, 1)
         
-        # Placeholder para GPU e Temperatura (simulados por enquanto se lib não detectar)
+        # Placeholder para GPU e Temperatura (simulados por enquanto se lib nÃ£o detectar)
         self.disk_gauge = CircularGauge("Disk", 0, 100, "%")
         metrics_grid.addWidget(self.disk_gauge, 0, 2)
         
         metrics_group.setLayout(metrics_grid)
         layout.addWidget(metrics_group)
         
-        # Gráficos em tempo real
-        charts_group = QGroupBox("Histórico de Desempenho")
+        # GrÃ¡ficos em tempo real
+        charts_group = QGroupBox("HistÃ³rico de Desempenho")
         charts_layout = QHBoxLayout()
         
         self.cpu_chart = RealtimeChart("Uso de CPU (60s)")
@@ -131,16 +131,16 @@ class StarkDashboard(QMainWindow):
         layout.addWidget(charts_group)
         
         tab.setLayout(layout)
-        self.tab_widget.addTab(tab, "📊 Monitoramento")
+        self.tab_widget.addTab(tab, "ðŸ“Š Monitoramento")
         
     def setup_config_tab(self):
-        """Aba de configurações manuais"""
+        """Aba de configuraÃ§Ãµes manuais"""
         tab = QWidget()
         layout = QFormLayout()
         layout.setSpacing(15)
         
-        # Configurações de Voz
-        voice_group = QGroupBox("Configurações de Voz")
+        # ConfiguraÃ§Ãµes de Voz
+        voice_group = QGroupBox("ConfiguraÃ§Ãµes de Voz")
         voice_layout = QFormLayout()
         
         self.voice_speed = QSlider(Qt.Orientation.Horizontal)
@@ -156,8 +156,8 @@ class StarkDashboard(QMainWindow):
         voice_group.setLayout(voice_layout)
         layout.addWidget(voice_group)
         
-        # Configurações de IA
-        ai_group = QGroupBox("Inteligência Artificial")
+        # ConfiguraÃ§Ãµes de IA
+        ai_group = QGroupBox("InteligÃªncia Artificial")
         ai_layout = QFormLayout()
         
         self.model_selector = QComboBox()
@@ -173,10 +173,10 @@ class StarkDashboard(QMainWindow):
         ai_group.setLayout(ai_layout)
         layout.addWidget(ai_group)
         
-        # Botões de ação
+        # BotÃµes de aÃ§Ã£o
         actions_layout = QHBoxLayout()
-        self.save_btn = QPushButton("💾 Salvar Configurações")
-        self.reset_btn = QPushButton("🔄 Restaurar Padrões")
+        self.save_btn = QPushButton("ðŸ’¾ Salvar ConfiguraÃ§Ãµes")
+        self.reset_btn = QPushButton("ðŸ”„ Restaurar PadrÃµes")
         
         actions_layout.addWidget(self.save_btn)
         actions_layout.addWidget(self.reset_btn)
@@ -184,7 +184,7 @@ class StarkDashboard(QMainWindow):
         layout.addRow(actions_layout)
         
         tab.setLayout(layout)
-        self.tab_widget.addTab(tab, "⚙️ Configurações")
+        self.tab_widget.addTab(tab, "âš™ï¸ ConfiguraÃ§Ãµes")
 
     def setup_console_tab(self):
         """Aba de logs do sistema"""
@@ -204,16 +204,16 @@ class StarkDashboard(QMainWindow):
         
         layout.addWidget(scroll)
         
-        # Botão limpar
+        # BotÃ£o limpar
         clear_btn = QPushButton("Limpar Logs")
         clear_btn.clicked.connect(lambda: self.log_area.setText(""))
         layout.addWidget(clear_btn)
         
         tab.setLayout(layout)
-        self.tab_widget.addTab(tab, "💻 Console")
+        self.tab_widget.addTab(tab, "ðŸ’» Console")
 
     def update_metrics(self):
-        """Atualiza métricas em tempo real"""
+        """Atualiza mÃ©tricas em tempo real"""
         try:
             cpu = psutil.cpu_percent()
             ram = psutil.virtual_memory().percent
@@ -233,7 +233,7 @@ class StarkDashboard(QMainWindow):
         current_text = self.log_area.text()
         if len(current_text) > 5000: current_text = current_text[-4000:]
         
-        # Formata com cores HTML básico se suportado ou apenas texto
+        # Formata com cores HTML bÃ¡sico se suportado ou apenas texto
         new_line = f"[{level}] {message}\n"
         self.log_area.setText(current_text + new_line)
         # Scroll to bottom logic if needed (usually automatic if widget resizes, but explicit scroll bar value set is better)

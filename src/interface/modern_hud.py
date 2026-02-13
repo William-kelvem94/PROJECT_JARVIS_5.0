@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import math
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QApplication
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ArcReactorWidget(QWidget):
     """
-    O Coração do JARVIS: Um Arc Reactor animado via QPainter.
+    O CoraÃ§Ã£o do JARVIS: Um Arc Reactor animado via QPainter.
     Pulsante, rotativo e responsivo ao estado do sistema.
     """
     def __init__(self, parent=None):
@@ -30,13 +30,13 @@ class ArcReactorWidget(QWidget):
         self.color_boot = QColor(255, 215, 0, 200)     # Modo Boot (Dourado Stark)
         self.color_glow = QColor(0, 255, 255, 50)       # Brilho
         
-        # Timer de Animação (60 FPS para fluidez total)
+        # Timer de AnimaÃ§Ã£o (60 FPS para fluidez total)
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._animate)
         self.timer.start(16)
 
     def _animate(self):
-        # Rotação dinâmica: Boot (6x) > Listening (3x) > Idle (1.5x)
+        # RotaÃ§Ã£o dinÃ¢mica: Boot (6x) > Listening (3x) > Idle (1.5x)
         speed = 6 if self.boot_mode else (3 if self.is_listening else 1.5)
         self.angle = (self.angle + speed) % 360
         self.pulse = (self.pulse + 0.05) % (2 * math.pi)
@@ -61,7 +61,7 @@ class ArcReactorWidget(QWidget):
         center = QPoint(width // 2, height // 2)
         base_radius = 80
         
-        # Calcular fator de pulsação (respirando)
+        # Calcular fator de pulsaÃ§Ã£o (respirando)
         pulse_factor = 1.0 + 0.05 * math.sin(self.pulse)
         radius = base_radius * pulse_factor
         
@@ -82,7 +82,7 @@ class ArcReactorWidget(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawEllipse(center, int(radius * 1.2), int(radius * 1.2))
         
-        # 2. Anéis do Reator
+        # 2. AnÃ©is do Reator
         pen = QPen(color, 3)
         painter.setPen(pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -102,7 +102,7 @@ class ArcReactorWidget(QWidget):
         inner_radius = radius * 0.7
         painter.drawEllipse(center, int(inner_radius), int(inner_radius))
         
-        # 3. Núcleo de Energia (Triângulos/Segmentos centrais)
+        # 3. NÃºcleo de Energia (TriÃ¢ngulos/Segmentos centrais)
         painter.save()
         painter.translate(center)
         painter.rotate(-self.angle * 2)
@@ -114,7 +114,7 @@ class ArcReactorWidget(QWidget):
             painter.drawLine(0, -int(inner_radius*0.8), 0, -int(inner_radius*0.4))
         painter.restore()
 
-        # 4. Texto de Status (Tecnológico)
+        # 4. Texto de Status (TecnolÃ³gico)
         painter.setPen(color)
         painter.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
         painter.drawText(
@@ -133,7 +133,7 @@ class ModernHUD(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        # Configurações de Janela Futurista
+        # ConfiguraÃ§Ãµes de Janela Futurista
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint | 
             Qt.WindowType.WindowStaysOnTopHint | 
@@ -152,7 +152,7 @@ class ModernHUD(QMainWindow):
         self.resize(300, 300)
         self._set_default_position()
         
-        # Conexão de Sinais
+        # ConexÃ£o de Sinais
         ui_signals.update_status.connect(self.update_status)
         ui_signals.update_listening_state.connect(self.reactor.set_listening)
         ui_signals.update_boot_stage.connect(self.update_boot_ui)
@@ -161,7 +161,7 @@ class ModernHUD(QMainWindow):
         self._state_signal.connect(self._handle_state_update)
         self._log_signal.connect(self._handle_log_event)
         
-        logger.info("💎 Modern HUD Stark Edition inicializado.")
+        logger.info("ðŸ’Ž Modern HUD Stark Edition inicializado.")
 
     # Internal Signals for thread-safe cross-thread calls
     _state_signal = pyqtSignal(str)
@@ -216,7 +216,7 @@ class ModernHUD(QMainWindow):
         if progress >= 100:
             self.reactor.boot_mode = False
             self.reactor.status_text = "SYSTEM ONLINE"
-            # Pequeno delay para garantir que o usuário veja o final
+            # Pequeno delay para garantir que o usuÃ¡rio veja o final
             QTimer.singleShot(2000, lambda: self.update_status("SISTEMA ONLINE"))
         
         self.reactor.update()

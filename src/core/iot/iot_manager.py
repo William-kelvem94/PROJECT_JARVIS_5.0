@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import requests
 from typing import Dict, Any, Optional
 from src.utils.config import config
@@ -22,11 +22,11 @@ class IOTManager:
         
         Args:
             device_id: ID da entidade no HA (ex: light.living_room)
-            command: Serviço a ser chamado (ex: turn_on, turn_off)
+            command: ServiÃ§o a ser chamado (ex: turn_on, turn_off)
             params: Atributos extras
         """
         if not self.is_configured:
-            logger.warning("⚠️ Home Assistant não configurado. Adicione 'iot.ha_token' ao ai_config.yaml")
+            logger.warning("âš ï¸ Home Assistant nÃ£o configurado. Adicione 'iot.ha_token' ao ai_config.yaml")
             return False
 
         try:
@@ -42,17 +42,17 @@ class IOTManager:
             if params:
                 payload.update(params)
 
-            logger.info(f"🏠 Enviando comando IoT: {domain}.{command} para {device_id}")
+            logger.info(f"ðŸ  Enviando comando IoT: {domain}.{command} para {device_id}")
             response = requests.post(url, headers=headers, json=payload, timeout=5)
             
             if response.status_code in [200, 201]:
                 return True
             else:
-                logger.error(f"❌ Erro HA ({response.status_code}): {response.text}")
+                logger.error(f"âŒ Erro HA ({response.status_code}): {response.text}")
                 return False
 
         except Exception as e:
-            logger.error(f"❌ Falha crítica no comando IoT: {e}")
+            logger.error(f"âŒ Falha crÃ­tica no comando IoT: {e}")
             return False
 
     def get_state(self, entity_id: str) -> Optional[Dict[str, Any]]:
@@ -67,5 +67,5 @@ class IOTManager:
         except:
             return None
 
-# Instância global
+# InstÃ¢ncia global
 iot_manager = IOTManager()

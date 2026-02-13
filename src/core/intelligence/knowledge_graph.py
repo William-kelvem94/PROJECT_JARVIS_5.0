@@ -1,8 +1,8 @@
-"""
+﻿"""
 JARVIS 5.0 - Knowledge Graph Foundation
 ========================================
-Sprint 2: RAG Avançado
-Grafo de conhecimento em memória para navegação conceitual
+Sprint 2: RAG AvanÃ§ado
+Grafo de conhecimento em memÃ³ria para navegaÃ§Ã£o conceitual
 
 DEPENDENCIES: pip install networkx
 USAGE: from src.core.knowledge_graph import KnowledgeGraph
@@ -35,10 +35,10 @@ except ImportError:
 
 class KnowledgeGraph:
     """
-    Knowledge Graph para navegação conceitual
+    Knowledge Graph para navegaÃ§Ã£o conceitual
     
-    - Nós: concepts (ex: "Gemini", "Voice Cloning", "Neural Memory")
-    - Arestas: relações ("uses", "depends_on", "related_to", "is_part_of")
+    - NÃ³s: concepts (ex: "Gemini", "Voice Cloning", "Neural Memory")
+    - Arestas: relaÃ§Ãµes ("uses", "depends_on", "related_to", "is_part_of")
     """
     
     def __init__(self, graph_path: Optional[str] = None):
@@ -50,7 +50,7 @@ class KnowledgeGraph:
         
         if NETWORKX_AVAILABLE:
             self.graph = nx.DiGraph()
-            logger.info("✅ Knowledge Graph initialized")
+            logger.info("âœ… Knowledge Graph initialized")
         else:
             self.graph = None
             logger.error("NetworkX not available")
@@ -82,7 +82,7 @@ class KnowledgeGraph:
                 metadata=metadata or {},
                 count=1
             )
-            logger.debug(f"➕ Added concept: {concept} ({concept_type})")
+            logger.debug(f"âž• Added concept: {concept} ({concept_type})")
         else:
             # Increment count if already exists
             self.graph.nodes[concept]['count'] += 1
@@ -111,7 +111,7 @@ class KnowledgeGraph:
             self.graph[concept_a][concept_b]['weight'] += weight
         else:
             self.graph.add_edge(concept_a, concept_b, relation=relation_type, weight=weight)
-            logger.debug(f"🔗 {concept_a} --[{relation_type}]--> {concept_b}")
+            logger.debug(f"ðŸ”— {concept_a} --[{relation_type}]--> {concept_b}")
     
     def extract_entities(self, text: str) -> Dict[str, List[str]]:
         """
@@ -305,7 +305,7 @@ class KnowledgeGraph:
         with open(save_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         
-        logger.info(f"💾 Knowledge Graph saved: {save_path}")
+        logger.info(f"ðŸ’¾ Knowledge Graph saved: {save_path}")
         logger.info(f"   Nodes: {len(data['nodes'])}, Edges: {len(data['edges'])}")
     
     def load(self, path: Optional[str] = None):
@@ -348,7 +348,7 @@ class KnowledgeGraph:
                 weight=edge_data.get('weight', 1.0)
             )
         
-        logger.info(f"📂 Knowledge Graph loaded: {load_path}")
+        logger.info(f"ðŸ“‚ Knowledge Graph loaded: {load_path}")
         logger.info(f"   Nodes: {self.graph.number_of_nodes()}, Edges: {self.graph.number_of_edges()}")
     
     def visualize_subgraph(self, center_concept: str, depth: int = 2):
@@ -424,25 +424,25 @@ if __name__ == "__main__":
     kg.add_from_text("YOLO detects objects and OCR recognizes text in vision system")
     
     # Get stats
-    print("\n📊 Knowledge Graph Stats:")
+    print("\nðŸ“Š Knowledge Graph Stats:")
     stats = kg.get_stats()
     for key, value in stats.items():
         print(f"  {key}: {value}")
     
     # Query relations
-    print("\n🔍 Path from 'gemini' to 'voice cloning':")
+    print("\nðŸ” Path from 'gemini' to 'voice cloning':")
     path = kg.query_relation('gemini', 'voice cloning')
     if path:
-        print(f"  {' → '.join(path)}")
+        print(f"  {' â†’ '.join(path)}")
     else:
         print("  No path found")
     
     # Get related concepts
-    print("\n🔗 Concepts related to 'yolo':")
+    print("\nðŸ”— Concepts related to 'yolo':")
     related = kg.get_related_concepts('yolo', max_depth=2, limit=5)
     for concept, distance in related:
         print(f"  {concept} (distance: {distance})")
     
     # Save graph
     kg.save()
-    print(f"\n💾 Graph saved to: {kg.graph_path}")
+    print(f"\nðŸ’¾ Graph saved to: {kg.graph_path}")

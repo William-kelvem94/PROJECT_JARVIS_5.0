@@ -26,7 +26,7 @@ CRITICAL_DEPS = [
     ('soundfile', 'soundfile', False),
     ('psutil', 'psutil', False),
     ('wmi', 'wmi', False),
-    ('tkinter_tooltip', 'tkinter-tooltip', False),
+    ('tktooltip', 'tkinter-tooltip', False),
 ]
 
 def check_package(import_name, pip_name, use_pip_show=False):
@@ -45,7 +45,7 @@ def check_package(import_name, pip_name, use_pip_show=False):
             result = subprocess.run(
                 [sys.executable, '-m', 'pip', 'show', pip_name],
                 capture_output=True,
-                text=True
+                text=False
             )
             return result.returncode == 0, None if result.returncode == 0 else pip_name
         else:
@@ -59,7 +59,7 @@ def check_package(import_name, pip_name, use_pip_show=False):
                 result = subprocess.run(
                     [sys.executable, '-m', 'pip', 'show', pip_name],
                     capture_output=True,
-                    text=True
+                    text=False
                 )
                 if result.returncode == 0:
                     return False, None # Return False but no pkg name means "Installed but Broken"

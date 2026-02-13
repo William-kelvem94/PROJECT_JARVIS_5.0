@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Advanced Auto-Recovery System
@@ -99,6 +99,7 @@ class ModuleHealth:
         self.module_name = module_name
         self.is_healthy = True
         self.last_check = datetime.now()
+        self.last_health_check = self.last_check
         self.error_count = 0
         self.recovery_count = 0
         self.uptime_start = datetime.now()
@@ -172,11 +173,11 @@ class AutoRecoverySystem:
         self._register_default_strategies()
         self._load_historical_data()
         
-        logger.info("✅ Auto-Recovery System initialized")
+        logger.info("âœ… Auto-Recovery System initialized")
 
     def trigger_emergency_mode(self, active: bool = True):
         """
-        Ativa/Desativa o modo de emergência (Stark Protocol).
+        Ativa/Desativa o modo de emergÃªncia (Stark Protocol).
         Reduz drasticamente o consumo de recursos para manter a vida do sistema.
         """
         if active == self.is_emergency_mode:
@@ -184,14 +185,14 @@ class AutoRecoverySystem:
 
         self.is_emergency_mode = active
         state = "ATIVADO" if active else "DESATIVADO"
-        logger.critical(f"🚨 CLASSIFIED: Modo de Emergência {state}!")
+        logger.critical(f"ðŸš¨ CLASSIFIED: Modo de EmergÃªncia {state}!")
 
         try:
             # 1. Ajustar Prioridade de Hardware
-            from src.core.management.hardware_manager import hardware_manager
+            from core.management.hardware_manager import hardware_manager
             if active:
                 hardware_manager.set_power_plan("POWER_SAVER")
-                # Reduz threads do torch para 1 (mínimo vital)
+                # Reduz threads do torch para 1 (mÃ­nimo vital)
                 import torch
                 torch.set_num_threads(1)
             else:
@@ -205,16 +206,16 @@ class AutoRecoverySystem:
                 torch.set_num_threads(threads)
 
             # 2. Notificar interface
-            from src.utils.web_emitter import emit_log_sync
-            emit_log_sync(f"SISTEMA: Protocolo de Sobrevivência {state}", level="CRITICAL")
+            from utils.web_emitter import emit_log_sync
+            emit_log_sync(f"SISTEMA: Protocolo de SobrevivÃªncia {state}", level="CRITICAL")
             
         except Exception as e:
-            logger.error(f"Erro ao alternar modo de emergência: {e}")
+            logger.error(f"Erro ao alternar modo de emergÃªncia: {e}")
 
     def set_fallback_system(self, fallback_system):
         """Inject fallback system for integration"""
         self.fallback_system = fallback_system
-        logger.info("🔗 Fallback system integration established")
+        logger.info("ðŸ”— Fallback system integration established")
     
     def _register_default_strategies(self):
         """Register default recovery strategies"""
@@ -243,7 +244,7 @@ class AutoRecoverySystem:
         # Permission Error Recovery
         self.register_strategy(FailureType.PERMISSION_ERROR, self._recover_permission_error)
         
-        logger.info(f"📋 Registered {len(self.recovery_strategies)} recovery strategy types")
+        logger.info(f"ðŸ“‹ Registered {len(self.recovery_strategies)} recovery strategy types")
     
     def register_strategy(self, failure_type: FailureType, strategy_func: Callable):
         """Register a new recovery strategy"""
@@ -256,7 +257,7 @@ class AutoRecoverySystem:
         """Register a module for health monitoring"""
         if module_name not in self.module_health:
             self.module_health[module_name] = ModuleHealth(module_name)
-            logger.debug(f"📊 Registered module for monitoring: {module_name}")
+            logger.debug(f"ðŸ“Š Registered module for monitoring: {module_name}")
         return self.module_health[module_name]
     
     def start_monitoring(self):
@@ -267,14 +268,14 @@ class AutoRecoverySystem:
         self.monitoring_active = True
         self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitoring_thread.start()
-        logger.info("🔍 Health monitoring started")
+        logger.info("ðŸ” Health monitoring started")
     
     def stop_monitoring(self):
         """Stop health monitoring"""
         self.monitoring_active = False
         if self.monitoring_thread:
             self.monitoring_thread.join(timeout=5)
-        logger.info("⏹️ Health monitoring stopped")
+        logger.info("â¹ï¸ Health monitoring stopped")
     
     def _monitoring_loop(self):
         """Main monitoring loop"""
@@ -283,7 +284,7 @@ class AutoRecoverySystem:
                 self._check_system_health()
                 time.sleep(self.monitor_interval)
             except Exception as e:
-                logger.error(f"❌ Monitoring loop error: {e}")
+                logger.error(f"âŒ Monitoring loop error: {e}")
                 time.sleep(5)  # Short delay on error
     
     def _check_system_health(self):
@@ -312,14 +313,14 @@ class AutoRecoverySystem:
                 )
                 
         except Exception as e:
-            logger.error(f"❌ System health check failed: {e}")
+            logger.error(f"âŒ System health check failed: {e}")
         
         # Check module-specific health
         for module_name, health in self.module_health.items():
             try:
                 self._check_module_health(health)
             except Exception as e:
-                logger.error(f"❌ Module health check failed for {module_name}: {e}")
+                logger.error(f"âŒ Module health check failed for {module_name}: {e}")
     
     def _check_module_health(self, health: ModuleHealth):
         """Check health of a specific module"""
@@ -349,7 +350,7 @@ class AutoRecoverySystem:
         """Trigger recovery process for a detected failure"""
         
         if self.recovery_in_progress:
-            logger.warning("⚠️ Recovery already in progress, queueing...")
+            logger.warning("âš ï¸ Recovery already in progress, queueing...")
             return
             
         # Create failure event
@@ -381,12 +382,12 @@ class AutoRecoverySystem:
         """Execute recovery strategies for a failure event"""
         
         self.recovery_in_progress = True
-        logger.warning(f"🔧 Starting auto-recovery for {failure_event.failure_type.value} in {failure_event.module_name}")
+        logger.warning(f"ðŸ”§ Starting auto-recovery for {failure_event.failure_type.value} in {failure_event.module_name}")
         
         try:
             strategies = self.recovery_strategies.get(failure_event.failure_type, [])
             if not strategies:
-                logger.error(f"❌ No recovery strategies available for {failure_event.failure_type.value}")
+                logger.error(f"âŒ No recovery strategies available for {failure_event.failure_type.value}")
                 return
             
             # Sort strategies by success rate (highest first)
@@ -401,10 +402,10 @@ class AutoRecoverySystem:
             # Try each strategy
             for strategy_func, success_rate in strategies_with_rates:
                 if len(failure_event.recovery_attempts) >= self.max_recovery_attempts:
-                    logger.error(f"❌ Max recovery attempts reached for {failure_event.module_name}")
+                    logger.error(f"âŒ Max recovery attempts reached for {failure_event.module_name}")
                     break
                 
-                logger.info(f"🔧 Trying recovery strategy: {strategy_func.__name__} (success rate: {success_rate:.1%})")
+                logger.info(f"ðŸ”§ Trying recovery strategy: {strategy_func.__name__} (success rate: {success_rate:.1%})")
                 
                 start_time = time.time()
                 recovery_action = None
@@ -430,7 +431,7 @@ class AutoRecoverySystem:
                     failure_event.recovery_attempts.append(asdict(recovery_action))
                     
                     if result.get("success"):
-                        logger.info(f"✅ Recovery successful: {strategy_func.__name__}")
+                        logger.info(f"âœ… Recovery successful: {strategy_func.__name__}")
                         
                         # Update module health
                         if failure_event.module_name in self.module_health:
@@ -440,12 +441,12 @@ class AutoRecoverySystem:
                         self._update_strategy_success_rate(strategy_func.__name__, failure_event.failure_type, True)
                         break
                     else:
-                        logger.warning(f"⚠️ Recovery strategy failed: {strategy_func.__name__}")
+                        logger.warning(f"âš ï¸ Recovery strategy failed: {strategy_func.__name__}")
                         self._update_strategy_success_rate(strategy_func.__name__, failure_event.failure_type, False)
                         
                 except Exception as e:
                     execution_time = (time.time() - start_time) * 1000
-                    logger.error(f"❌ Recovery strategy error: {strategy_func.__name__}: {e}")
+                    logger.error(f"âŒ Recovery strategy error: {strategy_func.__name__}: {e}")
                     
                     recovery_action = RecoveryAction(
                         timestamp=datetime.now(),
@@ -463,7 +464,7 @@ class AutoRecoverySystem:
             
             # If all strategies failed, escalate to fallback system
             if not any(attempt.get("status") == "success" for attempt in failure_event.recovery_attempts):
-                logger.warning("⚠️ All recovery strategies failed, escalating to fallback system")
+                logger.warning("âš ï¸ All recovery strategies failed, escalating to fallback system")
                 if self.fallback_system:
                     # Use fallback system for critical failures
                     pass
@@ -783,10 +784,10 @@ class AutoRecoverySystem:
                     # Load strategy success rates
                     self.strategy_success_rates = data.get("strategy_success_rates", {})
                     
-                    logger.info(f"📊 Loaded {len(self.strategy_success_rates)} strategy success rates")
+                    logger.info(f"ðŸ“Š Loaded {len(self.strategy_success_rates)} strategy success rates")
                     
         except Exception as e:
-            logger.warning(f"⚠️ Could not load historical data: {e}")
+            logger.warning(f"âš ï¸ Could not load historical data: {e}")
     
     def _save_historical_data(self):
         """Save recovery history and analytics"""
@@ -809,7 +810,7 @@ class AutoRecoverySystem:
         except Exception as e:
             # Avoid logging if logger might be gone
             try:
-                logger.error(f"❌ Could not save historical data: {e}")
+                logger.error(f"âŒ Could not save historical data: {e}")
             except:
                 pass
     

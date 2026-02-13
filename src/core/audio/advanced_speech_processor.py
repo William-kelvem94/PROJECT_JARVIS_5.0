@@ -1,4 +1,4 @@
-"""
+﻿"""
 Advanced Speech Processing - Processamento de Voz Neural
 Integra Whisper para STT e prepara para XTTS-v2 TTS
 """
@@ -16,7 +16,7 @@ import torch
 logger = logging.getLogger(__name__)
 
 class AdvancedSpeechProcessor:
-    """Processador avançado de voz com Whisper e TTS neural"""
+    """Processador avanÃ§ado de voz com Whisper e TTS neural"""
     
     def __init__(self):
         self.whisper_available = False
@@ -34,22 +34,22 @@ class AdvancedSpeechProcessor:
         try:
             import whisper
             
-            # Tentar carregar modelo (começar com base)
+            # Tentar carregar modelo (comeÃ§ar com base)
             logger.info(f"Carregando Whisper modelo '{self.whisper_model_size}'...")
             self.whisper_model = whisper.load_model(self.whisper_model_size)
             self.whisper_available = True
-            logger.info(f"✅ Whisper inicializado ({self.whisper_model_size})")
+            logger.info(f"âœ… Whisper inicializado ({self.whisper_model_size})")
             
         except ImportError:
-            logger.warning("⚠️ Whisper não disponível. Instale: pip install openai-whisper")
+            logger.warning("âš ï¸ Whisper nÃ£o disponÃ­vel. Instale: pip install openai-whisper")
         except Exception as e:
-            logger.warning(f"⚠️ Erro ao inicializar Whisper: {e}")
+            logger.warning(f"âš ï¸ Erro ao inicializar Whisper: {e}")
     
     def _init_tts(self):
         """
-        [DEPRECATED] Inicialização de TTS interno desativada.
-        O controle de voz agora é centralizado em src.core.audio.voice_controller
-        para evitar conflito de vozes (robótica vs neural).
+        [DEPRECATED] InicializaÃ§Ã£o de TTS interno desativada.
+        O controle de voz agora Ã© centralizado em src.core.audio.voice_controller
+        para evitar conflito de vozes (robÃ³tica vs neural).
         """
         self.tts_available = False
         self.tts_engine = None
@@ -62,28 +62,28 @@ class AdvancedSpeechProcessor:
         task: str = "transcribe"
     ) -> Dict[str, Any]:
         """
-        Transcreve áudio usando Whisper
+        Transcreve Ã¡udio usando Whisper
         
         Args:
-            audio_path: Caminho do arquivo de áudio
+            audio_path: Caminho do arquivo de Ã¡udio
             language: Idioma ('pt', 'en', etc)
             task: 'transcribe' ou 'translate'
         
         Returns:
-            Dicionário com texto e metadados
+            DicionÃ¡rio com texto e metadados
         """
         if not self.whisper_available:
             self._init_whisper()
             
         if not self.whisper_available:
             return {
-                "error": "Whisper não disponível",
+                "error": "Whisper nÃ£o disponÃ­vel",
                 "text": "",
                 "fallback": True
             }
         
         try:
-            logger.info(f"Transcrevendo áudio: {audio_path}")
+            logger.info(f"Transcrevendo Ã¡udio: {audio_path}")
             
             # Transcrever com Whisper
             result = self.whisper_model.transcribe(
@@ -116,21 +116,21 @@ class AdvancedSpeechProcessor:
         language: str = "pt"
     ):
         """
-        Transcrição em tempo real usando buffer circular (Faster-Whisper style)
+        TranscriÃ§Ã£o em tempo real usando buffer circular (Faster-Whisper style)
         """
         if not self.whisper_available:
-            logger.error("Whisper não disponível para streaming")
+            logger.error("Whisper nÃ£o disponÃ­vel para streaming")
             return
 
         def _streaming_worker():
-            logger.info("📡 Iniciando stream de transcrição...")
-            # Buffer circular de 3 segundos para latência reduzida
+            logger.info("ðŸ“¡ Iniciando stream de transcriÃ§Ã£o...")
+            # Buffer circular de 3 segundos para latÃªncia reduzida
             buffer = []
             while self.whisper_available:
                 if hasattr(audio_stream, 'read'):
-                    chunk = audio_stream.read(16000) # 1s de áudio
+                    chunk = audio_stream.read(16000) # 1s de Ã¡udio
                     if chunk:
-                        # Processamento rápido com o modelo carregado
+                        # Processamento rÃ¡pido com o modelo carregado
                         segments, info = self.whisper_model.transcribe(
                             chunk, beam_size=5, language=language, vad_filter=True
                         )
@@ -155,15 +155,15 @@ class AdvancedSpeechProcessor:
             voice_controller.speak(text)
             return True
         except ImportError:
-            logger.error("VoiceController não disponível para redirecionamento.")
+            logger.error("VoiceController nÃ£o disponÃ­vel para redirecionamento.")
             return False
             
     def _speak_sync(self, text: str):
-        """[DEPRECATED] Método mantido apenas para compatibilidade de interface."""
+        """[DEPRECATED] MÃ©todo mantido apenas para compatibilidade de interface."""
         pass
     
     def _get_audio_duration(self, audio_path: str) -> float:
-        """Retorna duração do áudio em segundos"""
+        """Retorna duraÃ§Ã£o do Ã¡udio em segundos"""
         try:
             with wave.open(audio_path, 'rb') as wf:
                 frames = wf.getnframes()
@@ -175,20 +175,20 @@ class AdvancedSpeechProcessor:
     
     def analyze_speech_emotion(self, audio_path: str) -> Dict[str, Any]:
         """
-        Analisa emoção na fala usando librosa (MFCC features)
+        Analisa emoÃ§Ã£o na fala usando librosa (MFCC features)
         """
         if not os.path.exists(audio_path):
             return {"emotion": "neutral", "confidence": 0.0}
 
         try:
-            # Carregar áudio
+            # Carregar Ã¡udio
             y, sr = librosa.load(audio_path, duration=3, offset=0.5)
             
             # Extrair features MFCC
             mfccs = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40).T, axis=0)
             
             # Simple Intensity Logic (Fallback/Baseline)
-            # Em versões futuras, usaremos um modelo .pth/.onnx pré-treinado aqui
+            # Em versÃµes futuras, usaremos um modelo .pth/.onnx prÃ©-treinado aqui
             intensity = np.sqrt(np.mean(y**2))
             
             emotion = "neutral"
@@ -205,21 +205,21 @@ class AdvancedSpeechProcessor:
                 "emotion": emotion,
                 "confidence": confidence,
                 "intensity": float(intensity),
-                "mfcc_fingerprint": mfccs.tolist()[:5] # Apenas o início para log
+                "mfcc_fingerprint": mfccs.tolist()[:5] # Apenas o inÃ­cio para log
             }
         except Exception as e:
-            logger.error(f"Erro na análise de emoção vocal: {e}")
+            logger.error(f"Erro na anÃ¡lise de emoÃ§Ã£o vocal: {e}")
             return {"emotion": "neutral", "confidence": 0.0}
     
     def diarize(self, audio_path: str) -> List[Dict[str, Any]]:
         """
-        Diarização de voz usando pyannote.audio
-        Identifica 'Quem disse o quê'
+        DiarizaÃ§Ã£o de voz usando pyannote.audio
+        Identifica 'Quem disse o quÃª'
         """
         try:
             from pyannote.audio import Pipeline
-            # Pipeline requer token do HuggingFace (USER precisará configurar se usar pyannote oficial)
-            # Por enquanto, mantemos uma lógica estruturada que o usuário pode expandir
+            # Pipeline requer token do HuggingFace (USER precisarÃ¡ configurar se usar pyannote oficial)
+            # Por enquanto, mantemos uma lÃ³gica estruturada que o usuÃ¡rio pode expandir
             pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1", use_auth_token=True)
             
             diarization = pipeline(audio_path)
@@ -232,7 +232,7 @@ class AdvancedSpeechProcessor:
                 })
             return segments
         except Exception as e:
-            logger.warning(f"Diarização (pyannote) indisponível ou erro: {e}. Usando ID genérico.")
+            logger.warning(f"DiarizaÃ§Ã£o (pyannote) indisponÃ­vel ou erro: {e}. Usando ID genÃ©rico.")
             return [{"start": 0.0, "end": 0.0, "speaker": "USER_MAIN"}]
     
     def upgrade_model(self, model_size: str = "small"):
@@ -243,7 +243,7 @@ class AdvancedSpeechProcessor:
             model_size: tiny, base, small, medium, large
         """
         if not self.whisper_available:
-            logger.error("Whisper não disponível")
+            logger.error("Whisper nÃ£o disponÃ­vel")
             return False
         
         try:
@@ -251,19 +251,19 @@ class AdvancedSpeechProcessor:
             logger.info(f"Fazendo upgrade para modelo '{model_size}'...")
             self.whisper_model = whisper.load_model(model_size)
             self.whisper_model_size = model_size
-            logger.info(f"✅ Upgrade concluído: {model_size}")
+            logger.info(f"âœ… Upgrade concluÃ­do: {model_size}")
             return True
         except Exception as e:
             logger.error(f"Erro ao fazer upgrade: {e}")
             return False
 
 
-# Instância global
+# InstÃ¢ncia global
 advanced_speech_processor = AdvancedSpeechProcessor()
 
 
-# Função de conveniência
+# FunÃ§Ã£o de conveniÃªncia
 def transcribe_audio(audio_path: str, language: str = "pt") -> str:
-    """Transcreve áudio e retorna apenas o texto"""
+    """Transcreve Ã¡udio e retorna apenas o texto"""
     result = advanced_speech_processor.transcribe(audio_path, language)
     return result.get("text", "")

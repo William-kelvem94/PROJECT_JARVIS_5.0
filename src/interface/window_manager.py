@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Window Manager (Dual Interface Controller)
@@ -93,15 +93,15 @@ class WindowManager(QObject):
         try:
             from src.utils.web_emitter import register_subscriber
             register_subscriber(self._on_global_signal)
-            logger.info("✅ WindowManager conectado ao Signal Hub")
+            logger.info("âœ… WindowManager conectado ao Signal Hub")
         except Exception as e:
-            logger.warning(f"⚠️ Falha ao conectar ao Signal Hub: {e}")
+            logger.warning(f"âš ï¸ Falha ao conectar ao Signal Hub: {e}")
 
         # Initialize components
         self._setup_system_tray()
         self._setup_global_shortcuts()
         
-        logger.info("✅ Window Manager initialized")
+        logger.info("âœ… Window Manager initialized")
         
     def _setup_system_tray(self):
         """Setup system tray icon and menu"""
@@ -129,25 +129,25 @@ class WindowManager(QObject):
             self._tray_menu = QMenu()
             
             # Mode switching actions
-            hud_action = QAction("🎯 HUD Overlay Mode", self._tray_menu)
+            hud_action = QAction("ðŸŽ¯ HUD Overlay Mode", self._tray_menu)
             hud_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.HUD_OVERLAY))
             self._tray_menu.addAction(hud_action)
             
-            dashboard_action = QAction("🎛️ Control Dashboard", self._tray_menu)
+            dashboard_action = QAction("ðŸŽ›ï¸ Control Dashboard", self._tray_menu)
             dashboard_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.DASHBOARD))
             self._tray_menu.addAction(dashboard_action)
             
             self._tray_menu.addSeparator()
             
             # Quick actions
-            hide_action = QAction("🙈 Hide All", self._tray_menu)
+            hide_action = QAction("ðŸ™ˆ Hide All", self._tray_menu)
             hide_action.triggered.connect(lambda: self.switch_mode(InterfaceMode.HIDDEN))
             self._tray_menu.addAction(hide_action)
             
             self._tray_menu.addSeparator()
             
             # Exit action
-            quit_action = QAction("❌ Exit JARVIS", self._tray_menu)
+            quit_action = QAction("âŒ Exit JARVIS", self._tray_menu)
             quit_action.triggered.connect(self.app.quit)
             self._tray_menu.addAction(quit_action)
             
@@ -159,10 +159,10 @@ class WindowManager(QObject):
             # Double-click to toggle
             self._tray_icon.activated.connect(self._on_tray_activated)
             
-            logger.info("✅ System tray initialized")
+            logger.info("âœ… System tray initialized")
             
         except Exception as e:
-            logger.error(f"❌ Failed to setup system tray: {e}")
+            logger.error(f"âŒ Failed to setup system tray: {e}")
             
     def _setup_global_shortcuts(self):
         """Setup global keyboard shortcuts"""
@@ -180,7 +180,7 @@ class WindowManager(QObject):
             toggle_hud = QShortcut(QKeySequence("Ctrl+Shift+H"), self._shortcut_window)
             toggle_hud.activated.connect(self._toggle_hud)
 
-            # 🆕 Ctrl+Shift+Alt+J - Emergency Manual Panel
+            # ðŸ†• Ctrl+Shift+Alt+J - Emergency Manual Panel
             emergency_panel = QShortcut(QKeySequence("Ctrl+Shift+Alt+J"), self._shortcut_window)
             emergency_panel.activated.connect(self._toggle_manual_panel)
             
@@ -188,14 +188,14 @@ class WindowManager(QObject):
             hide_all = QShortcut(QKeySequence("Ctrl+Shift+X"), self._shortcut_window)
             hide_all.activated.connect(lambda: self.switch_mode(InterfaceMode.HIDDEN))
             
-            logger.info("✅ Global shortcuts registered")
+            logger.info("âœ… Global shortcuts registered")
             logger.info("   Ctrl+Shift+J - Toggle Dashboard")
             logger.info("   Ctrl+Shift+H - Toggle HUD")
             logger.info("   Ctrl+Shift+Alt+J - EMERGENCY MANUAL PANEL")
             logger.info("   Ctrl+Shift+X - Hide All")
             
         except Exception as e:
-            logger.error(f"❌ Failed to setup shortcuts: {e}")
+            logger.error(f"âŒ Failed to setup shortcuts: {e}")
             
     def _on_tray_activated(self, reason):
         """Handle system tray icon activation"""
@@ -232,7 +232,7 @@ class WindowManager(QObject):
 
     @pyqtSlot(str, str)
     def _on_notification_received(self, title: str, message: str):
-        """Mostra notificação no sistema"""
+        """Mostra notificaÃ§Ã£o no sistema"""
         if self._tray_icon:
             self._tray_icon.showMessage(title, message, QSystemTrayIcon.MessageIcon.Information, 5000)
 
@@ -242,9 +242,9 @@ class WindowManager(QObject):
             try:
                 from .manual_control_panel import ManualControlPanel
                 self._manual_panel = ManualControlPanel()
-                logger.info("✅ Emergency Manual Panel initialized")
+                logger.info("âœ… Emergency Manual Panel initialized")
             except Exception as e:
-                logger.error(f"❌ Failed to initialize Manual Panel: {e}")
+                logger.error(f"âŒ Failed to initialize Manual Panel: {e}")
                 return
 
         if self._manual_panel.isVisible():
@@ -267,7 +267,7 @@ class WindowManager(QObject):
             self._do_switch_mode(mode)
         else:
             # We are in a background thread, dispatch to Main Thread
-            logger.debug(f"🔀 Redirecting switch_mode request ({mode.value}) to Main Thread")
+            logger.debug(f"ðŸ”€ Redirecting switch_mode request ({mode.value}) to Main Thread")
             self._request_mode_switch.emit(mode)
 
     @pyqtSlot(object)
@@ -278,7 +278,7 @@ class WindowManager(QObject):
         if mode == self.current_mode:
             return
             
-        logger.info(f"🔄 Switching interface mode: {self.current_mode.value} → {mode.value}")
+        logger.info(f"ðŸ”„ Switching interface mode: {self.current_mode.value} â†’ {mode.value}")
         
         # Hide current interface
         self._hide_current()
@@ -312,7 +312,7 @@ class WindowManager(QObject):
         if self.current_mode == InterfaceMode.HUD_OVERLAY:
             if not self._hud:
                 self._initialize_hud()
-            # Verificação de segurança: _initialize_hud pode falhar e usar fallback
+            # VerificaÃ§Ã£o de seguranÃ§a: _initialize_hud pode falhar e usar fallback
             if self._hud:
                 self._hud.show()
                 self._hud.raise_()
@@ -345,10 +345,10 @@ class WindowManager(QObject):
                 lambda status: self.status_update.emit("hud_status", status)
             )
             
-            logger.info("✅ HUD Overlay initialized")
+            logger.info("âœ… HUD Overlay initialized")
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize HUD: {e}")
+            logger.error(f"âŒ Failed to initialize HUD: {e}")
             # Fallback to basic window with log_event support
             from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
             
@@ -384,10 +384,10 @@ class WindowManager(QObject):
             # Connect mode switch request from dashboard
             self._dashboard.mode_switch_requested.connect(self.switch_mode)
             
-            logger.info("✅ Stark Dashboard initialized")
+            logger.info("âœ… Stark Dashboard initialized")
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Dashboard: {e}")
+            logger.error(f"âŒ Failed to initialize Dashboard: {e}")
             self._create_placeholder_dashboard()
 
     def _initialize_mini_orb(self):
@@ -399,10 +399,10 @@ class WindowManager(QObject):
             # Connect mode switch request
             self._mini_orb.mode_switch_requested.connect(self.switch_mode)
             
-            logger.info("✅ Mini Hub Orb initialized")
+            logger.info("âœ… Mini Hub Orb initialized")
             
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Mini Orb: {e}")
+            logger.error(f"âŒ Failed to initialize Mini Orb: {e}")
 
     def _create_placeholder_dashboard(self):
         """Create placeholder dashboard"""
@@ -415,13 +415,13 @@ class WindowManager(QObject):
         central = QWidget()
         layout = QVBoxLayout()
         
-        label = QLabel("🚧 Control Dashboard - Coming Soon\n\n"
+        label = QLabel("ðŸš§ Control Dashboard - Coming Soon\n\n"
                       "This will include:\n"
-                      "• Brain Configuration\n"
-                      "• Voice Settings\n"
-                      "• Vision System\n"
-                      "• System Logs\n"
-                      "• Hardware Monitor")
+                      "â€¢ Brain Configuration\n"
+                      "â€¢ Voice Settings\n"
+                      "â€¢ Vision System\n"
+                      "â€¢ System Logs\n"
+                      "â€¢ Hardware Monitor")
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         
@@ -513,10 +513,10 @@ class WindowManager(QObject):
             if self._tray_icon:
                 self._tray_icon.hide()
                 
-            logger.info("✅ Window Manager cleaned up")
+            logger.info("âœ… Window Manager cleaned up")
             
         except Exception as e:
-            logger.error(f"❌ Erro no shutdown do WindowManager: {e}")
+            logger.error(f"âŒ Erro no shutdown do WindowManager: {e}")
 
     def _on_global_signal(self, event_type: str, data: dict):
         """Callback recebido do Signal Hub (thread-safe bridging)"""

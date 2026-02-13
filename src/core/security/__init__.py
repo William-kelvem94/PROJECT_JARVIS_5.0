@@ -1,7 +1,7 @@
-"""Módulo de Segurança JARVIS
+﻿"""MÃ³dulo de SeguranÃ§a JARVIS
 
-Provide validação de segurança para caminhos, requisições web 
-e operações críticas do sistema.
+Provide validaÃ§Ã£o de seguranÃ§a para caminhos, requisiÃ§Ãµes web 
+e operaÃ§Ãµes crÃ­ticas do sistema.
 """
 
 from .security_manager import SecurityManager
