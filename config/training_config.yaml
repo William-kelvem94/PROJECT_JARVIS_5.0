@@ -56,13 +56,6 @@ dream_config:
   consolidation_epochs: 10
   sleep_cycles: 3
 
-emotion_config:
-  voice_dataset: "data/training_data/emotion_voices"
-  emotions: ["happy", "sad", "angry", "neutral"]
-  sample_rate: 22050
-  epochs: 100
-  batch_size: 8
-
 study_config:
   topic: "Inteligência Artificial"  # Pode ser sobrescrito por --topic
   project_root: "."
