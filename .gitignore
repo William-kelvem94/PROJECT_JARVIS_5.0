@@ -92,3 +92,4 @@ htmlcov/
 
 # Migration reports
 migration_report.json
+ollama_setup.exe
