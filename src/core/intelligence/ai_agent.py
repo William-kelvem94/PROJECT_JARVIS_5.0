@@ -878,8 +878,11 @@ class AIAgent:
                 # Limpar possÃ­vel lixo (Ã s vezes o LLM adiciona aspas ou prefixos)
                 resposta_viva = resposta_viva.strip().strip('"').strip("'").strip(".").strip()
                 
-                logger.info(f"âœ¨ JARVIS Real Startup Greeting: {resposta_viva}")
-                voice_controller.speak(resposta_viva)
+                logger.info(f"JARVIS Real Startup Greeting: {resposta_viva}")
+                if voice_controller:
+                    voice_controller.speak(resposta_viva)
+                else:
+                    logger.warning("voice_controller indisponivel - saudacao apenas registrada")
             else:
                 # No Funcionamento Real, nÃ£o usamos fallbacks estÃ¡ticos a menos que seja falha total
                 logger.warning(f"âš ï¸ Resposta curta ou invÃ¡lida do LLM: '{resposta_viva}'")

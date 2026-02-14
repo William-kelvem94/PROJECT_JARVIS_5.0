@@ -5,6 +5,8 @@ Utiliza MediaPipe para rastreamento de mÃ£os e reconhecimento de gestos.
 
 import os
 import logging
+import warnings
+warnings.filterwarnings('ignore', message='.*mediapipe.*')
 import threading
 import time
 import math

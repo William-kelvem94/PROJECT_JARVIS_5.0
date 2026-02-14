@@ -24,6 +24,12 @@ import pyttsx3
 import speech_recognition as sr
 from src.utils.config import config
 
+# Try to import ui_signals for status updates
+try:
+    from src.interface.ui_signals import ui_signals
+except (ImportError, AttributeError):
+    ui_signals = None
+
 # Lazy import torch to avoid numpy conflicts
 torch = None
 try:
@@ -138,6 +144,17 @@ class VoiceController:
         # Lazy import of TTS
         if not TTS_AVAILABLE:
             try:
+                # Patch BeamSearchScorer before importing TTS
+                try:
+                    from transformers import generation_utils
+                    if not hasattr(generation_utils, 'BeamSearchScorer'):
+                        # Create dummy BeamSearchScorer for compatibility
+                        class BeamSearchScorer:
+                            pass
+                        generation_utils.BeamSearchScorer = BeamSearchScorer
+                except:
+                    pass
+                
                 from TTS.api import TTS
                 TTS_AVAILABLE = True
                 logger.info("✅ TTS imported successfully")
@@ -166,7 +183,8 @@ class VoiceController:
     def _get_cache_path(self, text: str) -> Path:
         """Gera o caminho do arquivo de cache baseado no hash do texto."""
         text_hash = hashlib.md5(text.lower().strip().encode('utf-8')).hexdigest()
-        return self.cache_dir / f"{text_hash}.wav"
+        cache_path = self.cache_dir / f"{text_hash}.mp3"
+        return cache_path
 
     def clean_text(self, text: str) -> str:
         """Limpa o texto para TTS mantendo a pontuação emocional."""
@@ -186,7 +204,11 @@ class VoiceController:
         
         # Log visual
         logger.info(f"🗣️ JARVIS: {clean_text}")
-        ui_signals.update_status.emit(clean_text)
+        if ui_signals:
+            try:
+                ui_signals.update_status.emit(clean_text)
+            except Exception as e:
+                logger.debug(f"UI signal error: {e}")
 
         # Cache check
         cache_path = self._get_cache_path(clean_text)
@@ -208,23 +230,31 @@ class VoiceController:
         # Nível 1: XTTS Local
         if self.xtts_model and self.reference_wav.exists():
             try:
-                logger.debug("🔊 Nível 1: XTTS-v2 Synthesis")
+                logger.info("🔊 [LEVEL 1] XTTS-v2 Synthesis (Cloning Mode)")
                 self.xtts_model.tts_to_file(
                     text=text,
                     file_path=str(cache_path),
                     speaker_wav=str(self.reference_wav),
                     language="pt"
                 )
-                success = True
+                if cache_path.exists():
+                    success = True
             except Exception as e:
                 logger.warning(f"⚠️ XTTS falhou: {e}")
 
         # Nível 2: Edge-TTS
         if not success and EDGE_TTS_AVAILABLE:
             try:
-                logger.debug("🌐 Nível 2: Edge-TTS Synthesis")
-                asyncio.run(self._edge_tts_to_file(text, cache_path))
-                success = True
+                logger.info("🌐 [LEVEL 2] Edge-TTS Synthesis (Neural Cloud)")
+                # Usar um loop específico para evitar conflito com loops já rodando
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(self._edge_tts_to_file(text, cache_path))
+                    if cache_path.exists():
+                        success = True
+                finally:
+                    loop.close()
             except Exception as e:
                 logger.warning(f"⚠️ Edge-TTS falhou: {e}")
 
@@ -232,13 +262,16 @@ class VoiceController:
         if success and cache_path.exists():
             self._play_audio(str(cache_path), wait=wait)
         else:
-            logger.error("🚨 Nível 3: Fallback pyttsx3 (Catástrofe)")
+            logger.error("🚨 [LEVEL 3] Fallback pyttsx3 (ROBOTIC MODE)")
+            if not self.reference_wav.exists():
+                logger.warning("💡 DICA: Adicione um arquivo .wav em 'data/voice_signatures/jarvis_reference.wav' para voz premium.")
             self.engine_offline.say(text)
             self.engine_offline.runAndWait()
 
     async def _edge_tts_to_file(self, text: str, path: Path):
-        """Síntese via Edge-TTS."""
-        communicate = edge_tts.Communicate(text, "pt-BR-FranciscaNeural")
+        """Síntese via Edge-TTS com voz masculina neural."""
+        voice = "pt-BR-AntonioNeural" # Voz masculina mais elegante
+        communicate = edge_tts.Communicate(text, voice)
         await communicate.save(str(path))
 
     def _play_audio(self, file_path: str, wait: bool = False):
