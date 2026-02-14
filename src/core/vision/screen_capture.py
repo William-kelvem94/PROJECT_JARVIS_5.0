@@ -450,5 +450,30 @@ class ScreenCapture:
             logger.error(f"Erro na captura com cursor: {e}")
             return None
 
-# InstÃ¢ncia global
+    def capture_context(self) -> Dict[str, Any]:
+        """Captura contexto visual do desktop de forma econômica"""
+        context = {
+            "timestamp": datetime.now().isoformat(),
+            "active_window": "unknown"
+        }
+        
+        try:
+             # Window Title
+             import pygetwindow as gw
+             active = gw.getActiveWindow()
+             if active:
+                 context["active_window"] = active.title
+        except: pass
+
+        # Captura se o hardware permitir
+        from src.core.management.hardware_manager import hardware_manager
+        if not hardware_manager.is_throttled:
+            # Captura lo-res para economizar
+            path = self.capture_fullscreen(capture_type='context')
+            if path:
+                context["image_path"] = path
+                
+        return context
+
+# Instância global
 screen_capture = ScreenCapture()

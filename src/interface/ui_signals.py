@@ -17,6 +17,8 @@ class UISignals(QObject):
     update_boot_stage = pyqtSignal(str, int)     # (Mensagem, Progresso 0-100)
     update_cpu_usage = pyqtSignal(float)         # Valor de uso de CPU para gráficos
     show_notification = pyqtSignal(str, str)     # (título, mensagem) pop-up
+    update_learning_status = pyqtSignal(str, bool) # (tópico_atual, is_studying)
+    update_curiosity_list = pyqtSignal(list)      # Lista de tÃ³picos pendentes
 
     def __new__(cls):
         if cls._instance is None:

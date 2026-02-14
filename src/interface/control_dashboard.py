@@ -28,13 +28,20 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QLineEdit, QComboBox, QTextEdit, QCheckBox,
     QSpinBox, QDoubleSpinBox, QGroupBox, QFormLayout, QListWidget,
     QTableWidget, QTableWidgetItem, QProgressBar, QFileDialog,
-    QMessageBox, QSplitter, QSlider, QFrame, QGraphicsDropShadowEffect
+    QMessageBox, QSplitter, QSlider, QFrame, QGraphicsDropShadowEffect,
+    QApplication, QInputDialog
 )
+from PyQt6.QtCore import Qt, QMimeData
+from PyQt6.QtGui import QDragEnterEvent, QDropEvent
 from PyQt6.QtCore import (
     Qt, QTimer, pyqtSignal, pyqtSlot, QThread, QPropertyAnimation,
     QEasingCurve, QRect, QSize
 )
 from PyQt6.QtGui import QFont, QColor, QPalette, QTextCursor, QIcon, QAction
+
+from src.interface.ui_signals import ui_signals
+from src.interface.theme import JarvisTheme
+from src.core.management.hardware_manager import hardware_manager
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +75,55 @@ class SideBarButton(QPushButton):
                 font-weight: bold;
             }
         """)
+
+class ConfigTextEdit(QTextEdit):
+    """QTextEdit with drag & drop support for config files"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """Handle drag enter events"""
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if urls and any(url.toLocalFile().endswith(('.json', '.yaml', '.yml')) for url in urls):
+                event.acceptProposedAction()
+                return
+        event.ignore()
+
+    def dropEvent(self, event: QDropEvent):
+        """Handle file drop events"""
+        urls = event.mimeData().urls()
+        if urls:
+            file_path = urls[0].toLocalFile()
+            if file_path.endswith(('.json', '.yaml', '.yml')):
+                self.load_config_file(file_path)
+                event.acceptProposedAction()
+            else:
+                event.ignore()
+
+    def load_config_file(self, file_path: str):
+        """Load config file into editor"""
+        try:
+            from pathlib import Path
+            path = Path(file_path)
+
+            with open(path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            self.setPlainText(content)
+            self.parent().parent().config_path_label.setText(f"Loaded: {path.name}")
+            self.parent().parent().current_config_path = path
+
+            # Show success toast
+            from src.interface.toast_notifications import show_success_toast
+            show_success_toast("Config Loaded", f"Successfully loaded {path.name}")
+
+        except Exception as e:
+            # Show error toast
+            from src.interface.toast_notifications import show_error_toast
+            show_error_toast("Load Failed", f"Failed to load config: {e}")
 
 class SystemMonitorThread(QThread):
     """Background thread for system monitoring"""
@@ -105,6 +161,9 @@ class ControlDashboard(QMainWindow):
         
         self.setWindowTitle("JARVIS Singularity - Control Dashboard")
         self.setGeometry(100, 100, 1200, 800)
+        
+        # Aplicar tema unificado
+        JarvisTheme.apply_theme(self)
         
         # Load configuration
         self.config = self._load_config()
@@ -201,7 +260,8 @@ class ControlDashboard(QMainWindow):
             ("ðŸŽ“ LEARNING", self._create_learning_tab()),
             ("ðŸ’¾ MEMORY", self._create_memory_tab()),
             ("ðŸ“‹ LOGS", self._create_logs_tab()),
-            ("âš™ï¸ SYSTEM", self._create_system_tab())
+            ("âš™ï¸ SYSTEM", self._create_system_tab()),
+            ("⚙️ CONFIG", self._create_config_tab())
         ]
         
         for i, (name, widget) in enumerate(sections):
@@ -675,6 +735,107 @@ class ControlDashboard(QMainWindow):
         process_group.setLayout(process_layout)
         layout.addWidget(process_group)
         
+        return tab
+        
+    def _create_config_tab(self) -> QWidget:
+        """Create Configuration Editor tab"""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Title
+        title = QLabel("CONFIGURATION EDITOR")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #00F2FF; margin-bottom: 10px;")
+        layout.addWidget(title)
+        
+        # Config file selector
+        file_group = QGroupBox("Configuration Files")
+        file_layout = QVBoxLayout()
+        
+        # File list
+        self.config_file_list = QListWidget()
+        self.config_file_list.setMaximumHeight(100)
+        self._populate_config_files()
+        file_layout.addWidget(self.config_file_list)
+        
+        # File actions
+        file_actions = QHBoxLayout()
+        load_btn = QPushButton("📂 Load Config")
+        load_btn.clicked.connect(self._load_selected_config)
+        file_actions.addWidget(load_btn)
+        
+        save_btn = QPushButton("💾 Save Config")
+        save_btn.clicked.connect(self._save_current_config)
+        file_actions.addWidget(save_btn)
+        
+        refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.clicked.connect(self._populate_config_files)
+        file_actions.addWidget(refresh_btn)
+        
+        file_layout.addLayout(file_actions)
+        file_group.setLayout(file_layout)
+        layout.addWidget(file_group)
+        
+        # Config editor
+        editor_group = QGroupBox("JSON Editor")
+        editor_layout = QVBoxLayout()
+        
+        # Editor controls
+        editor_controls = QHBoxLayout()
+        
+        self.config_path_label = QLabel("No file loaded - Drag & drop config files here")
+        self.config_path_label.setStyleSheet("color: #888;")
+        editor_controls.addWidget(self.config_path_label)
+        
+        editor_controls.addStretch()
+        
+        validate_btn = QPushButton("✅ Validate JSON")
+        validate_btn.clicked.connect(self._validate_config_json)
+        editor_controls.addWidget(validate_btn)
+        
+        format_btn = QPushButton("🎨 Format JSON")
+        format_btn.clicked.connect(self._format_config_json)
+        editor_controls.addWidget(format_btn)
+        
+        editor_layout.addLayout(editor_controls)
+        
+        # JSON editor with drag & drop
+        self.config_editor = ConfigTextEdit()
+        self.config_editor.setFont(QFont("Consolas", 10))
+        self.config_editor.setStyleSheet("""
+            QTextEdit {
+                background: #1e1e1e;
+                color: #dcdcdc;
+                border: 1px solid #444;
+                selection-background-color: #00F2FF;
+            }
+        """)
+        editor_layout.addWidget(self.config_editor)
+        
+        editor_group.setLayout(editor_layout)
+        layout.addWidget(editor_group)
+        
+        # Backup section
+        backup_group = QGroupBox("Backup & Restore")
+        backup_layout = QHBoxLayout()
+        
+        backup_btn = QPushButton("📦 Create Backup")
+        backup_btn.clicked.connect(self._create_config_backup)
+        backup_layout.addWidget(backup_btn)
+        
+        restore_btn = QPushButton("🔄 Restore from Backup")
+        restore_btn.clicked.connect(self._restore_config_backup)
+        backup_layout.addWidget(restore_btn)
+        
+        backup_layout.addStretch()
+        
+        self.backup_status_label = QLabel("")
+        backup_layout.addWidget(self.backup_status_label)
+        
+        backup_group.setLayout(backup_layout)
+        layout.addWidget(backup_group)
+        
+        layout.addStretch()
         return tab
         
     def _create_memory_tab(self) -> QWidget:
@@ -1189,8 +1350,35 @@ class ControlDashboard(QMainWindow):
             
     def _filter_logs(self):
         """Filter logs based on search and level"""
-        # Implementation would filter the log display
-        pass
+        search_text = self.log_filter.text().lower()
+        level_filter = self.log_level_combo.currentText()
+
+        # Get all log content
+        all_logs = self.log_viewer.toPlainText().split('\n')
+
+        # Filter logs
+        filtered_logs = []
+        for log_line in all_logs:
+            if not log_line.strip():
+                continue
+
+            # Level filter
+            if level_filter != "ALL":
+                if f"{level_filter}:" not in log_line:
+                    continue
+
+            # Text search filter
+            if search_text and search_text not in log_line.lower():
+                continue
+
+            filtered_logs.append(log_line)
+
+        # Update display
+        self.log_viewer.setPlainText('\n'.join(filtered_logs))
+
+        # Auto-scroll to bottom if enabled
+        if self.auto_scroll_check.isChecked():
+            self.log_viewer.moveCursor(QTextCursor.MoveOperation.End)
         
     def _clear_logs(self):
         """Clear log viewer"""
@@ -1218,6 +1406,10 @@ class ControlDashboard(QMainWindow):
         self._save_config()
         QMessageBox.information(self, "Success", "Brain configuration saved!")
         
+        # Show success toast
+        from src.interface.toast_notifications import show_success_toast
+        show_success_toast("Configuration Saved", "Brain settings updated successfully")
+        
     def _save_voice_config(self):
         """Save voice configuration"""
         self.config["audio"] = {
@@ -1232,6 +1424,10 @@ class ControlDashboard(QMainWindow):
         }
         self._save_config()
         QMessageBox.information(self, "Success", "Voice settings saved!")
+        
+        # Show success toast
+        from src.interface.toast_notifications import show_success_toast
+        show_success_toast("Configuration Saved", "Voice settings updated successfully")
         
     def _save_vision_config(self):
         """Save vision configuration"""
@@ -1302,6 +1498,154 @@ class ControlDashboard(QMainWindow):
         enabled = state == 2 # 2 is checked in Qt
         reflect_logger.set_enabled(enabled)
         logger.info(f"Neural Reflection {'ENABLED' if enabled else 'DISABLED'}")
+            
+    def _scan_knowledge_gaps(self):
+        """Scan for knowledge gaps in the system"""
+        QMessageBox.information(
+            self, 
+            "Knowledge Gap Scanner", 
+            "🔍 Scanning knowledge gaps...\n\nThis feature analyzes the AI's knowledge base to identify areas that need improvement or additional training data.\n\nFeature coming soon in JARVIS 5.1!"
+        )
+            
+    def _populate_config_files(self):
+        """Populate the config files list"""
+        self.config_file_list.clear()
+        
+        project_root = Path(__file__).parent.parent.parent
+        config_dir = project_root / "config"
+        
+        if config_dir.exists():
+            for config_file in config_dir.glob("*.json"):
+                self.config_file_list.addItem(config_file.name)
+            for config_file in config_dir.glob("*.yaml"):
+                self.config_file_list.addItem(config_file.name)
+                
+    def _load_selected_config(self):
+        """Load selected config file into editor"""
+        current_item = self.config_file_list.currentItem()
+        if not current_item:
+            QMessageBox.warning(self, "No Selection", "Please select a config file first.")
+            return
+            
+        filename = current_item.text()
+        project_root = Path(__file__).parent.parent.parent
+        config_path = project_root / "config" / filename
+        
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            self.config_editor.setPlainText(content)
+            self.config_path_label.setText(f"Loaded: {filename}")
+            self.current_config_path = config_path
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load config: {e}")
+            
+    def _save_current_config(self):
+        """Save current config from editor"""
+        if not hasattr(self, 'current_config_path'):
+            QMessageBox.warning(self, "No File", "No config file loaded to save.")
+            return
+            
+        try:
+            content = self.config_editor.toPlainText()
+            with open(self.current_config_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+                
+            QMessageBox.information(self, "Success", "Configuration saved successfully!")
+            
+            # Show success toast
+            from src.interface.toast_notifications import show_success_toast
+            show_success_toast("Config Saved", "Configuration file updated successfully")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to save config: {e}")
+            
+    def _validate_config_json(self):
+        """Validate JSON syntax"""
+        content = self.config_editor.toPlainText()
+        
+        try:
+            import json
+            json.loads(content)
+            QMessageBox.information(self, "Valid", "✅ JSON is valid!")
+            
+        except json.JSONDecodeError as e:
+            QMessageBox.warning(self, "Invalid JSON", f"❌ JSON Error: {e}")
+            
+    def _format_config_json(self):
+        """Format JSON with proper indentation"""
+        content = self.config_editor.toPlainText()
+        
+        try:
+            import json
+            parsed = json.loads(content)
+            formatted = json.dumps(parsed, indent=4, ensure_ascii=False)
+            self.config_editor.setPlainText(formatted)
+            
+        except json.JSONDecodeError as e:
+            QMessageBox.warning(self, "Invalid JSON", f"Cannot format invalid JSON: {e}")
+            
+    def _create_config_backup(self):
+        """Create backup of current config"""
+        if not hasattr(self, 'current_config_path'):
+            QMessageBox.warning(self, "No File", "No config file loaded.")
+            return
+            
+        try:
+            import shutil
+            from datetime import datetime
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = self.current_config_path.with_suffix(f".backup_{timestamp}.json")
+            
+            shutil.copy2(self.current_config_path, backup_path)
+            
+            self.backup_status_label.setText(f"✅ Backup created: {backup_path.name}")
+            self.backup_status_label.setStyleSheet("color: #4CAF50;")
+            
+        except Exception as e:
+            self.backup_status_label.setText(f"❌ Backup failed: {e}")
+            self.backup_status_label.setStyleSheet("color: #f44336;")
+            
+    def _restore_config_backup(self):
+        """Restore config from backup"""
+        if not hasattr(self, 'current_config_path'):
+            QMessageBox.warning(self, "No File", "No config file loaded.")
+            return
+            
+        # List available backups
+        backup_files = list(self.current_config_path.parent.glob(f"{self.current_config_path.stem}.backup_*.json"))
+        
+        if not backup_files:
+            QMessageBox.information(self, "No Backups", "No backup files found.")
+            return
+            
+        # Show backup selection dialog
+        backup_names = [f.name for f in backup_files]
+        backup_name, ok = QInputDialog.getItem(
+            self, "Select Backup", "Choose backup to restore:", backup_names, 0, False
+        )
+        
+        if ok and backup_name:
+            backup_path = self.current_config_path.parent / backup_name
+            
+            try:
+                import shutil
+                shutil.copy2(backup_path, self.current_config_path)
+                
+                # Reload in editor
+                with open(self.current_config_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                self.config_editor.setPlainText(content)
+                
+                self.backup_status_label.setText(f"✅ Restored from: {backup_name}")
+                self.backup_status_label.setStyleSheet("color: #4CAF50;")
+                
+            except Exception as e:
+                self.backup_status_label.setText(f"❌ Restore failed: {e}")
+                self.backup_status_label.setStyleSheet("color: #f44336;")
             
     def closeEvent(self, event):
         """Handle window close"""

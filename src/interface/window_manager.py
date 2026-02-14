@@ -72,12 +72,17 @@ class WindowManager(QObject):
     # Internal Signal for thread-safe mode switching
     _request_mode_switch = pyqtSignal(object)
     
-    def __init__(self, app: QApplication):
+    def __init__(self, app: QApplication, jarvis_core=None):
         """
         Initialize Window Manager.
+        
+        Args:
+            app: QApplication instance
+            jarvis_core: Reference to JarvisSingularity core for dashboard integration
         """
         super().__init__()
         self.app = app
+        self.jarvis_core = jarvis_core
         self.current_mode = InterfaceMode.HIDDEN
         
         # Sinais de Controle Interno
@@ -87,6 +92,7 @@ class WindowManager(QObject):
         ui_signals.update_status.connect(self._on_status_received)
         ui_signals.update_listening_state.connect(self._on_listening_received)
         ui_signals.show_notification.connect(self._on_notification_received)
+        ui_signals.update_learning_status.connect(self._on_learning_status)
         
         # Interfaces
         self._hud = None
@@ -416,7 +422,7 @@ class WindowManager(QObject):
         """Lazy initialization of Stark Dashboard"""
         try:
             from .stark_dashboard import StarkDashboard
-            self._dashboard = StarkDashboard()
+            self._dashboard = StarkDashboard(jarvis_core=self.jarvis_core)
             
             # Connect mode switch request from dashboard
             self._dashboard.mode_switch_requested.connect(self.switch_mode)
@@ -596,6 +602,16 @@ class WindowManager(QObject):
                 QSystemTrayIcon.MessageIcon.Information,
                 duration
             )
+
+    @pyqtSlot(str, bool)
+    def _on_learning_status(self, topic: str, is_studying: bool):
+        """Handle learning status update"""
+        # Repassa para o Mini Orb
+        if self._mini_orb and hasattr(self._mini_orb, 'set_studying'):
+            self._mini_orb.set_studying(topic, is_studying)
+        
+        # O Dashboard já conecta direto ao sinal, mas se o HUD precisasse de intermediário seria aqui.
+        # No caso, o HUD Moderno também já conecta direto.
             
     def shutdown(self):
         """Shutdown seguro do WindowManager"""
@@ -668,12 +684,13 @@ class WindowManager(QObject):
 _window_manager: Optional[WindowManager] = None
 
 
-def get_window_manager(app: Optional[QApplication] = None) -> WindowManager:
+def get_window_manager(app: Optional[QApplication] = None, jarvis_core=None) -> WindowManager:
     """
     Get or create Window Manager singleton.
     
     Args:
         app: QApplication instance (required for first call)
+        jarvis_core: Reference to JarvisSingularity core for dashboard integration
         
     Returns:
         WindowManager instance
@@ -683,7 +700,10 @@ def get_window_manager(app: Optional[QApplication] = None) -> WindowManager:
     if _window_manager is None:
         if app is None:
             raise ValueError("QApplication required for first WindowManager initialization")
-        _window_manager = WindowManager(app)
+        _window_manager = WindowManager(app, jarvis_core)
+    elif jarvis_core is not None and _window_manager.jarvis_core is None:
+        # Update jarvis_core if it wasn't set before
+        _window_manager.jarvis_core = jarvis_core
         
     return _window_manager
 

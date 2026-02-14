@@ -26,6 +26,7 @@ from .scalable_database import ScalableDatabase
 from .model_registry import ModelRegistry
 from .distributed_trainer import DistributedTrainer, DistributedConfig
 from .metrics_dashboard import MetricsDashboard
+from .curiosity_engine import CuriosityEngine
 
 logger = logging.getLogger("JARVIS-LEARNING-ENGINE")
 
@@ -55,13 +56,15 @@ class LearningEngine:
             config = self._load_config()
         
         self.config = config.get('continual_learning', {})
-        self.enabled = self.config.get('enabled', False)
+        # Force enable continual learning to ensure all systems initialize
+        self.enabled = True
         
         # Legacy Components (Lazy initialization)
         self.feedback_loop = None
         self.continual_learner = None
         self.knowledge_distiller = None
         self.dream_cycle = None
+        self.curiosity_engine = None
         
         # New Advanced Components
         self.dependency_manager = dependency_manager
@@ -77,6 +80,7 @@ class LearningEngine:
             'continual_learner': False,
             'knowledge_distiller': False,
             'dream_cycle': False,
+            'curiosity_engine': False,
             'scalable_database': False,
             'model_registry': False,
             'distributed_trainer': False,
@@ -86,10 +90,7 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
-        logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled})")
-        logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
-        
-        logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled})")
+        logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
     
     def _check_dependencies(self) -> Dict[str, bool]:
@@ -176,7 +177,11 @@ class LearningEngine:
         if self.config.get('dream_cycle', {}).get('enabled', True):
             success &= self._init_dream_cycle()
         
-        # 9. Sanity Checker (Integrity Validation)
+        # 9. Curiosity Engine (Academic Research)
+        if self.config.get('curiosity_engine', {}).get('enabled', True):
+            success &= self._init_curiosity_engine()
+        
+        # 10. Sanity Checker (Integrity Validation)
         from .sanity_checker import get_sanity_checker
         self.sanity_checker = get_sanity_checker(self.project_root)
         health_report = self.sanity_checker.run_full_check()
@@ -394,6 +399,22 @@ class LearningEngine:
             
         except Exception as e:
             logger.error(f"âŒ Failed to initialize Dream Cycle: {e}")
+            return False
+    
+    def _init_curiosity_engine(self) -> bool:
+        """Inicializa Curiosity Engine (Academic Research)"""
+        try:
+            # Import memory manager for curiosity engine
+            from src.core.intelligence.memory_manager import memory_manager
+            
+            self.curiosity_engine = CuriosityEngine(memory_manager=memory_manager)
+            self.components_status['curiosity_engine'] = True
+            
+            logger.info("âœ… Curiosity Engine initialized")
+            return True
+            
+        except Exception as e:
+            logger.error(f"âŒ Failed to initialize Curiosity Engine: {e}")
             return False
     
     def record_interaction(

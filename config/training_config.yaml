@@ -60,4 +60,4 @@ study_config:
   topic: "Inteligência Artificial"  # Pode ser sobrescrito por --topic
   project_root: "."
   output_dir: "data/learning/training_data"
-  auto_train: false  # Se true, inicia treinamento automático após gerar dados
+    auto_train: true  # Se true, inicia treinamento automático após gerar dados

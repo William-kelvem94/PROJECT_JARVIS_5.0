@@ -157,6 +157,55 @@ class ActionController:
             logger.error(f"Erro na organizaÃ§Ã£o soberana: {e}")
             return False
 
+    def get_active_window(self) -> str:
+        """Retorna o título da janela ativa no momento"""
+        try:
+            active = pyautogui.getActiveWindowTitle()
+            return active if active else "Desktop"
+        except:
+            return "Unknown"
+
+    def manage_window(self, title: str, action: str = 'focus'):
+        """Gerencia janelas por título (focus, minimize, maximize, close)"""
+        try:
+            import pygetwindow as gw
+            wins = gw.getWindowsWithTitle(title)
+            if not wins: return False
+            win = wins[0]
+            if action == 'focus': win.activate()
+            elif action == 'minimize': win.minimize()
+            elif action == 'maximize': win.maximize()
+            elif action == 'close': win.close()
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao gerenciar janela '{title}': {e}")
+            return False
+
+    def system_power(self, action: str):
+        """Controle de energia (lock, logoff, restart, shutdown)"""
+        import os
+        try:
+            if action == 'lock':
+                import ctypes
+                ctypes.windll.user32.LockWorkStation()
+            elif action == 'restart':
+                os.system("shutdown /r /t 1")
+            elif action == 'shutdown':
+                os.system("shutdown /s /t 1")
+            return True
+        except Exception as e:
+            logger.error(f"Erro no comando de energia '{action}': {e}")
+            return False
+
+    def execute_power_shell(self, script: str) -> str:
+        """Executa comando PowerShell avançado com captura de output"""
+        import subprocess
+        try:
+            result = subprocess.run(["powershell", "-Command", script], capture_output=True, text=True, timeout=30)
+            return result.stdout if result.returncode == 0 else f"Error: {result.stderr}"
+        except Exception as e:
+            return str(e)
+
     def fill_field(self, field_label: str, value: str, ocr_regions: List[Dict[str, Any]]) -> bool:
         """
         Tenta encontrar um rÃ³tulo (ex: 'Email') e clica no campo Ã  direita ou abaixo para preencher.

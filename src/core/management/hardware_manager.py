@@ -141,7 +141,10 @@ class HardwareManager:
 
             if TORCH_AVAILABLE and torch and self.device == "cuda":
                 torch.backends.cudnn.benchmark = True
-                logger.info(f"ðŸ›ï¸ JARVIS [ULTRA]: Rodando em GPU: {self.gpu_name}")
+                logger.info(f"ðŸ›ï¸ JARVIS [ULTRA]: Rodando em GPU NVIDIA (CUDA): {self.gpu_name}")
+            elif hasattr(self, 'accelerator') and self.accelerator == "openvino":
+                # For OpenVINO, we might be using the GPU even if torch device is 'cpu'
+                logger.info(f"ðŸ›ï¸ JARVIS [{self.tier}]: Rodando em GPU Intel ({self.gpu_name} via OpenVINO).")
             else:
                 import psutil
                 logical_cores = psutil.cpu_count(logical=True) or 4
@@ -162,16 +165,29 @@ class HardwareManager:
                     
                 logger.info(f"ðŸ›ï¸ JARVIS [{self.tier}]: Rodando em CPU ({threads} threads ativas / {logical_cores} totais).")
                 
-            self._start_monitoring_thread()
+            # During test runs we avoid starting background threads that use native
+            # extensions (psutil, tqdm monitors, etc.) to reduce flakiness and crashes.
+            if os.environ.get('JARVIS_TEST_MODE') in ("1", "true", "True", "yes", "on"):
+                logger.info("JARVIS_TEST_MODE enabled: skipping hardware monitoring thread startup")
+            else:
+                self._start_monitoring_thread()
             self._hardware_initialized = True
 
     def _start_monitoring_thread(self):
         """Inicia monitoramento em background para alertas proativos"""
+        if os.environ.get('JARVIS_TEST_MODE') in ("1", "true", "True", "yes", "on"):
+            logger.debug("Test mode active: not starting HardwareProactiveMonitor thread")
+            return
         thread = threading.Thread(target=self._monitoring_loop, daemon=True, name="HardwareProactiveMonitor")
         thread.start()
 
     def _monitoring_loop(self):
         """Loop de monitoramento contÃ­nuo (Phase 3)"""
+        # Exit immediately in test mode to avoid native extension issues
+        if os.environ.get('JARVIS_TEST_MODE') in ("1", "true", "True", "yes", "on"):
+            logger.debug("Test mode active: exiting hardware monitoring loop")
+            return
+        
         import psutil
         import time
         from src.utils.web_emitter import emit_log_sync
@@ -399,6 +415,29 @@ class HardwareManager:
             return "SugestÃ£o: Pouca memÃ³ria RAM disponÃ­vel. Recomendo fechar aplicaÃ§Ãµes nÃ£o essenciais ou limpar cache de VRAM."
 
         return "Sistema operando em parÃ¢metros ideais."
+
+    def get_heartbeat_report(self) -> Dict[str, Any]:
+        """Gera um relatório completo de saúde do sistema (Heartbeat)"""
+        import psutil
+        cpu = psutil.cpu_percent()
+        ram = psutil.virtual_memory()
+        
+        # Alertas proativos
+        alerts = []
+        if cpu > 80: alerts.append("Alta carga de processamento")
+        if ram.percent > 90: alerts.append("Memória RAM quase esgotada")
+        
+        status = self.get_status()
+        
+        return {
+            "timestamp": time.time(),
+            "cpu_usage": cpu,
+            "ram_usage": ram.percent,
+            "alerts": alerts,
+            "tier": status["tier"],
+            "device": status["device"],
+            "vram_free": status["vram_free_gb"]
+        }
 
 # InstÃ¢ncia global (Singleton) - Lazy initialization
 _hardware_manager_instance = None

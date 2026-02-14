@@ -1,13 +1,39 @@
 ﻿import logging
 import asyncio
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import json
+import re
+from pathlib import Path
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import secrets
+import uvicorn
 import glob
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="JARVIS 5.0 - Control Dashboard")
+
+# Segurança básica
+security = HTTPBearer()
+API_KEY = secrets.token_urlsafe(32)  # Gerar chave única por sessão
+logger.info(f"🔑 API Key gerada: {API_KEY[:8]}...")
+
+def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verifica a API key no header Authorization"""
+    if credentials.credentials != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return credentials.credentials
+
+def sanitize_input(text: str) -> str:
+    """Sanitiza input para prevenir XSS e injection"""
+    if not isinstance(text, str):
+        return ""
+    # Remove tags HTML e caracteres perigosos
+    text = re.sub(r'<[^>]+>', '', text)
+    text = re.sub(r'[;&|`$]', '', text)
+    return text.strip()
 
 # Caminho para os arquivos estÃ¡ticos
 STATIC_DIR = Path(__file__).parent / "static"
@@ -28,7 +54,7 @@ async def get_dashboard():
 
 # API para dados de treinamento
 @app.get("/api/training-data")
-async def get_training_data():
+async def get_training_data(api_key: str = Depends(verify_api_key)):
     """Retorna dados de treinamento disponÃ­veis"""
     try:
         # Caminho para dados de treinamento
@@ -44,6 +70,11 @@ async def get_training_data():
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
+                    # Sanitizar dados antes de retornar
+                    if isinstance(data, dict):
+                        for key, value in data.items():
+                            if isinstance(value, str):
+                                data[key] = sanitize_input(value)
                     training_data.append(data)
             except Exception as e:
                 logger.error(f"Erro ao carregar {file_path}: {e}")

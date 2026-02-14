@@ -29,6 +29,8 @@ from src.core.intelligence.structured_output import (
     WaitAction,
     ActionType,
     RegisterNicknameAction,
+    RegisterUserAction,
+    RelocateUserAction,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,6 +80,9 @@ class ActionExecutor:
             ActionType.SET_POWER_PLAN: self._execute_set_power_plan,
             ActionType.GET_HARDWARE_SUGGESTIONS: self._execute_get_hardware_suggestions,
             ActionType.REGISTER_NICKNAME: self._execute_register_nickname,
+            ActionType.DELETE_FILE: self._execute_delete_file,
+            ActionType.REGISTER_USER: self._execute_register_user,
+            ActionType.RELOCATE_USER: self._execute_relocate_user,
         }
     
     def _load_controllers(self):
@@ -138,9 +143,40 @@ class ActionExecutor:
         handler = self.handlers.get(action_type)
         
         if not handler:
-            logger.error(f"Handler nÃ£o encontrado para aÃ§Ã£o: {action_type}")
+            # ⚡ FASE: Plugin Fallback (Hot-Reloadable Skills)
+            from src.core.management.plugin_manager import plugin_manager
+            plugin_actions = plugin_manager.get_plugin_actions()
             
-            # ðŸ”¥ Fase 4: Registro de Skill Gap (Curiosidade Neural)
+            if action_type.value in plugin_actions:
+                try:
+                    logger.info(f"🧩 Executando via plugin: {action_type.value}")
+                    plugin_info = plugin_actions[action_type.value]
+                    func = plugin_info["function"]
+                    
+                    # Pegar argumentos se for um objeto Pydantic
+                    params = action.dict() if hasattr(action, 'dict') else {}
+                    # Remover 'action' dos params
+                    if 'action' in params: del params['action']
+                    
+                    # Executar função do plugin
+                    import asyncio
+                    if asyncio.iscoroutinefunction(func):
+                        # Executar async se for o caso (usando loop existente)
+                        loop = asyncio.get_event_loop()
+                        result = loop.run_until_complete(func(**params))
+                    else:
+                        result = func(**params)
+                        
+                    return {
+                        "status": "success",
+                        "action": action_type.value,
+                        "result": result
+                    }
+                except Exception as e:
+                    logger.error(f"❌ Falha no plugin {action_type.value}: {e}")
+                    return {"status": "error", "action": action_type.value, "error": str(e)}
+
+            # 🔥 Fase 4: Registro de Skill Gap (Curiosidade Neural)
             try:
                 from src.learning.curiosity_engine import curiosity_engine
                 if curiosity_engine:
@@ -337,20 +373,29 @@ class ActionExecutor:
         return content
     
     def _execute_write_file(self, action: WriteFileAction) -> str:
-        """Escreve arquivo"""
-        # Validar com security manager
-        if not self.security_manager.validate_file_action(action.path, 'write'):
-            raise RuntimeError(f"Escrita de arquivo nÃ£o autorizada: {action.path}")
+        """Escreve arquivo com validação de Jaula de Vidro"""
+        # 🛡️ PROTEÇÃO TOTAL (Singularity Protocol)
+        if not self.security_manager.validate_path_access(action.path, 'write'):
+            raise RuntimeError(f"🚫 ACESSO NEGADO: Escrita em caminho protegido ({action.path})")
         
-        # Criar diretÃ³rio se necessÃ¡rio
+        # Criar diretório se necessário
         os.makedirs(os.path.dirname(action.path) or '.', exist_ok=True)
         
         mode = 'a' if action.append else 'w'
-        
         with open(action.path, mode, encoding=action.encoding) as f:
             f.write(action.content)
         
-        return f"Arquivo '{action.path}' escrito ({len(action.content)} chars)"
+        return f"Arquivo '{action.path}' escrito com sucesso."
+
+    def _execute_delete_file(self, action: Any) -> str:
+        """Exclui arquivo com validação de Jaula de Vidro"""
+        if not self.security_manager.validate_path_access(action.path, 'write'):
+            raise RuntimeError(f"🚫 ACESSO NEGADO: Exclusão em caminho protegido ({action.path})")
+            
+        if os.path.exists(action.path):
+            os.remove(action.path)
+            return f"Arquivo '{action.path}' removido com sucesso."
+        return "Arquivo não encontrado."
     
     def _execute_list_dir(self, action: ListDirAction) -> str:
         """Lista diretÃ³rio"""
@@ -515,8 +560,50 @@ class ActionExecutor:
         from src.core.audio.voice_filter import AtomicVoiceFilter
         success = AtomicVoiceFilter.add_nickname(action.nickname)
         if success:
-            return f"Apelido '{action.nickname}' registrado com sucesso. Agora vocÃª pode me chamar assim!"
-        return f"O apelido '{action.nickname}' jÃ¡ estÃ¡ registrado ou Ã© invÃ¡lido."
+            return f"Apelido '{action.nickname}' registrado com sucesso. Agora você pode me chamar assim!"
+        return f"O apelido '{action.nickname}' já está registrado ou é inválido."
+
+    def _execute_register_user(self, action: RegisterUserAction) -> str:
+        """Handler para RegisterUserAction (Multimodal Identity Sync)"""
+        try:
+            from src.core.management.user_manager import user_manager
+            from src.core.vision.camera_controller import camera_controller
+            from src.core.audio.enhanced_audio import get_audio_system
+            
+            # 1. Registrar metadados
+            user_manager.register_user(action.name, action.relationship, action.role)
+            
+            # 2. Iniciar registro de rosto
+            if camera_controller:
+                self.voice_controller.speak(f"William, vou iniciar o registro visual para {action.name}. Por favor, peça que ele olhe para a câmera.")
+                face_ok = camera_controller.register_new_face(action.name)
+                user_manager.update_biometrics(action.name, face=face_ok)
+            
+            # 3. Iniciar registro de voz
+            audio_system = get_audio_system()
+            if audio_system:
+                self.voice_controller.speak(f"Pressione o botão de gravação ou aguarde, pois agora vou precisar de um sample da voz de {action.name}.")
+                # Nota: A coleta de áudio real precisa ser orquestrada com o loop principal, 
+                # mas aqui marcamos que a intenção foi registrada.
+                # O ActionExecutor apenas dispara o processo.
+            
+            return f"Processo de cadastro de '{action.name}' como '{action.relationship}' iniciado. Biometria facial {'concluída' if face_ok else 'pendente'}."
+            
+        except ImportError as e:
+            return f"Falha ao carregar módulos de identidade: {e}"
+        except Exception as e:
+            return f"Erro no cadastro: {e}"
+
+    def _execute_relocate_user(self, action: RelocateUserAction) -> str:
+        """Handler para RelocateUserAction"""
+        try:
+            from src.core.management.user_manager import user_manager
+            success = user_manager.relocate_user(action.name, action.new_workspace)
+            if success:
+                return f"Usuário '{action.name}' realocado com sucesso para o workspace: {action.new_workspace}"
+            return f"Usuário '{action.name}' não encontrado para realocação."
+        except Exception as e:
+            return f"Erro na realocação: {e}"
 
 
 # InstÃ¢ncia global (singleton)

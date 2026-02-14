@@ -45,7 +45,8 @@ def check_package(import_name, pip_name, use_pip_show=False):
             result = subprocess.run(
                 [sys.executable, '-m', 'pip', 'show', pip_name],
                 capture_output=True,
-                text=False
+                text=False,
+                timeout=10
             )
             return result.returncode == 0, None if result.returncode == 0 else pip_name
         else:
@@ -59,7 +60,8 @@ def check_package(import_name, pip_name, use_pip_show=False):
                 result = subprocess.run(
                     [sys.executable, '-m', 'pip', 'show', pip_name],
                     capture_output=True,
-                    text=False
+                    text=False,
+                    timeout=10
                 )
                 if result.returncode == 0:
                     return False, None # Return False but no pkg name means "Installed but Broken"
@@ -70,7 +72,7 @@ def check_package(import_name, pip_name, use_pip_show=False):
 def install_package(pip_name):
     """Tenta instalar um pacote via pip"""
     try:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', pip_name], check=True, capture_output=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', pip_name], check=True, capture_output=True, timeout=60)
         return True
     except subprocess.CalledProcessError:
         return False

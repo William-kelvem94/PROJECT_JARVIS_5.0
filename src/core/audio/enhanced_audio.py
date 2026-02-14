@@ -26,48 +26,69 @@ from typing import Optional, Dict, List, Tuple, Callable
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
+import numpy as np
 
 from src.core.management.hardware_manager import hardware_manager
 from src.utils.stability import model_load_lock
-
-# Try to import config with graceful fallback
-try:
-    from src.utils.config import config
-except ImportError:
-    try:
-        from src.utils.config import Config
-        config = Config()
-    except Exception as e:
-        logger.warning(f"âš ï¸ Config module unavailable: {e}. Using defaults.")
-        # Mock config object
-        class MoackConfig:
-            @staticmethod
-            def get_setting(key, default=None):
-                return default
-        config = MoackConfig()
+from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CONDITIONAL IMPORTS (Graceful Degradation)
+# MANDATORY IMPORTS - All audio features NOW REQUIRED
 # ============================================================================
-import numpy as np
-NUMPY_AVAILABLE = True
 
+# Import Faster-Whisper (REQUIRED for STT)
 try:
     from faster_whisper import WhisperModel
     FASTER_WHISPER_AVAILABLE = True
-except (ImportError, OSError, AttributeError) as e:
+except ImportError as e:
+    logger.critical(f"❌ faster-whisper REQUIRED: {e}")
+    logger.critical("ðŸ'¡ Install with: pip install faster-whisper")
     FASTER_WHISPER_AVAILABLE = False
-    logger.warning(f"âš ï¸ faster-whisper not available - STT disabled: {e}")
+    WhisperModel = None
 
+# Import Torch (REQUIRED for advanced audio)
 try:
     import torch
     import torchaudio
     TORCH_AVAILABLE = True
-except (ImportError, OSError) as e:
+except ImportError as e:
+    logger.critical(f"❌ torch/torchaudio REQUIRED: {e}")
+    logger.critical("ðŸ'¡ Install with: pip install torch torchaudio")
     TORCH_AVAILABLE = False
-    logger.warning(f"âš ï¸ torch not available - advanced audio features disabled: {e}")
+    torch = None
+    torchaudio = None
+
+NUMPY_AVAILABLE = True  # Assumed to always be available
+
+def _import_faster_whisper():
+    """Lazy import of faster_whisper"""
+    global WhisperModel, FASTER_WHISPER_AVAILABLE
+    if not FASTER_WHISPER_AVAILABLE and WhisperModel is None:
+        try:
+            from faster_whisper import WhisperModel
+            FASTER_WHISPER_AVAILABLE = True
+        except (ImportError, OSError, AttributeError, KeyboardInterrupt) as e:
+            FASTER_WHISPER_AVAILABLE = False
+            logger.warning(f"âš ï¸ faster-whisper not available - STT disabled: {e}")
+            WhisperModel = None
+    return FASTER_WHISPER_AVAILABLE
+
+def _import_torch():
+    """Lazy import of torch"""
+    global torch, torchaudio, TORCH_AVAILABLE
+    if not TORCH_AVAILABLE and torch is None:
+        try:
+            import torch
+            import torchaudio
+            TORCH_AVAILABLE = True
+        except (ImportError, OSError, KeyboardInterrupt) as e:
+            TORCH_AVAILABLE = False
+            logger.warning(f"âš ï¸ torch not available - advanced audio features disabled: {e}")
+            torch = None
+            torchaudio = None
+    return TORCH_AVAILABLE
 
 import soundfile as sf
 SOUNDFILE_AVAILABLE = True
@@ -186,8 +207,12 @@ class EnhancedAudioSystem:
         self.chunk_size = 1024
         self.channels = 1
         
-        # Audio processing features
-        self.noise_reduction_enabled = config.get_setting('audio.noise_reduction', True)
+        # Audio processing features (safe config access with fallback for circular imports)
+        try:
+            from src.utils.config import config as _config
+            self.noise_reduction_enabled = _config.get_setting('audio.noise_reduction', True)
+        except Exception:
+            self.noise_reduction_enabled = True
         
         # Audio stream
         self.audio_stream = None
@@ -204,7 +229,11 @@ class EnhancedAudioSystem:
         
         # Wake word state
         self.porcupine = None
-        self.wake_word_active = config.get_setting('audio.wake_word_enabled', True)
+        try:
+            from src.utils.config import config as _config
+            self.wake_word_active = _config.get_setting('audio.wake_word_enabled', True)
+        except Exception:
+            self.wake_word_active = True
         # ðŸ†• ALWAYS LISTENING MODE: Se nÃ£o tiver wake word, fica sempre acordado
         self.is_awake = not self.wake_word_active  # ComeÃ§a acordado se wake word desabilitado
         

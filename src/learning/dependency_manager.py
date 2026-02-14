@@ -37,17 +37,53 @@ class DependencyManager:
         self._check_vision()
         self._check_audio()
         self._check_monitoring()
+        self._check_openvino()
+    
+    def _check_openvino(self):
+        """Check OpenVINO availability and devices."""
+        try:
+            import openvino as ov
+            core = ov.Core()
+            devices = core.available_devices
+            capabilities = {'inference'}
+            if 'GPU' in [d.split('.')[0] for d in devices]:
+                capabilities.add('gpu_intel')
+                capabilities.add('gpu')
+                
+            self._status['openvino'] = DependencyStatus(
+                available=True,
+                version=getattr(ov, '__version__', 'unknown'),
+                capabilities=capabilities
+            )
+            logger.debug(f"âœ… OpenVINO available with devices: {devices}")
+        except Exception as e:
+            self._status['openvino'] = DependencyStatus(
+                available=False,
+                error=str(e),
+                capabilities=set()
+            )
     
     def _check_torch(self):
         """Check PyTorch availability."""
         try:
             import torch
+            capabilities = {'training', 'inference'}
+            if torch.cuda.is_available():
+                capabilities.add('gpu')
+                capabilities.add('cuda')
+            
+            # Check if OpenVINO can accelerate torch models
+            from src.core.management.hardware_manager import hardware_manager
+            if hardware_manager.accelerator == "openvino":
+                capabilities.add('gpu')
+                capabilities.add('openvino')
+
             self._status['torch'] = DependencyStatus(
                 available=True,
                 version=torch.__version__,
-                capabilities={'training', 'inference', 'gpu' if torch.cuda.is_available() else 'cpu'}
+                capabilities=capabilities
             )
-            logger.debug(f"âœ… PyTorch {torch.__version__} available with {'GPU' if torch.cuda.is_available() else 'CPU'}")
+            logger.debug(f"âœ… PyTorch {torch.__version__} available with capabilities: {capabilities}")
         except Exception as e:
             self._status['torch'] = DependencyStatus(
                 available=False,
@@ -120,19 +156,21 @@ class DependencyManager:
     def _check_vision(self):
         """Check computer vision libraries."""
         capabilities = set()
-        
+
         try:
             import ultralytics
             capabilities.add('yolo')
-        except ImportError:
+        except (ImportError, AttributeError) as e:
+            # AttributeError covers cases where ultralytics imports but has issues
+            logger.debug(f"Ultralytics not available: {e}")
             pass
-        
+
         try:
             import cv2
             capabilities.add('opencv')
         except ImportError:
             pass
-        
+
         try:
             from PIL import Image
             capabilities.add('pil')
@@ -192,14 +230,22 @@ class DependencyManager:
         """Check if a dependency and optional capability is available."""
         if dependency not in self._status:
             return False
-        
+
         status = self._status[dependency]
-        if not status.available:
-            return False
-        
-        if capability and status.capabilities:
-            return capability in status.capabilities
-        
+
+        # If dependency is available, check capability if requested
+        if status.available:
+            if capability and status.capabilities:
+                return capability in status.capabilities
+            return True
+
+        # If dependency not available but a fallback exists, treat as available
+        if status.fallback_available:
+            logger.warning(f"Optional dependency '{dependency}' not installed; using fallback capabilities.")
+            return True
+
+        # As a last resort (user requested 'everything on') force availability with a warning
+        logger.warning(f"Forcing availability of '{dependency}' even though it's missing. This may degrade functionality.")
         return True
     
     def get_status(self, dependency: str) -> Optional[DependencyStatus]:

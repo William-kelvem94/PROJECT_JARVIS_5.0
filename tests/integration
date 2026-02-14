@@ -1,0 +1,27 @@
+import sys
+import os
+sys.path.insert(0, 'src')
+
+try:
+    from src.core.vision.ui_detector import UIDetector
+    print("UIDetector importado com sucesso")
+    detector = UIDetector()
+    print(f"UIDetector criado: enabled={detector.enabled}")
+
+    # Testar detecção em uma imagem de teste
+    test_image = "data/test_images/test_screen.png"  # Usar uma imagem de teste se existir
+    if os.path.exists(test_image):
+        print(f"Testando detecção em {test_image}")
+        results = detector.detect_elements(test_image)
+        print(f"Detecção concluída: {len(results)} elementos encontrados")
+        if results:
+            print("Primeiros 3 resultados:")
+            for i, result in enumerate(results[:3]):
+                print(f"  {i+1}. {result}")
+    else:
+        print("Imagem de teste não encontrada, pulando teste de detecção")
+
+except Exception as e:
+    print(f"Erro ao testar UIDetector: {e}")
+    import traceback
+    traceback.print_exc()

@@ -38,18 +38,18 @@ class CuriosityEngine:
         self.study_backlog.put("Artificial General Intelligence architecture")
         self.study_backlog.put("Self-supervised learning robotics")
 
-    def register_skill_gap(self, feature_name: str):
-        """Registra uma falha de execuÃ§Ã£o como lacuna de conhecimento para o Dream Cycle"""
-        gap_msg = f"Gap de Habilidade: Como implementar ou usar {feature_name} no Windows"
+    def register_skill_gap(self, feature_or_topic: str):
+        """Registra uma falha ou um tÃ³pico de curiosidade abstrata (Como ser humano, etc)"""
+        gap_msg = f"InvestigaÃ§Ã£o: {feature_or_topic}"
         if gap_msg not in self.skill_gaps:
             self.skill_gaps.append(gap_msg)
             self.study_backlog.put(gap_msg)
-            logger.info(f"ðŸ§  Skill Gap registrado: {feature_name}. Pesquisa agendada para o prÃ³ximo ciclo de sonho.")
+            logger.info(f"🧠 Nova curiosidade registrada: {feature_or_topic}. Pesquisa agendada.")
             
             # Armazenar no ChromaDB se disponÃ­vel (para persistÃªncia entre boots)
             if self.memory_manager:
                 self.memory_manager.save_to_vault(
-                    f"O sistema tentou mas nÃ£o soube como executar: {feature_name}", 
+                    f"O sistema tentou mas não soube como executar: {feature_or_topic}", 
                     metadata={"type": "skill_gap", "status": "pending_research"}
                 )
 
@@ -59,13 +59,23 @@ class CuriosityEngine:
     def run_study_cycle(self):
         """Loop de estudo executado durante o sonho"""
         self.is_studying = True
-        logger.info("ðŸ“š Iniciando ciclo de estudos...")
+        logger.info("📚 Iniciando ciclo de estudos...")
         
+        # UI Signal
+        try:
+            from src.interface.ui_signals import ui_signals
+            ui_signals.update_curiosity_list.emit(list(self.study_backlog.queue))
+        except: pass
+
         while self.is_studying and not self.study_backlog.empty():
             try:
                 topic = self.study_backlog.get(timeout=1)
-                logger.info(f"ðŸ” Investigando tÃ³pico: {topic}")
+                logger.info(f"🔎 Investigando tópico: {topic}")
                 
+                # UI Signal
+                try: ui_signals.update_learning_status.emit(topic, True)
+                except: pass
+
                 # 1. Buscar conhecimento
                 papers = self.fetch_academic_data(topic)
                 
@@ -76,9 +86,9 @@ class CuriosityEngine:
                     summary = paper['summary']
                     full_text = f"Title: {title}\nSummary: {summary}\nLink: {paper['link']}"
                     
-                    logger.info(f"ðŸ“– Lendo artigo: {title}")
+                    logger.info(f"📖 Lendo artigo: {title}")
                     
-                    # 2. Salvar na MemÃ³ria (RAG HierÃ¡rquico)
+                    # 2. Salvar na Memória (RAG Hierárquico)
                     if self.memory_manager:
                         # Cofre (Deep Storage)
                         self.memory_manager.save_to_vault(full_text, metadata={"source": "arxiv", "topic": topic})
@@ -88,6 +98,10 @@ class CuriosityEngine:
                     # 3. Gerar novas perguntas (Curiosidade)
                     self.generate_next_questions(full_text)
                     
+                    # Refresh list UI
+                    try: ui_signals.update_curiosity_list.emit(list(self.study_backlog.queue))
+                    except: pass
+
                     time.sleep(5) # Pausa para respirar
                 
                 self.study_backlog.task_done()
@@ -98,8 +112,10 @@ class CuriosityEngine:
                 logger.error(f"Erro no ciclo de estudo: {e}")
                 time.sleep(10)
 
-        logger.info("ðŸ’¤ Ciclo de estudos finalizado (Backlog vazio ou interrupÃ§Ã£o).")
+        logger.info("💤 Ciclo de estudos finalizado (Backlog vazio ou interrupção).")
         self.is_studying = False
+        try: ui_signals.update_learning_status.emit("Nenhum", False)
+        except: pass
 
     def fetch_academic_data(self, topic: str) -> List[Dict]:
         """Busca artigos no arXiv"""

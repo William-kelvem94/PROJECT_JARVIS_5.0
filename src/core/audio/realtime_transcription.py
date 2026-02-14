@@ -277,6 +277,16 @@ class RealtimeTranscriber:
         """Main processing loop (runs in thread)"""
         while self.is_running:
             try:
+                # ADJUST PERFORMANCE (Adaptive Scaling)
+                try:
+                    from src.core.management.hardware_manager import hardware_manager
+                    is_throttled = hardware_manager.is_throttled
+                except:
+                    is_throttled = False
+
+                interval = 2.0 if is_throttled else 1.0 # Menos scans se estiver pesado
+                beam = 2 if is_throttled else 5 # Menos precisão, mais velocidade
+
                 # Read audio buffer (last 3 seconds)
                 audio_chunk = self.audio_stream.read_buffer(duration=3.0)
                 
@@ -284,7 +294,7 @@ class RealtimeTranscriber:
                 if self.vad.is_speech(audio_chunk):
                     # Throttle transcriptions
                     current_time = time.time()
-                    if current_time - self.last_transcription_time < self.min_interval:
+                    if current_time - self.last_transcription_time < interval:
                         time.sleep(0.1)
                         continue
                     
@@ -295,7 +305,7 @@ class RealtimeTranscriber:
                         segments, info = self.whisper.transcribe(
                             audio_chunk,
                             language=self.language,
-                            beam_size=5,
+                            beam_size=beam,
                             vad_filter=False  # Already filtered by Silero
                         )
                         
@@ -303,7 +313,7 @@ class RealtimeTranscriber:
                         text = " ".join([seg.text.strip() for seg in segments])
                         
                         if text:
-                            logger.info(f"ðŸŽ¯ {text}")
+                            logger.info(f"🎯 {text}")
                             
                             # Call callback
                             if self.callback:
@@ -313,8 +323,8 @@ class RealtimeTranscriber:
                         logger.error(f"Transcription error: {e}")
                 
                 else:
-                    # No speech detected, sleep
-                    time.sleep(0.1)
+                    # No speech detected, sleep longer if throttled
+                    time.sleep(0.2 if is_throttled else 0.1)
             
             except Exception as e:
                 logger.error(f"Processing loop error: {e}")

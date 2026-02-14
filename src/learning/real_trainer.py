@@ -158,7 +158,7 @@ class RealTrainer:
 
             # Configurar treinamento
             training_args = TrainingArguments(  # type: ignore
-                output_dir=f"./temp_training_{topic.replace(' ', '_')}",
+                output_dir=f"data/temp/temp_training_{topic.replace(' ', '_')}",
                 num_train_epochs=self.num_epochs,
                 per_device_train_batch_size=self.batch_size,
                 learning_rate=self.learning_rate,
@@ -168,6 +168,14 @@ class RealTrainer:
                 remove_unused_columns=False,
                 report_to="none"  # Sem reporting para economizar
             )
+
+            # Garantir que o diretório temporário exista antes do treinamento
+            try:
+                Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
+            except Exception:
+                # Fallback simples caso o atributo seja diferente ou ocorra erro
+                tmp_out = f"data/temp/temp_training_{topic.replace(' ', '_')}"
+                Path(tmp_out).mkdir(parents=True, exist_ok=True)
 
             # Data collator
             data_collator = DataCollatorForLanguageModeling(

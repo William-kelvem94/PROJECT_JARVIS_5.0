@@ -31,19 +31,19 @@
   "storage": {
     "auto_organize": true,
     "compression": true,
-    "encryption": false,
+    "encryption": true,
     "retention_days": 365
   },
   "analysis": {
     "enable_ai": true,
     "categorization": true,
     "entity_extraction": true,
-    "sentiment_analysis": false
+    "sentiment_analysis": true
   },
   "interface": {
     "minimize_to_tray": true,
     "show_notifications": true,
-    "auto_start": false,
+    "auto_start": true,
     "check_updates": true
   },
   "test": {
