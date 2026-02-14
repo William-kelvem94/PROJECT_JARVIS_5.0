@@ -183,5 +183,10 @@ class CuriosityEngine:
         except Exception as e:
             logger.error(f"Erro ao gerar perguntas: {e}")
 
-# InstÃ¢ncia Global placeholder (SerÃ¡ instanciada no main com memory_manager)
-curiosity_engine = None
+# Instância Global placeholder
+try:
+    curiosity_engine = CuriosityEngine()
+    logging.getLogger(__name__).info("✅ Curiosity Engine initialized successfully")
+except Exception as e:
+    logging.getLogger(__name__).warning(f"⚠️ Curiosity Engine failed to initialize: {e}")
+    curiosity_engine = None

@@ -5,16 +5,31 @@ Utiliza Vector DB para busca semÃ¢ntica de interaÃ§Ãµes passadas.
 
 # ðŸ›¡ï¸ MONKEY PATCH PARA CHROMADB - DESATIVAR TELEMETRIA QUE QUEBRA O SISTEMA
 import os
-os.environ["ANALYTICS_ENABLED"] = "False"
-os.environ["CHROMA_TELEMETRY_MOUNT"] = "False"
-# Patch adicional para ChromaDB telemetry
-try:
-    import chromadb.telemetry
-    # Desabilitar completamente o telemetry
-    chromadb.telemetry.product.posthog.PostHog = None
-    chromadb.telemetry.product.posthog.capture = lambda *args, **kwargs: None
-except:
-    pass
+import sys
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY_IMPL"] = "posthog"
+os.environ["CHROMA_TELEMETRY_CAPTURE_URL"] = ""
+
+# Patch robusto ANTES de qualquer import do chromadb
+class DummyPostHog:
+    def capture(self, *args, **kwargs):
+        pass
+    def __call__(self, *args, **kwargs):
+        return self
+
+if 'chromadb' not in sys.modules:
+    import types
+    dummy_telemetry = types.ModuleType('chromadb.telemetry')
+    dummy_product = types.ModuleType('chromadb.telemetry.product')
+    dummy_posthog = types.ModuleType('chromadb.telemetry.product.posthog')
+    dummy_posthog.PostHog = DummyPostHog
+    dummy_posthog.Posthog = DummyPostHog
+    dummy_posthog.capture = lambda *args, **kwargs: None
+    dummy_product.posthog = dummy_posthog
+    dummy_telemetry.product = dummy_product
+    sys.modules['chromadb.telemetry'] = dummy_telemetry
+    sys.modules['chromadb.telemetry.product'] = dummy_product
+    sys.modules['chromadb.telemetry.product.posthog'] = dummy_posthog
 import logging
 import threading
 import subprocess

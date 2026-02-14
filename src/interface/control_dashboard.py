@@ -661,9 +661,13 @@ class ControlDashboard(QMainWindow):
         
         layout.addLayout(controls)
         
-        # Log viewer
+        # Log viewer (copiável mas não editável)
         self.log_viewer = QTextEdit()
         self.log_viewer.setReadOnly(True)
+        self.log_viewer.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse | 
+            Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
         self.log_viewer.setFont(QFont("Courier New", 9))
         self.log_viewer.setStyleSheet("""
             QTextEdit {

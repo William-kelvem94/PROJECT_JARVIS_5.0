@@ -67,6 +67,19 @@ try:
         if not hasattr(openvino, 'op'): openvino.op = op_obj
 except ImportError:
     pass
+
+# 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para XTTS (Transformers compatibility)
+try:
+    from transformers import generation_utils
+    if not hasattr(generation_utils, 'BeamSearchScorer'):
+        class BeamSearchScorer:
+            pass
+        generation_utils.BeamSearchScorer = BeamSearchScorer
+        logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers.generation_utils")
+except (ImportError, AttributeError):
+    pass
+except Exception as e:
+    logger.debug(f"XTTS Patch Error: {e}")
 import psutil
 import signal
 import shutil
@@ -167,16 +180,22 @@ warnings.filterwarnings('ignore', message='.*loss_type=None.*')
 # Ensure necessary data structure
 Path('data/logs').mkdir(parents=True, exist_ok=True)
 
-# Centralized Logging
-log_dir = Path(os.environ.get("JARVIS_SESSION_LOG_DIR", "data/logs"))
-log_dir.mkdir(parents=True, exist_ok=True)
-log_file = log_dir / "jarvis_singularity.log"
+# Centralized Logging (Organized by Date)
+from datetime import datetime
+log_date_dir = Path("data/logs") / datetime.now().strftime("%Y-%m-%d")
+log_date_dir.mkdir(parents=True, exist_ok=True)
+session_timestamp = datetime.now().strftime("%H%M%S")
+log_file = log_date_dir / f"jarvis_session_{session_timestamp}.log"
+
+# Also keep a symlink/copy to latest
+latest_log = Path("data/logs") / "jarvis.log"
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(log_file, encoding='utf-8'),
+        logging.FileHandler(latest_log, mode='w', encoding='utf-8'),  # Overwrite latest
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -1124,12 +1143,14 @@ Examples:
                 from src.core.vision.vision_system import get_vision_system
                 from src.core.intelligence.ai_agent import ai_agent
                 
-                # Update status via signal
+                # Update status via signal (with safe check)
+                ui_signals_available = None
                 try:
                     from src.interface.ui_signals import ui_signals
+                    ui_signals_available = ui_signals
                     ui_signals.update_status.emit("Carregando Core Systems...")
-                except ImportError:
-                    logger.warning("⚠️ ui_signals not available")
+                except (ImportError, AttributeError) as e:
+                    logger.warning(f"⚠️ ui_signals not available: {e}")
                 
                 sys_int = get_system_integrator()
                 data_path = PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data")
@@ -1150,7 +1171,8 @@ Examples:
                     "Neural Systems": None 
                 }
                 
-                ui_signals.update_status.emit("SUBSISTEMAS ALINHADOS")
+                if ui_signals_available:
+                    ui_signals_available.update_status.emit("SUBSISTEMAS ALINHADOS")
                 
              except Exception as e:
                  logger.error(f"❌ Background Boot Failed: {e}")

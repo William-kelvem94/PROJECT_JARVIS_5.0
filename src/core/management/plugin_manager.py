@@ -50,8 +50,16 @@ class SystemEvolutionManager:
         """Recarrega qualquer módulo do sistema de forma segura"""
         try:
             # Converter path em dot-notation para importlib
-            rel_path = file_path.relative_to(Path.cwd())
-            module_name = str(rel_path.with_suffix("")).replace(os.sep, ".")
+            # Use absolute() to avoid subpath errors on Windows
+            abs_file = file_path.absolute()
+            cwd = Path.cwd().absolute()
+            try:
+                rel_path = abs_file.relative_to(cwd)
+            except ValueError:
+                # Fallback: use file name directly if relative_to fails
+                logger.warning(f"⚠️ Path mismatch for {file_path}, using fallback")
+                rel_path = abs_file
+            module_name = str(rel_path.with_suffix("")).replace(os.sep, ".").replace("..", "")
             
             mtime = file_path.stat().st_mtime
             
@@ -89,10 +97,21 @@ class SystemEvolutionManager:
                 time.sleep(5)
 
     def _check_file(self, file: Path):
+        """Verifica se um arquivo foi modificado e aplica o hot-reload"""
         if file.name == "__init__.py": return
         try:
             mtime = file.stat().st_mtime
-            rel_path = str(file.relative_to(Path.cwd()))
+            # Garantir path absoluto e normalizado para comparação
+            abs_file = file.absolute()
+            cwd = Path.cwd().absolute()
+            
+            try:
+                rel_path_obj = abs_file.relative_to(cwd)
+                rel_path = str(rel_path_obj)
+            except ValueError:
+                # Se não for relativo ao CWD, usar o path completo
+                rel_path = str(abs_file)
+            
             stored_info = self.loaded_modules.get(rel_path)
             
             if not stored_info or mtime > stored_info["last_modified"]:
@@ -101,9 +120,11 @@ class SystemEvolutionManager:
                 
                 try:
                     from src.interface.ui_signals import ui_signals
-                    ui_signals.update_status.emit(f"🧬 DNA Recodificado: {file.stem} atualizado.")
+                    if ui_signals:
+                        ui_signals.update_status.emit(f"🧬 DNA Recodificado: {file.stem} atualizado.")
                 except: pass
-        except: pass
+        except Exception as e:
+            logger.debug(f"Erro ao checar arquivo {file}: {e}")
 
     def get_plugin_actions(self) -> Dict[str, Any]:
         """Coleta todas as ações disponíveis nos plugins carregados"""
