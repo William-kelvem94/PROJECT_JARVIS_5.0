@@ -195,7 +195,7 @@ class EnhancedAudioSystem:
         
         # VAD Model (Silero)
         self.vad_model = None
-        self.vad_threshold = 0.5
+        self.vad_threshold = 0.6  # Aumentado para 0.6 para filtrar melhor ruídos
         
         # Speaker verification
         self.voice_encoder = None
@@ -644,10 +644,12 @@ class EnhancedAudioSystem:
             # Convert to float32 and normalize
             audio_float = audio.astype(np.float32) / 32768.0
 
-            # Silero-VAD expects specific chunk sizes (512 for 16kHz)
-            # If the chunk is larger, we take the last 512 samples for a spot check
-            if self.sample_rate == 16000 and audio_float.shape[-1] > 512:
-                audio_float = audio_float[-512:]
+            # Silero-VAD funciona melhor com janelas de 512, 1024 ou 1536 amostras
+            if self.sample_rate == 16000:
+                if audio_float.shape[-1] > 1536:
+                    audio_float = audio_float[-1536:]
+                elif audio_float.shape[-1] < 512:
+                    return False
             elif self.sample_rate == 8000 and audio_float.shape[-1] > 256:
                 audio_float = audio_float[-256:]
                 

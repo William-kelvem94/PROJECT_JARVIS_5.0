@@ -111,7 +111,20 @@ class AIWorker(QThread):
                 self._ensure_agent()
                 if self._ai_agent:
                     # O ai_agent tem seu prÃ³prio controle interno de TTS e estado
-                    response = self._ai_agent.process_command(self._command)
+                    import asyncio
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    # Se for coroutine (async def), precisamos rodar o loop
+                    # Se for funÃ§Ã£o normal, executamos direto
+                    res = self._ai_agent.process_command(self._command)
+                    if asyncio.iscoroutine(res):
+                        response = loop.run_until_complete(res)
+                    else:
+                        response = res
                 else:
                     response = "Erro: NÃºcleo Neural (ai_agent) nÃ£o disponÃ­vel."
             

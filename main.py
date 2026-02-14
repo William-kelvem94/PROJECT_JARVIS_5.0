@@ -759,11 +759,18 @@ class JarvisSingularity(QObject):
     def _process_and_respond(self, text):
         """Agent processing loop (Background Thread)"""
         try:
-            # 1. Process Command
-            response = self.ai_agent.process_command(text)
+            # 1. Process Command (Async bridge)
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                
+            response = loop.run_until_complete(self.ai_agent.process_command(text))
             
             # 2. Update HUD with final response (Emit signal)
-            self.hud_update_requested.emit("speaking", response)
+            self.hud_update_requested.emit("speaking", str(response))
                     
             # 3. Wait for voice to finish
             try:

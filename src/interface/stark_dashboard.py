@@ -645,6 +645,7 @@ class StarkDashboard(QMainWindow):
         self.log_area = QLabel("Iniciando logs...\n")
         self.log_area.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.log_area.setWordWrap(True)
+        self.log_area.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.log_area.setStyleSheet("background-color: #000; color: #0f0; font-family: Consolas; padding: 10px;")
         
         scroll = QScrollArea()

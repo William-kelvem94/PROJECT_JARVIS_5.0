@@ -134,7 +134,7 @@ class CameraController:
              threading.Thread(target=self._load_known_faces, daemon=True, name="CamFaceSync").start()
 
         self.is_monitoring = True
-        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
+        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True, name="SentinelCameraThread")
         self.monitor_thread.start()
         logger.info("Monitoramento de visÃ£o iniciado.")
 
