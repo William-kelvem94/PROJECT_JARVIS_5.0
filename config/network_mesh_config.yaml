@@ -1,14 +1,14 @@
 network_mesh:
   enabled: true
   google_drive:
+    credentials_path: data/network_mesh/google_credentials/client_secret.json
     enabled: true
-    credentials_path: "data/network_mesh/google_credentials/client_secret.json"
-    sync_interval: 300  # 5 minutos
+    sync_interval: 300
   local_network:
-    enabled: true
-    discovery_port: 7777
     discovery_interval: 30
+    discovery_port: 7777
+    enabled: true
   privacy:
     encrypt_packets: true
-    trust_only_same_user: true
     max_bandwidth_mbps: 10
+    trust_only_same_user: true
