@@ -31,6 +31,16 @@ warnings.filterwarnings('ignore', message='.*loss_type=None.*')
 
 import logging
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('data/logs/jarvis.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 logger = logging.getLogger("JARVIS-CORE")
 
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
@@ -142,8 +152,10 @@ VENV_SITE = PROJECT_ROOT / "venv" / "Lib" / "site-packages"
 if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
     if str(VENV_SITE) in sys.path: sys.path.remove(str(VENV_SITE))
     sys.path.insert(0, str(VENV_SITE))
+if str(PROJECT_ROOT / "src" / "stubs") not in sys.path:
+    sys.path.insert(1, str(PROJECT_ROOT / "src" / "stubs"))
 if str(PROJECT_ROOT / "src") not in sys.path:
-    sys.path.insert(1, str(PROJECT_ROOT / "src"))
+    sys.path.insert(2, str(PROJECT_ROOT / "src"))
 
 # Suppress Warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -170,6 +182,17 @@ logging.basicConfig(
 )
 # Global reference for shutdown signaling
 QApplication = None
+
+# Load Network Mesh Configuration
+network_config = {}
+network_config_path = PROJECT_ROOT / "config" / "network_mesh_config.yaml"
+if network_config_path.exists():
+    try:
+        import yaml
+        with open(network_config_path, 'r', encoding='utf-8') as f:
+            network_config = yaml.safe_load(f) or {}
+    except Exception as e:
+        logging.warning(f"Failed to load network config: {e}")
 
 # Unified InterfaceMode Import
 from enum import Enum
@@ -390,6 +413,16 @@ class JarvisSingularity(QObject):
         if self.stark_orchestrator:
             self.stark_orchestrator.initialize_stark_system()
         
+        # Initialize Network Mesh (Collective Mind)
+        self.network_mesh = None
+        if network_config.get('network_mesh', {}).get('enabled'):
+            try:
+                from src.core.network_mesh.local_network_intelligence import LocalNetworkIntelligence
+                self.network_mesh = LocalNetworkIntelligence(str(PROJECT_ROOT))
+                logger.info("🌐 Network Mesh initialized for collective mind")
+            except Exception as e:
+                logger.warning(f"⚠️ Network Mesh initialization failed: {e}")
+        
         # Response lock to avoid overlapping
         self._is_processing = False
         
@@ -443,6 +476,59 @@ class JarvisSingularity(QObject):
         
         # [STEP 2] Wait another 5s then start Proactive Monitor (Screen)
         QTimer.singleShot(10000, self._start_proactive_monitor)
+        
+        # [STEP 3] Wait another 5s then start Network Mesh (Collective Mind)
+        QTimer.singleShot(15000, self._start_network_mesh)
+        
+        # [STEP 4] Start Plugin Manager (Hot-Reload) and Indexer (MetaCache)
+        QTimer.singleShot(20000, self._start_dynamic_systems)
+
+    def _start_dynamic_systems(self):
+        """Inicia sistemas dinâmicos de plugins e indexação de arquivos"""
+        try:
+            from src.core.management.plugin_manager import plugin_manager
+            plugin_manager.start()
+            
+            from src.utils.file_indexer import file_indexer
+            # Indexar pastas padrão (Documentos, Músicas, Imagens)
+            search_paths = [
+                str(Path.home() / "Documents"),
+                str(Path.home() / "Music"),
+                str(Path.home() / "Pictures")
+            ]
+            file_indexer.start_background_indexing(search_paths)
+            
+            logger.info("🔌 Plugin Manager & 🔍 MetaCache Indexer iniciados.")
+            if self.window_manager and self.window_manager.get_hud():
+                self.window_manager.get_hud().log_event("HOT-RELOAD ENGINE: ACTIVE")
+        except Exception as e:
+            logger.warning(f"⚠️ Falha ao iniciar sistemas dinâmicos: {e}")
+
+    def _start_network_mesh(self):
+        """Initialize and start the Network Mesh for collective intelligence"""
+        if self.network_mesh:
+            try:
+                # Start the network mesh in background
+                import asyncio
+                import threading
+                
+                def run_mesh():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(self.network_mesh.start_network_mesh())
+                    except Exception as e:
+                        logger.error(f"Network Mesh start failed: {e}")
+                
+                mesh_thread = threading.Thread(target=run_mesh, daemon=True, name="NetworkMesh")
+                mesh_thread.start()
+                
+                logger.info("🌐 Network Mesh started for collective mind")
+                if self.window_manager and self.window_manager.get_hud():
+                    self.window_manager.get_hud().log_event("COLLECTIVE MIND: ACTIVE")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ Network Mesh initialization failed: {e}")
 
     def _start_camera_monitoring(self):
         """Initializes FaceID and Emotion detection via CameraController"""
@@ -571,20 +657,28 @@ class JarvisSingularity(QObject):
         if not result or not result.text or len(result.text.strip()) < 2:
             return
             
-        if self._is_processing:
-            logger.warning("Already processing a command, skipping...")
-        # 🧠 [STARK NATURAL CONVERSATION LOGIC]
-        # Check if we should process this:
-        # 1. Has any wake word (Jarvis, James, etc) anywhere?
-        # 2. Are we in a follow-up window (last 15s)?
+        # 🧠 [STARK BARGE-IN LOGIC]
         from src.core.audio.voice_filter import AtomicVoiceFilter
         has_name = AtomicVoiceFilter.has_wake_word(result.text)
         is_follow_up = (time.time() - self.last_interaction_time) < self.continuous_mode_window
         
+        # Se estiver processando e o usuário falar meu nome, interrompo o atual para ouvir o novo
+        if self._is_processing and has_name:
+            logger.info("⚡ INTERRUPÇÃO DETECTADA: Parando resposta atual para ouvir o Senhor.")
+            try:
+                from src.core.audio.voice_controller import voice_controller
+                voice_controller.stop_requested = True # Sinal para parar playback
+                # Pequeno delay para garantir que o áudio parou
+                time.sleep(0.1)
+                self._is_processing = False 
+            except: pass
+
+        if self._is_processing:
+            logger.debug("Ocupado, ignorando ruído de fundo...")
+            return
+
         if not has_name and not is_follow_up:
-            # Let's be smart: if it's very short silence or background, ignore
-            # but log for diagnostics
-            logger.debug(f"🔇 Ignored (No wake word & no context): '{result.text}'")
+            logger.debug(f"🔇 Ignorado (Sem wake word & sem contexto): '{result.text}'")
             return
 
         logger.info(f"🎙️ [UI THREAD] {'CONTINUAÇÃO' if is_follow_up and not has_name else 'COMANDO'} recebido: '{result.text}'")
@@ -721,6 +815,93 @@ class JarvisSingularity(QObject):
 
 
 # ============================================================================
+# HEADLESS MODE - SERVER ONLY OPERATION
+# ============================================================================
+def run_headless_mode(args):
+    """Run JARVIS in headless mode (no GUI, server-only)"""
+    try:
+        logger.info("🚀 Initializing JARVIS in headless mode...")
+
+        # Initialize core systems without GUI
+        from src.core.actions.system_integrator import get_system_integrator
+        from src.core.audio.enhanced_audio import get_audio_system
+        from src.core.vision.vision_system import get_vision_system
+        from src.core.intelligence.ai_agent import ai_agent
+
+        # Initialize systems
+        data_path = PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data")
+
+        logger.info("🔧 Initializing System Integrator...")
+        sys_int = get_system_integrator()
+
+        logger.info("🎤 Initializing Audio System...")
+        audio = get_audio_system(data_path)
+
+        logger.info("👁️ Initializing Vision System...")
+        vision = get_vision_system(data_path)
+
+        logger.info("🧠 Initializing AI Agent...")
+        # ai_agent is already imported and initialized
+
+        # Start web server if available
+        try:
+            from src.web.web_server import start_web_server
+            logger.info("🌐 Starting Web Server...")
+            web_thread = start_web_server()
+            logger.info("✅ Web Server started successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Web Server failed to start: {e}")
+
+        # Start audio listening
+        if audio:
+            logger.info("🎤 Starting audio listening...")
+            success = audio.start_listening()
+            if success:
+                logger.info("✅ Audio system listening")
+            else:
+                logger.warning("⚠️ Audio system failed to start")
+
+        # Start vision monitoring
+        if vision:
+            logger.info("👁️ Starting vision monitoring...")
+            try:
+                from src.core.vision.camera_controller import camera_controller
+                camera_controller.start_monitoring()
+                logger.info("✅ Vision system active")
+            except Exception as e:
+                logger.warning(f"⚠️ Vision monitoring failed: {e}")
+
+        # Start proactive monitoring
+        try:
+            from src.core.intelligence.proactive_monitor import proactive_monitor
+            proactive_monitor.start()
+            logger.info("⚡ Proactive monitor active")
+        except Exception as e:
+            logger.warning(f"⚠️ Proactive monitor failed: {e}")
+
+        logger.info("🎉 JARVIS headless mode initialized successfully!")
+        logger.info("💡 Available endpoints:")
+        logger.info("   - Web API: Check web_server logs for port")
+        logger.info("   - Voice commands active")
+        logger.info("   - Vision monitoring active")
+
+        # Keep running until interrupted
+        try:
+            while True:
+                import time
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("🛑 Shutdown requested by user")
+
+        return 0
+
+    except Exception as e:
+        logger.error(f"❌ Headless mode failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+
+# ============================================================================
 # MAIN ENTRY POINT - STAGED BOOT PROTOCOL
 # ============================================================================
 def main():
@@ -735,11 +916,72 @@ def main():
                 sys.stderr.reconfigure(encoding='utf-8')
         except Exception:
             pass  # Python < 3.7 ou stdout redefinido
-    
+
+    # ========================================================================
+    # CLI ARGUMENT PARSING
+    # ========================================================================
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description='JARVIS Singularity - Advanced AI Assistant',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python main.py                    # Start with GUI (default)
+  python main.py --headless         # Start without GUI (server mode)
+  python main.py --debug            # Enable debug logging
+  python main.py --democratic       # Enable democratic mode
+  python main.py --headless --debug # Headless with debug logging
+        """
+    )
+
+    parser.add_argument(
+        '--headless',
+        action='store_true',
+        help='Run in headless mode (no GUI, server-only)'
+    )
+
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Enable debug logging and verbose output'
+    )
+
+    parser.add_argument(
+        '--democratic',
+        action='store_true',
+        help='Enable democratic mode with full system control'
+    )
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Configure logging based on debug flag
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
+        print("🐛 Debug mode enabled - verbose logging active")
+
+    # Handle headless mode
+    if args.headless:
+        print("🚀 Starting JARVIS in HEADLESS mode (server-only)")
+        print("💡 GUI interfaces will be disabled")
+        print("🔧 Use API endpoints or external clients to interact")
+
+        # In headless mode, we still need to initialize core systems
+        # but skip all GUI-related code
+        return run_headless_mode(args)
+
     # ========================================================================
     # 🔥 NOVO: VERIFICAÇÃO DE MODO DEMOCRÁTICO
     # ========================================================================
-    democratic_mode = "--democratic" in sys.argv
+    democratic_mode = args.democratic
+
+    if democratic_mode:
+        print(f"\n🔥 [DEMOCRÁTICO] Inicializando JARVIS em Modo Democrático Total...")
+        print("="*80)
+        print("🔥 PODER TOTAL HABILITADO - SEM PRÉ-CONFIGURAÇÕES")
+        print("👑 Interface de Controle Democrático Ativa")
     
     if democratic_mode:
         print(f"\n🔥 [DEMOCRÁTICO] Inicializando JARVIS em Modo Democrático Total...")
@@ -963,6 +1205,10 @@ def main():
                 # Start Stage 3 (Neural Awakening)
                 logger.info("⚡ [STAGE 3] Igniting Neural Engines...")
                 jarvis = JarvisSingularity(app, instances)
+                
+                # Update WindowManager with jarvis_core reference for dashboard integration
+                if window_manager:
+                    window_manager.jarvis_core = jarvis
                 
                 # Initialize Core
                 jarvis.start()

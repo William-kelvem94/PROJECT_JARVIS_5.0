@@ -66,16 +66,19 @@ class ComputeOrchestrator:
                 logger.warning(f"âš ï¸ Erro ao inicializar OpenVINO: {e}")
 
         # 3. Verificar DirectML (Universal Windows)
-        if ORT_AVAILABLE:
-            providers = ort.get_available_providers()
-            if 'DmlExecutionProvider' in providers:
-                logger.info("âœ… [DirectML] AceleraÃ§Ã£o universal DirectX 12 disponÃ­vel.")
-                self.available_providers.append({
-                    "name": "windows_directml",
-                    "backend": "onnx",
-                    "device": "DML",
-                    "score": 70
-                })
+        if ORT_AVAILABLE and hasattr(ort, 'get_available_providers'):
+            try:
+                providers = ort.get_available_providers()
+                if 'DmlExecutionProvider' in providers:
+                    logger.info("âœ… [DirectML] AceleraÃ§Ã£o universal DirectX 12 disponÃ­vel.")
+                    self.available_providers.append({
+                        "name": "windows_directml",
+                        "backend": "onnx",
+                        "device": "DML",
+                        "score": 70
+                    })
+            except Exception as e:
+                logger.warning(f"âš ï¸ Erro ao verificar DirectML: {e}")
 
         # 4. Fallback CPU Otimizada
         self.available_providers.append({

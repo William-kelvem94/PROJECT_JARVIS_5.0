@@ -237,11 +237,18 @@ class DecisionEngine:
             privacy_enum = PrivacyLevel[privacy] if privacy else PrivacyLevel.LOW
             latency_enum = LatencyRequirement[latency] if latency else LatencyRequirement.FLEXIBLE
             
-            provider = self.brain_router.route_task(
-                task_description=user_command,
+            brain_info = self.brain_router.choose_brain(
+                task_complexity=0.7,
                 privacy_level=privacy_enum,
                 latency_requirement=latency_enum
             )
+            provider_full = brain_info.get("brain", "ollama")
+            if provider_full.startswith("ollama:"):
+                provider = "ollama"
+                self.current_model = provider_full.split(":", 1)[1]
+            else:
+                provider = provider_full
+                self.current_model = None
             
             logger.debug(f"ðŸ§  Brain router: {provider}")
             return provider
@@ -282,7 +289,9 @@ class DecisionEngine:
         """Chama LLM apropriado"""
         
         if provider == 'ollama':
-            return await self._call_ollama_async(prompt, image_path)
+            # Usa o modelo selecionado pelo roteador ou o padrão
+            model = getattr(self, 'current_model', 'gemma3:4b')
+            return await self._call_ollama_async(prompt, image_path, model=model)
         elif provider == 'local':
             return await self._call_local_async(prompt)
         elif provider.startswith('cloud:'):
@@ -314,12 +323,12 @@ class DecisionEngine:
     
     
     
-    async def _call_ollama_async(self, prompt: str, image_path: Optional[str]) -> str:
-        """Chama Ollama API de forma assÃ­ncrona"""
+    async def _call_ollama_async(self, prompt: str, image_path: Optional[str], model: str = "gemma3:4b") -> str:
+        """Chama Ollama API de forma assíncrona"""
         try:
             # Preparar payload
             payload = {
-                "model": "llava",
+                "model": model,
                 "prompt": f"{self.system_prompt}\n\n{prompt}",
                 "stream": False
             }

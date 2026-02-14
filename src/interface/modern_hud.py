@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QTimer, QPoint, pyqtSlot, pyqtSignal
 from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QRadialGradient
 
 from src.interface.ui_signals import ui_signals
+from src.interface.theme import JarvisTheme
 from src.utils.config import config
 
 logger = logging.getLogger(__name__)
@@ -20,15 +21,18 @@ class ArcReactorWidget(QWidget):
         self.setMinimumSize(250, 250)
         self.angle = 0
         self.pulse = 0
+        self.spark_angle = 0
         self.is_listening = False
         self.boot_mode = False
+        self.is_studying = False
         self.status_text = "INITIALIZING..."
         
-        # Cores Stark
-        self.color_cyan = QColor(0, 255, 255, 200)      # Neon Principal
-        self.color_orange = QColor(255, 140, 0, 200)   # Modo Escuta
-        self.color_boot = QColor(255, 215, 0, 200)     # Modo Boot (Dourado Stark)
-        self.color_glow = QColor(0, 255, 255, 50)       # Brilho
+        # Cores do Tema Unificado
+        self.color_cyan = JarvisTheme.get_color_with_alpha(JarvisTheme.PRIMARY_CYAN, JarvisTheme.ALPHA_HIGH)
+        self.color_orange = JarvisTheme.get_color_with_alpha(JarvisTheme.SECONDARY_ORANGE, JarvisTheme.ALPHA_HIGH)
+        self.color_boot = JarvisTheme.get_color_with_alpha(JarvisTheme.ACCENT_GOLD, JarvisTheme.ALPHA_HIGH)
+        self.color_study = QColor(138, 43, 226, 200) # BlueViolet para Hiper-Foco
+        self.color_glow = JarvisTheme.get_color_with_alpha(JarvisTheme.PRIMARY_CYAN, JarvisTheme.ALPHA_GLOW)
         
         # Timer de AnimaÃ§Ã£o (60 FPS para fluidez total)
         self.timer = QTimer(self)
@@ -36,10 +40,11 @@ class ArcReactorWidget(QWidget):
         self.timer.start(16)
 
     def _animate(self):
-        # RotaÃ§Ã£o dinÃ¢mica: Boot (6x) > Listening (3x) > Idle (1.5x)
+        # Rotação dinâmica: Boot (6x) > Listening (3x) > Idle (1.5x)
         speed = 6 if self.boot_mode else (3 if self.is_listening else 1.5)
         self.angle = (self.angle + speed) % 360
         self.pulse = (self.pulse + 0.05) % (2 * math.pi)
+        self.spark_angle = (self.spark_angle + (speed * 4 if self.is_studying else speed)) % 360
         if self.isVisible():
             self.update()
 
@@ -50,6 +55,13 @@ class ArcReactorWidget(QWidget):
     @pyqtSlot(bool)
     def set_listening(self, state: bool):
         self.is_listening = state
+        self.update()
+
+    @pyqtSlot(str, bool)
+    def set_studying(self, topic: str, state: bool):
+        self.is_studying = state
+        if state:
+            self.status_text = f"STUDYING: {topic.upper()}"
         self.update()
 
     def paintEvent(self, event):
@@ -67,6 +79,8 @@ class ArcReactorWidget(QWidget):
         
         if self.boot_mode:
             color = self.color_boot
+        elif self.is_studying:
+            color = self.color_study
         else:
             color = self.color_orange if self.is_listening else self.color_cyan
         
@@ -114,6 +128,20 @@ class ArcReactorWidget(QWidget):
             painter.drawLine(0, -int(inner_radius*0.8), 0, -int(inner_radius*0.4))
         painter.restore()
 
+        # 3.1 Neural Sparks (Partículas orbitais)
+        if self.is_studying or self.is_listening:
+            painter.setPen(QPen(Qt.GlobalColor.white, 2))
+            painter.setBrush(QBrush(Qt.GlobalColor.white))
+            
+            spark_radius = inner_radius * 0.9
+            num_sparks = 4 if self.is_studying else 2
+            
+            for i in range(num_sparks):
+                s_angle = math.radians(self.spark_angle + (i * 360 / num_sparks))
+                sx = center.x() + spark_radius * math.cos(s_angle)
+                sy = center.y() + spark_radius * math.sin(s_angle)
+                painter.drawEllipse(QPoint(int(sx), int(sy)), 2, 2)
+
         # 4. Texto de Status (TecnolÃ³gico)
         painter.setPen(color)
         painter.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
@@ -148,6 +176,10 @@ class ModernHUD(QMainWindow):
         self._main_layout.addWidget(self.reactor)
         self.setCentralWidget(self.central_widget)
         
+        # Menu de Contexto
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        
         # Posicionamento Inicial (Canto Superior Direito)
         self.resize(300, 300)
         self._set_default_position()
@@ -156,6 +188,7 @@ class ModernHUD(QMainWindow):
         ui_signals.update_status.connect(self.update_status)
         ui_signals.update_listening_state.connect(self.reactor.set_listening)
         ui_signals.update_boot_stage.connect(self.update_boot_ui)
+        ui_signals.update_learning_status.connect(self.reactor.set_studying)
         
         # Thread-safe internal signals
         self._state_signal.connect(self._handle_state_update)
@@ -243,11 +276,84 @@ class ModernHUD(QMainWindow):
             self.move(new_pos)
             event.accept()
 
-    def mouseReleaseEvent(self, event):
-        """Finaliza arrasto do HUD"""
-        if event.button() == Qt.MouseButton.LeftButton:
             self.drag_pos = None
             event.accept()
+
+    def show_context_menu(self, pos):
+        """Menu de contexto Stark no HUD"""
+        from PyQt6.QtWidgets import QMenu
+        from PyQt6.QtGui import QAction
+        
+        menu = QMenu(self)
+        # Estilo Stark para o Menu
+        menu.setStyleSheet("""
+            QMenu { background-color: #050a10; color: #fff; border: 1px solid #00c3ff; padding: 5px; }
+            QMenu::item { padding: 5px 20px; }
+            QMenu::item:selected { background-color: rgba(0, 195, 255, 50); color: #00c3ff; border: 1px solid #00c3ff; border-radius: 4px; }
+            QMenu::separator { height: 1px; background: #1f293a; margin: 5px 0; }
+        """)
+        
+        # Ações
+        dashboard_action = QAction("🎛️ Abrir Painel de Controle", self)
+        dashboard_action.triggered.connect(self._request_dashboard)
+        menu.addAction(dashboard_action)
+
+        orb_action = QAction("💫 Alternar para Mini Orb", self)
+        orb_action.triggered.connect(self._request_orb)
+        menu.addAction(orb_action)
+        
+        menu.addSeparator()
+        
+        hide_action = QAction("🙈 Ocultar HUD", self)
+        hide_action.triggered.connect(self.hide)
+        menu.addAction(hide_action)
+        
+        menu.addSeparator()
+
+        restart_action = QAction("🔄 Reiniciar Protocolos", self)
+        restart_action.triggered.connect(self._restart_protocols)
+        menu.addAction(restart_action)
+        
+        quit_action = QAction("❌ Desativar Sistema", self)
+        quit_action.triggered.connect(QApplication.instance().quit)
+        menu.addAction(quit_action)
+        
+        menu.exec(self.mapToGlobal(pos))
+
+    def _request_dashboard(self):
+        """Solicita abertura do Dashboard via Signal Hub ou WindowManager"""
+        # Como não temos acesso direto ao WM aqui, usamos um hack simples:
+        # Tenta encontrar a janela principal ou emitir um sinal global
+        try:
+            from src.interface.ui_signals import ui_signals
+            # Emitir sinal customizado se existisse, ou usar log para trigger
+            # Melhor abordagem: WindowManager deve escutar eventos.
+            # Por enquanto, vamos fechar o HUD e abrir o dashboard se possível.
+            # A arquitetura ideal é o WindowManager gerenciar isso.
+            pass 
+        except: pass
+        
+        # Alternativa: Tentar acessar o WindowManager global se disponível
+        try:
+            from src.interface.window_manager import get_window_manager, InterfaceMode
+            wm = get_window_manager()
+            wm.switch_mode(InterfaceMode.DASHBOARD)
+        except:
+            logger.warning("Falha ao contactar WindowManager do HUD")
+
+    def _request_orb(self):
+        try:
+            from src.interface.window_manager import get_window_manager, InterfaceMode
+            wm = get_window_manager()
+            wm.switch_mode(InterfaceMode.ORB)
+        except: pass
+
+    def _restart_protocols(self):
+        """Simula reinício visual"""
+        self.reactor.boot_mode = True
+        self.reactor.status_text = "REBOOTING..."
+        self.reactor.update()
+        QTimer.singleShot(3000, lambda: self.update_boot_ui("SYSTEM READY", 100))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

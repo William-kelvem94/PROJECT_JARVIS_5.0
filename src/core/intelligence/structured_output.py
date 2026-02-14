@@ -69,6 +69,12 @@ class ActionType(str, Enum):
     READ_CLIPBOARD = "read_clipboard"
     ANALYZE_AND_ORGANIZE = "analyze_and_organize"
     REGISTER_NICKNAME = "register_nickname"
+    REGISTER_USER = "register_user"
+    RELOCATE_USER = "relocate_user"
+    
+    # NOVAS AÇÕES (Integradas do PVA)
+    SEARCH_LOCAL_FILES = "search_local_files"
+    RUN_AUTONOMOUS_RESEARCH = "run_autonomous_research"
 
 
 # ============================================================================
@@ -254,12 +260,42 @@ class RegisterNicknameAction(BaseModel):
     action: Literal[ActionType.REGISTER_NICKNAME] = ActionType.REGISTER_NICKNAME
     nickname: str = Field(..., min_length=2, description="O novo apelido a ser registrado")
 
+class SearchLocalFilesAction(BaseModel):
+    """AÃ§Ã£o: Buscar arquivos no computador usando MetaCache"""
+    action: Literal[ActionType.SEARCH_LOCAL_FILES] = ActionType.SEARCH_LOCAL_FILES
+    query: str = Field(..., description="Termo de busca (nome do arquivo ou metadado)")
+
+class RunAutonomousResearchAction(BaseModel):
+    """AÃ§Ã£o: Pesquisa profunda na web sobre um tema"""
+    action: Literal[ActionType.RUN_AUTONOMOUS_RESEARCH] = ActionType.RUN_AUTONOMOUS_RESEARCH
+    topic: str = Field(..., description="Tema da pesquisa")
+
+class DeleteFileAction(BaseModel):
+    """AÃ§Ã£o: Excluir um arquivo (Requer permissão da Jaula de Vidro)"""
+    action: Literal[ActionType.DELETE_FILE] = ActionType.DELETE_FILE
+    path: str = Field(..., description="Caminho do arquivo a ser excluído")
+
 
 # ============================================================================
 # MODELO DE RESPOSTA DO AGENTE
 # ============================================================================
 
 # Union de todos os tipos de aÃ§Ãµes
+class RegisterUserAction(BaseModel):
+    """Ação: Cadastrar novo usuário confiável (Pessoa de Confiança)"""
+    action: Literal[ActionType.REGISTER_USER] = ActionType.REGISTER_USER
+    name: str = Field(..., description="Nome do usuário a ser cadastrado")
+    relationship: str = Field(..., description="O que essa pessoa é para o Master (ex: Irmão, Amigo, etc)")
+    role: str = Field("trusted", description="Nível de permissão (master, trusted, guest)")
+
+
+class RelocateUserAction(BaseModel):
+    """Ação: Mover um usuário para um novo workspace (compartilhado ou novo)"""
+    action: Literal[ActionType.RELOCATE_USER] = ActionType.RELOCATE_USER
+    name: str = Field(..., description="Nome do usuário")
+    new_workspace: str = Field(..., description="Caminho absoluto do novo workspace")
+
+
 ActionUnion = Union[
     ClickAction,
     TypeTextAction,
@@ -287,6 +323,11 @@ ActionUnion = Union[
     SetPowerPlanAction,
     GetHardwareSuggestionsAction,
     RegisterNicknameAction,
+    SearchLocalFilesAction,
+    RunAutonomousResearchAction,
+    DeleteFileAction,
+    RegisterUserAction,
+    RelocateUserAction,
 ]
 
 
@@ -498,6 +539,8 @@ def get_actions_schema() -> Dict[str, Any]:
                         SetPowerPlanAction.schema(),
                         GetHardwareSuggestionsAction.schema(),
                         RegisterNicknameAction.schema(),
+                        SearchLocalFilesAction.schema(),
+                        RunAutonomousResearchAction.schema(),
                     ]
                 }
             },

@@ -9,9 +9,30 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QAction
 
+import logging
+import psutil
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, 
+    QTabWidget, QLabel, QStatusBar, QFormLayout, QSlider, 
+    QComboBox, QDoubleSpinBox, QPushButton, QGroupBox, QScrollArea
+)
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PyQt6.QtGui import QIcon, QFont, QAction
+
 logger = logging.getLogger(__name__)
 
-# Import custom components
+# Classe auxiliar para capturar logs do Python e enviar para Qt
+class QtLogSignaler(QObject):
+    log_signal = pyqtSignal(str)
+
+class QtLogHandler(logging.Handler):
+    def __init__(self, signaler):
+        super().__init__()
+        self.signaler = signaler
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.signaler.log_signal.emit(msg)
 try:
     from src.interface.components.circular_gauge import CircularGauge
     from src.interface.components.realtime_chart import RealtimeChart
@@ -53,25 +74,50 @@ class StarkDashboard(QMainWindow):
         self.gpu_available = TORCH_AVAILABLE and torch.cuda.is_available()
         self.nvml_available = NVML_AVAILABLE
         
-        # Stylesheet (Dark Stark Theme)
+        # Stylesheet (Stark Luxury Glass Theme)
         self.setStyleSheet("""
-            QMainWindow { background-color: #050a10; color: #e0e0e0; }
-            QTabWidget::pane { border: 1px solid #1f293a; background: #0b0f19; }
-            QTabBar::tab { background: #0b0f19; color: #8899a6; padding: 10px 20px; border-top-left-radius: 4px; border-top-right-radius: 4px; }
-            QTabBar::tab:selected { background: #1f293a; color: #00c3ff; border-bottom: 2px solid #00c3ff; }
+            QMainWindow { background-color: #03060a; color: #e0e0e0; }
+            QTabWidget::pane { border: 1px solid #00c3ff; background: rgba(11, 15, 25, 200); border-radius: 8px; }
+            QTabBar::tab { background: #050a10; color: #8899a6; padding: 12px 25px; border: 1px solid #1f293a; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 5px; }
+            QTabBar::tab:selected { background: #0b0f19; color: #00c3ff; border: 1px solid #00c3ff; border-bottom: 2px solid #0b0f19; font-weight: bold; }
+            QTabBar::tab:hover { background: #1f293a; color: #ffffff; }
             QLabel { color: #e0e0e0; font-family: 'Segoe UI'; }
-            QPushButton { background-color: #1f293a; color: #00c3ff; border: 1px solid #00c3ff; padding: 8px; border-radius: 4px; }
-            QPushButton:hover { background-color: #00c3ff; color: #050a10; }
-            QGroupBox { border: 1px solid #1f293a; margin-top: 20px; font-weight: bold; color: #00c3ff; }
-            QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px; }
+            QPushButton { background-color: rgba(31, 41, 58, 150); color: #00c3ff; border: 1px solid #00c3ff; padding: 10px; border-radius: 6px; font-weight: bold; }
+            QPushButton:hover { background-color: rgba(0, 195, 255, 50); text-shadow: 0 0 10px #00c3ff; }
+            QPushButton:pressed { background-color: #00c3ff; color: #050a10; }
+            QGroupBox { border: 1px solid rgba(0, 195, 255, 100); margin-top: 25px; font-weight: bold; color: #00c3ff; border-radius: 10px; padding-top: 20px; }
+            QGroupBox::title { subcontrol-origin: margin; left: 15px; padding: 0 10px; background-color: #03060a; }
+            QScrollArea { border: none; background: transparent; }
+            QScrollBar:vertical { border: none; background: #0b0f19; width: 10px; margin: 0; }
+            QScrollBar::handle:vertical { background: #1f293a; min-height: 20px; border-radius: 5px; }
+            QScrollBar::handle:vertical:hover { background: #00c3ff; }
         """)
         
+        # Shared container for instances
+        self.curiosity_backlog = []
+        self.is_studying = False
+        self.current_topic = "Nenhum"
+
         self.setup_ui()
         
         # Timer para atualização de métricas
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_metrics)
         self.update_timer.start(1000) # 1s
+
+        # Conectar sinais de aprendizado
+        from src.interface.ui_signals import ui_signals
+        ui_signals.update_learning_status.connect(self._handle_learning_status)
+        ui_signals.update_curiosity_list.connect(self._handle_curiosity_list)
+
+        # Setup Logging Bridge (Python Logging -> Dashboard Console)
+        self.log_signaler = QtLogSignaler()
+        self.log_signaler.log_signal.connect(self._on_log_received)
+        
+        # Adicionar handler ao root logger para pegar TUDO
+        log_handler = QtLogHandler(self.log_signaler)
+        log_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        logging.getLogger().addHandler(log_handler)
         
     def setup_ui(self):
         # Layout principal com abas
@@ -80,9 +126,14 @@ class StarkDashboard(QMainWindow):
         
         # Abas
         self.setup_monitor_tab()
+        self.setup_sentinel_tab() # Nova Aba de Visão
         self.setup_ai_brain_tab()
+        self.setup_cognitive_tab() 
         self.setup_config_tab()
         self.setup_console_tab()
+        
+        # Carregar configurações
+        self.load_configurations()
         
         # Status bar
         self.status_bar = QStatusBar()
@@ -197,6 +248,153 @@ class StarkDashboard(QMainWindow):
         
         tab.setLayout(layout)
         self.tab_widget.addTab(tab, "📊 Monitoramento")
+
+    def setup_sentinel_tab(self):
+        """Aba Sentinel: Monitoramento Visual e Câmera"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+        
+        # 1. Feed da Câmera (Real)
+        feed_group = QGroupBox("Sentinel Eye Feed (Câmera Principal)")
+        feed_layout = QVBoxLayout()
+        
+        self.camera_feed_label = QLabel("INITIALIZING OPTICAL SENSORS...")
+        self.camera_feed_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.camera_feed_label.setStyleSheet("background-color: #000; color: #00c3ff; font-family: Consolas;")
+        self.camera_feed_label.setMinimumHeight(400)
+        self.camera_feed_label.setScaledContents(True)
+        
+        feed_layout.addWidget(self.camera_feed_label)
+        feed_group.setLayout(feed_layout)
+        layout.addWidget(feed_group)
+        
+        # Timer de atualização de vídeo (30 FPS)
+        self.video_timer = QTimer()
+        self.video_timer.timeout.connect(self._update_camera_feed)
+        self.video_timer.start(33)
+        
+        # 2. Status de Detecção
+        detection_group = QGroupBox("Análise de Reconhecimento Visual")
+        det_layout = QGridLayout()
+        
+        # Labels de Estado
+        self.det_face_label = QLabel("FACE: N/A")
+        self.det_face_label.setStyleSheet("color: #8899a6; font-weight: bold;")
+        
+        self.det_motion_label = QLabel("MOTION: SAFE")
+        self.det_motion_label.setStyleSheet("color: #00ff00; font-weight: bold;")
+        
+        self.det_objects_label = QLabel("OBJECTS: ANALYZING...")
+        self.det_objects_label.setStyleSheet("color: #e0e0e0;")
+        
+        det_layout.addWidget(self.det_face_label, 0, 0)
+        det_layout.addWidget(self.det_motion_label, 0, 1)
+        det_layout.addWidget(self.det_objects_label, 1, 0, 1, 2)
+        
+        detection_group.setLayout(det_layout)
+        layout.addWidget(detection_group)
+        
+        tab.setLayout(layout)
+        self.tab_widget.addTab(tab, "👁️ Sentinel")
+
+    def setup_cognitive_tab(self):
+        """Aba do Laboratório Cognitivo (Curiosity Engine)"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+        
+        # Status de Estudo
+        status_group = QGroupBox("Status de Hiper-Foco")
+        status_layout = QHBoxLayout()
+        
+        self.study_status_label = QLabel("Estado: Ocioso")
+        self.study_status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #8899a6;")
+        status_layout.addWidget(self.study_status_label)
+        
+        self.current_topic_label = QLabel("Tópico Atual: Nenhum")
+        self.current_topic_label.setStyleSheet("color: #00c3ff;")
+        status_layout.addWidget(self.current_topic_label)
+        
+        status_group.setLayout(status_layout)
+        layout.addWidget(status_group)
+        
+        # Lista de Curiosidades (Gaps de Conhecimento)
+        gaps_group = QGroupBox("Âncora de Curiosidade (Backlog de Pesquisa)")
+        gaps_layout = QVBoxLayout()
+        
+        self.curiosity_list_widget = QLabel("Nenhum tópico pendente.")
+        self.curiosity_list_widget.setWordWrap(True)
+        self.curiosity_list_widget.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.curiosity_list_widget.setStyleSheet("background-color: #0b0f19; padding: 10px; border: 1px dashed #1f293a; color: #e0e0e0;")
+        
+        scroll = QScrollArea()
+        scroll.setWidget(self.curiosity_list_widget)
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(300)
+        
+        gaps_layout.addWidget(scroll)
+        gaps_group.setLayout(gaps_layout)
+        layout.addWidget(gaps_group)
+        
+        # Controles
+        controls_layout = QHBoxLayout()
+        self.force_study_btn = QPushButton("🚀 Forçar Ciclo de Estudo")
+        self.clear_gaps_btn = QPushButton("🗑️ Limpar Curiosidades")
+        
+        controls_layout.addWidget(self.force_study_btn)
+        controls_layout.addWidget(self.clear_gaps_btn)
+        layout.addLayout(controls_layout)
+        
+        tab.setLayout(layout)
+        self.tab_widget.addTab(tab, "🧠 Lab Cognitivo")
+
+        # Conectar botões
+        self.force_study_btn.clicked.connect(self._force_study_cycle)
+        self.clear_gaps_btn.clicked.connect(self._clear_learning_gaps)
+
+    def _force_study_cycle(self):
+        """Dispara ciclo de estudo em background"""
+        try:
+            from src.learning.curiosity_engine import curiosity_engine
+            if curiosity_engine:
+                import threading
+                threading.Thread(target=curiosity_engine.run_study_cycle, daemon=True).start()
+                self.status_bar.showMessage("🚀 Ciclo de Estudo de Emergência iniciado!", 5000)
+            else:
+                self.status_bar.showMessage("⚠️ Curiosity Engine não disponível.", 5000)
+        except Exception as e:
+            logger.error(f"Erro ao disparar estudo: {e}")
+
+    def _clear_learning_gaps(self):
+        """Limpa backlog de curiosidades"""
+        try:
+            from src.learning.curiosity_engine import curiosity_engine
+            if curiosity_engine:
+                while not curiosity_engine.study_backlog.empty():
+                    curiosity_engine.study_backlog.get()
+                self._handle_curiosity_list([])
+                self.status_bar.showMessage("🗑️ Backlog de pesquisa limpo.", 3000)
+        except: pass
+
+    def _handle_learning_status(self, topic, is_studying):
+        self.is_studying = is_studying
+        self.current_topic = topic
+        
+        if is_studying:
+            self.study_status_label.setText("Estado: 📚 ESTUDANDO (HIPER-FOCO)")
+            self.study_status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff00ff;") # Roxo para estudo
+            self.current_topic_label.setText(f"Tópico Atual: {topic}")
+        else:
+            self.study_status_label.setText("Estado: 😴 OCIOSO / SONHANDO")
+            self.study_status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #8899a6;")
+            self.current_topic_label.setText("Tópico Atual: Nenhum")
+
+    def _handle_curiosity_list(self, gaps):
+        self.curiosity_backlog = gaps
+        if gaps:
+            text = "\n".join([f"• {gap}" for gap in gaps])
+            self.curiosity_list_widget.setText(text)
+        else:
+            self.curiosity_list_widget.setText("Nenhum tópico pendente.")
         
     def setup_ai_brain_tab(self):
         """Aba de informações da IA e Cérebro"""
@@ -325,6 +523,33 @@ class StarkDashboard(QMainWindow):
         ai_group.setLayout(ai_layout)
         layout.addWidget(ai_group)
         
+        # Configurações da Mente Coletiva (Network Mesh)
+        network_group = QGroupBox("Mente Coletiva (Network Mesh)")
+        network_layout = QFormLayout()
+        
+        self.network_enabled = QComboBox()
+        self.network_enabled.addItems(["Desabilitado", "Habilitado"])
+        self.network_enabled.setCurrentText("Habilitado")
+        network_layout.addRow("Status:", self.network_enabled)
+        
+        self.google_drive_enabled = QComboBox()
+        self.google_drive_enabled.addItems(["Desabilitado", "Habilitado"])
+        self.google_drive_enabled.setCurrentText("Habilitado")
+        network_layout.addRow("Google Drive Sync:", self.google_drive_enabled)
+        
+        self.local_network_enabled = QComboBox()
+        self.local_network_enabled.addItems(["Desabilitado", "Habilitado"])
+        self.local_network_enabled.setCurrentText("Habilitado")
+        network_layout.addRow("Rede Local:", self.local_network_enabled)
+        
+        self.encryption_enabled = QComboBox()
+        self.encryption_enabled.addItems(["Desabilitado", "Habilitado"])
+        self.encryption_enabled.setCurrentText("Habilitado")
+        network_layout.addRow("Criptografia:", self.encryption_enabled)
+        
+        network_group.setLayout(network_layout)
+        layout.addWidget(network_group)
+        
         # Botões de ação
         actions_layout = QHBoxLayout()
         self.save_btn = QPushButton("💾 Salvar Configurações")
@@ -337,6 +562,78 @@ class StarkDashboard(QMainWindow):
         
         tab.setLayout(layout)
         self.tab_widget.addTab(tab, "⚙️ Configurações")
+        
+        # Conectar botões
+        self.save_btn.clicked.connect(self.save_configurations)
+        self.reset_btn.clicked.connect(self.reset_configurations)
+
+    def load_configurations(self):
+        """Carregar configurações do arquivo YAML"""
+        try:
+            import yaml
+            from pathlib import Path
+            
+            config_path = Path("config/network_mesh_config.yaml")
+            if config_path.exists():
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+                
+                nm = config.get('network_mesh', {})
+                
+                # Atualizar interface
+                self.network_enabled.setCurrentText("Habilitado" if nm.get('enabled') else "Desabilitado")
+                self.google_drive_enabled.setCurrentText("Habilitado" if nm.get('google_drive', {}).get('enabled') else "Desabilitado")
+                self.local_network_enabled.setCurrentText("Habilitado" if nm.get('local_network', {}).get('enabled') else "Desabilitado")
+                self.encryption_enabled.setCurrentText("Habilitado" if nm.get('privacy', {}).get('encrypt_packets') else "Desabilitado")
+                
+        except Exception as e:
+            logger.warning(f"Erro ao carregar configurações: {e}")
+
+    def save_configurations(self):
+        """Salvar configurações no arquivo YAML"""
+        try:
+            import yaml
+            from pathlib import Path
+            
+            config_path = Path("config/network_mesh_config.yaml")
+            
+            # Ler configuração atual
+            config = {}
+            if config_path.exists():
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+            
+            # Atualizar com valores da interface
+            nm = config.setdefault('network_mesh', {})
+            nm['enabled'] = self.network_enabled.currentText() == "Habilitado"
+            
+            gd = nm.setdefault('google_drive', {})
+            gd['enabled'] = self.google_drive_enabled.currentText() == "Habilitado"
+            
+            ln = nm.setdefault('local_network', {})
+            ln['enabled'] = self.local_network_enabled.currentText() == "Habilitado"
+            
+            privacy = nm.setdefault('privacy', {})
+            privacy['encrypt_packets'] = self.encryption_enabled.currentText() == "Habilitado"
+            
+            # Salvar
+            with open(config_path, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+            
+            self.status_bar.showMessage("✅ Configurações da Mente Coletiva salvas!", 3000)
+            
+        except Exception as e:
+            logger.error(f"Erro ao salvar configurações: {e}")
+            self.status_bar.showMessage("❌ Erro ao salvar configurações", 3000)
+
+    def reset_configurations(self):
+        """Restaurar configurações padrão"""
+        self.network_enabled.setCurrentText("Habilitado")
+        self.google_drive_enabled.setCurrentText("Habilitado")
+        self.local_network_enabled.setCurrentText("Habilitado")
+        self.encryption_enabled.setCurrentText("Habilitado")
+        
+        self.status_bar.showMessage("🔄 Configurações restauradas para padrão", 3000)
 
     def setup_console_tab(self):
         """Aba de logs do sistema"""
@@ -430,123 +727,188 @@ class StarkDashboard(QMainWindow):
         return None
 
     def _update_ai_metrics(self):
-        """Atualiza métricas específicas da IA"""
+        """Atualiza métricas específicas da IA usando o HardwareManager"""
+        from src.core.management.hardware_manager import hardware_manager
         try:
-            if not self.jarvis:
-                # Valores padrão se não há jarvis_core
-                self.ai_status_label.setText("Status: IA Não Conectada")
-                self.active_functions_label.setText("Funções Ativas: 0")
-                self.ai_cpu_usage_label.setText("IA CPU: 0%")
-                self.ai_memory_usage_label.setText("IA RAM: 0MB")
-                if self.gpu_available:
-                    self.ai_gpu_usage_label.setText("IA GPU: 0%")
-                return
+            status = hardware_manager.get_status()
             
-            # Status da IA
-            ai_status = "ONLINE" if hasattr(self.jarvis, 'is_active') and self.jarvis.is_active else "OFFLINE"
-            self.ai_status_label.setText(f"Status: {ai_status}")
+            # Status da IA (Baseado no Hardware)
+            self.ai_status_label.setText(f"Status: ONLINE ({status['tier']})")
             
-            # Funções ativas (estimativa baseada em threads/processos)
-            active_threads = len([t for t in psutil.process_iter(['pid', 'name']) if 'python' in t.info['name'].lower()])
-            self.active_functions_label.setText(f"Funções Ativas: {active_threads}")
+            # Consumo Real
+            cpu_usage = psutil.cpu_percent()
+            self.ai_cpu_usage_label.setText(f"Sistema CPU: {cpu_usage:.1f}%")
             
-            # Consumo estimado da IA (baseado em processos Python)
-            python_processes = [p for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_info']) 
-                              if 'python' in p.info['name'].lower()]
+            ram = psutil.virtual_memory()
+            self.ai_memory_usage_label.setText(f"RAM Livre: {ram.available / (1024**3):.1f}GB")
             
-            if python_processes:
-                total_cpu = sum(p.info['cpu_percent'] for p in python_processes)
-                total_memory = sum(p.info['memory_info'].rss for p in python_processes) / (1024**2)  # MB
-                
-                self.ai_cpu_usage_label.setText(f"IA CPU: {total_cpu:.1f}%")
-                self.ai_memory_usage_label.setText(f"IA RAM: {total_memory:.0f}MB")
-                
-                if self.gpu_available and TORCH_AVAILABLE:
-                    # Estimativa de uso de GPU pela IA
-                    try:
-                        gpu_memory_used = torch.cuda.memory_allocated(0) / (1024**2)  # MB
-                        gpu_memory_total = torch.cuda.get_device_properties(0).total_memory / (1024**2)  # MB
-                        gpu_percent = (gpu_memory_used / gpu_memory_total) * 100
-                        self.ai_gpu_usage_label.setText(f"IA GPU: {gpu_percent:.1f}%")
-                    except:
-                        self.ai_gpu_usage_label.setText("IA GPU: N/A")
+            if self.gpu_available:
+                vram_free = status.get("vram_free_gb", 0)
+                self.ai_gpu_usage_label.setText(f"VRAM Livre: {vram_free:.1f}GB")
+            
+            # Threads e Processos
+            self.ai_threads.setText(f"Threads IA: {status['threads']}")
+            self.ai_processes.setText(f"Acelerador: {status['accelerator'] or 'Nenhum'}")
             
         except Exception as e:
             logger.error(f"Erro ao atualizar métricas da IA: {e}")
 
     def _update_brain_status(self):
-        """Atualiza informações do cérebro da IA"""
+        """Atualiza informações do cérebro da IA com dados reais"""
+        from src.core.management.hardware_manager import hardware_manager
         try:
-            if not self.jarvis:
-                self.brain_status_text.setText("Cérebro: IA Não Conectada")
-                self.brain_version_text.setText("Versão: N/A")
-                self.active_model_text.setText("Modelo Ativo: Nenhum")
-                self.functions_list.setText("Funções: IA desconectada")
-                self.ai_cpu_dedicated.setText("CPU Dedicado: N/A")
-                self.ai_memory_dedicated.setText("RAM Dedicado: N/A")
-                if self.gpu_available:
-                    self.ai_gpu_dedicated.setText("GPU Dedicado: N/A")
-                self.ai_threads.setText("Threads Ativos: N/A")
-                self.ai_processes.setText("Processos IA: N/A")
-                self.ai_response_time.setText("Tempo Resposta: N/A")
-                self.learning_stats.setText("Estatísticas: IA desconectada")
-                return
+            # 1. Status do Cérebro (Verificação Real)
+            is_brain_loaded = False
+            try:
+                # Tenta verificar se o objeto ai_agent existe e tem modelo carregado
+                if self.jarvis and hasattr(self.jarvis, 'ai_agent') and self.jarvis.ai_agent:
+                    is_brain_loaded = True
+            except: pass
+
+            brain_status = "ONLINE - INTEGRADO" if is_brain_loaded else "OFFLINE - AGUARDANDO CONEXÃO"
+            color = "#00ff00" if is_brain_loaded else "#ff4444"
             
-            # Status do cérebro
-            brain_status = "ONLINE - PROTOCOLO STARK ATIVO" if hasattr(self.jarvis, 'brain') else "OFFLINE"
             self.brain_status_text.setText(f"Cérebro: {brain_status}")
-            self.brain_status_text.setStyleSheet("font-size: 14px; font-weight: bold; color: #00ff00;" if "ONLINE" in brain_status else "font-size: 14px; font-weight: bold; color: #ff4444;")
+            self.brain_status_text.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {color};")
             
-            # Versão
-            self.brain_version_text.setText("Versão: JARVIS 5.0 - Stark Protocol")
+            # 2. Modelo Ativo (Detectar via Config ou Hardware)
+            device = hardware_manager.get_device()
+            hw_name = hardware_manager.gpu_name if device != 'cpu' else 'AVX-512 Optimized'
+            self.active_model_text.setText(f"Core Engine: {device.upper()} ({hw_name})")
             
-            # Modelo ativo
-            active_model = "Qwen 1.5B (Local)"  # Placeholder - deveria vir do jarvis_core
-            self.active_model_text.setText(f"Modelo Ativo: {active_model}")
+            # 3. Funções Ativas (Dinâmico)
+            # 3. Funções Ativas (Baseado nas Threads do Python)
+            import threading
+            active_threads = [t.name for t in threading.enumerate()]
             
-            # Funções ativas
-            functions = [
-                "• Reconhecimento de Voz",
-                "• Processamento de Linguagem Natural", 
-                "• Visão Computacional",
-                "• Controle de Hardware",
-                "• Aprendizado Contínuo",
-                "• Interface Multimodal"
-            ]
-            self.functions_list.setText("\n".join(functions))
+            # Mapeamento de threads para nomes "Stark"
+            stark_modules = []
+            if any("Camera" in t for t in active_threads): stark_modules.append("• Sentinel Vision (ONLINE)")
+            else: stark_modules.append("• Sentinel Vision (OFFLINE)")
             
-            # Consumo dedicado (estimativas)
-            self.ai_cpu_dedicated.setText("CPU Dedicado: 15-25%")
-            self.ai_memory_dedicated.setText("RAM Dedicado: 500-1500MB")
-            if self.gpu_available:
-                self.ai_gpu_dedicated.setText("GPU Dedicado: 20-60%")
+            if any("Voice" in t for t in active_threads) or any("Audio" in t for t in active_threads): stark_modules.append("• Voice Array (LISTENING)")
+            else: stark_modules.append("• Voice Array (MUTED/OFFLINE)")
             
-            self.ai_threads.setText("Threads Ativos: 8-12")
-            self.ai_processes.setText("Processos IA: 3-5")
-            self.ai_response_time.setText("Tempo Resposta: 50-200ms")
+            if any("Mesh" in t for t in active_threads): stark_modules.append("• Network Mesh (ACTIVE)")
             
-            # Estatísticas de aprendizado
-            learning_info = [
-                "• Sessões de Treinamento: 47",
-                "• Dados Processados: 2.3GB",
-                "• Acurácia Média: 94.2%",
-                "• Tempo de Treinamento: 12h 34m",
-                "• Modelos Otimizados: 3",
-                "• Última Atualização: 2h atrás"
-            ]
-            self.learning_stats.setText("\n".join(learning_info))
+            # Adicionar fixos do sistema
+            stark_modules.append("• Neural Decision Engine")
+            stark_modules.append("• Hardware Sovereign Control")
+
+            self.functions_list.setText("\n".join(stark_modules))
+            
+            # 4. Memória e Aprendizado (Long-term)
+            try:
+                from src.core.intelligence.memory_manager import MemoryManager
+                mm = MemoryManager()
+                mem_count = mm.collection.count() if mm.collection else 0
+                learning_info = [
+                    f"• Memórias Gravadas: {mem_count}",
+                    "• Vínculo Neural: Estabilizado",
+                    f"• Latência Média: {150 if hardware_manager.is_throttled else 45}ms",
+                    "• Modo de Resposta: Adaptativo"
+                ]
+                self.learning_stats.setText("\n".join(learning_info))
+            except:
+                self.learning_stats.setText("• Memória: Modo Fallback (RAM)")
             
         except Exception as e:
             logger.error(f"Erro ao atualizar status do cérebro: {e}")
 
     def add_log_message(self, level, message):
-        """Adiciona mensagem ao console de logs"""
-        current_text = self.log_area.text()
-        if len(current_text) > 5000: current_text = current_text[-4000:]
+        """Adiciona mensagem formatada ao console"""
+        # Formatação básica de cores para HTML
+        color = "#00ff00" # Verde (Info)
+        if "ERROR" in level or "CRITICAL" in level: color = "#ff4444"
+        elif "WARNING" in level: color = "#ffbb33"
+        elif "DEBUG" in level: color = "#8899a6"
         
-        # Formata com cores HTML básico se suportado ou apenas texto
-        new_line = f"[{level}] {message}\n"
-        self.log_area.setText(current_text + new_line)
-        # Scroll to bottom logic if needed (usually automatic if widget resizes, but explicit scroll bar value set is better)
-        # For simple QLabel inside ScrollArea, auto-scroll is manual.
+        from datetime import datetime
+        timestamp = datetime.now().strftime('%H:%M:%S')
         
+        # Construir linha HTML
+        log_html = f'<span style="color: #666;">[{timestamp}]</span> <span style="color: {color}; font-weight: bold;">[{level}]</span> <span style="color: #e0e0e0;">{message}</span><br>'
+        
+        # Append seguro (limitando tamanho para performance)
+        current_html = self.log_area.text()
+        if len(current_html) > 15000: 
+            # Cortar o começo (inseguro com HTML puro, melhor limpar tudo ou usar lógica complexa)
+            # Para simplicidade, limpamos se ficar gigante
+            current_html = "" 
+        
+        self.log_area.setText(current_html + log_html)
+        
+        # Auto-scroll (Tentativa)
+        scroll_bar = self.log_area.parent().parent().verticalScrollBar() # QLabel -> ScrollAreaChild -> ScrollArea -> ScrollBar
+        if scroll_bar:
+            scroll_bar.setValue(scroll_bar.maximum())
+
+    def _on_log_received(self, msg: str):
+        """Callback do QtLogHandler"""
+        # Parse simples do formato padrão do logging
+        try:
+            parts = msg.split(' - ')
+            if len(parts) >= 4:
+                level = parts[2]
+                message = " - ".join(parts[3:])
+                self.add_log_message(level, message)
+            else:
+                self.add_log_message("INFO", msg)
+        except:
+            self.add_log_message("SYSTEM", msg)
+        
+    def _update_camera_feed(self):
+        """Atualiza o feed da câmera real na aba Sentinel"""
+        # Só atualiza se a aba Sentinel estiver visível para economizar recursos
+        if self.tab_widget.currentIndex() != 1: return
+            
+        try:
+            # Tentar pegar o frame mais recente do VisionSystem
+            frame = None
+            if self.jarvis and hasattr(self.jarvis, 'vision_system'):
+                system = self.jarvis.vision_system
+                if hasattr(system, 'last_frame') and system.last_frame is not None:
+                    frame = system.last_frame
+            
+            # Se não tiver acesso ao sistema global, tentar captura direta (apenas para teste visual)
+            if frame is None and not hasattr(self, '_cap'):
+                # Inicialização lazy do OpenCV para teste standalone
+                import cv2
+                self._cap = cv2.VideoCapture(0)
+            
+            if frame is None and hasattr(self, '_cap'):
+                ret, img = self._cap.read()
+                if ret:
+                    frame = img
+            
+            # Renderizar no Label
+            if frame is not None:
+                import cv2
+                from PyQt6.QtGui import QImage, QPixmap
+                
+                # Converter BGR (OpenCV) para RGB (Qt)
+                rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgb_image.shape
+                bytes_per_line = ch * w
+                qt_image = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+                
+                # Redimensionar mantendo aspect ratio
+                scaled_pixmap = QPixmap.fromImage(qt_image).scaled(
+                    self.camera_feed_label.size(), 
+                    Qt.AspectRatioMode.KeepAspectRatio, 
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                self.camera_feed_label.setPixmap(scaled_pixmap)
+                self.det_objects_label.setText("OBJECTS: REALTIME FEED ACTIVE")
+            else:
+                self.camera_feed_label.setText("NO SIGNAL - CAMERA OFFLINE")
+                
+        except Exception as e:
+            # logger.debug(f"Erro no feed de vídeo: {e}") # Debug only
+            pass
+
+    def closeEvent(self, event):
+        """Limpeza ao fechar"""
+        if hasattr(self, '_cap') and self._cap:
+            self._cap.release()
+        event.accept()

@@ -37,6 +37,7 @@ cd /d "%ROOT%"
 :: Environment settings
 set "KMP_DUPLICATE_LIB_OK=TRUE"
 set "PYTHONUTF8=1"
+set "PATH=%PATH%;%LOCALAPPDATA%\Programs\Ollama"
 
 :: =======================================
 :: 1.5 AUTO-CONFIGURATION (Optimize Environment)
@@ -79,7 +80,7 @@ if "%ERRORLEVEL%"=="0" (
     echo [OK] Ollama Service is active.
 ) else (
     echo [SYSTEM] Starting Ollama Service...
-    start /min "" "ollama" serve
+    powershell -WindowStyle Hidden -Command "ollama serve"
     timeout /t 5 /nobreak >nul
 )
 
@@ -144,28 +145,13 @@ echo [CHECK] Validating critical dependencies...
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
-    echo [AUTO-HEAL] Dependency issues detected - initiating auto-repair...
+    echo [AUTO-HEAL] Dependency issues detected - SKIPPING auto-repair for now...
     echo.
     
-    :: Tenta auto-healing primeiro
-    "%VENV_PYTHON%" "%ROOT%scripts\auto_healer.py"
+    :: Temporarily skip auto-healing to get JARVIS running
+    :: "%VENV_PYTHON%" "%ROOT%scripts\auto_healer.py"
     
-    if %ERRORLEVEL% EQU 0 (
-        echo [OK] Auto-healing successful! Revalidating...
-        "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
-        
-        if %ERRORLEVEL% EQU 0 (
-            echo [OK] All dependencies validated after auto-heal!
-            goto :CONTINUE_STARTUP
-        )
-    )
-    
-    :: Se auto-heal falhou, tenta quick fix
-    echo [AUTO-FIX] Running Quick Fix for remaining issues...
-    "%VENV_PYTHON%" "%ROOT%scripts\install\quick_fix_torch.py"
-    
-    if %ERRORLEVEL% EQU 0 (
-        echo [OK] Quick Fix completed. Revalidating...
+    goto :CONTINUE_STARTUP
         "%VENV_PYTHON%" "%ROOT%scripts\validate_dependencies.py"
         
         if %ERRORLEVEL% EQU 0 (

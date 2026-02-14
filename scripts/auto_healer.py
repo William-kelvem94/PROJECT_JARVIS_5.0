@@ -33,6 +33,8 @@ class AutoHealer:
                 return stdout
             else:
                 return ""
+        except Exception as e:
+            return ""
     
     def log(self, level, msg):
         """Log com niveis de gravidade"""

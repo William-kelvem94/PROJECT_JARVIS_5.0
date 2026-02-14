@@ -13,20 +13,23 @@ import logging
 from PIL import Image
 
 try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    # Fallback for type hints
+    class MockNumpy:
+        ndarray = type('ndarray', (), {})
+    np = MockNumpy()
+    logging.warning(f"âš ï¸ numpy not available in helpers: {e}")
+
+try:
     import cv2
     CV2_AVAILABLE = True
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
     logging.warning(f"âš ï¸ cv2 not available in helpers: {e}")
-
-try:
-    import numpy as np
-    NUMPY_AVAILABLE = True
-except (ImportError, OSError) as e:
-    NUMPY_AVAILABLE = False
-    np = None
-    logging.warning(f"âš ï¸ numpy not available in helpers: {e}")
 
 from src.utils.config import config
 

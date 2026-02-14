@@ -53,6 +53,7 @@ class MiniOrb(QWidget):
             "thinking": QColor(255, 193, 7, 200),  # Amarelo
             "speaking": QColor(220, 53, 69, 200),  # Vermelho
             "error": QColor(108, 117, 125, 200),   # Cinza
+            "studying": QColor(138, 43, 226, 200), # Roxo (Hiper-Foco)
         }
         
         color = colors.get(self.state, colors["idle"])
@@ -86,7 +87,8 @@ class MiniOrb(QWidget):
             "listening": "🎤",
             "thinking": "🧠",
             "speaking": "🗣️",
-            "error": "⚠️"
+            "error": "⚠️",
+            "studying": "📚"
         }
         
         painter.setFont(QFont("Segoe UI Emoji", 20))
@@ -154,4 +156,14 @@ class MiniOrb(QWidget):
     def set_state(self, state: str):
         """Muda estado visual do orb"""
         self.state = state
+        self.update()
+
+    def set_studying(self, topic: str, state: bool):
+        """Define estado de estudo"""
+        if state:
+            self.state = "studying"
+            self.setToolTip(f"Estudando: {topic}")
+        else:
+            self.state = "idle"
+            self.setToolTip("JARVIS Mini Orb")
         self.update()

@@ -292,6 +292,12 @@ performance:
   # Auto-optimization
   auto_optimize: true
   optimize_on_high_load: true
+  
+  # Adaptive Audio Performance
+  adaptive_transcription:
+    enabled: true
+    throttled_interval: 2.0
+    throttled_beam_size: 2
 
 # === SECURITY ===
 security:
@@ -299,6 +305,12 @@ security:
   validate_actions: true
   validate_file_access: true
   validate_network_access: true
+  
+  # Permission System (Singularity Edition)
+  file_permissions:
+    glass_cage_enabled: true
+    confirm_before_delete: true
+    backup_before_edit: true
   
   # Restricted paths
   restricted_paths:
@@ -322,6 +334,12 @@ audio:
   default_tts: "edge"            # 'edge', 'gtts', 'xtts'
   offline_tts_fallback: true
   response_caching: true
+  
+  # Barge-In (Natural Interruption)
+  barge_in:
+    enabled: true
+    interrupt_on_wake_word: true
+    mic_lock_prevention: true
 
 # === DEBUGGING ===
 debug:

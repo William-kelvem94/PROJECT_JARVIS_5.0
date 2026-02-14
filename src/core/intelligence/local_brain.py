@@ -45,12 +45,9 @@ except (ImportError, OSError):
     TORCH_AVAILABLE = False
     torch = None
 
-try:
-    from optimum.intel import OVModelForCausalLM
-    OPENVINO_AVAILABLE = True
-except ImportError:
-    OPENVINO_AVAILABLE = False
-    OVModelForCausalLM = None
+# OpenVINO - Import adiado para evitar problemas de inicialização
+OPENVINO_AVAILABLE = False
+OVModelForCausalLM = None
 
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM

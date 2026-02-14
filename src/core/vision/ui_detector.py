@@ -33,36 +33,44 @@ class UIDetector:
     def __init__(self, model_path: Optional[str] = None):
         self.enabled = config.get_setting('vision.yolo_enabled', True)
         self.model = None
+        self.model_path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
+        self._ultralytics_imported = False
 
         if not self.enabled:
             logger.debug("UIDetector desativado pela configuração.")
             return
 
-        try:
-            # Importação preguiçosa do Ultralytics (pode lançar se houver incompatibilidade)
-            from importlib import import_module
-            import_module('ultralytics')
-            from ultralytics import YOLO  # type: ignore
-
-            # Se não houver modelo customizado, usa o YOLOv8n (nano) na pasta models
-            path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
-            if not os.path.isabs(path):
-                path = str(Path(__file__).parent.parent.parent.parent / path)
-
-            self.model = YOLO(path)
-            globals()['ULTRALYTICS_AVAILABLE'] = True
-            logger.info(f"Modelo YOLO carregado: {path}")
-        except Exception as e:
-            logger.warning(f"Ultralytics/YOLO indisponível ou falha ao carregar o modelo: {e}")
-            self.enabled = False
-            self.model = None
+        # Don't load model immediately - wait for first use
 
     def detect_elements(self, image_path: str) -> List[Dict[str, Any]]:
         """
         Detecta elementos de UI na imagem.
         Retorna: Lista de dicionários com {label, confidence, x, y, width, height, center}
         """
-        if not self.enabled or self.model is None:
+        if not self.enabled:
+            return []
+
+        # Lazy import and model loading
+        if self.model is None and not self._ultralytics_imported:
+            try:
+                # Importação preguiçosa do Ultralytics
+                from ultralytics import YOLO  # type: ignore
+
+                # Resolve path
+                path = self.model_path
+                if not os.path.isabs(path):
+                    path = str(Path(__file__).parent.parent.parent.parent / path)
+
+                self.model = YOLO(path)
+                globals()['ULTRALYTICS_AVAILABLE'] = True
+                self._ultralytics_imported = True
+                logger.info(f"Modelo YOLO carregado: {path}")
+            except Exception as e:
+                logger.warning(f"Ultralytics/YOLO indisponível ou falha ao carregar o modelo: {e}")
+                self.enabled = False
+                return []
+
+        if self.model is None:
             return []
 
         try:
@@ -118,5 +126,23 @@ class UIDetector:
         return "Elementos visuais identificados: " + ", ".join(summary_parts)
 
 
-# Instância global (a inicialização tentará carregar o Ultralytics apenas se ativado)
-ui_detector = UIDetector()
+# Lazy global instance - will be created only when first accessed
+_ui_detector_instance = None
+
+def get_ui_detector():
+    """Get the global UI detector instance (lazy loading)"""
+    global _ui_detector_instance
+    if _ui_detector_instance is None:
+        _ui_detector_instance = UIDetector()
+    return _ui_detector_instance
+
+# For backward compatibility, create a lazy property
+class LazyUIDetector:
+    def __getattr__(self, name):
+        return getattr(get_ui_detector(), name)
+
+    def __call__(self, *args, **kwargs):
+        return get_ui_detector()(*args, **kwargs)
+
+# Global instance with lazy loading
+ui_detector = LazyUIDetector()

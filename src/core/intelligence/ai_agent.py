@@ -9,10 +9,18 @@ import requests
 import json
 import re
 import time
+import asyncio
 import threading
+from pathlib import Path
 from typing import Dict, Any, List, Optional
-from src.core.intelligence.context_sanitizer import ContextSanitizer
-from src.core.audio.voice_filter import AtomicVoiceFilter
+from src.core.intelligence.instinct_engine import instinct_engine
+from src.utils.hardware_control import hw_control
+from src.core.management.context_manager import context_manager
+try:
+    from src.core.audio.voice_filter import AtomicVoiceFilter
+except Exception as e:
+    logger.error(f"❌ Falha ao importar AtomicVoiceFilter: {e}")
+    AtomicVoiceFilter = None
 from src.utils.logger_reflection import reflect_logger
 try:
     from src.utils.env_manager import get_model_for_tier
@@ -289,10 +297,10 @@ except ImportError:
     logger.warning("âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel")
 
 try:
-    from src.learning.knowledge_distiller import knowledge_distiller
+    from src.learning.curiosity_engine import CuriosityEngine
+    curiosity_engine = CuriosityEngine()
 except ImportError:
-    knowledge_distiller = None
-
+    curiosity_engine = None
 
 class AIAgent:
     """Classe principal do Agente Inteligente"""
@@ -532,6 +540,141 @@ class AIAgent:
                     severity=9
                 )
     
+    def _should_engage(self, text: str) -> bool:
+        """
+        Determina se o agente deve responder baseando-se em múltiplos sinais dinâmicos.
+        O nome é buscado diretamente da configuração de identidade do sistema.
+        """
+        text_lower = text.lower()
+        
+        # 1. Identidade Dinâmica (Busca o nome atual: ex: Jarvis, Stark, etc.)
+        current_name = AtomicVoiceFilter.get_primary_name().lower()
+        nicknames = [current_name, "sistema", "computador"] # Apelidos padrão sempre ativos
+        
+        if any(name in text_lower for name in nicknames):
+            logger.info(f"🎯 Nome '{current_name}' (ou apelido) identificado.")
+            return True
+        
+        # 2. Atenção Visual (Gaze Tracking)
+        if camera_controller and hasattr(camera_controller, 'is_user_looking') and camera_controller.is_user_looking():
+            logger.info("👀 Usuário olhando para a tela/câmera. Engajando...")
+            return True
+            
+        # 3. Comandos de Ação Direta (Sem necessidade de chamar pelo nome)
+        direct_keywords = ["abra", "inicie", "pesquise", "mostra", "ajuda", "verificar", "executar"]
+        if any(word in text_lower for word in direct_keywords):
+            # Se for um comando direto, ele assume o engajamento
+            return True
+
+        return False
+
+    def _prepare_intent(self, text: str) -> str:
+        """
+        Em vez de apenas remover, isola a intenção mas mantém o tom original para a LLM.
+        """
+        # Mantemos o texto original para não perder o contexto emocional/educado
+        return text.strip()
+
+    def _passive_observation(self):
+        """
+        Ciclo de Observação Passiva: Aprende sobre a rotina, pessoas e workflow 
+        sem interromper o usuário. Alimenta a Memória de Longo Prazo.
+        """
+        if not self.observation_mode or self.safe_mode:
+            return
+
+        try:
+            # 1. Percepção Social (Quem está por perto?)
+            if camera_controller:
+                detected_people = camera_controller.get_detected_people()
+                if detected_people:
+                    memory_manager.store_passive_context(
+                        f"Pessoas presentes: {', '.join(detected_people)}",
+                        metadata={"type": "social_context"}
+                    )
+
+            # 2. Percepção de Workflow (O que está nas telas?)
+            if screen_capture:
+                # Captura todas as telas conectadas para entender o fluxo
+                for monitor_id in range(screen_capture.get_monitor_count()):
+                    activity = screen_capture.analyze_screen_activity(monitor_id)
+                    memory_manager.store_passive_context(
+                        f"Atividade na Tela {monitor_id}: {activity}",
+                        metadata={"type": "workflow_context"}
+                    )
+            
+            # 3. Análise de Humor e Rotina
+            current_hour = time.strftime("%H:%M")
+            user_emotion = camera_controller.current_emotion if camera_controller else "unknown"
+            memory_manager.store_passive_context(
+                 f"Rotina: Usuário em estado {user_emotion} às {current_hour}.",
+                 metadata={"type": "routine_log"}
+            )
+
+        except Exception as e:
+            logger.debug(f"Silenciando erro de observação passiva: {e}")
+
+    async def _handle_contextual_observation(self, current_intent: str):
+        """
+        Lógica de Observação Adaptativa: O sistema decide o que monitorar 
+        baseado na intenção aprendida e no contexto ambiental.
+        """
+        # A IA decide se deve ativar vigilância, monitorar workflow ou ser discreta
+        context = await self.context_manager.get_full_state()
+        
+        # O comportamento não é fixo, ele evolui com a UserManager
+        current_user = user_manager.get_active_user()
+        user_name = current_user.name if current_user else "usuário"
+        
+        if "vigilância" in current_intent or context['is_user_absent']:
+            # A IA decide o que é necessário coletar (fotos, logs, etc)
+            await self._execute_adaptive_surveillance(context)
+
+    async def _execute_adaptive_surveillance(self, context: dict):
+        """Executa ações de monitoramento decididas dinamicamente pela IA"""
+        results = []
+        # Ele decide usar os sensores disponíveis sem ordens fixas
+        if camera_controller: results.append(camera_controller.capture_context())
+        if screen_capture: results.append(screen_capture.capture_context())
+        
+        # Armazena na memória de longo prazo para análise posterior
+        memory_manager.store_experience("surveillance_event", results)
+
+    def _generate_discreet_response(self, core_message: str) -> str:
+        """
+        Usa a LLM para transformar uma mensagem direta em algo 
+        discreto se houver mais pessoas presentes.
+        """
+        is_private = camera_controller.is_private_env() if camera_controller else True
+        if is_private:
+            return core_message
+            
+        # Fallback de discrição (A IA aprenderá formas melhores com o tempo)
+        discreet_versions = {
+            "alguém mexeu no PC": "Senhor, os relatórios de integridade foram atualizados.",
+            "intruso detectado": "Há uma notificação de segurança pendente no seu painel."
+        }
+        return discreet_versions.get(core_message, "Há uma nova atualização no sistema.")
+
+    async def _move_mouse_cooperatively(self, x, y):
+        """Move o mouse respeitando o uso do usuário (Yield on Move)"""
+        import pyautogui
+        last_pos = pyautogui.position()
+        
+        # Se o usuário mexer o mouse, nós esperamos
+        while True:
+            current_pos = pyautogui.position()
+            if current_pos != last_pos:
+                # Usuário está no controle, esperamos...
+                logger.debug("🖱️ Usuário detectado no mouse. JARVIS aguardando...")
+                await asyncio.sleep(2)
+                last_pos = pyautogui.position()
+                continue
+            
+            # Se ninguém mexeu por 2 segundos, nós agimos
+            pyautogui.moveTo(x, y, duration=1.0)
+            break
+
     def _initialize_auto_recovery(self):
         """Initialize auto-recovery system integration"""
         try:
@@ -545,10 +688,9 @@ class AIAgent:
             if hasattr(self.auto_recovery, 'register_health_callback'):
                 self.auto_recovery.register_health_callback("ai_agent", self._health_check)
                 
-            logger.info("ðŸ”§ AI Agent auto-recovery integration established")
-            
+            logger.info("🔧 AI Agent auto-recovery integration established")
         except Exception as e:
-            logger.warning(f"âš ï¸ Could not initialize auto-recovery integration: {e}")
+            logger.warning(f"⚠️ Could not initialize auto-recovery integration: {e}")
     
     def _health_check(self) -> Dict[str, Any]:
         """Health check for auto-recovery monitoring"""
@@ -721,7 +863,7 @@ class AIAgent:
                 logger.info("ðŸ§  Gerando saudaÃ§Ã£o inteligente (Smart Switching)...")
                 resposta_viva = self._call_smart_brain(
                     prompt_saudacao,
-                    complexity=0.3,
+                    complexity=0.2,  # Baixa complexidade = prioriza tier_fast (Qwen 1.5B/3B)
                     system_prompt="VocÃª Ã© JARVIS. Responda APENAS com texto natural e humano. NUNCA use JSON, chaves ou formataÃ§Ã£o tÃ©cnica. Fale diretamente com o William."
                 )
             except Exception as e:
@@ -752,7 +894,7 @@ class AIAgent:
             except:
                 pass
 
-    def process_command(self, user_command: str) -> str:
+    async def process_command(self, user_command: str) -> str:
         """
         Recebe um comando (texto ou voz), captura a tela e decide o que fazer
         """
@@ -760,9 +902,62 @@ class AIAgent:
         original_command = user_command
         logger.info(f"Agente processando comando: {user_command}")
         
-        # ðŸŽ¨ FASE 5: Feedback Visual (Pensando)
+        # 🎨 FASE 5: Feedback Visual (Pensando)
         ui_signals.update_status.emit("Analisando comando do Senhor...")
-        # CORREÃ‡ÃƒO P0: VERIFICAÃ‡ÃƒO DE MODO SEGURO
+
+        # =====================================================================
+        # PHASE: INSTINCT LAYER (QUICK RESPONSE - ZERO LATENCY)
+        # =====================================================================
+        # Antes de ir para a LLM, verificamos se é um comando trivial
+        instinct_result = await instinct_engine.check(user_command)
+        if instinct_result:
+            logger.info("⚡ Comando resolvido pela camada de Instinto.")
+            
+            # 1. Tratamento Especial: Renomeação
+            if "identify_self" in instinct_result.get("name", "") and "seu novo nome é" in user_command.lower():
+                new_name = user_command.lower().split("seu novo nome é")[-1].strip()
+                if AtomicVoiceFilter.set_primary_name(new_name):
+                    instinct_result["final_answer"] = f"Entendido, Senhor. De agora em diante, atenderei pelo nome de {new_name}."
+            
+            # 2. Tratamento Especial: Modo Noturno / Foco
+            if "enable_night_mode" in instinct_result.get("name", ""):
+                context_manager.night_mode = True
+            elif "disable_night_mode" in instinct_result.get("name", ""):
+                context_manager.night_mode = False
+            
+            # Se for um comando de erro, buscamos os erros reais agora
+            if "get_last_system_error" in [a.get("action") for a in instinct_result.get("actions", [])]:
+                errors = hw_control.get_last_system_errors()
+                instinct_result["final_answer"] = f"Senhor, analisei os logs do sistema. Aqui estão os últimos registros: {errors}"
+            
+            # Executar ações de instinto
+            if instinct_result.get("actions") and action_controller:
+                for action in instinct_result["actions"]:
+                    if action["action"] == "set_volume":
+                        hw_control.set_system_volume(action["level"])
+            
+            # POLITENESS & NIGHT MODE CHECK before speaking
+            if voice_controller:
+                if context_manager.should_be_quiet():
+                    # No modo quieto, apenas mostra no HUD/Log
+                    logger.info(f"🤫 (Silent Mode) JARVIS: {instinct_result['final_answer']}")
+                    ui_signals.update_status.emit(instinct_result["final_answer"])
+                else:
+                    voice_controller.speak(instinct_result["final_answer"])
+            return instinct_result["final_answer"]
+
+        # =====================================================================
+        # PHASE: MULTI-MODAL ENGAGEMENT CHECK
+        # =====================================================================
+        if not self._should_engage(user_command):
+            logger.debug("Silenciando: Fala não direcionada ao JARVIS.")
+            return None
+
+        # Prepara a intenção mantendo o contexto emocional
+        intent_command = self._prepare_intent(user_command)
+        logger.debug(f"Processando intenção: {intent_command}")
+
+        # CORREÇÃO P0: VERIFICAÇÃO DE MODO SEGURO
         # =====================================================================
         if self.safe_mode:
             error_msg = (
@@ -905,6 +1100,11 @@ class AIAgent:
             "user_command": user_command
         }
         
+        # RAM-based immediate context (Inspirado no PVA)
+        if memory_manager:
+            immediate_ctx = memory_manager.get_immediate_context()
+            memory_context = f"{immediate_ctx}\n{memory_context}"
+
         enriched_command = ContextSanitizer.create_human_prompt(user_command, raw_context)
         
         # 5. Loop de Pensamento e AÃ§Ã£o (ReAct)
@@ -925,25 +1125,43 @@ class AIAgent:
             screenshot_event.wait(timeout=5.0)
             screenshot_path = screenshot_container["path"]
 
-            # --- TENTATIVA LOCAL OLLAMA-CENTRIC (Fase 1) ---
             try:
-                # Seleciona o melhor modelo Ollama
-                target_model = self._select_best_ollama_model(enriched_command, screenshot_path)
-                response = self._call_ollama(enriched_command, screenshot_path, model=target_model, system_prompt=dynamic_system_prompt)
-
-                if "ERRO" in response or not response:
-                    # Fallback para cÃ©rebro local ultra-leve (LocalBrain)
-                    logger.warning("Ollama falhou. Usando LocalBrain para fallback...")
-                    response = local_brain.generate_response(
-                        enriched_command, 
-                        dynamic_system_prompt,
-                        max_new_tokens=256
-                    )
+                # =====================================================================
+                # MÁQUINA DE EVOLUÇÃO: PRIORIZAR INSTINTO APRENDIDO
+                # =====================================================================
+                # Antes de chamar qualquer IA pesada, ele busca na sua própria base de experiências
+                learned_behavior = knowledge_distiller.get_relevant_examples(user_command, limit=1)
+                if learned_behavior and "ERRO" not in learned_behavior:
+                    logger.info("🧠 JARVIS agindo por Instinto (Conhecimento Destilado).")
+                    # Se ele já aprendeu, ele não pergunta pro "Tutor" (LLM)
+                    response = learned_behavior
+                    # Aqui ele executa direto o que aprendeu que funciona para você
+                else:
+                    # Se é algo novo, ele usa os modelos para aprender como agir
+                    target_model = self._select_best_ollama_model(enriched_command, screenshot_path)
+                    response = self._call_ollama(enriched_command, screenshot_path, model=target_model, system_prompt=dynamic_system_prompt)
+                    
+                    # Após a resposta do "Tutor", ele armazena para o futuro (Destilação)
+                    if "ERRO" not in response:
+                        knowledge_distiller.distill_interaction(
+                            user_command=original_command,
+                            thought="Aprendido via modelo tutor",
+                            actions=all_actions,
+                            success=True
+                        )
 
             except Exception as e:
                 logger.error(f"Falha no cÃ©rebro local ({primary_provider}): {e}")
                 
-                # ðŸ†• AUTO-RECOVERY: Handle critical AI processing errors
+                # 🧠 AUTO-EVOLUÇÃO: Se ele falhou tecnicamente ou em lógica, 
+                # ele registra uma dúvida para "estudar" depois de como resolver.
+                if curiosity_engine:
+                    curiosity_engine.register_skill_gap(
+                        f"Como responder adequadamente ao comando '{user_command}' "
+                        f"quando o provedor {primary_provider} falha ou não entende o contexto humano."
+                    )
+                
+                # AUTO-RECOVERY: Handle critical AI processing errors
                 self._handle_critical_error(e, "ai_processing")
                 
                 from src.core.management.evolution_engine import evolution_engine
@@ -1080,26 +1298,54 @@ class AIAgent:
                         'emotion': user_emotion if camera_controller else 'neutral'
                     }
                     
-                    # Registrar interaÃ§Ã£o para aprendizado
+                    # Registrar interação para aprendizado e dinâmica interpessoal
                     learning_engine.record_interaction(
                         user_input=user_command,
                         ai_response=response,
-                        feedback_value=None,  # SerÃ¡ coletado feedback explÃ­cito depois via UI
+                        feedback_value=None,
                         metadata=metadata
                     )
                     
-                    logger.debug("ðŸ“ InteraÃ§Ã£o registrada no sistema de aprendizado")
+                    # 🫂 SINCERIDADE E EVOLUÇÃO: Atualiza vínculo
+                    # Estimativa de sentimento baseada no comprimento e pontuação (Placeholder para análsie real)
+                    sentiment = "positive" if len(user_command) > 10 and "?" not in user_command else "neutral"
+                    context_manager.record_interaction(sentiment, was_helpful=True)
+                    
+                    logger.debug("📏 Dinâmica de Vínculo atualizada")
             except Exception as e:
-                logger.debug(f"Erro ao registrar interaÃ§Ã£o: {e}")
+                logger.debug(f"Erro ao registrar interação: {e}")
         
-        # 7. Falar a resposta (removendo tags de aÃ§Ã£o e limpando JSON)
+        # 7. Falar a resposta (removendo tags de ação e limpando JSON)
         final_response = self._clean_response_for_speech(response, emotion_prefix)
         
-        # Injetar pergunta proativa de aprendizado se disponÃ­vel
+        # Injetar pergunta proativa de aprendizado ou Meta-Conversa Humana
         if proactive_question and "ERRO" not in response:
             final_response = f"{final_response}\n\nPS: {proactive_question}"
+        elif context_manager.should_initiate_conversation() and "ERRO" not in response:
+             meta_comments = [
+                 "A propósito, Senhor, estou estudando nossa forma de interagir para me tornar mais natural. O que tem achado?",
+                 "Senhor, espero que meu tom atual esteja de acordo com sua preferência. Estou me adaptando.",
+                 "Estou monitorando meus próprios processos para garantir que não interrompa o Senhor indevidamente."
+             ]
+             import random
+             final_response = f"{final_response}\n\n{random.choice(meta_comments)}"
             
-        voice_controller.speak(final_response)
+        # POLITENESS & NIGHT MODE CHECK antes de falar a resposta final
+        if voice_controller:
+            if context_manager.should_be_quiet():
+                # No modo silencioso, evitamos a fala auditiva, mas garantimos o feedback visual
+                logger.info(f"🤫 (Silent Mode) JARVIS: {final_response}")
+                ui_signals.update_status.emit(final_response)
+            else:
+                # Se não for modo silencioso, verifica se o momento é oportuno (Politeness)
+                if context_manager.check_politeness():
+                    voice_controller.speak(final_response)
+                else:
+                    # Se o usuário estiver ocupado, podemos adiar ou apenas mostrar visualmente
+                    logger.info(f"⏳ (Busy/Polite Mode) JARVIS aguardando momento oportuno...")
+                    ui_signals.update_status.emit(f"[Pendente] {final_response}")
+                    # Por simplicidade, vamos apenas mostrar no HUD agora, mas poderíamos enfileirar
+                    # voice_controller.speak(final_response) # Fallback se quiser forçar
         return final_response
 
     def _handle_search(self, response, enriched_command):
@@ -1413,21 +1659,28 @@ class AIAgent:
             return None
 
     def _select_best_ollama_model(self, prompt: str, image_path: Optional[str] = None) -> str:
-        """Seleciona dinamicamente o melhor modelo Ollama para a tarefa"""
-        # Se houver imagem, usa modelo mais capaz disponÃ­vel (fallback sem visÃ£o especÃ­fica)
-        if image_path and os.path.exists(image_path):
-            # Usar modelo do tier ultra para processamento de imagem
-            return get_model_for_tier('ultra')
+        """Seleciona dinamicamente o melhor modelo Ollama para a tarefa usando o BrainRouter"""
+        if not self.brain_router:
+            return "gemma3:4b" # Fallback seguro
             
-        # Analisa complexidade do prompt (heurÃ­stica simples)
+        # Determina a complexidade básica
+        complexity = 0.3
         prompt_lower = prompt.lower()
-        if any(kw in prompt_lower for kw in ["cÃ³digo", "python", "script", "debug", "analise"]):
-            return "qwen2.5:7b" # Melhor em raciocÃ­nio/cÃ³digo
+        if any(kw in prompt_lower for kw in ["código", "python", "script", "debug", "analise"]):
+            complexity = 0.7
+        elif image_path:
+            complexity = 0.8 # Imagem exige mais "cérebro"
             
-        if any(kw in prompt_lower for kw in ["histÃ³ria", "poema", "conversa", "criativo"]):
-            return "qwen2.5:7b" # PadrÃ£o para criatividade
+        # Pede ao router o melhor cérebro local
+        brain_info = self.brain_router.choose_brain(task_complexity=complexity)
+        brain = brain_info.get("brain", "local")
+        
+        if brain.startswith("ollama:"):
+            return brain.split(":", 1)[1]
             
-        return "qwen2.5:7b" # PadrÃ£o estÃ¡vel
+        # Se o router sugerir 'local' (LocalBrain) ou 'cloud', mas queremos especificamente 
+        # um modelo Ollama aqui, buscamos o melhor disponível
+        return self.brain_router._choose_local_brain().replace("ollama:", "")
 
     def _call_ollama(self, prompt: str, image_path: Optional[str] = None, model: Optional[str] = None, system_prompt: str = None):
         """IntegraÃ§Ã£o com Ollama Local (Multi-modelo) com Keep-Alive DinÃ¢mico"""
@@ -1472,9 +1725,15 @@ class AIAgent:
             data = response.json()
             return data.get('response', "Senhor, nÃ£o obtive resposta do processador local.")
 
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timeout ao chamar Ollama ({target_model}): {e}")
+            return "OLLAMA_TIMEOUT"  # Sinal para retry
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Erro de conexão com Ollama ({target_model}): {e}")
+            return "OLLAMA_CONNECTION_ERROR"  # Sinal para retry
         except Exception as e:
             logger.error(f"Erro ao chamar Ollama ({target_model}): {e}")
-            return f"Infelizmente estou com dificuldades no processamento offline: {str(e)}."
+            return "OLLAMA_ERROR"  # Sinal para fallback
     
     def _get_keep_alive_for_model(self, model_name: str) -> any:
         """
@@ -1498,31 +1757,69 @@ class AIAgent:
 
     def _call_smart_brain(self, prompt: str, image_path: Optional[str] = None, complexity: float = 0.5, system_prompt: str = None) -> str:
         """
-        [ALTERNÃ‚NCIA INTELIGENTE - STARK IQ]
-        Orquestra a chamada entre diferentes provedores com fallback automÃ¡tico.
-        Ordem: Ollama -> Gemini (Cloud) -> LocalBrain (Micro-LLM).
+        [ALTERNÂNCIA INTELIGENTE - STARK IQ]
+        Orquestra a chamada entre diferentes provedores com fallback automático.
+        Ordem: Ollama (com retry) -> LocalBrain (Micro-LLM).
+        Prioriza sempre Ollama quando disponível.
         """
         # 1. Roteamento Inicial
         brain_config = self.brain_router.choose_brain(task_complexity=complexity) if self.brain_router else {"brain": "local"}
         primary_brain = brain_config.get("brain", "local")
         
-        logger.info(f"ðŸ§  Smart Router selecionou core primÃ¡rio: {primary_brain}")
+        logger.info(f"🧠 Smart Router selecionou core primário: {primary_brain}")
         
-        # 2. TENTATIVA 1: OLLAMA
+        # 2. TENTATIVA 1: OLLAMA (COM RETRY)
         if primary_brain.startswith("ollama:"):
             model = primary_brain.split(":", 1)[1]
-            response = self._call_ollama(prompt, image_path, model=model, system_prompt=system_prompt)
-            # Se a resposta nÃ£o for um erro de timeout/conexÃ£o, retorna
-            if "dificuldades no processamento offline" not in response:
+            
+            # Tentar Ollama até 3 vezes antes de desistir (prioridade máxima)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = self._call_ollama(prompt, image_path, model=model, system_prompt=system_prompt)
+                    
+                    # Verificar se é uma resposta válida (não é erro de conexão)
+                    error_indicators = [
+                        "OLLAMA_TIMEOUT",
+                        "OLLAMA_CONNECTION_ERROR",
+                        "OLLAMA_ERROR",
+                        "instabilidade momentânea",
+                        "dificuldades no processamento"
+                    ]
+                    
+                    is_error = any(indicator in response for indicator in error_indicators)
+                    
+                    if not is_error and len(response.strip()) > 10:
+                        logger.info(f"✅ Ollama {model} respondeu com sucesso (tentativa {attempt + 1}/{max_retries})")
+                        return response
+                    
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ Ollama resposta inválida/erro na tentativa {attempt + 1}, retry em 2s...")
+                        import time
+                        time.sleep(2)  # Pausa maior para estabilizar
+                    
+                except Exception as e:
+                    logger.error(f"Erro no Ollama (tentativa {attempt + 1}/{max_retries}): {e}")
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(2)
+            
+            logger.warning(f"⚠️ Ollama ({model}) falhou após {max_retries} tentativas. Ativando fallback para LocalBrain...")
+
+
+        # 3. FALLBACK FINAL: NATIVO (LocalBrain) - O motor que nunca para
+        logger.info("🏠 Fallback Final: Ativando LocalBrain nativo (1.5B Qwen).")
+        try:
+            from src.core.intelligence.local_brain import local_brain
+            response = local_brain.generate_response(prompt, system_prompt=system_prompt or self.system_prompt)
+            if response and len(response.strip()) > 5:
                 return response
-            logger.warning("âš ï¸ Ollama Falhou (Timeout/ConexÃ£o). Ativando Fallback de EmergÃªncia.")
-
-
-        # 4. TENTATIVA 3: NATIVO (LocalBrain) - O motor que nunca para
-        logger.info("ðŸ  Fallback Final: Ativando LocalBrain nativo.")
-        from src.core.intelligence.local_brain import local_brain
-        return local_brain.generate_response(prompt, system_prompt=system_prompt or self.system_prompt)
-
+            else:
+                logger.error("LocalBrain retornou resposta vazia, usando mensagem de emergência")
+                return "Sistemas online, William. Pronto para o que precisar."
+        except Exception as e:
+            logger.error(f"Erro crítico no LocalBrain fallback: {e}")
+            return "Sistemas operacionais, senhor."
 
     def _clean_response_for_speech(self, response: str, emotion_prefix: str = "") -> str:
         """
@@ -1572,5 +1869,10 @@ class AIAgent:
         except:
             return False
 
-# InstÃ¢ncia global
+try:
+    from src.learning.knowledge_distiller import knowledge_distiller
+except ImportError:
+    knowledge_distiller = None
+
+# Instância global
 ai_agent = AIAgent()

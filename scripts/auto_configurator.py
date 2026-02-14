@@ -25,15 +25,27 @@ class AutoConfigurator:
             return False
     
     def log(self, level, msg):
-        """Log colorido"""
-        colors = {
-            'INFO': '\033[96m',
-            'OK': '\033[92m',
-            'WARN': '\033[93m',
-            'ERROR': '\033[91m',
-            'END': '\033[0m'
-        }
-        print(f"{colors.get(level, '')}{msg}{colors['END']}")
+        """Log com cores apropriadas para o sistema"""
+        import platform
+        if platform.system() == 'Windows':
+            # Windows CMD não suporta ANSI bem, usar texto simples
+            prefix = {
+                'INFO': '[INFO]',
+                'OK': '[OK]',
+                'WARN': '[WARN]',
+                'ERROR': '[ERROR]'
+            }.get(level, f'[{level}]')
+            print(f"{prefix} {msg}")
+        else:
+            # ANSI colors para outros sistemas
+            colors = {
+                'INFO': '\033[96m',
+                'OK': '\033[92m',
+                'WARN': '\033[93m',
+                'ERROR': '\033[91m',
+                'END': '\033[0m'
+            }
+            print(f"{colors.get(level, '')}{msg}{colors['END']}")
     
     def install_vcredist(self):
         """Instala Visual C++ Redistributables se necessário"""
@@ -97,6 +109,22 @@ class AutoConfigurator:
         
         return True
     
+    def add_to_system_path(self, path_str):
+        """Adiciona um caminho ao PATH do sistema"""
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment", 0, winreg.KEY_ALL_ACCESS)
+            current_path, _ = winreg.QueryValueEx(key, "PATH")
+            if path_str not in current_path:
+                new_path = current_path + ";" + path_str
+                winreg.SetValueEx(key, "PATH", 0, winreg.REG_EXPAND_SZ, new_path)
+                winreg.CloseKey(key)
+                # Notifica o sistema da mudança
+                ctypes.windll.user32.SendMessageW(0xFFFF, 0x001A, 0, 0)  # WM_SETTINGCHANGE
+                return True
+        except Exception as e:
+            self.log('WARN', f'  Failed to add to system PATH: {e}')
+            return False
+    
     def fix_path_for_ollama(self):
         """Adiciona Ollama ao PATH se instalado mas não encontrado"""
         self.log('INFO', '[AUTO-CONFIG] Checking Ollama in PATH...')
@@ -119,9 +147,13 @@ class AutoConfigurator:
         for path in default_paths:
             if (path / 'ollama.exe').exists():
                 self.log('INFO', f'  Found Ollama at {path}')
-                os.environ['PATH'] = str(path) + os.pathsep + os.environ['PATH']
-                self.fixed.append('ollama_path')
-                self.log('OK', '  [OK] Added Ollama to PATH')
+                path_str = str(path)
+                if self.add_to_system_path(path_str):
+                    os.environ['PATH'] = path_str + os.pathsep + os.environ['PATH']
+                    self.fixed.append('ollama_path')
+                    self.log('OK', '  [OK] Added Ollama to system PATH')
+                else:
+                    self.log('WARN', '  [WARN] Could not add Ollama to system PATH')
                 return True
         
         self.log('WARN', '  [WARN] Ollama not found - will be installed by launcher')

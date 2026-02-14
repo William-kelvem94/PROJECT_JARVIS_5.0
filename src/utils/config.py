@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional
 import logging
 import yaml
+from pydantic import BaseModel, ValidationError, Field
+import jsonschema
 
 # ConfiguraÃ§Ã£o de logging gerenciada pelo LoggingConfig
 from src.utils.logging_config import LoggingConfig
@@ -20,6 +22,32 @@ from src.utils.logging_config import LoggingConfig
 logger = logging.getLogger(__name__)
 
 import threading
+
+# Schemas de validação
+class AIConfigSchema(BaseModel):
+    """Schema para ai_config.yaml"""
+    # Campos opcionais pois a estrutura do YAML mudou para seções aninhadas
+    model_name: Optional[str] = None
+    max_tokens: Optional[int] = None
+    temperature: Optional[float] = None
+    cache_enabled: bool = True
+    long_term_memory_enabled: bool = True
+    
+    class Config:
+        extra = "allow"  # Permitir campos extras
+
+class SettingsSchema(BaseModel):
+    """Schema para settings.json"""
+    app: Dict[str, Any]
+    capture: Dict[str, Any]
+    ocr: Dict[str, Any]
+    processing: Dict[str, Any]
+    storage: Dict[str, Any]
+    analysis: Dict[str, Any]
+    interface: Dict[str, Any]
+    
+    class Config:
+        extra = "allow"
 
 class Config:
     """Classe singleton para configuraÃ§Ãµes globais"""
@@ -74,18 +102,28 @@ class Config:
         self.PROCESSED_DIR = self.DATA_DIR / "processed"
         self.DATABASE_FILE = self.DATA_DIR / "jarvis.db"
 
-        # Arquivos de configuraÃ§Ã£o
+        # Arquivos de configuraÃ§Ã£o (SISTEMA)
         self.SETTINGS_FILE = self.CONFIG_DIR / "settings.json"
         self.OCR_CONFIG_FILE = self.CONFIG_DIR / "ocr_config.json"
         self.AI_CONFIG_FILE = self.CONFIG_DIR / "ai_config.yaml"
 
-        # InformaÃ§Ãµes do sistema
+        # Informações do sistema (Mover para antes do uso)
         self.SYSTEM_INFO = {
             "os": platform.system(),
             "os_version": platform.version(),
             "python_version": platform.python_version(),
             "architecture": platform.architecture()[0]
         }
+
+        # Caminhos de USUÁRIO (Camada de Sobreposição)
+        if self.SYSTEM_INFO["os"] == "Windows":
+            self.USER_CONFIG_DIR = Path(os.environ.get("APPDATA", "~")).expanduser() / "Jarvis"
+        else:
+            self.USER_CONFIG_DIR = Path("~/.config/jarvis").expanduser()
+            
+        self.USER_SETTINGS_FILE = self.USER_CONFIG_DIR / "settings.json"
+        self.USER_AI_CONFIG_FILE = self.USER_CONFIG_DIR / "ai_config.yaml"
+        self.USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
         # ConfiguraÃ§Ãµes padrÃ£o
         self.DEFAULT_SETTINGS = {
@@ -285,24 +323,48 @@ class Config:
             directory.mkdir(parents=True, exist_ok=True)
 
     def _load_user_settings(self) -> Dict[str, Any]:
-        """Carrega configuraÃ§Ãµes do usuÃ¡rio do arquivo JSON"""
+        """Carrega configurações do sistema e sobrepõe com as do usuário (Camadas)"""
+        settings = self.DEFAULT_SETTINGS.copy()
+        
+        # 1. Carregar do Sistema (Project Root / config)
         if self.SETTINGS_FILE.exists():
             try:
                 with open(self.SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                    user_settings = json.load(f)
-                logger.info("ConfiguraÃ§Ãµes do usuÃ¡rio carregadas com sucesso")
-                return user_settings
+                    system_settings = json.load(f)
+                    self._deep_update(settings, system_settings)
             except Exception as e:
-                logger.error(f"Erro ao carregar configuraÃ§Ãµes do usuÃ¡rio: {e}")
-                return self.DEFAULT_SETTINGS.copy()
-        else:
-            # Criar arquivo de configuraÃ§Ãµes padrÃ£o
-            self.save_user_settings(self.DEFAULT_SETTINGS)
-            return self.DEFAULT_SETTINGS.copy()
+                logger.error(f"Erro ao carregar settings do sistema: {e}")
+
+        # 2. Carregar do Usuário (AppData ou ~/.config)
+        if self.USER_SETTINGS_FILE.exists():
+            try:
+                with open(self.USER_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                    user_settings = json.load(f)
+                    self._deep_update(settings, user_settings)
+                    logger.info(f"✅ Configurações do usuário carregadas de {self.USER_SETTINGS_FILE}")
+            except Exception as e:
+                logger.error(f"Erro ao carregar settings do usuário: {e}")
+                
+        return settings
+
+    def _deep_update(self, base_dict: Dict, update_with: Dict):
+        """Atualiza dicionário aninhado recursivamente"""
+        for k, v in update_with.items():
+            if isinstance(v, dict) and k in base_dict and isinstance(base_dict[k], dict):
+                self._deep_update(base_dict[k], v)
+            else:
+                base_dict[k] = v
 
     def save_user_settings(self, settings: Dict[str, Any]):
-        """Salva configuraÃ§Ãµes do usuÃ¡rio"""
+        """Salva configurações do usuário com backup automático"""
         try:
+            # Criar backup se arquivo existir
+            if self.SETTINGS_FILE.exists():
+                backup_file = self.SETTINGS_FILE.with_suffix('.json.backup')
+                import shutil
+                shutil.copy2(self.SETTINGS_FILE, backup_file)
+                logger.debug(f"Backup criado: {backup_file}")
+            
             with open(self.SETTINGS_FILE, 'w', encoding='utf-8') as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
             logger.info("ConfiguraÃ§Ãµes do usuÃ¡rio salvas com sucesso")
@@ -359,14 +421,34 @@ class Config:
             try:
                 with open(self.AI_CONFIG_FILE, 'r', encoding='utf-8') as f:
                     ai_config = yaml.safe_load(f)
-                logger.info("âœ… ConfiguraÃ§Ãµes de IA carregadas de ai_config.yaml")
+                
+                # Validar configuração
+                try:
+                    validated_config = AIConfigSchema(**ai_config)
+                    logger.info("✅ Configurações de IA validadas com sucesso")
+                except ValidationError as e:
+                    logger.error(f"❌ Configuração de IA inválida: {e}")
+                    # Usar valores padrão para campos inválidos
+                    ai_config = self._get_default_ai_config()
+                
+                logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
                 return ai_config
             except Exception as e:
-                logger.error(f"âŒ Erro ao carregar ai_config.yaml: {e}")
-                return {}
+                logger.error(f"❌ Erro ao carregar ai_config.yaml: {e}")
+                return self._get_default_ai_config()
         else:
-            logger.warning(f"âš ï¸ ai_config.yaml nÃ£o encontrado em {self.AI_CONFIG_FILE}")
-            return {}
+            logger.warning(f"⚠️ ai_config.yaml não encontrado em {self.AI_CONFIG_FILE}")
+            return self._get_default_ai_config()
+    
+    def _get_default_ai_config(self) -> Dict[str, Any]:
+        """Retorna configurações padrão de IA"""
+        return {
+            "model_name": "microsoft/DialoGPT-medium",
+            "max_tokens": 1000,
+            "temperature": 0.7,
+            "cache_enabled": True,
+            "long_term_memory_enabled": True
+        }
     
     def get_ai_config(self, key_path: str = None, default=None):
         """

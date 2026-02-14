@@ -30,26 +30,42 @@ class AtomicVoiceFilter:
 
     @classmethod
     def add_nickname(cls, nickname: str) -> bool:
-        """Adiciona um novo apelido e persiste na configuraÃ§Ã£o"""
+        """Adiciona um novo apelido persistente."""
         cls._ensure_initialized()
         nick_lower = nickname.lower().strip()
-        if not nick_lower:
+        if not nick_lower or nick_lower in cls.WAKE_WORDS:
             return False
             
-        if nick_lower not in cls.WAKE_WORDS:
-            cls.WAKE_WORDS.append(nick_lower)
+        cls.WAKE_WORDS.append(nick_lower)
+        try:
+            from src.utils.config import config
+            current = config.get_setting("audio.nicknames", [])
+            if nick_lower not in current:
+                current.append(nick_lower)
+                config.set_setting("audio.nicknames", current)
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar apelido: {e}")
+            return False
+
+    @classmethod
+    def set_primary_name(cls, name: str) -> bool:
+        """Define um novo nome primário (prioridade na lista)."""
+        cls._ensure_initialized()
+        name_lower = name.lower().strip()
+        if not name_lower: return False
+        
+        if name_lower in cls.WAKE_WORDS:
+            cls.WAKE_WORDS.remove(name_lower)
+        cls.WAKE_WORDS.insert(0, name_lower)
             
         try:
             from src.utils.config import config
-            custom = config.get_setting("audio.nicknames", [])
-            if nick_lower not in custom:
-                custom.append(nick_lower)
-                config.set_setting("audio.nicknames", custom)
-                return True
+            config.set_setting("audio.primary_name", name_lower)
+            return True
         except Exception as e:
-            logger.error(f"Erro ao salvar novo apelido: {e}")
-            
-        return False
+            logger.error(f"Erro ao definir nome primário: {e}")
+            return False
 
     TECH_BLOCKLIST = [
         # Palavras tÃ©cnicas em inglÃªs que vazam com frequÃªncia

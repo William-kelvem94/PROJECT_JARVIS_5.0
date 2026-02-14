@@ -102,6 +102,7 @@ O **JARVIS 5.0 (Singularity Edition)** representa o estado da arte em sistemas d
 | 🌙 **Dream Engine** | Aprendizado autônomo noturno | ✅ Ativo |
 | ⚡ **Auto-Otimização** | Gerenciamento dinâmico de hardware | ✅ Ativo |
 | 🔧 **Auto-Reparação** | Sistema de healing automático | ✅ Ativo |
+| 🌐 **Mente Coletiva** | Inteligência distribuída entre dispositivos | ✅ Ativo |
 
 ### 🎮 Interfaces Disponíveis
 
@@ -456,6 +457,7 @@ PROXY_PORT=
 
 ### Documentação Técnica
 - **[Mapa de Capacidades](docs/capabilities_map_singularity.md)**: Auditoria completa das funcionalidades do sistema
+- **[Mente Coletiva](docs/MENTE_COLETIVA.md)**: Guia completo da inteligência distribuída
 - **[Documentação Técnica](docs/)**: Guias detalhados de arquitetura e implementação
 - **[Relatórios de Sistema](docs/reports/)**: Análises de performance e monitoramento
 

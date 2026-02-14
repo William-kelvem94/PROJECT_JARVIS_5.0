@@ -30,20 +30,60 @@ from src.core.management.hardware_manager import hardware_manager
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# MANDATORY IMPORTS
+# LAZY IMPORTS (Only when needed)
 # ============================================================================
-import cv2
-import numpy as np
-import face_recognition
-import mss
 
-# Module availability flags (deprecated, set to True for compatibility)
-CV2_AVAILABLE = True
-NUMPY_AVAILABLE = True
-MSS_AVAILABLE = True
-FACE_REC_AVAILABLE = True
+# Try to import numpy for type hints
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, KeyboardInterrupt):
+    # Fallback for type hints
+    class MockNumpy:
+        ndarray = type('ndarray', (), {})
+    np = MockNumpy()
+    NUMPY_AVAILABLE = False
+
+# MANDATORY IMPORTS - All vision features NOW REQUIRED
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError as e:
+    logger.critical(f"❌ opencv-python REQUIRED: {e}")
+    CV2_AVAILABLE = False
+    cv2 = None
+
+try:
+    import face_recognition
+    FACE_REC_AVAILABLE = True
+except ImportError as e:
+    logger.critical(f"❌ face-recognition REQUIRED: {e}")
+    FACE_REC_AVAILABLE = False
+    face_recognition = None
+
+try:
+    import mss
+    MSS_AVAILABLE = True
+except ImportError as e:
+    logger.critical(f"❌ mss REQUIRED: {e}")
+    MSS_AVAILABLE = False
+    mss = None
+
+# EasyOCR and YOLO now mandatory (loaded during init)
 EASYOCR_AVAILABLE = True
 YOLO_AVAILABLE = True
+
+def _import_cv2():
+    """Import cv2 (compatibility wrapper)"""
+    return CV2_AVAILABLE
+
+def _import_face_recognition():
+    """Import face_recognition (compatibility wrapper)"""
+    return FACE_REC_AVAILABLE
+
+def _import_mss():
+    """Import mss (compatibility wrapper)"""
+    return MSS_AVAILABLE
 
 
 # ============================================================================

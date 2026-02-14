@@ -10,7 +10,7 @@ import threading
 import time
 import logging
 import shutil
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any, Callable
 from pathlib import Path
 from datetime import datetime
 from src.utils.config import config
@@ -20,31 +20,15 @@ from src.core.management.hardware_manager import hardware_manager
 
 logger = logging.getLogger(__name__)
 
-# Lazy import face_recognition to avoid startup issues
-FACE_REC_AVAILABLE = False
-face_recognition = None
-
-def _ensure_face_recognition():
-    global FACE_REC_AVAILABLE, face_recognition
-    if not FACE_REC_AVAILABLE and face_recognition is None:
-        try:
-            import face_recognition
-            FACE_REC_AVAILABLE = True
-        except (ImportError, OSError) as e:
-            FACE_REC_AVAILABLE = False
-            face_recognition = None
-            logger.debug(f"Face recognition nÃ£o encontrado: {e}")
-
+# MANDATORY: face_recognition is REQUIRED
 try:
-    # Just check if face_recognition can be imported without actually importing it
-    import importlib
-    face_rec_spec = importlib.util.find_spec("face_recognition")
-    if face_rec_spec is not None:
-        FACE_REC_AVAILABLE = True
-    else:
-        FACE_REC_AVAILABLE = False
-except:
+    import face_recognition
+    FACE_REC_AVAILABLE = True
+except ImportError as e:
+    logger.critical(f"❌ face-recognition REQUIRED but not available! Install: pip install face-recognition")
+    logger.critical(f"Import error: {e}")
     FACE_REC_AVAILABLE = False
+    face_recognition = None
 
 class CameraController:
     """Controla a webcam e processa visÃ£o computacional"""
@@ -101,10 +85,8 @@ class CameraController:
 
     def _load_known_faces(self):
         """Carrega faces da pasta de dados para reconhecimento"""
-        # Ensure face recognition is loaded
-        _ensure_face_recognition()
         if not FACE_REC_AVAILABLE or face_recognition is None:
-            logger.warning("Face recognition not available, skipping face loading")
+            logger.warning("⚠️ Face recognition not available for loading known faces")
             return
             
         # Usar caminho absoluto centralizado
@@ -163,8 +145,22 @@ class CameraController:
             self.monitor_thread.join(timeout=2)
 
     def _monitor_loop(self):
-        """Loop principal de visÃ£o com FPS adaptativo"""
-        # ðŸ†• SAFE DELAY: Garantir que a GUI e outros sistemas estejam prontos
+        """Loop principal de visÃ£o com FPS adaptativo"""        # 🔒 PERMISSÃO CHECK: Verificar acesso à câmera antes de tentar abrir
+        try:
+            import platform
+            if platform.system() == "Windows":
+                # No Windows, tentar uma abertura rápida para verificar permissões
+                test_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+                if test_capture and test_capture.isOpened():
+                    test_capture.release()
+                    logger.info("✅ Permissões de câmera verificadas")
+                else:
+                    logger.error("❌ Sem permissão para acessar a câmera. Verifique as configurações de privacidade.")
+                    self.is_monitoring = False
+                    return
+        except Exception as e:
+            logger.warning(f"⚠️ Não foi possível verificar permissões da câmera: {e}")
+                # ðŸ†• SAFE DELAY: Garantir que a GUI e outros sistemas estejam prontos
         time.sleep(2)
         
         video_capture = None
@@ -195,9 +191,18 @@ class CameraController:
 
             while self.is_monitoring:
                 ret, frame = video_capture.read()
-                if not ret:
+                if not ret or frame is None or frame.size == 0:
+                    logger.warning("⚠️ Frame inválido ou corrompido da câmera, pulando...")
                     time.sleep(1)
                     continue
+
+                # 🛡️ DATA VALIDATION: Verificar integridade do frame
+                if len(frame.shape) != 3 or frame.shape[2] != 3:
+                    logger.warning("⚠️ Frame com formato inválido, pulando...")
+                    time.sleep(1)
+                    continue
+
+                self._current_frame_cache = frame.copy()
 
                 # ðŸ†• FASE 1: DetecÃ§Ã£o de Movimento para FPS Adaptativo
                 motion_detected = False
@@ -235,10 +240,8 @@ class CameraController:
                 if is_active_mode and getattr(self, '_faceid_failures', 0) < 5:
                     if process_this_frame:
                         try:
-                            # Ensure face recognition is loaded
-                            _ensure_face_recognition()
                             if not FACE_REC_AVAILABLE or face_recognition is None:
-                                logger.debug("Face recognition not available, skipping frame processing")
+                                pass  # Skip face recognition if not available
                             else:
                                 small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
                                 rgb_small_frame = small_frame[:, :, ::-1]
@@ -246,25 +249,35 @@ class CameraController:
                                 # Buscar faces com HOG
                                 face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
                             
-                            if face_locations:
-                                try:
-                                    face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
-                                    for face_encoding in face_encodings:
-                                        match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
-                                        name = "Desconhecido"
-                                        if True in match:
-                                            name = self.known_face_names[match.index(True)]
-                                        
-                                        # Log e atualizaÃ§Ã£o
-                                        if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
-                                            logger.info(f"UsuÃ¡rio identificado: {name}")
-                                            self.last_seen_user = name
-                                        self.last_seen_time = time.time()
-                                    self._faceid_failures = 0
-                                except Exception:
-                                    self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
+                                if face_locations:
+                                    try:
+                                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                                        for face_encoding in face_encodings:
+                                            match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
+                                            name = "Desconhecido"
+                                            if True in match:
+                                                name = self.known_face_names[match.index(True)]
+                                            
+                                            # Log e atualização
+                                            if name != self.last_seen_user or (time.time() - self.last_seen_time > 60):
+                                                logger.info(f"Usuário identificado: {name}")
+                                                self.last_seen_user = name
+                                                
+                                                # 🔄 SYNC IDENTITY: Alternar Workspace e Role se for um usuário autorizado
+                                                from src.core.management.context_manager import context_manager
+                                                from src.core.management.user_manager import user_manager
+                                                if name != "Desconhecido":
+                                                    context_manager.switch_user(name)
+                                                    user_manager.record_presence(name)
+
+                                            self.last_seen_time = time.time()
+                                        self._faceid_failures = 0
+                                    except Exception as e:
+                                        logger.debug(f"Erro no processamento de faces: {e}")
+                                        self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
                         except Exception as e:
                             logger.debug(f"Erro FaceID: {e}")
+                            self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
             
                 # EmoÃ§Ã£o (apenas em modo ativo)
                 if is_active_mode:
@@ -321,10 +334,8 @@ class CameraController:
     def register_new_face(self, name: str) -> bool:
         """Tira fotos de mÃºltiplos Ã¢ngulos para mapear o usuÃ¡rio de forma inteligente"""
         try:
-            # Ensure face recognition is loaded
-            _ensure_face_recognition()
             if not FACE_REC_AVAILABLE or face_recognition is None:
-                logger.error("Face recognition not available for registration")
+                logger.error("❌ Face recognition not available for user registration!")
                 return False
                 
             from src.core.audio.voice_controller import voice_controller
@@ -428,6 +439,62 @@ class CameraController:
             import dlib
             return dlib.DLIB_USE_CUDA
         except Exception:
+            return False
+
+    # 🛡️ MÉTODOS DE SEGURANÇA (SENTINEL PROTOCOL)
+    
+    def detect_unauthorized_access(self) -> bool:
+        """Retorna True se houver alguém não autorizado (Desconhecido) diante da câmera"""
+        return self.last_seen_user == "Desconhecido" and (time.time() - self.last_seen_time < 5)
+
+    def is_master_present(self) -> bool:
+        """Retorna True se o Master (William) estiver diante da câmera"""
+        # William é o master default, buscamos por ele no registro
+        return self.last_seen_user == "William" and (time.time() - self.last_seen_time < 5)
+
+    def is_master_alone(self) -> bool:
+        """Verifica se William é a única pessoa visível"""
+        # Simplificação: se o master está presente e o último visto foi ele, consideramos seguro.
+        # Numa versão avançada, contaríamos faces no frame atual.
+        return self.is_master_present()
+
+    def capture_context(self) -> Dict[str, Any]:
+        """Captura um snapshot leve de contexto para a observação adaptativa da IA"""
+        context = {
+            "timestamp": datetime.now().isoformat(),
+            "last_user": self.last_seen_user,
+            "current_emotion": self.current_emotion,
+            "face_detected": (time.time() - self.last_seen_time < 5)
+        }
+        
+        # Opcional: Snapshot se o sistema não estiver sobrecarregado
+        from src.core.management.hardware_manager import hardware_manager
+        if not hardware_manager.is_throttled:
+            snapshot_path = config.PROJECT_ROOT / "data" / "status" / "cam_context.jpg"
+            snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+            if self.save_snapshot(snapshot_path):
+                context["image_path"] = str(snapshot_path)
+                
+        return context
+
+    def save_snapshot(self, path: Path):
+        """Salva o frame atual em um arquivo (Snap de Evidência)"""
+        try:
+             # Usar o último frame processado (precisaríamos expor o frame do loop ou abrir a câmera rapidamente)
+             # Para evitar conflitos de travamento de hardware, tentamos capturar o frame atual se monitoramento estiver ativo
+             if hasattr(self, '_current_frame_cache') and self._current_frame_cache is not None:
+                 cv2.imwrite(str(path), self._current_frame_cache)
+                 return True
+             
+             # Fallback: Abrir câmera rapidinho se não estiver monitorando
+             cap = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+             ret, frame = cap.read()
+             if ret:
+                 cv2.imwrite(str(path), frame)
+             cap.release()
+             return ret
+        except Exception as e:
+            logger.error(f"Erro ao salvar snapshot: {e}")
             return False
 
 # ============================================================================

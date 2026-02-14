@@ -20,9 +20,17 @@ logging.getLogger('comtypes').setLevel(logging.ERROR)
 # ============================================================================
 # IMPORTS & DEPENDENCIES
 # ============================================================================
-import torch
 import pyttsx3
 import speech_recognition as sr
+from src.utils.config import config
+
+# Lazy import torch to avoid numpy conflicts
+torch = None
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
 
 try:
     import pygame
@@ -36,17 +44,15 @@ try:
 except ImportError:
     EDGE_TTS_AVAILABLE = False
 
-try:
-    from TTS.api import TTS
-    TTS_AVAILABLE = True
-except ImportError:
-    TTS_AVAILABLE = False
-
-from src.utils.config import config
-from src.interface.ui_signals import ui_signals
+# TTS will be imported lazily when needed
+TTS_AVAILABLE = False
 
 import logging
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# CONDITIONAL IMPORTS (Graceful Degradation)
+# ============================================================================
 
 class VoiceController:
     """
@@ -72,6 +78,18 @@ class VoiceController:
         mic_index = config.get_setting('voice.mic_index', None)
         self.recognizer = sr.Recognizer()
         try:
+            # 🔒 PERMISSÃO CHECK: Verificar acesso ao microfone
+            try:
+                # Tentar uma leitura rápida para verificar permissões
+                test_mic = sr.Microphone(device_index=mic_index)
+                with test_mic as source:
+                    self.recognizer.adjust_for_ambient_noise(source, duration=0.1)
+                logger.info("✅ Permissões de microfone verificadas")
+            except Exception as perm_error:
+                logger.error(f"❌ Sem permissão para acessar o microfone: {perm_error}")
+                self.microphone = None
+                return
+            
             self.microphone = sr.Microphone(device_index=mic_index)
             logger.info(f"✅ Microfone inicializado (Index: {mic_index or 'Padrao'})")
         except Exception as e:
@@ -115,14 +133,27 @@ class VoiceController:
 
     def _init_xtts(self):
         """Inicializa o modelo XTTS-v2 localmente."""
+        global TTS_AVAILABLE
+
+        # Lazy import of TTS
+        if not TTS_AVAILABLE:
+            try:
+                from TTS.api import TTS
+                TTS_AVAILABLE = True
+                logger.info("✅ TTS imported successfully")
+            except (ImportError, OSError) as e:
+                logger.warning(f"⚠️ TTS import failed, using fallback voice synthesis: {e}")
+                TTS_AVAILABLE = False
+                return
+
         if not TTS_AVAILABLE:
             logger.warning("⚠️ XTTS (Coqui) não disponível no sistema.")
             return
-        
+
         try:
             logger.info("🧠 Inicializando Stark Neural Engine (XTTS-v2)...")
             self.xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-            if torch.cuda.is_available():
+            if TORCH_AVAILABLE and torch.cuda.is_available():
                 self.xtts_model.to("cuda")
                 logger.info("🚀 XTTS utilizando aceleração CUDA")
             else:
@@ -211,11 +242,15 @@ class VoiceController:
         await communicate.save(str(path))
 
     def _play_audio(self, file_path: str, wait: bool = False):
-        """Reproduz áudio via pygame mixer."""
+        """Reproduz áudio via pygame mixer com Antifeedback."""
         if not PYGAME_AVAILABLE: return
+        
+        from src.utils.hardware_control import hw_control
         
         try:
             self._is_speaking = True
+            # BARGE-IN ENABLED: Microfone agora permanece aberto para permitir interrupções.
+            
             pygame.mixer.music.load(file_path)
             pygame.mixer.music.play()
             
@@ -230,6 +265,8 @@ class VoiceController:
             logger.error(f"❌ Erro na reprodução: {e}")
         finally:
             self._is_speaking = False
+            # O sistema agora confia no cancelamento de eco via software ou sensibilidade.
+            
             if self.stop_requested:
                 pygame.mixer.music.stop()
                 self.stop_requested = False
@@ -262,6 +299,11 @@ class VoiceController:
                     audio = self.recognizer.listen(source, timeout=5, phrase_time_limit=10)
                     ui_signals.update_listening_state.emit(False)
                     
+                    # 🛡️ DATA VALIDATION: Verificar integridade do áudio
+                    if audio is None or not hasattr(audio, 'frame_data') or len(audio.frame_data) == 0:
+                        logger.warning("⚠️ Dados de áudio inválidos ou vazios, pulando...")
+                        continue
+                    
                     text = self.recognizer.recognize_google(audio, language="pt-BR")
                     if text and self.on_speech_recognized:
                         self.on_speech_recognized(text)
@@ -278,21 +320,17 @@ class VoiceController:
             return False
 
 
-# Module-level singleton accessor for a VoiceController instance.
-# We avoid creating the heavy `VoiceController` at import time; use `get_voice_controller()`.
-voice_controller = None
+# Module-level singleton instance (mandatory initialization)
+try:
+    voice_controller = VoiceController()
+    logger.info("✅ VoiceController singleton created")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize VoiceController: {e}")
+    voice_controller = None
 
 def get_voice_controller():
-    """Return a singleton VoiceController instance, creating it on demand.
-
-    This avoids heavy initialization during module import (TTS models, audio drivers).
+    """Return the singleton VoiceController instance.
+    
+    Now initialized at module load time since all features are mandatory.
     """
-    global voice_controller
-    if voice_controller is None:
-        try:
-            voice_controller = VoiceController()
-            logger.info("VoiceController initialized lazily.")
-        except Exception as e:
-            logger.warning(f"Failed to initialize VoiceController lazily: {e}")
-            voice_controller = None
     return voice_controller

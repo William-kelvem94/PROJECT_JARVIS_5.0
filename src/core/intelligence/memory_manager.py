@@ -11,8 +11,9 @@ import hashlib
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 import json
-import threading
 import time
+import threading
+from collections import deque
 
 try:
     import chromadb
@@ -48,11 +49,21 @@ class MemoryManager:
         self.memory_cache = {}  # Fallback RAM
         self.prompt_cache = {}  # ðŸ†• Phase 2: Prompt caching (LRU-like)
         self.max_cache_size = 50
+        self.short_term_memory = deque(maxlen=10) # Memória RAM imediata (Inspirada no PVA)
         self._models_loaded = False  # Flag para lazy loading
         self._graph_lock = threading.Lock()  # ðŸ”’ ProteÃ§Ã£o para I/O concorrente do Grafo JSON
         self._chroma_lock = threading.Lock() # ðŸ”’ ProteÃ§Ã£o para o ChromaDB
-        self._initialize_db()
-        self._start_maintenance_thread()
+        # In test mode we avoid heavy initialization (threads, DB operations, model imports)
+        try:
+            test_mode = bool(os.environ.get('JARVIS_TEST_MODE', False))
+        except Exception:
+            test_mode = False
+
+        if not test_mode:
+            self._initialize_db()
+            self._start_maintenance_thread()
+        else:
+            logger.info("MemoryManager initialized in JARVIS_TEST_MODE: skipping DB and background threads")
         self._initialized = True
 
     def _start_maintenance_thread(self):
@@ -201,7 +212,12 @@ class MemoryManager:
         
         if self.collection:
             try:
-                embedding = self._create_embedding(combined_text)
+                try:
+                    embedding = self._create_embedding(combined_text)
+                except Exception as e:
+                    logger.warning(f"Embedding generation failed, saving without embedding: {e}")
+                    embedding = None
+
                 # ðŸ†• Usar upsert ao invÃ©s de add para evitar warnings de IDs duplicados
                 with self._chroma_lock:
                     self.collection.upsert(
@@ -210,11 +226,22 @@ class MemoryManager:
                         metadatas=[meta],
                         embeddings=[embedding] if embedding else None
                     )
-                if is_gold: logger.info(f"âœ¨ MemÃ³ria de OURO destilada: {mem_id[:8]}")
+
+                if is_gold:
+                    logger.info(f"âœ¨ MemÃ³ria de OURO destilada: {mem_id[:8]}")
             except Exception as e:
                 logger.error(f"Erro ao salvar memÃ³ria persistente: {e}")
         else:
             self.memory_cache[mem_id] = {"text": combined_text, "meta": meta}
+            
+        # PUSH TO RAM (Short-term)
+        self.short_term_memory.append({
+            "user": command,
+            "jarvis": response,
+            "timestamp": timestamp
+        })
+        
+        return True
 
     def get_context(self, query: str, max_memories: int = 3) -> str:
         """Busca contexto priorizando Gold Memories"""
@@ -248,6 +275,16 @@ class MemoryManager:
             return context
         except Exception:
             return ""
+
+    def get_immediate_context(self) -> str:
+        """Retorna as últimas interações da RAM (Short-term context)"""
+        if not self.short_term_memory: return ""
+        
+        ctx = "\n---\nCONTEXTO IMEDIATO (RAM):\n"
+        for mem in self.short_term_memory:
+            ctx += f"USER: {mem['user']}\nJARVIS: {mem['jarvis']}\n"
+        ctx += "---\n"
+        return ctx
 
     def get_cached_response(self, query: str) -> Optional[str]:
         """ðŸ†• Retorna resposta do cache se houver match exato"""
@@ -397,6 +434,29 @@ class MemoryManager:
             
         except Exception as e:
             logger.error(f"Falha na extraÃ§Ã£o do Grafo SemÃ¢ntico: {e}")
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Retorna estatísticas básicas do gerenciador de memória."""
+        stats: Dict[str, Any] = {
+            'chroma_available': CHROMA_AVAILABLE,
+            'memory_cache_size': len(self.memory_cache),
+            'prompt_cache_size': len(self.prompt_cache),
+            'short_term_memory_len': len(self.short_term_memory),
+            'models_loaded': self._models_loaded
+        }
+
+        try:
+            if self.collection:
+                try:
+                    stats['collection_count'] = int(self.collection.count())
+                except Exception:
+                    stats['collection_count'] = None
+            else:
+                stats['collection_count'] = 0
+        except Exception:
+            stats['collection_count'] = None
+
+        return stats
 
 # InstÃ¢ncia global
 memory_manager = MemoryManager()
