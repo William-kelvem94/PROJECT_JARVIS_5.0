@@ -111,10 +111,8 @@ try:
     STARK_ORCHESTRATOR_AVAILABLE = True
 except (ImportError, AttributeError) as e:
     logger.warning(f"⚠️ StarkOrchestrator not available via management: {e}")
-    StarkOrchestrator = None
-    STARK_ORCHESTRATOR_AVAILABLE = False
-
 # Optional web server imports (loaded on demand)
+from src.core.management.neuro_sync import neuro_sync
 
 # =============================
 # ORIENTAÇÃO SOBRE ENCODING DE ARQUIVOS EXTERNOS
@@ -479,8 +477,11 @@ class JarvisSingularity(QObject):
                 except Exception as e:
                     logger.warning(f"HUD Log Error (Non-Fatal): {e}")
         
+        # [STEP 0] Neuro-Sync: Sincronização de Redes Neurais e Modelos
+        neuro_sync.run_sync(blocking=False)
+        
         # Staggered initialization: Warmup for subsystems
-        QTimer.singleShot(5000, self._staggered_daemon_start)
+        QTimer.singleShot(2000, self._staggered_daemon_start)
         
         # 📊 TELEMETRY SYNC (Quantum Core)
         self.telemetry_timer = QTimer()

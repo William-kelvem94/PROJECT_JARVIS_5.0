@@ -80,8 +80,23 @@ if "%ERRORLEVEL%"=="0" (
     echo [OK] Ollama Service is active.
 ) else (
     echo [SYSTEM] Starting Ollama Service...
-    powershell -WindowStyle Hidden -Command "ollama serve"
-    timeout /t 5 /nobreak >nul
+    start /min "Ollama Service" ollama serve
+    echo [WAIT] Aguardando Motor Neural (max 30s)...
+    set /a count=0
+    :OLLAMA_WAIT
+    timeout /t 2 /nobreak >nul
+    set /a count+=2
+    curl -s http://localhost:11434 >nul
+    if %errorlevel% equ 0 (
+        echo [OK] Motor Neural Online.
+        goto :OLLAMA_READY
+    )
+    if %count% geq 30 (
+        echo [WARNING] Ollama demorando para responder. Continuando boot...
+        goto :OLLAMA_READY
+    )
+    goto :OLLAMA_WAIT
+    :OLLAMA_READY
 )
 
 :: =======================================
