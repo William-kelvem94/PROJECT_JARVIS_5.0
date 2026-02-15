@@ -77,43 +77,50 @@ def pull_model(model_name, background=False):
 
 def main():
     root_path = Path(__file__).parent.parent.parent
-    config = load_config(root_path)
+    config_data = load_config(root_path)
     
-    if not config or 'brain_router' not in config:
+    if not config_data or 'brain_router' not in config_data:
         logger.error("Invalid configuration format.")
         return
 
-    ollama_config = config['brain_router'].get('ollama_models', {})
+    ollama_config = config_data['brain_router'].get('ollama_models', {})
+    required_models = config_data['brain_router'].get('required_models', [])
     
-    # === TIER FAST (Mandatório) ===
-    # JARVIS precisa de pelo menos o modelo FAST para ser funcional.
+    # 1. Garantir que o serviço está respondendo
+    import requests
+    try:
+        requests.get("http://localhost:11434", timeout=2)
+    except:
+        logger.error("❌ Ollama service not responding. Please start it first.")
+        return
+
+    # 2. Verificar Modelos OBRIGATÓRIOS (Bloqueantes)
+    logger.info("🛡️ Verificando Modelos Críticos...")
+    for model in required_models:
+        if not is_model_installed(model):
+            logger.info(f"⚡ Modelo obrigatório ausente: {model}. Instalando agora...")
+            pull_model(model, background=False)
+
+    # 3. Verificar TIER FAST (Mandatório para Sentinela)
     fast_models = ollama_config.get('tier_fast', [])
     if fast_models:
         primary_fast = fast_models[0]
-        logger.info(f"\n🔍 Checking TIER_FAST: {primary_fast}...")
         if not is_model_installed(primary_fast):
-            logger.info("⚡ Modelo FAST essencial ausente. Instalando agora (Bloqueante)...")
+            logger.info(f"⚡ Modelo FAST principal '{primary_fast}' ausente. Instalando...")
             pull_model(primary_fast, background=False)
-        else:
-            logger.info(f"✅ Primary FAST model is ready.")
 
-    # === TIER PRO & ULTRA (Background/Opcional) ===
-    # Modelos pesados são baixados em segundo plano para não travar o boot.
+    # 4. Verificar TIER PRO & ULTRA (Background)
     for tier in ['tier_pro', 'tier_ultra']:
         models = ollama_config.get(tier, [])
         if not models:
             continue
             
-        logger.info(f"\n🔍 Checking {tier.upper()} candidates...")
         primary_model = models[0]
-        
         if not is_model_installed(primary_model):
             logger.info(f"🚀 {tier.upper()}: Modelo '{primary_model}' será baixado em background.")
             pull_model(primary_model, background=True)
-            # Apenas um download pesado por vez para não matar o notebook
-            break # Baixa o PRO primeiro, na próxima vez ele baixa o ULTRA
-        else:
-            logger.info(f"✅ {tier.upper()} model '{primary_model}' is ready.")
+            # Apenas um download pesado por vez
+            break 
 
 if __name__ == "__main__":
     main()
