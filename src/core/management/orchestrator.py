@@ -86,7 +86,7 @@ class StarkOrchestrator:
     def _init_auto_recovery(self):
         """Inicializa o sistema de auto-recuperação avançado"""
         try:
-            from src.core.management.auto_recovery_system import get_auto_recovery_system
+            from src.core.management.universal_recovery_manager import get_universal_recovery_manager
             self.auto_recovery = get_auto_recovery_system()
             
             # Register core modules for monitoring

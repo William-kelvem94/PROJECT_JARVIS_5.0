@@ -44,10 +44,11 @@ class LearningEngine:
             project_root: DiretÃ³rio raiz do projeto
             config: ConfiguraÃ§Ã£o de learning (se None, carrega de ai_config.yaml)
         """
-        self.project_root = Path(project_root)
-        self.data_dir = self.project_root / "data"
-        self.learning_dir = self.data_dir / "learning"
-        self.models_dir = self.project_root / "models"
+        from src.utils.config import config as jarvis_config
+        self.project_root = jarvis_config.PROJECT_ROOT
+        self.data_dir = jarvis_config.DATA_DIR
+        self.learning_dir = jarvis_config.LEARNING_DIR
+        self.models_dir = jarvis_config.MODELS_DIR
         self.learning_dir.mkdir(parents=True, exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         
@@ -405,7 +406,7 @@ class LearningEngine:
         """Inicializa Curiosity Engine (Academic Research)"""
         try:
             # Import memory manager for curiosity engine
-            from src.core.intelligence.memory_manager import memory_manager
+            from src.core.intelligence.memory import memory_manager
             
             self.curiosity_engine = CuriosityEngine(memory_manager=memory_manager)
             self.components_status['curiosity_engine'] = True

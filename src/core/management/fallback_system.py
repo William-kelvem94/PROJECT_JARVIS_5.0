@@ -24,7 +24,7 @@ class FallbackSystem:
     def _initialize_auto_recovery(self):
         """Initialize auto-recovery system integration"""
         try:
-            from .auto_recovery_system import get_auto_recovery_system
+            from .universal_recovery_manager import get_universal_recovery_manager
             self.auto_recovery = get_auto_recovery_system()
             
             # Set bidirectional integration
@@ -42,7 +42,7 @@ class FallbackSystem:
         """Trigger auto-recovery for detected failures"""
         if self.auto_recovery:
             try:
-                from .auto_recovery_system import trigger_recovery_for_exception
+                from .universal_recovery_manager import trigger_recovery_for_exception
                 trigger_recovery_for_exception(module_name, exception, severity)
                 logger.info(f"ðŸ”§ Auto-recovery triggered for {module_name}")
             except Exception as e:

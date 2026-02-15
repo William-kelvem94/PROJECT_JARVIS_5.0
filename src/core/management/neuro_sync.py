@@ -16,7 +16,7 @@ from typing import Dict, Any
 
 from src.utils.config import config
 from src.core.intelligence.brain_router import brain_router
-from src.core.intelligence.memory_manager import memory_manager
+from src.core.intelligence.memory import memory_manager
 from src.core.intelligence.local_brain import local_brain
 from src.interface.ui_signals import ui_signals
 
@@ -68,7 +68,7 @@ class NeuroSync:
             stats = memory_manager.get_stats()
             if stats.get("chroma_available"):
                 self.status["memory"] = "ready"
-                logger.info(f"✅ ChromaDB: {stats.get('collection_count', 0)} memórias sincronizadas.")
+                logger.info(f"✅ ChromaDB: {stats.get('memories_count', 0)} memórias sincronizadas.")
             else:
                 self.status["memory"] = "warning"
                 logger.warning("⚠️ ChromaDB indisponível. Usando cache temporário.")

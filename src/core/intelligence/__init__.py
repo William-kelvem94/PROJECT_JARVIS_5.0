@@ -24,7 +24,7 @@ Exemplo de uso:
 
 from .ai_agent import AIAgent
 from .decision_engine import DecisionEngine
-from .memory_manager import MemoryManager
+from .memory import UnifiedMemoryManager as MemoryManager, memory_manager
 from .context_sanitizer import ContextSanitizer
 from .neural_systems import NeuralSystemsLoader
 from .perception_engine import PerceptionEngine
@@ -34,6 +34,7 @@ __all__ = [
     'AIAgent',
     'DecisionEngine',
     'MemoryManager',
+    'memory_manager',
     'ContextSanitizer',
     'NeuralSystemsLoader',
     'PerceptionEngine',

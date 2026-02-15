@@ -111,6 +111,9 @@ try:
     STARK_ORCHESTRATOR_AVAILABLE = True
 except (ImportError, AttributeError) as e:
     logger.warning(f"⚠️ StarkOrchestrator not available via management: {e}")
+    StarkOrchestrator = None
+    STARK_ORCHESTRATOR_AVAILABLE = False
+
 # Optional web server imports (loaded on demand)
 from src.core.management.neuro_sync import neuro_sync
 

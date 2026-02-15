@@ -14,9 +14,10 @@ class EvolutionEngine:
     """
 
     def __init__(self):
-        self.data_dir = Path("data/monitoring")
+        from src.utils.config import config
+        self.data_dir = config.SYSTEM_DIR
         self.data_dir.mkdir(parents=True, exist_ok=True)
-        self.pulse_file = Path("data/SYSTEM_PULSE.md")
+        self.pulse_file = self.data_dir / "SYSTEM_PULSE.md"
         
         # Estado atual dos mÃ³dulos
         self.module_health = {
@@ -59,7 +60,8 @@ class EvolutionEngine:
         Records an autonomous system evolution (code change).
         Saves to data/EVOLUTION.log for human auditing.
         """
-        log_file = Path("data/EVOLUTION.log")
+        from src.utils.config import config
+        log_file = config.LOGS_DIR / "EVOLUTION.log"
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         log_entry = (

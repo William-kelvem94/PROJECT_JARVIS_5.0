@@ -24,19 +24,26 @@ Exemplo de uso:
 
 from .device_manager import AdvancedDeviceManager as DeviceManager
 from .hardware_manager import HardwareManager
-from .auto_recovery_system import AutoRecoverySystem, get_auto_recovery_system
+from .universal_recovery_manager import UniversalRecoveryManager, get_universal_recovery_manager, universal_recovery_manager
 from .performance_optimizer import PerformanceOptimizer
 from .dependency_manager import DependencyManager
 from .shutdown_manager import ShutdownManager
 from .system_controller import SystemController
 
+# Backward compatibility alias
+def get_auto_recovery_system():
+    return get_universal_recovery_manager()
+
 # Global Instances
-auto_recovery_system = get_auto_recovery_system()
+auto_recovery_system = get_universal_recovery_manager()
 
 __all__ = [
     'DeviceManager',
     'HardwareManager',
-    'AutoRecoverySystem',
+    'UniversalRecoveryManager',
+    'get_universal_recovery_manager',
+    'universal_recovery_manager',
+    'auto_recovery_system',
     'PerformanceOptimizer',
     'DependencyManager',
     'ShutdownManager',

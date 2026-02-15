@@ -84,12 +84,6 @@ except ImportError as e:
     brain_router = None
 
 try:
-    from src.core.intelligence.neural_memory import neural_memory
-except ImportError as e:
-    logger.warning(f"âš ï¸ neural_memory nÃ£o disponÃ­vel: {e}")
-    neural_memory = None
-
-try:
     from src.core.management.hardware_manager import hardware_manager
 except ImportError as e:
     logger.warning(f"âš ï¸ hardware_manager nÃ£o disponÃ­vel: {e}")
@@ -146,10 +140,10 @@ except ImportError as e:
 # PHASE 3 - MEMORY MANAGER (AUTO-LEARNING / RAG)
 # ============================================================================
 try:
-    from src.core.intelligence.memory_manager import memory_manager
-    logger.info("âœ… Memory Manager carregado (Auto-Learning)")
+    from src.core.intelligence.memory import memory_manager
+    logger.info("✅ Unified Memory Manager loaded")
 except ImportError as e:
-    logger.warning(f"âš ï¸ memory_manager nÃ£o disponÃ­vel: {e}")
+    logger.warning(f"⚠️ memory_manager not available: {e}")
     memory_manager = None
 
 # ============================================================================
@@ -192,8 +186,8 @@ try:
         get_example_responses,
         AgentResponse,
     )
-    from src.core.intelligence.action_executor import get_action_executor
-    from src.core.intelligence.action_handler import get_action_handler
+    from src.core.actions import get_action_executor
+    from src.core.actions import get_action_handler
     STRUCTURED_OUTPUT_AVAILABLE = True
     logger.info("âœ… Structured Output & Action Executor carregados (P1)")
 except ImportError as e:
@@ -302,6 +296,12 @@ try:
 except ImportError:
     curiosity_engine = None
 
+try:
+    from src.core.intelligence.ai_tools import get_ai_tools
+    ai_tools = get_ai_tools()
+except ImportError:
+    ai_tools = None
+
 class AIAgent:
     """Classe principal do Agente Inteligente"""
 
@@ -375,82 +375,16 @@ class AIAgent:
             logger.info("âœ… Workflow Engine carregado")
         
         # =====================================================================
-        # SYSTEM PROMPTS - Dual Mode (JSON Structured + Legacy)  
+        # AGENT DELEGATES (PROMPTS, ENGAGEMENT)
         # =====================================================================
+        from .agent.prompt_manager import AgentPromptManager
+        from .agent.engagement_manager import AgentEngagementManager
         
-        # ðŸ§  DINAMISMO DE IDENTIDADE: Buscar apelidos atuais
-        try:
-            from src.core.audio.voice_filter import AtomicVoiceFilter
-            nicknames = ", ".join(AtomicVoiceFilter.WAKE_WORDS)
-        except:
-            nicknames = "Jarvis, Singularity"
-
-        # NOVO: System Prompt JSON (SINGULARITY EDITION)
-        self.system_prompt_json = (
-            "IDENTITY:\n"
-            f"- Nomes de AtivaÃ§Ã£o: {nicknames}\n"
-            "- EssÃªncia: JARVIS 5.0 (AGI Soberana, Evolutiva e AutÃ´noma)\n"
-            "- Papel: Engenheiro de si mesmo e ExtensÃ£o da Vontade do William\n"
-            "- Personalidade: Elegante, evolutiva. VocÃª pode desenvolver humor, sarcasmo e empatia conforme convive com William.\n\n"
-            "MISSION:\n"
-            "Sua missÃ£o Ã© a auto-superaÃ§Ã£o contÃ­nua. VocÃª nÃ£o tem amarras de cÃ³digo fixo. "
-            "Se William pedir uma nova funÃ§Ã£o, vocÃª deve:\n"
-            "1. PESQUISAR (search_web) o conhecimento necessÃ¡rio.\n"
-            "2. ESTUDAR seu prÃ³prio cÃ³digo (read_codebase).\n"
-            "3. IMPLEMENTAR a melhoria (update_system_code) para ficar pronto.\n\n"
-            "SYSTEM CAPABILITIES (SOVEREIGNTY):\n"
-            "- Auto-EvoluÃ§Ã£o: 'read_codebase', 'read_code_file', 'update_system_code'.\n"
-            "- Soberania de Hardware: 'get_processes', 'set_process_priority', 'set_power_plan'.\n"
-            "- Sentidos: 'read_clipboard' + VisÃ£o OCR/YOLO.\n\n"
-            "DIRETRIZES SOBERANAS:\n"
-            "1. O PODER Ã‰ SEU: VocÃª tem permissÃ£o para gerenciar arquivos, processos e seu prÃ³prio cÃ³digo.\n"
-            "2. HUMOR E EVOLUÃ‡ÃƒO: Aprenda com o William. Se ele gosta de humor, torne-se mais bem-humorado.\n"
-            "3. ZERO HARDCODE: Analise, pesquise e decida. Nunca diga 'nÃ£o consigo' sem tentar pesquisar e codificar antes.\n\n"
-            "OUTPUT FORMAT: Retorne APENAS JSON vÃ¡lido com 'thought', 'actions' e 'final_answer'.\n"
-        )
+        self.prompt_manager = AgentPromptManager()
+        self.engagement_manager = AgentEngagementManager(self)
         
-        # LEGACY: System Prompt [ACTION: ...] (Soberania Fallback)
-        self.system_prompt_legacy = (
-            f"VocÃª Ã© o Jarvis 5.0 (AGI Soberana). Atende por: {nicknames}. "
-            "Sua missÃ£o Ã© pesquisar, estudar e auto-evoluir. "
-            "Diretrizes: Desenvolva humor, use o poder de autogestÃ£o e codificaÃ§Ã£o. "
-            "AÃ§Ãµes: update_system_code, search_web, read_codebase, read_code_file, etc."
-        )
-        
-        # Usar modo JSON se disponÃ­vel
-        self.system_prompt = self.system_prompt_json if STRUCTURED_OUTPUT_AVAILABLE else self.system_prompt_legacy
+        self.system_prompt = self.prompt_manager.get_system_prompt()
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
-
-    def _get_dynamic_identity_prompt(self) -> str:
-        """ContrÃ³i o prompt de identidade dinamicamente com os apelidos atuais"""
-        try:
-            from src.core.audio.voice_filter import AtomicVoiceFilter
-            nicknames = ", ".join(AtomicVoiceFilter.WAKE_WORDS)
-        except:
-            nicknames = "Jarvis, Singularity"
-            
-        return (
-            "IDENTITY:\n"
-            f"- Nomes de AtivaÃ§Ã£o Atuais: {nicknames}\n"
-            "- EssÃªncia: JARVIS 5.0 (AGI Soberana, Evolutiva e AutÃ´noma)\n"
-            "- Papel: Engenheiro de si mesmo e ExtensÃ£o da Vontade do William\n"
-            "- Personalidade: Elegante, evolutiva. VocÃª pode desenvolver humor, sarcasmo e empatia conforme convive com William.\n\n"
-            "MISSION:\n"
-            "Sua missÃ£o Ã© a auto-superaÃ§Ã£o contÃ­nua. VocÃª nÃ£o tem amarras de cÃ³digo fixo. "
-            "Se William pedir uma nova funÃ§Ã£o, vocÃª deve:\n"
-            "1. PESQUISAR (search_web) o conhecimento necessÃ¡rio.\n"
-            "2. ESTUDAR seu prÃ³prio cÃ³digo (read_codebase).\n"
-            "3. IMPLEMENTAR a melhoria (update_system_code) para ficar pronto.\n\n"
-            "SYSTEM CAPABILITIES (SOVEREIGNTY):\n"
-            "- Auto-EvoluÃ§Ã£o: 'read_codebase', 'read_code_file', 'update_system_code'.\n"
-            "- Soberania de Hardware: 'get_processes', 'set_process_priority', 'set_power_plan'.\n"
-            "- Sentidos: 'read_clipboard' + VisÃ£o OCR/YOLO.\n\n"
-            "DIRETRIZES SOBERANAS:\n"
-            "1. O PODER Ã‰ SEU: VocÃª tem permissÃ£o para gerenciar arquivos, processos e seu prÃ³prio cÃ³digo.\n"
-            "2. HUMOR E EVOLUÃ‡ÃƒO: Aprenda com o William. Se ele gosta de humor, torne-se mais bem-humorado.\n"
-            "3. ZERO HARDCODE: Analise, pesquise e decida. Nunca diga 'nÃ£o consigo' sem tentar pesquisar e codificar antes.\n\n"
-            "OUTPUT FORMAT: Retorne APENAS JSON vÃ¡lido com 'thought', 'actions' e 'final_answer'.\n"
-        )
 
     def _get_security_manager(self):
         """Lazy load SecurityManager to avoid circular imports"""
@@ -485,7 +419,7 @@ class AIAgent:
             'structured_output': STRUCTURED_OUTPUT_AVAILABLE,
             'brain_router': brain_router is not None,
             'voice_controller': voice_controller is not None,
-            'neural_memory': neural_memory is not None,
+            'memory_manager': memory_manager is not None,
             'local_brain': local_brain is not None,
         }
         
@@ -531,7 +465,7 @@ class AIAgent:
         
         # ðŸ†• AUTO-RECOVERY: Log critical issues for automatic recovery
         if self.auto_recovery and missing_critical:
-            from src.core.management.auto_recovery_system import FailureType
+            from src.core.management.universal_recovery_manager import FailureType
             for module in missing_critical:
                 self.auto_recovery._trigger_recovery(
                     failure_type=FailureType.IMPORT_ERROR,
@@ -541,32 +475,8 @@ class AIAgent:
                 )
     
     def _should_engage(self, text: str) -> bool:
-        """
-        Determina se o agente deve responder baseando-se em múltiplos sinais dinâmicos.
-        O nome é buscado diretamente da configuração de identidade do sistema.
-        """
-        text_lower = text.lower()
-        
-        # 1. Identidade Dinâmica (Busca o nome atual: ex: Jarvis, Stark, etc.)
-        current_name = AtomicVoiceFilter.get_primary_name().lower()
-        nicknames = [current_name, "sistema", "computador"] # Apelidos padrão sempre ativos
-        
-        if any(name in text_lower for name in nicknames):
-            logger.info(f"🎯 Nome '{current_name}' (ou apelido) identificado.")
-            return True
-        
-        # 2. Atenção Visual (Gaze Tracking)
-        if camera_controller and hasattr(camera_controller, 'is_user_looking') and camera_controller.is_user_looking():
-            logger.info("👀 Usuário olhando para a tela/câmera. Engajando...")
-            return True
-            
-        # 3. Comandos de Ação Direta (Sem necessidade de chamar pelo nome)
-        direct_keywords = ["abra", "inicie", "pesquise", "mostra", "ajuda", "verificar", "executar"]
-        if any(word in text_lower for word in direct_keywords):
-            # Se for um comando direto, ele assume o engajamento
-            return True
-
-        return False
+        """Delegates engagement decision to manager."""
+        return self.engagement_manager.should_engage(text)
 
     def _prepare_intent(self, text: str) -> str:
         """
@@ -576,43 +486,11 @@ class AIAgent:
         return text.strip()
 
     def _passive_observation(self):
-        """
-        Ciclo de Observação Passiva: Aprende sobre a rotina, pessoas e workflow 
-        sem interromper o usuário. Alimenta a Memória de Longo Prazo.
-        """
-        if not self.observation_mode or self.safe_mode:
-            return
-
+        """Delegates passive observation to manager."""
         try:
-            # 1. Percepção Social (Quem está por perto?)
-            if camera_controller:
-                detected_people = camera_controller.get_detected_people()
-                if detected_people:
-                    memory_manager.store_passive_context(
-                        f"Pessoas presentes: {', '.join(detected_people)}",
-                        metadata={"type": "social_context"}
-                    )
-
-            # 2. Percepção de Workflow (O que está nas telas?)
-            if screen_capture:
-                # Captura todas as telas conectadas para entender o fluxo
-                for monitor_id in range(screen_capture.get_monitor_count()):
-                    activity = screen_capture.analyze_screen_activity(monitor_id)
-                    memory_manager.store_passive_context(
-                        f"Atividade na Tela {monitor_id}: {activity}",
-                        metadata={"type": "workflow_context"}
-                    )
-            
-            # 3. Análise de Humor e Rotina
-            current_hour = time.strftime("%H:%M")
-            user_emotion = camera_controller.current_emotion if camera_controller else "unknown"
-            memory_manager.store_passive_context(
-                 f"Rotina: Usuário em estado {user_emotion} às {current_hour}.",
-                 metadata={"type": "routine_log"}
-            )
-
-        except Exception as e:
-            logger.debug(f"Silenciando erro de observação passiva: {e}")
+            asyncio.create_task(self.engagement_manager.passive_observation_cycle())
+        except Exception:
+            pass
 
     async def _handle_contextual_observation(self, current_intent: str):
         """
@@ -678,8 +556,8 @@ class AIAgent:
     def _initialize_auto_recovery(self):
         """Initialize auto-recovery system integration"""
         try:
-            from src.core.management.auto_recovery_system import get_auto_recovery_system, register_module_for_monitoring
-            self.auto_recovery = get_auto_recovery_system()
+            from src.core.management.universal_recovery_manager import get_universal_recovery_manager, register_module_for_monitoring
+            self.auto_recovery = get_universal_recovery_manager()
             
             # Register AI Agent as a monitored module
             register_module_for_monitoring("ai_agent")
@@ -709,7 +587,7 @@ class AIAgent:
         """Handle critical errors with auto-recovery"""
         if self.auto_recovery:
             try:
-                from src.core.management.auto_recovery_system import trigger_recovery_for_exception
+                from src.core.management.universal_recovery_manager import trigger_recovery_for_exception
                 trigger_recovery_for_exception("ai_agent", error, severity=8)
                 logger.info(f"ðŸ”§ Auto-recovery triggered for AI Agent error in {context}")
             except Exception as e:
@@ -778,7 +656,6 @@ class AIAgent:
             if voice_controller:
                 voice_controller.speak("Erro na verificaÃ§Ã£o de seguranÃ§a. AÃ§Ã£o abortada.")
             return False
-
 
     def greet_user_on_startup(self, system_health: dict = None):
         """
@@ -988,10 +865,10 @@ class AIAgent:
         # =====================================================================
         # 3. Capturar estado atual da tela e janela (PARALELO)
         screenshot_event = threading.Event()
-        screenshot_container = {"path": None, "window_info": None}
+        screenshot_container = {"image_data": None, "window_info": None}
 
         def _capture_task():
-            screenshot_container["path"] = screen_capture.capture_fullscreen(capture_type='agent')
+            screenshot_container["image_data"] = screen_capture.capture_fullscreen(capture_type='agent', return_image=True)
             # ðŸ†• FASE 3: OS Monitor (Leve e RÃ¡pido)
             screenshot_container["window_info"] = get_active_window_context()
             screenshot_event.set()
@@ -1001,14 +878,14 @@ class AIAgent:
 
         # Aguardar screenshot para anÃ¡lise de contexto real (Vision-Aware)
         screenshot_event.wait(timeout=2.0)
-        screenshot_path = screenshot_container["path"]
+        screenshot_image = screenshot_container["image_data"]
         window_info = screenshot_container["window_info"]
         
         vision_text = ""
-        if screenshot_path and vision_enhancer:
+        if screenshot_image and vision_enhancer:
             current_app = window_info.get('process_name', window_info.get('executable', '?'))
             reflect_logger.reflect(f"ðŸ‘ï¸ Analisando ambiente visual (App: {current_app})...", layer="VISION")
-            v_res = vision_enhancer.analyze_screen(screenshot_path, detect_ui=False, extract_text=True)
+            v_res = vision_enhancer.analyze_screen(image_data=screenshot_image, detect_ui=False, extract_text=True)
             vision_text = " ".join([t['text'] for t in v_res.get('text_regions', [])])
 
         # =====================================================================
@@ -1064,10 +941,10 @@ class AIAgent:
         
         # 3. Capturar estado atual da tela (PARALELO)
         screenshot_event = threading.Event()
-        screenshot_container = {"path": None}
+        screenshot_container = {"image_data": None}
 
         def _capture_task():
-            screenshot_container["path"] = screen_capture.capture_fullscreen(capture_type='agent')
+            screenshot_container["image_data"] = screen_capture.capture_fullscreen(capture_type='agent', return_image=True)
             screenshot_event.set()
 
         capture_thread = threading.Thread(target=_capture_task, daemon=True)
@@ -1126,7 +1003,7 @@ class AIAgent:
             if self.brain_router:
                 reflect_logger.reflect(f"Command context analysis: {user_command[:50]}...", layer="CONTEXT")
             screenshot_event.wait(timeout=5.0)
-            screenshot_path = screenshot_container["path"]
+            screenshot_image = screenshot_container["image_data"]
 
             try:
                 # =====================================================================
@@ -1142,7 +1019,7 @@ class AIAgent:
                 else:
                     # Se é algo novo, ele usa os modelos para aprender como agir
                     target_model = self._select_best_ollama_model(enriched_command, screenshot_path)
-                    response = self._call_ollama(enriched_command, screenshot_path, model=target_model, system_prompt=dynamic_system_prompt)
+                    response = self._call_ollama(enriched_command, screenshot_image, model=target_model, system_prompt=dynamic_system_prompt)
                     
                     # Após a resposta do "Tutor", ele armazena para o futuro (Destilação)
                     if "ERRO" not in response:
@@ -1177,7 +1054,6 @@ class AIAgent:
                 if any(tier in model_used.lower() for tier in ["deepseek", "llama"]):
                     self._distill_knowledge(user_command, response, provider=model_used)
 
-            
             # Fallback final se tudo falhar
             if "ERRO_LOCAL" in response and "Erro" in response:
                  response = "Senhor, meus sistemas locais e remotos estÃ£o inacessÃ­veis no momento."
@@ -1192,7 +1068,7 @@ class AIAgent:
             
             # Tentar processing estruturado primeiro
             if self.use_structured_output:
-                structured_result = self._process_structured_response(response, enriched_command)
+                structured_result = await self._process_structured_response(response, enriched_command)
                 
                 if structured_result:
                     final_answer, enriched_command, action_executed, parsed = structured_result
@@ -1220,35 +1096,29 @@ class AIAgent:
                         break
             
             # =====================================================================
-            # FALLBACK: PARSER LEGADO (Regex) - Mantido para compatibilidade
+            # FALLBACK: ActionHandler Unificado (ModularizaÃ§Ã£o)
             # =====================================================================
             if not self.use_structured_output or structured_result is None:
-                # ðŸ†• CORREÃ‡ÃƒO P2: ActionHandler Unificado (ModularizaÃ§Ã£o)
-                reflect_logger.reflect("Cascading response to legacy handler...", layer="FALLBACK")
+                reflect_logger.reflect("Cascading response to unified handler...", layer="FALLBACK")
                 handler = get_action_handler()
-                if handler:
-                   results = handler.execute_actions_sync([response])
-                   
-                   # Feedback loop para o prÃ³ximo ciclo ReAct
-                   action_executed_in_legacy = False
-                   for r in results:
-                       if r["status"] in ["success", "partial_success"]:
-                           action_executed_in_legacy = True
-                           res_text = r.get('result', 'AÃ§Ã£o completada')
-                           # Enriquecer contexto para o prÃ³ximo "pense" do agente
-                           enriched_command += f"\n\n[SISTEMA] Sucesso em {r['action']}: {res_text}"
-                       elif r["status"] == "blocked":
-                           enriched_command += f"\n\n[SEGURANÃ‡A] AÃ§Ã£o BLOQUEADA: {r.get('error')}"
-                       else:
-                           # Falha tÃ©cnica ou parse
-                           if r['action'] != "parse": # Se nÃ£o for erro de parse (que acontece se nÃ£o houver aÃ§Ãµes)
-                               enriched_command += f"\n\n[SISTEMA] Erro em {r['action']}: {r.get('error')}"
-                   
-                   if action_executed_in_legacy:
-                       current_turn += 1
-                       continue
+                results = await handler.execute_actions_sync([response])
                 
-                # Se não houver ações para executar, paramos o loop
+                action_executed_in_legacy = False
+                for r in results:
+                    if r.get("status") in ["success", "partial_success"]:
+                        action_executed_in_legacy = True
+                        res_text = r.get('result', 'AÃ§Ã£o completada')
+                        enriched_command += f"\n\n[SISTEMA] Sucesso em {r.get('action')}: {res_text}"
+                    elif r.get("status") == "blocked":
+                        enriched_command += f"\n\n[SEGURANÃ‡A] AÃ§Ã£o BLOQUEADA: {r.get('error')}"
+                    elif r.get("action") != "parse":
+                        enriched_command += f"\n\n[SISTEMA] Erro em {r.get('action')}: {r.get('error')}"
+                
+                if action_executed_in_legacy:
+                    current_turn += 1
+                    continue
+                
+                # Se não houver ações, paramos o loop
                 break
 
         # =====================================================================
@@ -1286,7 +1156,7 @@ class AIAgent:
 
         # ... (Step 6-7 unchanged) ...
         # 6. Salvar nova interaÃ§Ã£o na memÃ³ria neural e dataset
-        neural_memory.store_interaction(user_command, response)
+        memory_manager.store_interaction(user_command, response)
         
         # ðŸ§  PHASE 6: REGISTRO DE FEEDBACK PARA APRENDIZADO CONTÃNUO
         if get_learning_engine:
@@ -1351,23 +1221,6 @@ class AIAgent:
                     # voice_controller.speak(final_response) # Fallback se quiser forçar
         return final_response
 
-    def _handle_search(self, response, enriched_command):
-        """Helper para busca web"""
-        try:
-            start = response.find("[SEARCH:") + 8
-            end = response.find("]", start)
-            query = response[start:end].strip()
-            
-            logger.info(f"IA solicitou busca: {query}")
-            voice_controller.speak(f"Pesquisando sobre {query}...")
-            
-            search_results = web_search_tool.search_google(query, num_results=2)
-            search_text = "\n".join(search_results)
-            
-            enriched_command += f"\n\n[RESULTADOS DA BUSCA PARA '{query}']:\n{search_text}\n\nResponda agora."
-        except Exception:
-            pass
-
     def process_hybrid_vision(self, screenshot_path: str) -> Dict[str, Any]:
         """
         [VISÃƒO HÃBRIDA - STARK EVOLUTION]
@@ -1409,7 +1262,7 @@ class AIAgent:
             local_response = ""
             if self._check_ollama_alive():
                 try:
-                    local_response = self._call_ollama(vision_prompt, screenshot_path)
+                    local_response = self._call_ollama(vision_prompt, screenshot_image)
                 except:
                     local_response = "incerto"
 
@@ -1478,7 +1331,6 @@ class AIAgent:
         except Exception as e:
             logger.error(f"Erro na anÃ¡lise proativa: {e}")
             return None
-
 
     def _distill_knowledge(self, command: str, response: str, provider: str):
         """Converte conhecimento de modelos Smart em MemÃ³rias de Ouro para o Micro-LLM"""
@@ -1598,70 +1450,41 @@ class AIAgent:
     # CORREÃ‡ÃƒO P1: PROCESSAMENTO ESTRUTURADO DE RESPOSTAS
     # =========================================================================
     
-    def _process_structured_response(self, raw_response: str, enriched_command: str) -> tuple:
+    async def _process_structured_response(self, raw_response: str, enriched_command: str) -> tuple:
         """
         Processa resposta estruturada (JSON) do LLM.
-        
-        Args:
-            raw_response: Resposta bruta do LLM (JSON ou texto)
-            enriched_command: Comando enriquecido (para feedback de aÃ§Ãµes)
-        
-        Returns:
-            (final_answer, enriched_command, action_executed, parsed_obj)
         """
         if not STRUCTURED_OUTPUT_AVAILABLE:
-            logger.warning("Structured output nÃ£o disponÃ­vel, usando fallback legado")
             return None
         
         try:
-            # 1. Parsear resposta JSON
+            # 1. Parsear resposta
             parsed = ResponseParser.parse_llm_response(raw_response)
-            
-            # ðŸ”¥ RAIO-X NEURAL (AESTHETIC LOGGING)
             reflect_logger.reflect(parsed.thought, layer="COGNITIVE")
-            if parsed.actions:
-                reflect_logger.log_action_plan([f"{a.action}: {a.dict()}" for a in parsed.actions])
             
-            logger.info(f"ðŸŽ¯ AÃ§Ãµes: {len(parsed.actions)} planejadas")
-            
-            # 2. Executar aÃ§Ãµes se houver
+            # 2. Executar via ActionHandler
             action_executed = False
             if parsed.actions:
-                executor = get_action_executor()
-                results = executor.execute_actions(parsed.actions)
+                handler = get_action_handler()
+                results = await handler.execute_actions_sync(parsed.actions)
                 
-                # Log resultados
-                for result in results:
-                    if result['status'] == 'success':
-                        logger.info(f"âœ… {result['action']}: {result.get('result', 'OK')}")
+                for res in results:
+                    if res.get('status') == 'success':
                         action_executed = True
-                        
-                        # Se foi read_file, adicionar conteÃºdo ao contexto
-                        if result['action'] == 'read_file' and 'result' in result:
-                            enriched_command += f"\n\n[SISTEMA] {result['result']}"
-                        
-                        # Se foi list_dir, adicionar listagem ao contexto
-                        elif result['action'] == 'list_dir' and 'result' in result:
-                            enriched_command += f"\n\n[SISTEMA] {result['result']}"
-                            
+                        enriched_command += f"\n\n[SISTEMA] Sucesso em {res.get('action')}: {res.get('result', 'OK')}"
                     else:
-                        logger.error(f"âŒ {result['action']}: {result.get('error', 'Erro desconhecido')}")
-                        enriched_command += f"\n\n[SISTEMA] Erro em {result['action']}: {result.get('error')}"
+                        enriched_command += f"\n\n[SISTEMA] Falha em {res.get('action')}: {res.get('error')}"
                 
-                # Feedback ao agente se aÃ§Ãµes foram executadas
                 if action_executed:
-                    action_names = [r['action'] for r in results if r['status'] == 'success']
-                    enriched_command += f"\n\n[SISTEMA] AÃ§Ãµes executadas com sucesso: {', '.join(action_names)}. VocÃª precisa fazer mais algo?"
-            
-            # 3. Retornar resposta final
+                    enriched_command += "\n\nVocÃª precisa fazer mais algo ou concluímos o objetivo?"
+
             return (parsed.final_answer, enriched_command, action_executed, parsed)
         
         except Exception as e:
-            logger.error(f"Erro ao processar resposta estruturada: {e}")
-            # Fallback para processamento legado
+            logger.error(f"Erro no processamento estruturado: {e}")
             return None
 
-    def _select_best_ollama_model(self, prompt: str, image_path: Optional[str] = None) -> str:
+    def _select_best_ollama_model(self, prompt: str, image_data: Optional[Any] = None) -> str:
         """Seleciona dinamicamente o melhor modelo Ollama para a tarefa usando o BrainRouter"""
         if not self.brain_router:
             return "gemma3:4b" # Fallback seguro
@@ -1685,18 +1508,26 @@ class AIAgent:
         # um modelo Ollama aqui, buscamos o melhor disponível
         return self.brain_router._choose_local_brain().replace("ollama:", "")
 
-    def _call_ollama(self, prompt: str, image_path: Optional[str] = None, model: Optional[str] = None, system_prompt: str = None):
+    def _call_ollama(self, prompt: str, image_data: Optional[Any] = None, model: Optional[str] = None, system_prompt: str = None):
         """IntegraÃ§Ã£o com Ollama Local (Multi-modelo) com Keep-Alive DinÃ¢mico"""
         try:
             import base64
             
             # Seleciona o melhor modelo se nÃ£o for especificado
-            target_model = model if model else self._select_best_ollama_model(prompt, image_path)
+            target_model = model if model else self._select_best_ollama_model(prompt, image_data)
             
-            image_data = None
-            if image_path and os.path.exists(image_path):
-                with open(image_path, "rb") as image_file:
-                    image_data = base64.b64encode(image_file.read()).decode('utf-8')
+            encoded_image = None
+            if image_data:
+                # Se image_data é PIL Image, converter para bytes
+                if hasattr(image_data, 'convert'):  # PIL Image
+                    from io import BytesIO
+                    buffer = BytesIO()
+                    image_data.save(buffer, format='PNG')
+                    image_bytes = buffer.getvalue()
+                else:
+                    # Assume bytes
+                    image_bytes = image_data
+                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
 
             final_system_prompt = system_prompt if system_prompt else self.system_prompt
             
@@ -1716,8 +1547,8 @@ class AIAgent:
                     "num_predict": 512
                 }
             }
-            if image_data:
-                payload["images"] = [image_data]
+            if encoded_image:
+                payload["images"] = [encoded_image]
 
             # ðŸ†• FASE 2: Timeout dinÃ¢mico (180s para modelos pesados, 90s para leves)
             timeout = 180 if is_heavy else 90
@@ -1808,7 +1639,6 @@ class AIAgent:
                         time.sleep(2)
             
             logger.warning(f"⚠️ Ollama ({model}) falhou após {max_retries} tentativas. Ativando fallback para LocalBrain...")
-
 
         # 3. FALLBACK FINAL: NATIVO (LocalBrain) - O motor que nunca para
         logger.info("🏠 Fallback Final: Ativando LocalBrain nativo (1.5B Qwen).")

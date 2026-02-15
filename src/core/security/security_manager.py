@@ -13,7 +13,7 @@ class SecurityManager:
     
     SYSTEM_SCRIPTS = [
         "SINGULARITY_LAUNCHER.py", "kill_switch.py", "security_manager.py",
-        "main.py", "auto_recovery_system.py"
+        "main.py", "universal_recovery_manager.py"
     ]
 
     @staticmethod

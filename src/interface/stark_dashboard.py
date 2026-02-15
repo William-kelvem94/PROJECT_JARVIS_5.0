@@ -800,9 +800,9 @@ class StarkDashboard(QMainWindow):
             
             # 4. Memória e Aprendizado (Long-term)
             try:
-                from src.core.intelligence.memory_manager import MemoryManager
+                from src.core.intelligence.memory import MemoryManager
                 mm = MemoryManager()
-                mem_count = mm.collection.count() if mm.collection else 0
+                mem_count = mm.interactions.count() if mm.collection else 0
                 learning_info = [
                     f"• Memórias Gravadas: {mem_count}",
                     "• Vínculo Neural: Estabilizado",
