@@ -122,7 +122,7 @@ from src.core.management.neuro_sync import neuro_sync
 
 # Import Boot Manager for infrastructure initialization
 try:
-    from src.core.infrastructure.boot_manager import BootManager
+    from src.core.infrastructure.boot_manager import BootManager, BootPriority
     BOOT_MANAGER_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"⚠️ Boot Manager not available: {e}")
@@ -1318,35 +1318,35 @@ Examples:
                     "window_manager",
                     lambda: window_manager,
                     dependencies=[],
-                    priority=10
+                    priority=BootPriority.HIGH
                 )
                 
                 boot_manager.register_module(
                     "system_integrator",
                     lambda: __import__('src.core.actions.system_integrator', fromlist=['get_system_integrator']).get_system_integrator(),
                     dependencies=["window_manager"],
-                    priority=8
+                    priority=BootPriority.MEDIUM
                 )
                 
                 boot_manager.register_module(
                     "audio_system", 
                     lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
                     dependencies=["system_integrator"],
-                    priority=7
+                    priority=BootPriority.MEDIUM
                 )
                 
                 boot_manager.register_module(
                     "vision_system",
                     lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
                     dependencies=["system_integrator"],
-                    priority=7
+                    priority=BootPriority.MEDIUM
                 )
                 
                 boot_manager.register_module(
                     "ai_agent",
                     lambda: __import__('src.core.intelligence.ai_agent', fromlist=['ai_agent']).ai_agent,
                     dependencies=["audio_system", "vision_system"],
-                    priority=5
+                    priority=BootPriority.MEDIUM
                 )
                 
                 # Register Event Bus as a module for other systems to access
@@ -1355,7 +1355,7 @@ Examples:
                         "event_bus",
                         lambda: event_bus,
                         dependencies=[],
-                        priority=9
+                        priority=BootPriority.HIGH
                     )
                 
                 # Initialize all modules

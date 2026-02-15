@@ -9,11 +9,11 @@ try:
     # Garantir que o target seja absoluto e aponte para o .bat
     base_path = os.path.abspath(os.path.dirname(__file__))
     project_root = os.path.abspath(os.path.join(base_path, ".."))
-    target = os.path.join(project_root, "START_JARVIS.bat")
+    target = os.path.join(project_root, "jarvis.bat")
     
     if not os.path.exists(target):
         # Fallback se não encontrar o .bat no root relativo ao script
-        target = os.path.abspath("START_JARVIS.bat")
+        target = os.path.abspath("jarvis.bat")
 
     shortcut = shell.CreateShortcut(path)
     shortcut.TargetPath = "cmd.exe"
