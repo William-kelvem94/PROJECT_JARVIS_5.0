@@ -33,6 +33,66 @@ except (ImportError, OSError) as e:
 
 from src.utils.config import config
 
+# Additional controlled imports to avoid imports inside functions
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
+
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
+
+try:
+    from PIL import ImageEnhance
+    PIL_ENHANCE_AVAILABLE = True
+except ImportError:
+    PIL_ENHANCE_AVAILABLE = False
+    ImageEnhance = None
+
+# Platform-specific imports
+try:
+    import platform
+    PLATFORM_MODULE = True
+except ImportError:
+    PLATFORM_MODULE = False
+
+try:
+    import subprocess
+    SUBPROCESS_AVAILABLE = True
+except ImportError:
+    SUBPROCESS_AVAILABLE = False
+    subprocess = None
+
+# Windows-specific imports
+if platform.system() == "Windows":
+    try:
+        import ctypes
+        CTYPES_AVAILABLE = True
+    except ImportError:
+        CTYPES_AVAILABLE = False
+        ctypes = None
+    
+    try:
+        import winshell
+        from win32com.client import Dispatch
+        WINSHELL_AVAILABLE = True
+    except ImportError:
+        WINSHELL_AVAILABLE = False
+        winshell = None
+        Dispatch = None
+else:
+    CTYPES_AVAILABLE = False
+    WINSHELL_AVAILABLE = False
+    ctypes = None
+    winshell = None
+    Dispatch = None
+
 logger = logging.getLogger(__name__)
 
 class FileHelper:
@@ -118,7 +178,9 @@ class ImageHelper:
     @staticmethod
     def _enhance_contrast(image: Image.Image) -> Image.Image:
         """Melhora o contraste da imagem"""
-        from PIL import ImageEnhance
+        if not PIL_ENHANCE_AVAILABLE:
+            logger.warning("PIL ImageEnhance not available for contrast enhancement")
+            return image
         enhancer = ImageEnhance.Contrast(image)
         return enhancer.enhance(2.0)
 
@@ -329,9 +391,10 @@ class SystemHelper:
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
-        """ObtÃ©m informaÃ§Ãµes do sistema"""
-        import platform
-        import psutil
+        """Obtém informações do sistema"""
+        if not PSUTIL_AVAILABLE or psutil is None:
+            logger.warning("psutil not available for system info")
+            return {"error": "psutil not available"}
 
         try:
             return {
@@ -344,7 +407,7 @@ class SystemHelper:
                 "gpu": SystemHelper.get_gpu_info()
             }
         except Exception as e:
-            logger.error(f"Erro ao obter informaÃ§Ãµes do sistema: {e}")
+            logger.error(f"Erro ao obter informações do sistema: {e}")
             return {}
 
     @staticmethod
@@ -352,37 +415,38 @@ class SystemHelper:
         """Detecta disponibilidade de GPU (NVIDIA/CUDA)"""
         info = {"available": False, "name": "None", "driver": "None"}
         
-        # Tentar via torch se disponÃ­vel (mais confiÃ¡vel para IA)
-        try:
-            import torch
-            if torch.cuda.is_available():
-                info["available"] = True
-                info["name"] = torch.cuda.get_device_name(0)
-                info["driver"] = "CUDA (torch)"
-                return info
-        except ImportError:
-            pass
+        # Tentar via torch se disponível (mais confiável para IA)
+        if TORCH_AVAILABLE and torch is not None:
+            try:
+                if torch.cuda.is_available():
+                    info["available"] = True
+                    info["name"] = torch.cuda.get_device_name(0)
+                    info["driver"] = "CUDA (torch)"
+                    return info
+            except Exception:
+                pass
 
         # Tentar via linha de comando (nvidia-smi)
-        try:
-            import subprocess
-            output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], 
-                                          stderr=subprocess.DEVNULL, universal_newlines=True)
-            if output:
-                info["available"] = True
-                info["name"] = output.strip()
-                info["driver"] = "NVIDIA-SMI"
-                return info
-        except (Exception, FileNotFoundError):
-            pass
+        if SUBPROCESS_AVAILABLE and subprocess is not None:
+            try:
+                output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], 
+                                              stderr=subprocess.DEVNULL, universal_newlines=True)
+                if output:
+                    info["available"] = True
+                    info["name"] = output.strip()
+                    info["driver"] = "NVIDIA-SMI"
+                    return info
+            except (Exception, FileNotFoundError):
+                pass
 
         return info
 
     @staticmethod
     def is_admin() -> bool:
-        """Verifica se o programa estÃ¡ rodando como administrador"""
+        """Verifica se o programa está rodando como administrador"""
+        if not CTYPES_AVAILABLE or ctypes is None:
+            return False
         try:
-            import ctypes
             return ctypes.windll.shell32.IsUserAnAdmin()
         except:
             return False
@@ -390,14 +454,20 @@ class SystemHelper:
     @staticmethod
     def create_shortcut(target_path: str, shortcut_path: str, description: str = ""):
         """Cria atalho no Windows"""
+        if not WINSHELL_AVAILABLE or winshell is None or Dispatch is None:
+            logger.warning("Windows shell libraries not available")
+            return False
         try:
-            import winshell
-            from win32com.client import Dispatch
-
             shell = Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(shortcut_path)
             shortcut.Targetpath = target_path
             shortcut.WorkingDirectory = str(Path(target_path).parent)
+            shortcut.Description = description
+            shortcut.save()
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao criar atalho: {e}")
+            return False
             shortcut.Description = description
             shortcut.save()
         except Exception as e:

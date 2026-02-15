@@ -36,7 +36,8 @@ class UnifiedMemoryManager:
     def __init__(self):
         if self._initialized: return
         from src.utils.config import config
-        self.db_path = config.MEMORY_DIR
+        # Use unified vector store location
+        self.db_path = config.PROJECT_ROOT / "data" / "memory" / "vector_store"
         self.db_path.mkdir(parents=True, exist_ok=True)
         
         self.client = None
@@ -54,6 +55,36 @@ class UnifiedMemoryManager:
         
         self._initialize_db()
         self._initialized = True
+        
+        # [EVENT-DRIVEN]
+        self.event_bus = None
+
+    def connect_event_bus(self, event_bus):
+        """Connects to AsyncEventBus for background memory operations."""
+        self.event_bus = event_bus
+        if self.event_bus:
+            import asyncio
+            # Subscribe to interaction events for background storage
+            asyncio.create_task(self.event_bus.subscribe("ai.response.generated", self._handle_interaction_event))
+            logger.info("✅ UnifiedMemoryManager connected to Event Bus (background saving enabled).")
+
+    async def _handle_interaction_event(self, event_data: Dict[str, Any]):
+        """Handles ai.response.generated event asynchronously."""
+        try:
+            prompt = event_data.get("prompt")
+            response = event_data.get("response")
+            metadata = event_data.get("metadata", {})
+            
+            if prompt and response:
+                # Offload heavy embedding/DB operations to thread pool
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(
+                    None, 
+                    lambda: self.store_interaction(prompt, response, metadata)
+                )
+                logger.debug(f"💾 Memory saved in background: {prompt[:30]}...")
+        except Exception as e:
+            logger.error(f"Failed to handle memory event: {e}")
 
     def _initialize_db(self):
         if not CHROMA_AVAILABLE:

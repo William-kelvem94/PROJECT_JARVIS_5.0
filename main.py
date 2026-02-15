@@ -30,6 +30,9 @@ warnings.filterwarnings('ignore', message='.*openvino.runtime.*')
 warnings.filterwarnings('ignore', message='.*loss_type=None.*')
 
 import logging
+import asyncio
+import threading
+from src.core.infrastructure.priority_scheduler import PriorityScheduler, TaskPriority, TaskType
 
 # Configure logging
 logging.basicConfig(
@@ -116,6 +119,35 @@ except (ImportError, AttributeError) as e:
 
 # Optional web server imports (loaded on demand)
 from src.core.management.neuro_sync import neuro_sync
+
+# Import Boot Manager for infrastructure initialization
+try:
+    from src.core.infrastructure.boot_manager import BootManager
+    BOOT_MANAGER_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ Boot Manager not available: {e}")
+    BootManager = None
+    BOOT_MANAGER_AVAILABLE = False
+
+# Import Event Bus for asynchronous module communication
+try:
+    from src.core.infrastructure.async_event_bus import AsyncEventBus
+    EVENT_BUS_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ Event Bus not available: {e}")
+    AsyncEventBus = None
+    EVENT_BUS_AVAILABLE = False
+
+# Import Phase 1 Infrastructure (Watchdog & Session)
+try:
+    from src.core.infrastructure.watchdog import watchdog_system
+    from src.core.infrastructure.session_manager import SessionManager
+    INFRA_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"⚠️ Infrastructure Phase 1 components not available: {e}")
+    watchdog_system = None
+    SessionManager = None
+    INFRA_AVAILABLE = False
 
 # =============================
 # ORIENTAÇÃO SOBRE ENCODING DE ARQUIVOS EXTERNOS
@@ -428,6 +460,30 @@ class JarvisSingularity(QObject):
         # Initialize Shutdown Manager
         self.shutdown_manager = ShutdownManager(self) if ShutdownManager else None
         
+        # Priority Scheduler (Backend Async Orchestrator - Fase 1.2)
+        self.scheduler = PriorityScheduler()
+        self._scheduler_loop = None
+        self._scheduler_thread = None
+        self._start_backend_scheduler()
+
+        # Session Manager (Thread-safe Context - Fase 1.7)
+        self.session_manager = SessionManager() if SessionManager else None
+        
+        # Watchdog System (Self-Healing - Fase 1.4)
+        if watchdog_system:
+            try:
+                watchdog_system.start()
+                watchdog_system.register_component("MainUI", heartbeat_interval=2.0)
+                watchdog_system.register_component("BackendScheduler", heartbeat_interval=5.0)
+                if self.vision_system:
+                    watchdog_system.register_component("VisionSystem", heartbeat_interval=5.0)
+                if self.audio_system:
+                    watchdog_system.register_component("AudioSystem", heartbeat_interval=5.0)
+                
+                logger.info("✅ Watchdog System ACTIVE (Phase 1.4)")
+            except Exception as e:
+                logger.error(f"❌ Failed to start Watchdog: {e}")
+        
         # Initialize Stark Orchestrator (Phase 4)
         self.stark_orchestrator = StarkOrchestrator(self) if StarkOrchestrator else None
         if self.stark_orchestrator:
@@ -552,6 +608,64 @@ class JarvisSingularity(QObject):
                     
             except Exception as e:
                 logger.warning(f"⚠️ Network Mesh initialization failed: {e}")
+
+    def _start_backend_scheduler(self):
+        """Start async priority scheduler in background thread (Fase 1.2)"""
+        def _run_scheduler_loop():
+            try:
+                self._scheduler_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self._scheduler_loop)
+                
+                # Verify loop
+                if not self._scheduler_loop:
+                    logger.error("❌ Failed to create scheduler loop")
+                    return
+                
+                # Start scheduler async
+                self._scheduler_loop.run_until_complete(self.start_scheduler_async())
+                self._scheduler_loop.run_forever()
+            except Exception as e:
+                logger.error(f"❌ Priority Scheduler crashed: {e}")
+
+        self._scheduler_thread = threading.Thread(
+            target=_run_scheduler_loop, 
+            daemon=True, 
+            name="PrioritySchedulerMetaContext"
+        )
+        self._scheduler_thread.start()
+
+    async def start_scheduler_async(self):
+        """Async startup wrapper"""
+        await self.scheduler.start()
+        logger.info("✅ Priority Scheduler ACTIVE (Backend Async Loop)")
+        
+        # 🛡️ JARVIS Evolution Layer (Self-Healing)
+        try:
+            from src.evolution import start_evolution_services
+            await start_evolution_services()
+            logger.info("🧬 Evolution Services (Self-Healing) ACTIVATED")
+        except Exception as e:
+            logger.error(f"❌ Evolution Services failed to start: {e}")
+
+    def schedule_backend_task(self, name, coro_func, delay=0, priority=TaskPriority.NORMAL):
+        """Schedule a task on the backend scheduler thread-safely"""
+        if not self._scheduler_loop:
+            logger.warning(f"⚠️ Scheduler loop not ready, task {name} pending...")
+            # Retry in 1s? Or use queue? For now, just log.
+            return
+
+        async def _schedule_wrapper():
+            # Wait for delay inside the loop
+            if delay > 0:
+                await asyncio.sleep(delay)
+            # Schedule execution
+            self.scheduler.schedule_task(
+                name=name,
+                coroutine_factory=coro_func,
+                priority=priority
+            )
+            
+        asyncio.run_coroutine_threadsafe(_schedule_wrapper(), self._scheduler_loop)
 
     def _start_camera_monitoring(self):
         """Initializes FaceID and Emotion detection via CameraController"""
@@ -1145,59 +1259,205 @@ Examples:
         if hud and hasattr(hud, 'show_response'):
              hud.show_response("INICIANDO PROTOCOLO SINGULARITY...")
         
-        # 2. Define Background Boot Task
-        def background_boot_task():
-             try:
-                # Load heavy systems
+        # ========================================================================
+        # 🚀 [STAGE 2] INFRASTRUCTURE INITIALIZATION WITH BOOT MANAGER
+        # ========================================================================
+        boot_data = {"instances": None, "status": "initializing"}
+        
+        async def initialize_with_boot_manager():
+            """Initialize all systems using the new Boot Manager infrastructure"""
+            try:
+                if not BOOT_MANAGER_AVAILABLE:
+                    logger.error("❌ Boot Manager not available, falling back to legacy boot")
+                    return await legacy_boot_fallback()
+                
+                # Create Boot Manager instance
+                boot_manager = BootManager()
+                
+                # Initialize Event Bus for module communication
+                event_bus = None
+                if EVENT_BUS_AVAILABLE:
+                    try:
+                        event_bus = AsyncEventBus()
+                        await event_bus.initialize()
+                        logger.info("✅ Event Bus initialized for module communication")
+
+                        # [PHASE 2.2] Connect UnifiedMemoryManager to Event Bus
+                        if event_bus:
+                            try:
+                                from src.core.intelligence.memory import memory_manager
+                                if memory_manager and hasattr(memory_manager, 'connect_event_bus'):
+                                    memory_manager.connect_event_bus(event_bus)
+                                    logger.info("✅ Memory Manager connected to Event Bus")
+                                
+                                # Connect AI Agent to Event Bus (Phase 2)
+                                from src.core.intelligence.ai_agent import ai_agent
+                                if ai_agent and hasattr(ai_agent, 'connect_event_bus'):
+                                    ai_agent.connect_event_bus(event_bus)
+                                    logger.info("✅ AI Agent connected to Event Bus")
+                                
+                                # Connect Proactive Monitor (Phase 2.3)
+                                from src.core.intelligence.proactive_monitor import proactive_monitor
+                                if proactive_monitor and hasattr(proactive_monitor, 'connect_event_bus'):
+                                    proactive_monitor.connect_event_bus(event_bus)
+                                    proactive_monitor.event_bus.loop = asyncio.get_running_loop() # Inject loop for thread safety
+                                    logger.info("✅ Proactive Monitor connected to Event Bus")
+
+                            except ImportError:
+                                logger.warning("⚠️ Memory Manager import failed for Event Bus connection")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Event Bus initialization failed: {e}")
+                        event_bus = None
+                
+                # Update HUD status
+                if hud and hasattr(hud, 'show_response'):
+                    hud.show_response("CARREGANDO INFRAESTRUTURA...")
+                
+                # Register core modules with proper dependencies
+                boot_manager.register_module(
+                    "window_manager",
+                    lambda: window_manager,
+                    dependencies=[],
+                    priority=10
+                )
+                
+                boot_manager.register_module(
+                    "system_integrator",
+                    lambda: __import__('src.core.actions.system_integrator', fromlist=['get_system_integrator']).get_system_integrator(),
+                    dependencies=["window_manager"],
+                    priority=8
+                )
+                
+                boot_manager.register_module(
+                    "audio_system", 
+                    lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                    dependencies=["system_integrator"],
+                    priority=7
+                )
+                
+                boot_manager.register_module(
+                    "vision_system",
+                    lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                    dependencies=["system_integrator"],
+                    priority=7
+                )
+                
+                boot_manager.register_module(
+                    "ai_agent",
+                    lambda: __import__('src.core.intelligence.ai_agent', fromlist=['ai_agent']).ai_agent,
+                    dependencies=["audio_system", "vision_system"],
+                    priority=5
+                )
+                
+                # Register Event Bus as a module for other systems to access
+                if event_bus:
+                    boot_manager.register_module(
+                        "event_bus",
+                        lambda: event_bus,
+                        dependencies=[],
+                        priority=9
+                    )
+                
+                # Initialize all modules
+                logger.info("⚡ [STAGE 2] Starting Boot Manager initialization...")
+                instances = await boot_manager.initialize_all()
+                
+                # Start background loading for audio and vision
+                if "audio_system" in instances:
+                    try:
+                        audio = instances["audio_system"]
+                        if hasattr(audio, 'start_background_loading'):
+                            audio.start_background_loading()
+                    except Exception as e:
+                        logger.warning(f"⚠️ Audio background loading failed: {e}")
+                
+                if "vision_system" in instances:
+                    try:
+                        vision = instances["vision_system"]  
+                        if hasattr(vision, 'start_background_loading'):
+                            vision.start_background_loading()
+                    except Exception as e:
+                        logger.warning(f"⚠️ Vision background loading failed: {e}")
+                
+                # Add neural systems placeholder and event bus
+                instances["Neural Systems"] = None
+                if event_bus:
+                    instances["event_bus"] = event_bus
+                
+                boot_data["instances"] = instances
+                boot_data["status"] = "completed"
+                
+                if hud and hasattr(hud, 'show_response'):
+                    hud.show_response("SUBSISTEMAS ALINHADOS")
+                
+                logger.info("✅ [STAGE 2] Boot Manager initialization completed successfully")
+                return instances
+                
+            except Exception as e:
+                logger.error(f"❌ Boot Manager initialization failed: {e}")
+                import traceback
+                traceback.print_exc()
+                boot_data["status"] = "failed"
+                return await legacy_boot_fallback()
+        
+        async def legacy_boot_fallback():
+            """Legacy fallback boot process"""
+            try:
+                logger.warning("⚠️ Using legacy boot fallback")
+                
+                # Load systems sequentially as fallback
                 from src.core.actions.system_integrator import get_system_integrator
                 from src.core.audio.enhanced_audio import get_audio_system
                 from src.core.vision.vision_system import get_vision_system
                 from src.core.intelligence.ai_agent import ai_agent
                 
-                # Update status via signal (with safe check)
-                ui_signals_available = None
-                try:
-                    from src.interface.ui_signals import ui_signals
-                    ui_signals_available = ui_signals
-                    ui_signals.update_status.emit("Carregando Core Systems...")
-                except (ImportError, AttributeError) as e:
-                    logger.warning(f"⚠️ ui_signals not available: {e}")
-                
-                sys_int = get_system_integrator()
                 data_path = PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data")
+                sys_int = get_system_integrator()
                 audio = get_audio_system(data_path)
                 vision = get_vision_system(data_path)
                 
-                # 🚀 INICIAR CARREGAMENTO NEURAL EM BACKGROUND
-                # Isso impede que o sistema fique "surdo" ou "cego"
+                # Start background loading
                 audio.start_background_loading()
                 vision.start_background_loading()
                 
-                boot_data["instances"] = {
-                    "Window Manager": window_manager,
-                    "System Integrator": sys_int,
-                    "Audio System": audio,
-                    "Vision System": vision,
-                    "AI Agent": ai_agent,
-                    "Neural Systems": None 
+                instances = {
+                    "window_manager": window_manager,
+                    "system_integrator": sys_int,
+                    "audio_system": audio,
+                    "vision_system": vision,
+                    "ai_agent": ai_agent,
+                    "Neural Systems": None
                 }
                 
-                if ui_signals_available:
-                    ui_signals_available.update_status.emit("SUBSISTEMAS ALINHADOS")
+                boot_data["instances"] = instances
+                boot_data["status"] = "completed"
+                return instances
                 
-             except Exception as e:
-                 logger.error(f"❌ Background Boot Failed: {e}")
-                 import traceback
-                 traceback.print_exc()
-
-        # 3. Start Background Thread (Scheduled after event loop starts)
-        boot_thread = threading_module.Thread(target=background_boot_task, daemon=True, name="BackgroundBoot")
-        QTimer.singleShot(100, boot_thread.start)
+            except Exception as e:
+                logger.error(f"❌ Legacy boot fallback also failed: {e}")
+                boot_data["status"] = "failed"
+                raise
         
-        # 4. Timer to check for completion and start Stage 3
+        # Start initialization in background thread
+        def run_async_boot():
+            import asyncio
+            try:
+                # Create new event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(initialize_with_boot_manager())
+                loop.close()
+            except Exception as e:
+                logger.error(f"❌ Async boot failed: {e}")
+                boot_data["status"] = "failed"
+        
+        boot_thread = threading_module.Thread(target=run_async_boot, daemon=True, name="BootManager")  
+        boot_thread.start()
+        
+        # Timer to check for completion and start Stage 3 
         def check_boot_completion():
-            if boot_data["instances"]:
-                logger.info("⚡ [STAGE 2] Background Boot Completed")
+            if boot_data["instances"] and boot_data["status"] == "completed":
+                logger.info("⚡ [STAGE 2] Boot Manager initialization completed")
                 instances = boot_data["instances"]
                 
                 # ========================================================================
@@ -1208,11 +1468,11 @@ Examples:
                         print("🔥 [DEMOCRÁTICO] Integrando sistemas de poder ao núcleo...")
                         
                         # Adicionar sistemas democráticos às instâncias
-                        instances["Democratic Core"] = democratic_systems['democratic_core']
-                        instances["Microsoft Identifier"] = democratic_systems['microsoft_identifier']
-                        instances["Biometric Verifier"] = democratic_systems['biometric_verifier']
-                        instances["Drive Manager"] = democratic_systems['drive_manager']
-                        instances["Democratic Interface"] = democratic_systems['democratic_interface']
+                        instances["democratic_core"] = democratic_systems['democratic_core']
+                        instances["microsoft_identifier"] = democratic_systems['microsoft_identifier']
+                        instances["biometric_verifier"] = democratic_systems['biometric_verifier']
+                        instances["drive_manager"] = democratic_systems['drive_manager']
+                        instances["democratic_interface"] = democratic_systems['democratic_interface']
                         
                         # Lançar interface democrática em thread separada
                         def launch_democratic_interface():
@@ -1239,6 +1499,16 @@ Examples:
                 logger.info("⚡ [STAGE 3] Igniting Neural Engines...")
                 jarvis = JarvisSingularity(app, instances)
                 
+                # Connect AI Agent to Event Bus if available
+                if event_bus and "ai_agent" in instances:
+                    try:
+                        ai_agent = instances["ai_agent"]
+                        if hasattr(ai_agent, 'set_event_bus'):
+                            ai_agent.set_event_bus(event_bus)
+                            logger.info("✅ AI Agent connected to Event Bus")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to connect AI Agent to Event Bus: {e}")
+                
                 # Update WindowManager with jarvis_core reference for dashboard integration
                 if window_manager:
                     window_manager.jarvis_core = jarvis
@@ -1248,7 +1518,12 @@ Examples:
                 
                 # Stop checking
                 boot_checker.stop()
+            elif boot_data["status"] == "failed":
+                logger.error("❌ [STAGE 2] Boot Manager initialization failed, stopping")
+                boot_checker.stop()
+                app.quit()
                 
+        # Create boot completion checker
         boot_checker = QTimer()
         boot_checker.timeout.connect(check_boot_completion)
         boot_checker.start(200) # Check every 200ms

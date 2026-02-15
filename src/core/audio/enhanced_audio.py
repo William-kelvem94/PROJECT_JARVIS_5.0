@@ -170,14 +170,16 @@ class EnhancedAudioSystem:
     - Voice signature management
     """
     
-    def __init__(self, data_dir: Optional[Path] = None):
+    def __init__(self, data_dir: Optional[Path] = None, event_bus=None):
         """
         Initialize Enhanced Audio System.
         
         Args:
             data_dir: Directory for audio data and signatures
+            event_bus: Event bus instance for module communication
         """
         self.data_dir = data_dir or Path("data")
+        self.event_bus = event_bus
         self.voice_signatures_dir = self.data_dir / "voice_signatures"
         self.audio_temp_dir = self.data_dir / "audio" / "temp"
         
@@ -451,6 +453,15 @@ class EnhancedAudioSystem:
         except Exception as e:
             logger.error(f"âŒ Erro na calibraÃ§Ã£o VAD: {e}")
             return 2000  # Fallback padrÃ£o
+
+    def _pulse_watchdog(self):
+        """Send heartbeat to watchdog"""
+        try:
+            from src.core.infrastructure.watchdog import watchdog_system
+            if watchdog_system:
+                watchdog_system.update_heartbeat("AudioSystem")
+        except ImportError:
+            pass
         
     def start_listening(self):
         """Start listening for audio input"""
@@ -544,6 +555,9 @@ class EnhancedAudioSystem:
         voice_frame_count = 0
         
         while self.is_running:
+            # Pulse Watchdog
+            self._pulse_watchdog()
+            
             try:
                 # Get audio chunk
                 try:
@@ -756,6 +770,75 @@ class EnhancedAudioSystem:
                 
                 if self.on_transcription:
                     self.on_transcription(result)
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"📣 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to publish transcription event: {e}")
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
                     
             self.state = AudioState.LISTENING
             
@@ -959,12 +1042,13 @@ class EnhancedAudioSystem:
 _audio_system: Optional[EnhancedAudioSystem] = None
 
 
-def get_audio_system(data_dir: Optional[Path] = None) -> EnhancedAudioSystem:
+def get_audio_system(data_dir: Optional[Path] = None, event_bus=None) -> EnhancedAudioSystem:
     """
     Get or create Audio System singleton.
     
     Args:
         data_dir: Data directory (for first call)
+        event_bus: Event bus instance for module communication
         
     Returns:
         EnhancedAudioSystem instance
@@ -972,7 +1056,7 @@ def get_audio_system(data_dir: Optional[Path] = None) -> EnhancedAudioSystem:
     global _audio_system
     
     if _audio_system is None:
-        _audio_system = EnhancedAudioSystem(data_dir)
+        _audio_system = EnhancedAudioSystem(data_dir, event_bus)
         
     return _audio_system
 
