@@ -1,5 +1,5 @@
-"""
-Modelos de dados e configurações do banco de dados
+﻿"""
+Modelos de dados e configuraÃ§Ãµes do banco de dados
 Define todas as tabelas e relacionamentos do sistema
 """
 
@@ -39,7 +39,7 @@ class Capture(Base):
     extracted_data = relationship("ExtractedData", back_populates="capture", cascade="all, delete-orphan")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'filename': self.filename,
@@ -69,14 +69,14 @@ class OCRResult(Base):
     cleaned_text = Column(Text, nullable=True)
     confidence_score = Column(Float, nullable=True)
     processing_time = Column(Float, nullable=True)  # segundos
-    text_regions = Column(JSON, nullable=True)  # coordenadas das regiões de texto
+    text_regions = Column(JSON, nullable=True)  # coordenadas das regiÃµes de texto
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamentos
     capture = relationship("Capture", back_populates="ocr_results")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'capture_id': self.capture_id,
@@ -91,7 +91,7 @@ class OCRResult(Base):
         }
 
 class ExtractedData(Base):
-    """Modelo para dados extraídos"""
+    """Modelo para dados extraÃ­dos"""
     __tablename__ = 'extracted_data'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -108,7 +108,7 @@ class ExtractedData(Base):
     capture = relationship("Capture", back_populates="extracted_data")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'capture_id': self.capture_id,
@@ -122,14 +122,14 @@ class ExtractedData(Base):
         }
 
 class DocumentCategory(Base):
-    """Modelo para categorização de documentos"""
+    """Modelo para categorizaÃ§Ã£o de documentos"""
     __tablename__ = 'document_categories'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     capture_id = Column(Integer, ForeignKey('captures.id'), nullable=False)
     category_name = Column(String(100), nullable=False)  # receipt, invoice, contract, etc.
     confidence_score = Column(Float, default=0.0)
-    keywords_found = Column(JSON, nullable=True)  # palavras-chave que levaram à categorização
+    keywords_found = Column(JSON, nullable=True)  # palavras-chave que levaram Ã  categorizaÃ§Ã£o
     ai_suggestion = Column(Boolean, default=False)  # se foi sugerido por IA
     manual_override = Column(Boolean, default=False)  # se foi definido manualmente
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -138,7 +138,7 @@ class DocumentCategory(Base):
     capture = relationship("Capture")
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'capture_id': self.capture_id,
@@ -159,11 +159,11 @@ class ProcessingLog(Base):
     log_level = Column(String(20), default='INFO')  # DEBUG, INFO, WARNING, ERROR
     module = Column(String(100), nullable=False)  # screen_capture, ocr_processor, etc.
     message = Column(Text, nullable=False)
-    details = Column(JSON, nullable=True)  # informações adicionais em JSON
+    details = Column(JSON, nullable=True)  # informaÃ§Ãµes adicionais em JSON
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'capture_id': self.capture_id,
@@ -175,19 +175,19 @@ class ProcessingLog(Base):
         }
 
 class ExportHistory(Base):
-    """Modelo para histórico de exportações"""
+    """Modelo para histÃ³rico de exportaÃ§Ãµes"""
     __tablename__ = 'export_history'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     export_type = Column(String(50), nullable=False)  # json, csv, pdf, excel
     file_path = Column(String(500), nullable=False)
-    filters_used = Column(JSON, nullable=True)  # filtros aplicados na exportação
+    filters_used = Column(JSON, nullable=True)  # filtros aplicados na exportaÃ§Ã£o
     record_count = Column(Integer, default=0)
     file_size_mb = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Converte objeto para dicionário"""
+        """Converte objeto para dicionÃ¡rio"""
         return {
             'id': self.id,
             'export_type': self.export_type,
@@ -207,17 +207,17 @@ class DatabaseManager:
         self._initialize_database()
 
     def _initialize_database(self):
-        """Inicializa conexão com banco de dados"""
+        """Inicializa conexÃ£o com banco de dados"""
         try:
             # Criar engine SQLite
             database_url = f"sqlite:///{config.DATABASE_FILE}"
             self.engine = create_engine(
                 database_url,
-                connect_args={"check_same_thread": False},  # Necessário para SQLite
-                echo=False  # Desabilitar logs SQL em produção
+                connect_args={"check_same_thread": False},  # NecessÃ¡rio para SQLite
+                echo=False  # Desabilitar logs SQL em produÃ§Ã£o
             )
 
-            # Criar sessão
+            # Criar sessÃ£o
             self.SessionLocal = sessionmaker(
                 autocommit=False,
                 autoflush=False,
@@ -234,16 +234,16 @@ class DatabaseManager:
             raise
 
     def get_session(self):
-        """Retorna uma sessão do banco de dados"""
+        """Retorna uma sessÃ£o do banco de dados"""
         return self.SessionLocal()
 
     def close_session(self, session):
-        """Fecha uma sessão do banco de dados"""
+        """Fecha uma sessÃ£o do banco de dados"""
         if session:
             session.close()
 
     def execute_in_session(self, operation, *args, **kwargs):
-        """Executa operação no banco de dados com tratamento de erro"""
+        """Executa operaÃ§Ã£o no banco de dados com tratamento de erro"""
         session = self.get_session()
         try:
             result = operation(session, *args, **kwargs)
@@ -251,7 +251,7 @@ class DatabaseManager:
             return result
         except Exception as e:
             session.rollback()
-            logger.error(f"Erro na operação do banco: {e}")
+            logger.error(f"Erro na operaÃ§Ã£o do banco: {e}")
             raise
         finally:
             self.close_session(session)
@@ -274,7 +274,7 @@ class DatabaseManager:
         return self.execute_in_session(_query)
 
     def get_unprocessed_captures(self) -> List[Capture]:
-        """Busca capturas não processadas"""
+        """Busca capturas nÃ£o processadas"""
         def _query(session):
             return session.query(Capture)\
                          .filter(Capture.processing_status == 'pending')\
@@ -296,7 +296,7 @@ class DatabaseManager:
         self.execute_in_session(_update)
 
     def search_extracted_data(self, query: str, data_type: str = None) -> List[ExtractedData]:
-        """Busca dados extraídos"""
+        """Busca dados extraÃ­dos"""
         def _search(session):
             q = session.query(ExtractedData)\
                       .filter(ExtractedData.field_value.contains(query))
@@ -307,7 +307,7 @@ class DatabaseManager:
         return self.execute_in_session(_search)
 
     def get_statistics(self) -> Dict[str, Any]:
-        """Retorna estatísticas do sistema"""
+        """Retorna estatÃ­sticas do sistema"""
         def _stats(session):
             total_captures = session.query(Capture).count()
             processed_captures = session.query(Capture)\
@@ -316,7 +316,7 @@ class DatabaseManager:
             total_ocr_results = session.query(OCRResult).count()
             total_extracted_data = session.query(ExtractedData).count()
 
-            # Estatísticas por tipo de dados
+            # EstatÃ­sticas por tipo de dados
             data_types = session.query(
                 ExtractedData.data_type,
                 session.func.count(ExtractedData.id).label('count')
@@ -354,5 +354,5 @@ class DatabaseManager:
         logger.info(f"Removidos {deleted_count} registros antigos")
         return deleted_count
 
-# Instância global do gerenciador de banco de dados
+# InstÃ¢ncia global do gerenciador de banco de dados
 db_manager = DatabaseManager()

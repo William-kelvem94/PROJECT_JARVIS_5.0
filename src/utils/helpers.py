@@ -1,6 +1,6 @@
-"""
-Funções auxiliares e utilitários para o Jarvis 5.0
-Contém funções comuns usadas em todo o sistema
+﻿"""
+FunÃ§Ãµes auxiliares e utilitÃ¡rios para o Jarvis 5.0
+ContÃ©m funÃ§Ãµes comuns usadas em todo o sistema
 """
 
 import os
@@ -11,14 +11,32 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple, Union
 import logging
 from PIL import Image
-import cv2
-import numpy as np
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError) as e:
+    NUMPY_AVAILABLE = False
+    # Fallback for type hints
+    class MockNumpy:
+        ndarray = type('ndarray', (), {})
+    np = MockNumpy()
+    logging.warning(f"âš ï¸ numpy not available in helpers: {e}")
+
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except (ImportError, OSError) as e:
+    CV2_AVAILABLE = False
+    cv2 = None
+    logging.warning(f"âš ï¸ cv2 not available in helpers: {e}")
+
 from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 
 class FileHelper:
-    """Utilitários para manipulação de arquivos"""
+    """UtilitÃ¡rios para manipulaÃ§Ã£o de arquivos"""
 
     @staticmethod
     def get_file_hash(file_path: Union[str, Path]) -> str:
@@ -40,12 +58,12 @@ class FileHelper:
 
     @staticmethod
     def ensure_directory(path: Union[str, Path]):
-        """Garante que um diretório existe"""
+        """Garante que um diretÃ³rio existe"""
         Path(path).mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def get_unique_filename(directory: Union[str, Path], filename: str, extension: str = "") -> str:
-        """Gera nome de arquivo único"""
+        """Gera nome de arquivo Ãºnico"""
         base_name = Path(filename).stem
         if extension and not extension.startswith('.'):
             extension = f".{extension}"
@@ -61,7 +79,7 @@ class FileHelper:
 
     @staticmethod
     def cleanup_old_files(directory: Union[str, Path], max_age_days: int = 30):
-        """Remove arquivos antigos de um diretório"""
+        """Remove arquivos antigos de um diretÃ³rio"""
         try:
             cutoff_date = datetime.datetime.now() - datetime.timedelta(days=max_age_days)
             directory = Path(directory)
@@ -76,11 +94,11 @@ class FileHelper:
             logger.error(f"Erro ao limpar arquivos antigos: {e}")
 
 class ImageHelper:
-    """Utilitários para processamento de imagens"""
+    """UtilitÃ¡rios para processamento de imagens"""
 
     @staticmethod
     def preprocess_image(image: Image.Image) -> Image.Image:
-        """Pré-processa imagem para melhorar OCR"""
+        """PrÃ©-processa imagem para melhorar OCR"""
         try:
             # Converter para escala de cinza
             if image.mode != 'L':
@@ -89,12 +107,12 @@ class ImageHelper:
             # Aumentar contraste
             image = ImageHelper._enhance_contrast(image)
 
-            # Redimensionar se necessário
+            # Redimensionar se necessÃ¡rio
             image = ImageHelper._resize_for_ocr(image)
 
             return image
         except Exception as e:
-            logger.error(f"Erro no pré-processamento da imagem: {e}")
+            logger.error(f"Erro no prÃ©-processamento da imagem: {e}")
             return image
 
     @staticmethod
@@ -106,7 +124,7 @@ class ImageHelper:
 
     @staticmethod
     def _resize_for_ocr(image: Image.Image, max_width: int = 2000) -> Image.Image:
-        """Redimensiona imagem mantendo proporção para OCR"""
+        """Redimensiona imagem mantendo proporÃ§Ã£o para OCR"""
         width, height = image.size
         if width > max_width:
             ratio = max_width / width
@@ -127,7 +145,7 @@ class ImageHelper:
 
     @staticmethod
     def detect_text_regions(image: Image.Image) -> List[Tuple[int, int, int, int]]:
-        """Detecta regiões de texto na imagem"""
+        """Detecta regiÃµes de texto na imagem"""
         try:
             cv_image = ImageHelper.image_to_cv2(image)
             gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
@@ -141,29 +159,29 @@ class ImageHelper:
             text_regions = []
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
-                # Filtrar regiões muito pequenas (provavelmente ruído)
+                # Filtrar regiÃµes muito pequenas (provavelmente ruÃ­do)
                 if w > 20 and h > 10:
                     text_regions.append((x, y, x + w, y + h))
 
             return text_regions
         except Exception as e:
-            logger.error(f"Erro na detecção de regiões de texto: {e}")
+            logger.error(f"Erro na detecÃ§Ã£o de regiÃµes de texto: {e}")
             return []
 
 class TextHelper:
-    """Utilitários para processamento de texto"""
+    """UtilitÃ¡rios para processamento de texto"""
 
     @staticmethod
     def clean_ocr_text(text: str) -> str:
-        """Limpa texto extraído do OCR"""
+        """Limpa texto extraÃ­do do OCR"""
         if not text:
             return ""
 
-        # Remover múltiplos espaços
+        # Remover mÃºltiplos espaÃ§os
         text = re.sub(r'\s+', ' ', text)
 
         # Remover caracteres especiais indesejados
-        text = re.sub(r'[^\w\s.,;:!?()[\]{}@#$%&*+-=<>|/\\\'"âàáêèéîìíôòóûùúçñÂÀÁÊÈÉÎÌÍÔÒÓÛÙÚÇÑ]', '', text)
+        text = re.sub(r'[^\w\s.,;:!?()[\]{}@#$%&*+-=<>|/\\\'"Ã¢Ã Ã¡ÃªÃ¨Ã©Ã®Ã¬Ã­Ã´Ã²Ã³Ã»Ã¹ÃºÃ§Ã±Ã‚Ã€ÃÃŠÃˆÃ‰ÃŽÃŒÃÃ”Ã’Ã“Ã›Ã™ÃšÃ‡Ã‘]', '', text)
 
         # Corrigir quebras de linha inconsistentes
         text = re.sub(r'\n\s*\n', '\n\n', text)
@@ -172,7 +190,7 @@ class TextHelper:
 
     @staticmethod
     def extract_patterns(text: str, patterns: Dict[str, str]) -> Dict[str, List[str]]:
-        """Extrai padrões regex do texto"""
+        """Extrai padrÃµes regex do texto"""
         results = {}
 
         for pattern_name, pattern in patterns.items():
@@ -181,7 +199,7 @@ class TextHelper:
                 if matches:
                     results[pattern_name] = list(set(matches))  # Remover duplicatas
             except re.error as e:
-                logger.error(f"Erro no padrão regex {pattern_name}: {e}")
+                logger.error(f"Erro no padrÃ£o regex {pattern_name}: {e}")
 
         return results
 
@@ -191,13 +209,13 @@ class TextHelper:
         if not text:
             return ""
 
-        # Converter para minúsculas
+        # Converter para minÃºsculas
         text = text.lower()
 
         # Remover acentos
         text = TextHelper._remove_accents(text)
 
-        # Remover pontuação desnecessária
+        # Remover pontuaÃ§Ã£o desnecessÃ¡ria
         text = re.sub(r'[^\w\s]', ' ', text)
 
         return text.strip()
@@ -206,12 +224,12 @@ class TextHelper:
     def _remove_accents(text: str) -> str:
         """Remove acentos do texto"""
         accents = {
-            'á': 'a', 'à': 'a', 'â': 'a', 'ã': 'a', 'ä': 'a',
-            'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-            'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
-            'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ö': 'o',
-            'ú': 'u', 'ù': 'u', 'û': 'u', 'ü': 'u',
-            'ç': 'c', 'ñ': 'n'
+            'Ã¡': 'a', 'Ã ': 'a', 'Ã¢': 'a', 'Ã£': 'a', 'Ã¤': 'a',
+            'Ã©': 'e', 'Ã¨': 'e', 'Ãª': 'e', 'Ã«': 'e',
+            'Ã­': 'i', 'Ã¬': 'i', 'Ã®': 'i', 'Ã¯': 'i',
+            'Ã³': 'o', 'Ã²': 'o', 'Ã´': 'o', 'Ãµ': 'o', 'Ã¶': 'o',
+            'Ãº': 'u', 'Ã¹': 'u', 'Ã»': 'u', 'Ã¼': 'u',
+            'Ã§': 'c', 'Ã±': 'n'
         }
 
         for accented, normal in accents.items():
@@ -237,7 +255,7 @@ class TextHelper:
         return intersection / union if union > 0 else 0.0
 
 class DataHelper:
-    """Utilitários para manipulação de dados"""
+    """UtilitÃ¡rios para manipulaÃ§Ã£o de dados"""
 
     @staticmethod
     def validate_cpf(cpf: str) -> bool:
@@ -280,10 +298,10 @@ class DataHelper:
 
     @staticmethod
     def format_money(value: Union[str, float, int]) -> str:
-        """Formata valor monetário brasileiro"""
+        """Formata valor monetÃ¡rio brasileiro"""
         try:
             if isinstance(value, str):
-                # Remover símbolos e converter
+                # Remover sÃ­mbolos e converter
                 value = float(re.sub(r'[^\d.,]', '', value).replace(',', '.'))
 
             return f"R$ {value:,.2f}".replace(',', '_').replace('.', ',').replace('_', '.')
@@ -292,7 +310,7 @@ class DataHelper:
 
     @staticmethod
     def parse_date(date_str: str) -> Optional[datetime.datetime]:
-        """Parseia data em vários formatos"""
+        """Parseia data em vÃ¡rios formatos"""
         date_formats = [
             '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%Y/%m/%d',
             '%d/%m/%y', '%d-%m-%y', '%m/%d/%Y', '%m-%d-%Y'
@@ -307,11 +325,11 @@ class DataHelper:
         return None
 
 class SystemHelper:
-    """Utilitários do sistema"""
+    """UtilitÃ¡rios do sistema"""
 
     @staticmethod
     def get_system_info() -> Dict[str, Any]:
-        """Obtém informações do sistema"""
+        """ObtÃ©m informaÃ§Ãµes do sistema"""
         import platform
         import psutil
 
@@ -326,7 +344,7 @@ class SystemHelper:
                 "gpu": SystemHelper.get_gpu_info()
             }
         except Exception as e:
-            logger.error(f"Erro ao obter informações do sistema: {e}")
+            logger.error(f"Erro ao obter informaÃ§Ãµes do sistema: {e}")
             return {}
 
     @staticmethod
@@ -334,7 +352,7 @@ class SystemHelper:
         """Detecta disponibilidade de GPU (NVIDIA/CUDA)"""
         info = {"available": False, "name": "None", "driver": "None"}
         
-        # Tentar via torch se disponível (mais confiável para IA)
+        # Tentar via torch se disponÃ­vel (mais confiÃ¡vel para IA)
         try:
             import torch
             if torch.cuda.is_available():
@@ -362,7 +380,7 @@ class SystemHelper:
 
     @staticmethod
     def is_admin() -> bool:
-        """Verifica se o programa está rodando como administrador"""
+        """Verifica se o programa estÃ¡ rodando como administrador"""
         try:
             import ctypes
             return ctypes.windll.shell32.IsUserAnAdmin()
@@ -385,7 +403,7 @@ class SystemHelper:
         except Exception as e:
             logger.error(f"Erro ao criar atalho: {e}")
 
-# Instâncias globais para conveniência
+# InstÃ¢ncias globais para conveniÃªncia
 file_helper = FileHelper()
 image_helper = ImageHelper()
 text_helper = TextHelper()
