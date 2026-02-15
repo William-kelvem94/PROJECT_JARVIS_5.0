@@ -1160,19 +1160,6 @@ class AIAgent:
                 if voice_controller:
                     voice_controller.speak(clarification)
 
-    def ask_for_clarification(self, validation_data: Dict[str, Any]) -> str:
-        """Pergunta ao usuário como resolver uma disputa de informações."""
-        query = validation_data.get("query", "este assunto")
-        sources = [r.get("source") for r in validation_data.get("results", [])]
-        unique_sources = list(set(sources))[:2]
-        
-        if len(unique_sources) >= 2:
-            msg = f"Senhor, encontrei informações conflitantes sobre '{query}'. Algumas fontes mencionam {unique_sources[0]} e outras {unique_sources[1]}. Como deseja que eu prossiga?"
-        else:
-            msg = f"Senhor, não consegui validar com certeza as informações sobre '{query}'. Deseja que eu continue pesquisando ou assume o risco?"
-            
-        return msg
-
         # ... (Step 6-7 unchanged) ...
         # [PHASE 2.2] Event-Driven Memory Storage
         if self.event_bus:
@@ -1252,6 +1239,19 @@ class AIAgent:
                     # Por simplicidade, vamos apenas mostrar no HUD agora, mas poderíamos enfileirar
                     # voice_controller.speak(final_response) # Fallback se quiser forçar
         return final_response
+
+    def ask_for_clarification(self, validation_data: Dict[str, Any]) -> str:
+        """Pergunta ao usuário como resolver uma disputa de informações."""
+        query = validation_data.get("query", "este assunto")
+        sources = [r.get("source") for r in validation_data.get("results", [])]
+        unique_sources = list(set(sources))[:2]
+        
+        if len(unique_sources) >= 2:
+            msg = f"Senhor, encontrei informações conflitantes sobre '{query}'. Algumas fontes mencionam {unique_sources[0]} e outras {unique_sources[1]}. Como deseja que eu prossiga?"
+        else:
+            msg = f"Senhor, não consegui validar com certeza as informações sobre '{query}'. Deseja que eu continue pesquisando ou assume o risco?"
+            
+        return msg
 
     def process_hybrid_vision(self, screenshot_path: str) -> Dict[str, Any]:
         """
