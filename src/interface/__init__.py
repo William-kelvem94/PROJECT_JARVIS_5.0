@@ -1,7 +1,8 @@
-"""
+﻿"""
 Interface Module - HUD and Visual Components
 """
 
-from .hud import JarvisHUD, ReactorWidget
+from .modern_hud import ModernHUD as JarvisHUD
+from .modern_hud import ArcReactorWidget as ReactorWidget
 
 __all__ = ['JarvisHUD', 'ReactorWidget']
