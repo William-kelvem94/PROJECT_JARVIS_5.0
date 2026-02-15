@@ -44,6 +44,30 @@ import psutil
 
 logger = logging.getLogger(__name__)
 
+class SessionManager:
+    """Stub for SessionManager functionality"""
+    
+    def __init__(self):
+        logger.warning("⚠️ SessionManager is a stub - functionality not implemented")
+    
+    def start(self):
+        pass
+    
+    def stop(self):
+        pass
+    
+    def create_session(self, session_id):
+        return None
+    
+    def end_session(self, session_id):
+        pass
+    
+    def get_manager_stats(self):
+        return {}
+
+# Singleton instance
+session_manager = SessionManager()
+
 class SessionState(Enum):
     """Estados de uma sessão"""
     INITIALIZING = "initializing"
