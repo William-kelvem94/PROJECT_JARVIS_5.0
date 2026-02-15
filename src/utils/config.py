@@ -77,7 +77,7 @@ class Config:
         self.PROJECT_ROOT = Path(__file__).parent.parent.parent
         self.SRC_DIR = self.PROJECT_ROOT / "src"
         self.DATA_DIR = self.PROJECT_ROOT / "data"
-        self.CONFIG_DIR = self.PROJECT_ROOT / "config"
+        self.CONFIG_DIR = self.SRC_DIR / "config"
         self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
@@ -97,10 +97,31 @@ class Config:
         else:
             logger.warning(f"âš ï¸ Arquivo .env nÃ£o encontrado em {env_path}")
 
-        # DiretÃ³rios de dados
-        self.CAPTURES_DIR = self.DATA_DIR / "captures"
-        self.PROCESSED_DIR = self.DATA_DIR / "processed"
-        self.DATABASE_FILE = self.DATA_DIR / "jarvis.db"
+        # Core Data Subdirectories
+        self.LOGS_DIR = self.DATA_DIR / "logs"
+        self.CACHE_DIR = self.DATA_DIR / "cache"
+        self.DB_DIR = self.DATA_DIR / "database"
+        self.MEMORY_DIR = self.DATA_DIR / "memory"
+        self.VISION_DIR = self.DATA_DIR / "vision"
+        self.AUDIO_DIR = self.DATA_DIR / "audio"
+        self.SYSTEM_DIR = self.DATA_DIR / "system"
+        self.LEARNING_DIR = self.DATA_DIR / "learning"
+        self.SECURITY_DIR = self.DATA_DIR / "security"
+        self.BACKUPS_DIR = self.DATA_DIR / "backups"
+        self.WORKFLOWS_DIR = self.DATA_DIR / "workflows"
+        self.USERS_DIR = self.DATA_DIR / "users"
+        self.TESTS_DIR = self.DATA_DIR / "tests"
+
+        # Specific Paths
+        self.CAPTURES_DIR = self.VISION_DIR / "captures"
+        self.PROCESSED_DIR = self.VISION_DIR / "processed"
+        self.DATABASE_FILE = self.DB_DIR / "jarvis.db"
+        self.FEEDBACK_FILE = self.DB_DIR / "feedback.db"
+        self.HEALTH_REPORT_FILE = self.SYSTEM_DIR / "system_health.json"
+        
+        # Temp & Exports
+        self.TEMP_DIR = self.DATA_DIR / "temp"
+        self.EXPORTS_DIR = self.DATA_DIR / "exports"
 
         # Arquivos de configuraÃ§Ã£o (SISTEMA)
         self.SETTINGS_FILE = self.CONFIG_DIR / "settings.json"
@@ -315,12 +336,26 @@ class Config:
             self.PROCESSED_DIR,
             self.CONFIG_DIR,
             self.MODELS_DIR,
-            self.DATA_DIR / "temp",
-            self.DATA_DIR / "exports"
+            self.LOGS_DIR,
+            self.CACHE_DIR,
+            self.DB_DIR,
+            self.MEMORY_DIR,
+            self.SYSTEM_DIR,
+            self.LEARNING_DIR,
+            self.SECURITY_DIR,
+            self.BACKUPS_DIR,
+            self.WORKFLOWS_DIR,
+            self.USERS_DIR,
+            self.TESTS_DIR,
+            self.TEMP_DIR,
+            self.EXPORTS_DIR
         ]
 
         for directory in directories:
-            directory.mkdir(parents=True, exist_ok=True)
+            try:
+                directory.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logger.warning(f"Could not create directory {directory}: {e}")
 
     def _load_user_settings(self) -> Dict[str, Any]:
         """Carrega configurações do sistema e sobrepõe com as do usuário (Camadas)"""

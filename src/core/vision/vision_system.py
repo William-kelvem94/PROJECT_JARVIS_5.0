@@ -557,13 +557,14 @@ class VisionSystem:
             logger.error(f"Error capturing screen: {e}")
             return None
             
-    def analyze_screen(self, include_ocr: bool = True, include_objects: bool = False) -> VisionContext:
+    def analyze_screen(self, include_ocr: bool = True, include_objects: bool = False, save_screenshot: bool = False) -> VisionContext:
         """
         Analyze current screen content.
         
         Args:
             include_ocr: Extract text using OCR
             include_objects: Detect objects using YOLO
+            save_screenshot: If True, saves the capture to disk (default False for Zero-Disk-IO)
             
         Returns:
             VisionContext with analysis results
@@ -571,7 +572,7 @@ class VisionSystem:
         self.mode = VisionMode.ANALYZING
         
         try:
-            # Capture screen
+            # Capture screen directly into memory (RAM)
             screenshot = self.capture_screen()
             
             if screenshot is None:
@@ -580,17 +581,20 @@ class VisionSystem:
                     screen_text="Screen capture failed"
                 )
                 
-            # Save screenshot
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            screenshot_path = self.screenshots_dir / f"screen_{timestamp}.png"
-            cv2.imwrite(str(screenshot_path), screenshot)
+            # Save screenshot ONLY if explicitly requested (Zero-Disk-IO Optimization)
+            screenshot_path = None
+            if save_screenshot:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                screenshot_path = self.screenshots_dir / f"screen_{timestamp}.png"
+                cv2.imwrite(str(screenshot_path), screenshot)
+                logger.debug(f"📸 Screenshot saved to disk: {screenshot_path}")
             
-            # Extract text with OCR
+            # Extract text with OCR (Processes directly from memory/ndarray)
             screen_text = None
             if include_ocr and EASYOCR_AVAILABLE:
                 screen_text = self._extract_text_from_image(screenshot)
                 
-            # Detect objects
+            # Detect objects (Processes directly from memory)
             detected_objects = None
             if include_objects and YOLO_AVAILABLE:
                 detected_objects = self._detect_objects_in_image(screenshot)

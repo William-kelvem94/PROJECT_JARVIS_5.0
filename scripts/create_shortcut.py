@@ -17,8 +17,8 @@ try:
 
     shortcut = shell.CreateShortcut(path)
     shortcut.TargetPath = "cmd.exe"
-    # Argumentos para rodar o BAT e manter a janela aberta em caso de erro para diagnóstico
-    shortcut.Arguments = f'/c "{target}"'
+    # Usar /k para que a janela fique aberta e possamos ver o erro caso o BAT feche
+    shortcut.Arguments = f'/k "{target}"'
     shortcut.WorkingDirectory = project_root
     shortcut.IconLocation = "shell32.dll, 238" 
     shortcut.Description = "Sistema JARVIS 5.0 - Protocolo Singularity"

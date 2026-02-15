@@ -85,9 +85,19 @@ class ScreenCapture:
 
     def capture_fullscreen(self, save_path: Optional[str] = None,
                           capture_type: str = 'manual',
-                          monitor_index: Optional[int] = None) -> Optional[str]:
+                          monitor_index: Optional[int] = None,
+                          return_image: bool = False) -> Optional[str]:
         """
         Captura tela completa ou de um monitor especÃ­fico
+        
+        Args:
+            save_path: Caminho para salvar a captura
+            capture_type: Tipo da captura
+            monitor_index: Ãndice do monitor
+            return_image: Se True, retorna dados da imagem em vez de salvar
+        
+        Returns:
+            Caminho do arquivo salvo ou dados da imagem se return_image=True
         """
         if not self.enabled or not MSS_AVAILABLE:
             logger.warning("Screen capture nÃ£o disponÃ­vel (mss nÃ£o instalado)")
@@ -111,12 +121,16 @@ class ScreenCapture:
 
             # Converter para PIL Image
             if not PIL_AVAILABLE:
-                logger.error("PIL nÃ£o disponÃ­vel para salvar imagem")
+                logger.error("PIL nÃ£o disponÃ­vel para processar imagem")
                 return None
             img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
 
-            # Salvar captura
-            return self._save_capture(img, save_path, capture_type, 'fullscreen')
+            if return_image:
+                # Retornar dados da imagem para processamento em memÃ³ria
+                return img
+            else:
+                # Salvar captura
+                return self._save_capture(img, save_path, capture_type, 'fullscreen')
 
         except Exception as e:
             logger.error(f"Erro na captura de tela completa: {e}")

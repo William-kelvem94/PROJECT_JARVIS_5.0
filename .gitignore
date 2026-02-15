@@ -1,11 +1,8 @@
-# Dados (controle delegado para data/.gitignore)
-# data/  <-- REMOVIDO (usar .gitignore interno)
+# JARVIS 5.0 - Professional .gitignore
 
-*.log
-*.tmp
-*.cache
-
-# Python
+# -----------------------------------------------------------------------------
+# SYSTEM & ENVIRONMENT
+# -----------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,70 +23,91 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual environments
+# Virtual Environment
 venv/
 env/
 ENV/
 .venv
 
-# IDE
-# .vscode/  <-- REMOVIDO (settings.json deve ser versionado)
-.idea/
-*.swp
-*.swo
-*~
-# .cursor/  <-- REMOVIDO (rules.md deve ser versionado)
-
-# OS
+# OS Generated
 .DS_Store
 Thumbs.db
 desktop.ini
+*.swp
+*.swo
+*~
 
-# Configuração sensível
+# -----------------------------------------------------------------------------
+# IDE & EDITOR
+# -----------------------------------------------------------------------------
+.idea/
+.vscode/launch.json
+.vscode/tasks.json
+# Keep .vscode/settings.json and extensions.json if shared
+# .cursor/ is kept for context rules
+
+# -----------------------------------------------------------------------------
+# CONFIGURATION & SECRETS (CRITICAL)
+# -----------------------------------------------------------------------------
 .env
 config/secrets.yaml
 *.key
 *.pem
+*.pfx
 
-# Modelos grandes
-models/*.pt
-!models/vision/yolov8n.pt
-
-# Backup
-_backup_legacy/
-*.bak
-
-# Logs
+# -----------------------------------------------------------------------------
+# DATA STORAGE & LOGS
+# -----------------------------------------------------------------------------
 *.log
-jarvis.log
-jarvis_singularity.log
+data/logs/*
+!data/logs/.gitkeep
 
-# ChromaDB
+# Memory / Database
 data/memory/chroma.sqlite3
 data/memory/*.parquet
+data/memory/*
+!data/memory/.gitkeep
 
-# Rclone
+# Sync / Backup
 data/sync/
-
-# Temporários
+data/backup/
 data/temp/
+
+# -----------------------------------------------------------------------------
+# MEDIA & ASSETS (GENERATED)
+# -----------------------------------------------------------------------------
 *.wav
 *.mp3
 *.png
 *.jpg
 *.jpeg
+*.gif
+*.mp4
 
-# Testes
+# -----------------------------------------------------------------------------
+# AI MODELS (LARGE FILES)
+# -----------------------------------------------------------------------------
+models/*.pt
+models/*.bin
+models/*.gguf
+models/*.safetensors
+!models/vision/yolov8n.pt  # Keep small reference models if needed
+
+# -----------------------------------------------------------------------------
+# TESTING & COVERAGE
+# -----------------------------------------------------------------------------
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
-
-# Migration reports
+# -----------------------------------------------------------------------------
+# LEGACY & MIGRATION
+# -----------------------------------------------------------------------------
+archive/
+_backup_legacy/
+*.bak
 migration_report.json
 ollama_setup.exe

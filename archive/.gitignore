@@ -1,6 +1,0 @@
-# Ignorar tudo nesta pasta por padrão
-*
-
-# Exceto este arquivo de configuração e o README
-!.gitignore
-!README.md

@@ -75,7 +75,7 @@ device_id = hash(conta_windows + hardware_info)
 # Adicionar em jarvis_core.py na inicialização:
 
 from src.core.network_mesh.local_network_intelligence import LocalNetworkIntelligence
-from src.core.management.jarvis_auto_recovery import AutoRecoveryIntegration
+from src.core.management.universal_recovery_manager import UniversalRecoveryManager
 
 class JarvisCore:
     def __init__(self):

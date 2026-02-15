@@ -146,12 +146,17 @@ class VoiceController:
             try:
                 # Patch BeamSearchScorer before importing TTS
                 try:
-                    from transformers import generation_utils
-                    if not hasattr(generation_utils, 'BeamSearchScorer'):
-                        # Create dummy BeamSearchScorer for compatibility
-                        class BeamSearchScorer:
-                            pass
-                        generation_utils.BeamSearchScorer = BeamSearchScorer
+                    import transformers
+                    # If BeamSearchScorer is missing from top-level, try to inject it
+                    if not hasattr(transformers, 'BeamSearchScorer'):
+                        try:
+                            from transformers.generation import BeamSearchScorer
+                            transformers.BeamSearchScorer = BeamSearchScorer
+                        except ImportError:
+                            # Create dummy if everything fails to let it load
+                            class BeamSearchScorer:
+                                def __init__(self, *args, **kwargs): pass
+                            transformers.BeamSearchScorer = BeamSearchScorer
                 except:
                     pass
                 

@@ -681,7 +681,8 @@ class ScalableDatabase:
     
     def _initialize_backend(self):
         """Initialize appropriate database backend."""
-        sqlite_path = self.data_dir / "feedback.db"
+        from src.utils.config import config
+        sqlite_path = config.FEEDBACK_FILE
         
         # Check current data volume
         if sqlite_path.exists():

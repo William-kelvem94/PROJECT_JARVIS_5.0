@@ -44,7 +44,7 @@ try:
     FASTER_WHISPER_AVAILABLE = True
 except ImportError as e:
     logger.critical(f"❌ faster-whisper REQUIRED: {e}")
-    logger.critical("ðŸ'¡ Install with: pip install faster-whisper")
+    logger.critical("💡 Install with: pip install faster-whisper")
     FASTER_WHISPER_AVAILABLE = False
     WhisperModel = None
 
@@ -55,7 +55,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError as e:
     logger.critical(f"❌ torch/torchaudio REQUIRED: {e}")
-    logger.critical("ðŸ'¡ Install with: pip install torch torchaudio")
+    logger.critical("💡 Install with: pip install torch torchaudio")
     TORCH_AVAILABLE = False
     torch = None
     torchaudio = None
@@ -71,7 +71,7 @@ def _import_faster_whisper():
             FASTER_WHISPER_AVAILABLE = True
         except (ImportError, OSError, AttributeError, KeyboardInterrupt) as e:
             FASTER_WHISPER_AVAILABLE = False
-            logger.warning(f"âš ï¸ faster-whisper not available - STT disabled: {e}")
+            logger.warning(f"⚠️ faster-whisper not available - STT disabled: {e}")
             WhisperModel = None
     return FASTER_WHISPER_AVAILABLE
 
@@ -85,7 +85,7 @@ def _import_torch():
             TORCH_AVAILABLE = True
         except (ImportError, OSError, KeyboardInterrupt) as e:
             TORCH_AVAILABLE = False
-            logger.warning(f"âš ï¸ torch not available - advanced audio features disabled: {e}")
+            logger.warning(f"⚠️ torch not available - advanced audio features disabled: {e}")
             torch = None
             torchaudio = None
     return TORCH_AVAILABLE
@@ -645,13 +645,20 @@ class EnhancedAudioSystem:
             audio_float = audio.astype(np.float32) / 32768.0
 
             # Silero-VAD funciona melhor com janelas de 512, 1024 ou 1536 amostras
+            # Versões recentes exigem estritamente 512 para 16kHz
             if self.sample_rate == 16000:
-                if audio_float.shape[-1] > 1536:
-                    audio_float = audio_float[-1536:]
+                if audio_float.shape[-1] > 512:
+                    audio_float = audio_float[-512:]
                 elif audio_float.shape[-1] < 512:
-                    return False
-            elif self.sample_rate == 8000 and audio_float.shape[-1] > 256:
-                audio_float = audio_float[-256:]
+                    # Pad zero if too small
+                    pad_size = 512 - audio_float.shape[-1]
+                    audio_float = np.pad(audio_float, (0, pad_size))
+            elif self.sample_rate == 8000:
+                if audio_float.shape[-1] > 256:
+                    audio_float = audio_float[-256:]
+                elif audio_float.shape[-1] < 256:
+                    pad_size = 256 - audio_float.shape[-1]
+                    audio_float = np.pad(audio_float, (0, pad_size))
                 
             # Convert to tensor
             audio_tensor = torch.from_numpy(audio_float)

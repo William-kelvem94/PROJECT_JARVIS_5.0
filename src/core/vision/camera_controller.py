@@ -13,6 +13,7 @@ import shutil
 from typing import Optional, List, Dict, Any, Callable
 from pathlib import Path
 from datetime import datetime
+import numpy as np
 from src.utils.config import config
 from src.core.vision.gesture_controller import gesture_controller
 from src.core.intelligence.emotion_detector import emotion_detector
@@ -246,12 +247,15 @@ class CameraController:
                                 small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
                                 rgb_small_frame = small_frame[:, :, ::-1]
                                 
+                                 # Garantir que o frame seja contíguo e no formato correto para o dlib
+                                r_frame = np.ascontiguousarray(rgb_small_frame)
+                                
                                 # Buscar faces com HOG
-                                face_locations = face_recognition.face_locations(rgb_small_frame, model="hog")
+                                face_locations = face_recognition.face_locations(r_frame, model="hog")
                             
                                 if face_locations:
                                     try:
-                                        face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
+                                        face_encodings = face_recognition.face_encodings(r_frame, face_locations)
                                         for face_encoding in face_encodings:
                                             match = face_recognition.compare_faces(self.known_face_encodings, face_encoding, tolerance=0.6)
                                             name = "Desconhecido"

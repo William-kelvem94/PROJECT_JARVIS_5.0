@@ -38,7 +38,8 @@ class VisionEnhancer:
     
     def analyze_screen(
         self,
-        image_path: str,
+        image_path: Optional[str] = None,
+        image_data: Optional[Any] = None,
         detect_ui: bool = True,
         extract_text: bool = True
     ) -> Dict[str, Any]:
@@ -46,7 +47,8 @@ class VisionEnhancer:
         AnÃ¡lise completa da tela.
         
         Args:
-            image_path: Path da screenshot
+            image_path: Path da screenshot (legacy)
+            image_data: Dados da imagem (PIL Image ou numpy array) para processamento em memÃ³ria
             detect_ui: Se True, detecta elementos UI
             extract_text: Se True, extrai texto com OCR
         
@@ -62,13 +64,19 @@ class VisionEnhancer:
         
         try:
             # Carregar imagem
-            if not Path(image_path).exists():
-                logger.error(f"âŒ Imagem nÃ£o encontrada: {image_path}")
-                return result
-            
-            image = cv2.imread(image_path)
-            if image is None:
-                logger.error(f"âŒ Erro ao carregar imagem: {image_path}")
+            if image_data is not None:
+                # Processamento em memÃ³ria
+                if hasattr(image_data, 'convert'):  # PIL Image
+                    image = cv2.cvtColor(np.array(image_data), cv2.COLOR_RGB2BGR)
+                else:  # Assume numpy array
+                    image = image_data
+            elif image_path and Path(image_path).exists():
+                image = cv2.imread(image_path)
+                if image is None:
+                    logger.error(f"âŒ Erro ao carregar imagem: {image_path}")
+                    return result
+            else:
+                logger.error("âŒ Nenhuma imagem fornecida ou arquivo nÃ£o encontrado")
                 return result
             
             # 1. DetecÃ§Ã£o de UI com YOLO
