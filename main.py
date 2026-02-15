@@ -9,6 +9,14 @@ os.environ["PYTHONUTF8"] = "1"
 os.environ["PYTHONIOENCODING"] = "utf-8"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
+# Set console to UTF-8 on Windows
+if platform.system() == "Windows":
+    try:
+        import subprocess
+        subprocess.run(["chcp", "65001"], check=True, capture_output=True)
+    except:
+        pass  # Ignore if fails
+
 # Force UTF-8 encoding for file operations
 import locale
 try:
@@ -83,6 +91,23 @@ except (ImportError, AttributeError):
     pass
 except Exception as e:
     logger.debug(f"XTTS Patch Error: {e}")
+
+# Additional patch for newer transformers versions
+try:
+    from transformers import __version__ as transformers_version
+    if transformers_version.startswith('4.4') or transformers_version.startswith('4.3'):
+        # For newer versions, try to import from the correct location
+        try:
+            from transformers.generation import BeamSearchScorer
+        except ImportError:
+            # Create a dummy class
+            class BeamSearchScorer:
+                pass
+            import transformers
+            transformers.BeamSearchScorer = BeamSearchScorer
+            logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers (version compatibility)")
+except:
+    pass
 import psutil
 import signal
 import shutil
@@ -1279,7 +1304,6 @@ Examples:
                 if EVENT_BUS_AVAILABLE:
                     try:
                         event_bus = AsyncEventBus()
-                        await event_bus.initialize()
                         logger.info("✅ Event Bus initialized for module communication")
 
                         # [PHASE 2.2] Connect UnifiedMemoryManager to Event Bus
@@ -1360,7 +1384,10 @@ Examples:
                 
                 # Initialize all modules
                 logger.info("⚡ [STAGE 2] Starting Boot Manager initialization...")
-                instances = await boot_manager.initialize_all()
+                boot_success = boot_manager.start_boot()
+                if not boot_success:
+                    raise Exception("Boot Manager initialization failed")
+                instances = boot_manager.instances
                 
                 # Start background loading for audio and vision
                 if "audio_system" in instances:
