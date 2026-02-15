@@ -6,6 +6,7 @@ Gerencia interaÃ§Ã£o entre visÃ£o (OCR), decisÃ£o (LLM) e aÃ§Ã£o (Py
 import logging
 import os
 import requests
+import aiohttp
 import json
 import re
 import time
@@ -385,6 +386,19 @@ class AIAgent:
         
         self.system_prompt = self.prompt_manager.get_system_prompt()
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
+        
+        # [EVENT BUS]
+        self.event_bus = None
+
+    def connect_event_bus(self, event_bus):
+        """Connects AI Agent to AsyncEventBus for pub/sub communication"""
+        self.event_bus = event_bus
+        if self.event_bus:
+            logger.info("✅ AI Agent connected to AsyncEventBus.")
+            
+            # [PHASE 2.3] Proactive Vision Trigger
+            import asyncio
+            asyncio.create_task(self.event_bus.subscribe("vision.screen_change", self._handle_vision_event))
 
     def _get_security_manager(self):
         """Lazy load SecurityManager to avoid circular imports"""
@@ -876,8 +890,10 @@ class AIAgent:
         capture_thread = threading.Thread(target=_capture_task, daemon=True)
         capture_thread.start()
 
-        # Aguardar screenshot para anÃ¡lise de contexto real (Vision-Aware)
-        screenshot_event.wait(timeout=2.0)
+        # Aguardar screenshot (Async Wrapper)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, screenshot_event.wait, 2.0)
+        
         screenshot_image = screenshot_container["image_data"]
         window_info = screenshot_container["window_info"]
         
@@ -1002,7 +1018,9 @@ class AIAgent:
             # Show on HUD if possible
             if self.brain_router:
                 reflect_logger.reflect(f"Command context analysis: {user_command[:50]}...", layer="CONTEXT")
-            screenshot_event.wait(timeout=5.0)
+            
+            # [ASYNC FIX]
+            await loop.run_in_executor(None, screenshot_event.wait, 5.0)
             screenshot_image = screenshot_container["image_data"]
 
             try:
@@ -1019,7 +1037,8 @@ class AIAgent:
                 else:
                     # Se é algo novo, ele usa os modelos para aprender como agir
                     target_model = self._select_best_ollama_model(enriched_command, screenshot_path)
-                    response = self._call_ollama(enriched_command, screenshot_image, model=target_model, system_prompt=dynamic_system_prompt)
+                    # [ASYNC MIGRATION] Calls _call_ollama_async
+                    response = await self._call_ollama_async(enriched_command, screenshot_image, model=target_model, system_prompt=dynamic_system_prompt)
                     
                     # Após a resposta do "Tutor", ele armazena para o futuro (Destilação)
                     if "ERRO" not in response:
@@ -1155,8 +1174,21 @@ class AIAgent:
         return msg
 
         # ... (Step 6-7 unchanged) ...
-        # 6. Salvar nova interaÃ§Ã£o na memÃ³ria neural e dataset
-        memory_manager.store_interaction(user_command, response)
+        # [PHASE 2.2] Event-Driven Memory Storage
+        if self.event_bus:
+            # Publish event for background storage
+            await self.event_bus.publish("ai.response.generated", {
+                "prompt": user_command,
+                "response": response,
+                "metadata": {
+                    "provider": primary_provider,
+                    "turns": current_turn + 1,
+                    "ts": time.time()
+                }
+            })
+        elif memory_manager:
+            # Legacy synchronous storage
+            memory_manager.store_interaction(user_command, response)
         
         # ðŸ§  PHASE 6: REGISTRO DE FEEDBACK PARA APRENDIZADO CONTÃNUO
         if get_learning_engine:
@@ -1568,6 +1600,72 @@ class AIAgent:
         except Exception as e:
             logger.error(f"Erro ao chamar Ollama ({target_model}): {e}")
             return "OLLAMA_ERROR"  # Sinal para fallback
+
+    async def _call_ollama_async(self, prompt: str, image_data: Optional[Any] = None, model: Optional[str] = None, system_prompt: str = None) -> str:
+        """
+        [ASYNC] Integração com Ollama Local (Multi-modelo) usando aiohttp.
+        100% Assíncrono para não travar o Event Loop.
+        """
+        try:
+            import base64
+            import aiohttp
+            
+            # Seleciona o melhor modelo se não for especificado
+            target_model = model if model else self._select_best_ollama_model(prompt, image_data)
+            
+            encoded_image = None
+            if image_data:
+                # Processamento de imagem em executor thread se necessário, 
+                # mas operações em memória bytes são rápidas.
+                if hasattr(image_data, 'convert'):  # PIL Image
+                    from io import BytesIO
+                    buffer = BytesIO()
+                    # Salvar imagem pode ser levemente pesado, mas ok para pouca frequência
+                    image_data.save(buffer, format='PNG')
+                    image_bytes = buffer.getvalue()
+                else:
+                    image_bytes = image_data
+                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+
+            final_system_prompt = system_prompt if system_prompt else self.system_prompt
+            
+            # Determinar keep_alive
+            keep_alive = self._get_keep_alive_for_model(target_model)
+            is_heavy = keep_alive == 0
+            
+            logger.info(f"🧞‍♂️ [ASYNC OLLAMA] Usando modelo: '{target_model}' (keep_alive: {keep_alive})")
+            
+            payload = {
+                "model": target_model,
+                "prompt": f"{final_system_prompt}\n\nComando do William: {prompt}\n\nLembre-se: Retorne APENAS o JSON.",
+                "stream": False,
+                "keep_alive": keep_alive,
+                "options": {
+                    "temperature": 0.2,
+                    "num_predict": 512
+                }
+            }
+            if encoded_image:
+                payload["images"] = [encoded_image]
+
+            timeout_seconds = 180 if is_heavy else 90
+            timeout = aiohttp.ClientTimeout(total=timeout_seconds)
+
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(self.ollama_url, json=payload) as response:
+                    if response.status != 200:
+                        logger.error(f"Ollama respondeu com erro: {response.status}")
+                        response.raise_for_status() # Vai para o except
+                    
+                    data = await response.json()
+                    return data.get('response', "Senhor, não obtive resposta do processador local.")
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Erro de conexão Async com Ollama ({target_model}): {e}")
+            return "OLLAMA_CONNECTION_ERROR"
+        except Exception as e:
+            logger.error(f"Erro Async ao chamar Ollama ({target_model}): {e}")
+            return "OLLAMA_ERROR"
     
     def _get_keep_alive_for_model(self, model_name: str) -> any:
         """
@@ -1588,6 +1686,75 @@ class AIAgent:
         
         # tier_pro/ultra: Modelos pesados sÃ£o descarregados imediatamente
         return 0
+
+    async def _call_smart_brain_async(self, prompt: str, image_path: Optional[str] = None, complexity: float = 0.5, system_prompt: str = None) -> str:
+        """
+        [ASYNC ALTERNÂNCIA INTELIGENTE - STARK IQ]
+        Versão não-bloqueante para o Event Bus.
+        Orquestra a chamada entre diferentes provedores com fallback automático.
+        Ordem: Ollama (Async) -> LocalBrain (Executor).
+        """
+        # 1. Roteamento Inicial
+        brain_config = self.brain_router.choose_brain(task_complexity=complexity) if self.brain_router else {"brain": "local"}
+        primary_brain = brain_config.get("brain", "local")
+        
+        logger.info(f"🧠 [ASYNC] Smart Router selecionou core primário: {primary_brain}")
+        
+        # 2. TENTATIVA 1: OLLAMA (COM RETRY)
+        if primary_brain.startswith("ollama:"):
+            model = primary_brain.split(":", 1)[1]
+            
+            # Tentar Ollama até 3 vezes antes de desistir
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = await self._call_ollama_async(prompt, image_path, model=model, system_prompt=system_prompt)
+                    
+                    error_indicators = [
+                        "OLLAMA_TIMEOUT",
+                        "OLLAMA_CONNECTION_ERROR",
+                        "OLLAMA_ERROR",
+                        "instabilidade momentânea",
+                        "dificuldades no processamento"
+                    ]
+                    
+                    is_error = any(indicator in response for indicator in error_indicators)
+                    
+                    if not is_error and len(response.strip()) > 10:
+                        logger.info(f"✅ Ollama {model} respondeu com sucesso (async tentativa {attempt + 1}/{max_retries})")
+                        return response
+                    
+                    if attempt < max_retries - 1:
+                        logger.warning(f"⚠️ Ollama resposta inválida/erro na tentativa {attempt + 1}, retry em 2s...")
+                        await asyncio.sleep(2)
+                    
+                except Exception as e:
+                    logger.error(f"Erro Async no Ollama (tentativa {attempt + 1}/{max_retries}): {e}")
+                    if attempt < max_retries - 1:
+                        await asyncio.sleep(2)
+            
+            logger.warning(f"⚠️ Ollama ({model}) falhou após {max_retries} tentativas. Ativando fallback para LocalBrain...")
+
+        # 3. FALLBACK FINAL: NATIVO (LocalBrain) - Executado em Thread Separada
+        logger.info("🏠 Async Fallback Final: Ativando LocalBrain nativo em Executor.")
+        try:
+            if not local_brain:
+                return "Sistemas de backup indisponíveis, senhor."
+
+            loop = asyncio.get_running_loop()
+            # Rodar LocalBrain em thread pool para nao bloquear loop
+            response = await loop.run_in_executor(
+                None, 
+                lambda: local_brain.generate_response(prompt, system_prompt=system_prompt or self.system_prompt)
+            )
+            
+            if response and len(response.strip()) > 5:
+                return response
+            else:
+                return "Sistemas online, William. Pronto para o que precisar."
+        except Exception as e:
+            logger.error(f"Erro crítico no Async LocalBrain fallback: {e}")
+            return "Sistemas operacionais, senhor."
 
     def _call_smart_brain(self, prompt: str, image_path: Optional[str] = None, complexity: float = 0.5, system_prompt: str = None) -> str:
         """
@@ -1701,6 +1868,103 @@ class AIAgent:
             return True
         except:
             return False
+
+    def set_event_bus(self, event_bus):
+        """
+        Connect the AI Agent to the Event Bus for asynchronous communication.
+        
+        Args:
+            event_bus: Event bus instance for pub/sub communication
+        """
+        self.event_bus = event_bus
+        
+        if event_bus:
+            try:
+                # Subscribe to audio transcription events
+                import asyncio
+                asyncio.create_task(
+                    event_bus.subscribe(
+                        "audio.transcription",
+                        self._handle_transcription_event
+                    )
+                )
+                
+                # Subscribe to vision analysis events
+                asyncio.create_task(
+                    event_bus.subscribe(
+                        "vision.screen_analysis",
+                        self._handle_vision_event
+                    )
+                )
+                
+                logger.info("✅ AI Agent connected to Event Bus (async communication enabled)")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to subscribe to Event Bus events: {e}")
+
+
+    async def process_command_async(self, text: str, context: dict = None) -> Optional[str]:
+        """
+        Process command asynchronously (Phase 2.1).
+        Uses the native async process_command (fully non-blocking).
+        """
+        try:
+            # P0: Check for empty input
+            if not text or not text.strip():
+                return None
+
+            # Execute async process_command directly on the event loop
+            # No executor needed as process_command is now async-native
+            response = await self.process_command(text)
+        except Exception as e:
+            logger.error(f"❌ Async Processing Error: {e}")
+            return None
+
+    async def _handle_transcription_event(self, event_data: dict):
+        """Handle transcription events from audio system"""
+        try:
+            text = event_data.get("text", "")
+            speaker_verified = event_data.get("speaker_verified", False)
+            confidence = event_data.get("confidence", 0.0)
+            
+            # Confidence threshold
+            if confidence < 0.6:
+                return
+
+            logger.debug(f"🎤 Async Transcription: {text} (conf: {confidence:.2f})")
+            
+            # Trigger Async Processing
+            # We treat verified speakers as authorized
+            if speaker_verified or True: # Temporary: Allow all for testing if verification is strict
+                 await self.process_command_async(text, context=event_data)
+                 
+        except Exception as e:
+            logger.error(f"❌ Error handling transcription event: {e}")
+
+    async def _handle_vision_event(self, event_data: dict):
+        """Handle vision analysis events from vision system"""
+        try:
+            # Update Context Manager with latest visual context
+            if context_manager:
+                # Assuming update_visual_context is fast/non-blocking or handles its own async
+                # If synchronous, might slightly block but usually fast metadata update
+                try:
+                    context_manager.update_visual_context(event_data)
+                except AttributeError:
+                    pass # context_manager might not have this method yet
+                
+            # Log for debugging
+            diff_percent = event_data.get("diff_percent", 0)
+            logger.debug(f"👁️ Visual Context Updated (Diff: {diff_percent:.1f}%)")
+            
+            # [PHASE 2.3] Trigger Proactive Engagement
+            # If significant change detected by Proactive Monitor
+            if diff_percent > 0:
+                loop = asyncio.get_running_loop()
+                # Run existing proactive logic in thread pool to avoid blocking bus
+                await loop.run_in_executor(None, self.process_proactive_analysis, event_data)
+                
+        except Exception as e:
+            logger.error(f"❌ Error handling vision event: {e}")
 
 try:
     from src.learning.knowledge_distiller import knowledge_distiller

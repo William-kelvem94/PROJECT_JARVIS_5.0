@@ -1,0 +1,74 @@
+# JARVIS 5.0 - Network Mesh Configuration
+# =========================================
+# Configurações da malha de rede distribuída do sistema JARVIS
+
+network_mesh:
+  # Configurações gerais da malha
+  enabled: false
+  node_id: "jarvis_main_node"
+  port: 8765
+  discovery_port: 8766
+  
+  # Configurações de conectividade
+  max_connections: 10
+  heartbeat_interval: 30  # segundos
+  connection_timeout: 10  # segundos
+  retry_attempts: 3
+  
+  # Configurações do Google Drive
+  google_drive:
+    enabled: false
+    sync_interval: 300  # 5 minutos
+    max_file_size: 104857600  # 100MB
+    allowed_extensions: [".json", ".yaml", ".txt", ".log", ".py"]
+    excluded_paths: ["__pycache__", ".git", "venv", "temp", "cache"]
+    
+  # Configurações da rede local
+  local_network:
+    enabled: false
+    broadcast_enabled: false
+    subnet_scan: false
+    allowed_subnets: ["192.168.1.0/24", "10.0.0.0/8"]
+    
+  # Configurações de privacidade e segurança
+  privacy:
+    encrypt_packets: true
+    encryption_key_rotation_hours: 24
+    log_network_activity: false
+    anonymize_logs: true
+    
+  # Configurações de performance
+  performance:
+    buffer_size: 8192  # bytes
+    compression_enabled: true
+    compression_level: 6
+    batch_operations: true
+    max_batch_size: 100
+    
+  # Configurações de backup e sincronização
+  backup:
+    auto_backup: false
+    backup_interval_hours: 6
+    max_backup_versions: 5
+    backup_critical_only: true
+    
+  # Configurações de monitoramento
+  monitoring:
+    health_checks_enabled: true
+    metrics_collection: false
+    performance_monitoring: false
+    network_diagnostics: false
+
+# Configurações de fallback (quando network_mesh está desabilitado)
+fallback:
+  local_storage_only: true
+  offline_mode: true
+  cache_duration_hours: 24
+  max_cache_size_mb: 500
+  
+# Configurações de desenvolvimento/debug
+development:
+  debug_mode: false
+  verbose_logging: false
+  simulate_network_errors: false
+  test_mode: false
