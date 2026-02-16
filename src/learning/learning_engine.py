@@ -423,7 +423,9 @@ class LearningEngine:
         user_input: str,
         ai_response: str,
         feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        thought: str = "",
+        actions: Optional[List[Dict[str, Any]]] = None
     ):
         """
         Registra uma interaÃ§Ã£o para aprendizado.
@@ -433,7 +435,12 @@ class LearningEngine:
             ai_response: Resposta do agente
             feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
             metadata: Dados adicionais (latÃªncia, provider usado, etc)
+            thought: RaciocÃ­nio interno do agente (opcional)
+            actions: Lista de aÃ§Ãµes executadas (opcional)
         """
+        if actions is None:
+            actions = []
+
         if not self.feedback_loop:
             return
         
@@ -476,96 +483,14 @@ class LearningEngine:
             if feedback_value > 0.7 and self.knowledge_distiller:
                 self.knowledge_distiller.distill_interaction(
                     user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
+                    thought=thought,
+                    actions=actions,
                     success=True
                 )
             
         except Exception as e:
             logger.error(f"âŒ Failed to record interaction: {e}")
     
-    def record_interaction(
-        self,
-        user_input: str,
-        ai_response: str,
-        feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Registra uma interaÃ§Ã£o para aprendizado.
-        
-        Args:
-            user_input: Comando do usuÃ¡rio
-            ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
-        """
-        if not self.feedback_loop:
-            return
-        
-        try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
-            if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
-            
-            from src.learning.feedback_loop import FeedbackEntry
-            import hashlib
-            import time
-            from datetime import datetime
-            
-            interaction_id = hashlib.md5(
-                f"{user_input}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            feedback_id = hashlib.md5(
-                f"{interaction_id}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            entry = FeedbackEntry(
-                feedback_id=feedback_id,
-                interaction_id=interaction_id,
-                user_input=user_input,
-                ai_response=ai_response,
-                feedback_type='implicit',
-                feedback_value=feedback_value,
-                timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
-            )
-            
-            self.feedback_loop.add_feedback(entry)
-            
-            # Store in scalable database if available
-            if self.scalable_database:
-                self._store_interaction_in_scalable_db(entry)
-            
-            # Record metrics if dashboard available
-            if self.metrics_dashboard:
-                self.metrics_dashboard.add_training_metric(
-                    job_id="main_session",
-                    metric_name="user_interaction",
-                    value=feedback_value,
-                    metadata={
-                        'input_length': len(user_input),
-                        'response_length': len(ai_response),
-                        'timestamp': datetime.now().isoformat()
-                    }
-                )
-            
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
-            if feedback_value > 0.7 and self.knowledge_distiller:
-                self.knowledge_distiller.distill_interaction(
-                    user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
-                    success=True
-                )
-            
-        except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
     
     def _store_interaction_in_scalable_db(self, entry):
         """Store interaction in scalable database for analytics."""

@@ -991,6 +991,7 @@ class AIAgent:
         response = ""
         max_turns = 5 
         current_turn = 0
+        all_thoughts = []
         
         while current_turn < max_turns:
             logger.info(f"Ciclo de Pensamento {current_turn+1}/{max_turns} | Provedor: {primary_provider}")
@@ -1074,6 +1075,10 @@ class AIAgent:
                     final_answer, enriched_command, action_executed, parsed = structured_result
                     response = final_answer
                     
+                    # Collect thoughts for distillation
+                    if parsed and parsed.thought:
+                        all_thoughts.append(parsed.thought)
+
                     # Se executou aÃ§Ãµes, continuar loop ReAct
                     if action_executed:
                         # Rastrear aÃ§Ãµes para destilaÃ§Ã£o ( Phase 4)
@@ -1087,9 +1092,12 @@ class AIAgent:
                         # âœ… SUCESSO: Resposta final sem aÃ§Ãµes
                         if knowledge_distiller and all_actions:
                             # Destilar o comando original com as aÃ§Ãµes que levaram ao sucesso
+                            # Join all accumulated thoughts to capture full reasoning chain
+                            full_thought_chain = "\n".join(all_thoughts) if all_thoughts else (parsed.thought if parsed else "")
+
                             knowledge_distiller.distill_interaction(
                                 user_command=original_command,
-                                thought=parsed.thought if parsed else "",
+                                thought=full_thought_chain,
                                 actions=all_actions,
                                 success=True
                             )
@@ -1172,11 +1180,15 @@ class AIAgent:
                     }
                     
                     # Registrar interação para aprendizado e dinâmica interpessoal
+                    full_thought_chain = "\n".join(all_thoughts) if all_thoughts else ""
+
                     learning_engine.record_interaction(
                         user_input=user_command,
                         ai_response=response,
                         feedback_value=None,
-                        metadata=metadata
+                        metadata=metadata,
+                        thought=full_thought_chain,
+                        actions=all_actions
                     )
                     
                     # 🫂 SINCERIDADE E EVOLUÇÃO: Atualiza vínculo
