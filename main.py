@@ -166,7 +166,13 @@ except (ImportError, AttributeError) as e:
     STARK_ORCHESTRATOR_AVAILABLE = False
 
 # Optional web server imports (loaded on demand)
-from src.core.management.neuro_sync import neuro_sync
+try:
+    from src.core.management.neuro_sync import neuro_sync
+    NEURO_SYNC_AVAILABLE = True
+except (ImportError, OSError) as e:
+    logger.warning(f"⚠️ NeuroSync not available (may need GUI libraries): {e}")
+    neuro_sync = None
+    NEURO_SYNC_AVAILABLE = False
 
 # Import Boot Manager for infrastructure initialization
 try:
