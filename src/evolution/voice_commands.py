@@ -1,34 +1,38 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-JARVIS 5.0 - Evolution Voice Commands Handler
-=============================================
-Real functional implementation of voice commands for Evolution Layer control.
+JARVIS 5.0 - Evolution Voice Commands Handler (Intelligent Version)
+===================================================================
+INTELLIGENT implementation using LLM for natural language understanding.
 
-Implements Section 10.1 voice commands:
-- "JARVIS, mostre o que você está corrigindo"
-- "JARVIS, autorizo a correção XYZ"
-- "JARVIS, reverta a última alteração"
-- "JARVIS, desative o modo auto-correção por 1 hora"
+Instead of fixed regex patterns, uses AI to understand user intent naturally.
+User can express commands in their own words - JARVIS intelligently understands.
+
+Examples of natural variations:
+- "show corrections" / "what are you fixing" / "mostre o que está corrigindo"
+- "pause for an hour" / "stop auto-heal temporarily" / "desative por 1 hora"
+- "go back" / "undo that" / "reverta a última mudança"
 
 Author: JARVIS 5.0 Evolution Layer
 """
 
 import asyncio
 import logging
+import json
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
-import re
+import requests
 
 from src.core.infrastructure.async_event_bus import event_bus, EventType, EventPriority
+from src.core.config.system_manifest import system_manifest
 
 logger = logging.getLogger(__name__)
 
 
 class EvolutionVoiceCommands:
     """
-    Handles voice commands for Evolution Layer control.
-    Real functional implementation of Section 10.1 requirements.
+    Handles voice commands for Evolution Layer control with INTELLIGENT understanding.
+    Uses LLM to understand natural language variations instead of fixed patterns.
     """
     
     def __init__(self):
@@ -37,50 +41,37 @@ class EvolutionVoiceCommands:
         self.last_correction = None
         self.pending_corrections = []
         
-        # Command patterns (Portuguese and English)
-        self.command_patterns = {
-            'show_corrections': [
-                r'mostre.*corrig',
-                r'show.*correct',
-                r'o que.*corrig',
-                r'what.*correct'
-            ],
-            'authorize_correction': [
-                r'autorizo.*corre[cç][aã]o',
-                r'authorize.*correction',
-                r'aprovar.*corre[cç][aã]o',
-                r'approve.*correction'
-            ],
-            'revert_change': [
-                r'reverta.*altera[cç][aã]o',
-                r'revert.*change',
-                r'desfazer.*altera[cç][aã]o',
-                r'undo.*change'
-            ],
-            'disable_auto_heal': [
-                r'desative.*auto.*corre[cç][aã]o',
-                r'disable.*auto.*correct',
-                r'pausar.*auto.*corre[cç][aã]o',
-                r'pause.*auto.*heal'
-            ],
-            'enable_auto_heal': [
-                r'ative.*auto.*corre[cç][aã]o',
-                r'enable.*auto.*correct',
-                r'retomar.*auto.*corre[cç][aã]o',
-                r'resume.*auto.*heal'
-            ],
-            'system_status': [
-                r'status.*evolu[cç][aã]o',
-                r'evolution.*status',
-                r'sa[uú]de.*sistema',
-                r'system.*health'
-            ],
-            'trigger_maintenance': [
-                r'fa[cç]a.*manuten[cç][aã]o',
-                r'run.*maintenance',
-                r'verificar.*sistema',
-                r'check.*system'
-            ]
+        # Available actions that the system can perform
+        # LLM will map user's natural language to these intents
+        self.available_actions = {
+            'show_corrections': {
+                'description': 'Show current corrections being applied or pending',
+                'examples': ['show corrections', 'what are you fixing', 'mostre correções']
+            },
+            'authorize_correction': {
+                'description': 'Authorize/approve a pending correction',
+                'examples': ['authorize correction XYZ', 'approve it', 'autorizo']
+            },
+            'revert_change': {
+                'description': 'Revert/undo the last change made',
+                'examples': ['revert last change', 'undo that', 'reverta']
+            },
+            'disable_auto_heal': {
+                'description': 'Temporarily disable auto-correction',
+                'examples': ['disable auto-correction', 'pause healing', 'desative']
+            },
+            'enable_auto_heal': {
+                'description': 'Re-enable auto-correction',
+                'examples': ['enable auto-correction', 'resume healing', 'ative']
+            },
+            'system_status': {
+                'description': 'Show evolution system status and health',
+                'examples': ['status', 'how are you', 'system health']
+            },
+            'trigger_maintenance': {
+                'description': 'Trigger a manual maintenance cycle',
+                'examples': ['do maintenance', 'check yourself', 'faça manutenção']
+            }
         }
         
     async def start(self):
@@ -113,7 +104,8 @@ class EvolutionVoiceCommands:
             self._track_pending_corrections
         )
         
-        logger.info("🎤 Evolution Voice Commands Handler started")
+        logger.info("🎤 Evolution Voice Commands Handler started (INTELLIGENT MODE)")
+        logger.info("   └─ Using LLM for natural language understanding")
         
     async def stop(self):
         """Stop the voice commands handler"""
@@ -121,63 +113,168 @@ class EvolutionVoiceCommands:
         logger.info("🎤 Evolution Voice Commands Handler stopped")
         
     async def _handle_voice_command(self, event):
-        """Process incoming voice commands"""
+        """Process incoming voice commands using LLM for intelligent understanding"""
         if not self.running:
             return
             
-        command = event.data.get("command", "").lower()
+        command = event.data.get("command", "")
         
-        # Check each command pattern
-        if self._matches_pattern(command, 'show_corrections'):
+        # Use LLM to understand the user's intent
+        intent_result = await self._understand_intent(command)
+        
+        if not intent_result or not intent_result.get('action'):
+            logger.debug(f"Could not understand intent from: {command}")
+            return
+            
+        action = intent_result['action']
+        parameters = intent_result.get('parameters', {})
+        
+        logger.info(f"🧠 Understood intent: {action} with params: {parameters}")
+        
+        # Execute the appropriate action
+        if action == 'show_corrections':
             await self._show_corrections()
             
-        elif self._matches_pattern(command, 'authorize_correction'):
-            correction_id = self._extract_correction_id(command)
+        elif action == 'authorize_correction':
+            correction_id = parameters.get('correction_id')
             await self._authorize_correction(correction_id)
             
-        elif self._matches_pattern(command, 'revert_change'):
+        elif action == 'revert_change':
             await self._revert_last_change()
             
-        elif self._matches_pattern(command, 'disable_auto_heal'):
-            duration = self._extract_duration(command)
+        elif action == 'disable_auto_heal':
+            duration = parameters.get('duration_minutes', 60)
             await self._disable_auto_heal(duration)
             
-        elif self._matches_pattern(command, 'enable_auto_heal'):
+        elif action == 'enable_auto_heal':
             await self._enable_auto_heal()
             
-        elif self._matches_pattern(command, 'system_status'):
+        elif action == 'system_status':
             await self._show_system_status()
             
-        elif self._matches_pattern(command, 'trigger_maintenance'):
+        elif action == 'trigger_maintenance':
             await self._trigger_maintenance()
             
-    def _matches_pattern(self, command: str, pattern_key: str) -> bool:
-        """Check if command matches any pattern for the given key"""
-        patterns = self.command_patterns.get(pattern_key, [])
-        return any(re.search(pattern, command) for pattern in patterns)
-        
-    def _extract_correction_id(self, command: str) -> Optional[str]:
-        """Extract correction ID from command"""
-        # Look for ID patterns like "XYZ", "abc123", etc.
-        match = re.search(r'\b([a-z0-9]{6,16})\b', command.lower())
-        return match.group(1) if match else None
-        
-    def _extract_duration(self, command: str) -> int:
-        """Extract duration in minutes from command"""
-        # Look for "1 hora", "2 hours", "30 minutos", etc.
-        
-        # Hours
-        match = re.search(r'(\d+)\s*(hora|hour)', command.lower())
-        if match:
-            return int(match.group(1)) * 60
+    async def _understand_intent(self, command: str) -> Optional[Dict[str, Any]]:
+        """
+        Use LLM to understand user intent from natural language.
+        This replaces rigid pattern matching with intelligent understanding.
+        """
+        try:
+            # Build prompt for LLM to classify intent
+            prompt = self._build_intent_classification_prompt(command)
             
-        # Minutes
-        match = re.search(r'(\d+)\s*(minuto|minute)', command.lower())
-        if match:
-            return int(match.group(1))
+            # Call LLM for intent classification
+            response = await self._call_llm(prompt)
             
-        # Default to 1 hour
-        return 60
+            if not response:
+                return None
+                
+            # Parse LLM response
+            intent_result = self._parse_intent_response(response)
+            
+            return intent_result
+            
+        except Exception as e:
+            logger.error(f"Error understanding intent: {e}")
+            return None
+            
+    def _build_intent_classification_prompt(self, command: str) -> str:
+        """Build a prompt for LLM to classify user intent"""
+        
+        # Build list of available actions for LLM
+        actions_description = "\n".join([
+            f"- {action}: {info['description']}"
+            for action, info in self.available_actions.items()
+        ])
+        
+        prompt = f"""You are JARVIS, an intelligent AI assistant. Analyze the user's command and determine their intent.
+
+Available actions:
+{actions_description}
+
+User command: "{command}"
+
+Analyze the command and respond with JSON containing:
+- "action": the matching action name (or null if unclear)
+- "confidence": your confidence level (0.0 to 1.0)
+- "parameters": any parameters extracted (correction_id, duration_minutes, etc.)
+
+Think about what the user wants to do. Consider:
+- Portuguese and English variations
+- Natural ways people express these intents
+- Context and implied meanings
+
+Respond ONLY with valid JSON, no extra text."""
+
+        return prompt
+        
+    async def _call_llm(self, prompt: str) -> Optional[str]:
+        """Call LLM (Ollama) for intent understanding"""
+        try:
+            host = system_manifest.ai.ollama_host
+            port = system_manifest.ai.ollama_port
+            model = system_manifest.ai.ollama_model
+            
+            response = requests.post(
+                f"http://{host}:{port}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.1,  # Low temperature for more consistent results
+                        "top_p": 0.9
+                    }
+                },
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result.get("response", "")
+            else:
+                logger.warning(f"LLM returned status {response.status_code}")
+                return None
+                
+        except requests.exceptions.Timeout:
+            logger.warning("LLM request timed out")
+            return None
+        except Exception as e:
+            logger.error(f"Error calling LLM: {e}")
+            return None
+            
+    def _parse_intent_response(self, response: str) -> Optional[Dict[str, Any]]:
+        """Parse LLM's intent classification response"""
+        try:
+            # Extract JSON from response (might be wrapped in markdown)
+            if "```json" in response:
+                response = response.split("```json")[1].split("```")[0]
+            elif "```" in response:
+                response = response.split("```")[1].split("```")[0]
+                
+            # Parse JSON
+            intent_data = json.loads(response.strip())
+            
+            # Validate confidence
+            confidence = intent_data.get('confidence', 0.0)
+            if confidence < 0.5:
+                logger.debug(f"Low confidence ({confidence}) in intent classification")
+                return None
+                
+            return intent_data
+            
+        except json.JSONDecodeError as e:
+            logger.debug(f"Could not parse JSON from LLM response: {e}")
+            # Try to extract action name at least
+            response_lower = response.lower()
+            for action in self.available_actions.keys():
+                if action in response_lower:
+                    return {'action': action, 'parameters': {}, 'confidence': 0.6}
+            return None
+        except Exception as e:
+            logger.error(f"Error parsing intent response: {e}")
+            return None
         
     async def _show_corrections(self):
         """Show current and recent corrections"""
