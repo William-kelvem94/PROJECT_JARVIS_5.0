@@ -33,8 +33,8 @@ call venv\Scripts\activate.bat
 REM Instalar dependências se necessário
 if exist requirements.txt (
     echo [INFO] Instalando dependências do requirements.txt...
-    pip install --upgrade pip
-    pip install -r requirements.txt
+    python -m pip install --upgrade pip
+    python -m pip install -r requirements.txt
     if errorlevel 1 (
         echo [ERRO] Falha ao instalar dependências. Verifique o requirements.txt.
         pause
