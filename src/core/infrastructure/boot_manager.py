@@ -19,7 +19,6 @@ Philosophy:
 - Zero dependências circulares
 """
 
-import asyncio
 import logging
 import threading
 import time
@@ -32,8 +31,10 @@ import sys
 
 logger = logging.getLogger(__name__)
 
+
 class BootStage(Enum):
     """Estágios do processo de boot"""
+
     INITIALIZING = "initializing"
     PRE_GUI = "pre_gui"
     GUI_INIT = "gui_init"
@@ -43,17 +44,21 @@ class BootStage(Enum):
     READY = "ready"
     FAILED = "failed"
 
+
 class BootPriority(Enum):
     """Prioridades de inicialização"""
-    CRITICAL = 0    # Deve inicializar primeiro (configurações, logging)
-    HIGH = 1        # GUI, sinais, dependências críticas
-    MEDIUM = 2      # Sistemas core (IA, visão, áudio)
-    LOW = 3         # Sistemas auxiliares
+
+    CRITICAL = 0  # Deve inicializar primeiro (configurações, logging)
+    HIGH = 1  # GUI, sinais, dependências críticas
+    MEDIUM = 2  # Sistemas core (IA, visão, áudio)
+    LOW = 3  # Sistemas auxiliares
     BACKGROUND = 4  # Sistemas que podem inicializar depois
+
 
 @dataclass
 class BootModule:
     """Definição de um módulo para inicialização"""
+
     name: str
     initializer: Callable[[], Any]
     priority: BootPriority
@@ -66,9 +71,11 @@ class BootModule:
     error: Optional[Exception] = None
     init_time: Optional[float] = None
 
+
 @dataclass
 class BootProgress:
     """Estado do progresso de boot"""
+
     stage: BootStage = BootStage.INITIALIZING
     completed_modules: List[str] = field(default_factory=list)
     failed_modules: List[str] = field(default_factory=list)
@@ -77,17 +84,18 @@ class BootProgress:
     start_time: datetime = field(default_factory=datetime.now)
     estimated_completion: Optional[datetime] = None
 
+
 class BootManager:
     """
     Gerenciador de Boot Robusto para JARVIS 5.0
-    
+
     Gerencia todo o processo de inicialização de forma ordenada, tolerante a falhas,
     e com recovery automático. Resolve o problema de ui_signals e outros imports.
     """
-    
+
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
@@ -95,66 +103,66 @@ class BootManager:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-            
+
         self.modules: Dict[str, BootModule] = {}
         self.instances: Dict[str, Any] = {}
         self.progress = BootProgress()
-        
+
         # Configuração básica
         self.project_root = self._discover_project_root()
         self.max_parallel_init = 2
         self.boot_timeout = 300  # 5 minutes total timeout
-        
+
         # Event callbacks
         self.progress_callbacks: List[Callable[[BootProgress], None]] = []
         self.completion_callbacks: List[Callable[[Dict[str, Any]], None]] = []
-        
+
         # Internal state
         self._boot_thread = None
         self._shutdown_event = threading.Event()
-        
+
         self._setup_core_modules()
         self._initialized = True
-        
+
         logger.info("🔥 Boot Manager initialized")
-    
+
     def _discover_project_root(self) -> Path:
         """Discover project root directory"""
         current = Path(__file__).resolve()
-        
+
         # Look for main.py or other markers
         for parent in current.parents:
             if (parent / "main.py").exists() or (parent / "jarvis.bat").exists():
                 return parent
-                
+
         # Fallback
         return current.parent.parent.parent
-    
+
     def _setup_core_modules(self):
         """Setup core modules for initialization"""
-        
+
         # Critical modules (must initialize first)
         self.register_module(
             "system_manifest",
             self._init_system_manifest,
             BootPriority.CRITICAL,
             required=True,
-            timeout_seconds=10
+            timeout_seconds=10,
         )
-        
+
         self.register_module(
             "blackbox_logger",
             self._init_blackbox_logger,
             BootPriority.CRITICAL,
             dependencies=["system_manifest"],
             required=True,
-            timeout_seconds=10
+            timeout_seconds=10,
         )
-        
+
         # GUI and signals (high priority)
         self.register_module(
             "qt_application",
@@ -162,27 +170,27 @@ class BootManager:
             BootPriority.HIGH,
             dependencies=["system_manifest"],
             required=True,
-            timeout_seconds=15
+            timeout_seconds=15,
         )
-        
+
         self.register_module(
             "ui_signals",
             self._init_ui_signals,
             BootPriority.HIGH,
             dependencies=["qt_application"],
             required=True,
-            timeout_seconds=5
+            timeout_seconds=5,
         )
-        
+
         self.register_module(
             "window_manager",
             self._init_window_manager,
             BootPriority.HIGH,
             dependencies=["qt_application", "ui_signals"],
             required=True,
-            timeout_seconds=15
+            timeout_seconds=15,
         )
-        
+
         # Core systems (medium priority)
         self.register_module(
             "system_integrator",
@@ -190,18 +198,18 @@ class BootManager:
             BootPriority.MEDIUM,
             dependencies=["ui_signals"],
             required=True,
-            timeout_seconds=20
+            timeout_seconds=20,
         )
-        
+
         self.register_module(
             "ai_agent",
             self._init_ai_agent,
             BootPriority.MEDIUM,
             dependencies=["system_integrator"],
             required=True,
-            timeout_seconds=30
+            timeout_seconds=30,
         )
-        
+
         # Heavy systems (can be initialized in background)
         self.register_module(
             "audio_system",
@@ -209,18 +217,18 @@ class BootManager:
             BootPriority.LOW,
             dependencies=["system_integrator", "ui_signals"],
             required=False,
-            timeout_seconds=45
+            timeout_seconds=45,
         )
-        
+
         self.register_module(
             "vision_system",
             self._init_vision_system,
             BootPriority.LOW,
             dependencies=["system_integrator", "ui_signals"],
             required=False,
-            timeout_seconds=45
+            timeout_seconds=45,
         )
-        
+
         # Background systems
         self.register_module(
             "network_mesh",
@@ -228,22 +236,28 @@ class BootManager:
             BootPriority.BACKGROUND,
             dependencies=["system_manifest"],
             required=False,
-            timeout_seconds=30
+            timeout_seconds=30,
         )
-        
+
         self.register_module(
             "watchdog_supervisor",
             self._init_watchdog_supervisor,
             BootPriority.BACKGROUND,
             dependencies=["system_manifest"],
             required=False,
-            timeout_seconds=10
+            timeout_seconds=10,
         )
-    
-    def register_module(self, name: str, initializer: Callable[[], Any], 
-                       priority: BootPriority, dependencies: Optional[List[str]] = None,
-                       required: bool = True, timeout_seconds: int = 30,
-                       retry_count: int = 3):
+
+    def register_module(
+        self,
+        name: str,
+        initializer: Callable[[], Any],
+        priority: BootPriority,
+        dependencies: Optional[List[str]] = None,
+        required: bool = True,
+        timeout_seconds: int = 30,
+        retry_count: int = 3,
+    ):
         """Register a module for initialization"""
         self.modules[name] = BootModule(
             name=name,
@@ -252,159 +266,173 @@ class BootManager:
             dependencies=dependencies or [],
             timeout_seconds=timeout_seconds,
             required=required,
-            retry_count=retry_count
+            retry_count=retry_count,
         )
-        
+
         logger.debug(f"📝 Registered boot module: {name} (priority={priority.name})")
-    
+
     def add_progress_callback(self, callback: Callable[[BootProgress], None]):
         """Add callback for progress updates"""
         self.progress_callbacks.append(callback)
-    
+
     def add_completion_callback(self, callback: Callable[[Dict[str, Any]], None]):
         """Add callback for boot completion"""
         self.completion_callbacks.append(callback)
-    
+
     def start_boot(self, blocking: bool = True) -> bool:
         """Start the boot process"""
         if self._boot_thread and self._boot_thread.is_alive():
             logger.warning("Boot process already running")
             return False
-        
+
         logger.info("🚀 Starting JARVIS 5.0 boot sequence...")
         self.progress.start_time = datetime.now()
         self.progress.stage = BootStage.INITIALIZING
-        
+
         if blocking:
             return self._execute_boot()
         else:
             self._boot_thread = threading.Thread(
-                target=self._execute_boot,
-                daemon=False,
-                name="BootManager"
+                target=self._execute_boot, daemon=False, name="BootManager"
             )
             self._boot_thread.start()
             return True
-    
+
     def _execute_boot(self) -> bool:
         """Execute boot sequence"""
         try:
             start_time = time.time()
-            
+
             # Get modules sorted by priority and dependencies
             ordered_modules = self._resolve_dependencies()
-            
-            logger.info(f"🔄 Boot sequence: {len(ordered_modules)} modules to initialize")
-            
+
+            logger.info(
+                f"🔄 Boot sequence: {len(ordered_modules)} modules to initialize"
+            )
+
             # Initialize modules in order
             for i, module in enumerate(ordered_modules):
                 if self._shutdown_event.is_set():
                     logger.info("🛑 Boot interrupted by shutdown")
                     return False
-                
+
                 # Update progress
                 self.progress.current_module = module.name
                 self.progress.progress_percent = int((i / len(ordered_modules)) * 100)
                 self._notify_progress()
-                
+
                 # Initialize module
                 success = self._initialize_module(module)
-                
+
                 if success:
                     self.progress.completed_modules.append(module.name)
                     self.instances[module.name] = module.instance
-                    logger.info(f"✅ {module.name} initialized ({module.init_time:.2f}s)")
+                    logger.info(
+                        f"✅ {module.name} initialized ({module.init_time:.2f}s)"
+                    )
                 else:
                     self.progress.failed_modules.append(module.name)
                     if module.required:
-                        logger.critical(f"❌ Critical module {module.name} failed - aborting boot")
+                        logger.critical(
+                            f"❌ Critical module {module.name} failed - aborting boot"
+                        )
                         self.progress.stage = BootStage.FAILED
                         self._notify_progress()
                         return False
                     else:
-                        logger.warning(f"⚠️ Optional module {module.name} failed - continuing")
-            
+                        logger.warning(
+                            f"⚠️ Optional module {module.name} failed - continuing"
+                        )
+
             # Boot completed successfully
             boot_time = time.time() - start_time
             self.progress.stage = BootStage.READY
             self.progress.progress_percent = 100
             self.progress.current_module = None
-            
-            logger.info(f"🎉 JARVIS 5.0 boot completed successfully in {boot_time:.2f}s")
-            
+
+            logger.info(
+                f"🎉 JARVIS 5.0 boot completed successfully in {boot_time:.2f}s"
+            )
+
             # Notify callbacks
             self._notify_progress()
             self._notify_completion()
-            
+
             return True
-            
+
         except Exception as e:
             logger.critical(f"💥 Boot process failed critically: {e}")
             self.progress.stage = BootStage.FAILED
             self._notify_progress()
             return False
-    
+
     def _resolve_dependencies(self) -> List[BootModule]:
         """Resolve module dependencies and return ordered list"""
         # Sort by priority first
         modules = sorted(self.modules.values(), key=lambda m: m.priority.value)
-        
+
         # Simple dependency resolution (can be improved with topological sort)
         ordered = []
         remaining = {m.name: m for m in modules}
-        
+
         while remaining:
             # Find modules with no unmet dependencies
             ready = []
             for name, module in remaining.items():
-                deps_met = all(dep in [m.name for m in ordered] for dep in module.dependencies)
+                deps_met = all(
+                    dep in [m.name for m in ordered] for dep in module.dependencies
+                )
                 if deps_met:
                     ready.append(module)
-            
+
             if not ready:
                 # Circular dependency or missing dependency
-                logger.error(f"❌ Dependency resolution failed. Remaining: {list(remaining.keys())}")
+                logger.error(
+                    f"❌ Dependency resolution failed. Remaining: {list(remaining.keys())}"
+                )
                 # Add remaining modules anyway (best effort)
                 ordered.extend(remaining.values())
                 break
-            
+
             # Sort ready modules by priority and add to ordered list
             ready.sort(key=lambda m: m.priority.value)
             ordered.extend(ready)
-            
+
             # Remove from remaining
             for module in ready:
                 remaining.pop(module.name)
-        
+
         return ordered
-    
+
     def _initialize_module(self, module: BootModule) -> bool:
         """Initialize a single module with retry logic"""
         for attempt in range(module.retry_count):
             try:
                 logger.debug(f"🔄 Initializing {module.name} (attempt {attempt + 1})")
-                
+
                 start_time = time.time()
-                
+
                 # Execute initializer with timeout
                 instance = module.initializer()
-                
+
                 # Store results
                 module.instance = instance
                 module.initialized = True
                 module.init_time = time.time() - start_time
-                
+
                 return True
-                
+
             except Exception as e:
                 module.error = e
-                logger.warning(f"⚠️ {module.name} initialization failed (attempt {attempt + 1}): {e}")
-                
+                logger.warning(
+                    f"⚠️ {module.name} initialization failed (attempt {attempt + 1}): {e}"
+                )
+
                 if attempt < module.retry_count - 1:
                     time.sleep(1)  # Brief delay before retry
-        
+
         return False
-    
+
     def _notify_progress(self):
         """Notify progress callbacks"""
         for callback in self.progress_callbacks:
@@ -412,7 +440,7 @@ class BootManager:
                 callback(self.progress)
             except Exception as e:
                 logger.error(f"Progress callback failed: {e}")
-    
+
     def _notify_completion(self):
         """Notify completion callbacks"""
         for callback in self.completion_callbacks:
@@ -420,160 +448,174 @@ class BootManager:
                 callback(self.instances)
             except Exception as e:
                 logger.error(f"Completion callback failed: {e}")
-    
+
     def get_instance(self, name: str) -> Optional[Any]:
         """Get initialized instance by name"""
         return self.instances.get(name)
-    
+
     def get_all_instances(self) -> Dict[str, Any]:
         """Get all initialized instances"""
         return self.instances.copy()
-    
+
     def is_ready(self) -> bool:
         """Check if boot process is complete"""
         return self.progress.stage == BootStage.READY
-    
+
     def shutdown(self):
         """Shutdown boot manager"""
         logger.info("🔽 Boot Manager shutting down...")
         self._shutdown_event.set()
-        
+
         if self._boot_thread and self._boot_thread.is_alive():
             self._boot_thread.join(timeout=5)
-        
+
         logger.info("✅ Boot Manager shutdown complete")
-    
+
     # ========================================================================
     # MODULE INITIALIZERS
     # ========================================================================
-    
+
     def _init_system_manifest(self) -> Any:
         """Initialize system manifest"""
         try:
             from src.core.config.system_manifest import system_manifest
+
             return system_manifest
         except ImportError as e:
             logger.error(f"Failed to import system manifest: {e}")
             raise
-    
+
     def _init_blackbox_logger(self) -> Any:
         """Initialize blackbox logger"""
         try:
-            from src.core.config.blackbox_logger import blackbox_logger, setup_blackbox_integration
+            from src.core.config.blackbox_logger import (
+                blackbox_logger,
+                setup_blackbox_integration,
+            )
+
             setup_blackbox_integration()
             return blackbox_logger
         except ImportError as e:
             logger.error(f"Failed to import blackbox logger: {e}")
             raise
-    
+
     def _init_qt_application(self) -> Any:
         """Initialize Qt application"""
         try:
             from PyQt6.QtWidgets import QApplication
             from PyQt6.QtCore import QTimer
-            
+
             # Check if QApplication already exists
             app = QApplication.instance()
             if app is None:
                 app = QApplication(sys.argv)
                 app.setStyle("Fusion")
-                
+
                 # Set unicode font
                 try:
                     from src.interface.window_manager import set_unicode_font
+
                     set_unicode_font(app)
                 except ImportError:
                     pass
-            
+
             return app
         except ImportError as e:
             logger.error(f"Failed to initialize Qt application: {e}")
             raise
-    
+
     def _init_ui_signals(self) -> Any:
         """Initialize UI signals - CRITICAL FIX"""
         try:
             from src.interface.ui_signals import ui_signals
+
             logger.info("✅ ui_signals initialized successfully")
             return ui_signals
         except ImportError as e:
             logger.error(f"❌ Failed to initialize ui_signals: {e}")
             raise
-    
+
     def _init_window_manager(self) -> Any:
         """Initialize window manager"""
         try:
             from src.interface.window_manager import get_window_manager, InterfaceMode
-            
+
             app = self.get_instance("qt_application")
             if app is None:
                 raise RuntimeError("Qt application not initialized")
-            
+
             window_manager = get_window_manager(app)
-            
+
             # Show HUD immediately
             window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
-            
+
             return window_manager
         except ImportError as e:
             logger.error(f"Failed to initialize window manager: {e}")
             raise
-    
+
     def _init_system_integrator(self) -> Any:
         """Initialize system integrator"""
         try:
             from src.core.actions.system_integrator import get_system_integrator
+
             return get_system_integrator()
         except ImportError as e:
             logger.error(f"Failed to initialize system integrator: {e}")
             raise
-    
+
     def _init_ai_agent(self) -> Any:
         """Initialize AI agent"""
         try:
             from src.core.intelligence.ai_agent import ai_agent
+
             return ai_agent
         except ImportError as e:
             logger.error(f"Failed to initialize AI agent: {e}")
             raise
-    
+
     def _init_audio_system(self) -> Any:
         """Initialize audio system"""
         try:
             from src.core.audio.enhanced_audio import get_audio_system
+
             audio = get_audio_system(self.project_root / "data")
-            
+
             # Start background loading
-            if hasattr(audio, 'start_background_loading'):
+            if hasattr(audio, "start_background_loading"):
                 audio.start_background_loading()
-            
+
             return audio
         except ImportError as e:
             logger.warning(f"Audio system not available: {e}")
             return None
-    
+
     def _init_vision_system(self) -> Any:
         """Initialize vision system"""
         try:
             from src.core.vision.vision_system import get_vision_system
+
             vision = get_vision_system(self.project_root / "data")
-            
+
             # Start background loading
-            if hasattr(vision, 'start_background_loading'):
+            if hasattr(vision, "start_background_loading"):
                 vision.start_background_loading()
-            
+
             return vision
         except ImportError as e:
             logger.warning(f"Vision system not available: {e}")
             return None
-    
+
     def _init_network_mesh(self) -> Any:
         """Initialize network mesh"""
         try:
             # Check if network mesh is enabled
             system_manifest = self.get_instance("system_manifest")
             if system_manifest and system_manifest.network.enabled:
-                from src.core.network_mesh.local_network_intelligence import LocalNetworkIntelligence
+                from src.core.network_mesh.local_network_intelligence import (
+                    LocalNetworkIntelligence,
+                )
+
                 return LocalNetworkIntelligence(str(self.project_root))
             else:
                 logger.info("Network mesh disabled in configuration")
@@ -581,7 +623,7 @@ class BootManager:
         except ImportError as e:
             logger.warning(f"Network mesh not available: {e}")
             return None
-    
+
     def _init_watchdog_supervisor(self) -> Any:
         """Initialize watchdog supervisor (will be implemented in next task)"""
         try:
@@ -592,6 +634,7 @@ class BootManager:
             logger.warning(f"Watchdog supervisor not available: {e}")
             return None
 
+
 # Global instance
 boot_manager = BootManager()
 
@@ -599,15 +642,17 @@ if __name__ == "__main__":
     # Test boot manager
     print("🧪 Testing Boot Manager")
     print("=" * 50)
-    
+
     def progress_callback(progress: BootProgress):
-        print(f"Progress: {progress.stage.value} - {progress.current_module} ({progress.progress_percent}%)")
-    
+        print(
+            f"Progress: {progress.stage.value} - {progress.current_module} ({progress.progress_percent}%)"
+        )
+
     def completion_callback(instances: Dict[str, Any]):
         print(f"Boot completed! Instances: {list(instances.keys())}")
-    
+
     boot_manager.add_progress_callback(progress_callback)
     boot_manager.add_completion_callback(completion_callback)
-    
+
     success = boot_manager.start_boot(blocking=True)
     print(f"Boot result: {'SUCCESS' if success else 'FAILED'}")

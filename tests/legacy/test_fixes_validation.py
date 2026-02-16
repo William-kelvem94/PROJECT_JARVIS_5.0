@@ -1,8 +1,10 @@
 """
 Validação das correções aplicadas - Boot Test
 """
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 passed = 0
@@ -11,13 +13,16 @@ failed = 0
 # Test 1: structured_output - empty markdown block handling
 print("=== TEST 1: Structured Output (empty block) ===")
 try:
-    from src.core.intelligence.structured_output import ResponseParser, AgentResponse
+    from src.core.intelligence.structured_output import ResponseParser
+
     # Test empty markdown block (was crashing with json.loads(""))
-    result = ResponseParser.parse_llm_response('```json\n```')
+    result = ResponseParser.parse_llm_response("```json\n```")
     assert result.final_answer, "Should have fallback answer"
     assert "Desculpe" in result.final_answer or "Tente" in result.final_answer
     # Test valid JSON
-    result2 = ResponseParser.parse_llm_response('{"thought":"test","actions":[],"final_answer":"OK"}')
+    result2 = ResponseParser.parse_llm_response(
+        '{"thought":"test","actions":[],"final_answer":"OK"}'
+    )
     assert result2.final_answer == "OK"
     # Test truly empty
     result3 = ResponseParser.parse_llm_response("")
@@ -37,6 +42,7 @@ passed += 1
 print("\n=== TEST 3: Window Manager Import ===")
 try:
     from src.interface.window_manager import InterfaceMode
+
     print(f"  InterfaceMode: {InterfaceMode}")
     print("  PASS")
     passed += 1
@@ -48,6 +54,7 @@ except Exception as e:
 print("\n=== TEST 4: Voice Controller PYGAME_AVAILABLE ===")
 try:
     import src.core.audio.voice_controller as vc_mod
+
     print(f"  PYGAME_AVAILABLE={vc_mod.PYGAME_AVAILABLE}")
     print("  PASS")
     passed += 1
@@ -60,18 +67,19 @@ print("\n=== TEST 5: Enhanced Audio VAD Fallback ===")
 try:
     import numpy as np
     from src.core.audio.enhanced_audio import EnhancedAudioSystem
+
     audio_sys = EnhancedAudioSystem.__new__(EnhancedAudioSystem)
     audio_sys.vad_model = None  # No VAD
     audio_sys.vad_threshold = 0.5
-    
+
     # Silence should return False (RMS ~ 0)
     silence = np.zeros(512, dtype=np.int16)
     assert audio_sys._check_voice_activity(silence) == False, "Silence should be False"
-    
+
     # Loud signal should return True (RMS >> 500)
     loud = np.full(512, 10000, dtype=np.int16)
     assert audio_sys._check_voice_activity(loud) == True, "Loud should be True"
-    
+
     print("  PASS")
     passed += 1
 except Exception as e:
@@ -83,13 +91,25 @@ print("\n=== TEST 6: HUD Module Import ===")
 try:
     # Just verify it parses without syntax errors
     import importlib
+
     spec = importlib.util.spec_from_file_location(
-        "modern_hud", 
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "interface", "modern_hud.py")
+        "modern_hud",
+        os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "src",
+            "interface",
+            "modern_hud.py",
+        ),
     )
     # Don't actually load (needs QApplication), just verify syntax
     import py_compile
-    hud_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "interface", "modern_hud.py")
+
+    hud_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "src",
+        "interface",
+        "modern_hud.py",
+    )
     py_compile.compile(hud_path, doraise=True)
     print("  PASS (syntax valid)")
     passed += 1

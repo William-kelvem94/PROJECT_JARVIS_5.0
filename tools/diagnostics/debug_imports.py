@@ -1,9 +1,8 @@
-
 import sys
 import os
 import traceback
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 modules_to_test = [
     "src.core.intelligence.stark_nexus",
@@ -11,7 +10,7 @@ modules_to_test = [
     "src.learning.learning_engine",
     "src.core.intelligence.analisador_contexto",
     "src.core.management.device_manager",
-    "src.core.management.orchestrator"
+    "src.core.management.orchestrator",
 ]
 
 for module in modules_to_test:
@@ -19,6 +18,6 @@ for module in modules_to_test:
     try:
         __import__(module)
         print(f"✅ Success: {module}")
-    except Exception as e:
+    except Exception:
         print(f"❌ Failed: {module}")
         traceback.print_exc()

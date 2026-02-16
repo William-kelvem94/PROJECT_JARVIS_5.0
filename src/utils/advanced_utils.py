@@ -6,7 +6,7 @@ Utilitários avançados para otimização de performance e segurança.
 
 import logging
 import importlib
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 import asyncio
 import threading
 from concurrent.futures import ThreadPoolExecutor
@@ -15,11 +15,13 @@ import gc
 
 logger = logging.getLogger(__name__)
 
+
 class LazyLoader:
     """
     Lazy loader para módulos com cache inteligente.
     Evita imports pesados até que sejam necessários.
     """
+
     _modules: Dict[str, Any] = {}
     _loading_lock = threading.Lock()
 
@@ -49,6 +51,7 @@ class LazyLoader:
 
         return cls._modules[full_name]
 
+
 class MemoryManager:
     """
     Gerenciador avançado de memória para otimização de recursos.
@@ -59,10 +62,10 @@ class MemoryManager:
         """Retorna uso detalhado de memória"""
         mem = psutil.virtual_memory()
         return {
-            'total_gb': mem.total / (1024**3),
-            'used_gb': mem.used / (1024**3),
-            'free_gb': mem.free / (1024**3),
-            'percent': mem.percent
+            "total_gb": mem.total / (1024**3),
+            "used_gb": mem.used / (1024**3),
+            "free_gb": mem.free / (1024**3),
+            "percent": mem.percent,
         }
 
     @staticmethod
@@ -88,9 +91,12 @@ class MemoryManager:
         """
         usage = psutil.Process().memory_info().rss / 1024 / 1024
         if usage > threshold_mb:
-            logger.warning(f"Memory usage exceeded threshold: {usage:.2f} MB > {threshold_mb} MB")
+            logger.warning(
+                f"Memory usage exceeded threshold: {usage:.2f} MB > {threshold_mb} MB"
+            )
             return True
         return False
+
 
 class AsyncRunner:
     """
@@ -98,7 +104,9 @@ class AsyncRunner:
     """
 
     def __init__(self, max_workers: int = 4):
-        self.executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="JARVIS-Async")
+        self.executor = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="JARVIS-Async"
+        )
 
     async def run_in_thread(self, func, *args, **kwargs):
         """
@@ -119,6 +127,7 @@ class AsyncRunner:
         """Encerra o executor"""
         self.executor.shutdown(wait=True)
 
+
 # Singleton instances
 lazy_loader = LazyLoader()
 memory_manager = MemoryManager()
@@ -126,4 +135,5 @@ async_runner = AsyncRunner()
 
 # Cleanup on exit
 import atexit
+
 atexit.register(async_runner.shutdown)

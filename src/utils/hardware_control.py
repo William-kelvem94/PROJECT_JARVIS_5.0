@@ -6,10 +6,8 @@ Inclui controle de volume, muting de microfone (Antifeedback) e planos de energi
 """
 
 import logging
-import ctypes
-import os
 import subprocess
-from typing import Optional, List
+from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +15,10 @@ logger = logging.getLogger(__name__)
 # Based on Core Audio APIs (MMDevApi.h)
 # Simplified implementation using endpointvolume or command line tools for stability
 
+
 class WindowsHardwareControl:
     """Controle de hardware específico para Windows"""
-    
+
     @staticmethod
     def set_system_volume(level: int):
         """Define o volume do sistema (0-100)"""
@@ -27,7 +26,14 @@ class WindowsHardwareControl:
             # Opção 1: Usar nircmd se disponível (mais confiável)
             # Opção 2: PowerShell (nativo mas mais lento)
             volume_level = int((level / 100) * 65535)
-            subprocess.run(["powershell", "-Command", f"(Get-WmiObject -Query 'Select * from Win32_SoundDevice').SetVolume({volume_level})"], capture_output=True)
+            subprocess.run(
+                [
+                    "powershell",
+                    "-Command",
+                    f"(Get-WmiObject -Query 'Select * from Win32_SoundDevice').SetVolume({volume_level})",
+                ],
+                capture_output=True,
+            )
             logger.info(f"Volume do sistema definido para {level}%")
         except Exception as e:
             logger.error(f"Falha ao definir volume: {e}")
@@ -42,16 +48,16 @@ class WindowsHardwareControl:
             # Fallback PowerShell para mutar microfone (Input Device)
             # Nota: PowerShell nativo para mutar MIC é complexo sem módulos extras.
             # Vamos usar o comando 'set_audio' via SoundDevice se possível ou PowerShell script.
-            
+
             # Script PowerShell simplificado para mutar todos os inputs
             action = "1" if mute else "0"
-            ps_script = f"""
+            ps_script = """
             $obj = New-Object -ComObject Shell.Application
-            $obj.NameSpace(10).Items() | Where-Object {{ $_.Name -eq 'Sounds' }} | ForEach-Object {{ $_.InvokeVerb('Properties') }}
+            $obj.NameSpace(10).Items() | Where-Object { $_.Name -eq 'Sounds' } | ForEach-Object { $_.InvokeVerb('Properties') }
             """
             # Por enquanto, vamos usar uma abordagem de "soft mute" se o hard mute falhar
             # Ou usar bibliotecas como 'pyaudio' para fechar o stream se estivermos dentro do app.
-            
+
             logger.info(f"Microfone {'mutado' if mute else 'desmutado'} (Antifeedback)")
             return True
         except Exception as e:
@@ -62,8 +68,12 @@ class WindowsHardwareControl:
     def get_last_system_errors(lines: int = 5) -> str:
         """Busca os últimos erros críticos no log de eventos do Windows"""
         try:
-            cmd = f"powershell -Command \"Get-EventLog -LogName System -EntryType Error -Newest {lines} | Select-Object -Property Message | Format-List\""
-            result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+            cmd = [
+                "powershell",
+                "-Command",
+                f"Get-EventLog -LogName System -EntryType Error -Newest {lines} | Select-Object -Property Message | Format-List",
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
             return result.stdout
         except Exception as e:
             return f"Erro ao acessar logs: {e}"
@@ -73,9 +83,11 @@ class WindowsHardwareControl:
         """Lista dispositivos de exibição capturáveis"""
         try:
             from screeninfo import get_monitors
+
             return [f"{m.name} ({m.width}x{m.height})" for m in get_monitors()]
         except ImportError:
             return ["Monitor Principal (screeninfo não instalado)"]
+
 
 # Singleton helper
 hw_control = WindowsHardwareControl()

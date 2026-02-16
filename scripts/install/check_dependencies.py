@@ -7,16 +7,16 @@ Verifica o status de todas as dependências do sistema
 
 import sys
 import platform
-from pathlib import Path
+
 
 def check_module(name, package_name=None):
     """Tenta importar um módulo e retorna o status"""
     if package_name is None:
         package_name = name
-    
+
     try:
         module = __import__(package_name)
-        version = getattr(module, '__version__', 'unknown')
+        version = getattr(module, "__version__", "unknown")
         return True, version, None
     except ImportError as e:
         return False, None, f"ImportError: {str(e)}"
@@ -25,19 +25,20 @@ def check_module(name, package_name=None):
     except Exception as e:
         return False, None, f"Error: {str(e)}"
 
+
 def main():
     print("=" * 70)
     print("🔍 JARVIS 5.0 - Dependency Status Check")
     print("=" * 70)
     print()
-    
+
     # System Info
     print("📊 System Information:")
     print(f"   Python: {sys.version.split()[0]}")
     print(f"   Platform: {platform.system()} {platform.release()}")
     print(f"   Architecture: {platform.machine()}")
     print()
-    
+
     # Core Dependencies
     print("🔧 Core Dependencies:")
     core_deps = [
@@ -46,7 +47,7 @@ def main():
         ("cv2", "cv2"),
         ("PIL", "PIL"),
     ]
-    
+
     for name, package in core_deps:
         status, version, error = check_module(name, package)
         if status:
@@ -54,10 +55,10 @@ def main():
         else:
             print(f"   ❌ {name:20} NOT AVAILABLE")
             if error and "DLL" in error:
-                print(f"      ⚠️  DLL Error - Install Visual C++ Redistributable")
-    
+                print("      ⚠️  DLL Error - Install Visual C++ Redistributable")
+
     print()
-    
+
     # AI Dependencies
     print("🤖 AI/ML Dependencies (PyTorch-based):")
     ai_deps = [
@@ -69,7 +70,7 @@ def main():
         ("faster-whisper", "faster_whisper"),
         ("resemblyzer", "resemblyzer"),
     ]
-    
+
     pytorch_issue = False
     for name, package in ai_deps:
         status, version, error = check_module(name, package)
@@ -79,9 +80,9 @@ def main():
             print(f"   ❌ {name:20} NOT AVAILABLE")
             if error and "DLL" in error:
                 pytorch_issue = True
-                
+
     print()
-    
+
     # Audio Dependencies
     print("🎤 Audio Dependencies:")
     audio_deps = [
@@ -89,16 +90,16 @@ def main():
         ("soundfile", "soundfile"),
         ("librosa", "librosa"),
     ]
-    
+
     for name, package in audio_deps:
         status, version, error = check_module(name, package)
         if status:
             print(f"   ✅ {name:20} {version}")
         else:
             print(f"   ❌ {name:20} NOT AVAILABLE")
-    
+
     print()
-    
+
     # Vision Dependencies
     print("👁️  Vision Dependencies:")
     vision_deps = [
@@ -106,16 +107,16 @@ def main():
         ("mediapipe", "mediapipe"),
         ("mss", "mss"),
     ]
-    
+
     for name, package in vision_deps:
         status, version, error = check_module(name, package)
         if status:
             print(f"   ✅ {name:20} {version}")
         else:
             print(f"   ❌ {name:20} NOT AVAILABLE")
-    
+
     print()
-    
+
     # Windows Integration
     if platform.system() == "Windows":
         print("🪟 Windows Integration:")
@@ -124,7 +125,7 @@ def main():
             ("pycaw", "pycaw"),
             ("wmi", "wmi"),
         ]
-        
+
         for name, package in windows_deps:
             status, version, error = check_module(name, package)
             if status:
@@ -132,12 +133,12 @@ def main():
             else:
                 print(f"   ❌ {name:20} NOT AVAILABLE")
         print()
-    
+
     # Summary
     print("=" * 70)
     print("📋 Summary:")
     print()
-    
+
     if pytorch_issue:
         print("❌ PyTorch DLL Error Detected!")
         print()
@@ -152,12 +153,13 @@ def main():
     else:
         print("✅ No critical DLL errors detected!")
         print("   JARVIS should run with full AI capabilities.")
-    
+
     print()
     print("=" * 70)
     print()
     print("For more info, see: FIX_PYTORCH.md")
     print()
+
 
 if __name__ == "__main__":
     main()

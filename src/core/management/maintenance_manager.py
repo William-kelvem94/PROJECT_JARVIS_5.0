@@ -1,16 +1,15 @@
-import os
-import sys
 import logging
 import threading
-import subprocess
 import time
-import json
-from typing import Dict, List, Optional, Any, Callable
+from typing import Optional, Callable
 from pathlib import Path
 
 # Configurar logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("MAINTENANCE")
+
 
 class MaintenanceManager:
     """Classe responsável por auto-reparo e verificação de saúde do sistema"""
@@ -55,14 +54,17 @@ class MaintenanceManager:
         if log_file.exists():
             lines = log_file.read_text().splitlines()
             if len(lines) > 10:
-                logger.warning(f"⚠️ Detectadas {len(lines)} falhas no TruthValidator. Sugerindo recalibração de APIs.")
+                logger.warning(
+                    f"⚠️ Detectadas {len(lines)} falhas no TruthValidator. Sugerindo recalibração de APIs."
+                )
                 # Aqui poderia disparar um reparo automático, como limpar cache
-                log_file.unlink() # Limpa após alerta
+                log_file.unlink()  # Limpa após alerta
 
     def _align_numpy(self):
         """Garante que o NumPy esteja em uma versão compatível"""
         try:
             import numpy as np
+
             version = np.__version__
             logger.info(f"NumPy version: {version}")
         except Exception as e:
@@ -91,6 +93,7 @@ class MaintenanceManager:
         logger.info("Verificando Ollama...")
         try:
             import requests
+
             resp = requests.get("http://localhost:11434/api/tags", timeout=5)
             if resp.status_code == 200:
                 logger.info("✅ Ollama está online.")
@@ -101,14 +104,16 @@ class MaintenanceManager:
 
     def start_background_maintenance(self):
         """Inicia manutenção em segundo plano periodicamente"""
+
         def _maintenance_loop():
             while True:
-                time.sleep(3600 * 6) # A cada 6 horas
+                time.sleep(3600 * 6)  # A cada 6 horas
                 self.check_and_repair_all()
-        
+
         thread = threading.Thread(target=_maintenance_loop, daemon=True)
         thread.start()
         logger.info("Manutenção em background agendada.")
+
 
 # Instância global
 maintenance_manager = MaintenanceManager()

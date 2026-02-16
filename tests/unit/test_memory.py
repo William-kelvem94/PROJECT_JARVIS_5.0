@@ -34,13 +34,13 @@ print("\n3️⃣ BUSCANDO MEMÓRIAS SIMILARES:")
 queries = [
     "qual é a capital de Portugal?",  # Similar a capital queries
     "abrir chrome",  # Similar a abrir navegador
-    "horário atual"  # Similar a que horas são
+    "horário atual",  # Similar a que horas são
 ]
 
 for query in queries:
     print(f"\n   Query: '{query}'")
     memories = memory_manager.recall(query, top_k=2)
-    
+
     if memories:
         for i, mem in enumerate(memories, 1):
             print(f"      {i}. [Sim: {mem['similarity']:.2f}] {mem['command'][:40]}...")

@@ -1,8 +1,5 @@
-
 import sys
 import os
-import subprocess
-import logging
 import importlib
 from pathlib import Path
 
@@ -13,6 +10,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 print("=" * 70)
 print("🔍 JARVIS SINGULARITY - DIAGNÓSTICO DE SISTEMA")
 print("=" * 70)
+
 
 def check_import(module_name, friendly_name):
     try:
@@ -25,6 +23,7 @@ def check_import(module_name, friendly_name):
     except Exception as e:
         print(f"⚠️ {friendly_name:30} : ERRO ({e})")
         return False
+
 
 print("\n📦 VERIFICANDO DEPENDÊNCIAS CRÍTICAS:")
 critical = [
@@ -57,6 +56,7 @@ for mod, name in core_mods:
 print("\n🎤 TESTANDO HARDWARE ÁUDIO:")
 try:
     import speech_recognition as sr
+
     mic_list = sr.Microphone.list_microphone_names()
     if not mic_list:
         print("❌ Microfone: Nenhum dispositivo detectado!")
@@ -70,6 +70,7 @@ except Exception as e:
 print("\n🌐 VERIFICANDO CONECTIVIDADE:")
 try:
     import requests
+
     resp = requests.get("http://localhost:11434", timeout=2)
     if resp.status_code == 200:
         print("✅ Ollama Local: ONLINE")

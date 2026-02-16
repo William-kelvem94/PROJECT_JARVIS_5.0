@@ -1,13 +1,13 @@
 import pytest
-import asyncio
 import json
 import shutil
 import os
 from pathlib import Path
-from src.web.web_server import get_training_data, app
+from src.web.web_server import get_training_data
 
 # Setup data directory path relative to project root (where tests run from)
 DATA_REL_PATH = Path("data/learning/training_data")
+
 
 @pytest.fixture
 def setup_training_data():
@@ -20,7 +20,7 @@ def setup_training_data():
         data = {
             "id": i,
             "content": f"content_{i}",
-            "unsafe": "<script>alert(1)</script>"
+            "unsafe": "<script>alert(1)</script>",
         }
         file_path = DATA_REL_PATH / f"data_{i}.json"
         with open(file_path, "w", encoding="utf-8") as f:
@@ -38,6 +38,7 @@ def setup_training_data():
         os.rmdir("data")
     except OSError:
         pass
+
 
 @pytest.mark.asyncio
 async def test_get_training_data_returns_correct_sanitized_data(setup_training_data):
@@ -60,8 +61,9 @@ async def test_get_training_data_returns_correct_sanitized_data(setup_training_d
         assert item["unsafe"] == "alert(1)"
 
     # Check ids
-    ids = sorted([item['id'] for item in data])
+    ids = sorted([item["id"] for item in data])
     assert ids == list(range(10))
+
 
 @pytest.mark.asyncio
 async def test_get_training_data_empty():
