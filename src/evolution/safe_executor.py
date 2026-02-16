@@ -22,6 +22,7 @@ import logging
 import asyncio
 import py_compile
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -29,6 +30,7 @@ from typing import Dict, Any, List, Optional
 from src.core.config.system_manifest import system_manifest
 from src.core.infrastructure.async_event_bus import event_bus, EventType, EventPriority
 from src.core.infrastructure.async_event_bus import Event
+from src.evolution.knowledge_db import knowledge_db
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +51,11 @@ class SafeExecutor:
             
         self.running = True
         
-        # Cria diretório de backup se não existir
+        # Create backup directory if it doesn't exist
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Inscreve-se nos planos de diagnóstico
-        await event_bus.subscribe(
+        # Subscribe to diagnostic plans (not async)
+        event_bus.subscribe(
             EventType.SYSTEM_DIAGNOSTIC_PLAN,
             self._handle_diagnostic_plan,
             priority_filter=[EventPriority.HIGH]
@@ -90,11 +92,15 @@ class SafeExecutor:
                 )
 
     async def _execute_action(self, action: Dict) -> bool:
-        """Executa uma única ação com segurança"""
-        logger.info(f"🔧 Executing fix: {action.get('description')}")
+        """Executes a single action safely"""
+        # Support both Portuguese and English keys for backward compatibility
+        description = action.get('descricao') or action.get('description', 'No description')
+        logger.info(f"🔧 Executing fix: {description}")
         
+        start_time = time.time()
         action_type = action.get("tipo")
         target_file = action.get("arquivo")
+        problem_hash = action.get("problem_hash")  # If provided by the healer
         
         if not target_file:
             logger.error("Action missing target file")
@@ -113,6 +119,8 @@ class SafeExecutor:
             return False
             
         # 3. Apply Change
+        success = False
+        error_message = None
         try:
             if action_type == "codigo":
                 self._apply_code_change(full_path, action)
@@ -123,16 +131,36 @@ class SafeExecutor:
             # 4. Validation
             if self._validate_change(full_path):
                 logger.info("✅ Fix validated successfully")
-                return True
+                success = True
             else:
                 logger.warning("❌ Validation failed, rolling back...")
+                error_message = "Validation failed"
                 self._restore_backup(backup_path, full_path)
-                return False
                 
         except Exception as e:
             logger.error(f"💥 Exception during execution: {e}")
+            error_message = str(e)
             self._restore_backup(backup_path, full_path)
-            return False
+        
+        # 5. Record result in knowledge base
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        if problem_hash:
+            try:
+                knowledge_db.record_solution(
+                    problem_hash=problem_hash,
+                    action_type=action_type or "unknown",
+                    description=action.get('descricao') or action.get('description', 'No description'),
+                    success=success,
+                    files_modified=[target_file],
+                    code_diff=action.get("codigo_corrigido"),
+                    impact_score=1.0 if success else 0.0,
+                    execution_time_ms=execution_time_ms,
+                    error_message=error_message
+                )
+            except Exception as e:
+                logger.warning(f"Failed to record solution in knowledge base: {e}")
+        
+        return success
 
     def _create_backup(self, file_path: Path) -> Optional[Path]:
         """Cria um backup timestamped do arquivo"""
