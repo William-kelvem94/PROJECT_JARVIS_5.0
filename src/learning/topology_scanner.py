@@ -70,7 +70,7 @@ class TopologyScanner:
             return "AplicaÃ§Ã£o Backend com Banco de Dados"
         if "JavaScript/TypeScript" in stack and "Node.js" in stack:
             return "Projeto Web/Fullstack"
-        if "Python" in stack and "torch" in str(topology["structure"]):
+        if "Python" in stack and any("torch" in path for path in topology["structure"]):
             return "Desenvolvimento de IA/Machine Learning"
         return "Projeto de Software Geral"
 
