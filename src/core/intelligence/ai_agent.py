@@ -16,6 +16,12 @@ from typing import Dict, Any, List, Optional
 from src.core.intelligence.instinct_engine import instinct_engine
 from src.utils.hardware_control import hw_control
 from src.core.management.context_manager import context_manager
+
+# ============================================================================
+# LOGGER SETUP - DEVE VIR ANTES DE QUALQUER IMPORT QUE USE LOGGER
+# ============================================================================
+logger = logging.getLogger(__name__)
+
 try:
     from src.core.audio.voice_filter import AtomicVoiceFilter
 except Exception as e:
@@ -30,11 +36,6 @@ from src.interface.ui_signals import ui_signals
 
 # Enable Neural Reflection by default for luxury diagnostics
 reflect_logger.set_enabled(True)
-
-# ============================================================================
-# LOGGER SETUP - DEVE VIR ANTES DE QUALQUER IMPORT QUE USE LOGGER
-# ============================================================================
-logger = logging.getLogger(__name__)
 
 # ============================================================================
 # CORE IMPORTS - SAFE LOADING
