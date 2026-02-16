@@ -3,12 +3,10 @@
 """
 JARVIS SINGULARITY - Microsoft Account + Device Identification System
 =====================================================================
-Sistema completo de identificaÃ§Ã£o da conta Microsoft real + hardware fingerprinting
-para autorizar dispositivos na rede democrÃ¡tica.
+Sistema completo de identificação da conta Microsoft real + hardware fingerprinting
+para autorizar dispositivos na rede democrática.
 """
 
-import winreg
-import wmi
 import hashlib
 import json
 import subprocess
@@ -22,6 +20,12 @@ from pathlib import Path
 from datetime import datetime
 import requests
 import os
+
+# Platform compatibility
+from src.utils.platform_compat import (
+    IS_WINDOWS, winreg, WINREG_AVAILABLE, wmi, WMI_AVAILABLE,
+    require_windows, windows_or_fallback
+)
 
 @dataclass
 class MicrosoftAccountInfo:

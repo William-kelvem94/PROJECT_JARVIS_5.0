@@ -19,7 +19,7 @@ import platform
 import socket
 import hashlib
 import time
-import winreg
+from src.utils.platform_compat import winreg, WINREG_AVAILABLE
 import psutil
 import threading
 import subprocess
