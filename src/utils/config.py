@@ -190,6 +190,9 @@ class Config:
                 "auto_start": False,
                 "check_updates": True
             },
+            "portability": {
+                "target_user_email": os.getenv("JARVIS_USER_EMAIL", "")
+            },
             "vision": {
                 "yolo_enabled": True,
                 "yolo_model": "models/vision/yolov8n.pt",
