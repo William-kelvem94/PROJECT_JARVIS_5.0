@@ -21,7 +21,12 @@ if sys.platform != "win32":
     sys.modules["winreg"] = MagicMock()
 
 # Import the module under test
-from src.core.intelligence.structured_output import ResponseParser, AgentResponse
+from src.core.intelligence.structured_output import (
+    ResponseParser,
+    AgentResponse,
+    get_actions_schema,
+    get_example_responses
+)
 
 class TestResponseParser:
     """Tests for ResponseParser resilience to malformed JSON and various inputs."""
@@ -159,3 +164,83 @@ class TestResponseParser:
             ResponseParser.parse_llm_response(malformed)
 
         assert "JSON inválido do LLM" in caplog.text or "Erro ao validar resposta" in caplog.text
+
+    def test_legacy_regex_click_at(self):
+        """Test legacy regex fallback for click_at action."""
+        text = "Click here [ACTION: click_at(100, 200)]"
+        response = ResponseParser.parse_llm_response(text)
+        assert len(response.actions) == 1
+        assert response.actions[0].action == "click_at"
+        assert response.actions[0].x == 100
+        assert response.actions[0].y == 200
+
+    def test_legacy_regex_type_text(self):
+        """Test legacy regex fallback for type_text action."""
+        text = "Type this [ACTION: type_text('hello world')]"
+        response = ResponseParser.parse_llm_response(text)
+        assert len(response.actions) == 1
+        assert response.actions[0].action == "type_text"
+        assert response.actions[0].text == "hello world"
+
+    def test_legacy_regex_press_key(self):
+        """Test legacy regex fallback for press_key action."""
+        text = "Press enter [ACTION: press_key('enter')]"
+        response = ResponseParser.parse_llm_response(text)
+        assert len(response.actions) == 1
+        assert response.actions[0].action == "press_key"
+        assert response.actions[0].key == "enter"
+
+    def test_legacy_regex_hotkey(self):
+        """Test legacy regex fallback for hotkey action."""
+        text = "Copy [ACTION: hotkey('ctrl', 'c')]"
+        response = ResponseParser.parse_llm_response(text)
+        assert len(response.actions) == 1
+        assert response.actions[0].action == "hotkey"
+        assert response.actions[0].keys == ["ctrl", "c"]
+
+    def test_empty_markdown_block(self):
+        """Test protection against empty markdown blocks."""
+        text = "Here is nothing:\n```\n \n```"
+        response = ResponseParser.parse_llm_response(text)
+        assert "Modelo retornou bloco vazio" in response.thought
+        assert len(response.actions) == 0
+
+class TestSchemaAndExamples:
+    """Tests for helper functions that generate schemas and examples."""
+
+    def test_actions_schema_structure(self):
+        """Verify the actions schema structure."""
+        schema = get_actions_schema()
+        assert isinstance(schema, dict)
+        assert schema["type"] == "object"
+        assert "properties" in schema
+        assert "thought" in schema["properties"]
+        assert "actions" in schema["properties"]
+        assert "final_answer" in schema["properties"]
+
+        # Verify actions property structure
+        actions_prop = schema["properties"]["actions"]
+        assert actions_prop["type"] == "array"
+        assert "items" in actions_prop
+        assert "oneOf" in actions_prop["items"]
+
+        # Verify some known actions are present in oneOf
+        assert len(actions_prop["items"]["oneOf"]) > 0
+
+    def test_example_responses_structure(self):
+        """Verify the structure of example responses."""
+        examples = get_example_responses()
+        assert isinstance(examples, list)
+        assert len(examples) > 0
+
+        for example in examples:
+            assert "user" in example
+            assert "response" in example
+
+            response = example["response"]
+            assert "thought" in response
+            assert "actions" in response
+            assert "final_answer" in response
+
+            # Validate that actions is a list
+            assert isinstance(response["actions"], list)
