@@ -111,7 +111,13 @@ async def broadcast_message(message: dict):
             connected_clients.remove(client)
 
 def start_server(host="0.0.0.0", port=5000):
-    logger.info(f"ðŸŒ Iniciando Web Dashboard em http://{host}:{port}")
+    logger.info(f"🌐 Iniciando Web Dashboard em http://{host}:{port}")
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     return server
+
+
+# Backwards compatibility: some callers expect start_web_server
+def start_web_server(*args, **kwargs):
+    """Compatibilidade retroativa: chama `start_server`"""
+    return start_server(*args, **kwargs)
