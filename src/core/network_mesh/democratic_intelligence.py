@@ -9,7 +9,7 @@ CaracterÃ­sticas:
 - EleiÃ§Ã£o dinÃ¢mica baseada em capacidade e necessidade  
 - Treinamento distribuÃ­do inteligente
 - ConsolidaÃ§Ã£o automÃ¡tica via Google Drive
-- IdentificaÃ§Ã£o por conta Windows (" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + ")
+- IdentificaÃ§Ã£o por conta Windows
 """
 
 import asyncio
@@ -114,8 +114,13 @@ class DemocraticNetworkIntelligence:
     - Monitoramento de capacidade em tempo real
     """
     
-    def __init__(self, jarvis_core_path: str, target_account: str = "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + ""):
+    def __init__(self, jarvis_core_path: str, target_account: Optional[str] = None):
         self.jarvis_core_path = Path(jarvis_core_path)
+
+        if target_account is None:
+            from src.utils.config import config
+            target_account = config.get_setting("portability.target_user_email", "")
+
         self.target_account = target_account.lower()
         self.config_path = self.jarvis_core_path / "data" / "democratic_network"
         self.config_path.mkdir(parents=True, exist_ok=True)
@@ -679,7 +684,7 @@ async def democratic_training_demo():
     
     # Inicializar rede democrÃ¡tica
     jarvis_path = r"C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0"
-    network = DemocraticNetworkIntelligence(jarvis_path, "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + "")
+    network = DemocraticNetworkIntelligence(jarvis_path)
     
     if not network.is_authorized:
         print("âŒ Dispositivo nÃ£o autorizado para demo")

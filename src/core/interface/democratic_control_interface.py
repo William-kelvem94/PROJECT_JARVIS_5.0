@@ -824,7 +824,11 @@ class DemocraticControlInterface:
         email_frame.pack(fill='x', padx=20, pady=5)
         
         ttk.Label(email_frame, text="Email:", style='Status.TLabel').pack(side='left')
-        email_var = tk.StringVar(value="" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + "")
+
+        from src.utils.config import config
+        target_email = config.get_setting("portability.target_user_email", "")
+
+        email_var = tk.StringVar(value=target_email)
         ttk.Entry(email_frame, textvariable=email_var, width=40).pack(side='right')
         
         # Display name  
