@@ -51,10 +51,10 @@ class SafeExecutor:
             
         self.running = True
         
-        # Cria diretório de backup se não existir
+        # Create backup directory if it doesn't exist
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Inscreve-se nos planos de diagnóstico (subscribe is not async)
+        # Subscribe to diagnostic plans (not async)
         event_bus.subscribe(
             EventType.SYSTEM_DIAGNOSTIC_PLAN,
             self._handle_diagnostic_plan,
@@ -92,8 +92,10 @@ class SafeExecutor:
                 )
 
     async def _execute_action(self, action: Dict) -> bool:
-        """Executa uma única ação com segurança"""
-        logger.info(f"🔧 Executing fix: {action.get('descricao', action.get('description'))}")
+        """Executes a single action safely"""
+        # Support both Portuguese and English keys for backward compatibility
+        description = action.get('descricao') or action.get('description', 'No description')
+        logger.info(f"🔧 Executing fix: {description}")
         
         start_time = time.time()
         action_type = action.get("tipo")
@@ -147,7 +149,7 @@ class SafeExecutor:
                 knowledge_db.record_solution(
                     problem_hash=problem_hash,
                     action_type=action_type or "unknown",
-                    description=action.get("descricao", action.get("description", "No description")),
+                    description=action.get('descricao') or action.get('description', 'No description'),
                     success=success,
                     files_modified=[target_file],
                     code_diff=action.get("codigo_corrigido"),
