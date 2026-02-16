@@ -38,6 +38,26 @@ desktop.ini
 *.swp
 *.swo
 *~
+# VSCode
+.vscode/
+
+# Logs
+logs/
+*.log
+*.txt
+
+# Dados temporários
+data/cache/
+data/temp/
+data/audio/temp/
+
+# Modelos
+models/trained/
+models/yolo/
+
+# Outros
+.env
+.idea/
 
 # -----------------------------------------------------------------------------
 # IDE & EDITOR

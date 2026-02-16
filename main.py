@@ -171,48 +171,53 @@ try:
     NEURO_SYNC_AVAILABLE = True
 except (ImportError, OSError) as e:
     logger.warning(f"⚠️ NeuroSync not available (may need GUI libraries): {e}")
-    neuro_sync = None
-    NEURO_SYNC_AVAILABLE = False
-
-# Import Boot Manager for infrastructure initialization
-try:
-    from src.core.infrastructure.boot_manager import BootManager, BootPriority
-    BOOT_MANAGER_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"⚠️ Boot Manager not available: {e}")
-    BootManager = None
-    BOOT_MANAGER_AVAILABLE = False
-
-# Import Event Bus for asynchronous module communication
-try:
-    from src.core.infrastructure.async_event_bus import AsyncEventBus
-    EVENT_BUS_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"⚠️ Event Bus not available: {e}")
-    AsyncEventBus = None
-    EVENT_BUS_AVAILABLE = False
-
-# Import Phase 1 Infrastructure (Watchdog & Session)
-try:
-    from src.core.infrastructure.watchdog import watchdog_system
-    from src.core.infrastructure.session_manager import SessionManager
-    INFRA_AVAILABLE = True
-except ImportError as e:
-    logger.warning(f"⚠️ Infrastructure Phase 1 components not available: {e}")
-    watchdog_system = None
-    SessionManager = None
-    INFRA_AVAILABLE = False
-
-# =============================
-# ORIENTAÇÃO SOBRE ENCODING DE ARQUIVOS EXTERNOS
-# =============================
 # Para evitar bugs de encoding:
 # 1. Garanta que todos os arquivos de texto/configuração (json, yaml, txt, csv, etc.) estejam salvos em UTF-8.
 #    - No VS Code: clique com o direito no arquivo > "Reabrir com codificação" > UTF-8.
-# 2. Sempre abra arquivos de texto explicitamente com encoding='utf-8':
-#    with open('arquivo.txt', 'r', encoding='utf-8') as f:
+
+    # --- EARLY ENVIRONMENT CONFIGURATION (UTF-8, warnings, etc) ---
+    import os
+    import sys
+    import platform
+    import warnings
+    import locale
+    import io
+
+    os.environ["PYTHONUTF8"] = "1"
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+    if platform.system() == "Windows":
+        try:
+            import subprocess
+            subprocess.run(["chcp", "65001"], check=True, capture_output=True)
+        except Exception:
+            pass
+
+    try:
+        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+    except locale.Error:
+        try:
+            locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        except locale.Error:
+            pass
+
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
+    warnings.filterwarnings('ignore', category=DeprecationWarning)
 #        conteudo = f.read()
 # 3. Se usar pandas, use encoding='utf-8' ao ler csv:
+
+    # --- LOGGER SETUP (must be before any other imports) ---
+    from src.utils.jarvis_logger import setup_jarvis_logging, get_component_logger
+    from pathlib import Path
+
+    # Setup logging directory
+    LOG_DIR = Path(__file__).parent / "data" / "logs"
+    setup_jarvis_logging(LOG_DIR)
+    logger = get_component_logger("main")
+
 #    pd.read_csv('arquivo.csv', encoding='utf-8')
 # 4. Para arquivos de configuração YAML:
 #    with open('config.yaml', 'r', encoding='utf-8') as f:
