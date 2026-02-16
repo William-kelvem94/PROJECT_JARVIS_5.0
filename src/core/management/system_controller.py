@@ -60,7 +60,7 @@ class SystemController:
         Ciclo de Cirurgia: Staging -> ValidaÃ§Ã£o -> Backup -> Merge -> Reload.
         Retorna status do processo.
         """
-        logger.info(f"ðŸ§¬ Iniciando safe_code_update para: {file_path}")
+        logger.info(f"ðŸ§ Iniciando safe_code_update para: {file_path}")
         full_path = self.project_root / file_path
         
         # 0. SeguranÃ§a bÃ¡sica de path e Leis da RobÃ³tica

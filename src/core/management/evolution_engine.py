@@ -75,7 +75,7 @@ class EvolutionEngine:
         try:
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write(log_entry)
-            logger.info(f"ðŸ§¬ Evolution logged for {file_path}")
+            logger.info(f"ðŸ§ Evolution logged for {file_path}")
         except Exception as e:
             logger.error(f"Failed to log evolution: {e}")
 
