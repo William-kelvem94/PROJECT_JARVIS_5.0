@@ -23,9 +23,11 @@ import json
 import logging
 import platform
 import time
+import threading
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from pathlib import Path
+from dataclasses import asdict
 
 # External Dependencies (Graceful degradation)
 try:
@@ -284,11 +286,9 @@ class SelfObserver:
         try:
             # Assuming query_logs returns a list of objects or dicts
             logs = blackbox_logger.query_logs(level="ERROR", limit=10)
-            return [asdict(l) if hasattr(l, 'asdict') else l for l in logs]
+            return [asdict(l) if hasattr(l, '__dataclass_fields__') else l for l in logs]
         except Exception:
             return []
-
-        return status
 
 class AdvancedMetricsCollector:
     """
