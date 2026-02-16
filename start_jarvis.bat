@@ -26,5 +26,5 @@ if errorlevel 1 (
     )
 )
 
-REM Start JARVIS
-python main.py %*
+REM Start JARVIS via launcher (ensures venv and env vars)
+call "scripts\launchers\start_jarvis.bat" %*

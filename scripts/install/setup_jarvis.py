@@ -334,8 +334,8 @@ if errorlevel 1 (
     )
 )
 
-REM Start JARVIS
-python main.py %*
+REM Start JARVIS via launcher (ensures venv and env vars)
+call "scripts\\launchers\\start_jarvis.bat" %*
 """
     
     # Write Unix script
@@ -407,7 +407,13 @@ def main():
     
     print(f"\n{Colors.BOLD}Status: {success_count}/{total} steps completed{Colors.ENDC}\n")
     
-    if success_count >= 6:  # At least 6 out of 7 (Ollama is optional)
+    # Calculate required steps (all except Ollama and Startup Scripts which are optional)
+    optional_steps = {"Ollama (Optional)", "Startup Scripts"}
+    required_count = sum(1 for step_name, _ in results if step_name not in optional_steps)
+    failed_required = sum(1 for step_name, result in results 
+                         if step_name not in optional_steps and not result)
+    
+    if failed_required == 0:  # All required steps passed
         print_success("✓ JARVIS 5.0 is ready!")
         print_info("\nTo start JARVIS:")
         print_info("  Unix/Linux/Mac: ./start_jarvis.sh")
