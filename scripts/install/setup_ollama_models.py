@@ -11,6 +11,7 @@ import subprocess
 import logging
 from pathlib import Path
 import time
+import requests
 
 # Config logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -75,8 +76,24 @@ def pull_model(model_name, background=False):
         logger.error(f"❌ Error pulling {model_name}: {e}")
         return False
 
+def check_ollama_service():
+    """Checks if Ollama service is running"""
+    try:
+        requests.get("http://localhost:11434", timeout=2)
+        return True
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.error("❌ Ollama service not responding. Please start it first.")
+        if os.name == 'nt':
+            logger.info("ℹ️  On Windows, make sure Ollama is running in the system tray.")
+        else:
+            logger.info("ℹ️  On Linux, run 'ollama serve' in a separate terminal.")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Error checking Ollama service: {e}")
+        return False
+
 def main():
-    root_path = Path(__file__).parent.parent.parent
+    root_path = Path(__file__).resolve().parent.parent.parent
     config_data = load_config(root_path)
     
     if not config_data or 'brain_router' not in config_data:
@@ -87,11 +104,7 @@ def main():
     required_models = config_data['brain_router'].get('required_models', [])
     
     # 1. Garantir que o serviço está respondendo
-    import requests
-    try:
-        requests.get("http://localhost:11434", timeout=2)
-    except:
-        logger.error("❌ Ollama service not responding. Please start it first.")
+    if not check_ollama_service():
         return
 
     # 2. Verificar Modelos OBRIGATÓRIOS (Bloqueantes)
@@ -100,6 +113,8 @@ def main():
         if not is_model_installed(model):
             logger.info(f"⚡ Modelo obrigatório ausente: {model}. Instalando agora...")
             pull_model(model, background=False)
+        else:
+            logger.info(f"✅ Modelo obrigatório presente: {model}")
 
     # 3. Verificar TIER FAST (Mandatório para Sentinela)
     fast_models = ollama_config.get('tier_fast', [])
@@ -108,8 +123,11 @@ def main():
         if not is_model_installed(primary_fast):
             logger.info(f"⚡ Modelo FAST principal '{primary_fast}' ausente. Instalando...")
             pull_model(primary_fast, background=False)
+        else:
+            logger.info(f"✅ Modelo FAST presente: {primary_fast}")
 
     # 4. Verificar TIER PRO & ULTRA (Background)
+    background_downloads_triggered = False
     for tier in ['tier_pro', 'tier_ultra']:
         models = ollama_config.get(tier, [])
         if not models:
@@ -117,10 +135,14 @@ def main():
             
         primary_model = models[0]
         if not is_model_installed(primary_model):
-            logger.info(f"🚀 {tier.upper()}: Modelo '{primary_model}' será baixado em background.")
-            pull_model(primary_model, background=True)
-            # Apenas um download pesado por vez
-            break 
+            if not background_downloads_triggered:
+                logger.info(f"🚀 {tier.upper()}: Modelo '{primary_model}' será baixado em background.")
+                pull_model(primary_model, background=True)
+                background_downloads_triggered = True # Apenas um download pesado por vez
+            else:
+                 logger.info(f"⏳ {tier.upper()}: Modelo '{primary_model}' agendado para download futuro (background ocupado).")
+        else:
+            logger.info(f"✅ Modelo {tier.upper()} presente: {primary_model}")
 
 if __name__ == "__main__":
     main()
