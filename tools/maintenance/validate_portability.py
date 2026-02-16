@@ -25,14 +25,25 @@ def validate_portability():
         r'williamkelvem64@gmail\.com'
     ]
 
+    # Buscar padrões de forma multiplataforma usando pathlib e leitura de arquivos
+    search_files = list(project_root.rglob("*.py")) + list(project_root.rglob("*.md"))
+
     for pattern in hardcoded_patterns:
-        try:
-            result = os.popen(f'grep -r "{pattern}" "{project_root}" --include="*.py" --include="*.md" 2>/dev/null').read()
-            if result.strip():
-                lines = result.strip().split('\n')
-                issues.extend(lines[:5])  # Limitar a 5 exemplos
-        except Exception:
-            pass
+        examples_for_pattern = 0
+        for file_path in search_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    for lineno, line in enumerate(f, start=1):
+                        if pattern in line:
+                            issues.append(f"{file_path}:{lineno}:{line.rstrip()}")
+                            examples_for_pattern += 1
+                            if examples_for_pattern >= 5:  # Limitar a 5 exemplos por padrão
+                                break
+            except (OSError, UnicodeError):
+                # Ignorar arquivos que não puderem ser lidos
+                continue
+            if examples_for_pattern >= 5:
+                break
 
     # 2. Verificar estrutura de arquivos
     print("📋 Verificando estrutura de arquivos...")

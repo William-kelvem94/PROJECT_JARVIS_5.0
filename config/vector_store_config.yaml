@@ -5,12 +5,12 @@
 vector_store:
   # Configurações gerais
   enabled: true
-  path: "data/memory/vector_store"
+  path: &vector_store_path "data/memory/vector_store"
   backend: "chromadb"  # chromadb | faiss | pinecone
   
   # Configurações do ChromaDB
   chromadb:
-    persist_directory: "data/memory/vector_store"
+    persist_directory: *vector_store_path
     collection_name: "jarvis_memory"
     distance_metric: "cosine"  # cosine | l2 | ip
     
@@ -20,11 +20,12 @@ vector_store:
     allow_reset: true
     anonymized_telemetry: false
     
-    # Configurações de índice
+    # Configurações de índice HNSW (Hierarchical Navigable Small World)
+    # Estes parâmetros controlam o trade-off entre velocidade de busca e precisão
     index_params:
-      ef_search: 128
-      ef_construction: 200
-      M: 16
+      ef_search: 128        # Tamanho da lista de candidatos durante busca (maior = mais preciso, mais lento)
+      ef_construction: 200  # Tamanho da lista durante construção do índice (maior = melhor qualidade, mais lento)
+      M: 16                 # Número máximo de conexões por nó (maior = melhor conectividade, mais memória)
       
   # Configurações de embedding
   embedding:

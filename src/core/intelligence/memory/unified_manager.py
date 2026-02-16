@@ -17,6 +17,12 @@ try:
     import chromadb
     from chromadb.config import Settings
     CHROMA_AVAILABLE = True
+    # Suppress ChromaDB telemetry
+    import os
+    os.environ["ANONYMIZED_TELEMETRY"] = "False"
+    os.environ["POSTHOG_DISABLED"] = "1"
+    os.environ["CHROMA_TELEMETRY"] = "False"
+    os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
 except ImportError:
     CHROMA_AVAILABLE = False
 
@@ -61,11 +67,14 @@ class UnifiedMemoryManager:
 
     def connect_event_bus(self, event_bus):
         """Connects to AsyncEventBus for background memory operations."""
+        print("DEBUG: connect_event_bus called with corrected EventType usage")
+        from src.core.infrastructure.async_event_bus import EventType
         self.event_bus = event_bus
         if self.event_bus:
             import asyncio
             # Subscribe to interaction events for background storage
-            asyncio.create_task(self.event_bus.subscribe("ai.response.generated", self._handle_interaction_event))
+            print(f"DEBUG: Subscribing to {EventType.AI_RESPONSE}")
+            self.event_bus.subscribe(EventType.AI_RESPONSE, self._handle_interaction_event)
             logger.info("✅ UnifiedMemoryManager connected to Event Bus (background saving enabled).")
 
     async def _handle_interaction_event(self, event_data: Dict[str, Any]):

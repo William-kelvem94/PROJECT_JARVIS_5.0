@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import Optional
 import sys
 
+# Import the unified JARVIS logger
+from .jarvis_logger import jarvis_logger, setup_jarvis_logging
+
 class LoggingConfig:
     """Configurador central de logging para JARVIS"""
     
@@ -16,8 +19,58 @@ class LoggingConfig:
     DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10MB por arquivo
     DEFAULT_BACKUP_COUNT = 5  # 5 arquivos de backup = 50MB total
     DEFAULT_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    DEFAULT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+    DEFAULT_DATE_FORMAT = '%Y-%m-%d %H:%M:%S'    
+    @staticmethod
+    def setup_jarvis_logging(data_dir: Path):
+        """
+        Setup complete JARVIS logging system with unified logger
+        
+        Args:
+            data_dir: Base data directory
+        """
+        log_dir = data_dir / "logs"
+        
+        # Setup unified JARVIS logging
+        unified_logger = setup_jarvis_logging(log_dir)
+        
+        # Setup additional specialized loggers
+        LoggingConfig._setup_specialized_loggers(log_dir)
+        
+        return unified_logger
     
+    @staticmethod
+    def _setup_specialized_loggers(log_dir: Path):
+        """Setup specialized loggers for specific purposes"""
+        
+        # Critical errors logger (always log to separate file)
+        critical_logger = LoggingConfig.setup_rotating_logger(
+            logger_name="jarvis.critical",
+            log_file=log_dir / "errors_critical.log",
+            level=logging.ERROR,
+            max_bytes=20*1024*1024,  # 20MB
+            backup_count=10,
+            console_output=False  # Critical errors always go to file
+        )
+        
+        # Performance metrics logger
+        perf_logger = LoggingConfig.setup_rotating_logger(
+            logger_name="jarvis.performance",
+            log_file=log_dir / "performance.log",
+            level=logging.INFO,
+            max_bytes=50*1024*1024,  # 50MB
+            backup_count=3,
+            console_output=False
+        )
+        
+        # Session logger (rotates daily)
+        session_logger = LoggingConfig.setup_timed_rotating_logger(
+            logger_name="jarvis.session",
+            log_file=log_dir / "jarvis_session.log",
+            level=logging.DEBUG,
+            when='midnight',
+            backup_count=30,  # Keep 30 days
+            console_output=True
+        )    
     @staticmethod
     def setup_rotating_logger(
         logger_name: str,

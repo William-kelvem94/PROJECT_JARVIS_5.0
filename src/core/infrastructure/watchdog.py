@@ -35,7 +35,13 @@ from datetime import datetime, timedelta
 from src.core.infrastructure.process_worker_factory import process_worker_factory
 from src.core.infrastructure.resource_pool_manager import resource_pool_manager
 
-logger = logging.getLogger(__name__)
+# Use unified JARVIS logger
+try:
+    from src.utils.jarvis_logger import get_component_logger
+    logger = get_component_logger('watchdog')
+except ImportError:
+    # Fallback to standard logger if unified system not available
+    logger = logging.getLogger(__name__)
 
 class ComponentStatus(Enum):
     """Estado de saúde de um componente"""

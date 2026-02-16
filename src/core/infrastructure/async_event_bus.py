@@ -89,12 +89,15 @@ class EventType(Enum):
     VISION_DETECT = "vision.detect"
     VISION_TRACK = "vision.track"
     VISION_ANALYZE = "vision.analyze"
+    VISION_SCREEN_CHANGE = "vision.screen_change"
+    VISION_SCREEN_ANALYSIS = "vision.screen_analysis"
     
     # Audio events
     AUDIO_INPUT = "audio.input"
     AUDIO_OUTPUT = "audio.output"
     AUDIO_PROCESS = "audio.process"
     AUDIO_VOICE_COMMAND = "audio.voice_command"
+    AUDIO_TRANSCRIPTION = "audio.transcription"
     
     # Network events
     NETWORK_REQUEST = "network.request"

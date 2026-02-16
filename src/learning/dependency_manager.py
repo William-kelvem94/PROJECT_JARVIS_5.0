@@ -140,6 +140,12 @@ class DependencyManager:
         # Check ChromaDB (Vector Database)
         try:
             import chromadb
+            # Suppress ChromaDB telemetry
+            import os
+            os.environ["ANONYMIZED_TELEMETRY"] = "False"
+            os.environ["POSTHOG_DISABLED"] = "1"
+            os.environ["CHROMA_TELEMETRY"] = "False"
+            os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
             capabilities.add('vector_db')
         except ImportError:
             pass

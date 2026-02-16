@@ -47,7 +47,7 @@ class AutoHealer:
     async def start(self):
         """Inicia o Auto Healer"""
         if self.running:
-            return
+            return None
             
         self.running = True
         
@@ -59,6 +59,7 @@ class AutoHealer:
         )
         
         logger.info("🧠 Auto-Healer operational")
+        return None
 
     async def stop(self):
         self.running = False

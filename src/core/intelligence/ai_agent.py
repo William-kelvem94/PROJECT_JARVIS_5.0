@@ -392,13 +392,14 @@ class AIAgent:
 
     def connect_event_bus(self, event_bus):
         """Connects AI Agent to AsyncEventBus for pub/sub communication"""
+        from src.core.infrastructure.async_event_bus import EventType
         self.event_bus = event_bus
         if self.event_bus:
             logger.info("✅ AI Agent connected to AsyncEventBus.")
             
             # [PHASE 2.3] Proactive Vision Trigger
             import asyncio
-            asyncio.create_task(self.event_bus.subscribe("vision.screen_change", self._handle_vision_event))
+            asyncio.create_task(self.event_bus.subscribe(EventType.VISION_SCREEN_CHANGE, self._handle_vision_event))
 
     def _get_security_manager(self):
         """Lazy load SecurityManager to avoid circular imports"""
@@ -1884,7 +1885,7 @@ class AIAgent:
                 import asyncio
                 asyncio.create_task(
                     event_bus.subscribe(
-                        "audio.transcription",
+                        EventType.AUDIO_TRANSCRIPTION,
                         self._handle_transcription_event
                     )
                 )
@@ -1892,7 +1893,7 @@ class AIAgent:
                 # Subscribe to vision analysis events
                 asyncio.create_task(
                     event_bus.subscribe(
-                        "vision.screen_analysis",
+                        EventType.VISION_SCREEN_ANALYSIS,
                         self._handle_vision_event
                     )
                 )

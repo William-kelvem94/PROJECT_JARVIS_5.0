@@ -255,7 +255,7 @@ PROJECT_JARVIS_5.0/
 │   │   ├── brain.py           # Processamento cognitivo
 │   │   └── memory_manager.py  # Sistema de memória neural
 │   ├── interface/             # HUD, GUI e interfaces visuais
-│   │   ├── hud.py            # Overlay transparente
+│   │   ├── hud_interface.py   # Overlay transparente
 │   │   ├── dashboard.py       # Interface Stark
 │   │   └── voice_interface.py # Sistema de voz
 │   ├── learning/              # Motor de aprendizado neural
@@ -267,7 +267,7 @@ PROJECT_JARVIS_5.0/
 ├── 📚 docs/                   # Documentação técnica completa
 │   ├── capabilities_map.md    # Mapa de funcionalidades
 │   ├── architecture/          # Documentação arquitetural
-│   ├── user-guide/           # Guias do usuário
+│   ├── user_guide/           # Guias do usuário
 │   └── technical/            # Referências técnicas
 ├── 🧪 tests/                 # Suíte completa de testes
 │   ├── integration/          # Testes de integração
@@ -461,7 +461,7 @@ PROXY_PORT=
 - **[Documentação Técnica](docs/)**: Guias detalhados de arquitetura e implementação
 - **[Relatórios de Sistema](docs/reports/)**: Análises de performance e monitoramento
 
-### Ferramenta de Desenvolvimento
+### Ferramentas de Desenvolvimento
 - **Auto-Configurador**: `scripts/auto_configurator.py` para setup automático
 - **Validador de Dependências**: `scripts/validate_dependencies.py` para verificação de ambiente
 - **Auto-Reparador**: `scripts/auto_healer.py` para manutenção proativa

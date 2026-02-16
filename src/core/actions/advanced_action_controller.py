@@ -9,6 +9,7 @@ import logging
 import subprocess
 import psutil
 import pyautogui
+import pygetwindow as gw
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import time
@@ -64,16 +65,27 @@ class AdvancedActionController:
     def open_application(self, app_name: str) -> bool:
         """Abre uma aplicaÃ§Ã£o pelo nome"""
         try:
+            # Validação básica de segurança
+            if not app_name or not app_name.strip():
+                logger.error("❌ Nome da aplicação vazio")
+                return False
+            
+            # Prevenir injeção de comandos - permitir apenas caracteres seguros
+            import re
+            if not re.match(r'^[a-zA-Z0-9._\-\s]+$', app_name):
+                logger.error(f"❌ Nome da aplicação contém caracteres inválidos: {app_name}")
+                return False
+            
             app_name_lower = app_name.lower()
             
-            # Verificar se estÃ¡ nos apps conhecidos
+            # Verificar se está nos apps conhecidos
             if app_name_lower in self.known_apps:
-                subprocess.Popen([self.known_apps[app_name_lower]])
-                logger.info(f"âœ… AplicaÃ§Ã£o aberta: {app_name}")
+                subprocess.Popen([self.known_apps[app_name_lower]], shell=False)
+                logger.info(f"✅ Aplicação aberta: {app_name}")
                 return True
             
             # Tentar abrir diretamente (pode estar no PATH)
-            subprocess.Popen([app_name])
+            subprocess.Popen([app_name], shell=False)
             logger.info(f"âœ… AplicaÃ§Ã£o aberta: {app_name}")
             return True
             
@@ -84,11 +96,24 @@ class AdvancedActionController:
     def close_application(self, app_name: str) -> bool:
         """Fecha uma aplicaÃ§Ã£o pelo nome"""
         try:
-            for proc in psutil.process_iter(['name']):
-                if app_name.lower() in proc.info['name'].lower():
-                    proc.terminate()
-                    logger.info(f"âœ… AplicaÃ§Ã£o fechada: {app_name}")
-                    return True
+            target_name = app_name.lower()
+            for proc in psutil.process_iter(['name', 'exe']):
+                try:
+                    proc_name = (proc.info.get('name') or '').lower()
+                    exe_path = proc.info.get('exe') or ''
+                    exe_name = os.path.basename(exe_path).lower() if exe_path else ''
+
+                    # Comparar exatamente com o nome do processo ou nome do executável
+                    if (
+                        target_name == proc_name
+                        or target_name == exe_name
+                        or (exe_name.endswith(".exe") and target_name == exe_name[:-4])
+                    ):
+                        proc.terminate()
+                        logger.info(f"✅ Aplicação fechada: {app_name}")
+                        return True
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
             
             logger.warning(f"âš ï¸ AplicaÃ§Ã£o nÃ£o encontrada: {app_name}")
             return False
@@ -127,7 +152,7 @@ class AdvancedActionController:
             logger.error(f"âŒ Erro ao executar atalho: {e}")
             return False
     
-    def click(self, x: int = None, y: int = None, button: str = 'left', clicks: int = 1):
+    def click(self, x: Optional[int] = None, y: Optional[int] = None, button: str = 'left', clicks: int = 1):
         """Clica em uma posiÃ§Ã£o ou na posiÃ§Ã£o atual"""
         try:
             if x is not None and y is not None:
@@ -153,7 +178,7 @@ class AdvancedActionController:
         """Retorna posiÃ§Ã£o atual do mouse"""
         return pyautogui.position()
     
-    def screenshot_region(self, x: int, y: int, width: int, height: int, filename: str = None):
+    def screenshot_region(self, x: int, y: int, width: int, height: int, filename: Optional[str] = None):
         """Captura uma regiÃ£o especÃ­fica da tela"""
         try:
             screenshot = pyautogui.screenshot(region=(x, y, width, height))
@@ -188,19 +213,46 @@ class AdvancedActionController:
             return False
         
         try:
-            for action in self.macros[name]:
+            for index, action in enumerate(self.macros[name]):
+                # Validar estrutura básica da ação
+                if not isinstance(action, dict):
+                    logger.error(f"❌ Ação inválida na macro '{name}' no índice {index}: esperado dict, obtido {type(action).__name__}")
+                    continue
+
                 action_type = action.get('type')
+                if not action_type:
+                    logger.error(f"❌ Tipo de ação ausente na macro '{name}' no índice {index}")
+                    continue
                 
                 if action_type == 'click':
-                    self.click(action.get('x'), action.get('y'))
+                    if 'x' not in action or 'y' not in action or action['x'] is None or action['y'] is None:
+                        logger.error(f"❌ Ação 'click' inválida na macro '{name}' no índice {index}: campos 'x' e 'y' são obrigatórios")
+                        continue
+                    self.click(action['x'], action['y'])
                 elif action_type == 'type':
-                    self.type_text(action.get('text'))
+                    text = action.get('text')
+                    if text is None:
+                        logger.error(f"❌ Ação 'type' inválida na macro '{name}' no índice {index}: campo 'text' é obrigatório")
+                        continue
+                    self.type_text(text)
                 elif action_type == 'key':
-                    self.press_key(action.get('key'))
+                    key = action.get('key')
+                    if key is None:
+                        logger.error(f"❌ Ação 'key' inválida na macro '{name}' no índice {index}: campo 'key' é obrigatório")
+                        continue
+                    self.press_key(key)
                 elif action_type == 'hotkey':
-                    self.hotkey(*action.get('keys'))
+                    keys = action.get('keys')
+                    if not keys:
+                        logger.error(f"❌ Ação 'hotkey' inválida na macro '{name}' no índice {index}: campo 'keys' é obrigatório")
+                        continue
+                    self.hotkey(*keys)
                 elif action_type == 'wait':
-                    time.sleep(action.get('duration', 0.5))
+                    duration = action.get('duration', 0.5)
+                    time.sleep(duration)
+                else:
+                    logger.error(f"❌ Tipo de ação desconhecido '{action_type}' na macro '{name}' no índice {index}")
+                    continue
                 
             logger.info(f"âœ… Macro executada: {name}")
             return True
@@ -209,22 +261,21 @@ class AdvancedActionController:
             logger.error(f"âŒ Erro ao executar macro: {e}")
             return False
     
-    def window_manage(self, window_title: str = None, operation: str = "focus", **kwargs):
+    def window_manage(self, window_title: Optional[str] = None, operation: str = "focus", **kwargs):
         """Gerencia janelas do sistema"""
         try:
-            import pygetwindow as gw
-            
-            # Se tÃ­tulo nÃ£o fornecido, usar janela ativa
+            # Se título não fornecido, usar janela ativa
             if not window_title:
                 window = gw.getActiveWindow()
             else:
                 windows = gw.getWindowsWithTitle(window_title)
                 if not windows:
-                    logger.warning(f"âš ï¸ Janela nÃ£o encontrada: {window_title}")
+                    logger.warning(f"⚠️ Janela não encontrada: {window_title}")
                     return False
                 window = windows[0]
 
-            if not window: return False
+            if not window:
+                return False
 
             if operation == "focus":
                 window.activate()
@@ -254,7 +305,7 @@ class AdvancedActionController:
         return {
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": psutil.virtual_memory().percent,
-            "disk_usage": psutil.disk_usage('/').percent,
+            "disk_usage": psutil.disk_usage(os.path.abspath(os.sep)).percent,
             "running_processes": len(psutil.pids()),
             "screen_size": pyautogui.size()
         }

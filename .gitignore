@@ -65,8 +65,6 @@ data/logs/*
 !data/logs/.gitkeep
 
 # Memory / Database
-data/memory/chroma.sqlite3
-data/memory/*.parquet
 data/memory/*
 !data/memory/.gitkeep
 

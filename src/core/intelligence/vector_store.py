@@ -58,6 +58,8 @@ class UnifiedVectorStore:
         # Suppress ChromaDB telemetry
         os.environ["ANONYMIZED_TELEMETRY"] = "False"
         os.environ["POSTHOG_DISABLED"] = "1"
+        os.environ["CHROMA_TELEMETRY"] = "False"
+        os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
         
         # Get project root
         try:

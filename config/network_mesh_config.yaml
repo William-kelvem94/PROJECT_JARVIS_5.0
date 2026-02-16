@@ -4,6 +4,8 @@
 
 network_mesh:
   # Configurações gerais da malha
+  # ATENÇÃO: Habilitar esta feature conecta o JARVIS a uma rede distribuída
+  # Requer configuração de chaves de criptografia e pode expor dados do sistema
   enabled: false
   node_id: "jarvis_main_node"
   port: 8765
@@ -16,23 +18,30 @@ network_mesh:
   retry_attempts: 3
   
   # Configurações do Google Drive
+  # ATENÇÃO: Sincroniza dados com Google Drive. Requer credenciais válidas
+  # e pode transferir dados sensíveis para a nuvem
   google_drive:
     enabled: false
     sync_interval: 300  # 5 minutos
-    max_file_size: 104857600  # 100MB
+    max_file_size: 104857600  # 100MB = 100 * 1024 * 1024 bytes
     allowed_extensions: [".json", ".yaml", ".txt", ".log", ".py"]
     excluded_paths: ["__pycache__", ".git", "venv", "temp", "cache"]
     
   # Configurações da rede local
+  # ATENÇÃO: Permite descoberta e comunicação na rede local
+  # Pode expor o sistema a outros dispositivos na mesma rede
   local_network:
     enabled: false
     broadcast_enabled: false
     subnet_scan: false
-    allowed_subnets: ["192.168.1.0/24", "10.0.0.0/8"]
+    allowed_subnets: ["192.168.1.0/24", "10.0.0.0/16"]
     
   # Configurações de privacidade e segurança
   privacy:
     encrypt_packets: true
+    encryption_algorithm: "AES-256-GCM"
+    key_storage_backend: "file"
+    initial_key_path: "config/keys/network_mesh_initial.key"
     encryption_key_rotation_hours: 24
     log_network_activity: false
     anonymize_logs: true
