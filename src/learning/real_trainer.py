@@ -277,13 +277,19 @@ class RealTrainer:
             return f"Erro na geraÃ§Ã£o: {str(e)}"
 
 def train_with_real_learning(topic: str, config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-    """FunÃ§Ã£o de treinamento real com configuraÃ§Ã£o opcional"""
+    """
+    Função principal para treinamento REAL.
+    Usa conhecimento destilado + fine-tuning real.
+
+    Args:
+        topic (str): O tópico a ser treinado.
+        config (Optional[Dict[str, Any]]): Configuração opcional para o treinamento.
+
+    Returns:
+        Dict[str, Any]: Resultado do treinamento.
+    """
     if config is None:
         config = {}
-    """
-    FunÃ§Ã£o principal para treinamento REAL
-    Usa conhecimento destilado + fine-tuning real
-    """
     try:
         logger.info(f"ðŸ§  INICIANDO TREINAMENTO REAL PARA: {topic}")
 
