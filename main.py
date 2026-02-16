@@ -1604,6 +1604,51 @@ Examples:
                 # Initialize Core
                 jarvis.start()
                 
+                # ========================================================================
+                # 🧬 EVOLUTION LAYER: Self-Healing & Auto-Organization System
+                # ========================================================================
+                # Initialize the Evolution Layer for autonomous system maintenance
+                # This enables self-observation, diagnosis, and correction capabilities
+                evolution_enabled = os.environ.get("JARVIS_EVOLUTION_ENABLED", "true").lower() == "true"
+                
+                if evolution_enabled:
+                    try:
+                        logger.info("🧬 [EVOLUTION] Initializing Self-Healing System...")
+                        from src.evolution import evolution_manager
+                        
+                        # Start evolution layer asynchronously
+                        async def start_evolution():
+                            try:
+                                await evolution_manager.start(
+                                    observer_interval=300,  # Check every 5 minutes
+                                    auto_heal=True,         # Enable automatic corrections
+                                    initial_scan=True       # Run initial health check
+                                )
+                                logger.info("✅ [EVOLUTION] Self-Healing System operational")
+                            except Exception as e:
+                                logger.error(f"❌ [EVOLUTION] Failed to start: {e}")
+                        
+                        # Run in event loop
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        
+                        loop.create_task(start_evolution())
+                        
+                        # Add to instances for integration
+                        instances["evolution_manager"] = evolution_manager
+                        
+                        logger.info("🧬 [EVOLUTION] Integration complete - System is self-aware")
+                        
+                    except Exception as e:
+                        logger.warning(f"⚠️ [EVOLUTION] Could not initialize Evolution Layer: {e}")
+                        logger.warning("   System will continue without self-healing capabilities")
+                else:
+                    logger.info("⚠️ [EVOLUTION] Self-Healing System disabled (set JARVIS_EVOLUTION_ENABLED=true to enable)")
+                
                 # Stop checking
                 boot_checker.stop()
             elif boot_data["status"] == "failed":
@@ -1634,12 +1679,32 @@ Examples:
         traceback.print_exc()
         return 1
     finally:
-        # Garante a limpeza de recursos se o sistema fechar
+        # Ensure cleanup of resources when system shuts down
         # Note: instances and other vars are local to main, so we check local scope if possible
         # or just rely on OS cleanup since we are exiting.
         # But per user request, we add the logging.
         if 'logger' in globals():
-             logger.info("🧹 Encerrando instâncias e limpando memória...")
+            logger.info("🧹 Cleaning up and shutting down...")
+            
+            # Gracefully shutdown Evolution Layer if it was started
+            try:
+                if 'evolution_manager' in locals() or 'instances' in locals():
+                    if 'instances' in locals() and 'evolution_manager' in locals()['instances']:
+                        logger.info("🧬 [EVOLUTION] Shutting down Self-Healing System...")
+                        import asyncio
+                        from src.evolution import evolution_manager
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if not loop.is_closed():
+                                loop.run_until_complete(evolution_manager.stop())
+                        except:
+                            # If event loop is not available, just log
+                            pass
+                        logger.info("✅ [EVOLUTION] Shutdown complete")
+            except Exception as e:
+                logger.warning(f"⚠️ [EVOLUTION] Shutdown warning: {e}")
+            
+            logger.info("🧹 Memory cleanup complete")
 
 if __name__ == "__main__":
     sys.exit(main())
