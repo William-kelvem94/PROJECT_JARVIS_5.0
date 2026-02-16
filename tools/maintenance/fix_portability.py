@@ -42,7 +42,7 @@ class PortabilityFixer:
         """Cria arquivo de configuração de portabilidade"""
         config = {
             "portability": {
-                "target_user_email": "williamkelvem64@gmail.com",  # Email do desenvolvedor
+                "target_user_email": os.getenv("JARVIS_USER_EMAIL", ""),  # Email do desenvolvedor
                 "allow_dynamic_user_detection": True,
                 "auto_detect_google_drive": True,
                 "auto_detect_microsoft_account": True,
@@ -102,14 +102,14 @@ class PortabilityFixer:
                     original_content = content
                     content = re.sub(
                         r'williamkelvem64@gmail\.com',
-                        '" + self.config.get("target_user_email", "williamkelvem64@gmail.com") + "',
+                        'config.get_setting("portability.target_user_email", "")',
                         content
                     )
 
                     # Para casos onde não há self.config, usar variável de ambiente
                     content = re.sub(
                         r'"williamkelvem64@gmail\.com"',
-                        'os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")',
+                        'os.getenv("JARVIS_USER_EMAIL", "")',
                         content
                     )
 
@@ -191,7 +191,7 @@ python scripts/validate_portability.py
 ## 🔍 Problemas Conhecidos e Soluções
 
 ### Email Hardcoded
-**Problema**: Alguns arquivos têm `williamkelvem64@gmail.com` hardcoded
+**Problema**: Alguns arquivos podem ter emails hardcoded
 **Solução**: Use variável de ambiente `JARVIS_USER_EMAIL` ou configure em `portability.json`
 
 ### Google Drive não Detectado

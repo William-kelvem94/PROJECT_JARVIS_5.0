@@ -415,19 +415,23 @@ class ResponseParser:
             return AgentResponse(**data)
             
         except json.JSONDecodeError as e:
-            logger.error(f"JSON invÃ¡lido do LLM: {e}")
+            logger.error(f"JSON inválido do LLM: {e}")
             logger.debug(f"Raw response (primeiros 500 chars): {raw_response[:500] if raw_response else 'NONE'}")
             
-            # ðŸ†• RESILIÃŠNCIA: Se nÃ£o Ã© JSON, tenta tratar como texto puro
-            # Limpa possÃ­veis tags markdown remanescentes
+            # RESILIÊNCIA: Se não é JSON, tenta tratar como texto puro
+            # Limpa possíveis tags markdown remanescentes
             import re
             clean_text = re.sub(r'```(?:json)?|```', '', raw_response).strip()
             
-            return AgentResponse(
-                thought="Resposta nÃ£o estruturada (Fallback para Texto)",
-                actions=[],
-                final_answer=clean_text if clean_text else "Senhor, tive uma falha na estruturaÃ§Ã£o da resposta, mas estou operacional."
-            )
+            # Tentar fallback para ações legadas ou retornar texto limpo
+            if not clean_text:
+                return AgentResponse(
+                    thought="Resposta não estruturada (Fallback para Texto)",
+                    actions=[],
+                    final_answer="Senhor, tive uma falha na estruturação da resposta, mas estou operacional."
+                )
+
+            return ResponseParser._fallback_text_parse(clean_text)
             
         except Exception as e:
             logger.error(f"Erro ao validar resposta: {e}")
