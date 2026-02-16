@@ -46,7 +46,9 @@ class EvolutionManager:
         self, 
         observer_interval: int = 300, 
         auto_heal: bool = True,
-        initial_scan: bool = True
+        initial_scan: bool = True,
+        enable_module_generation: bool = True,
+        enable_voice_commands: bool = True
     ):
         """
         Inicia o sistema de evolução.
@@ -55,6 +57,8 @@ class EvolutionManager:
             observer_interval: Intervalo entre observações em segundos
             auto_heal: Se True, habilita correção automática
             initial_scan: Se True, executa um scan inicial ao iniciar
+            enable_module_generation: Se True, habilita geração de módulos
+            enable_voice_commands: Se True, habilita comandos de voz
         """
         if self.running:
             logger.warning("Evolution Manager already running")
@@ -68,7 +72,11 @@ class EvolutionManager:
         logger.info("🧬 Starting JARVIS Evolution Layer...")
 
         try:
-            # 1. Inicializar componentes na ordem correta
+            # 1. Initialize core components
+            logger.info("  ├─ Initializing Authorization Manager...")
+            from src.evolution.authorization_manager import authorization_manager
+            await authorization_manager.start()
+
             logger.info("  ├─ Initializing Self Observer...")
             await self_observer.start(interval=observer_interval)
 
@@ -78,19 +86,32 @@ class EvolutionManager:
             logger.info("  ├─ Initializing Safe Executor...")
             await safe_executor.start()
 
-            # 2. Executar scan inicial se solicitado
+            # 2. Initialize advanced components
+            if enable_module_generation:
+                logger.info("  ├─ Initializing Module Generator (Auto-Development)...")
+                from src.evolution.module_generator import module_generator
+                await module_generator.start()
+
+            if enable_voice_commands:
+                logger.info("  ├─ Initializing Voice Commands Handler...")
+                from src.evolution.voice_commands import evolution_voice_commands
+                await evolution_voice_commands.start()
+
+            # 3. Execute initial scan if requested
             if initial_scan:
                 logger.info("  ├─ Running initial system scan...")
                 await self._trigger_initial_scan()
 
-            # 3. Publicar evento de inicialização
+            # 4. Publish startup event
             event_bus.publish(
                 EventType.SYSTEM_STARTUP,
                 data={
                     "subsystem": "evolution",
                     "status": "operational",
                     "auto_heal_enabled": self.auto_heal_enabled,
-                    "observer_interval": self.observer_interval
+                    "observer_interval": self.observer_interval,
+                    "module_generation_enabled": enable_module_generation,
+                    "voice_commands_enabled": enable_voice_commands
                 },
                 priority=EventPriority.HIGH,
                 source="evolution_manager"
@@ -98,6 +119,8 @@ class EvolutionManager:
 
             logger.info("✅ JARVIS Evolution Layer operational")
             logger.info(f"   └─ Auto-healing: {'ENABLED' if auto_heal else 'DISABLED'}")
+            logger.info(f"   └─ Module Generation: {'ENABLED' if enable_module_generation else 'DISABLED'}")
+            logger.info(f"   └─ Voice Commands: {'ENABLED' if enable_voice_commands else 'DISABLED'}")
             logger.info(f"   └─ Observation interval: {observer_interval}s")
 
         except Exception as e:
@@ -113,12 +136,30 @@ class EvolutionManager:
         logger.info("🛑 Stopping JARVIS Evolution Layer...")
 
         try:
-            # Parar componentes na ordem inversa
+            # Stop components in reverse order
+            try:
+                from src.evolution.voice_commands import evolution_voice_commands
+                await evolution_voice_commands.stop()
+            except:
+                pass
+
+            try:
+                from src.evolution.module_generator import module_generator
+                await module_generator.stop()
+            except:
+                pass
+
             await safe_executor.stop()
             await auto_healer.stop()
             await self_observer.stop()
 
-            # Publicar evento de shutdown
+            try:
+                from src.evolution.authorization_manager import authorization_manager
+                await authorization_manager.stop()
+            except:
+                pass
+
+            # Publish shutdown event
             event_bus.publish(
                 EventType.SYSTEM_SHUTDOWN,
                 data={

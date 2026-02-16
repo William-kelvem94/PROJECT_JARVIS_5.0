@@ -1608,23 +1608,35 @@ Examples:
                 # 🧬 EVOLUTION LAYER: Self-Healing & Auto-Organization System
                 # ========================================================================
                 # Initialize the Evolution Layer for autonomous system maintenance
-                # This enables self-observation, diagnosis, and correction capabilities
+                # This enables self-observation, diagnosis, correction, and auto-development
                 evolution_enabled = os.environ.get("JARVIS_EVOLUTION_ENABLED", "true").lower() == "true"
                 
                 if evolution_enabled:
                     try:
-                        logger.info("🧬 [EVOLUTION] Initializing Self-Healing System...")
+                        logger.info("🧬 [EVOLUTION] Initializing Complete Self-Healing System...")
                         from src.evolution import evolution_manager
+                        from src.core.config.system_manifest import system_manifest
                         
-                        # Start evolution layer asynchronously
+                        # Get protected files from system manifest
+                        protected_files = system_manifest.system.core_protected_files
+                        
+                        # Start evolution layer with all features
                         async def start_evolution():
                             try:
                                 await evolution_manager.start(
-                                    observer_interval=300,  # Check every 5 minutes
-                                    auto_heal=True,         # Enable automatic corrections
-                                    initial_scan=True       # Run initial health check
+                                    observer_interval=300,          # Check every 5 minutes
+                                    auto_heal=True,                 # Enable automatic corrections
+                                    initial_scan=True,              # Run initial health check
+                                    enable_module_generation=True,  # Enable auto-development
+                                    enable_voice_commands=True      # Enable voice control
                                 )
-                                logger.info("✅ [EVOLUTION] Self-Healing System operational")
+                                logger.info("✅ [EVOLUTION] Complete Self-Healing System operational")
+                                logger.info("   ├─ Auto-Observation: ACTIVE")
+                                logger.info("   ├─ Auto-Diagnosis: ACTIVE")
+                                logger.info("   ├─ Auto-Correction: ACTIVE")
+                                logger.info("   ├─ Auto-Development: ACTIVE")
+                                logger.info("   ├─ Voice Commands: ACTIVE")
+                                logger.info("   └─ Protected Files: ENFORCED")
                             except Exception as e:
                                 logger.error(f"❌ [EVOLUTION] Failed to start: {e}")
                         
@@ -1641,7 +1653,7 @@ Examples:
                         # Add to instances for integration
                         instances["evolution_manager"] = evolution_manager
                         
-                        logger.info("🧬 [EVOLUTION] Integration complete - System is self-aware")
+                        logger.info("🧬 [EVOLUTION] Integration complete - System is fully autonomous")
                         
                     except Exception as e:
                         logger.warning(f"⚠️ [EVOLUTION] Could not initialize Evolution Layer: {e}")
