@@ -16,7 +16,9 @@ if exist venv\Scripts\activate.bat (
     call venv\Scripts\activate.bat
 )
 
-:: Executar Jarvis
+:: Marcar modo minimal para o processo Python
+set JARVIS_MINIMAL=1
+:: Executar Jarvis em headless minimal
 python main.py %*
 
 REM Fim
