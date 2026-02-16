@@ -1,4 +1,4 @@
-﻿"""
+"""
 âš™ï¸ JARVIS Management System - Sistema de Gerenciamento
 ====================================================
 
@@ -27,8 +27,19 @@ from .hardware_manager import HardwareManager
 from .universal_recovery_manager import UniversalRecoveryManager, get_universal_recovery_manager, universal_recovery_manager
 from .performance_optimizer import PerformanceOptimizer
 from .dependency_manager import DependencyManager
-from .shutdown_manager import ShutdownManager
 from .system_controller import SystemController
+
+import logging
+logger = logging.getLogger(__name__)
+
+# Optional PyQt6-dependent modules
+try:
+    from .shutdown_manager import ShutdownManager
+    SHUTDOWN_MANAGER_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"ShutdownManager not available: {e}")
+    ShutdownManager = None
+    SHUTDOWN_MANAGER_AVAILABLE = False
 
 # Backward compatibility alias
 def get_auto_recovery_system():

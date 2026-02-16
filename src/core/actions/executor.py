@@ -15,24 +15,12 @@ try:
     from src.core.intelligence.structured_output import ActionType
     TYPES_AVAILABLE = True
 except ImportError:
-    from enum import Enum
-    class ActionType(Enum):
-        CLICK_AT = "click_at"
-        TYPE_TEXT = "type_text"
-        PRESS_KEY = "press_key"
-        HOTKEY = "hotkey"
-        OPEN_PROGRAM = "open_program"
-        RUN_COMMAND = "run_command"
-        READ_FILE = "read_file"
-        WRITE_FILE = "write_file"
-        LIST_DIR = "list_dir"
-        SEARCH_WEB = "search_web"
-        REGISTER_NICKNAME = "register_nickname"
-        SET_VOLUME = "set_volume"
-        GET_PROCESSES = "get_processes"
     TYPES_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+# Constants
+MAX_FILE_READ_SIZE = 5000
 
 class ActionExecutor:
     """Unified executor for all JARVIS actions."""
@@ -55,27 +43,30 @@ class ActionExecutor:
         try:
             from src.core.actions.action_controller import action_controller
             self.gui = action_controller
-        except: self.gui = None
+        except ImportError:
+            self.gui = None
         
         try:
             from src.core.actions.system_integrator import system_integrator
             self.sys = system_integrator
-        except: self.sys = None
+        except ImportError:
+            self.sys = None
         
         try:
             from src.core.security.security_manager import security_manager
             self.security = security_manager
-        except: self.security = None
+        except ImportError:
+            self.security = None
 
         try:
             from src.core.audio.voice_controller import voice_controller
             self.voice = voice_controller
-        except: self.voice = None
+        except ImportError:
+            self.voice = None
 
     def execute_action(self, action: Any) -> Dict[str, Any]:
         """Executes a single structured action."""
         # Handle both Pydantic objects and simple dicts
-        action_obj = action
         if hasattr(action, 'dict'):
              action_dict = action.dict()
         elif isinstance(action, dict):
@@ -94,33 +85,46 @@ class ActionExecutor:
 
             # 2. Routing
             if action_name == "click_at" or action_name == "click":
+                if not self.gui:
+                    return {"status": "error", "error": "GUI controller not available"}
                 self.gui.click_at(action_dict.get("x", 0), action_dict.get("y", 0))
                 return {"status": "success", "action": action_name, "result": "Clicked"}
 
             if action_name == "type_text" or action_name == "type":
+                if not self.gui:
+                    return {"status": "error", "error": "GUI controller not available"}
                 self.gui.type_text(action_dict.get("text", ""))
                 return {"status": "success", "action": action_name, "result": "Typed"}
 
             if action_name == "open_program" or action_name == "open_app":
                 prog = action_dict.get("program") or action_dict.get("name")
-                # Use SystemIntegrator if possible
-                success = False
-                if self.sys:
-                    # Logic to open app
-                    os.startfile(prog) if os.path.exists(prog) else os.system(f"start {prog}")
-                    success = True
-                return {"status": "success" if success else "failed", "action": action_name}
+                if not prog:
+                    return {"status": "error", "error": "Missing program parameter"}
+                # Use cross-platform solution
+                import subprocess
+                try:
+                    if os.name == 'nt':  # Windows
+                        os.startfile(prog)
+                    else:  # Unix-like
+                        subprocess.run(['xdg-open', prog], check=True)
+                    return {"status": "success", "action": action_name}
+                except Exception as e:
+                    return {"status": "error", "action": action_name, "error": str(e)}
 
             if action_name == "read_file":
                 path = action_dict.get("path")
-                if self.security and not self.security.validate_file_action(path, 'read'):
+                if not path:
+                    return {"status": "error", "action": action_name, "error": "File path is required"}
+                if self.security and not self.security.validate_path_access(path, 'read'):
                     return {"status": "blocked", "error": "Access denied"}
                 with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-                    return {"status": "success", "action": action_name, "result": f.read(5000)}
+                    return {"status": "success", "action": action_name, "result": f.read(MAX_FILE_READ_SIZE)}
 
             if action_name == "write_file":
                 path = action_dict.get("path")
-                if self.security and not self.security.validate_file_action(path, 'write'):
+                if not path:
+                    return {"status": "error", "action": action_name, "error": "File path is required"}
+                if self.security and not self.security.validate_path_access(path, 'write'):
                     return {"status": "blocked", "error": "Access denied"}
                 os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
                 with open(path, 'w', encoding='utf-8') as f:
@@ -128,8 +132,11 @@ class ActionExecutor:
                 return {"status": "success", "action": action_name, "result": "File written"}
 
             if action_name == "register_nickname":
+                nickname = action_dict.get("nickname")
+                if not nickname:
+                    return {"status": "error", "error": "Nickname is required"}
                 from src.core.audio.voice_filter import AtomicVoiceFilter
-                AtomicVoiceFilter.add_nickname(action_dict.get("nickname"))
+                AtomicVoiceFilter.add_nickname(nickname)
                 return {"status": "success", "result": "Nickname registered"}
 
             # Add more handlers from the old complex executor as needed

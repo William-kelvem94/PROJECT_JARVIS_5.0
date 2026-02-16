@@ -1,4 +1,4 @@
-﻿"""
+"""
 Processador OCR para extraÃ§Ã£o de texto de imagens
 Suporta mÃºltiplos engines: Tesseract, EasyOCR e integraÃ§Ã£o com APIs
 """

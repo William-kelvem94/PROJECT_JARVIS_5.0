@@ -1,4 +1,4 @@
-﻿"""
+"""
 Monitor Proativo do Jarvis (Proactive Monitor)
 Detecta mudanÃ§as significativas na tela em tempo real e aciona o Agente de IA proativamente.
 """
@@ -12,6 +12,7 @@ from pathlib import Path
 from src.core.vision.screen_capture import screen_capture
 from src.core.intelligence.ai_agent import ai_agent
 from src.utils.config import config
+from src.core.infrastructure.async_event_bus import EventType
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,14 @@ class ProactiveMonitor:
         
         # Cooldown para nÃ£o ser irritante (segundos)
         self.last_trigger_time = 0
+        
+        # [EVENT BUS]
+        self.event_bus = None
+
+    def connect_event_bus(self, event_bus):
+        """Connects Proactive Monitor to AsyncEventBus."""
+        self.event_bus = event_bus
+        logger.info("✅ Proactive Monitor connected to Event Bus.")
 
     def start(self):
         """Inicia o monitoramento em background"""
@@ -131,7 +140,30 @@ class ProactiveMonitor:
 
         # Acionar o Agente de IA para anÃ¡lise proativa
         self.last_trigger_time = current_time
-        threading.Thread(target=self._trigger_ai_analysis, args=(screenshot_path, diff_percent), daemon=True).start()
+        
+        # [PHASE 2.3] Event-Driven Trigger
+        if self.event_bus:
+            try:
+                import asyncio
+                # Use loop do bus ou pega o loop corrente (que deve estar rodando na main thread)
+                # Como estamos em thread, precisamos de threadsafe calls
+                loop = self.event_bus.loop if hasattr(self.event_bus, 'loop') else None
+                if loop and loop.is_running():
+                    asyncio.run_coroutine_threadsafe(
+                        self.event_bus.publish(EventType.VISION_SCREEN_CHANGE, {
+                            "screenshot_path": screenshot_path,
+                            "diff_percent": diff_percent, 
+                            "ts": current_time
+                        }),
+                        loop
+                    )
+                else:
+                    logger.warning("Event Bus loop not available for Proactive Monitor")
+            except Exception as e:
+                logger.error(f"Failed to publish vision event: {e}")
+        else:
+            # Legacy Fallback
+            threading.Thread(target=self._trigger_ai_analysis, args=(screenshot_path, diff_percent), daemon=True).start()
 
 
     def _trigger_ai_analysis(self, screenshot_path: str, diff_percent: float):

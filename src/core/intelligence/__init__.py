@@ -1,4 +1,4 @@
-﻿"""
+"""
 ðŸ§  JARVIS Intelligence System - Sistema de InteligÃªncia
 =====================================================
 

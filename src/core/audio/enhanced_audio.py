@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Enhanced Audio Processing
@@ -23,6 +23,7 @@ import queue
 import time
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple, Callable
+import psutil # Added for memory monitoring
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
@@ -170,14 +171,16 @@ class EnhancedAudioSystem:
     - Voice signature management
     """
     
-    def __init__(self, data_dir: Optional[Path] = None):
+    def __init__(self, data_dir: Optional[Path] = None, event_bus=None):
         """
         Initialize Enhanced Audio System.
         
         Args:
             data_dir: Directory for audio data and signatures
+            event_bus: Event bus instance for module communication
         """
         self.data_dir = data_dir or Path("data")
+        self.event_bus = event_bus
         self.voice_signatures_dir = self.data_dir / "voice_signatures"
         self.audio_temp_dir = self.data_dir / "audio" / "temp"
         
@@ -242,6 +245,11 @@ class EnhancedAudioSystem:
         self._vad_ready = False
         self._models_lock = threading.Lock()
         
+        # Auto-unload configuration
+        self.auto_unload_timeout = 600  # 10 minutes for audio (less critical than vision)
+        self.last_activity = datetime.now()
+        self._unload_timer: Optional[threading.Timer] = None
+        
         # Initialize basic components
         self._initialize_basic_components()
         
@@ -256,7 +264,16 @@ class EnhancedAudioSystem:
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
-        logger.info("ðŸš€ Audio System: Iniciando carregamento neural post-boot...")
+        # MEMORY SAFETY CHECK
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 85:
+                logger.warning(f"⚠️ AudioSystem: High RAM usage ({mem.percent}%) - Delaying heavy model loading")
+                return # Skip loading if memory critical
+        except Exception:
+            pass
+
+        logger.info("🚀 Audio System: Iniciando carregamento neural post-boot...")
         threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
     def _initialize_basic_components(self):
@@ -272,58 +289,14 @@ class EnhancedAudioSystem:
 
     def _load_models_background(self):
         """Load heavy AI models in background to prevent 0xC0000005 during boot"""
-        # 1. Faster-Whisper
-        if FASTER_WHISPER_AVAILABLE:
-            try:
-                # ðŸ†• GLOBAL NEURAL LOCK: Serialize heavy loads
-                model_load_lock.acquire("Whisper (Audio Core)")
-                try:
-                    with self._models_lock:
-                        logger.info(f"ðŸ§  Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
-                        
-                        # CRITICAL: Import here to avoid init-time conflicts
-                        from faster_whisper import WhisperModel
-                        
-                        # 4. AbstraÃ§Ã£o de Hardware (Universalidade)
-                        try:
-                            if torch.cuda.is_available():
-                                device = "cuda"
-                                compute_type = "float16"
-                                logger.info(f"   ðŸš€ GPU NVIDIA Detectada: Usando CUDA + Float16")
-                            else:
-                                device = "cpu"
-                                compute_type = "int8"
-                                logger.info(f"   ðŸ’» CPU Detectada: Usando INT8 para economia de memÃ³ria")
-                        except Exception:
-                            device = "cpu"
-                            compute_type = "int8"
-                        
-                        # CRITICAL: cpu_threads=1 for Windows stability
-                        # num_workers=1 to prevent thread pool crashes
-                        self.whisper_model = WhisperModel(
-                            self.whisper_model_size,
-                            device=device,
-                            compute_type=compute_type,
-                            cpu_threads=1,  # Single-threaded for stability
-                            num_workers=1   # Single worker to prevent pool crashes
-                        )
-                        self._whisper_ready = True
-                        logger.info(f"âœ… Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
-                finally:
-                    model_load_lock.release()
-            except Exception as e:
-                self._whisper_ready = False
-                logger.error(f"âŒ Audio Core: Falha no Whisper: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
-
-        # 2. Silero-VAD
+        
+        # 1. Silero-VAD (Priority 1: Lightweight & Essential for 'Awareness')
         if TORCH_AVAILABLE:
             try:
                 model_load_lock.acquire("Silero-VAD (Audio Core)")
                 try:
                     with self._models_lock:
-                        logger.info("ðŸ§  Audio Core: Carregando Silero-VAD...")
+                        logger.info("🧠 Audio Core: Carregando Silero-VAD (Prioridade 1)...")
                         result = torch.hub.load(
                             repo_or_dir='snakers4/silero-vad',
                             model='silero_vad',
@@ -338,12 +311,66 @@ class EnhancedAudioSystem:
                             self.vad_utils = None
                             
                         self._vad_ready = True
-                        logger.info("âœ… Audio Core: Silero-VAD pronto")
+                        logger.info("✅ Audio Core: Silero-VAD pronto")
                 finally:
                     model_load_lock.release()
             except Exception as e:
                 self._vad_ready = False
-                logger.warning(f"âŒ Audio Core: Falha no VAD: {e}")
+                logger.warning(f"❌ Audio Core: Falha no VAD: {e}")
+
+        # MEMORY GUARD BEFORE WHISPER
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 85.0:
+                logger.warning(f"⚠️ AudioSystem: High RAM ({mem.percent}%) - Skipping heavy Whisper load to prevent crash.")
+                return
+        except Exception as e:
+            logger.debug(f"Memory check failed: {e}")
+
+        # 2. Faster-Whisper (Heavy - Priority 2)
+        if FASTER_WHISPER_AVAILABLE:
+            try:
+                # 🔒 GLOBAL NEURAL LOCK: Serialize heavy loads
+                model_load_lock.acquire("Whisper (Audio Core)")
+                try:
+                    with self._models_lock:
+                        logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
+                        
+                        # CRITICAL: Import here to avoid init-time conflicts
+                        from faster_whisper import WhisperModel
+                        
+                        # 4. Abstração de Hardware (Universalidade)
+                        try:
+                            if torch.cuda.is_available():
+                                device = "cuda"
+                                compute_type = "float16"
+                                logger.info(f"   🚀 GPU NVIDIA Detectada: Usando CUDA + Float16")
+                            else:
+                                device = "cpu"
+                                compute_type = "int8"
+                                logger.info(f"   💻 CPU Detectada: Usando INT8 para economia de memória")
+                        except Exception:
+                            device = "cpu"
+                            compute_type = "int8"
+                        
+                        # CRITICAL: cpu_threads=1 for Windows stability
+                        # num_workers=1 to prevent thread pool crashes
+                        self.whisper_model = WhisperModel(
+                            self.whisper_model_size,
+                            device=device,
+                            compute_type=compute_type,
+                            cpu_threads=1,  # Single-threaded for stability
+                            num_workers=1   # Single worker to prevent pool crashes
+                        )
+                        self._whisper_ready = True
+                        logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
+                finally:
+                    model_load_lock.release()
+            except Exception as e:
+                self._whisper_ready = False
+                logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
     def wait_for_models(self, timeout: float = 30.0) -> bool:
         """Wait for background model loading to complete"""
@@ -360,6 +387,64 @@ class EnhancedAudioSystem:
             
         logger.warning("âš ï¸ Timeout waiting for audio models - system may be degraded")
         return self._whisper_ready
+
+    def unload_models(self):
+        """Unload heavy models to free memory"""
+        logger.info("🧠 Audio System: Unloading models to free memory")
+        
+        with self._models_lock:
+            # Unload Whisper model
+            if self.whisper_model:
+                try:
+                    del self.whisper_model
+                    self.whisper_model = None
+                    self._whisper_ready = False
+                    logger.info("✅ Whisper model unloaded")
+                except Exception as e:
+                    logger.error(f"Error unloading Whisper: {e}")
+            
+            # Unload VAD model
+            if self.vad_model:
+                try:
+                    del self.vad_model
+                    self.vad_model = None
+                    self.vad_utils = None
+                    self._vad_ready = False
+                    logger.info("✅ VAD model unloaded")
+                except Exception as e:
+                    logger.error(f"Error unloading VAD: {e}")
+            
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+            # Clear GPU cache if available
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass
+
+    def _update_activity(self):
+        """Update last activity timestamp and schedule auto-unload"""
+        self.last_activity = datetime.now()
+        
+        # Cancel existing unload timer
+        if self._unload_timer:
+            self._unload_timer.cancel()
+        
+        # Schedule new unload timer
+        self._unload_timer = threading.Timer(self.auto_unload_timeout, self._auto_unload_models)
+        self._unload_timer.daemon = True
+        self._unload_timer.start()
+    
+    def _auto_unload_models(self):
+        """Auto-unload models after inactivity timeout"""
+        # Check if still inactive
+        if (datetime.now() - self.last_activity).total_seconds() >= self.auto_unload_timeout:
+            logger.info("🧠 Audio System: Auto-unloading models due to inactivity")
+            self.unload_models()
 
     def _load_voice_signatures(self):
         """Load known voice signatures"""
@@ -451,6 +536,15 @@ class EnhancedAudioSystem:
         except Exception as e:
             logger.error(f"âŒ Erro na calibraÃ§Ã£o VAD: {e}")
             return 2000  # Fallback padrÃ£o
+
+    def _pulse_watchdog(self):
+        """Send heartbeat to watchdog"""
+        try:
+            from src.core.infrastructure.watchdog import watchdog_system
+            if watchdog_system:
+                watchdog_system.update_heartbeat("AudioSystem")
+        except ImportError:
+            pass
         
     def start_listening(self):
         """Start listening for audio input"""
@@ -544,6 +638,9 @@ class EnhancedAudioSystem:
         voice_frame_count = 0
         
         while self.is_running:
+            # Pulse Watchdog
+            self._pulse_watchdog()
+            
             try:
                 # Get audio chunk
                 try:
@@ -639,6 +736,9 @@ class EnhancedAudioSystem:
             threshold = getattr(self, '_dynamic_rms_threshold', 2000)
             rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
             return rms > threshold
+            
+        # Update activity timestamp for VAD usage
+        self._update_activity()
             
         try:
             # Convert to float32 and normalize
@@ -756,6 +856,75 @@ class EnhancedAudioSystem:
                 
                 if self.on_transcription:
                     self.on_transcription(result)
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"📣 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"⚠️ Failed to publish transcription event: {e}")
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
+                
+                # Publish event to Event Bus if available
+                if self.event_bus:
+                    try:
+                        import asyncio
+                        # Schedule event publication (non-blocking)
+                        asyncio.create_task(
+                            self.event_bus.publish(
+                                "audio.transcription",
+                                {
+                                    "text": result.text,
+                                    "language": result.language,
+                                    "confidence": result.confidence,
+                                    "speaker_id": result.speaker_id,
+                                    "speaker_verified": result.speaker_verified,
+                                    "processing_time": result.processing_time,
+                                    "timestamp": datetime.now().isoformat()
+                                }
+                            )
+                        )
+                        logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+                    except Exception as e:
+                        logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
                     
             self.state = AudioState.LISTENING
             
@@ -803,6 +972,9 @@ class EnhancedAudioSystem:
                 segments=[],
                 processing_time=0.0
             )
+            
+        # Update activity timestamp
+        self._update_activity()
             
         try:
             start_time = time.time()
@@ -870,6 +1042,9 @@ class EnhancedAudioSystem:
                 segments=[],
                 processing_time=0.0
             )
+            
+        # Update activity timestamp
+        self._update_activity()
             
         try:
             # Load audio file
@@ -959,12 +1134,13 @@ class EnhancedAudioSystem:
 _audio_system: Optional[EnhancedAudioSystem] = None
 
 
-def get_audio_system(data_dir: Optional[Path] = None) -> EnhancedAudioSystem:
+def get_audio_system(data_dir: Optional[Path] = None, event_bus=None) -> EnhancedAudioSystem:
     """
     Get or create Audio System singleton.
     
     Args:
         data_dir: Data directory (for first call)
+        event_bus: Event bus instance for module communication
         
     Returns:
         EnhancedAudioSystem instance
@@ -972,7 +1148,7 @@ def get_audio_system(data_dir: Optional[Path] = None) -> EnhancedAudioSystem:
     global _audio_system
     
     if _audio_system is None:
-        _audio_system = EnhancedAudioSystem(data_dir)
+        _audio_system = EnhancedAudioSystem(data_dir, event_bus)
         
     return _audio_system
 

@@ -4,7 +4,7 @@
 - **Modular Architecture**: All core logic resides in `src/core/`.
 - **Absolute Imports**: Always import from `src` root (e.g., `from src.core.intelligence.ai_agent import AIAgent`).
 - **Configuration Driven**: Use `src/utils/config.py` and `config/ai_config.yaml` for all configurable parameters. Hardcoding is forbidden.
-- **Logging**: Use `src.utils.logger` for all output. `print()` is improved for debugging only.
+- **Logging**: Use `src.utils.logger` for all output. `print()` is allowed for debugging only.
 
 ## 📂 Directory Structure
 - `src/core/intelligence`: AI logic, LLM integration, Brain Router.

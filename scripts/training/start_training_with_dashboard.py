@@ -24,4 +24,4 @@ print('🚀 Iniciando treinamento sobre Inteligência Artificial...')
 print('')
 print('=' * 60)
 
-os.system('python scripts/external_trainer.py --component study --topic "Inteligência Artificial" --config config/training_config.yaml')
+os.system('python scripts/training/external_trainer.py --component study --topic "Inteligência Artificial" --config config/training_config.yaml')

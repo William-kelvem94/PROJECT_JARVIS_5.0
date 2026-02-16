@@ -1,4 +1,4 @@
-﻿"""
+"""
 ðŸ”Š JARVIS Audio System - Sistema de Ãudio
 ========================================
 

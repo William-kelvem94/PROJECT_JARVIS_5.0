@@ -1,4 +1,4 @@
-﻿"""
+"""
 Detector de EmoÃ§Ãµes (Neural Emotional Intelligence)
 Analisa expressÃµes faciais (via FER) e tons de voz para ajustar a persona do Jarvis.
 """

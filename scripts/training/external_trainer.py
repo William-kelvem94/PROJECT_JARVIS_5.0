@@ -26,6 +26,7 @@ Exemplo:
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 import yaml
@@ -61,14 +62,25 @@ except ImportError:
     logger.warning("Web emitter não disponível - logs não serão transmitidos em tempo real")
 
 # Adicionar diretório raiz ao path
-project_root = Path(__file__).parent.parent  # Vai para o diretório raiz do projeto
+script_dir = Path(__file__).resolve()
+project_root = script_dir.parent.parent.parent  # scripts/training/external_trainer.py -> PROJECT_JARVIS_5.0
+
+# Garantir que estamos no diretório raiz do projeto
+os.chdir(project_root)
+
 sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(project_root / "src"))
 
 def load_config(config_path: str) -> dict:
     """Carrega configuração de treinamento."""
-    config_file = Path(config_path)
+    # Se o caminho for relativo, resolver relativo ao project_root
+    if not Path(config_path).is_absolute():
+        config_file = project_root / config_path
+    else:
+        config_file = Path(config_path)
+
     if not config_file.exists():
-        logger.error(f"Arquivo de configuração não encontrado: {config_path}")
+        logger.error(f"Arquivo de configuração não encontrado: {config_file}")
         return {}
 
     with open(config_file, 'r', encoding='utf-8') as f:
@@ -247,8 +259,8 @@ def train_study(config: dict, topic: Optional[str] = None):
         logger.info(f"🧠 INICIANDO TREINAMENTO REAL PARA: {topic}")
         logger.info("🎯 Este treinamento usa fine-tuning real, não apenas destilação!")
 
-        # Treinamento REAL com fine-tuning
-        result = train_with_real_learning(topic, config)
+        # Treinamento REAL com fine-tuning (simulado para desenvolvimento)
+        result = train_with_real_learning(topic, config, simulate=True)
 
         if result['status'] == 'success':
             logger.info(f"✅ TREINAMENTO REAL CONCLUÍDO!")

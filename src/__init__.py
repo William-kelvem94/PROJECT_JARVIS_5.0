@@ -1,4 +1,4 @@
-﻿"""Jarvis 5.0 - Pacote Principal"""
+"""Jarvis 5.0 - Pacote Principal"""
 
 # ðŸ›¡ï¸ GLOBAL MONKEY PATCH: CorreÃ§Ã£o CrÃ­tica para OpenVINO/Optimum-Intel
 # Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'

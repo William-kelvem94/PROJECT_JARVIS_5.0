@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Database Layer for JARVIS Learning Systems.
 
 Provides scalable database backends with automatic migration from SQLite
@@ -506,6 +506,12 @@ class VectorDatabase(DatabaseInterface):
         """Connect to ChromaDB."""
         try:
             import chromadb
+            # Suppress ChromaDB telemetry
+            import os
+            os.environ["ANONYMIZED_TELEMETRY"] = "False"
+            os.environ["POSTHOG_DISABLED"] = "1"
+            os.environ["CHROMA_TELEMETRY"] = "False"
+            os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
             
             self.client = chromadb.PersistentClient(path=str(self.db_path))
             self.collection = self.client.get_or_create_collection(

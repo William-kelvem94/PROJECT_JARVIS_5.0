@@ -1,0 +1,66 @@
+development:
+  debug_mode: false
+  simulate_network_errors: false
+  test_mode: false
+  verbose_logging: false
+fallback:
+  cache_duration_hours: 24
+  local_storage_only: true
+  max_cache_size_mb: 500
+  offline_mode: true
+network_mesh:
+  backup:
+    auto_backup: false
+    backup_critical_only: true
+    backup_interval_hours: 6
+    max_backup_versions: 5
+  connection_timeout: 10
+  discovery_port: 8766
+  enabled: false
+  google_drive:
+    allowed_extensions:
+    - .json
+    - .yaml
+    - .txt
+    - .log
+    - .py
+    enabled: false
+    excluded_paths:
+    - __pycache__
+    - .git
+    - venv
+    - temp
+    - cache
+    max_file_size: 104857600
+    sync_interval: 300
+  heartbeat_interval: 30
+  local_network:
+    allowed_subnets:
+    - 192.168.1.0/24
+    - 10.0.0.0/16
+    broadcast_enabled: false
+    enabled: false
+    subnet_scan: false
+  max_connections: 10
+  monitoring:
+    health_checks_enabled: true
+    metrics_collection: false
+    network_diagnostics: false
+    performance_monitoring: false
+  node_id: jarvis_main_node
+  performance:
+    batch_operations: true
+    buffer_size: 8192
+    compression_enabled: true
+    compression_level: 6
+    max_batch_size: 100
+  port: 8765
+  privacy:
+    anonymize_logs: true
+    encrypt_packets: true
+    encryption_algorithm: AES-256-GCM
+    encryption_key_rotation_hours: 24
+    initial_key_path: config/keys/network_mesh_initial.key
+    key_storage_backend: file
+    log_network_activity: false
+  retry_attempts: 3

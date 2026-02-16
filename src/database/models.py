@@ -1,4 +1,4 @@
-﻿"""
+"""
 Modelos de dados e configuraÃ§Ãµes do banco de dados
 Define todas as tabelas e relacionamentos do sistema
 """
@@ -8,10 +8,11 @@ from typing import Dict, List, Any, Optional
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, Boolean, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-import logging
-from src.utils.config import config
 
-logger = logging.getLogger(__name__)
+from src.utils.config import config
+from src.utils.jarvis_logger import get_component_logger
+
+logger = get_component_logger("models")
 
 Base = declarative_base()
 

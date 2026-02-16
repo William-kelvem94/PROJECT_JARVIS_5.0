@@ -1,4 +1,4 @@
-﻿"""
+"""
 ðŸŽ¥ JARVIS Vision System - Sistema de VisÃ£o Computacional
 =======================================================
 

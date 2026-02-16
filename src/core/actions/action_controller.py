@@ -1,4 +1,4 @@
-﻿"""
+"""
 Controlador de aÃ§Ãµes do sistema
 Habilita interaÃ§Ã£o com mouse e teclado via PyAutoGUI
 """
@@ -115,14 +115,23 @@ class ActionController:
                 time.sleep(0.1)
         
         # Fallback se pyperclip falhar ou nÃ£o existir
+        root = None
         try:
              import tkinter as tk
              root = tk.Tk()
              root.withdraw()
-             return root.clipboard_get()
+             content = root.clipboard_get()
+             return content
         except Exception as e:
              logger.error(f"Erro ao ler clipboard (Final): {e}")
              return ""
+        finally:
+             if root is not None:
+                 try:
+                     root.destroy()
+                 except Exception:
+                     # Ignora erros ao destruir a janela Tkinter
+                     pass
 
     def analyze_and_organize(self, target_path: str, mapping: Dict[str, str]) -> bool:
         """
@@ -160,9 +169,10 @@ class ActionController:
     def get_active_window(self) -> str:
         """Retorna o título da janela ativa no momento"""
         try:
-            active = pyautogui.getActiveWindowTitle()
-            return active if active else "Desktop"
-        except:
+            import pygetwindow as gw
+            active = gw.getActiveWindow()
+            return active.title if active else "Desktop"
+        except Exception:
             return "Unknown"
 
     def manage_window(self, title: str, action: str = 'focus'):
@@ -170,7 +180,8 @@ class ActionController:
         try:
             import pygetwindow as gw
             wins = gw.getWindowsWithTitle(title)
-            if not wins: return False
+            if not wins:
+                return False
             win = wins[0]
             if action == 'focus': win.activate()
             elif action == 'minimize': win.minimize()
@@ -183,15 +194,15 @@ class ActionController:
 
     def system_power(self, action: str):
         """Controle de energia (lock, logoff, restart, shutdown)"""
-        import os
+        import subprocess
         try:
             if action == 'lock':
                 import ctypes
                 ctypes.windll.user32.LockWorkStation()
             elif action == 'restart':
-                os.system("shutdown /r /t 1")
+                subprocess.run(["shutdown", "/r", "/t", "1"], check=True)
             elif action == 'shutdown':
-                os.system("shutdown /s /t 1")
+                subprocess.run(["shutdown", "/s", "/t", "1"], check=True)
             return True
         except Exception as e:
             logger.error(f"Erro no comando de energia '{action}': {e}")
@@ -201,6 +212,17 @@ class ActionController:
         """Executa comando PowerShell avançado com captura de output"""
         import subprocess
         try:
+            # Validação básica de segurança
+            if not script or not script.strip():
+                return "Error: Script vazio não é permitido"
+            
+            # Bloqueia comandos potencialmente perigosos
+            dangerous_commands = ['remove-item', 'del', 'rm', 'format', 'shutdown', 'restart']
+            script_lower = script.lower()
+            for cmd in dangerous_commands:
+                if cmd in script_lower:
+                    return f"Error: Comando '{cmd}' não é permitido por razões de segurança"
+            
             result = subprocess.run(["powershell", "-Command", script], capture_output=True, text=True, timeout=30)
             return result.stdout if result.returncode == 0 else f"Error: {result.stderr}"
         except Exception as e:

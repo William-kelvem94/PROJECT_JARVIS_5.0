@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import logging
 import time
 

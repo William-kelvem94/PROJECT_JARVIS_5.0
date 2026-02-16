@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import math
 import logging
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QApplication

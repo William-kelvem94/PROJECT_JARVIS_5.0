@@ -1,4 +1,4 @@
-﻿"""
+"""
 Ferramenta de Busca na Web
 Permite que o Jarvis busque informaÃ§Ãµes no Google de forma autÃ´noma.
 """

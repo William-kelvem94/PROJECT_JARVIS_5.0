@@ -309,7 +309,7 @@ pip install -r requirements.txt
 ### **Erro: "No module named 'src'"**
 ```bash
 # Execute do diretório raiz do projeto
-cd C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0
+cd /path/to/PROJECT_JARVIS_5.0   # ajuste para o caminho correto no seu sistema
 python tools/script_name.py
 ```
 

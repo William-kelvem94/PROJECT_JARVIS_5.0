@@ -1,4 +1,4 @@
-﻿"""
+"""
 Real-time Metrics Dashboard for JARVIS Learning Systems.
 
 Provides comprehensive monitoring and visualization of training progress,

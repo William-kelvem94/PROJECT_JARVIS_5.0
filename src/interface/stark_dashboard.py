@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import psutil
 import logging
 from PyQt6.QtWidgets import (

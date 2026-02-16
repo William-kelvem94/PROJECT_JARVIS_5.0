@@ -14,7 +14,7 @@ content = content.replace("class AIAgent:", new_imports)
 # We'll use a regex to find the __init__ and replace everything up to the first method
 init_pattern = re.compile(r'def __init__\(self, provider: str = \'ollama\'\):.*?def ', re.DOTALL)
 
-new_init = """def __init__(self, provider: str = 'ollama'):
+new_init = '''def __init__(self, provider: str = 'ollama'):
         """JARVIS 5.0 Intelligence Center"""
         # =====================================================================
         # 🧩 MODULAR MANAGERS (Refactored)
@@ -85,7 +85,7 @@ new_init = """def __init__(self, provider: str = 'ollama'):
         self.use_structured_output = STRUCTURE_OUTPUT_AVAILABLE
         self.system_prompt = self.prompt_manager.get_system_prompt(self.use_structured_output)
 
-    def get_security_manager(self):"""
+    def get_security_manager(self):'''
 
 content = init_pattern.sub(new_init, content, count=1)
 

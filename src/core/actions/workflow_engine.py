@@ -1,4 +1,4 @@
-﻿"""
+"""
 Workflow Engine - Sistema de AutomaÃ§Ã£o Inteligente
 Permite criar, gravar e executar workflows complexos
 """

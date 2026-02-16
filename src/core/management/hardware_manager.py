@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gerenciador de Hardware do Jarvis 5.0
 Detecta e otimiza o uso de CPU/GPU para todos os módulos de IA.
 """

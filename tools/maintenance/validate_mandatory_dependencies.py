@@ -8,18 +8,13 @@ Biometria, Áudio, Interface e Monitoramento.
 """
 
 import sys
-import os
+
 import importlib
-import logging
 from pathlib import Path
 
 # Ensure project root is on sys.path so imports from repo root resolve when running from /scripts
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-
-# Configuração de logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 def test_imports():
     """Testa importação de todos os pacotes obrigatórios"""
@@ -95,19 +90,24 @@ def test_basic_functionality():
         import face_recognition
         import numpy as np
         # Testar se dlib consegue criar um detector
-        detector = dlib.get_frontal_face_detector()
+        detector = dlib.get_frontal_face_detector()  # type: ignore
+        # Validação simples: executar o detector em uma imagem dummy
+        test_image = np.zeros((100, 100, 3), dtype=np.uint8)
+        _ = detector(test_image, 1)
+        # Testar importação básica de face_recognition
+        _ = face_recognition
         print(f"🔐 Biometria: dlib face detector inicializado - ✅")
     except Exception as e:
-        print(f"🔐 Biometria: FALHA na biometria - ❌ ({e})")
-
-    # 4. Interface (tkinter_tooltip)
+        print(f"🔐 Biometria: FALHA - ❌ ({e})")
+    
+    # 4. Interface (tkinter/tkinter_tooltip)
     try:
         import tkinter as tk
-        from tkinter_tooltip import ToolTip
+        import tkinter_tooltip  # type: ignore
         root = tk.Tk()
         root.withdraw() # Não mostrar janela
         label = tk.Label(root, text="Test")
-        tooltip = ToolTip(label, msg="Test Tooltip")
+        tkinter_tooltip.ToolTip(label, msg="Test Tooltip")
         root.destroy()
         print(f"🖥️ Interface: tkinter-tooltip funcional - ✅")
     except Exception as e:

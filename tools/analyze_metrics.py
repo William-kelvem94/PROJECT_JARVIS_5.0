@@ -14,13 +14,15 @@ def analyze_complexity(root_dir):
                     
                     for node in ast.walk(tree):
                         if isinstance(node, ast.FunctionDef):
-                            length = node.end_lineno - node.lineno
-                            if length > 50:
-                                results.append(f"FUNC|{path}|{node.name}|{length}")
+                            if node.end_lineno is not None and node.lineno is not None:
+                                line_count = node.end_lineno - node.lineno
+                                if line_count > 50:
+                                    results.append(f"FUNC|{path}|{node.name}|{line_count}")
                         elif isinstance(node, ast.ClassDef):
-                            length = node.end_lineno - node.lineno
-                            if length > 500:
-                                results.append(f"CLASS|{path}|{node.name}|{length}")
+                            if node.end_lineno is not None and node.lineno is not None:
+                                line_count = node.end_lineno - node.lineno
+                                if line_count > 500:
+                                    results.append(f"CLASS|{path}|{node.name}|{line_count}")
                 except:
                     pass
     return results
