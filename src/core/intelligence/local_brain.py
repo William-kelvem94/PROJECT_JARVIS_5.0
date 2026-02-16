@@ -100,6 +100,8 @@ class LocalBrain:
                 logger.info(f"🧠 [LOCAL BRAIN] Iniciando motor neural: {self.model_id}")
                 
                 # 1. Carregar Tokenizer
+                if not TRANSFORMERS_AVAILABLE:
+                    raise ImportError("Transformers library not available for LocalBrain")
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True)
                 
                 # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache Inteligente

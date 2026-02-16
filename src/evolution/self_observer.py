@@ -75,6 +75,7 @@ class SelfObserver:
         self.interval = interval
         self.task = asyncio.create_task(self._observation_loop())
         logger.info("👁️ Self-Observer started")
+        return None
 
     async def stop(self):
         """Para o ciclo de observação"""
@@ -287,5 +288,195 @@ class SelfObserver:
         except Exception:
             return []
 
-# Singleton instance
+        return status
+
+class AdvancedMetricsCollector:
+    """
+    Coletor avançado de métricas de sistema para observabilidade completa.
+    """
+
+    def __init__(self):
+        self.nvidia_available = HAS_NVIDIA
+
+    async def collect_system_metrics(self) -> Dict[str, Any]:
+        """
+        Coleta métricas avançadas do sistema.
+
+        Returns:
+            Dicionário com métricas detalhadas
+        """
+        metrics = {}
+
+        try:
+            # Métricas básicas de sistema
+            if psutil:
+                cpu_percent = psutil.cpu_percent(interval=1)
+                memory = psutil.virtual_memory()
+                disk = psutil.disk_usage('/')
+                net = psutil.net_io_counters()
+
+                metrics.update({
+                    'cpu_percent': cpu_percent,
+                    'cpu_count': psutil.cpu_count(),
+                    'cpu_freq': psutil.cpu_freq().current if psutil.cpu_freq() else None,
+                    'memory_total_gb': memory.total / (1024**3),
+                    'memory_used_gb': memory.used / (1024**3),
+                    'memory_percent': memory.percent,
+                    'disk_total_gb': disk.total / (1024**3),
+                    'disk_used_gb': disk.used / (1024**3),
+                    'disk_percent': disk.percent,
+                    'network_bytes_sent': net.bytes_sent,
+                    'network_bytes_recv': net.bytes_recv,
+                    'network_packets_sent': net.packets_sent,
+                    'network_packets_recv': net.packets_recv
+                })
+
+            # Métricas de GPU se disponível
+            if self.nvidia_available and pynvml:
+                try:
+                    pynvml.nvmlInit()
+                    device_count = pynvml.nvmlDeviceGetCount()
+
+                    gpu_metrics = {}
+                    for i in range(device_count):
+                        handle = pynvml.nvmlDeviceGetHandleByIndex(i)
+                        name = pynvml.nvmlDeviceGetName(handle)
+                        memory = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                        utilization = pynvml.nvmlDeviceGetUtilizationRates(handle)
+
+                        gpu_metrics[f'gpu_{i}'] = {
+                            'name': name.decode() if isinstance(name, bytes) else str(name),
+                            'memory_total_mb': memory.total / (1024**2),
+                            'memory_used_mb': memory.used / (1024**2),
+                            'memory_free_mb': memory.free / (1024**2),
+                            'memory_percent': (memory.used / memory.total) * 100,
+                            'gpu_utilization': utilization.gpu,
+                            'memory_utilization': utilization.memory
+                        }
+
+                    metrics['gpu'] = gpu_metrics
+                    pynvml.nvmlShutdown()
+
+                except Exception as e:
+                    logger.warning(f"Failed to collect GPU metrics: {e}")
+
+            # Métricas de processo
+            process = psutil.Process()
+            metrics.update({
+                'process_cpu_percent': process.cpu_percent(),
+                'process_memory_mb': process.memory_info().rss / (1024**2),
+                'process_threads': process.num_threads(),
+                'process_open_files': len(process.open_files()),
+                'process_connections': len(process.connections())
+            })
+
+            # Métricas de Python
+            import gc
+            metrics.update({
+                'python_gc_objects': len(gc.get_objects()),
+                'python_threads': threading.active_count(),
+                'python_gc_collections': gc.get_stats()
+            })
+
+        except Exception as e:
+            logger.error(f"Failed to collect system metrics: {e}")
+            metrics['error'] = str(e)
+
+        return metrics
+
+    async def collect_code_metrics(self, project_root: Path) -> Dict[str, Any]:
+        """
+        Coleta métricas de qualidade e complexidade do código.
+
+        Args:
+            project_root: Diretório raiz do projeto
+
+        Returns:
+            Dicionário com métricas de código
+        """
+        metrics = {
+            'total_files': 0,
+            'total_lines': 0,
+            'python_files': 0,
+            'complexity_warnings': 0,
+            'import_issues': 0,
+            'docstring_coverage': 0
+        }
+
+        try:
+            for py_file in project_root.rglob('*.py'):
+                if 'venv' in str(py_file) or '__pycache__' in str(py_file):
+                    continue
+
+                metrics['total_files'] += 1
+                if py_file.suffix == '.py':
+                    metrics['python_files'] += 1
+
+                try:
+                    with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                        lines = content.split('\n')
+                        metrics['total_lines'] += len(lines)
+
+                        # Análise básica de complexidade
+                        if len(lines) > 500:
+                            metrics['complexity_warnings'] += 1
+
+                        # Verifica imports
+                        tree = ast.parse(content)
+                        imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
+                        if len(imports) > 20:
+                            metrics['import_issues'] += 1
+
+                        # Verifica docstrings
+                        functions = [node for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.ClassDef))]
+                        documented = sum(1 for func in functions if ast.get_docstring(func))
+                        if functions:
+                            metrics['docstring_coverage'] = (documented / len(functions)) * 100
+
+                except Exception as e:
+                    logger.warning(f"Failed to analyze {py_file}: {e}")
+
+        except Exception as e:
+            logger.error(f"Failed to collect code metrics: {e}")
+            metrics['error'] = str(e)
+
+        return metrics
+
+    async def collect_performance_metrics(self) -> Dict[str, Any]:
+        """
+        Coleta métricas de performance do sistema.
+
+        Returns:
+            Dicionário com métricas de performance
+        """
+        metrics = {}
+
+        try:
+            # Response times (simulated - would need actual measurements)
+            metrics.update({
+                'avg_response_time_ms': 150,  # Placeholder
+                'p95_response_time_ms': 300,  # Placeholder
+                'p99_response_time_ms': 500,  # Placeholder
+                'requests_per_second': 10,    # Placeholder
+                'error_rate_percent': 0.1     # Placeholder
+            })
+
+            # Resource utilization trends
+            if psutil:
+                cpu_trend = []
+                for _ in range(5):  # Last 5 seconds
+                    cpu_trend.append(psutil.cpu_percent(interval=1))
+
+                metrics['cpu_trend'] = cpu_trend
+                metrics['cpu_trend_avg'] = sum(cpu_trend) / len(cpu_trend)
+
+        except Exception as e:
+            logger.error(f"Failed to collect performance metrics: {e}")
+            metrics['error'] = str(e)
+
+        return metrics
+
+# Singleton instances
 self_observer = SelfObserver()
+advanced_metrics_collector = AdvancedMetricsCollector()

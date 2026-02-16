@@ -157,16 +157,17 @@ class BlackboxLogger:
                         stack_trace TEXT,
                         session_id TEXT,
                         user_id TEXT,
-                        created_at REAL NOT NULL,
-                        INDEX idx_timestamp ON logs(timestamp),
-                        INDEX idx_level ON logs(level),
-                        INDEX idx_component ON logs(component),
-                        INDEX idx_session ON logs(session_id),
-                        INDEX idx_error_code ON logs(error_code),
-                        INDEX idx_created_at ON logs(created_at)
+                        created_at REAL NOT NULL
                     )
                 """)
-                
+                # Indices for logs
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON logs(timestamp);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_level ON logs(level);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_component ON logs(component);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_session ON logs(session_id);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_error_code ON logs(error_code);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_created_at ON logs(created_at);")
+
                 # Performance metrics table
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS metrics (
@@ -177,13 +178,14 @@ class BlackboxLogger:
                         component TEXT NOT NULL,
                         session_id TEXT,
                         metadata TEXT,  -- JSON
-                        created_at REAL NOT NULL,
-                        INDEX idx_metric_name ON metrics(metric_name),
-                        INDEX idx_component_metrics ON metrics(component),
-                        INDEX idx_timestamp_metrics ON metrics(timestamp)
+                        created_at REAL NOT NULL
                     )
                 """)
-                
+                # Indices for metrics
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_metric_name ON metrics(metric_name);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_component_metrics ON metrics(component);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_timestamp_metrics ON metrics(timestamp);")
+
                 # System events table
                 conn.execute("""
                     CREATE TABLE IF NOT EXISTS events (
@@ -193,17 +195,17 @@ class BlackboxLogger:
                         event_data TEXT,  -- JSON
                         component TEXT NOT NULL,
                         session_id TEXT,
-                        success BOOLEAN,
+                        success INTEGER,  -- 0=false, 1=true
                         duration_ms REAL,
-                        created_at REAL NOT NULL,
-                        INDEX idx_event_type ON events(event_type),
-                        INDEX idx_component_events ON events(component),
-                        INDEX idx_success ON events(success)
+                        created_at REAL NOT NULL
                     )
                 """)
-                
+                # Indices for events
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_event_type ON events(event_type);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_component_events ON events(component);")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_success ON events(success);")
+
                 conn.commit()
-                
         except Exception as e:
             # Fallback to standard logging if database fails
             logging.error(f"❌ Failed to initialize blackbox database: {e}")
@@ -263,14 +265,16 @@ class BlackboxLogger:
         except Exception as e:
             logging.error(f"Blackbox maintenance failed: {e}")
     
+
     def log(self, level: str, message: str, component: str = "system", 
             context: Optional[Dict[str, Any]] = None,
             error_code: Optional[str] = None,
             user_id: Optional[str] = None,
-            include_stack: bool = False):
+            include_stack: bool = False,
+            no_standard_log: bool = False):
         """
         Core logging method
-        
+
         Args:
             level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
             message: Log message
@@ -283,16 +287,16 @@ class BlackboxLogger:
         try:
             timestamp = datetime.now().isoformat()
             created_at = time.time()
-            
+
             # Get stack trace if requested or if it's an error
             stack_trace = None
             if include_stack or level in ["ERROR", "CRITICAL"]:
                 stack_trace = traceback.format_stack()
                 stack_trace = "".join(stack_trace[:-1])  # Exclude this call
-            
+
             # Serialize context
             context_json = json.dumps(context) if context else None
-            
+
             # Store in database
             with self._get_connection() as conn:
                 conn.execute("""
@@ -305,24 +309,33 @@ class BlackboxLogger:
                     error_code, stack_trace, self.session_id, user_id, created_at
                 ))
                 conn.commit()
-            
-            # Also log to standard Python logger for immediate visibility
-            python_logger = logging.getLogger(f"jarvis.{component}")
-            log_method = getattr(python_logger, level.lower(), python_logger.info)
-            
-            # Format message for standard logger
-            std_message = message
-            if context:
-                std_message += f" | Context: {context}"
-            if error_code:
-                std_message += f" | Code: {error_code}"
-                
-            log_method(std_message)
-            
+
+            # Only log to standard Python logger if not already coming from it
+            # This prevents infinite loops
+            if not no_standard_log and not hasattr(logging.currentframe(), '_blackbox_logged'):
+                python_logger = logging.getLogger(f"jarvis.{component}")
+                log_method = getattr(python_logger, level.lower(), python_logger.info)
+
+                # Format message for standard logger
+                std_message = f"[{component.upper()}] {message}"
+                if context:
+                    std_message += f" | Context: {context}"
+                if error_code:
+                    std_message += f" | Code: {error_code}"
+
+                # Mark as already logged to prevent loops
+                old_frame = logging.currentframe()
+                if old_frame:
+                    try:
+                        old_frame._blackbox_logged = True
+                    except AttributeError:
+                        pass  # Can't set attribute on frame
+
+                log_method(std_message)
+
         except Exception as e:
             # Fallback to standard logging if database fails
-            logging.error(f"Blackbox logging failed: {e}")
-            logging.log(getattr(logging, level, logging.INFO), f"{component}: {message}")
+            print(f"Blackbox logging failed: {e}", file=sys.stderr)
     
     # Convenience methods matching standard Python logger interface
     def debug(self, message: str, component: str = "system", **kwargs):
@@ -572,14 +585,44 @@ blackbox_logger = BlackboxLogger()
 class BlackboxLogHandler(logging.Handler):
     """Custom log handler that routes to blackbox logger"""
     
+    def __init__(self):
+        super().__init__()
+        self._last_log_times = {}
+        self._duplicate_window = 1.0  # 1 second window for duplicate detection
+    
     def emit(self, record):
         try:
+            # Skip if this is already a blackbox-generated log to prevent loops
+            if hasattr(record, '_blackbox_logged'):
+                return
+            
             # Extract component from logger name
             component = record.name.split('.')[-1] if '.' in record.name else record.name
             
+            # Create duplicate key
+            duplicate_key = (record.levelno, record.getMessage(), component)
+            current_time = record.created
+            
+            # Check for duplicates within time window
+            if duplicate_key in self._last_log_times:
+                last_time = self._last_log_times[duplicate_key]
+                if current_time - last_time < self._duplicate_window:
+                    return  # Skip duplicate
+            
+            # Update last seen time
+            self._last_log_times[duplicate_key] = current_time
+            
+            # Clean old entries (keep only last 1000)
+            if len(self._last_log_times) > 1000:
+                cutoff_time = current_time - 300  # Remove entries older than 5 minutes
+                self._last_log_times = {
+                    k: v for k, v in self._last_log_times.items() 
+                    if v > cutoff_time
+                }
+            
             # Build context from record
             context = {}
-            if hasattr(record, 'extra'):
+            if hasattr(record, 'extra') and record.extra:
                 context.update(record.extra)
             
             # Include exception info if available
@@ -595,11 +638,12 @@ class BlackboxLogHandler(logging.Handler):
                 message=record.getMessage(),
                 component=component,
                 context=context if context else None,
-                include_stack=record.levelno >= logging.ERROR
+                include_stack=record.levelno >= logging.ERROR,
+                no_standard_log=True
             )
             
-        except Exception:
-            # Don't let logging errors break the application
+        except Exception as e:
+            # Prevent infinite loops - don't log logging errors
             pass
 
 def setup_blackbox_integration():
@@ -607,17 +651,20 @@ def setup_blackbox_integration():
     try:
         # Add blackbox handler to root logger
         root_logger = logging.getLogger()
-        
+
         # Remove existing blackbox handlers to avoid duplicates
-        root_logger.handlers = [h for h in root_logger.handlers if not isinstance(h, BlackboxLogHandler)]
-        
+        existing_handlers = [h for h in root_logger.handlers if isinstance(h, BlackboxLogHandler)]
+        if existing_handlers:
+            blackbox_logger.debug("Blackbox handler already exists, skipping integration", component="blackbox_logger")
+            return
+
         # Add new blackbox handler
         blackbox_handler = BlackboxLogHandler()
         blackbox_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(blackbox_handler)
-        
+
         blackbox_logger.info("🔗 Standard logging integration enabled", component="blackbox_logger")
-        
+
     except Exception as e:
         logging.error(f"Failed to setup blackbox integration: {e}")
 

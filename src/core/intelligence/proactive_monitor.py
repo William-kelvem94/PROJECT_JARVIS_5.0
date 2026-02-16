@@ -12,6 +12,7 @@ from pathlib import Path
 from src.core.vision.screen_capture import screen_capture
 from src.core.intelligence.ai_agent import ai_agent
 from src.utils.config import config
+from src.core.infrastructure.async_event_bus import EventType
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +150,7 @@ class ProactiveMonitor:
                 loop = self.event_bus.loop if hasattr(self.event_bus, 'loop') else None
                 if loop and loop.is_running():
                     asyncio.run_coroutine_threadsafe(
-                        self.event_bus.publish("vision.screen_change", {
+                        self.event_bus.publish(EventType.VISION_SCREEN_CHANGE, {
                             "screenshot_path": screenshot_path,
                             "diff_percent": diff_percent, 
                             "ts": current_time

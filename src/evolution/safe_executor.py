@@ -45,7 +45,7 @@ class SafeExecutor:
     async def start(self):
         """Inicia o Safe Executor"""
         if self.running:
-            return
+            return None
             
         self.running = True
         
@@ -60,6 +60,7 @@ class SafeExecutor:
         )
         
         logger.info("🛡️ Safe Executor operational")
+        return None
 
     async def stop(self):
         self.running = False

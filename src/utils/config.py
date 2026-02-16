@@ -84,7 +84,7 @@ class Config:
         # INICIALIZAR LOGGING EXTENDIDO
         try:
             LoggingConfig.setup_jarvis_logging(self.DATA_DIR)
-            logger.info("âœ… Sistema de Logging Detalhado inicializado.")
+            logger.info("âœ… Sistema de Logging Unificado JARVIS inicializado.")
         except Exception as e:
             print(f"FATAL: Erro ao iniciar logs: {e}")
 

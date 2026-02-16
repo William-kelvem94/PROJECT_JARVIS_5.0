@@ -16,17 +16,17 @@ async def run_research(topic: str):
     logger.info(f"🔍 Iniciando pesquisa autônoma sobre: {topic}")
     
     # 1. Busca Web
-    search_results = web_search_tool.search(topic, max_results=3)
+    search_results = await asyncio.to_thread(web_search_tool.search_google, topic, num_results=3)
     if not search_results:
         return "Não consegui encontrar fontes externas confiáveis sobre este assunto, Senhor."
         
-    # 2. Sintetizar resultados (Simulado via processamento local rÃ¡pido)
+    # 2. Sintetizar resultados (Simulado via processamento local rápido)
     # Em uma implementação completa, passaríamos para uma LLM resumir.
     summary = f"RELATÓRIO DE PESQUISA: {topic.upper()}\n\n"
-    for i, res in enumerate(search_results, 1):
-        summary += f"[{i}] {res['title']}\n    {res['snippet']}\n\n"
+    for i, result in enumerate(search_results, 1):
+        summary += f"[{i}] {result}\n\n"
     
-    summary += "PROXIMOS PASSOS: Deseja que eu aprofunde em alguma destas fontes ou salve no seu banco de dados?"
+    summary += "PRÓXIMOS PASSOS: Deseja que eu aprofunde em alguma destas fontes ou salve no seu banco de dados?"
     
     return summary
 

@@ -1,6 +1,6 @@
-﻿"""MÃ³dulo de AÃ§Ãµes JARVIS
+﻿"""Módulo de Ações JARVIS
 
-Controladores de sistema, execuÃ§Ã£o de comandos e workflows automatizados.
+Controladores de sistema, execução de comandos e workflows automatizados.
 """
 
 from .action_controller import action_controller

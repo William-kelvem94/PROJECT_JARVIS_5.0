@@ -52,7 +52,29 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger("JARVIS-CORE")
+# Setup unified JARVIS logging system
+try:
+    from pathlib import Path
+    from src.utils.jarvis_logger import setup_jarvis_logging, apply_global_duplicate_filter
+    
+    data_dir = Path('data')
+    data_dir.mkdir(exist_ok=True)
+    
+    jarvis_logging_system = setup_jarvis_logging(data_dir)
+    logger = jarvis_logging_system.get_logger('core')
+    
+    # Apply global duplicate filter to the root logger and existing loggers
+    root_logger = logging.getLogger()
+    apply_global_duplicate_filter(root_logger)
+    
+    # Apply to the basic logger we created
+    jarvis_core_logger = logging.getLogger("JARVIS-CORE")
+    apply_global_duplicate_filter(jarvis_core_logger)
+    
+    logger.info("🎯 JARVIS Unified Logging System initialized")
+except Exception as e:
+    logger = logging.getLogger("JARVIS-CORE")
+    logger.error(f"❌ Failed to initialize unified logging: {e}")
 
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para OpenVINO/Optimum-Intel
 # Previne erro 'module openvino has no attribute Node' e 'No module named openvino.op'
@@ -81,33 +103,34 @@ except ImportError:
 
 # 🛡️ GLOBAL MONKEY PATCH: Correção Crítica para XTTS (Transformers compatibility)
 try:
-    from transformers import generation_utils
-    if not hasattr(generation_utils, 'BeamSearchScorer'):
-        class BeamSearchScorer:
-            pass
-        generation_utils.BeamSearchScorer = BeamSearchScorer
-        logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers.generation_utils")
-except (ImportError, AttributeError):
-    pass
-except Exception as e:
-    logger.debug(f"XTTS Patch Error: {e}")
-
-# Additional patch for newer transformers versions
-try:
     from transformers import __version__ as transformers_version
-    if transformers_version.startswith('4.4') or transformers_version.startswith('4.3'):
-        # For newer versions, try to import from the correct location
+    if transformers_version.startswith('4.4') or transformers_version.startswith('4.3') or transformers_version.startswith('4.2'):
+        # For newer versions (4.21+), import directly from transformers.generation
         try:
-            from transformers.generation import BeamSearchScorer
+            from transformers.generation import BeamSearchScorer  # type: ignore
+            # No patch needed if import succeeds
+            logger.info("🛡️ XTTS Patch: BeamSearchScorer disponível nativamente em transformers.generation")
         except ImportError:
-            # Create a dummy class
-            class BeamSearchScorer:
+            # Fallback: Create dummy class and inject into transformers
+            class _BeamSearchScorerNew:
                 pass
             import transformers
-            transformers.BeamSearchScorer = BeamSearchScorer
-            logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers (version compatibility)")
-except:
-    pass
+            transformers.BeamSearchScorer = _BeamSearchScorerNew  # type: ignore
+            logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers (fallback para versões novas)")
+    else:
+        # For older versions, try the legacy import and patch if needed
+        try:
+            from transformers import generation_utils  # type: ignore
+            if not hasattr(generation_utils, 'BeamSearchScorer'):
+                class _BeamSearchScorerOld:
+                    pass
+                generation_utils.BeamSearchScorer = _BeamSearchScorerOld  # type: ignore
+                logger.info("🛡️ XTTS Patch: BeamSearchScorer injetado em transformers.generation_utils (versão antiga)")
+        except ImportError:
+            # If even the legacy import fails, skip patching
+            logger.warning("🛡️ XTTS Patch: generation_utils não disponível, pulando patch")
+except (ImportError, AttributeError, Exception) as e:
+    logger.debug(f"XTTS Patch Error: {e}")
 import psutil
 import signal
 import shutil
@@ -220,7 +243,7 @@ if platform.system() == "Windows":
 # Path Synchronization
 PROJECT_ROOT = Path(__file__).parent.absolute()
 VENV_SITE = PROJECT_ROOT / "venv" / "Lib" / "site-packages"
-if VENV_SITE.exists() and str(VENV_SITE) not in sys.path:
+if VENV_SITE.exists():
     if str(VENV_SITE) in sys.path: sys.path.remove(str(VENV_SITE))
     sys.path.insert(0, str(VENV_SITE))
 if str(PROJECT_ROOT / "src" / "stubs") not in sys.path:
@@ -230,7 +253,7 @@ if str(PROJECT_ROOT / "src") not in sys.path:
 
 # Suppress Warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning)
-warnings.filterwarnings('ignore', category=DeprecationWarning)
+
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', message='.*loss_type=None.*')
@@ -471,11 +494,11 @@ class JarvisSingularity(QObject):
     def __init__(self, app, instances):
         super().__init__()
         self.app = app
-        self.window_manager = instances.get("Window Manager")
-        self.vision_system = instances.get("Vision System")
-        self.audio_system = instances.get("Audio System")
-        self.system_integrator = instances.get("System Integrator")
-        self.ai_agent = instances.get("AI Agent")
+        self.window_manager = instances.get("window_manager")
+        self.vision_system = instances.get("vision_system")
+        self.audio_system = instances.get("audio_system")
+        self.system_integrator = instances.get("system_integrator")
+        self.ai_agent = instances.get("ai_agent")
         
         # 🧠 Contextual Awareness State
         self.last_interaction_time = 0
@@ -611,6 +634,7 @@ class JarvisSingularity(QObject):
     def _start_network_mesh(self):
         """Initialize and start the Network Mesh for collective intelligence"""
         if self.network_mesh:
+            assert self.network_mesh is not None  # For linter
             try:
                 # Start the network mesh in background
                 import asyncio
@@ -620,7 +644,7 @@ class JarvisSingularity(QObject):
                     try:
                         loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(loop)
-                        loop.run_until_complete(self.network_mesh.start_network_mesh())
+                        loop.run_until_complete(self.network_mesh.start_network_mesh())  # type: ignore
                     except Exception as e:
                         logger.error(f"Network Mesh start failed: {e}")
                 
@@ -678,6 +702,8 @@ class JarvisSingularity(QObject):
             logger.warning(f"⚠️ Scheduler loop not ready, task {name} pending...")
             # Retry in 1s? Or use queue? For now, just log.
             return
+
+        assert self._scheduler_loop is not None  # For linter
 
         async def _schedule_wrapper():
             # Wait for delay inside the loop
@@ -833,7 +859,8 @@ class JarvisSingularity(QObject):
                 # Pequeno delay para garantir que o áudio parou
                 time.sleep(0.1)
                 self._is_processing = False 
-            except: pass
+            except Exception:
+                pass
 
         if self._is_processing:
             logger.debug("Ocupado, ignorando ruído de fundo...")
@@ -1014,11 +1041,11 @@ def run_headless_mode(args):
 
         # Start web server if available
         try:
-            from src.web.web_server import start_web_server
+            from src.web.web_server import start_web_server  # type: ignore
             logger.info("🌐 Starting Web Server...")
             web_thread = start_web_server()
             logger.info("✅ Web Server started successfully")
-        except Exception as e:
+        except (ImportError, Exception) as e:
             logger.warning(f"⚠️ Web Server failed to start: {e}")
 
         # Start audio listening
@@ -1074,6 +1101,26 @@ def run_headless_mode(args):
 # MAIN ENTRY POINT - STAGED BOOT PROTOCOL
 # ============================================================================
 def main():
+    """Main entry point for JARVIS Singularity - Advanced AI Assistant.
+    This function initializes and runs the JARVIS system, handling various modes and configurations
+    based on command-line arguments. It performs pre-GUI setup, including console encoding fixes for
+    Windows, CLI argument parsing, and conditional initialization of democratic systems. In GUI mode,
+    it sets up the PyQt6 application, initializes the user interface via the window manager, and
+    orchestrates asynchronous boot processes using the Boot Manager to load core subsystems like
+    audio, vision, AI agent, and event bus. It integrates democratic control interfaces if enabled,
+    starts the JarvisSingularity core, and enters the application event loop. In headless mode, it
+    delegates to a server-only operation.
+    Command-line arguments:
+        --headless: Run in headless mode (no GUI, server-only).
+        --debug: Enable debug logging and verbose output.
+        --democratic: Enable democratic mode with full system control.
+    The function ensures proper resource cleanup and handles exceptions gracefully, returning
+    appropriate exit codes.
+    Returns:
+        int: Exit code (0 for success, 1 for general error, 130 for KeyboardInterrupt).
+    Raises:
+        SystemExit: When the application event loop exits normally.
+    """
     # Fix console encoding for Windows (emojis support)
     if sys.platform == 'win32':
         try:
@@ -1146,12 +1193,6 @@ Examples:
     # ========================================================================
     democratic_mode = args.democratic
 
-    if democratic_mode:
-        print(f"\n🔥 [DEMOCRÁTICO] Inicializando JARVIS em Modo Democrático Total...")
-        print("="*80)
-        print("🔥 PODER TOTAL HABILITADO - SEM PRÉ-CONFIGURAÇÕES")
-        print("👑 Interface de Controle Democrático Ativa")
-    
     if democratic_mode:
         print(f"\n🔥 [DEMOCRÁTICO] Inicializando JARVIS em Modo Democrático Total...")
         print("="*80)
@@ -1297,11 +1338,13 @@ Examples:
                     return await legacy_boot_fallback()
                 
                 # Create Boot Manager instance
+                assert BOOT_MANAGER_AVAILABLE and BootManager is not None  # For linter
                 boot_manager = BootManager()
                 
                 # Initialize Event Bus for module communication
                 event_bus = None
                 if EVENT_BUS_AVAILABLE:
+                    assert AsyncEventBus is not None  # For linter
                     try:
                         event_bus = AsyncEventBus()
                         logger.info("✅ Event Bus initialized for module communication")
@@ -1313,24 +1356,40 @@ Examples:
                                 if memory_manager and hasattr(memory_manager, 'connect_event_bus'):
                                     memory_manager.connect_event_bus(event_bus)
                                     logger.info("✅ Memory Manager connected to Event Bus")
+                                else:
+                                    logger.warning("⚠️ Memory Manager not available for Event Bus connection")
                                 
                                 # Connect AI Agent to Event Bus (Phase 2)
                                 from src.core.intelligence.ai_agent import ai_agent
                                 if ai_agent and hasattr(ai_agent, 'connect_event_bus'):
                                     ai_agent.connect_event_bus(event_bus)
                                     logger.info("✅ AI Agent connected to Event Bus")
+                                else:
+                                    logger.warning("⚠️ AI Agent not available for Event Bus connection")
                                 
                                 # Connect Proactive Monitor (Phase 2.3)
                                 from src.core.intelligence.proactive_monitor import proactive_monitor
                                 if proactive_monitor and hasattr(proactive_monitor, 'connect_event_bus'):
                                     proactive_monitor.connect_event_bus(event_bus)
-                                    proactive_monitor.event_bus.loop = asyncio.get_running_loop() # Inject loop for thread safety
-                                    logger.info("✅ Proactive Monitor connected to Event Bus")
+                                    try:
+                                        if hasattr(proactive_monitor, 'event_bus') and proactive_monitor.event_bus:
+                                            proactive_monitor.event_bus.loop = asyncio.get_running_loop() # Inject loop for thread safety
+                                        logger.info("✅ Proactive Monitor connected to Event Bus")
+                                    except AttributeError as e:
+                                        logger.warning(f"⚠️ Could not set proactive monitor loop: {e}")
+                                else:
+                                    logger.warning("⚠️ Proactive Monitor not available for Event Bus connection")
 
-                            except ImportError:
-                                logger.warning("⚠️ Memory Manager import failed for Event Bus connection")
+                            except ImportError as e:
+                                logger.warning(f"⚠️ Import error during Event Bus connections: {e}")
+                            except Exception as e:
+                                logger.warning(f"⚠️ Event Bus connection error: {e}")
+                                import traceback
+                                logger.warning(f"Connection traceback: {traceback.format_exc()}")
                     except Exception as e:
                         logger.warning(f"⚠️ Event Bus initialization failed: {e}")
+                        import traceback
+                        logger.warning(f"Event Bus traceback: {traceback.format_exc()}")
                         event_bus = None
                 
                 # Update HUD status
@@ -1483,6 +1542,8 @@ Examples:
         
         # Timer to check for completion and start Stage 3 
         def check_boot_completion():
+            from src.core.infrastructure.async_event_bus import event_bus
+            
             if boot_data["instances"] and boot_data["status"] == "completed":
                 logger.info("⚡ [STAGE 2] Boot Manager initialization completed")
                 instances = boot_data["instances"]

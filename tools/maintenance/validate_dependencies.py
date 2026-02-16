@@ -37,7 +37,7 @@ def check_package(import_name, pip_name, use_pip_show=False):
             import numpy as np
             version = tuple(map(int, np.__version__.split('.')[:2]))
             if version[0] >= 2:
-                print(f"    [WARN] NumPy {np.__version__} detectado. Incompativel com torch atual.")
+                print(f"    [WARN] NumPy {np.__version__} detectado. Incompatível com torch atual.")
                 return False, pip_name
 
         # Para pacotes pesados, usar pip show ao invés de import
