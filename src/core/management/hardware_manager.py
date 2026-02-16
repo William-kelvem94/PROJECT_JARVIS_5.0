@@ -206,12 +206,22 @@ class HardwareManager:
             self._hardware_initialized = True
 
     def _start_monitoring_thread(self):
-        """Inicia monitoramento em background para alertas proativos"""
+        """Inicia monitoramento em background para alertas proativos
+
+        Não inicia o thread quando estamos em modo de testes (pytest) para evitar
+        acessos a extensões nativas que causam crashes em ambientes de CI/local.
+        """
+        # If running under pytest, skip starting native monitoring threads
+        if "pytest" in sys.modules:
+            logger.debug("pytest detected: skipping HardwareProactiveMonitor thread")
+            return
+
         if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on"):
             logger.debug(
-                "Test mode active: not starting HardwareProactiveMonitor thread"
+                "JARVIS_TEST_MODE enabled: skipping HardwareProactiveMonitor thread"
             )
             return
+
         thread = threading.Thread(
             target=self._monitoring_loop, daemon=True, name="HardwareProactiveMonitor"
         )
