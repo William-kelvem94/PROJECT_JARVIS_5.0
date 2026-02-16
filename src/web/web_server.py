@@ -3,7 +3,14 @@ import asyncio
 import json
 import re
 from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Depends, Header
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    Depends,
+    Header,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -20,20 +27,23 @@ security = HTTPBearer()
 API_KEY = secrets.token_urlsafe(32)  # Gerar chave única por sessão
 logger.info(f"🔑 API Key gerada: {API_KEY[:8]}...")
 
+
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verifica a API key no header Authorization"""
     if credentials.credentials != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API key")
     return credentials.credentials
 
+
 def sanitize_input(text: str) -> str:
     """Sanitiza input para prevenir XSS e injection"""
     if not isinstance(text, str):
         return ""
     # Remove tags HTML e caracteres perigosos
-    text = re.sub(r'<[^>]+>', '', text)
-    text = re.sub(r'[;&|`$]', '', text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"[;&|`$]", "", text)
     return text.strip()
+
 
 # Caminho para os arquivos estÃ¡ticos
 STATIC_DIR = Path(__file__).parent / "static"
@@ -41,6 +51,7 @@ STATIC_DIR.mkdir(parents=True, exist_ok=True)
 
 # Lista de clientes WebSocket conectados
 connected_clients = set()
+
 
 # Rota para o Dashboard Principal
 @app.get("/")
@@ -52,38 +63,57 @@ async def get_dashboard():
     with open(index_file, "r", encoding="utf-8") as f:
         return HTMLResponse(f.read())
 
+
+# Helper function to read all files in a single thread (to minimize context switching overhead)
+def read_all_files_sync(file_paths):
+    results = []
+    for file_path in file_paths:
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                # Sanitizar dados antes de retornar
+                if isinstance(data, dict):
+                    for key, value in data.items():
+                        if isinstance(value, str):
+                            data[key] = sanitize_input(value)
+                results.append(data)
+        except Exception as e:
+            logger.error(f"Erro ao carregar {file_path}: {e}")
+    return results
+
+
+def get_training_dir() -> Path:
+    return Path(__file__).parent.parent.parent / "data" / "learning" / "training_data"
+
+
 # API para dados de treinamento
 @app.get("/api/training-data")
 async def get_training_data(api_key: str = Depends(verify_api_key)):
     """Retorna dados de treinamento disponÃ­veis"""
     try:
         # Caminho para dados de treinamento
-        training_dir = Path(__file__).parent.parent.parent / "data" / "learning" / "training_data"
-        
+        training_dir = get_training_dir()
+
         if not training_dir.exists():
             return JSONResponse(content=[], status_code=200)
-        
-        training_files = list(training_dir.glob("*.json"))
-        training_data = []
-        
-        for file_path in training_files:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    # Sanitizar dados antes de retornar
-                    if isinstance(data, dict):
-                        for key, value in data.items():
-                            if isinstance(value, str):
-                                data[key] = sanitize_input(value)
-                    training_data.append(data)
-            except Exception as e:
-                logger.error(f"Erro ao carregar {file_path}: {e}")
-        
+
+        # Run glob in a thread executor to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        training_files = await loop.run_in_executor(
+            None, lambda: list(training_dir.glob("*.json"))
+        )
+
+        # Process all files in a single thread executor task to avoid overhead of creating hundreds of tasks
+        training_data = await loop.run_in_executor(
+            None, read_all_files_sync, training_files
+        )
+
         return JSONResponse(content=training_data)
-    
+
     except Exception as e:
         logger.error(f"Erro ao carregar dados de treinamento: {e}")
         return JSONResponse(content={"error": str(e)}, status_code=500)
+
 
 # WebSocket para Logs e Telemetria em Tempo Real
 @app.websocket("/ws")
@@ -98,6 +128,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         connected_clients.remove(websocket)
 
+
 # FunÃ§Ã£o auxiliar para broadcast de mensagens (chamada pelo main.py)
 async def broadcast_message(message: dict):
     if not connected_clients:
@@ -109,6 +140,7 @@ async def broadcast_message(message: dict):
             await client.send_text(msg_json)
         except Exception:
             connected_clients.remove(client)
+
 
 def start_server(host="0.0.0.0", port=5000):
     logger.info(f"ðŸŒ Iniciando Web Dashboard em http://{host}:{port}")
