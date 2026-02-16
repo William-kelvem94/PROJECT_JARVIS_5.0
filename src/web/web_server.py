@@ -18,7 +18,7 @@ app = FastAPI(title="JARVIS 5.0 - Control Dashboard")
 # Segurança básica
 security = HTTPBearer()
 API_KEY = secrets.token_urlsafe(32)  # Gerar chave única por sessão
-logger.info(f"🔑 API Key gerada: {API_KEY[:8]}...")
+logger.info("🔑 API Key gerada com sucesso.")
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verifica a API key no header Authorization"""
