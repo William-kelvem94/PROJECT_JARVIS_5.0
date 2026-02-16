@@ -91,8 +91,11 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
-        # Last interaction tracking
+        # Last interaction tracking and thread safety
+        self._interaction_lock = threading.Lock()
         self.last_interaction: Optional[Dict[str, Any]] = None
+        self.recent_interactions: Dict[str, Dict[str, Any]] = {}
+        self._max_recent = 10
 
         logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
@@ -480,12 +483,21 @@ class LearningEngine:
             else:
                 self.feedback_loop.add_feedback(entry)
 
-            # Store in memory for immediate feedback/correction
-            self.last_interaction = {
-                "interaction_id": interaction_id,
-                "user_input": user_input,
-                "ai_response": ai_response
-            }
+            # Store in memory for immediate feedback/correction (thread-safe)
+            with self._interaction_lock:
+                interaction_data = {
+                    "interaction_id": interaction_id,
+                    "user_input": user_input,
+                    "ai_response": ai_response
+                }
+                self.last_interaction = interaction_data
+                self.recent_interactions[interaction_id] = interaction_data
+
+                # Cleanup old interactions
+                if len(self.recent_interactions) > self._max_recent:
+                    # Remove oldest by interaction_id (simplified)
+                    oldest_id = list(self.recent_interactions.keys())[0]
+                    del self.recent_interactions[oldest_id]
             
             # Store in scalable database if available
             if self.scalable_database:
@@ -715,15 +727,21 @@ class LearningEngine:
             return
         
         try:
-            # Tenta recuperar dados do cache se nÃ£o fornecidos
-            if (user_input is None or ai_response is None) and self.last_interaction:
-                if self.last_interaction.get('interaction_id') == interaction_id:
-                    user_input = user_input or self.last_interaction.get('user_input')
-                    ai_response = ai_response or self.last_interaction.get('ai_response')
+            # Tenta recuperar dados do cache se nÃ£o fornecidos (thread-safe)
+            if (user_input is None or ai_response is None):
+                with self._interaction_lock:
+                    cached = self.recent_interactions.get(interaction_id)
+                    if cached:
+                        user_input = user_input or cached.get('user_input')
+                        ai_response = ai_response or cached.get('ai_response')
 
-            # Se ainda assim nÃ£o tivermos, usamos placeholders (menos ideal para DPO)
-            user_input = user_input or "Unknown Interaction"
-            ai_response = ai_response or "No Response Cached"
+            # Se ainda assim nÃ£o tivermos dados, evitamos usar placeholders para nÃ£o degradar o treino DPO/RLHF
+            if user_input is None or ai_response is None:
+                logger.warning(
+                    f"âš ï¸  Missing interaction data for explicit feedback (interaction_id={interaction_id}). "
+                    "No user_input or ai_response cached; skipping feedback record to avoid low-quality training data."
+                )
+                return
 
             if hasattr(self.feedback_loop, 'record_explicit_feedback'):
                 # Usar mÃ©todo avançado do FeedbackLoop
@@ -750,7 +768,8 @@ class LearningEngine:
                     feedback_type='correction' if correction else 'explicit',
                     feedback_value=feedback_value,
                     correction=correction,
-                    timestamp=datetime.now().isoformat()
+                    timestamp=datetime.now().isoformat(),
+                    metadata={}
                 )
                 self.feedback_loop.add_feedback(entry)
 

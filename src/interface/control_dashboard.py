@@ -1041,15 +1041,20 @@ class ControlDashboard(QMainWindow):
             engine = get_learning_engine()
             
             if engine:
-                if engine.last_interaction:
-                    interaction_id = engine.last_interaction.get('interaction_id')
-                    engine.record_explicit_feedback(
-                        interaction_id=interaction_id,
-                        feedback_value=value
-                    )
-                    QMessageBox.information(self, "Feedback Sent",
-                                           f"Thank you! Your feedback ({'+' if value > 0 else '-'}) will improve JARVIS.")
-                    logger.info(f"User feedback: {value} for {interaction_id}")
+                # Snapshot last interaction to avoid TOCTOU race conditions
+                last_interaction = engine.last_interaction
+                if last_interaction:
+                    interaction_id = last_interaction.get('interaction_id')
+                    if interaction_id:
+                        engine.record_explicit_feedback(
+                            interaction_id=interaction_id,
+                            feedback_value=value
+                        )
+                        QMessageBox.information(self, "Feedback Sent",
+                                               f"Thank you! Your feedback ({'+' if value > 0 else '-'}) will improve JARVIS.")
+                        logger.info(f"User feedback: {value} for {interaction_id}")
+                    else:
+                        QMessageBox.warning(self, "Invalid Interaction", "Interaction ID not found.")
                 else:
                     QMessageBox.warning(self, "No Interaction", "No recent interaction found to rate.")
             else:
@@ -1071,16 +1076,21 @@ class ControlDashboard(QMainWindow):
             engine = get_learning_engine()
             
             if engine:
-                if engine.last_interaction:
-                    interaction_id = engine.last_interaction.get('interaction_id')
-                    engine.record_explicit_feedback(
-                        interaction_id=interaction_id,
-                        feedback_value=-1.0,
-                        correction=correction
-                    )
-                    QMessageBox.information(self, "Correction Saved",
-                                           "Your correction will be used for training!")
-                    logger.info(f"User correction: {correction} for {interaction_id}")
+                # Snapshot last interaction to avoid TOCTOU race conditions
+                last_interaction = engine.last_interaction
+                if last_interaction:
+                    interaction_id = last_interaction.get('interaction_id')
+                    if interaction_id:
+                        engine.record_explicit_feedback(
+                            interaction_id=interaction_id,
+                            feedback_value=-1.0,
+                            correction=correction
+                        )
+                        QMessageBox.information(self, "Correction Saved",
+                                               "Your correction will be used for training!")
+                        logger.info(f"User correction: {correction} for {interaction_id}")
+                    else:
+                        QMessageBox.warning(self, "Invalid Interaction", "Interaction ID not found.")
                 else:
                     QMessageBox.warning(self, "No Interaction", "No recent interaction found to correct.")
                 self.correction_edit.clear()
