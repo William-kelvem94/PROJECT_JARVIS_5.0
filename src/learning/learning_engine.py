@@ -1,7 +1,7 @@
 """
 JARVIS 5.0 - Learning Engine (Singularity Core)
 ================================================
-MÃ³dulo unificado para inicializar e gerenciar todos os sistemas de aprendizado:
+Módulo unificado para inicializar e gerenciar todos os sistemas de aprendizado:
 - Continual Learner (Auto-Training)
 - Feedback Loop (RLHF/DPO)
 - Knowledge Distiller (Golden Commands)
@@ -11,14 +11,21 @@ MÃ³dulo unificado para inicializar e gerenciar todos os sistemas de aprendizad
 - Scalable Database (Auto-migration)
 - Metrics Dashboard (Real-time monitoring)
 
-Este Ã© o "motor evolutivo" que transforma JARVIS de assistente para AGI.
+Este é o "motor evolutivo" que transforma JARVIS de assistente para AGI.
 """
 
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Callable
-import yaml
 import threading
+
+# Safe Import for YAML
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    yaml = None
+    YAML_AVAILABLE = False
 
 # Import new advanced components
 from .dependency_manager import dependency_manager
@@ -41,8 +48,8 @@ class LearningEngine:
         Initialize Learning Engine.
         
         Args:
-            project_root: DiretÃ³rio raiz do projeto
-            config: ConfiguraÃ§Ã£o de learning (se None, carrega de ai_config.yaml)
+            project_root: Diretório raiz do projeto
+            config: Configuração de learning (se None, carrega de ai_config.yaml)
         """
         from src.utils.config import config as jarvis_config
         self.project_root = jarvis_config.PROJECT_ROOT
@@ -91,8 +98,8 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
-        logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
-        logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
+        logger.info(f"🧠 Learning Engine created (Enabled: {self.enabled}) - forced ON")
+        logger.info(f"📊 Dependencies available: {self._check_dependencies()}")
     
     def _check_dependencies(self) -> Dict[str, bool]:
         """Check availability of optional dependencies."""
@@ -109,18 +116,21 @@ class LearningEngine:
         return deps
     
     def _load_config(self) -> Dict[str, Any]:
-        """Carrega configuraÃ§Ãµes do ai_config.yaml"""
+        """Carrega configurações do ai_config.yaml"""
+        if not YAML_AVAILABLE:
+            return {}
+
         config_path = self.project_root / "config" / "ai_config.yaml"
         
         if not config_path.exists():
-            logger.warning(f"âš ï¸ Config file not found: {config_path}")
+            logger.warning(f"⚠️ Config file not found: {config_path}")
             return {}
         
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 return yaml.safe_load(f) or {}
         except Exception as e:
-            logger.error(f"âŒ Failed to load config: {e}")
+            logger.error(f"❌ Failed to load config: {e}")
             return {}
     
     def initialize(self) -> bool:
@@ -128,17 +138,17 @@ class LearningEngine:
         Inicializa todos os sistemas de aprendizado habilitados.
         
         Returns:
-            True se inicializaÃ§Ã£o bem-sucedida, False caso contrÃ¡rio
+            True se inicialização bem-sucedida, False caso contrário
         """
         if not self.enabled:
-            logger.info("ðŸ”’ Learning systems DISABLED in config. Skipping initialization.")
+            logger.info("🔒 Learning systems DISABLED in config. Skipping initialization.")
             return False
         
         if self.is_initialized:
-            logger.info("âœ… Learning Engine already initialized")
+            logger.info("✅ Learning Engine already initialized")
             return True
         
-        logger.info("ðŸš€ [LEARNING ENGINE] Initializing autonomous learning systems...")
+        logger.info("🚀 [LEARNING ENGINE] Initializing autonomous learning systems...")
         
         success = True
         
@@ -186,20 +196,20 @@ class LearningEngine:
         from .sanity_checker import get_sanity_checker
         self.sanity_checker = get_sanity_checker(self.project_root)
         health_report = self.sanity_checker.run_full_check()
-        logger.info(f"ðŸ¥ Health Check: {health_report['total_score']*100}% Stability")
+        logger.info(f"🏥 Health Check: {health_report['total_score']*100}% Stability")
         
         self.is_initialized = success
         
         if success:
-            logger.info("âœ… [LEARNING ENGINE] All systems ONLINE - JARVIS is now self-evolving")
+            logger.info("✅ [LEARNING ENGINE] All systems ONLINE - JARVIS is now self-evolving")
             self._print_status()
         else:
-            logger.warning("âš ï¸ [LEARNING ENGINE] Some systems failed to initialize")
+            logger.warning("⚠️ [LEARNING ENGINE] Some systems failed to initialize")
         
         return success
     
     def _init_scalable_database(self) -> bool:
-        """Inicializa sistema de banco de dados escalÃ¡vel"""
+        """Inicializa sistema de banco de dados escalável"""
         try:
             config = self.config.get('scalable_database', {})
             
@@ -214,14 +224,14 @@ class LearningEngine:
             # Test connection and initialization
             if self.scalable_database.initialize():
                 self.components_status['scalable_database'] = True
-                logger.info("âœ… Scalable Database initialized")
+                logger.info("✅ Scalable Database initialized")
                 return True
             else:
-                logger.error("âŒ Scalable Database failed to initialize")
+                logger.error("❌ Scalable Database failed to initialize")
                 return False
                 
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Scalable Database: {e}")
+            logger.error(f"❌ Failed to initialize Scalable Database: {e}")
             return False
     
     def _init_model_registry(self) -> bool:
@@ -242,24 +252,24 @@ class LearningEngine:
             # Initialize registry tables
             if self.model_registry.initialize():
                 self.components_status['model_registry'] = True
-                logger.info("âœ… Model Registry initialized")
+                logger.info("✅ Model Registry initialized")
                 return True
             else:
-                logger.error("âŒ Model Registry failed to initialize")
+                logger.error("❌ Model Registry failed to initialize")
                 return False
                 
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Model Registry: {e}")
+            logger.error(f"❌ Failed to initialize Model Registry: {e}")
             return False
     
     def _init_distributed_trainer(self) -> bool:
-        """Inicializa sistema de treinamento distribuÃ­do"""
+        """Inicializa sistema de treinamento distribuído"""
         try:
             config = self.config.get('distributed_training', {})
             
             # Check for GPU availability
             if not self.dependency_manager.is_available('torch', 'gpu'):
-                logger.warning("âš ï¸ No GPU detected, distributed training will be CPU-only")
+                logger.warning("⚠️ No GPU detected, distributed training will be CPU-only")
             
             # Create distributed configuration
             distributed_config = DistributedConfig(
@@ -275,15 +285,15 @@ class LearningEngine:
             self.distributed_trainer = DistributedTrainer(distributed_config)
             self.components_status['distributed_trainer'] = True
             
-            logger.info(f"âœ… Distributed Trainer initialized ({len(self.distributed_trainer.gpu_manager.available_gpus)} GPUs)")
+            logger.info(f"✅ Distributed Trainer initialized ({len(self.distributed_trainer.gpu_manager.available_gpus)} GPUs)")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Distributed Trainer: {e}")
+            logger.error(f"❌ Failed to initialize Distributed Trainer: {e}")
             return False
     
     def _init_metrics_dashboard(self) -> bool:
-        """Inicializa sistema de dashboard de mÃ©tricas"""
+        """Inicializa sistema de dashboard de métricas"""
         try:
             config = self.config.get('metrics_dashboard', {})
             
@@ -303,11 +313,11 @@ class LearningEngine:
             self._dashboard_thread.start()
             
             self.components_status['metrics_dashboard'] = True
-            logger.info(f"âœ… Metrics Dashboard initialized (Port: {dashboard_config['web_port']})")
+            logger.info(f"✅ Metrics Dashboard initialized (Port: {dashboard_config['web_port']})")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Metrics Dashboard: {e}")
+            logger.error(f"❌ Failed to initialize Metrics Dashboard: {e}")
             return False
     
     def _init_feedback_loop(self) -> bool:
@@ -321,11 +331,11 @@ class LearningEngine:
             self.feedback_loop = FeedbackDatabase(db_path)
             self.components_status['feedback_loop'] = True
             
-            logger.info("âœ… Feedback Loop initialized")
+            logger.info("✅ Feedback Loop initialized")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Feedback Loop: {e}")
+            logger.error(f"❌ Failed to initialize Feedback Loop: {e}")
             return False
     
     def _init_knowledge_distiller(self) -> bool:
@@ -336,11 +346,11 @@ class LearningEngine:
             self.knowledge_distiller = KnowledgeDistiller(self.data_dir)
             self.components_status['knowledge_distiller'] = True
             
-            logger.info("âœ… Knowledge Distiller initialized")
+            logger.info("✅ Knowledge Distiller initialized")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Knowledge Distiller: {e}")
+            logger.error(f"❌ Failed to initialize Knowledge Distiller: {e}")
             return False
     
     def _init_continual_learner(self) -> bool:
@@ -362,11 +372,11 @@ class LearningEngine:
             self.continual_learner.start()
             self.components_status['continual_learner'] = True
             
-            logger.info(f"âœ… Continual Learner initialized (Threshold: {feedback_threshold} interactions)")
+            logger.info(f"✅ Continual Learner initialized (Threshold: {feedback_threshold} interactions)")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Continual Learner: {e}")
+            logger.error(f"❌ Failed to initialize Continual Learner: {e}")
             return False
     
     def _init_dream_cycle(self) -> bool:
@@ -395,11 +405,11 @@ class LearningEngine:
             self.dream_cycle.start()
             self.components_status['dream_cycle'] = True
             
-            logger.info(f"âœ… Dream Cycle initialized (Active: {config.get('night_start_hour')}h-{config.get('night_end_hour')}h)")
+            logger.info(f"✅ Dream Cycle initialized (Active: {config.get('night_start_hour')}h-{config.get('night_end_hour')}h)")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Dream Cycle: {e}")
+            logger.error(f"❌ Failed to initialize Dream Cycle: {e}")
             return False
     
     def _init_curiosity_engine(self) -> bool:
@@ -411,11 +421,11 @@ class LearningEngine:
             self.curiosity_engine = CuriosityEngine(memory_manager=memory_manager)
             self.components_status['curiosity_engine'] = True
             
-            logger.info("âœ… Curiosity Engine initialized")
+            logger.info("✅ Curiosity Engine initialized")
             return True
             
         except Exception as e:
-            logger.error(f"âŒ Failed to initialize Curiosity Engine: {e}")
+            logger.error(f"❌ Failed to initialize Curiosity Engine: {e}")
             return False
     
     def record_interaction(
@@ -426,92 +436,13 @@ class LearningEngine:
         metadata: Optional[Dict[str, Any]] = None
     ):
         """
-        Registra uma interaÃ§Ã£o para aprendizado.
+        Registra uma interação para aprendizado.
         
         Args:
-            user_input: Comando do usuÃ¡rio
+            user_input: Comando do usuário
             ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
-        """
-        if not self.feedback_loop:
-            return
-        
-        try:
-            # Coleta feedback implícito se não houver explícito
-            if feedback_value is None:
-                feedback_value = 0.5  # Valor base
-                
-                # Heurística 1: Latência vs Complexidade (Metadata)
-                if metadata:
-                    latency = metadata.get('latency', 0)
-                    if latency > 0 and latency < 1.0:
-                        feedback_value += 0.1 # Rápido é bom
-                        
-                # Heurística 2: Qualidade Literária
-                if len(ai_response) > 20 and "não sei" not in ai_response.lower():
-                    feedback_value += 0.2
-                
-                # Heurística 3: Erros sintáticos ou placeholders
-                if "placeholder" in ai_response.lower() or "implementar" in ai_response.lower():
-                    feedback_value -= 0.3
-                
-                feedback_value = max(0.0, min(1.0, feedback_value))
-                logger.debug(f"📊 Feedback implícito calculado: {feedback_value:.2f}")
-            
-            from src.learning.feedback_loop import FeedbackEntry
-            import hashlib
-            import time
-            from datetime import datetime
-            
-            interaction_id = hashlib.md5(
-                f"{user_input}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            feedback_id = hashlib.md5(
-                f"{interaction_id}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            entry = FeedbackEntry(
-                feedback_id=feedback_id,
-                interaction_id=interaction_id,
-                user_input=user_input,
-                ai_response=ai_response,
-                feedback_type='implicit',
-                feedback_value=feedback_value,
-                timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
-            )
-            
-            self.feedback_loop.add_feedback(entry)
-            
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
-            if feedback_value > 0.7 and self.knowledge_distiller:
-                self.knowledge_distiller.distill_interaction(
-                    user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
-                    success=True
-                )
-            
-        except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
-    
-    def record_interaction(
-        self,
-        user_input: str,
-        ai_response: str,
-        feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Registra uma interaÃ§Ã£o para aprendizado.
-        
-        Args:
-            user_input: Comando do usuÃ¡rio
-            ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
+            feedback_value: Valor de feedback (-1.0 a 1.0) se explícito
+            metadata: Dados adicionais (latência, provider usado, etc)
         """
         if not self.feedback_loop:
             return
@@ -581,17 +512,17 @@ class LearningEngine:
                     }
                 )
             
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
+            # Se foi uma interação bem-sucedida, pode ser um Golden Command
             if feedback_value > 0.7 and self.knowledge_distiller:
                 self.knowledge_distiller.distill_interaction(
                     user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
+                    thought="",  # TODO: Capturar raciocínio do agente
+                    actions=[],  # TODO: Capturar ações executadas
                     success=True
                 )
             
         except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
+            logger.error(f"❌ Failed to record interaction: {e}")
     
     def _store_interaction_in_scalable_db(self, entry):
         """Store interaction in scalable database for analytics."""
@@ -639,16 +570,16 @@ class LearningEngine:
                                  output_dir: Optional[str] = None,
                                  num_gpus: Optional[int] = None) -> Optional[str]:
         """
-        Inicia um trabalho de treinamento distribuÃ­do.
+        Inicia um trabalho de treinamento distribuído.
         
         Args:
-            model_config: ConfiguraÃ§Ã£o do modelo
+            model_config: Configuração do modelo
             dataset_path: Caminho para dataset
-            output_dir: DiretÃ³rio de output (se None, usa models/)
-            num_gpus: NÃºmero de GPUs (se None, auto-detecta)
+            output_dir: Diretório de output (se None, usa models/)
+            num_gpus: Número de GPUs (se None, auto-detecta)
         
         Returns:
-            Job ID se sucesso, None caso contrÃ¡rio
+            Job ID se sucesso, None caso contrário
         """
         if not self.distributed_trainer:
             logger.error("Distributed trainer not initialized")
@@ -673,7 +604,7 @@ class LearningEngine:
                 success = self.distributed_trainer.start_training_job(job_id)
                 
                 if success:
-                    logger.info(f"âœ… Started distributed training job: {job_id}")
+                    logger.info(f"✅ Started distributed training job: {job_id}")
                     
                     # Record training start in metrics
                     if self.metrics_dashboard:
@@ -693,7 +624,7 @@ class LearningEngine:
                 return None
                 
         except Exception as e:
-            logger.error(f"âŒ Failed to start distributed training: {e}")
+            logger.error(f"❌ Failed to start distributed training: {e}")
             return None
     
     def get_training_job_status(self, job_id: str) -> Optional[Dict[str, Any]]:
@@ -736,11 +667,11 @@ class LearningEngine:
                 metadata=metadata or {}
             )
             
-            logger.info(f"âœ… Registered model: {name} (ID: {model_id})")
+            logger.info(f"✅ Registered model: {name} (ID: {model_id})")
             return model_id
             
         except Exception as e:
-            logger.error(f"âŒ Failed to register model: {e}")
+            logger.error(f"❌ Failed to register model: {e}")
             return None
     
     def deploy_model(self, model_id: str) -> bool:
@@ -752,14 +683,14 @@ class LearningEngine:
         try:
             success = self.model_registry.deploy_model(model_id)
             if success:
-                logger.info(f"âœ… Deployed model: {model_id}")
+                logger.info(f"✅ Deployed model: {model_id}")
             else:
                 logger.error(f"Failed to deploy model: {model_id}")
             
             return success
             
         except Exception as e:
-            logger.error(f"âŒ Failed to deploy model: {e}")
+            logger.error(f"❌ Failed to deploy model: {e}")
             return False
     
     def get_dashboard_url(self) -> Optional[str]:
@@ -777,21 +708,21 @@ class LearningEngine:
         correction: Optional[str] = None
     ):
         """
-        Registra feedback explÃ­cito do usuÃ¡rio (ðŸ‘/ðŸ‘Ž).
+        Registra feedback explícito do usuário (👍/👎).
         
         Args:
-            interaction_id: ID da interaÃ§Ã£o
+            interaction_id: ID da interação
             feedback_value: -1.0 (ruim) a 1.0 (excelente)
-            correction: CorreÃ§Ã£o fornecida pelo usuÃ¡rio (opcional)
+            correction: Correção fornecida pelo usuário (opcional)
         """
         if not self.feedback_loop:
             return
         
         try:
             # TODO: Atualizar feedback entry existente ou criar nova
-            logger.info(f"ðŸ“ Explicit feedback recorded: {feedback_value} for {interaction_id}")
+            logger.info(f"📝 Explicit feedback recorded: {feedback_value} for {interaction_id}")
         except Exception as e:
-            logger.error(f"âŒ Failed to record explicit feedback: {e}")
+            logger.error(f"❌ Failed to record explicit feedback: {e}")
     
     def get_status(self) -> Dict[str, Any]:
         """Retorna status de todos os sistemas de aprendizado"""
@@ -834,56 +765,56 @@ class LearningEngine:
     def _print_status(self):
         """Imprime status formatado dos sistemas"""
         print("\n" + "="*80)
-        print("ðŸ§  JARVIS LEARNING ENGINE - ADVANCED STATUS REPORT")
+        print("🧠 JARVIS LEARNING ENGINE - ADVANCED STATUS REPORT")
         print("="*80)
         
         # Infrastructure Layer
-        print("\nðŸ—ï¸  INFRASTRUCTURE LAYER:")
+        print("\n🏗️  INFRASTRUCTURE LAYER:")
         infra_components = ['scalable_database', 'model_registry', 'distributed_trainer', 'metrics_dashboard']
         for component in infra_components:
             active = self.components_status.get(component, False)
-            status_icon = "âœ…" if active else "âŒ"
+            status_icon = "✅" if active else "❌"
             component_name = component.replace('_', ' ').title()
             print(f"  {status_icon} {component_name}: {'ONLINE' if active else 'OFFLINE'}")
         
         # Learning Layer
-        print("\nðŸ§  LEARNING LAYER:")
+        print("\n🧠 LEARNING LAYER:")
         learning_components = ['feedback_loop', 'knowledge_distiller', 'continual_learner', 'dream_cycle']
         for component in learning_components:
             active = self.components_status.get(component, False)
-            status_icon = "âœ…" if active else "âŒ"
+            status_icon = "✅" if active else "❌"
             component_name = component.replace('_', ' ').title()
             print(f"  {status_icon} {component_name}: {'ONLINE' if active else 'OFFLINE'}")
         
         # Additional Info
-        print("\nðŸ“Š SYSTEM INFORMATION:")
+        print("\n📊 SYSTEM INFORMATION:")
         if self.distributed_trainer:
             gpu_count = len(self.distributed_trainer.gpu_manager.available_gpus)
-            print(f"  ðŸŽ® Available GPUs: {gpu_count}")
+            print(f"  🎮 Available GPUs: {gpu_count}")
         
         if self.metrics_dashboard:
             dashboard_url = self.get_dashboard_url()
-            print(f"  ðŸ“ˆ Dashboard: {dashboard_url}")
+            print(f"  📈 Dashboard: {dashboard_url}")
         
         if self.model_registry:
             try:
                 model_count = len(self.model_registry.list_models())
-                print(f"  ðŸ¤– Registered Models: {model_count}")
+                print(f"  🤖 Registered Models: {model_count}")
             except:
-                print(f"  ðŸ¤– Registered Models: 0")
+                print(f"  🤖 Registered Models: 0")
         
         print("="*80)
-        print("ðŸ’¡ JARVIS is now in ADVANCED CONTINUOUS EVOLUTION MODE!")
-        print("   â€¢ Multi-GPU distributed training enabled")
-        print("   â€¢ Real-time metrics monitoring active")
-        print("   â€¢ Auto-scaling database with migration support")
-        print("   â€¢ Model versioning and A/B testing ready")
-        print("   â€¢ Every interaction improves the neural model")
+        print("💡 JARVIS is now in ADVANCED CONTINUOUS EVOLUTION MODE!")
+        print("   • Multi-GPU distributed training enabled")
+        print("   • Real-time metrics monitoring active")
+        print("   • Auto-scaling database with migration support")
+        print("   • Model versioning and A/B testing ready")
+        print("   • Every interaction improves the neural model")
         print("="*80 + "\n")
     
     def shutdown(self):
         """Encerra todos os sistemas de aprendizado de forma segura"""
-        logger.info("ðŸ”„ Shutting down Learning Engine...")
+        logger.info("🔄 Shutting down Learning Engine...")
         
         # Shutdown learning components
         if self.continual_learner:
@@ -926,7 +857,7 @@ class LearningEngine:
             except:
                 pass
         
-        logger.info("âœ… Learning Engine shutdown complete")
+        logger.info("✅ Learning Engine shutdown complete")
 
 
 # ============================================================================
@@ -936,13 +867,13 @@ _learning_engine: Optional[LearningEngine] = None
 
 def get_learning_engine(project_root: Path = None) -> Optional[LearningEngine]:
     """
-    ObtÃ©m instÃ¢ncia singleton do Learning Engine.
+    Obtém instância singleton do Learning Engine.
     
     Args:
-        project_root: DiretÃ³rio raiz do projeto (necessÃ¡rio na primeira chamada)
+        project_root: Diretório raiz do projeto (necessário na primeira chamada)
     
     Returns:
-        InstÃ¢ncia do LearningEngine ou None se nÃ£o inicializado
+        Instância do LearningEngine ou None se não inicializado
     """
     global _learning_engine
     
@@ -954,13 +885,13 @@ def get_learning_engine(project_root: Path = None) -> Optional[LearningEngine]:
 def initialize_learning_systems(project_root: Path) -> bool:
     """
     Inicializa todos os sistemas de aprendizado.
-    Esta Ã© a funÃ§Ã£o principal a ser chamada pelo launcher.
+    Esta é a função principal a ser chamada pelo launcher.
     
     Args:
-        project_root: DiretÃ³rio raiz do projeto
+        project_root: Diretório raiz do projeto
     
     Returns:
-        True se inicializaÃ§Ã£o bem-sucedida
+        True se inicialização bem-sucedida
     """
     engine = get_learning_engine(project_root)
     

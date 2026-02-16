@@ -115,6 +115,14 @@ def install_dependencies():
         "sentence-transformers"  # Embeddings
     ]
     
+    # Windows specific dependencies
+    windows_deps = [
+        "pywin32",
+        "WMI",
+        "pycaw",
+        "comtypes"
+    ]
+
     def install_package(package):
         """Install a single package"""
         try:
@@ -126,39 +134,69 @@ def install_dependencies():
             return True
         except:
             return False
+
+    def install_requirements_file(filename):
+        """Install from requirements file if exists"""
+        if os.path.exists(filename):
+            print_info(f"Installing from {filename}...")
+            try:
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "-r", filename],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                print_success(f"Installed packages from {filename}")
+                return True
+            except:
+                print_warning(f"Failed to install some packages from {filename}")
+                return False
+        return False
+
+    # 1. Try installing from standard requirements files first (BEST PRACTICE)
+    if platform.system() == "Windows":
+        install_requirements_file("requirements_windows.txt")
+    elif platform.system() == "Linux":
+        install_requirements_file("requirements_linux.txt")
+
+    # Always install core requirements
+    install_requirements_file("requirements.txt")
+
+    # 2. Fallback manual installation for critical packages
     
     # Install core dependencies
-    print_info("Installing core dependencies...")
+    print_info("Verifying core dependencies...")
     for dep in core_deps:
         if install_package(dep):
-            print_success(f"Installed: {dep}")
+            print_success(f"Verified: {dep}")
         else:
             print_error(f"Failed: {dep}")
             return False
     
     # Install audio dependencies (best effort)
-    print_info("\nInstalling audio dependencies...")
+    print_info("\nVerifying audio dependencies...")
     for dep in audio_deps:
         if install_package(dep):
-            print_success(f"Installed: {dep}")
+            print_success(f"Verified: {dep}")
         else:
             print_warning(f"Skipped: {dep} (may require system libraries)")
     
     # Install vision dependencies
-    print_info("\nInstalling vision dependencies...")
+    print_info("\nVerifying vision dependencies...")
     for dep in vision_deps:
         if install_package(dep):
-            print_success(f"Installed: {dep}")
+            print_success(f"Verified: {dep}")
         else:
             print_warning(f"Failed: {dep}")
-    
-    # Install optional dependencies (best effort)
-    print_info("\nInstalling optional dependencies...")
-    for dep in optional_deps:
-        if install_package(dep):
-            print_success(f"Installed: {dep}")
-        else:
-            print_warning(f"Skipped: {dep} (optional)")
+
+    # Install Windows dependencies if on Windows
+    if platform.system() == "Windows":
+        print_info("\nInstalling Windows-specific dependencies...")
+        for dep in windows_deps:
+            if install_package(dep):
+                print_success(f"Installed: {dep}")
+            else:
+                print_error(f"Failed to install Windows dependency: {dep}")
+                # We don't fail the whole setup, but warn loudly
     
     return True
 
@@ -243,6 +281,18 @@ def test_basic_functionality():
         sys.path.insert(0, str(Path.cwd()))
         from src.utils.platform_compat import IS_WINDOWS, IS_LINUX, IS_MAC
         print_success(f"Platform detection: Windows={IS_WINDOWS}, Linux={IS_LINUX}, Mac={IS_MAC}")
+
+        # Test Windows specific imports if on Windows
+        if IS_WINDOWS:
+            try:
+                import wmi
+                import pycaw
+                import comtypes
+                print_success("Windows specific modules (wmi, pycaw) loaded")
+            except ImportError as e:
+                print_error(f"Failed to load Windows modules: {e}")
+                return False
+
     except Exception as e:
         print_error(f"Failed to import platform_compat: {e}")
         return False
