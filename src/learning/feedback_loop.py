@@ -265,6 +265,26 @@ class FeedbackDatabase:
         except Exception as e:
             logger.error(f"Error getting preference pairs: {e}")
             return []
+
+    def get_last_interaction_id(self) -> Optional[str]:
+        """Get the ID of the most recent interaction."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                SELECT interaction_id FROM feedback
+                WHERE feedback_type = 'implicit'
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """)
+
+            row = cursor.fetchone()
+            if row:
+                return row['interaction_id']
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting last interaction ID: {e}")
+            return None
     
     def _row_to_feedback(self, row: sqlite3.Row) -> FeedbackEntry:
         """Convert database row to FeedbackEntry."""

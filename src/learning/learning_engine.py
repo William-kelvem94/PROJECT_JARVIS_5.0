@@ -92,10 +92,27 @@ class LearningEngine:
         self._dashboard_thread = None
         
         # Track last interaction for feedback
-        self.last_interaction_id = None
+        self._last_interaction_id = None
 
         logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
+
+    @property
+    def last_interaction_id(self) -> Optional[str]:
+        """Get the ID of the last interaction."""
+        if self._last_interaction_id:
+            return self._last_interaction_id
+
+        # Try to get from DB
+        if self.feedback_loop:
+            return self.feedback_loop.get_last_interaction_id()
+
+        return None
+
+    @last_interaction_id.setter
+    def last_interaction_id(self, value: Optional[str]):
+        """Set the ID of the last interaction."""
+        self._last_interaction_id = value
     
     def _check_dependencies(self) -> Dict[str, bool]:
         """Check availability of optional dependencies."""
