@@ -54,8 +54,8 @@ class SafeExecutor:
         # Cria diretório de backup se não existir
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Inscreve-se nos planos de diagnóstico
-        await event_bus.subscribe(
+        # Inscreve-se nos planos de diagnóstico (subscribe is not async)
+        event_bus.subscribe(
             EventType.SYSTEM_DIAGNOSTIC_PLAN,
             self._handle_diagnostic_plan,
             priority_filter=[EventPriority.HIGH]
