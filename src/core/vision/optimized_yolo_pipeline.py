@@ -265,6 +265,22 @@ class YOLOModelResource:
         if self.model:
             del self.model
             self.model = None
+    
+    def unload(self):
+        """Unload model to free memory"""
+        if self.model:
+            logger.info(f"Unloading YOLO model {Path(self.model_path).name}")
+            del self.model
+            self.model = None
+            # Force GPU memory cleanup if available
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass
+            import gc
+            gc.collect()
 
 class YOLOModelFactory(ResourceFactory[YOLOModelResource]):
     """Factory for YOLO model resources"""
@@ -362,6 +378,11 @@ class OptimizedYOLOPipeline:
         self.enable_caching = True
         self.enable_process_workers = True
         
+        # Auto-unload configuration
+        self.auto_unload_timeout = 300  # 5 minutes of inactivity
+        self.last_activity = datetime.now()
+        self._unload_task: Optional[asyncio.Task] = None
+        
         logger.info("🎯 Optimized YOLO Pipeline initialized")
     
     async def initialize(self):
@@ -428,6 +449,46 @@ class OptimizedYOLOPipeline:
         
         logger.info("✅ Optimized YOLO Pipeline started")
     
+    def _update_activity(self):
+        """Update last activity timestamp and schedule auto-unload"""
+        self.last_activity = datetime.now()
+        
+        # Cancel existing unload task
+        if self._unload_task and not self._unload_task.done():
+            self._unload_task.cancel()
+        
+        # Schedule new unload task
+        self._unload_task = asyncio.create_task(self._auto_unload_after_timeout())
+    
+    async def _auto_unload_after_timeout(self):
+        """Auto-unload models after inactivity timeout"""
+        try:
+            await asyncio.sleep(self.auto_unload_timeout)
+            
+            # Check if still inactive
+            if (datetime.now() - self.last_activity).total_seconds() >= self.auto_unload_timeout:
+                logger.info("🧠 YOLO Pipeline: Auto-unloading models due to inactivity")
+                await self._unload_models()
+                
+        except asyncio.CancelledError:
+            pass  # Normal cancellation when activity resumes
+    
+    async def _unload_models(self):
+        """Unload all models to free memory"""
+        if self._model_pool:
+            try:
+                # Get all resources and unload them
+                resources = []
+                async for resource in self._model_pool._resources.values():
+                    if hasattr(resource, 'unload'):
+                        resource.unload()
+                    resources.append(resource)
+                
+                logger.info(f"🧠 Unloaded {len(resources)} YOLO models")
+                
+            except Exception as e:
+                logger.error(f"Error unloading YOLO models: {e}")
+    
     async def stop(self):
         """Stop the pipeline"""
         if not self._running:
@@ -460,6 +521,9 @@ class OptimizedYOLOPipeline:
     @circuit_breaker("yolo_detection", failure_threshold=5, timeout_seconds=10.0)
     async def detect(self, request: DetectionRequest) -> DetectionResult:
         """Main detection method with circuit breaker"""
+        # Update activity timestamp
+        self._update_activity()
+        
         start_time = time.time()
         
         try:

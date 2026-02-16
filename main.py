@@ -960,12 +960,23 @@ class JarvisSingularity(QObject):
         try:
             # 1. Process Command (Async bridge)
             try:
-                loop = asyncio.get_event_loop()
+                # Check if we're already in an async context
+                loop = asyncio.get_running_loop()
+                # If we get here, we're in an async context - this shouldn't happen in a background thread
+                logger.warning("⚠️ _process_and_respond called from async context - this may cause issues")
+                # Create task instead of blocking
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(self._sync_process_command, text)
+                    response = future.result(timeout=30)  # 30 second timeout
             except RuntimeError:
+                # No running loop, safe to create one
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                
-            response = loop.run_until_complete(self.ai_agent.process_command(text))
+                try:
+                    response = loop.run_until_complete(self.ai_agent.process_command(text))
+                finally:
+                    loop.close()
             
             # 2. Update HUD with final response (Emit signal)
             self.hud_update_requested.emit("speaking", str(response))
@@ -987,6 +998,15 @@ class JarvisSingularity(QObject):
             self.hud_update_requested.emit("error", f"Erro: {e}")
         finally:
             self._is_processing = False
+    
+    def _sync_process_command(self, text):
+        """Synchronous wrapper for process_command"""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            return loop.run_until_complete(self.ai_agent.process_command(text))
+        finally:
+            loop.close()
             self.last_interaction_time = time.time() # Start follow-up timer AFTER finishing speech
 
     def _process_fallback(self, text):
@@ -1549,11 +1569,17 @@ Examples:
         # Start initialization in background thread
         def run_async_boot():
             try:
-                # Create new event loop for this thread
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop.run_until_complete(initialize_with_boot_manager())
-                loop.close()
+                # Check if there's already an event loop in this thread
+                try:
+                    loop = asyncio.get_running_loop()
+                    # If we get here, there's already a running loop - schedule the task
+                    asyncio.create_task(initialize_with_boot_manager())
+                except RuntimeError:
+                    # No running loop, create a new one
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    loop.run_until_complete(initialize_with_boot_manager())
+                    loop.close()
             except Exception as e:
                 logger.error(f"❌ Async boot failed: {e}")
                 boot_data["status"] = "failed"
