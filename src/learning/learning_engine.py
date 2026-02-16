@@ -91,6 +91,9 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
+        # Last interaction tracking
+        self.last_interaction: Optional[Dict[str, Any]] = None
+
         logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
     
@@ -313,12 +316,12 @@ class LearningEngine:
     def _init_feedback_loop(self) -> bool:
         """Inicializa sistema de coleta de feedback"""
         try:
-            from src.learning.feedback_loop import FeedbackDatabase
+            from src.learning.feedback_loop import FeedbackLoop
             
             config = self.config.get('feedback_loop', {})
-            db_path = self.learning_dir / "feedback.db"
             
-            self.feedback_loop = FeedbackDatabase(db_path)
+            # FeedbackLoop initializes its own FeedbackDatabase internally
+            self.feedback_loop = FeedbackLoop(self.learning_dir)
             self.components_status['feedback_loop'] = True
             
             logger.info("âœ… Feedback Loop initialized")
@@ -470,73 +473,19 @@ class LearningEngine:
                 metadata=metadata or {}
             )
             
-            self.feedback_loop.add_feedback(entry)
-            
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
-            if feedback_value > 0.7 and self.knowledge_distiller:
-                self.knowledge_distiller.distill_interaction(
-                    user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
-                    success=True
-                )
-            
-        except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
-    
-    def record_interaction(
-        self,
-        user_input: str,
-        ai_response: str,
-        feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Registra uma interaÃ§Ã£o para aprendizado.
-        
-        Args:
-            user_input: Comando do usuÃ¡rio
-            ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
-        """
-        if not self.feedback_loop:
-            return
-        
-        try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
-            if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
-            
-            from src.learning.feedback_loop import FeedbackEntry
-            import hashlib
-            import time
-            from datetime import datetime
-            
-            interaction_id = hashlib.md5(
-                f"{user_input}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            feedback_id = hashlib.md5(
-                f"{interaction_id}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            entry = FeedbackEntry(
-                feedback_id=feedback_id,
-                interaction_id=interaction_id,
-                user_input=user_input,
-                ai_response=ai_response,
-                feedback_type='implicit',
-                feedback_value=feedback_value,
-                timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
-            )
-            
-            self.feedback_loop.add_feedback(entry)
+            # Record in feedback loop (database)
+            # If feedback_loop is a FeedbackLoop instance, use its database
+            if hasattr(self.feedback_loop, 'database'):
+                self.feedback_loop.database.add_feedback(entry)
+            else:
+                self.feedback_loop.add_feedback(entry)
+
+            # Store in memory for immediate feedback/correction
+            self.last_interaction = {
+                "interaction_id": interaction_id,
+                "user_input": user_input,
+                "ai_response": ai_response
+            }
             
             # Store in scalable database if available
             if self.scalable_database:
@@ -748,7 +697,9 @@ class LearningEngine:
         self,
         interaction_id: str,
         feedback_value: float,
-        correction: Optional[str] = None
+        correction: Optional[str] = None,
+        user_input: Optional[str] = None,
+        ai_response: Optional[str] = None
     ):
         """
         Registra feedback explÃ­cito do usuÃ¡rio (ðŸ‘/ðŸ‘Ž).
@@ -757,13 +708,54 @@ class LearningEngine:
             interaction_id: ID da interaÃ§Ã£o
             feedback_value: -1.0 (ruim) a 1.0 (excelente)
             correction: CorreÃ§Ã£o fornecida pelo usuÃ¡rio (opcional)
+            user_input: Comando do usuÃ¡rio (opcional, usa cache se None)
+            ai_response: Resposta do agente (opcional, usa cache se None)
         """
         if not self.feedback_loop:
             return
         
         try:
-            # TODO: Atualizar feedback entry existente ou criar nova
+            # Tenta recuperar dados do cache se nÃ£o fornecidos
+            if (user_input is None or ai_response is None) and self.last_interaction:
+                if self.last_interaction.get('interaction_id') == interaction_id:
+                    user_input = user_input or self.last_interaction.get('user_input')
+                    ai_response = ai_response or self.last_interaction.get('ai_response')
+
+            # Se ainda assim nÃ£o tivermos, usamos placeholders (menos ideal para DPO)
+            user_input = user_input or "Unknown Interaction"
+            ai_response = ai_response or "No Response Cached"
+
+            if hasattr(self.feedback_loop, 'record_explicit_feedback'):
+                # Usar mÃ©todo avançado do FeedbackLoop
+                self.feedback_loop.record_explicit_feedback(
+                    interaction_id=interaction_id,
+                    user_input=user_input,
+                    ai_response=ai_response,
+                    rating=feedback_value,
+                    correction=correction
+                )
+            else:
+                # Fallback para FeedbackDatabase simples
+                from src.learning.feedback_loop import FeedbackEntry
+                import hashlib
+                import time
+                from datetime import datetime
+
+                feedback_id = hashlib.md5(f"{interaction_id}{time.time()}".encode()).hexdigest()[:16]
+                entry = FeedbackEntry(
+                    feedback_id=feedback_id,
+                    interaction_id=interaction_id,
+                    user_input=user_input,
+                    ai_response=ai_response,
+                    feedback_type='correction' if correction else 'explicit',
+                    feedback_value=feedback_value,
+                    correction=correction,
+                    timestamp=datetime.now().isoformat()
+                )
+                self.feedback_loop.add_feedback(entry)
+
             logger.info(f"ðŸ“ Explicit feedback recorded: {feedback_value} for {interaction_id}")
+
         except Exception as e:
             logger.error(f"âŒ Failed to record explicit feedback: {e}")
     
