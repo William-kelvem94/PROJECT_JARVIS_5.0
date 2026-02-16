@@ -278,6 +278,9 @@ def create_startup_script():
     unix_script = """#!/bin/bash
 # JARVIS 5.0 Startup Script
 
+# Ensure we are in the project root
+cd "$(dirname "$0")"
+
 echo "Starting JARVIS 5.0..."
 
 # Check Python
@@ -288,6 +291,15 @@ fi
 
 # Check dependencies
 python3 scripts/install/setup_jarvis.py --quick-check
+if [ $? -ne 0 ]; then
+    echo "Dependencies missing or check failed. Running full setup..."
+    # Use --no-scripts to prevent overwriting this script while running
+    python3 scripts/install/setup_jarvis.py --no-scripts
+    if [ $? -ne 0 ]; then
+        echo "Error: Setup failed. Please check the logs and try again."
+        exit 1
+    fi
+fi
 
 # Start JARVIS
 python3 main.py "$@"
@@ -296,6 +308,9 @@ python3 main.py "$@"
     # Windows startup script
     windows_script = """@echo off
 REM JARVIS 5.0 Startup Script
+
+REM Ensure we are in the project root
+cd /d "%~dp0"
 
 echo Starting JARVIS 5.0...
 
@@ -308,6 +323,16 @@ if errorlevel 1 (
 
 REM Check dependencies
 python scripts/install/setup_jarvis.py --quick-check
+if errorlevel 1 (
+    echo Dependencies missing or check failed. Running full setup...
+    REM Use --no-scripts to prevent overwriting this script while running
+    python scripts/install/setup_jarvis.py --no-scripts
+    if errorlevel 1 (
+        echo Error: Setup failed. Please check the logs and try again.
+        pause
+        exit /b 1
+    )
+)
 
 REM Start JARVIS
 python main.py %*
@@ -352,9 +377,12 @@ def main():
         ("Dependencies", install_dependencies),
         ("Ollama (Optional)", check_ollama),
         ("Import Validation", validate_imports),
-        ("Basic Functionality", test_basic_functionality),
-        ("Startup Scripts", create_startup_script)
+        ("Basic Functionality", test_basic_functionality)
     ]
+
+    # Only create startup scripts if not disabled
+    if "--no-scripts" not in sys.argv:
+        steps.append(("Startup Scripts", create_startup_script))
     
     results = []
     for step_name, step_func in steps:
