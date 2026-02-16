@@ -1,6 +1,6 @@
 """
-Detector de EmoÃ§Ãµes (Neural Emotional Intelligence)
-Analisa expressÃµes faciais (via FER) e tons de voz para ajustar a persona do Jarvis.
+Detector de Emoções (Neural Emotional Intelligence)
+Analisa expressões faciais (via FER) e tons de voz para ajustar a persona do Jarvis.
 """
 
 import logging
@@ -12,15 +12,17 @@ try:
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
-    logging.warning(f"âš ï¸ cv2 not available in emotion_detector: {e}")
+    logging.warning(f"⚠️ cv2 not available in emotion_detector: {e}")
 
 try:
     import numpy as np
     NUMPY_AVAILABLE = True
+    FrameType = np.ndarray
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
     np = None
-    logging.warning(f"âš ï¸ numpy not available in emotion_detector: {e}")
+    FrameType = Any
+    logging.warning(f"⚠️ numpy not available in emotion_detector: {e}")
 
 try:
     from fer import FER
@@ -37,18 +39,18 @@ class EmotionDetector:
         self.emotion_model = None
         if FER_AVAILABLE:
             try:
-                # mtcnn=True para maior precisÃ£o, False para performance (CPU)
+                # mtcnn=True para maior precisão, False para performance (CPU)
                 self.emotion_model = FER(mtcnn=False) 
-                logger.info("Detector de emoÃ§Ãµes (FER) carregado.")
+                logger.info("Detector de emoções (FER) carregado.")
             except Exception as e:
                 logger.error(f"Erro ao carregar detector FER: {e}")
         
         self.last_emotion = "neutral"
         self.last_score = 0.0
 
-    def detect_emotion_from_frame(self, frame: np.ndarray) -> Dict[str, Any]:
-        """Detecta emoÃ§Ãµes na imagem atual"""
-        if not FER_AVAILABLE or self.emotion_model is None:
+    def detect_emotion_from_frame(self, frame: FrameType) -> Dict[str, Any]:
+        """Detecta emoções na imagem atual"""
+        if not FER_AVAILABLE or self.emotion_model is None or not NUMPY_AVAILABLE:
             return {"emotion": "neutral", "score": 1.0}
 
         try:
@@ -65,12 +67,12 @@ class EmotionDetector:
             
             return {"emotion": dominant_emotion, "score": score}
         except Exception as e:
-            logger.error(f"Erro na detecÃ§Ã£o de emoÃ§Ã£o visual: {e}")
+            logger.error(f"Erro na detecção de emoção visual: {e}")
             return {"emotion": "neutral", "score": 0.0}
 
     def analyze_voice_tone(self, audio_path: str) -> Dict[str, Any]:
         """
-        Analisa o tom de voz usando o processador avanÃ§ado
+        Analisa o tom de voz usando o processador avançado
         """
         try:
             from src.core.audio.advanced_speech_processor import advanced_speech_processor
@@ -82,7 +84,7 @@ class EmotionDetector:
 
     def get_consolidated_emotion(self, visual_data: Dict, audio_data: Dict) -> Dict[str, Any]:
         """
-        FusÃ£o Multimodal (Cross-Modal Fusion): Face (60%) + Voz (40%)
+        Fusão Multimodal (Cross-Modal Fusion): Face (60%) + Voz (40%)
         """
         v_emo = visual_data.get("emotion", "neutral")
         v_score = visual_data.get("score", 0.0)
@@ -90,10 +92,10 @@ class EmotionDetector:
         a_emo = audio_data.get("emotion", "neutral")
         a_score = audio_data.get("confidence", 0.0)
         
-        # Pesos da FusÃ£o
+        # Pesos da Fusão
         fused_score = (v_score * 0.6) + (a_score * 0.4)
         
-        # LÃ³gica de dominÃ¢ncia
+        # Lógica de dominância
         if v_emo == a_emo:
             final_emotion = v_emo
         elif v_score > a_score + 0.2:
@@ -108,40 +110,40 @@ class EmotionDetector:
         }
 
     def get_personality_modifier(self, emotion: str) -> Dict[str, str]:
-        """Retorna parÃ¢metros para ajustar o System Prompt do AIAgent"""
+        """Retorna parâmetros para ajustar o System Prompt do AIAgent"""
         modifiers = {
             "happy": {
-                "prefix": "Fico feliz em vÃª-lo de bom humor, Senhor. ",
-                "style": "leve e sarcÃ¡stico",
+                "prefix": "Fico feliz em vê-lo de bom humor, Senhor. ",
+                "style": "leve e sarcástico",
                 "energy": "alta"
             },
             "sad": {
-                "prefix": "Lamento se as coisas nÃ£o estÃ£o fÃ¡ceis hoje, Senhor. Conte comigo. ",
+                "prefix": "Lamento se as coisas não estão fáceis hoje, Senhor. Conte comigo. ",
                 "style": "acolhedor e eficiente",
                 "energy": "baixa"
             },
             "angry": {
-                "prefix": "Percebo sua frustraÃ§Ã£o, Senhor. Vou resolver isso o mais rÃ¡pido possÃ­vel. ",
+                "prefix": "Percebo sua frustração, Senhor. Vou resolver isso o mais rápido possível. ",
                 "style": "direto e sem rodeios",
-                "energy": "mÃ¡xima"
+                "energy": "máxima"
             },
             "fear": {
                 "prefix": "Fique tranquilo, Senhor. Estou monitorando tudo. ",
                 "style": "calmo e protetor",
-                "energy": "estÃ¡vel"
+                "energy": "estável"
             },
             "surprise": {
-                "prefix": "Impressionante, nÃ£o Ã©? ",
+                "prefix": "Impressionante, não é? ",
                 "style": "entusiasta",
                 "energy": "vibrante"
             },
             "neutral": {
                 "prefix": "",
-                "style": "clÃ¡ssico Jarvis",
-                "energy": "padrÃ£o"
+                "style": "clássico Jarvis",
+                "energy": "padrão"
             }
         }
         return modifiers.get(emotion, modifiers["neutral"])
 
-# InstÃ¢ncia global
+# Instância global
 emotion_detector = EmotionDetector()
