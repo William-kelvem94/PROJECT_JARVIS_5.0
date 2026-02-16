@@ -15,6 +15,7 @@ import logging
 from typing import List, Dict, Optional, Any, Callable
 import time
 from src.utils.logger_reflection import reflect_logger
+from src.utils.safe_math import safe_eval
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -203,9 +204,8 @@ class ReActAgent:
             
             elif tool_name == 'calculate':
                 expression = parameters['expression']
-                # Safe eval with limited namespace
-                allowed_names = {'abs': abs, 'round': round, 'min': min, 'max': max, 'sum': sum}
-                result = eval(expression, {"__builtins__": {}}, allowed_names)
+                # Secure evaluation using safe_eval (AST-based)
+                result = safe_eval(expression)
                 return f"Result: {result}"
             
             elif tool_name == 'code_exec':
