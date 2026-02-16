@@ -19,6 +19,34 @@ def create_shortcut():
             print("   Não foi possível criar o atalho. Verifique se o script de inicialização foi gerado corretamente.")
             return
         print(f"[LOG] Validando arquivo de inicialização: {target_script}")
+        # Verifica Python
+        python_check = subprocess.run(["python", "--version"], capture_output=True)
+        if python_check.returncode != 0:
+            print("[ERRO] Python não encontrado. Instale o Python e tente novamente.")
+            return
+        # Verifica e cria venv se necessário
+        venv_path = project_root / "venv" / "Scripts" / "activate.bat"
+        if not venv_path.exists():
+            print("[LOG] Ambiente virtual não encontrado. Criando venv...")
+            venv_create = subprocess.run(["python", "-m", "venv", str(project_root / "venv")], capture_output=True)
+            if venv_create.returncode != 0:
+                print("[ERRO] Falha ao criar venv. Veja o log abaixo:")
+                print(venv_create.stdout.decode())
+                print(venv_create.stderr.decode())
+                return
+        print("[LOG] Ativando ambiente virtual...")
+        subprocess.run([str(venv_path)], shell=True)
+        # Instala dependências
+        req_file = project_root / "requirements.txt"
+        if req_file.exists():
+            print("[LOG] Instalando dependências do requirements.txt...")
+            pip_install = subprocess.run(["pip", "install", "--upgrade", "pip"], capture_output=True)
+            req_install = subprocess.run(["pip", "install", "-r", str(req_file)], capture_output=True)
+            if req_install.returncode != 0:
+                print("[ERRO] Falha ao instalar dependências. Veja o log abaixo:")
+                print(req_install.stdout.decode())
+                print(req_install.stderr.decode())
+                return
         # Valida dependências/configuração antes de criar o atalho
         setup_script = project_root / "scripts" / "install" / "setup_jarvis.py"
         if setup_script.exists():
@@ -26,7 +54,12 @@ def create_shortcut():
             result = subprocess.run(["python", str(setup_script), "--quick-check"], capture_output=True)
             if result.returncode != 0:
                 print("[LOG] Dependências/configuração ausentes. Executando setup completo...")
-                subprocess.run(["python", str(setup_script), "--no-scripts"], check=True)
+                setup_result = subprocess.run(["python", str(setup_script), "--no-scripts"], capture_output=True)
+                if setup_result.returncode != 0:
+                    print("[ERRO] Falha ao executar setup_jarvis.py. Veja o log abaixo:")
+                    print(setup_result.stdout.decode())
+                    print(setup_result.stderr.decode())
+                    return
         else:
             print("[LOG] setup_jarvis.py não encontrado. Prosseguindo sem validação.")
         shortcut_name = input("Nome do atalho (padrão: JARVIS 5.0): ") or "JARVIS 5.0"
@@ -41,7 +74,8 @@ def create_shortcut():
             print("[INFO] Para iniciar o Jarvis, basta clicar no atalho. Se houver problemas, execute novamente este script ou verifique as dependências.")
         except Exception as e:
             print(f"[ERRO] Falha ao criar o atalho: {e}")
-            print("[DICA] Verifique permissões, dependências e o arquivo start_jarvis.bat.")
+            print("[DICA] Verifique permissões, dependências, ambiente virtual e o arquivo start_jarvis.bat.")
+            print("[DICA] Consulte o README para troubleshooting e requisitos.")
     elif system == "Linux":
         target_script = project_root / "start_jarvis.sh"
         if not target_script.exists():
