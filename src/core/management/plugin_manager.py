@@ -121,8 +121,16 @@ class SystemEvolutionManager:
                 try:
                     from src.interface.ui_signals import ui_signals
                     if ui_signals:
+<<<<<<< Updated upstream
                         ui_signals.update_status.emit(f"🧬 DNA Recodificado: {file.stem} atualizado.")
                 except: pass
+=======
+                        ui_signals.update_status.emit(
+                            f"🧬 DNA Recodificado: {file.stem} atualizado."
+                        )
+                except Exception:
+                    pass
+>>>>>>> Stashed changes
         except Exception as e:
             logger.debug(f"Erro ao checar arquivo {file}: {e}")
 

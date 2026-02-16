@@ -231,6 +231,25 @@ class SystemManifest(BaseSettings):
         
         return report
 
+<<<<<<< Updated upstream
+=======
+    # ------------------------------------------------------------------
+    # Backward-compatibility aliases (legacy code expects flat attributes)
+    # ------------------------------------------------------------------
+    @property
+    def project_root(self) -> Path:
+        return self.system.project_root
+
+    @property
+    def data_path(self) -> Path:
+        return self.system.data_path
+
+    @property
+    def logs_path(self) -> Path:
+        return self.system.logs_path
+
+
+>>>>>>> Stashed changes
 # Global instance
 system_manifest = SystemManifest.get_instance()
 

@@ -100,7 +100,11 @@ except ImportError:
 try:
     if IS_WINDOWS:
         import ctypes
+<<<<<<< Updated upstream
         from ctypes import cast, POINTER
+=======
+
+>>>>>>> Stashed changes
         CTYPES_AVAILABLE = True
     else:
         ctypes = None

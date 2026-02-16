@@ -523,9 +523,15 @@ class OptimizedYOLOPipeline:
         """Main detection method with circuit breaker"""
         # Update activity timestamp
         self._update_activity()
+<<<<<<< Updated upstream
         
         start_time = time.time()
         
+=======
+
+        start_time = time.time()  # noqa: F841
+
+>>>>>>> Stashed changes
         try:
             # Check cache first
             if self.enable_caching and request.mode != DetectionMode.STREAMING:

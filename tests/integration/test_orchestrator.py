@@ -5,17 +5,24 @@ Testa inicialização de módulos, verificação de saúde, reinicialização de
 tratamento de erros e integração completa dos novos módulos Security e IoT.
 """
 
+<<<<<<< Updated upstream
 import pytest
 import unittest
 from unittest.mock import Mock, MagicMock, patch, call
 import logging
 import sys
 import os
+=======
+import logging
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+>>>>>>> Stashed changes
 
 # Adiciona o diretório raiz ao path para imports
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-sys.path.insert(0, project_root)
+project_root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(project_root))
 
 # Mock de módulos problemáticos antes do import
 sys.modules['mediapipe'] = Mock()
@@ -24,7 +31,7 @@ sys.modules['cv2'] = Mock()
 sys.modules['face_recognition'] = Mock()
 sys.modules['dlib'] = Mock()
 
-from src.core.orchestrator import StarkOrchestrator
+from src.core.management.orchestrator import StarkOrchestrator
 
 class TestStarkOrchestrator(unittest.TestCase):
     """Testes unitários completos para o StarkOrchestrator"""
@@ -49,11 +56,21 @@ class TestStarkOrchestrator(unittest.TestCase):
         self.assertFalse(self.orchestrator.is_ready)
         self.assertEqual(len(self.orchestrator.components), 0)
         self.assertIsInstance(self.orchestrator.components, dict)
+<<<<<<< Updated upstream
     
     @patch('src.core.orchestrator.SecurityManager')
     @patch('src.core.orchestrator.IOTManager')
     @patch('src.core.orchestrator.FallbackSystem')
     def test_stark_system_initialization_complete_success(self, mock_fallback, mock_iot, mock_security):
+=======
+
+    @patch("src.core.management.orchestrator.SecurityManager")
+    @patch("src.core.management.orchestrator.IOTManager")
+    @patch("src.core.management.orchestrator.FallbackSystem")
+    def test_stark_system_initialization_complete_success(
+        self, mock_fallback, mock_iot, mock_security
+    ):
+>>>>>>> Stashed changes
         """Testa a inicialização completa do sistema Stark com sucesso total"""
         # Mock do IOTManager para simular configuração completa
         mock_iot_instance = Mock()
@@ -85,12 +102,26 @@ class TestStarkOrchestrator(unittest.TestCase):
         mock_iot.assert_called_once()
         mock_fallback.assert_called_once_with(self.mock_jarvis)
         mock_interface.assert_called_once()
+<<<<<<< Updated upstream
     
     @patch('src.core.orchestrator.SecurityManager', side_effect=Exception("Security init failed"))
     @patch('src.core.orchestrator.IOTManager')
     @patch('src.core.orchestrator.FallbackSystem')
     @patch('src.core.orchestrator.logger')
     def test_stark_system_initialization_partial_failure(self, mock_logger, mock_fallback, mock_iot, mock_security):
+=======
+
+    @patch(
+        "src.core.management.orchestrator.SecurityManager",
+        side_effect=Exception("Security init failed"),
+    )
+    @patch("src.core.management.orchestrator.IOTManager")
+    @patch("src.core.management.orchestrator.FallbackSystem")
+    @patch("src.core.management.orchestrator.logger")
+    def test_stark_system_initialization_partial_failure(
+        self, mock_logger, mock_fallback, mock_iot, mock_security
+    ):
+>>>>>>> Stashed changes
         """Testa inicialização com falhas parciais"""
         # IOT e Fallback funcionam normalmente
         mock_iot_instance = Mock()
@@ -188,7 +219,11 @@ class TestStarkOrchestrator(unittest.TestCase):
         self.assertFalse(result)
         
         # Mock dos managers para teste de reinicialização
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.SecurityManager') as mock_security:
+=======
+        with patch("src.core.management.orchestrator.SecurityManager") as mock_security:
+>>>>>>> Stashed changes
             mock_security_instance = Mock()
             mock_security.return_value = mock_security_instance
             
@@ -204,7 +239,14 @@ class TestStarkOrchestrator(unittest.TestCase):
             mock_security.assert_called_once()
         
         # Teste reinicialização com erro
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.SecurityManager', side_effect=Exception("Restart failed")):
+=======
+        with patch(
+            "src.core.management.orchestrator.SecurityManager",
+            side_effect=Exception("Restart failed"),
+        ):
+>>>>>>> Stashed changes
             result = self.orchestrator.restart_component("security")
             self.assertFalse(result)
     
@@ -238,12 +280,24 @@ class TestStarkOrchestrator(unittest.TestCase):
         self.assertEqual(info["components_count"], 2)
         self.assertIn("security", info["registered_components"])
         self.assertIn("iot", info["registered_components"])
+<<<<<<< Updated upstream
     
     @patch('src.core.orchestrator.logger')
     def test_initialization_error_handling_detailed(self, mock_logger):
         """Testa tratamento detalhado de erros durante inicialização"""
         # Teste erro no SecurityManager
         with patch('src.core.orchestrator.SecurityManager', side_effect=Exception("Security init error")):
+=======
+
+    @patch("src.core.management.orchestrator.logger")
+    def test_initialization_error_handling_detailed(self, mock_logger):
+        """Testa tratamento detalhado de erros durante inicialização"""
+        # Teste erro no SecurityManager
+        with patch(
+            "src.core.management.orchestrator.SecurityManager",
+            side_effect=Exception("Security init error"),
+        ):
+>>>>>>> Stashed changes
             with self.assertRaises(Exception):
                 self.orchestrator._init_security()
             mock_logger.error.assert_called()
@@ -252,7 +306,14 @@ class TestStarkOrchestrator(unittest.TestCase):
         mock_logger.reset_mock()
         
         # Teste erro no IOTManager (não deve interromper)
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.IOTManager', side_effect=Exception("IoT init error")):
+=======
+        with patch(
+            "src.core.management.orchestrator.IOTManager",
+            side_effect=Exception("IoT init error"),
+        ):
+>>>>>>> Stashed changes
             # IoT não deve lançar exceção, apenas logar
             self.orchestrator._init_iot() 
             mock_logger.error.assert_called()
@@ -289,7 +350,13 @@ class TestStarkOrchestrator(unittest.TestCase):
         self.mock_jarvis.ai_agent = mock_ai_agent
         
         # Mock do FallbackSystem
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.FallbackSystem') as mock_fallback_class:
+=======
+        with patch(
+            "src.core.management.orchestrator.FallbackSystem"
+        ) as mock_fallback_class:
+>>>>>>> Stashed changes
             mock_fallback_instance = Mock()
             mock_fallback_class.return_value = mock_fallback_instance
             
@@ -300,6 +367,7 @@ class TestStarkOrchestrator(unittest.TestCase):
             
             # Verifica se foi injetado no AI Agent
             self.assertEqual(mock_ai_agent.fallback_system, mock_fallback_instance)
+<<<<<<< Updated upstream
     
     @patch('src.core.orchestrator.logger')
     def test_logging_during_initialization(self, mock_logger):
@@ -308,12 +376,31 @@ class TestStarkOrchestrator(unittest.TestCase):
             with patch('src.core.orchestrator.IOTManager') as mock_iot:
                 with patch('src.core.orchestrator.FallbackSystem') as mock_fallback:
                     with patch.object(self.orchestrator, '_init_interface_orchestration'):
+=======
+
+    @patch("src.core.management.orchestrator.logger")
+    def test_logging_during_initialization(self, mock_logger):
+        """Testa logging detalhado durante inicialização"""
+        with patch(
+            "src.core.management.orchestrator.SecurityManager"
+        ) as _mock_security:
+            with patch("src.core.management.orchestrator.IOTManager") as _mock_iot:
+                with patch(
+                    "src.core.management.orchestrator.FallbackSystem"
+                ) as _mock_fallback:
+                    with patch.object(
+                        self.orchestrator, "_init_interface_orchestration"
+                    ):
+>>>>>>> Stashed changes
                         self.orchestrator.initialize_stark_system()
         
         # Verifica se logging de início e fim foram chamados
         info_calls = [call for call in mock_logger.info.call_args_list if call[0]]
         self.assertTrue(len(info_calls) > 0)
+<<<<<<< Updated upstream
         
+=======
+>>>>>>> Stashed changes
         # Verifica se mensagem de sucesso foi logada
         success_logged = any(
             "Stark 2.0 Inicializado" in str(call) for call in info_calls
@@ -335,10 +422,19 @@ class TestStarkOrchestratorIntegration(unittest.TestCase):
     
     def test_complete_workflow_success_scenario(self):
         """Testa fluxo completo de inicialização bem-sucedida"""
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.SecurityManager') as mock_security:
             with patch('src.core.orchestrator.IOTManager') as mock_iot:
                 with patch('src.core.orchestrator.FallbackSystem') as mock_fallback:
                     
+=======
+        with patch("src.core.management.orchestrator.SecurityManager") as mock_security:
+            with patch("src.core.management.orchestrator.IOTManager") as mock_iot:
+                with patch(
+                    "src.core.management.orchestrator.FallbackSystem"
+                ) as mock_fallback:
+
+>>>>>>> Stashed changes
                     # Setup mocks para sucesso
                     mock_security.return_value = Mock()
                     
@@ -357,9 +453,14 @@ class TestStarkOrchestratorIntegration(unittest.TestCase):
                     self.assertEqual(len(self.orchestrator.components), 3)
                     
                     # Verifica health
+<<<<<<< Updated upstream
                     health = self.orchestrator.get_system_health()
                     self.assertTrue(self.orchestrator.is_system_healthy())
                     
+=======
+                    _ = self.orchestrator.get_system_health()
+
+>>>>>>> Stashed changes
                     # Verifica system info
                     info = self.orchestrator.get_system_info()
                     self.assertTrue(info["is_ready"])
@@ -367,10 +468,22 @@ class TestStarkOrchestratorIntegration(unittest.TestCase):
     
     def test_complete_workflow_partial_failure_scenario(self):
         """Testa fluxo com falhas parciais mas sistema resiliente"""
+<<<<<<< Updated upstream
         with patch('src.core.orchestrator.SecurityManager', side_effect=Exception("Security failed")):
             with patch('src.core.orchestrator.IOTManager') as mock_iot:
                 with patch('src.core.orchestrator.FallbackSystem') as mock_fallback:
                     
+=======
+        with patch(
+            "src.core.management.orchestrator.SecurityManager",
+            side_effect=Exception("Security failed"),
+        ):
+            with patch("src.core.management.orchestrator.IOTManager") as mock_iot:
+                with patch(
+                    "src.core.management.orchestrator.FallbackSystem"
+                ) as mock_fallback:
+
+>>>>>>> Stashed changes
                     # IoT funciona mas não configurado
                     mock_iot_instance = Mock()
                     mock_iot_instance.is_configured = False

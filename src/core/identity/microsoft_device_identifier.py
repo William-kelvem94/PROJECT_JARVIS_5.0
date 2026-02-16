@@ -136,8 +136,16 @@ class MicrosoftDeviceIdentifier:
             # 1. VERIFICAR SE Ã‰ ADMINISTRADOR
             try:
                 import ctypes
+<<<<<<< Updated upstream
                 account_info.is_administrator = ctypes.windll.shell32.IsUserAnAdmin() != 0
             except:
+=======
+
+                account_info.is_administrator = (
+                    ctypes.windll.shell32.IsUserAnAdmin() != 0
+                )
+            except Exception:
+>>>>>>> Stashed changes
                 pass
             
             # 2. TENTAR REGISTRY - LOGON UI (Ãšltima conta que fez login)
@@ -204,7 +212,7 @@ class MicrosoftDeviceIdentifier:
                         account_info.account_email = fqdn
                         if account_info.account_type == "local":
                             account_info.account_type = "domain"
-            except:
+            except Exception:
                 pass
             
             # 6. SE AINDA Ã‰ LOCAL, TENTAR DETECTAR VIA REGISTRY USERS
@@ -359,7 +367,7 @@ class MicrosoftDeviceIdentifier:
             google_drive_path = None
             for path in possible_paths:
                 if os.path.exists(path):
-                    google_drive_path = path
+                    google_drive_path = path  # noqa: F841
                     drive_auth.drive_path = path
                     drive_auth.sync_enabled = True
                     break
@@ -367,12 +375,19 @@ class MicrosoftDeviceIdentifier:
             # 2. VERIFICAR PROCESSO DO GOOGLE DRIVE
             google_drive_running = False
             try:
+<<<<<<< Updated upstream
                 for proc in psutil.process_iter(['pid', 'name']):
                     proc_name = proc.info['name'].lower()
                     if 'googledrivesync' in proc_name or 'google drive' in proc_name:
                         google_drive_running = True
+=======
+                for proc in psutil.process_iter(["pid", "name"]):
+                    proc_name = proc.info["name"].lower()
+                    if "googledrivesync" in proc_name or "google drive" in proc_name:
+                        google_drive_running = True  # noqa: F841
+>>>>>>> Stashed changes
                         break
-            except:
+            except Exception:
                 pass
             
             # 3. TENTAR DETECTAR CONTA VIA REGISTRY

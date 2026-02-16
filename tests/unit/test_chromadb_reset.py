@@ -1,4 +1,12 @@
 """Teste pós-reset do ChromaDB"""
+<<<<<<< Updated upstream
+=======
+
+import pytest
+
+pytest.importorskip("chromadb")
+
+>>>>>>> Stashed changes
 import sys
 from pathlib import Path
 

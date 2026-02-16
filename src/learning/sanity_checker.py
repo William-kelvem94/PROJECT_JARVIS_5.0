@@ -15,7 +15,10 @@ from datetime import datetime
 try:
     from src.utils.env_manager import get_config
 except ImportError:
-    get_config = lambda: None
+
+    def get_config():
+        return None
+
 
 logger = logging.getLogger("JARVIS-SANITY-CHECK")
 

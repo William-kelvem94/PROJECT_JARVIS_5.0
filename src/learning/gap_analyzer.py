@@ -85,9 +85,19 @@ class KnowledgeGapAnalyzer:
                 for line in lines:
                     try:
                         data = json.loads(line)
+<<<<<<< Updated upstream
                         if not data.get('success', True) or data.get('confidence', 1.0) < 0.6:
                             commands.append(data.get('command', ''))
                     except: continue
+=======
+                        if (
+                            not data.get("success", True)
+                            or data.get("confidence", 1.0) < 0.6
+                        ):
+                            commands.append(data.get("command", ""))
+                    except Exception:
+                        continue
+>>>>>>> Stashed changes
         except Exception as e:
             logger.error(f"Error reading interactions log: {e}")
             

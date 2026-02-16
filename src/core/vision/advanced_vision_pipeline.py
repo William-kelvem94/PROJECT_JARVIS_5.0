@@ -99,7 +99,12 @@ class AdvancedVisionPipeline:
         try:
             from src.core.management.hardware_manager import hardware_manager
             is_throttled = hardware_manager.is_throttled
+<<<<<<< Updated upstream
         except: pass
+=======
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
         # NÃ­vel 2: AnÃ¡lise intermediÃ¡ria
         if target_level >= 2 and self.level2_available and not is_throttled:

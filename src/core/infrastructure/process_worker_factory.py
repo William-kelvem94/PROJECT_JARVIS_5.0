@@ -1,25 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-JARVIS 5.0 - Process Worker Factory
-===================================
-FASE 1.6: Factory para workers em processos separados eliminando limitações do GIL.
+﻿"""JARVIS 5.0 - Process Worker Factory.
 
-Responsibilities:
-- Spawning de processos worker com diferentes configurações
-- IPC (Inter-Process Communication) robusto
-- Load balancing entre workers
-- Health monitoring de processes
-- Crash recovery e failover automático
-
-Philosophy:
-- Processes isolados para eliminar GIL
-- IPC eficiente para performance crítica
-- Health monitoring proativo
-- Auto-recovery resiliente
-- Load balancing inteligente
+Stability-first implementation with a lightweight worker abstraction.
 """
 
+<<<<<<< Updated upstream
 import asyncio
 import logging
 import multiprocessing
@@ -41,21 +25,35 @@ import uuid
 import socket
 import json
 import traceback
+=======
+from __future__ import annotations
+
+import logging
+import threading
+import time
+import uuid
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Dict, Optional
+>>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
 
 class WorkerState(Enum):
+<<<<<<< Updated upstream
     """Estados de um worker process"""
+=======
+>>>>>>> Stashed changes
     STARTING = "starting"
     IDLE = "idle"
     BUSY = "busy"
-    OVERLOADED = "overloaded"
     UNHEALTHY = "unhealthy"
-    CRASHED = "crashed"
     STOPPING = "stopping"
     STOPPED = "stopped"
 
 class WorkerType(Enum):
+<<<<<<< Updated upstream
     """Tipos de workers especializados"""
     AI_PROCESSOR = "ai_processor"           # Processamento de IA/ML
     VISION_ANALYZER = "vision_analyzer"     # Análise de imagens/vídeo
@@ -66,14 +64,25 @@ class WorkerType(Enum):
 
 class TaskPriority(Enum):
     """Prioridades de tarefas"""
+=======
+    AI_PROCESSOR = "ai_processor"
+    VISION_ANALYZER = "vision_analyzer"
+    AUDIO_PROCESSOR = "audio_processor"
+    DATA_TRANSFORMER = "data_transformer"
+    IO_WORKER = "io_worker"
+    GENERAL_COMPUTE = "general_compute"
+
+
+class TaskPriority(Enum):
+>>>>>>> Stashed changes
     URGENT = 0
     HIGH = 1
     NORMAL = 2
     LOW = 3
-    BACKGROUND = 4
 
 @dataclass
 class WorkerConfig:
+<<<<<<< Updated upstream
     """Configuração de um worker process"""
     worker_type: WorkerType
     worker_id: str = field(default_factory=lambda: str(uuid.uuid4()))
@@ -525,8 +534,30 @@ class WorkerProcess:
         """Mock speech-to-text function"""
         time.sleep(0.15)  # Simulate transcription time
         return {"text": "Hello, this is mock transcription", "confidence": 0.91}
+=======
+    worker_type: WorkerType
+    worker_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    max_memory_mb: int = 512
+    max_cpu_percent: float = 80.0
+    max_tasks_per_worker: int = 100
+    worker_timeout_seconds: float = 300.0
+    task_timeout_seconds: float = 60.0
+    max_concurrent_tasks: int = 1
+    queue_size: int = 10
+
+
+@dataclass
+class WorkerTask:
+    task_id: str
+    worker_type: WorkerType
+    function_name: str
+    args: tuple
+    kwargs: Dict[str, Any]
+    priority: TaskPriority = TaskPriority.NORMAL
+>>>>>>> Stashed changes
 
 class ProcessWorkerFactory:
+<<<<<<< Updated upstream
     """
     Factory para gerenciar workers em processos separados
     
@@ -636,11 +667,72 @@ class ProcessWorkerFactory:
                    timeout_seconds: Optional[float] = None,
                    **kwargs) -> str:
         """Submit task for execution"""
+=======
+    """Simplified worker factory used by performance-sensitive modules."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._running = False
+        self._configs: Dict[WorkerType, WorkerConfig] = {}
+        self._results: Dict[str, Future] = {}
+        self._submitted_tasks = 0
+        self._completed_tasks = 0
+        self._failed_tasks = 0
+
+        self._executor = ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="jarvis-worker"
+        )
+        self._function_registry: Dict[str, Callable[..., Any]] = {
+            "yolo_inference": self._fallback_yolo_inference,
+        }
+
+    def configure_worker_type(
+        self, worker_type: WorkerType, config: WorkerConfig
+    ) -> bool:
+        with self._lock:
+            self._configs[worker_type] = config
+        logger.debug("Configured worker type %s", worker_type.value)
+        return True
+
+    def register_function(
+        self, function_name: str, function: Callable[..., Any]
+    ) -> None:
+        self._function_registry[function_name] = function
+
+    def start(self) -> bool:
+        self._running = True
+        return True
+
+    def stop(self) -> bool:
+        self._running = False
+        with self._lock:
+            pending = list(self._results.values())
+            self._results.clear()
+        for future in pending:
+            future.cancel()
+        return True
+
+    def submit_task(
+        self,
+        worker_type: WorkerType,
+        function_name: str,
+        *args: Any,
+        priority: TaskPriority = TaskPriority.NORMAL,
+        **kwargs: Any,
+    ) -> str:
+        if not self._running:
+            self.start()
+
+        task_id = str(uuid.uuid4())
+>>>>>>> Stashed changes
         task = WorkerTask(
+            task_id=task_id,
+            worker_type=worker_type,
             function_name=function_name,
             args=args,
             kwargs=kwargs,
             priority=priority,
+<<<<<<< Updated upstream
             timeout_seconds=timeout_seconds,
             metadata={"worker_type": worker_type.value}
         )
@@ -873,9 +965,45 @@ class ProcessWorkerFactory:
                 logger.error(f"Result collector error: {e}")
                 time.sleep(1.0)
     
-    def get_stats(self) -> Dict[str, Any]:
-        """Get comprehensive factory statistics"""
+=======
+        )
+
+        future = self._executor.submit(self._execute_task, task)
         with self._lock:
+            self._results[task_id] = future
+            self._submitted_tasks += 1
+
+        return task_id
+
+    def get_task_result(
+        self, task_id: str, timeout: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            future = self._results.get(task_id)
+
+        if future is None:
+            return None
+
+        try:
+            result = future.result(timeout=timeout)
+        except TimeoutError:
+            return {
+                "success": False,
+                "result": None,
+                "error": "timeout",
+                "duration_seconds": timeout or 0.0,
+            }
+        finally:
+            if future.done():
+                with self._lock:
+                    self._results.pop(task_id, None)
+
+        return result
+
+>>>>>>> Stashed changes
+    def get_stats(self) -> Dict[str, Any]:
+        with self._lock:
+<<<<<<< Updated upstream
             # Count workers by type and state
             workers_by_type = {}
             workers_by_state = defaultdict(int)
@@ -1024,3 +1152,69 @@ if __name__ == "__main__":
         print("✅ Test completed")
     
     test_worker_factory()
+=======
+            in_flight = len(self._results)
+            submitted = self._submitted_tasks
+            completed = self._completed_tasks
+            failed = self._failed_tasks
+
+        return {
+            "running": self._running,
+            "submitted_tasks": submitted,
+            "completed_tasks": completed,
+            "failed_tasks": failed,
+            "in_flight": in_flight,
+            "configured_worker_types": [wt.value for wt in self._configs.keys()],
+        }
+
+    def _execute_task(self, task: WorkerTask) -> Dict[str, Any]:
+        started = time.perf_counter()
+        try:
+            handler = self._function_registry.get(task.function_name)
+            if handler is None:
+                raise ValueError(f"Unsupported worker function: {task.function_name}")
+
+            output = handler(*task.args, **task.kwargs)
+            duration = time.perf_counter() - started
+
+            with self._lock:
+                self._completed_tasks += 1
+
+            return {
+                "success": True,
+                "result": output,
+                "duration_seconds": duration,
+                "worker_type": task.worker_type.value,
+                "function_name": task.function_name,
+            }
+        except Exception as exc:
+            duration = time.perf_counter() - started
+            with self._lock:
+                self._failed_tasks += 1
+            logger.error("Worker task failed (%s): %s", task.function_name, exc)
+            return {
+                "success": False,
+                "result": None,
+                "error": str(exc),
+                "duration_seconds": duration,
+                "worker_type": task.worker_type.value,
+                "function_name": task.function_name,
+            }
+
+    def _fallback_yolo_inference(self, *args: Any, **kwargs: Any) -> list:
+        # Conservative fallback: return empty detections and let caller handle local inference fallback.
+        return []
+
+
+process_worker_factory = ProcessWorkerFactory()
+
+
+__all__ = [
+    "ProcessWorkerFactory",
+    "TaskPriority",
+    "WorkerConfig",
+    "WorkerState",
+    "WorkerType",
+    "process_worker_factory",
+]
+>>>>>>> Stashed changes

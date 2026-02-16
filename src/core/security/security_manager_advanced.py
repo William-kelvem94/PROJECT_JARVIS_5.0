@@ -245,7 +245,7 @@ class SecurityManager:
                 try:
                     event = json.loads(line.strip())
                     events.append(event)
-                except:
+                except Exception:
                     continue
             
             return events

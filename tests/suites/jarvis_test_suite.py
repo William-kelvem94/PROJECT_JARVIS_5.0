@@ -62,7 +62,7 @@ class JarvisTestSuite(unittest.TestCase):
 
     def tearDown(self):
         """Limpeza após cada teste."""
-        duration = time.time() - self.start_time
+        _duration = time.time() - self.start_time
         # Resultado será coletado pelo TestRunner
 
     @classmethod
@@ -154,7 +154,7 @@ class PerformanceTestSuite(JarvisTestSuite):
 
         # Simula alguma atividade
         data = list(range(10000))
-        result = sum(data)
+        _ = sum(data)
 
         final_memory = process.memory_info().rss / (1024 * 1024)  # MB
         memory_increase = final_memory - initial_memory
@@ -164,7 +164,7 @@ class PerformanceTestSuite(JarvisTestSuite):
 
     def test_cpu_usage_baseline(self):
         """Testa uso de CPU em condições normais."""
-        initial_cpu = psutil.cpu_percent(interval=1)
+        _initial_cpu = psutil.cpu_percent(interval=1)
 
         # Simula processamento
         for _ in range(1000):
@@ -270,8 +270,12 @@ class SystemTestSuite(JarvisTestSuite):
         try:
             import src.core.main
             import src.core.security_manager
+<<<<<<< Updated upstream
             import src.core.config_manager
             import src.evolution.self_observer
+=======
+            import src.evolution.self_observer  # noqa: F401
+>>>>>>> Stashed changes
 
             # Se chegou aqui, imports foram bem-sucedidos
             self.assertTrue(True, "System modules imported successfully")
@@ -320,8 +324,15 @@ class TestRunner:
             cov.start()
 
         # Executa testes
+<<<<<<< Updated upstream
         loader = unittest.TestLoader()
         runner = unittest.TextTestRunner(verbosity=2, stream=open(self.output_dir / "test_output.txt", "w"))
+=======
+        loader = unittest.TestLoader()  # noqa: F841
+        runner = unittest.TextTestRunner(
+            verbosity=2, stream=open(self.output_dir / "test_output.txt", "w")
+        )
+>>>>>>> Stashed changes
 
         all_results = []
         total_tests = 0

@@ -201,11 +201,11 @@ def test_security_manager():
         
         # Teste 3: Modo privado
         security_manager.enable_private_mode()
-        assert security_manager.private_mode == True
+        assert security_manager.private_mode
         print("✅ Teste 6.3: Modo privado ativado")
         
         security_manager.disable_private_mode()
-        assert security_manager.private_mode == False
+        assert not security_manager.private_mode
         print("✅ Teste 6.4: Modo privado desativado")
         
         # Teste 4: Status

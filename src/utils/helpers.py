@@ -448,7 +448,7 @@ class SystemHelper:
             return False
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except Exception:
             return False
 
     @staticmethod
@@ -468,10 +468,6 @@ class SystemHelper:
         except Exception as e:
             logger.error(f"Erro ao criar atalho: {e}")
             return False
-            shortcut.Description = description
-            shortcut.save()
-        except Exception as e:
-            logger.error(f"Erro ao criar atalho: {e}")
 
 # InstÃ¢ncias globais para conveniÃªncia
 file_helper = FileHelper()

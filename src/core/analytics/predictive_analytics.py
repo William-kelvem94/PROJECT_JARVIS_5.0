@@ -261,7 +261,7 @@ class DemocraticPredictiveAnalytics:
                     gpu = gpus[0]
                     gpu_percent = gpu.load * 100
                     gpu_memory_mb = gpu.memoryUsed
-            except:
+            except Exception:
                 pass
             
             # MÃ©tricas de rede
@@ -324,8 +324,13 @@ class DemocraticPredictiveAnalytics:
         # Por ora, simular baseado em device_info
         
         try:
+<<<<<<< Updated upstream
             specs = device_info.get('specs', {})
             
+=======
+            specs = device_info.get("specs", {})  # noqa: F841
+
+>>>>>>> Stashed changes
             return SystemMetrics(
                 timestamp=datetime.now(),
                 device_id=device_id,
@@ -342,7 +347,7 @@ class DemocraticPredictiveAnalytics:
                 uptime_hours=np.random.normal(72, 24),  # ~3 dias mÃ©dia
                 temperature_c=np.random.normal(45, 10)
             )
-        except:
+        except Exception:
             return None
     
     def _store_metrics(self, metrics: SystemMetrics):
@@ -645,9 +650,15 @@ class DemocraticPredictiveAnalytics:
             # Analisar padrÃµes de performance
             cpu_trend = np.mean([m.cpu_percent for m in recent])
             memory_trend = np.mean([m.memory_percent for m in recent])
+<<<<<<< Updated upstream
             
             current_hour = datetime.now().hour
             
+=======
+
+            current_hour = datetime.now().hour  # noqa: F841
+
+>>>>>>> Stashed changes
             # Se sistema estÃ¡ subutilizado, recomendar tarefas
             if cpu_trend < 30 and memory_trend < 50:
                 alert = PredictiveAlert(

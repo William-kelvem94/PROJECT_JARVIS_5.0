@@ -7,9 +7,13 @@ Loop ReAct explÃ­cito com Gemini function calling
 USAGE: from src.core.react_agent import ReActAgent
 """
 
+<<<<<<< Updated upstream
 import sys
 import os
 from pathlib import Path
+=======
+import ast
+>>>>>>> Stashed changes
 import json
 import logging
 from typing import List, Dict, Optional, Any, Callable
@@ -20,6 +24,17 @@ from src.utils.safe_math import safe_eval
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SAFE_CODE_EXEC_BUILTINS = {
+    "abs": abs,
+    "len": len,
+    "min": min,
+    "max": max,
+    "sum": sum,
+    "sorted": sorted,
+    "range": range,
+    "round": round,
+}
 
 # Add project root
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -146,8 +161,14 @@ class ReActAgent:
             
             # Create model with tools (Corrected format for SDK)
             try:
+<<<<<<< Updated upstream
                 from google.ai.generativelanguage_v1beta.types import Tool
                 # If we could import Tool, we might structure it differently, 
+=======
+                from google.ai.generativelanguage_v1beta.types import Tool  # noqa: F401
+
+                # If we could import Tool, we might structure it differently,
+>>>>>>> Stashed changes
                 # but standard dict typically works if schema is perfect.
             except ImportError:
                 pass
@@ -207,6 +228,7 @@ class ReActAgent:
                 # Secure evaluation using safe_eval (AST-based)
                 result = safe_eval(expression)
                 return f"Result: {result}"
+<<<<<<< Updated upstream
             
             elif tool_name == 'code_exec':
                 code = parameters['code']
@@ -215,12 +237,116 @@ class ReActAgent:
                 exec(code, {"__builtins__": {}}, namespace)
                 return f"Executed successfully. Namespace: {namespace}"
             
+=======
+
+            elif tool_name == "code_exec":
+                code = parameters["code"]
+                return self._safe_code_exec(code)
+
+>>>>>>> Stashed changes
             else:
                 return f"Error: Unknown tool '{tool_name}'"
         
         except Exception as e:
             return f"Error executing {tool_name}: {str(e)}"
+<<<<<<< Updated upstream
     
+=======
+
+    def _validate_code_exec(self, code: str) -> Optional[str]:
+        """Validate code_exec payload with strict AST and token checks."""
+        if not isinstance(code, str) or not code.strip():
+            return "Empty code payload."
+
+        if len(code) > 500:
+            return "Code payload too large."
+
+        lowered = code.lower()
+        forbidden_snippets = (
+            "import ",
+            "__",
+            "open(",
+            "exec(",
+            "eval(",
+            "compile(",
+            "globals(",
+            "locals(",
+            "os.",
+            "sys.",
+            "subprocess",
+            "socket",
+            "pathlib",
+        )
+        if any(snippet in lowered for snippet in forbidden_snippets):
+            return "Forbidden token detected in code payload."
+
+        try:
+            tree = ast.parse(code, mode="exec")
+        except SyntaxError as exc:
+            return f"Syntax error: {exc}"
+
+        allowed_names = set(SAFE_CODE_EXEC_BUILTINS.keys()) | {"result"}
+        forbidden_nodes = (
+            ast.Import,
+            ast.ImportFrom,
+            ast.With,
+            ast.Try,
+            ast.Lambda,
+            ast.ClassDef,
+            ast.FunctionDef,
+            ast.AsyncFunctionDef,
+            ast.Attribute,
+            ast.Delete,
+            ast.Global,
+            ast.Nonlocal,
+            ast.Raise,
+        )
+
+        for node in ast.walk(tree):
+            if isinstance(node, forbidden_nodes):
+                return f"Forbidden syntax: {type(node).__name__}"
+
+            if isinstance(node, ast.Call):
+                if not isinstance(node.func, ast.Name):
+                    return "Only direct safe built-in calls are allowed."
+                if node.func.id not in SAFE_CODE_EXEC_BUILTINS:
+                    return f"Function '{node.func.id}' is not allowed."
+
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                if node.id not in allowed_names:
+                    return f"Identifier '{node.id}' is not allowed."
+
+        return None
+
+    def _safe_code_exec(self, code: str) -> str:
+        """Execute tightly-scoped code with an allowlisted built-in namespace."""
+        validation_error = self._validate_code_exec(code)
+        if validation_error:
+            return f"Error executing code_exec: {validation_error}"
+
+        namespace: Dict[str, Any] = {}
+        compiled = compile(ast.parse(code, mode="exec"), "<safe_code_exec>", "exec")
+        # Exec é usado intencionalmente **após** validação estrita via AST e allowlist.
+        # Builtins são restritos em SAFE_CODE_EXEC_BUILTINS; capturamos exceções de
+        # tempo de execução para evitar crash da função.
+        try:
+            exec(
+                compiled, {"__builtins__": SAFE_CODE_EXEC_BUILTINS}, namespace
+            )  # nosec: validated by _validate_code_exec
+        except Exception as e:
+            logger.exception("Erro ao executar código seguro")
+            return f"Error executing code_exec: {e}"
+
+        serializable_types = (str, int, float, bool, list, dict, tuple, type(None))
+        safe_namespace = {
+            key: value
+            for key, value in namespace.items()
+            if not key.startswith("__") and isinstance(value, serializable_types)
+        }
+
+        return f"Executed successfully. Namespace: {safe_namespace}"
+
+>>>>>>> Stashed changes
     def run(self, task: str, verbose: bool = True) -> Dict[str, Any]:
         """
         Run ReAct loop (uses Gemini if available, otherwise fallback to LocalBrain)

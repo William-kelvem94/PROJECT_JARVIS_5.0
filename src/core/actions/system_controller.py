@@ -5,6 +5,7 @@
 # Prioriza comandos diretos sobre automaÃ§Ã£o visual
 # ============================================================================
 
+<<<<<<< Updated upstream
 import os
 import sys
 import subprocess
@@ -12,6 +13,17 @@ import logging
 from ctypes import cast, POINTER
 from typing import Optional, List, Dict, Any
 from pathlib import Path
+=======
+import logging
+import shlex
+import subprocess
+from ctypes import POINTER, cast
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import psutil
+
+>>>>>>> Stashed changes
 
 # Lazy import helpers
 def _get_security_manager():
@@ -26,10 +38,18 @@ def _get_config():
 # IMPORTS CONDICIONAIS (Graceful degradation)
 # -------------------------------------------------------------------------
 try:
+<<<<<<< Updated upstream
     import win32gui
     import win32con
     import win32process
     import win32api
+=======
+    import win32api  # noqa: F401
+    import win32con
+    import win32gui
+    import win32process  # noqa: F401
+
+>>>>>>> Stashed changes
     PYWIN32_AVAILABLE = True
 except ImportError:
     PYWIN32_AVAILABLE = False
@@ -50,12 +70,26 @@ except ImportError:
     PYCAW_AVAILABLE = False
     logging.warning("âš ï¸ pycaw nÃ£o disponÃ­vel - controle de Ã¡udio desabilitado")
 
-import psutil  # Sempre disponÃ­vel (fallback)
-
 # -------------------------------------------------------------------------
 # LOGGER
 # -------------------------------------------------------------------------
 logger = logging.getLogger(__name__)
+
+SAFE_SHELL_EXECUTABLES = {
+    "python",
+    "python3",
+    "pip",
+    "git",
+    "ollama",
+    "whoami",
+    "hostname",
+    "ipconfig",
+    "tasklist",
+    "systeminfo",
+    "wmic",
+    "powershell",
+    "pwsh",
+}
 
 
 # ============================================================================
@@ -297,7 +331,7 @@ class SystemController:
             subprocess.run(['nircmd.exe', 'setsysvolume', str(volume_int)], 
                          capture_output=True, timeout=2)
             return True
-        except:
+        except Exception:
             return False
     
     # -------------------------------------------------------------------------
@@ -373,12 +407,26 @@ class SystemController:
             Dict com stdout, stderr, returncode
         """
         try:
+<<<<<<< Updated upstream
             result = subprocess.run(
                 command,
                 shell=True,
                 capture_output=True,
                 text=True,
                 timeout=timeout
+=======
+            argv, validation_error = self._validate_shell_command(command)
+            if validation_error:
+                return {
+                    "stdout": "",
+                    "stderr": validation_error,
+                    "returncode": -1,
+                    "success": False,
+                }
+
+            result = subprocess.run(
+                argv, shell=False, capture_output=True, text=True, timeout=timeout
+>>>>>>> Stashed changes
             )
             
             return {
@@ -401,6 +449,28 @@ class SystemController:
                 "returncode": -1,
                 "success": False
             }
+
+    def _validate_shell_command(self, command: str):
+        if not isinstance(command, str) or not command.strip():
+            return None, "Comando vazio."
+
+        blocked_operators = ("|", "&", ";", ">", "<", "`", "$(")
+        if any(op in command for op in blocked_operators):
+            return None, "Operadores de shell não são permitidos."
+
+        try:
+            argv = shlex.split(command, posix=False)
+        except ValueError:
+            return None, "Sintaxe de comando inválida."
+
+        if not argv:
+            return None, "Comando vazio."
+
+        executable = Path(argv[0]).name.lower()
+        if executable not in SAFE_SHELL_EXECUTABLES:
+            return None, f"Executável '{executable}' não permitido."
+
+        return argv, None
 
 
 # ============================================================================

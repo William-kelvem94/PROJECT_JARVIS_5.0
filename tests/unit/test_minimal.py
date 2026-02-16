@@ -24,7 +24,12 @@ print("✅ Platform:", platform.system(), platform.release())
 
 # Test basic imports
 try:
+<<<<<<< Updated upstream
     import pygame
+=======
+    import pygame  # noqa: F401
+
+>>>>>>> Stashed changes
     print("✅ Pygame available")
 except ImportError as e:
     print("❌ Pygame failed:", e)

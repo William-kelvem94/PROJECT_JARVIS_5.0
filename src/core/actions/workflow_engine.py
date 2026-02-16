@@ -214,7 +214,7 @@ def create_example_workflows():
     """Cria workflows de exemplo"""
     
     # Workflow 1: Abrir navegador e pesquisar
-    wf1 = workflow_engine.create_workflow(
+    wf1 = workflow_engine.create_workflow(  # noqa: F841
         name="pesquisar_google",
         description="Abre Chrome e faz uma pesquisa no Google",
         tags=["navegador", "pesquisa"]

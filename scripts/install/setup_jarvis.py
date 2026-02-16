@@ -10,6 +10,29 @@ import subprocess
 import platform
 from pathlib import Path
 
+<<<<<<< Updated upstream
+=======
+
+def _force_utf8_output():
+    """Normalize console encoding to UTF-8 on Windows terminals."""
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            # Keep default encoding if runtime doesn't support reconfigure.
+            pass
+
+
+_force_utf8_output()
+
+
+>>>>>>> Stashed changes
 class Colors:
     """Terminal colors for better output"""
     HEADER = '\033[95m'
@@ -311,6 +334,11 @@ REM JARVIS 5.0 Startup Script
 
 REM Ensure we are in the project root
 cd /d "%~dp0"
+
+REM Normalize terminal encoding for Unicode output
+chcp 65001 >nul
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
 
 echo Starting JARVIS 5.0...
 

@@ -5,6 +5,11 @@ Integra Whisper para STT e prepara para XTTS-v2 TTS
 
 import logging
 import os
+<<<<<<< Updated upstream
+=======
+import threading
+import time
+>>>>>>> Stashed changes
 import wave
 import numpy as np
 from pathlib import Path
@@ -125,7 +130,7 @@ class AdvancedSpeechProcessor:
         def _streaming_worker():
             logger.info("ðŸ“¡ Iniciando stream de transcriÃ§Ã£o...")
             # Buffer circular de 3 segundos para latÃªncia reduzida
-            buffer = []
+            buffer = []  # noqa: F841
             while self.whisper_available:
                 if hasattr(audio_stream, 'read'):
                     chunk = audio_stream.read(16000) # 1s de Ã¡udio
@@ -170,7 +175,7 @@ class AdvancedSpeechProcessor:
                 rate = wf.getframerate()
                 duration = frames / float(rate)
                 return duration
-        except:
+        except Exception:
             return 0.0
     
     def analyze_speech_emotion(self, audio_path: str) -> Dict[str, Any]:

@@ -43,7 +43,7 @@ class LoggingConfig:
         """Setup specialized loggers for specific purposes"""
         
         # Critical errors logger (always log to separate file)
-        critical_logger = LoggingConfig.setup_rotating_logger(
+        _critical_logger = LoggingConfig.setup_rotating_logger(
             logger_name="jarvis.critical",
             log_file=log_dir / "errors_critical.log",
             level=logging.ERROR,
@@ -53,7 +53,7 @@ class LoggingConfig:
         )
         
         # Performance metrics logger
-        perf_logger = LoggingConfig.setup_rotating_logger(
+        _perf_logger = LoggingConfig.setup_rotating_logger(
             logger_name="jarvis.performance",
             log_file=log_dir / "performance.log",
             level=logging.INFO,
@@ -63,7 +63,7 @@ class LoggingConfig:
         )
         
         # Session logger (rotates daily)
-        session_logger = LoggingConfig.setup_timed_rotating_logger(
+        _session_logger = LoggingConfig.setup_timed_rotating_logger(
             logger_name="jarvis.session",
             log_file=log_dir / "jarvis_session.log",
             level=logging.DEBUG,
@@ -194,9 +194,9 @@ class LoggingConfig:
         return logger
     
     @staticmethod
-    def setup_jarvis_logging(data_dir: Path) -> dict:
+    def setup_jarvis_session_logging(data_dir: Path) -> dict:
         """
-        Configura todo o sistema de logging do JARVIS 5.0
+        Configura todo o sistema de logging do JARVIS 5.0 (session-level)
         Organiza logs em pastas por data (YYYY-MM-DD) para fÃ¡cil auditoria.
         """
         from datetime import datetime

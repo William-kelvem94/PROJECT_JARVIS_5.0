@@ -1,12 +1,13 @@
 === JARVIS 5.0 SYSTEM SCAN ===
 Root: C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0
-Time: 2026-02-16 02:28:44.899204
+Time: 2026-02-16 16:29:48.091277
 ------------------------------
-Scanning 1034 files...
+Scanning 927 files...
 ------------------------------
-Found 0 Syntax Errors:
+Found 1 Syntax Errors:
+  [CRITICAL] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\legacy\test_p1_structured.py: SyntaxError at line 65: expected an indented block after 'except' statement on line 63
 ------------------------------
-Found 67 Suspicious Items (TODOs/FIXMEs/etc):
+Found 66 Suspicious Items (TODOs/FIXMEs/etc):
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\archive\old_status\AUTO_INSTALL_P0_P1.md:149 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\archive\old_status\IMPLEMENTACAO_STATUS_FINAL.txt:198 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\archive\old_status\NEURAL_EXPANSION_COMPLETE.txt:5 - TODO found
@@ -17,104 +18,73 @@ Found 67 Suspicious Items (TODOs/FIXMEs/etc):
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\reports\DIAGNOSTIC_REPORT_2026_02_16.md:49 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\reports\IMPLEMENTATION_COMPLETE.txt:14 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\reports\IMPLEMENTATION_COMPLETE.txt:255 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\reports\REPORT.md:74 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\technical\autonomous-mode-guide.md:105 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\technical\RELATORIO_FINAL_MELHORIAS_CORE.md:41 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\docs\technical\evolution\COMPLETE_IMPLEMENTATION.md:324 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\debug\singularity_debug.py:41 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\collect_code_metrics.py:1 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\collect_code_metrics.py:9 - FIXME found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\collect_code_metrics.py:9 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\debug\singularity_debug.py:44 - TODO found
   [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\translation\commit_translations_map.txt:28 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\translation\translate_commits_automated.py:38 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\analytics\predictive_analytics.py:714 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\analytics\predictive_analytics.py:926 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\identity\enhanced_biometric_verifier.py:595 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\identity\microsoft_device_identifier.py:593 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\infrastructure\circuit_breaker.py:182 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\infrastructure\resource_pool_manager.py:159 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\intelligence\perception_engine.py:128 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:693 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:787 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:922 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:980 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:51 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:52 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:53 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:54 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:56 - NotImplementedError
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\democratic_intelligence.py:579 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\democratic_intelligence.py:652 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\local_network_intelligence.py:593 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\vision\camera_controller.py:448 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:128 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:193 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:205 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\interface\control_dashboard.py:1042 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\interface\control_dashboard.py:1065 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:492 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:493 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:588 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:589 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:791 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_core_complete.py:406 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_device_manager_complete.py:449 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_evolution_complete.py:53 - TODO found
-  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_evolution_complete.py:84 - TODO found
-  ... and 17 more.
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\scripts\translation\translate_commits_automated.py:36 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\analytics\predictive_analytics.py:802 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\analytics\predictive_analytics.py:1027 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\identity\enhanced_biometric_verifier.py:692 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\identity\microsoft_device_identifier.py:647 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\infrastructure\circuit_breaker.py:191 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\infrastructure\resource_pool_manager.py:165 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\intelligence\perception_engine.py:134 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:899 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:1007 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:1183 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\interface\democratic_control_interface.py:1249 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:59 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:62 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:65 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:68 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\management\device_manager.py:74 - NotImplementedError
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\democratic_intelligence.py:653 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\democratic_intelligence.py:728 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\network_mesh\local_network_intelligence.py:627 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:132 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:198 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\evolution\safe_executor.py:210 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:546 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:547 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\learning\learning_engine.py:756 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_core_complete.py:459 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_device_manager_complete.py:445 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_evolution_complete.py:58 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_evolution_complete.py:94 - TODO found
+  [WARN] C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\tests\integration\test_evolution_complete.py:138 - TODO found
+  ... and 16 more.
 ------------------------------
 Recent Log Errors:
-  Errors in errors_critical.log:
-  2026-02-16 02:02:02,282 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:04,315 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:06,322 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 10.5s)
-  2026-02-16 02:02:06,330 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.8% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:08,337 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:10,787 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:12,822 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 95.1% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:14,830 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:16,836 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 10.5s)
-  2026-02-16 02:02:16,845 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:18,851 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:20,857 - jarvis.watchdog - ERROR - 💀 Watchdog: BackendScheduler is DEAD (No heartbeat for 31.9s)
-  2026-02-16 02:02:20,867 - jarvis.watchdog - ERROR - 💀 Watchdog: VisionSystem is DEAD (No heartbeat for 31.9s)
-  2026-02-16 02:02:20,877 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:22,885 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:24,902 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:26,907 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 10.1s)
-  2026-02-16 02:02:26,919 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:28,926 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:30,931 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.8% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:32,943 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:34,948 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:36,954 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 10.0s)
-  2026-02-16 02:02:36,986 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:38,991 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:40,998 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.3% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:43,014 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:45,021 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 93.9% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:47,026 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 10.1s)
-  2026-02-16 02:02:47,034 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.5% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:49,038 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:51,043 - jarvis.watchdog - ERROR - 💀 Watchdog: BackendScheduler is DEAD (No heartbeat for 30.2s)
-  2026-02-16 02:02:51,049 - jarvis.watchdog - ERROR - 💀 Watchdog: VisionSystem is DEAD (No heartbeat for 30.2s)
-  2026-02-16 02:02:51,060 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:53,489 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.8% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:55,956 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.7% - Triggering EMERGENCY cleanup
-  2026-02-16 02:02:58,237 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 11.2s)
-  2026-02-16 02:02:58,250 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 95.1% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:00,333 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:02,999 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.5% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:05,469 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 94.5% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:07,477 - jarvis.watchdog - ERROR - 💀 Watchdog: MainUI is DEAD (No heartbeat for 9.2s)
-  2026-02-16 02:03:07,501 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 95.5% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:09,508 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 95.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:03:11,579 - jarvis.watchdog - ERROR - ⚠️ System Memory Critical: 95.6% - Triggering EMERGENCY cleanup
-  2026-02-16 02:12:10,567 - src.core.management.universal_recovery_manager - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
-  2026-02-16 02:16:42,414 - REAL-TRAINER - ERROR - âŒ Erro no fine-tuning: cannot access local variable 'LoraConfig' where it is not associated with a value
-  2026-02-16 02:16:42,415 - EXTERNAL-TRAINER - ERROR - ❌ Falha no treinamento real: {'status': 'error', 'topic': 'machine learning', 'error': "cannot access local variable 'LoraConfig' where it is not associated with a value"}
-  2026-02-16 02:16:42,417 - EXTERNAL-TRAINER - ERROR - ❌ Falha no treinamento!
-  2026-02-16 02:18:37,066 - src.core.management.universal_recovery_manager - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
   Errors in jarvis_detailed_debug.log:
-  2026-02-16 02:16:42,414 - REAL-TRAINER - ERROR - âŒ Erro no fine-tuning: cannot access local variable 'LoraConfig' where it is not associated with a value
-  2026-02-16 02:16:42,415 - EXTERNAL-TRAINER - ERROR - ❌ Falha no treinamento real: {'status': 'error', 'topic': 'machine learning', 'error': "cannot access local variable 'LoraConfig' where it is not associated with a value"}
-  2026-02-16 02:16:42,417 - EXTERNAL-TRAINER - ERROR - ❌ Falha no treinamento!
-  2026-02-16 02:18:37,066 - src.core.management.universal_recovery_manager - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
-  Errors in jarvis.log:
-  2026-02-16 02:18:37,066 - src.core.management.universal_recovery_manager - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+  2026-02-16 16:28:40,148 - src.core.intelligence.memory.unified_manager - ERROR - Memory initialization failed: no such column: collections.topic
+  Errors in component_vision.log:
+  2026-02-16 15:30:34 - src.core.vision.vision_enhancer - ERROR - âŒ Nenhuma imagem fornecida ou arquivo nÃ£o encontrado
+  2026-02-16 15:37:04 - src.core.vision.screen_capture - ERROR - ScreenCapture: mss nÃ£o disponÃ­vel. MÃ³dulo desativado.
+  2026-02-16 15:38:21 - src.core.vision.screen_capture - ERROR - ScreenCapture: mss nÃ£o disponÃ­vel. MÃ³dulo desativado.
+  2026-02-16 15:39:56 - src.core.vision.screen_capture - ERROR - ScreenCapture: mss nÃ£o disponÃ­vel. MÃ³dulo desativado.
+  Errors in component_audio.log:
+  2026-02-16 15:35:40 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install faster-whisper
+  2026-02-16 15:35:40 - src.core.audio.enhanced_audio - CRITICAL - ❌ torch/torchaudio REQUIRED: No module named 'torchaudio'
+  2026-02-16 15:35:40 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install torch torchaudio
+  2026-02-16 15:37:27 - src.core.audio.enhanced_audio - CRITICAL - ❌ faster-whisper REQUIRED: No module named 'faster_whisper'
+  2026-02-16 15:37:27 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install faster-whisper
+  2026-02-16 15:37:27 - src.core.audio.enhanced_audio - CRITICAL - ❌ torch/torchaudio REQUIRED: No module named 'torchaudio'
+  2026-02-16 15:37:27 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install torch torchaudio
+  2026-02-16 15:38:33 - src.core.audio.enhanced_audio - CRITICAL - ❌ faster-whisper REQUIRED: No module named 'faster_whisper'
+  2026-02-16 15:38:33 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install faster-whisper
+  2026-02-16 15:38:33 - src.core.audio.enhanced_audio - CRITICAL - ❌ torch/torchaudio REQUIRED: No module named 'torchaudio'
+  2026-02-16 15:38:33 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install torch torchaudio
+  2026-02-16 15:40:09 - src.core.audio.enhanced_audio - CRITICAL - ❌ faster-whisper REQUIRED: No module named 'faster_whisper'
+  2026-02-16 15:40:09 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install faster-whisper
+  2026-02-16 15:40:09 - src.core.audio.enhanced_audio - CRITICAL - ❌ torch/torchaudio REQUIRED: No module named 'torchaudio'
+  2026-02-16 15:40:09 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install torch torchaudio
+  2026-02-16 15:40:44 - src.core.audio.enhanced_audio - CRITICAL - ❌ faster-whisper REQUIRED: No module named 'faster_whisper'
+  2026-02-16 15:40:44 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install faster-whisper
+  2026-02-16 15:40:44 - src.core.audio.enhanced_audio - CRITICAL - ❌ torch/torchaudio REQUIRED: No module named 'torchaudio'
+  2026-02-16 15:40:44 - src.core.audio.enhanced_audio - CRITICAL - 💡 Install with: pip install torch torchaudio

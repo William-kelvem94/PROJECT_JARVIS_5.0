@@ -265,7 +265,7 @@ class SelfObserver:
             if requests:
                 requests.get("https://www.google.com", timeout=2)
                 status["internet"] = True
-        except:
+        except Exception:
             pass
             
         # Check Ollama
@@ -276,7 +276,7 @@ class SelfObserver:
                 res = requests.get(f"http://{host}:{port}/api/tags", timeout=2)
                 if res.status_code == 200:
                     status["ollama"] = True
-        except:
+        except Exception:
             pass
             
         return status

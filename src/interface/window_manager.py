@@ -655,7 +655,7 @@ class WindowManager(QObject):
         if event_type == "status":
             msg = data.get("details", "")
             status = data.get("status", "idle")
-            model = data.get("model", "")
+            model = data.get("model", "")  # noqa: F841
             tier = data.get("tier", "balanced")
             # Repassar para o HUD
             if self._hud:

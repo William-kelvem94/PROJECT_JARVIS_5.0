@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-SEMANTIC FEEDBACK - Sistema de Auto-CorreÃ§Ã£o Evolutiva
-JARVIS 5.0 - AnÃ¡lise semÃ¢ntica e aprendizado adaptativo real
-"""
+﻿"""Semantic feedback loop with safe incremental adaptation hooks."""
+
+from __future__ import annotations
 
 import sys
 import os
 import json
 import logging
+<<<<<<< Updated upstream
 import asyncio
 import threading
 from pathlib import Path
@@ -23,18 +22,30 @@ logger = logging.getLogger("SEMANTIC-FEEDBACK")
 
 # Adicionar diretÃ³rio raiz
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+=======
+from collections import deque
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
+>>>>>>> Stashed changes
 
 @dataclass
 class SemanticInteraction:
+<<<<<<< Updated upstream
     """Representa uma interaÃ§Ã£o semÃ¢ntica completa"""
+=======
+>>>>>>> Stashed changes
     interaction_id: str
     user_input: str
     ai_response: str
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
-    user_intent_vector: Optional[np.ndarray] = None
+    user_intent_vector: Dict[str, float] = field(default_factory=dict)
     response_quality_score: float = 0.0
-    dissonance_detected: bool = False
     confidence_score: float = 0.5
+<<<<<<< Updated upstream
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -50,33 +61,29 @@ class SemanticInteraction:
         if 'user_intent_vector' in data and data['user_intent_vector']:
             data['user_intent_vector'] = np.array(data['user_intent_vector'])
         return cls(**data)
+=======
+    dissonance_detected: bool = False
+>>>>>>> Stashed changes
 
 
 @dataclass
 class ConfidenceMetrics:
+<<<<<<< Updated upstream
     """MÃ©tricas de confianÃ§a do sistema"""
     total_interactions: int = 0
     successful_interactions: int = 0
+=======
+    interactions_processed: int = 0
+>>>>>>> Stashed changes
     dissonance_events: int = 0
-    average_confidence: float = 0.5
-    confidence_history: deque = field(default_factory=lambda: deque(maxlen=100))
-    last_self_study: Optional[str] = None
     adaptation_cycles: int = 0
-
-    def update_confidence(self, new_score: float):
-        """Atualiza confianÃ§a com novo score"""
-        self.confidence_history.append(new_score)
-        self.average_confidence = float(np.mean(list(self.confidence_history)))
-
-    def should_trigger_self_study(self, threshold: float = 0.4) -> bool:
-        """Verifica se deve disparar auto-estudo"""
-        return self.average_confidence < threshold and len(self.confidence_history) >= 5
+    last_self_study: Optional[str] = None
 
 
-class SemanticFeedbackAnalyzer:
-    """
-    Analisador SemÃ¢ntico para Auto-CorreÃ§Ã£o Evolutiva
+class SemanticFeedbackSystem:
+    """Detects response dissonance and triggers bounded re-training."""
 
+<<<<<<< Updated upstream
     Sistema que avalia intenÃ§Ãµes do usuÃ¡rio, detecta dissonÃ¢ncias
     e dispara aprendizado adaptativo de forma invisÃ­vel.
     """
@@ -88,13 +95,31 @@ class SemanticFeedbackAnalyzer:
         self.model = None
         self.tokenizer = None
         self.interaction_history: deque[SemanticInteraction] = deque(maxlen=50)
+=======
+    def __init__(self, max_history: int = 200, dissonance_threshold: float = 0.65):
+        self.max_history = max_history
+        self.dissonance_threshold = dissonance_threshold
+        self.interaction_history: deque[SemanticInteraction] = deque(maxlen=max_history)
+>>>>>>> Stashed changes
         self.confidence_metrics = ConfidenceMetrics()
 
-        # ConfiguraÃ§Ãµes
-        self.dissonance_threshold = 0.3  # Similaridade mÃ­nima para dissonÃ¢ncia
-        self.confidence_threshold = 0.4  # Threshold para auto-reparo
-        self.max_context_length = 512
+    def analyze_user_intent(self, user_input: str) -> Dict[str, float]:
+        text = (user_input or "").lower()
+        return {
+            "question": 1.0 if "?" in text else 0.0,
+            "command": (
+                1.0
+                if any(word in text for word in ["faça", "execute", "run", "crie"])
+                else 0.0
+            ),
+            "emotion": (
+                1.0
+                if any(word in text for word in ["obrigado", "ansioso", "frustrado"])
+                else 0.0
+            ),
+        }
 
+<<<<<<< Updated upstream
         # Estado do sistema
         self.is_adapting = False
         self.last_adaptation = None
@@ -518,14 +543,49 @@ class SemanticFeedbackAnalyzer:
             InteraÃ§Ã£o processada
         """
         # Criar interaÃ§Ã£o
+=======
+    def evaluate_response_quality(self, user_input: str, ai_response: str) -> float:
+        response = (ai_response or "").strip()
+        if not response:
+            return 0.0
+        score = 0.4
+        if len(response) > 30:
+            score += 0.2
+        if "não sei" not in response.lower():
+            score += 0.2
+        if user_input and any(
+            k in response.lower() for k in user_input.lower().split()[:3]
+        ):
+            score += 0.1
+        return max(0.0, min(1.0, score))
+
+    def calculate_dissonance(
+        self,
+        current_interaction: SemanticInteraction,
+        recent_interactions: List[SemanticInteraction],
+    ) -> float:
+        if not recent_interactions:
+            return 0.0
+
+        avg_quality = sum(
+            i.response_quality_score for i in recent_interactions[-10:]
+        ) / min(10, len(recent_interactions))
+        quality_delta = max(
+            0.0, avg_quality - current_interaction.response_quality_score
+        )
+        return max(0.0, min(1.0, quality_delta))
+
+    def process_interaction(
+        self, user_input: str, ai_response: str
+    ) -> SemanticInteraction:
+>>>>>>> Stashed changes
         interaction = SemanticInteraction(
             interaction_id=f"int_{datetime.now().timestamp()}",
             user_input=user_input,
             ai_response=ai_response
         )
-
-        # Analisar intenÃ§Ã£o do usuÃ¡rio
         interaction.user_intent_vector = self.analyze_user_intent(user_input)
+<<<<<<< Updated upstream
 
         # Avaliar qualidade da resposta
         interaction.response_quality_score = self.evaluate_response_quality(user_input, ai_response)
@@ -551,9 +611,30 @@ class SemanticFeedbackAnalyzer:
         self.interaction_history.append(interaction)
 
         logger.debug(f"ðŸ“Š InteraÃ§Ã£o processada - ConfianÃ§a: {interaction.confidence_score:.2f}, DissonÃ¢ncia: {interaction.dissonance_detected}")
+=======
+        interaction.response_quality_score = self.evaluate_response_quality(
+            user_input, ai_response
+        )
+
+        recent = list(self.interaction_history)
+        dissonance = self.calculate_dissonance(interaction, recent)
+        interaction.dissonance_detected = dissonance > self.dissonance_threshold
+        interaction.confidence_score = max(
+            0.1, interaction.response_quality_score - (dissonance / 2)
+        )
+>>>>>>> Stashed changes
+
+        self.interaction_history.append(interaction)
+        self.confidence_metrics.interactions_processed += 1
+
+        if interaction.dissonance_detected:
+            self.confidence_metrics.dissonance_events += 1
+            critique = f"Dissonance={dissonance:.2f}, quality={interaction.response_quality_score:.2f}"
+            self.trigger_neural_synthesis(critique, [interaction])
 
         return interaction
 
+<<<<<<< Updated upstream
     def _async_analysis_loop(self):
         """Loop assÃ­ncrono de anÃ¡lise e adaptaÃ§Ã£o"""
         while True:
@@ -636,30 +717,93 @@ class SemanticFeedbackAnalyzer:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 state = json.load(f)
+=======
+    def trigger_neural_synthesis(
+        self,
+        critique_analysis: str,
+        dissonant_sequence: List[SemanticInteraction],
+    ) -> None:
+        try:
+            from .real_trainer import RealTrainer
+>>>>>>> Stashed changes
 
-            # Restaurar mÃ©tricas
-            metrics_data = state.get("confidence_metrics", {})
-            self.confidence_metrics = ConfidenceMetrics(**metrics_data)
+            examples = []
+            for item in dissonant_sequence:
+                examples.append(
+                    {
+                        "instruction": item.user_input,
+                        "output": f"Resposta revisada com base em análise: {critique_analysis}",
+                    }
+                )
 
-            # Restaurar histÃ³rico
-            history_data = state.get("interaction_history", [])
-            self.interaction_history = deque(maxlen=50)
-            for interaction_data in history_data:
-                interaction = SemanticInteraction.from_dict(interaction_data)
-                self.interaction_history.append(interaction)
+            topic = f"semantic_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            trainer = RealTrainer(simulate=True)
+            trainer.fine_tune_incremental(examples, topic=topic)
 
+<<<<<<< Updated upstream
             self.last_adaptation = datetime.fromisoformat(state["last_adaptation"]) if state.get("last_adaptation") else None
             self.is_adapting = state.get("is_adapting", False)
+=======
+            self.confidence_metrics.adaptation_cycles += 1
+            self.confidence_metrics.last_self_study = datetime.now().isoformat()
+        except Exception as exc:
+            logger.error("Neural synthesis failed: %s", exc)
+            self._fallback_neural_synthesis(critique_analysis, dissonant_sequence)
+>>>>>>> Stashed changes
 
-            logger.info(f"ðŸ“‚ Estado carregado de {filepath}")
+    def _fallback_neural_synthesis(
+        self,
+        critique_analysis: str,
+        dissonant_sequence: List[SemanticInteraction],
+    ) -> None:
+        logger.warning(
+            "Fallback semantic synthesis used (%d interactions): %s",
+            len(dissonant_sequence),
+            critique_analysis[:120],
+        )
 
-        except Exception as e:
-            logger.error(f"âŒ Erro carregando estado: {e}")
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "history_size": len(self.interaction_history),
+            "dissonance_threshold": self.dissonance_threshold,
+            "metrics": asdict(self.confidence_metrics),
+        }
+
+    def save_state(
+        self, filepath: str = "data/learning/semantic_feedback_state.json"
+    ) -> None:
+        path = Path(filepath)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        payload = {
+            "saved_at": datetime.now().isoformat(),
+            "metrics": asdict(self.confidence_metrics),
+            "history": [asdict(item) for item in self.interaction_history],
+        }
+        path.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+    def load_state(
+        self, filepath: str = "data/learning/semantic_feedback_state.json"
+    ) -> None:
+        path = Path(filepath)
+        if not path.exists():
+            return
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            self.confidence_metrics = ConfidenceMetrics(**data.get("metrics", {}))
+            history = data.get("history", [])
+            self.interaction_history.clear()
+            for raw in history[-self.max_history :]:
+                self.interaction_history.append(SemanticInteraction(**raw))
+        except Exception as exc:
+            logger.warning("Could not load semantic feedback state: %s", exc)
 
 
-# InstÃ¢ncia global do analisador
-_semantic_analyzer = None
+semantic_feedback = SemanticFeedbackSystem()
 
+<<<<<<< Updated upstream
 def get_semantic_analyzer() -> SemanticFeedbackAnalyzer:
     """Retorna instÃ¢ncia global do analisador semÃ¢ntico"""
     global _semantic_analyzer
@@ -687,3 +831,12 @@ def process_interaction_feedback(user_input: str, ai_response: str) -> Dict[str,
         "dissonance_detected": interaction.dissonance_detected,
         "system_status": analyzer.get_system_status()
     }
+=======
+
+__all__ = [
+    "ConfidenceMetrics",
+    "SemanticFeedbackSystem",
+    "SemanticInteraction",
+    "semantic_feedback",
+]
+>>>>>>> Stashed changes

@@ -140,13 +140,13 @@ class EvolutionManager:
             try:
                 from src.evolution.voice_commands import evolution_voice_commands
                 await evolution_voice_commands.stop()
-            except:
+            except Exception:
                 pass
 
             try:
                 from src.evolution.module_generator import module_generator
                 await module_generator.stop()
-            except:
+            except Exception:
                 pass
 
             await safe_executor.stop()
@@ -156,7 +156,7 @@ class EvolutionManager:
             try:
                 from src.evolution.authorization_manager import authorization_manager
                 await authorization_manager.stop()
-            except:
+            except Exception:
                 pass
 
             # Publish shutdown event

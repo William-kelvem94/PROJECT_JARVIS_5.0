@@ -64,12 +64,19 @@ def test_1_structured_models():
         
         # Testar validação
         try:
-            invalid_click = ClickAction(x=-1, y=200)  # x negativo
+            ClickAction(x=-1, y=200)  # x negativo
             print("❌ Validação falhou (deveria rejeitar x negativo)")
             return False
+<<<<<<< Updated upstream
         except:
             print("✅ Validação funcionando (rejeitou x negativo)")
         
+=======
+        except Exception:
+            print("✅ Validação de coordenadas inválidas funcionando")
+            pass
+
+>>>>>>> Stashed changes
         return True
         
     except Exception as e:

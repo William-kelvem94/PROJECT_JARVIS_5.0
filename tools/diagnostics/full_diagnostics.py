@@ -1,17 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-JARVIS 5.0 - Full System Diagnostics
-====================================
-Script completo de diagnóstico que verifica:
-- Versões de dependências críticas
-- Carregamento de módulos ML
-- Disponibilidade de DLLs (Windows)
-- Configurações e encoding
-- Health status de todos os subsistemas
-- Gera relatório HTML detalhado
-"""
+﻿"""Full diagnostics runner for JARVIS 5.0."""
 
+<<<<<<< Updated upstream
 import sys
 import os
 from pathlib import Path
@@ -20,16 +9,30 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+=======
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+>>>>>>> Stashed changes
 import platform
 import json
 import subprocess
 from datetime import datetime
+<<<<<<< Updated upstream
 from typing import Dict, List, Tuple, Any
 import logging
+=======
+from pathlib import Path
+from typing import Dict, List
+>>>>>>> Stashed changes
 
-# Configurar logging mínimo
-logging.basicConfig(level=logging.WARNING)
+import psutil
 
+logger = logging.getLogger(__name__)
+
+<<<<<<< Updated upstream
 class DiagnosticRunner:
     """Executor de diagnósticos do sistema JARVIS"""
     
@@ -474,6 +477,55 @@ def main():
     
     # Retornar código de erro se houver problemas críticos
     sys.exit(1 if runner.errors else 0)
+=======
+
+def collect_system_snapshot() -> Dict[str, object]:
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "platform": platform.platform(),
+        "python_version": platform.python_version(),
+        "cpu_percent": psutil.cpu_percent(interval=0.2),
+        "memory_percent": psutil.virtual_memory().percent,
+        "disk_percent": psutil.disk_usage(".").percent,
+    }
+
+
+def validate_paths(paths: List[str]) -> Dict[str, bool]:
+    result: Dict[str, bool] = {}
+    for item in paths:
+        result[item] = Path(item).exists()
+    return result
+
+
+def run_diagnostics(output_path: Path) -> Dict[str, object]:
+    payload = {
+        "system": collect_system_snapshot(),
+        "paths": validate_paths(["src", "tests", "config", "data", "main.py"]),
+    }
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    return payload
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run full diagnostics for JARVIS")
+    parser.add_argument(
+        "--output",
+        default="tools/diagnostics/diagnostics_report.json",
+        help="Output file path",
+    )
+    args = parser.parse_args()
+
+    output = Path(args.output)
+    payload = run_diagnostics(output)
+
+    logger.info("Diagnostics report generated at %s", output)
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    return 0
+>>>>>>> Stashed changes
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

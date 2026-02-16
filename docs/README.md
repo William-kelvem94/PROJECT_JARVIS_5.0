@@ -12,7 +12,7 @@
 👉 Comece aqui: [Instalação](getting-started/installation.md) → [Guia Rápido](getting-started/quick-start.md)
 
 ### Para Desenvolvedores
-👉 Veja: [Guia do Desenvolvedor](technical/developer-guide.md) → [Arquitetura](architecture/overview.md)
+👉 Veja: [Guia do Desenvolvedor](technical/developer-guide.md) → [Arquitetura](architecture/capabilities_map_singularity.md)
 
 ### Para Aprendizado de IA
 👉 Acesse: [Sistema de Aprendizado](ai-systems/learning-system.md)
@@ -57,8 +57,8 @@ Guias para treinamento manual da IA
 ### 🏗️ Architecture (Arquitetura)
 Estrutura técnica do sistema
 
-- [overview.md](architecture/overview.md) - Visão geral da arquitetura
-- [system-structure.md](architecture/system-structure.md) - Estrutura de componentes
+- [capabilities_map_singularity.md](architecture/capabilities_map_singularity.md) - Visão geral da arquitetura
+- [code-structure.md](technical/code-structure.md) - Estrutura de componentes
 - [autonomous-mode-guide.md](technical/autonomous-mode-guide.md) - 🤖 Guia detalhado do modo autônomo
 
 ---
@@ -127,7 +127,7 @@ Documentos antigos e descontinuados
 ### Caso de Uso 3: Desenvolvimento/Contribuição
 ```
 1. developer-guide.md
-2. architecture/overview.md
+2. architecture/capabilities_map_singularity.md
 3. code-structure.md
 4. contributing.md
 ```
@@ -153,7 +153,7 @@ Documentos antigos e descontinuados
 | **Treinamento Manual** | [manual_training_guide.md](ai_training/manual_training_guide.md) |
 | **API Keys** | [api-keys-setup.md](getting-started/api-keys-setup.md) |
 | **Problemas** | [troubleshooting.md](maintenance/troubleshooting.md) |
-| **Arquitetura** | [overview.md](architecture/overview.md) |
+| **Arquitetura** | [capabilities_map_singularity.md](architecture/capabilities_map_singularity.md) |
 | **Desenvolver** | [developer-guide.md](technical/developer-guide.md) |
 
 ### Por Funcionalidade
@@ -164,7 +164,7 @@ Documentos antigos e descontinuados
 | Controle por Voz | [voice-commands.md](user-guide/voice-commands.md) |
 | Automação de Tarefas | [automation.md](user-guide/automation.md) |
 | Dashboard de Controle | [dashboard.md](user-guide/dashboard.md) |
-| Treinamento de Modelos | [model-training.md](ai-systems/model-training.md) |
+| Treinamento de Modelos | [manual_training_guide_ptbr.md](ai_training/manual_training_guide_ptbr.md) |
 | Ollama Local | [ollama-integration.md](ai-systems/ollama-integration.md) |
 
 ---
@@ -178,11 +178,11 @@ Documentos antigos e descontinuados
 
 ### Perguntas sobre IA
 1. Leia [learning-system.md](ai-systems/learning-system.md) (FAQ completo)
-2. Verifique [model-training.md](ai-systems/model-training.md)
+2. Verifique [manual_training_guide_ptbr.md](ai_training/manual_training_guide_ptbr.md)
 
 ### Desenvolvimento
 1. Siga [developer-guide.md](technical/developer-guide.md)
-2. Leia [contributing.md](technical/contributing.md)
+2. Leia [developer-guide.md](technical/developer-guide.md)
 
 ---
 

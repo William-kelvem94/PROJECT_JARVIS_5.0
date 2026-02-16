@@ -68,7 +68,7 @@ class ModelUpgrader:
                 timeout=5
             )
             return result.returncode == 0
-        except:
+        except Exception:
             return False
     
     def upgrade_qwen_to_3b(self) -> bool:
@@ -159,7 +159,14 @@ class ModelUpgrader:
                 logger.info("ðŸ“¥ Baixando modelo XTTS-v2...")
                 try:
                     from TTS.api import TTS
+<<<<<<< Updated upstream
                     tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+=======
+
+                    tts = TTS(
+                        "tts_models/multilingual/multi-dataset/xtts_v2"
+                    )  # noqa: F841
+>>>>>>> Stashed changes
                     logger.info("âœ… Modelo XTTS-v2 baixado!")
                 except Exception as e:
                     logger.warning(f"âš ï¸ Modelo serÃ¡ baixado no primeiro uso: {e}")

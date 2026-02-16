@@ -46,7 +46,7 @@ try:
         MEDIAPIPE_AVAILABLE = True
     else:
         MEDIAPIPE_AVAILABLE = False
-except:
+except Exception:
     MEDIAPIPE_AVAILABLE = False
 
 class GestureType(Enum):
@@ -157,11 +157,19 @@ class GestureRecognizer:
         """Classifica gesto baseado em landmarks da mÃ£o"""
         # Extrair coordenadas dos dedos
         thumb_tip = landmarks.landmark[4]
+<<<<<<< Updated upstream
         index_tip = landmarks.landmark[8]
         middle_tip = landmarks.landmark[12]
         ring_tip = landmarks.landmark[16]
         pinky_tip = landmarks.landmark[20]
         
+=======
+        index_tip = landmarks.landmark[8]  # noqa: F841
+        middle_tip = landmarks.landmark[12]  # noqa: F841
+        ring_tip = landmarks.landmark[16]  # noqa: F841
+        pinky_tip = landmarks.landmark[20]  # noqa: F841
+
+>>>>>>> Stashed changes
         wrist = landmarks.landmark[0]
         
         # Calcular se dedos estÃ£o estendidos

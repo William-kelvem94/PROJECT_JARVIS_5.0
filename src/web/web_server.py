@@ -102,7 +102,7 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             # Manter a conexão viva (ping/pong implícito do FastAPI)
-            data = await websocket.receive_text()
+            _ = await websocket.receive_text()
             # Opcional: processar comandos vindos da web
     except WebSocketDisconnect:
         connected_clients.remove(websocket)

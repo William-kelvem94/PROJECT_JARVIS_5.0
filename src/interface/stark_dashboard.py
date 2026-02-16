@@ -76,6 +76,7 @@ class StarkDashboard(QMainWindow):
         
         # Stylesheet (Stark Luxury Glass Theme)
         self.setStyleSheet("""
+<<<<<<< Updated upstream
             QMainWindow { background-color: #03060a; color: #e0e0e0; }
             QTabWidget::pane { border: 1px solid #00c3ff; background: rgba(11, 15, 25, 200); border-radius: 8px; }
             QTabBar::tab { background: #050a10; color: #8899a6; padding: 12px 25px; border: 1px solid #1f293a; border-bottom: none; border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 5px; }
@@ -93,6 +94,107 @@ class StarkDashboard(QMainWindow):
             QScrollBar::handle:vertical:hover { background: #00c3ff; }
         """)
         
+=======
+            QMainWindow {
+                background-color: #03060a;
+                color: #e0e0e0;
+            }
+
+            QTabWidget::pane {
+                border: 1px solid #00c3ff;
+                background: rgba(11, 15, 25, 200);
+                border-radius: 8px;
+            }
+
+            QTabBar::tab {
+                background: #050a10;
+                color: #8899a6;
+                padding: 12px 25px;
+                border: 1px solid #1f293a;
+                border-bottom: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                margin-right: 5px;
+            }
+
+            QTabBar::tab:selected {
+                background: #0b0f19;
+                color: #00c3ff;
+                border: 1px solid #00c3ff;
+                border-bottom: 2px solid #0b0f19;
+                font-weight: bold;
+            }
+
+            QTabBar::tab:hover {
+                background: #1f293a;
+                color: #ffffff;
+            }
+
+            QLabel {
+                color: #e0e0e0;
+                font-family: 'Segoe UI';
+            }
+
+            QPushButton {
+                background-color: rgba(31, 41, 58, 150);
+                color: #00c3ff;
+                border: 1px solid #00c3ff;
+                padding: 10px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+
+            QPushButton:hover {
+                background-color: rgba(0, 195, 255, 50);
+                text-shadow: 0 0 10px #00c3ff;
+            }
+
+            QPushButton:pressed {
+                background-color: #00c3ff;
+                color: #050a10;
+            }
+
+            QGroupBox {
+                border: 1px solid rgba(0, 195, 255, 100);
+                margin-top: 25px;
+                font-weight: bold;
+                color: #00c3ff;
+                border-radius: 10px;
+                padding-top: 20px;
+            }
+
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 15px;
+                padding: 0 10px;
+                background-color: #03060a;
+            }
+
+            QScrollArea {
+                border: none;
+                background: transparent;
+            }
+
+            QScrollBar:vertical {
+                border: none;
+                background: #0b0f19;
+                width: 10px;
+                margin: 0;
+            }
+
+            QScrollBar::handle:vertical {
+                background: #1f293a;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+
+            QScrollBar::handle:vertical:hover {
+                background: #00c3ff;
+            }
+
+            """)
+
+>>>>>>> Stashed changes
         # Shared container for instances
         self.curiosity_backlog = []
         self.is_studying = False

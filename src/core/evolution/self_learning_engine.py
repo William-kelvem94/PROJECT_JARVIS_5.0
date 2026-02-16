@@ -1,53 +1,62 @@
+﻿"""JARVIS 5.0 - Self-Learning Evolution Engine.
+
+Simplified and hardened implementation focused on runtime stability.
 """
-JARVIS 5.0 - Self-Learning Evolution Engine
-Sistema de aprendizado contínuo e auto-melhoria
-"""
+
+from __future__ import annotations
 
 import os
 import json
+<<<<<<< Updated upstream
+=======
+import logging
+import threading
+>>>>>>> Stashed changes
 import time
 import threading
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
+<<<<<<< Updated upstream
 from typing import Dict, List, Any, Optional
 import hashlib
 import re
+=======
+from typing import Any, Dict, List
+>>>>>>> Stashed changes
 
 logger = logging.getLogger(__name__)
 
 class SelfLearningEngine:
-    """Engine de aprendizado contínuo do JARVIS"""
+    """Background learning engine that analyzes project state periodically."""
 
     def __init__(self, project_root: Path):
-        self.project_root = project_root
-        self.learning_data_path = project_root / "data" / "learning" / "self_knowledge"
+        self.project_root = Path(project_root)
+        self.learning_data_path = (
+            self.project_root / "data" / "learning" / "self_knowledge"
+        )
         self.learning_data_path.mkdir(parents=True, exist_ok=True)
 
-        # Estado de aprendizado
-        self.knowledge_base = {}
-        self.learning_sessions = []
-        self.current_session = None
-        self.auto_improvements = []
+        self.knowledge_base: Dict[str, Any] = {}
+        self.learning_sessions: List[Dict[str, Any]] = []
+        self.current_session: Dict[str, Any] | None = None
+        self.auto_improvements: List[Dict[str, Any]] = []
 
-        # Estatísticas
         self.analysis_count = 0
         self.files_analyzed = 0
         self.insights_generated = 0
         self.improvements_suggested = 0
 
-        # Sistema de aprendizado contínuo
-        self.learning_thread = None
+        self.learning_thread: threading.Thread | None = None
         self.is_learning = False
-        self.learning_interval = 300  # 5 minutos
+        self.learning_interval = 300
 
-        # Carregar conhecimento existente
         self._load_knowledge_base()
 
     def start_continuous_learning(self):
-        """Inicia o aprendizado contínuo em background"""
+        """Starts background learning loop."""
         if self.is_learning:
-            logger.info("🧠 Self-Learning já está ativo")
+            logger.info("Self-Learning already active")
             return
 
         self.is_learning = True
@@ -65,85 +74,60 @@ class SelfLearningEngine:
             name="SelfLearningEngine"
         )
         self.learning_thread.start()
+<<<<<<< Updated upstream
 
         logger.info("🧠 Self-Learning Engine iniciado - JARVIS aprendendo sobre si mesmo")
+=======
+        logger.info("Self-Learning Engine started")
+>>>>>>> Stashed changes
 
     def stop_continuous_learning(self):
-        """Para o aprendizado contínuo e salva o conhecimento"""
+        """Stops background learning and persists state."""
         if not self.is_learning:
             return
 
         self.is_learning = False
-
         if self.learning_thread:
             self.learning_thread.join(timeout=10)
 
-        # Finalizar sessão atual
         if self.current_session:
             self.current_session["end_time"] = datetime.now().isoformat()
+<<<<<<< Updated upstream
             self.current_session["duration_seconds"] = (
                 datetime.fromisoformat(self.current_session["end_time"]) -
                 datetime.fromisoformat(self.current_session["start_time"])
             ).total_seconds()
 
+=======
+>>>>>>> Stashed changes
             self.learning_sessions.append(self.current_session)
+            self.current_session = None
 
-        # Salvar tudo
-        self._save_knowledge_base()
+        self._save_progress()
         self._generate_learning_report()
-
-        logger.info("🧠 Self-Learning Engine parado - Conhecimento salvo")
+        logger.info("Self-Learning Engine stopped")
 
     def _continuous_learning_loop(self):
-        """Loop principal de aprendizado contínuo"""
         while self.is_learning:
             try:
-                # Análise completa do sistema
                 self._analyze_entire_system()
-
-                # Gerar insights baseados na análise
                 self._generate_insights()
-
-                # Sugerir melhorias
                 self._suggest_improvements()
-
-                # Gerar documentação automática
                 self._generate_auto_documentation()
-
-                # Salvar progresso periodicamente
                 self._save_progress()
-
-                # Aguardar próximo ciclo
-                time.sleep(self.learning_interval)
-
-            except Exception as e:
-                logger.error(f"Erro no loop de aprendizado: {e}")
-                time.sleep(60)  # Aguardar 1 minuto em caso de erro
+            except Exception as exc:
+                logger.error("Error in learning loop: %s", exc)
+            time.sleep(self.learning_interval)
 
     def _analyze_entire_system(self):
-        """Análise completa de todo o sistema JARVIS"""
-        logger.info("🔍 Iniciando análise completa do sistema...")
-
-        analysis_start = time.time()
-
-        # Analisar código fonte
         self._analyze_source_code()
-
-        # Analisar logs
         self._analyze_logs()
-
-        # Analisar configurações
         self._analyze_configurations()
-
-        # Analisar dados de aprendizado
         self._analyze_learning_data()
-
-        # Analisar performance
         self._analyze_performance()
-
-        analysis_time = time.time() - analysis_start
         self.analysis_count += 1
 
+<<<<<<< Updated upstream
         # Registrar atividade
         if self.current_session:
             self.current_session["activities"].append({
@@ -216,10 +200,19 @@ class SelfLearningEngine:
 
         self.knowledge_base["code_analysis"] = code_stats
         self.files_analyzed = code_stats["python_files"]
+=======
+    def _analyze_source_code(self):
+        source_root = self.project_root / "src"
+        count = 0
+        if source_root.exists():
+            for _ in source_root.rglob("*.py"):
+                count += 1
+        self.files_analyzed = count
+>>>>>>> Stashed changes
 
     def _analyze_logs(self):
-        """Analisa logs para identificar padrões e problemas"""
         logs_path = self.project_root / "data" / "logs"
+<<<<<<< Updated upstream
 
         if not logs_path.exists():
             return
@@ -416,34 +409,55 @@ class SelfLearningEngine:
                 "priority": "medium"
             }
         ])
+=======
+        self.knowledge_base["log_files"] = (
+            sum(1 for _ in logs_path.glob("*.log")) if logs_path.exists() else 0
+        )
+>>>>>>> Stashed changes
 
-        # Salvar melhorias
-        if self.current_session:
-            self.current_session["improvements"].extend(improvements)
+    def _analyze_configurations(self):
+        config_path = self.project_root / "config"
+        self.knowledge_base["config_files"] = (
+            sum(1 for _ in config_path.rglob("*.yaml")) if config_path.exists() else 0
+        )
 
-        self.improvements_suggested += len(improvements)
-        self.auto_improvements.extend(improvements)
+    def _analyze_learning_data(self):
+        self.knowledge_base["learning_files"] = sum(
+            1 for _ in self.learning_data_path.rglob("*.json")
+        )
+
+    def _analyze_performance(self):
+        self.knowledge_base["last_performance_check"] = datetime.now().isoformat()
+
+    def _generate_insights(self):
+        insight = {
+            "timestamp": datetime.now().isoformat(),
+            "type": "system_snapshot",
+            "files_analyzed": self.files_analyzed,
+            "analysis_count": self.analysis_count,
+        }
+        self.knowledge_base.setdefault("insights", []).append(insight)
+        self.insights_generated += 1
+
+    def _suggest_improvements(self):
+        suggestion = {
+            "timestamp": datetime.now().isoformat(),
+            "recommendation": "Prioritize modules with recurring import/runtime errors.",
+        }
+        self.auto_improvements.append(suggestion)
+        self.improvements_suggested += 1
 
     def _generate_auto_documentation(self):
-        """Gera documentação automática baseada no aprendizado"""
-        docs_path = self.project_root / "docs" / "auto_generated"
+        docs_path = self.project_root / "docs" / "auto"
         docs_path.mkdir(parents=True, exist_ok=True)
-
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # Gerar relatório de sistema
         self._generate_system_report(docs_path, timestamp)
-
-        # Gerar análise de código
         self._generate_code_analysis(docs_path, timestamp)
-
-        # Gerar relatório de melhorias
         self._generate_improvements_report(docs_path, timestamp)
-
-        # Gerar guia de troubleshooting
         self._generate_troubleshooting_guide(docs_path, timestamp)
 
     def _generate_system_report(self, docs_path: Path, timestamp: str):
+<<<<<<< Updated upstream
         """Gera relatório completo do sistema"""
         report_path = docs_path / f"system_report_{timestamp}.md"
 
@@ -665,14 +679,52 @@ class SelfLearningEngine:
                     if 'files_analyzed' in activity:
                         f.write(f"  - Arquivos analisados: {activity['files_analyzed']}\n")
                     f.write("\n")
+=======
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "analysis_count": self.analysis_count,
+            "files_analyzed": self.files_analyzed,
+        }
+        (docs_path / f"system_report_{timestamp}.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
-            # Insights gerados
-            if self.current_session["insights"]:
-                f.write("## 💡 Insights Gerados\n\n")
-                for insight in self.current_session["insights"]:
-                    f.write(f"### {insight['title']} ({insight['priority'].upper()})\n")
-                    f.write(f"{insight['description']}\n\n")
+    def _generate_code_analysis(self, docs_path: Path, timestamp: str):
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "insights_generated": self.insights_generated,
+        }
+        (docs_path / f"code_analysis_{timestamp}.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
 
+    def _generate_improvements_report(self, docs_path: Path, timestamp: str):
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "improvements": self.auto_improvements[-20:],
+        }
+        (docs_path / f"improvements_{timestamp}.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+>>>>>>> Stashed changes
+
+    def _generate_troubleshooting_guide(self, docs_path: Path, timestamp: str):
+        guide = {
+            "generated_at": datetime.now().isoformat(),
+            "notes": [
+                "Check logs in data/logs for recurring errors.",
+                "Run pytest collect-only before full test execution.",
+            ],
+        }
+        (docs_path / f"troubleshooting_{timestamp}.json").write_text(
+            json.dumps(guide, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+<<<<<<< Updated upstream
             # Melhorias sugeridas
             if self.current_session["improvements"]:
                 f.write("## 🚀 Melhorias Sugeridas\n\n")
@@ -681,15 +733,47 @@ class SelfLearningEngine:
                     f.write(f"{improvement['description']}\n\n")
                     f.write(f"**Implementação:** {improvement['implementation']}\n")
                     f.write(f"**Prioridade:** {improvement.get('priority', 'medium')}\n\n")
+=======
+    def _save_progress(self):
+        self._save_knowledge_base()
+
+    def _load_knowledge_base(self):
+        file_path = self.learning_data_path / "knowledge_base.json"
+        if not file_path.exists():
+            self.knowledge_base = {}
+            return
+        try:
+            self.knowledge_base = json.loads(file_path.read_text(encoding="utf-8"))
+        except Exception:
+            self.knowledge_base = {}
+
+    def _save_knowledge_base(self):
+        file_path = self.learning_data_path / "knowledge_base.json"
+        file_path.write_text(
+            json.dumps(self.knowledge_base, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    def _generate_learning_report(self):
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "stats": self.get_learning_stats(),
+        }
+        report_path = self.learning_data_path / "learning_report.json"
+        report_path.write_text(
+            json.dumps(report, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+>>>>>>> Stashed changes
 
     def get_learning_stats(self) -> Dict[str, Any]:
-        """Retorna estatísticas do aprendizado"""
         return {
-            "total_sessions": len(self.learning_sessions),
-            "current_session_active": self.is_learning,
+            "is_learning": self.is_learning,
             "analysis_count": self.analysis_count,
+            "files_analyzed": self.files_analyzed,
             "insights_generated": self.insights_generated,
             "improvements_suggested": self.improvements_suggested,
+<<<<<<< Updated upstream
             "knowledge_entries": len(self.knowledge_base),
             "last_analysis": self.knowledge_base.get("last_analysis")
         }
@@ -698,3 +782,11 @@ class SelfLearningEngine:
         """Força salvamento imediato do conhecimento"""
         self._save_knowledge_base()
         logger.info("🧠 Conhecimento salvo forçadamente")
+=======
+            "sessions": len(self.learning_sessions),
+        }
+
+    def force_save_knowledge(self):
+        self._save_progress()
+        return True
+>>>>>>> Stashed changes

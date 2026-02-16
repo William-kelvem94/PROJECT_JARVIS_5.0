@@ -1,19 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-JARVIS SINGULARITY - Control Dashboard
-=======================================
-Full-featured admin panel for JARVIS configuration and monitoring.
+﻿"""JARVIS Control Dashboard (stability version)."""
 
-Features:
-- Brain Configuration (LLM models, API keys)
-- Voice Settings (STT/TTS, microphone, speaker verification)
-- Vision System (FaceID, OCR, YOLO configuration)
-- Real-time Logs Viewer
-- System Monitor (CPU, RAM, processes)
-- Memory Browser (ChromaDB conversation history)
-"""
+from __future__ import annotations
 
+<<<<<<< Updated upstream
 import sys
 import logging
 import json
@@ -78,20 +67,113 @@ class SideBarButton(QPushButton):
 
 class ConfigTextEdit(QTextEdit):
     """QTextEdit with drag & drop support for config files"""
+=======
+import json
+import logging
+from pathlib import Path
+from typing import Optional
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAcceptDrops(True)
+logger = logging.getLogger(__name__)
 
+try:
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtGui import QDragEnterEvent, QDropEvent
+    from PyQt6.QtWidgets import (
+        QComboBox,
+        QLineEdit,
+        QMainWindow,
+        QPlainTextEdit,
+        QWidget,
+    )
+
+    PYQT_AVAILABLE = True
+except Exception:
+    PYQT_AVAILABLE = False
+
+    class QWidget:  # type: ignore[override]
+        pass
+
+    class QMainWindow:  # type: ignore[override]
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+
+    class QLineEdit:  # type: ignore[override]
+        def __init__(self, text: str = ""):
+            self._text = text
+
+        def text(self) -> str:
+            return self._text
+
+    class QComboBox:  # type: ignore[override]
+        def __init__(self, value: str = "ALL"):
+            self._value = value
+
+        def currentText(self) -> str:
+            return self._value
+
+    class QPlainTextEdit:  # type: ignore[override]
+        def __init__(self, text: str = ""):
+            self._text = text
+            self._accept_drops = False
+
+        def setAcceptDrops(self, value: bool) -> None:
+            self._accept_drops = value
+
+        def acceptDrops(self) -> bool:
+            return self._accept_drops
+
+        def toPlainText(self) -> str:
+            return self._text
+
+        def setPlainText(self, value: str) -> None:
+            self._text = value
+
+    class QDragEnterEvent:  # type: ignore[override]
+        pass
+
+    class QDropEvent:  # type: ignore[override]
+        pass
+
+    class Qt:  # type: ignore[override]
+        class DropAction:
+            CopyAction = 0
+
+
+class ConfigTextEdit(QPlainTextEdit):
+    """Text editor that accepts drag/drop for config files."""
+>>>>>>> Stashed changes
+
+    _allowed_extensions = {".json", ".yaml", ".yml", ".toml"}
+
+<<<<<<< Updated upstream
     def dragEnterEvent(self, event: QDragEnterEvent):
         """Handle drag enter events"""
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
             if urls and any(url.toLocalFile().endswith(('.json', '.yaml', '.yml')) for url in urls):
-                event.acceptProposedAction()
-                return
-        event.ignore()
+=======
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if hasattr(self, "setAcceptDrops"):
+            self.setAcceptDrops(True)
 
+    def _is_allowed_file(self, file_path: str) -> bool:
+        return Path(file_path).suffix.lower() in self._allowed_extensions
+
+    def dragEnterEvent(self, event: QDragEnterEvent):  # noqa: N802
+        try:
+            mime_data = event.mimeData()
+            urls = mime_data.urls() if mime_data else []
+            if any(
+                self._is_allowed_file(url.toLocalFile() or url.toString())
+                for url in urls
+            ):
+>>>>>>> Stashed changes
+                event.acceptProposedAction()
+        except Exception:
+            pass
+
+<<<<<<< Updated upstream
     def dropEvent(self, event: QDropEvent):
         """Handle file drop events"""
         urls = event.mimeData().urls()
@@ -1366,29 +1448,75 @@ class ControlDashboard(QMainWindow):
         if self.auto_scroll_check.isChecked():
             self.log_viewer.moveCursor(QTextCursor.MoveOperation.End)
             
-    def _filter_logs(self):
-        """Filter logs based on search and level"""
-        search_text = self.log_filter.text().lower()
-        level_filter = self.log_level_combo.currentText()
+=======
+    def dropEvent(self, event: QDropEvent):  # noqa: N802
+        try:
+            mime_data = event.mimeData()
+            urls = mime_data.urls() if mime_data else []
+            for url in urls:
+                file_path = url.toLocalFile() or url.toString().replace("file:///", "")
+                if self._is_allowed_file(file_path):
+                    content = Path(file_path).read_text(encoding="utf-8")
+                    self.setPlainText(content)
+                    event.acceptProposedAction()
+                    return
+        except Exception as exc:
+            logger.warning("Config drop failed: %s", exc)
 
+
+class ControlDashboard(QMainWindow):
+    """Minimal dashboard shell used by tests and runtime entry points."""
+
+    def __init__(self, config_path: Optional[str] = None):
+        super().__init__()
+        self.config_path = Path(config_path or "config/ai_config.yaml")
+
+        # Core widgets used by test suite and helper methods.
+        self.log_filter = QLineEdit()
+        self.log_level_combo = QComboBox()
+        self.log_viewer = QPlainTextEdit()
+        self.config_editor = ConfigTextEdit()
+
+>>>>>>> Stashed changes
+    def _filter_logs(self):
+        """Filter logs by level + free text."""
+        filter_text = ""
+        level = "ALL"
+
+<<<<<<< Updated upstream
         # Get all log content
         all_logs = self.log_viewer.toPlainText().split('\n')
+=======
+        try:
+            filter_text = (self.log_filter.text() or "").strip().lower()
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
-        # Filter logs
-        filtered_logs = []
-        for log_line in all_logs:
-            if not log_line.strip():
+        try:
+            level = (self.log_level_combo.currentText() or "ALL").strip().upper()
+        except Exception:
+            pass
+
+        raw_logs = (
+            self.log_viewer.toPlainText()
+            if hasattr(self.log_viewer, "toPlainText")
+            else ""
+        )
+        lines = raw_logs.splitlines()
+
+        filtered = []
+        for line in lines:
+            line_upper = line.upper()
+            line_lower = line.lower()
+
+            if level != "ALL" and level not in line_upper:
                 continue
-
-            # Level filter
-            if level_filter != "ALL":
-                if f"{level_filter}:" not in log_line:
-                    continue
-
-            # Text search filter
-            if search_text and search_text not in log_line.lower():
+            if filter_text and filter_text not in line_lower:
                 continue
+            filtered.append(line)
 
+<<<<<<< Updated upstream
             filtered_logs.append(log_line)
 
         # Update display
@@ -1686,3 +1814,19 @@ if __name__ == "__main__":
     dashboard.show()
     
     sys.exit(app.exec())
+=======
+        if hasattr(self.log_viewer, "setPlainText"):
+            self.log_viewer.setPlainText("\n".join(filtered))
+
+    def _validate_config_json(self):
+        """Validate JSON currently loaded in config editor."""
+        text = self.config_editor.toPlainText()
+        try:
+            json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSON configuration: {exc}") from exc
+        return True
+
+
+__all__ = ["ControlDashboard", "ConfigTextEdit", "PYQT_AVAILABLE"]
+>>>>>>> Stashed changes

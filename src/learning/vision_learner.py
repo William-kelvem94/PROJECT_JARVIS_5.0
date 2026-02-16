@@ -72,6 +72,12 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+<<<<<<< Updated upstream
+=======
+# Local import to avoid circular dependency during module import-time
+from src.utils.config import config
+
+>>>>>>> Stashed changes
 
 @dataclass
 class BoundingBox:

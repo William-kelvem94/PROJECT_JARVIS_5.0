@@ -334,8 +334,13 @@ class LearningEngine:
         """Inicializa sistema de coleta de feedback"""
         try:
             from src.learning.feedback_loop import FeedbackDatabase
+<<<<<<< Updated upstream
             
             config = self.config.get('feedback_loop', {})
+=======
+
+            config = self.config.get("feedback_loop", {})  # noqa: F841
+>>>>>>> Stashed changes
             db_path = self.learning_dir / "feedback.db"
             
             self.feedback_loop = FeedbackDatabase(db_path)
@@ -803,10 +808,21 @@ class LearningEngine:
         
         if self.feedback_loop:
             try:
+<<<<<<< Updated upstream
                 status['total_feedback'] = self.feedback_loop.count_pending() if hasattr(self.feedback_loop, 'count_pending') else 0
             except:
                 status['total_feedback'] = 0
         
+=======
+                status["total_feedback"] = (
+                    self.feedback_loop.count_pending()
+                    if hasattr(self.feedback_loop, "count_pending")
+                    else 0
+                )
+            except Exception:
+                status["total_feedback"] = 0
+
+>>>>>>> Stashed changes
         # New components stats
         if self.distributed_trainer:
             status['gpu_status'] = self.distributed_trainer.gpu_manager.get_gpu_utilization()
@@ -814,12 +830,23 @@ class LearningEngine:
         
         if self.model_registry:
             try:
+<<<<<<< Updated upstream
                 status['registered_models'] = len(self.model_registry.list_models())
                 status['deployed_models'] = len(self.model_registry.list_deployed_models())
             except:
                 status['registered_models'] = 0
                 status['deployed_models'] = 0
         
+=======
+                status["registered_models"] = len(self.model_registry.list_models())
+                status["deployed_models"] = len(
+                    self.model_registry.list_deployed_models()
+                )
+            except Exception:
+                status["registered_models"] = 0
+                status["deployed_models"] = 0
+
+>>>>>>> Stashed changes
         if self.scalable_database:
             status['database_backend'] = self.scalable_database.get_current_backend()
         
@@ -862,6 +889,7 @@ class LearningEngine:
         if self.model_registry:
             try:
                 model_count = len(self.model_registry.list_models())
+<<<<<<< Updated upstream
                 print(f"  ðŸ¤– Registered Models: {model_count}")
             except:
                 print(f"  ðŸ¤– Registered Models: 0")
@@ -875,6 +903,21 @@ class LearningEngine:
         print("   â€¢ Every interaction improves the neural model")
         print("="*80 + "\n")
     
+=======
+                print(f"  🤖 Registered Models: {model_count}")
+            except Exception:
+                print("  🤖 Registered Models: 0")
+
+        print("=" * 80)
+        print("💡 JARVIS is now in ADVANCED CONTINUOUS EVOLUTION MODE!")
+        print("   • Multi-GPU distributed training enabled")
+        print("   • Real-time metrics monitoring active")
+        print("   • Auto-scaling database with migration support")
+        print("   • Model versioning and A/B testing ready")
+        print("   • Every interaction improves the neural model")
+        print("=" * 80 + "\n")
+
+>>>>>>> Stashed changes
     def shutdown(self):
         """Encerra todos os sistemas de aprendizado de forma segura"""
         logger.info("ðŸ”„ Shutting down Learning Engine...")
@@ -890,7 +933,7 @@ class LearningEngine:
         if self.metrics_dashboard:
             try:
                 self.metrics_dashboard.stop()
-            except:
+            except Exception:
                 pass
         
         if self.distributed_trainer:
@@ -909,7 +952,7 @@ class LearningEngine:
         if self.scalable_database:
             try:
                 self.scalable_database.close()
-            except:
+            except Exception:
                 pass
         
         # Stop dashboard thread if running
@@ -917,7 +960,7 @@ class LearningEngine:
             try:
                 # Dashboard thread is daemon, will be killed when main process exits
                 pass
-            except:
+            except Exception:
                 pass
         
         logger.info("âœ… Learning Engine shutdown complete")

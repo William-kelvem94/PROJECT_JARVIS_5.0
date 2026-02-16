@@ -281,9 +281,27 @@ class CameraController:
                                         self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
                         except Exception as e:
                             logger.debug(f"Erro FaceID: {e}")
+<<<<<<< Updated upstream
                             self._faceid_failures = getattr(self, '_faceid_failures', 0) + 1
             
                 # EmoÃ§Ã£o (apenas em modo ativo)
+=======
+                            self._faceid_failures = (
+                                getattr(self, "_faceid_failures", 0) + 1
+                            )
+
+                # Emoção (Opcional - wrap in try/except)
+                if is_active_mode and emotion_detector:
+                    try:
+                        emotion_data = emotion_detector.detect_emotion_from_frame(frame)
+                        self.current_emotion = emotion_data["emotion"]
+                    except Exception:
+                        pass
+
+                process_this_frame = not process_this_frame
+
+                # Gestos
+>>>>>>> Stashed changes
                 if is_active_mode:
                     try:
                         emotion_data = emotion_detector.detect_emotion_from_frame(frame)
@@ -317,11 +335,15 @@ class CameraController:
                                     self.on_frame_ready(rgb_frame)
                                 except Exception:
                                     pass
+<<<<<<< Updated upstream
 
                             if gesture != "None":
                                 logger.debug(f"Gesto: {gesture}")
                     except Exception as e:
                         # Silently ignore gesture errors to prevent log flooding
+=======
+                    except Exception:
+>>>>>>> Stashed changes
                         pass
 
                 # ðŸ†• FASE 1: FPS Adaptativo

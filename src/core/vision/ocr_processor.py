@@ -36,7 +36,7 @@ try:
         EASYOCR_AVAILABLE = True
     else:
         EASYOCR_AVAILABLE = False
-except:
+except Exception:
     EASYOCR_AVAILABLE = False
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.utils.config import config
@@ -464,8 +464,13 @@ class OCRProcessor:
                 else:
                     test_image = Image.new('RGB', (100, 50), color='white')
                     cv_image = ImageHelper.image_to_cv2(test_image)
+<<<<<<< Updated upstream
                     test_results = self.easyocr_reader.readtext(cv_image)
                     results['easyocr'] = True
+=======
+                    test_results = self.easyocr_reader.readtext(cv_image)  # noqa: F841
+                    results["easyocr"] = True
+>>>>>>> Stashed changes
             except Exception:
                 results['easyocr'] = False
         else:

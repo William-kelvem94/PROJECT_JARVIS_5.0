@@ -477,7 +477,7 @@ class TestSecurityAndIOTIntegration(unittest.TestCase):
         constructed_url = args[0]
         
         # Verifica se URL construída seria aprovada pelo security manager
-        is_url_safe = self.security.validate_web_request(constructed_url)
+        is_url_safe = self.security.validate_web_request(constructed_url)  # noqa: F841
         # Nota: o security manager atual não inclui 'homeassistant.local' na lista
         # Esta é uma área de melhoria - adicionar suporte a hostnames locais
 

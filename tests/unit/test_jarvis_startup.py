@@ -29,7 +29,7 @@ def test_jarvis_startup():
             print("   ✅ Audio system import OK")
         except Exception as e:
             print(f"   ⚠️ Audio system failed (non-critical): {e}")
-            audio_system = None
+            audio_system = None  # noqa: F841
 
         print("   Testing vision system...")
         try:

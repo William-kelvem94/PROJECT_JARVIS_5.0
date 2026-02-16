@@ -338,7 +338,7 @@ class CircuitBreaker:
             return result
             
         except Exception as e:
-            error = e
+            error = e  # noqa: F841
             duration = time.time() - start_time
             
             # Determine failure type
@@ -411,7 +411,7 @@ class CircuitBreaker:
                 raise
         
         except Exception as e:
-            error = e
+            error = e  # noqa: F841
             duration = time.time() - start_time
             
             # Determine failure type

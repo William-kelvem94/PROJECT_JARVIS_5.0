@@ -38,7 +38,12 @@ class KillSwitch:
             pyautogui.FAILSAFE = True
             # ForÃ§ar erro movendo mouse para o canto (se possÃ­vel)
             pyautogui.moveTo(0, 0)
+<<<<<<< Updated upstream
         except: pass
+=======
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
         # 2. Notificar o usuÃ¡rio via logs/hud
         print("\n" + "!"*50)
