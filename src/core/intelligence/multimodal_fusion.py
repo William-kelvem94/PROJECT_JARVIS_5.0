@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Multimodal Fusion System
 ======================================
 Sprint 3: Multimodal BÃ¡sico

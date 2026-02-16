@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Action Controller - Controle Total do PC
 Gerencia automaÃ§Ã£o de interface, controle de aplicaÃ§Ãµes e sistema de arquivos
 """

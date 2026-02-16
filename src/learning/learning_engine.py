@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Learning Engine (Singularity Core)
 ================================================
 MÃ³dulo unificado para inicializar e gerenciar todos os sistemas de aprendizado:

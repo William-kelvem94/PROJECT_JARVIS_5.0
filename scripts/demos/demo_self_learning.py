@@ -33,7 +33,7 @@ async def demo_self_learning():
         learning_engine._analyze_entire_system()
         analysis_time = time.time() - start_time
 
-        print(".2f"
+        print(f"\\n🔍 Análise completa em {analysis_time:.2f} segundos")
         # Gerar insights
         print("\\n💡 Gerando insights baseados na análise...")
         learning_engine._generate_insights()
@@ -48,7 +48,8 @@ async def demo_self_learning():
 
         # Mostrar estatísticas
         stats = learning_engine.get_learning_stats()
-        print("\\n📊 ESTATÍSTICAS DA ANÁLISE:"        print(f"  • Arquivos analisados: {stats['analysis_count']}")
+        print("\\n📊 ESTATÍSTICAS DA ANÁLISE:")
+        print(f"  • Arquivos analisados: {stats['analysis_count']}")
         print(f"  • Insights gerados: {stats['insights_generated']}")
         print(f"  • Melhorias sugeridas: {stats['improvements_suggested']}")
 

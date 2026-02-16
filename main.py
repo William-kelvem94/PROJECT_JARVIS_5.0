@@ -627,8 +627,9 @@ class JarvisSingularity(QObject):
         QTimer.singleShot(20000, self._start_dynamic_systems)
 
         # [STEP 5] 🚀 LATE BOOT: Neural Warmup (Heavy Models)
-        # We wait 40s to ensure system is 100% idle and HUD is stable
-        QTimer.singleShot(40000, self._start_heavy_models_loading)
+        # We wait 60s to ensure system is 100% idle and HUD is stable
+        # Reduced from aggressive 40s to prevent Boot Crash (100% RAM)
+        QTimer.singleShot(60000, self._start_heavy_models_loading)
 
     def _start_dynamic_systems(self):
         """Inicia sistemas dinâmicos de plugins e indexação de arquivos"""
@@ -661,7 +662,8 @@ class JarvisSingularity(QObject):
             except Exception as e:
                 logger.warning(f"⚠️ Falha no warmup de áudio: {e}")
 
-        # Wait extra 10s between audio and vision to avoid spike overlap
+        # Wait extra 45s between audio and vision to avoid spike overlap
+        # Critical for reliability on 16GB RAM systems
         def start_vision():
             if self.vision_system and hasattr(self.vision_system, 'start_background_loading'):
                 try:
@@ -669,7 +671,7 @@ class JarvisSingularity(QObject):
                 except Exception as e:
                     logger.warning(f"⚠️ Falha no warmup de visão: {e}")
         
-        QTimer.singleShot(10000, start_vision)
+        QTimer.singleShot(45000, start_vision)
 
     def _start_network_mesh(self):
         """Initialize and start the Network Mesh for collective intelligence"""

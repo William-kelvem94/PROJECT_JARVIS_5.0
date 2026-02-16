@@ -1,4 +1,4 @@
-﻿"""
+"""
 ConfiguraÃ§Ãµes globais do Jarvis 5.0
 Centraliza todas as configuraÃ§Ãµes, caminhos e constantes do sistema
 """

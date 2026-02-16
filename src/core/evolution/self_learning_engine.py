@@ -155,7 +155,7 @@ class SelfLearningEngine:
 
             self.analysis_count += 1
 
-        logger.info(".2f")
+        logger.info(f"🔍 Análise completa em {analysis_time:.2f} segundos")
 
     def _analyze_source_code(self):
         """Analisa todo o código fonte do JARVIS"""

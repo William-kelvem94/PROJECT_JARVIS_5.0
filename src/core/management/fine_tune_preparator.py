@@ -1,4 +1,4 @@
-﻿"""
+"""
 Preparador de Fine-Tuning (EvoluÃ§Ã£o Neural)
 Converte o histÃ³rico do Jarvis em formato de treinamento para modelos locais.
 """

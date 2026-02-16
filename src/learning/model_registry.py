@@ -1,4 +1,4 @@
-﻿"""
+"""
 Model Registry for JARVIS Learning Systems.
 
 Provides versioning, rollback, A/B testing, and lifecycle management

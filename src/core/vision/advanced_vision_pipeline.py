@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Vision Pipeline - VisÃ£o Computacional Multi-NÃ­vel
 Implementa pipeline de 3 nÃ­veis para anÃ¡lise visual progressiva
 """

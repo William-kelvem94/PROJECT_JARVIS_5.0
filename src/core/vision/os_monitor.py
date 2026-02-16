@@ -1,4 +1,4 @@
-﻿"""
+"""
 O Olho no Sistema (OS Monitor)
 Monitoramento de processos e janelas ativas sem uso de OCR (Custo Zero de Performance).
 """

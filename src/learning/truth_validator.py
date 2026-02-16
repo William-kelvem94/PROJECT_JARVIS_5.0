@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 TRUTH VALIDATOR - Validação de Fatos com Dados Externos
 JARVIS 5.0 - Ground Truth para Auto-Correção Evolutiva

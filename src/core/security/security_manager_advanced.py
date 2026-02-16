@@ -1,4 +1,4 @@
-﻿"""
+"""
 Security Manager - Sistema de SeguranÃ§a AvanÃ§ado
 Implementa criptografia, controle de acesso e modo privado
 """

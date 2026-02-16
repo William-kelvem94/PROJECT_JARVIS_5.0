@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Neural Curiosity (Stark Protocol)
 ==============================================
 MÃ³dulo para permitir que o Jarvis sinta "curiosidade" sobre novas tarefas

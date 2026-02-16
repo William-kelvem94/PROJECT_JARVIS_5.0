@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS 5.0 - Stark Nexus (Research & Web Expansion)

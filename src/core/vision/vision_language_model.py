@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Vision-Language Model (VQA)
 =========================================
 Sprint 3: Multimodal BÃ¡sico

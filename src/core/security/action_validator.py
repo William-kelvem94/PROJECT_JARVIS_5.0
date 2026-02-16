@@ -1,4 +1,4 @@
-﻿"""
+"""
 A Jaula de Vidro (Security Middleware)
 ValidaÃ§Ã£o rigorosa de aÃ§Ãµes, proteÃ§Ã£o de sistema e backups automÃ¡ticos.
 """

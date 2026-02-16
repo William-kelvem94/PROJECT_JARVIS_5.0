@@ -91,7 +91,7 @@ def executar_treinamento(topico, componente):
     print("=" * 65)
 
     # Comando para executar o treinamento
-    cmd = f'python scripts/external_trainer.py --component {componente} --topic "{topico}" --config config/training_config.yaml'
+    cmd = f'python scripts/training/external_trainer.py --component {componente} --topic "{topico}" --config config/training_config.yaml'
 
     try:
         print("⏳ Executando treinamento... (pode demorar alguns minutos)")

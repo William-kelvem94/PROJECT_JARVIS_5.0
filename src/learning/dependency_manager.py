@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dependency Manager for JARVIS Learning Systems.
 
 Centralizes optional dependency handling to avoid scattered try/except blocks

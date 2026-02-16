@@ -1,4 +1,4 @@
-﻿"""
+"""
 Model Upgrader - Sistema de Upgrade de Modelos de IA
 Gerencia download e upgrade de modelos avanÃ§ados
 """
