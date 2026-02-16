@@ -1039,6 +1039,7 @@ class ControlDashboard(QMainWindow):
             engine = get_learning_engine()
             
             if engine:
+                # Use engine's last_interaction_id (which now supports persistent fallback)
                 if hasattr(engine, 'last_interaction_id') and engine.last_interaction_id:
                     engine.record_explicit_feedback(
                         interaction_id=engine.last_interaction_id,
