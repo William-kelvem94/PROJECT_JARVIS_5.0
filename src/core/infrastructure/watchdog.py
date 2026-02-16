@@ -120,6 +120,7 @@ class WatchdogSystem:
             return
             
         self._running = True
+        self.start_time = datetime.now()
         self._shutdown_event.clear()
         
         self._thread = threading.Thread(
@@ -151,11 +152,11 @@ class WatchdogSystem:
                         delta = (current_time - comp.last_heartbeat).total_seconds()
                         
                         # Tolerância: 2x o intervalo esperado
-                        # FASE 5: Grace period de inicialização (primeiros 60s o sistema pode estar lento sob carga de I/O)
+                        # FASE 5: Grace period de inicialização (primeiros 120s o sistema pode estar lento sob carga de I/O)
                         uptime = (datetime.now() - getattr(self, 'start_time', datetime.now())).total_seconds()
-                        is_booting = uptime < 60
-                        dead_threshold = comp.heartbeat_interval * (6 if is_booting else 3)
-                        slow_threshold = comp.heartbeat_interval * (3 if is_booting else 1.5)
+                        is_booting = uptime < 120
+                        dead_threshold = comp.heartbeat_interval * (10 if is_booting else 3)
+                        slow_threshold = comp.heartbeat_interval * (5 if is_booting else 1.5)
 
                         if delta > dead_threshold:
                             # Componente parece morto
@@ -203,10 +204,22 @@ class WatchdogSystem:
         """Verifica saúde global do sistema (CPU/RAM)"""
         try:
             mem = psutil.virtual_memory()
+            
+            # MEMORY CRITICAL GUARD (>90%)
             if mem.percent > 90:
-                logger.warning(f"⚠️ System Memory Critical: {mem.percent}%")
+                logger.error(f"⚠️ System Memory Critical: {mem.percent}% - Triggering EMERGENCY cleanup")
                 # Trigger aggressive cleanup
                 resource_pool_manager.cleanup(force=True)
+                
+                # Force GC collection
+                import gc
+                gc.collect()
+
+            # MEMORY WARNING GUARD (>75%)
+            elif mem.percent > 75:
+                logger.warning(f"⚠️ System Memory High: {mem.percent}% - Triggering standard cleanup")
+                # Trigger standard cleanup
+                resource_pool_manager.cleanup(force=False)
                 
             cpu = psutil.cpu_percent(interval=None)
             if cpu > 95:

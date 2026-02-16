@@ -527,12 +527,12 @@ class JarvisSingularity(QObject):
         if watchdog_system:
             try:
                 watchdog_system.start()
-                watchdog_system.register_component("MainUI", heartbeat_interval=2.0)
-                watchdog_system.register_component("BackendScheduler", heartbeat_interval=5.0)
+                watchdog_system.register_component("MainUI", heartbeat_interval=3.0) # 30s grace during boot
+                watchdog_system.register_component("BackendScheduler", heartbeat_interval=10.0)
                 if self.vision_system:
-                    watchdog_system.register_component("VisionSystem", heartbeat_interval=5.0)
+                    watchdog_system.register_component("VisionSystem", heartbeat_interval=10.0)
                 if self.audio_system:
-                    watchdog_system.register_component("AudioSystem", heartbeat_interval=5.0)
+                    watchdog_system.register_component("AudioSystem", heartbeat_interval=10.0)
                 
                 logger.info("✅ Watchdog System ACTIVE (Phase 1.4)")
             except Exception as e:
@@ -610,11 +610,15 @@ class JarvisSingularity(QObject):
         # [STEP 2] Wait another 5s then start Proactive Monitor (Screen)
         QTimer.singleShot(10000, self._start_proactive_monitor)
         
-        # [STEP 3] Wait another 5s then start Network Mesh (Collective Mind)
+        # [STEP 3] Wait 15s then start Network Mesh (Collective Mind)
         QTimer.singleShot(15000, self._start_network_mesh)
         
-        # [STEP 4] Start Plugin Manager (Hot-Reload) and Indexer (MetaCache)
+        # [STEP 4] Start Plugin Manager and Indexer
         QTimer.singleShot(20000, self._start_dynamic_systems)
+
+        # [STEP 5] 🚀 LATE BOOT: Neural Warmup (Heavy Models)
+        # We wait 40s to ensure system is 100% idle and HUD is stable
+        QTimer.singleShot(40000, self._start_heavy_models_loading)
 
     def _start_dynamic_systems(self):
         """Inicia sistemas dinâmicos de plugins e indexação de arquivos"""
@@ -636,6 +640,26 @@ class JarvisSingularity(QObject):
                 self.window_manager.get_hud().log_event("HOT-RELOAD ENGINE: ACTIVE")
         except Exception as e:
             logger.warning(f"⚠️ Falha ao iniciar sistemas dinâmicos: {e}")
+
+    def _start_heavy_models_loading(self):
+        """Final stage of boot: Trigger heavy neural model loading on demand"""
+        logger.info("🧠 JARVIS: Iniciando aquecimento de motores neurais (Carga Pesada)...")
+        
+        if self.audio_system and hasattr(self.audio_system, 'start_background_loading'):
+            try:
+                self.audio_system.start_background_loading()
+            except Exception as e:
+                logger.warning(f"⚠️ Falha no warmup de áudio: {e}")
+
+        # Wait extra 10s between audio and vision to avoid spike overlap
+        def start_vision():
+            if self.vision_system and hasattr(self.vision_system, 'start_background_loading'):
+                try:
+                    self.vision_system.start_background_loading()
+                except Exception as e:
+                    logger.warning(f"⚠️ Falha no warmup de visão: {e}")
+        
+        QTimer.singleShot(10000, start_vision)
 
     def _start_network_mesh(self):
         """Initialize and start the Network Mesh for collective intelligence"""
@@ -1463,22 +1487,7 @@ Examples:
                     raise Exception("Boot Manager initialization failed")
                 instances = boot_manager.instances
                 
-                # Start background loading for audio and vision
-                if "audio_system" in instances:
-                    try:
-                        audio = instances["audio_system"]
-                        if hasattr(audio, 'start_background_loading'):
-                            audio.start_background_loading()
-                    except Exception as e:
-                        logger.warning(f"⚠️ Audio background loading failed: {e}")
-                
-                if "vision_system" in instances:
-                    try:
-                        vision = instances["vision_system"]  
-                        if hasattr(vision, 'start_background_loading'):
-                            vision.start_background_loading()
-                    except Exception as e:
-                        logger.warning(f"⚠️ Vision background loading failed: {e}")
+                # Neural systems will be warmed up later via staggered_daemon_start (Late Boot)
                 
                 # Add neural systems placeholder and event bus
                 instances["Neural Systems"] = None
@@ -1517,9 +1526,7 @@ Examples:
                 audio = get_audio_system(data_path)
                 vision = get_vision_system(data_path)
                 
-                # Start background loading
-                audio.start_background_loading()
-                vision.start_background_loading()
+                # Background loading will be triggered by JarvisSingularity.start() (Late Boot)
                 
                 instances = {
                     "window_manager": window_manager,
