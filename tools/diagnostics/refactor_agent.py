@@ -1,9 +1,8 @@
-import os
 import re
 
-file_path = r'c:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\intelligence\ai_agent.py'
+file_path = r"c:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\src\core\intelligence\ai_agent.py"
 
-with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
     content = f.read()
 
 # 1. Update imports
@@ -12,7 +11,9 @@ content = content.replace("class AIAgent:", new_imports)
 
 # 2. Refactor __init__
 # We'll use a regex to find the __init__ and replace everything up to the first method
-init_pattern = re.compile(r'def __init__\(self, provider: str = \'ollama\'\):.*?def ', re.DOTALL)
+init_pattern = re.compile(
+    r"def __init__\(self, provider: str = \'ollama\'\):.*?def ", re.DOTALL
+)
 
 new_init = '''def __init__(self, provider: str = 'ollama'):
         """JARVIS 5.0 Intelligence Center"""
@@ -90,13 +91,28 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
 content = init_pattern.sub(new_init, content, count=1)
 
 # 3. Remove _get_dynamic_identity_prompt if it still exists
-content = re.sub(r'def _get_dynamic_identity_prompt\(self\).*?return \(.*?\)\s*', '', content, flags=re.DOTALL)
+content = re.sub(
+    r"def _get_dynamic_identity_prompt\(self\).*?return \(.*?\)\s*",
+    "",
+    content,
+    flags=re.DOTALL,
+)
 
 # 4. Cleanup redundant observation methods if still there
-content = re.sub(r'def _handle_contextual_observation\(self, current_intent: str\).*?memory_manager\.store_experience\("surveillance_event", results\)\s*', '', content, flags=re.DOTALL)
-content = re.sub(r'def _generate_discreet_response\(self, core_message: str\).*?return discreet_versions\.get\(core_message, "Há uma nova atualização no sistema\."\)\s*', '', content, flags=re.DOTALL)
+content = re.sub(
+    r'def _handle_contextual_observation\(self, current_intent: str\).*?memory_manager\.store_experience\("surveillance_event", results\)\s*',
+    "",
+    content,
+    flags=re.DOTALL,
+)
+content = re.sub(
+    r'def _generate_discreet_response\(self, core_message: str\).*?return discreet_versions\.get\(core_message, "Há uma nova atualização no sistema\."\)\s*',
+    "",
+    content,
+    flags=re.DOTALL,
+)
 
-with open(file_path, 'w', encoding='utf-8') as f:
+with open(file_path, "w", encoding="utf-8") as f:
     f.write(content)
 
 print("AIAgent refactored successfully via script.")

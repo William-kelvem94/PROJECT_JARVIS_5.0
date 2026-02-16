@@ -3,7 +3,6 @@ AlertManager - Sistema de alertas inteligentes para JARVIS 5.0
 Gerencia alertas, notificações e respostas automáticas.
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -17,23 +16,29 @@ from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 
+
 class AlertSeverity(Enum):
     """Níveis de severidade para alertas."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
     CRITICAL = "critical"
 
+
 class AlertStatus(Enum):
     """Status possíveis para alertas."""
+
     ACTIVE = "active"
     ACKNOWLEDGED = "acknowledged"
     RESOLVED = "resolved"
     SUPPRESSED = "suppressed"
 
+
 @dataclass
 class AlertRule:
     """Regra para geração de alertas."""
+
     rule_id: str
     name: str
     description: str
@@ -47,9 +52,11 @@ class AlertRule:
         if self.actions is None:
             self.actions = []
 
+
 @dataclass
 class Alert:
     """Representa um alerta do sistema."""
+
     alert_id: str
     rule_id: str
     title: str
@@ -91,6 +98,7 @@ class Alert:
         """Verifica se o alerta expirou."""
         return (time.time() - self.created_at) > max_age_seconds
 
+
 class AlertManager:
     """
     Gerenciador de alertas inteligentes com regras automáticas e notificações.
@@ -120,44 +128,53 @@ class AlertManager:
         """Inicializa regras de alerta padrão."""
 
         # Regra para alta utilização de CPU
-        self.add_rule(AlertRule(
-            rule_id="high_cpu_usage",
-            name="High CPU Usage",
-            description="CPU usage above 90% for extended period",
-            condition=lambda metrics: metrics.get('cpu_percent', 0) > 90,
-            severity=AlertSeverity.HIGH,
-            cooldown_seconds=300
-        ))
+        self.add_rule(
+            AlertRule(
+                rule_id="high_cpu_usage",
+                name="High CPU Usage",
+                description="CPU usage above 90% for extended period",
+                condition=lambda metrics: metrics.get("cpu_percent", 0) > 90,
+                severity=AlertSeverity.HIGH,
+                cooldown_seconds=300,
+            )
+        )
 
         # Regra para alta utilização de memória
-        self.add_rule(AlertRule(
-            rule_id="high_memory_usage",
-            name="High Memory Usage",
-            description="Memory usage above 90%",
-            condition=lambda metrics: metrics.get('memory_percent', 0) > 90,
-            severity=AlertSeverity.HIGH,
-            cooldown_seconds=300
-        ))
+        self.add_rule(
+            AlertRule(
+                rule_id="high_memory_usage",
+                name="High Memory Usage",
+                description="Memory usage above 90%",
+                condition=lambda metrics: metrics.get("memory_percent", 0) > 90,
+                severity=AlertSeverity.HIGH,
+                cooldown_seconds=300,
+            )
+        )
 
         # Regra para erros críticos
-        self.add_rule(AlertRule(
-            rule_id="critical_error",
-            name="Critical Error Detected",
-            description="Critical error in system logs",
-            condition=lambda data: data.get('level') == 'CRITICAL' or data.get('error_type') == 'critical',
-            severity=AlertSeverity.CRITICAL,
-            cooldown_seconds=60
-        ))
+        self.add_rule(
+            AlertRule(
+                rule_id="critical_error",
+                name="Critical Error Detected",
+                description="Critical error in system logs",
+                condition=lambda data: data.get("level") == "CRITICAL"
+                or data.get("error_type") == "critical",
+                severity=AlertSeverity.CRITICAL,
+                cooldown_seconds=60,
+            )
+        )
 
         # Regra para falha de serviço
-        self.add_rule(AlertRule(
-            rule_id="service_failure",
-            name="Service Failure",
-            description="Core service has failed",
-            condition=lambda data: data.get('service_status') == 'failed',
-            severity=AlertSeverity.CRITICAL,
-            cooldown_seconds=30
-        ))
+        self.add_rule(
+            AlertRule(
+                rule_id="service_failure",
+                name="Service Failure",
+                description="Core service has failed",
+                condition=lambda data: data.get("service_status") == "failed",
+                severity=AlertSeverity.CRITICAL,
+                cooldown_seconds=30,
+            )
+        )
 
     def add_rule(self, rule: AlertRule):
         """
@@ -180,7 +197,9 @@ class AlertManager:
             del self.alert_rules[rule_id]
             logger.info(f"Removed alert rule: {rule_id}")
 
-    async def check_rules(self, metrics: Dict[str, Any], context: Dict[str, Any] = None):
+    async def check_rules(
+        self, metrics: Dict[str, Any], context: Dict[str, Any] = None
+    ):
         """
         Verifica todas as regras contra as métricas fornecidas.
 
@@ -243,7 +262,7 @@ class AlertManager:
                 updated_at=time.time(),
                 value=data,
                 labels={"rule": rule.rule_id, "severity": rule.severity.value},
-                annotations={"trigger_data": data}
+                annotations={"trigger_data": data},
             )
 
             self.active_alerts[alert_id] = alert
@@ -256,7 +275,9 @@ class AlertManager:
                 except Exception as e:
                     logger.error(f"Error executing alert action: {e}")
 
-            logger.warning(f"Triggered new alert: {alert.title} (severity: {alert.severity.value})")
+            logger.warning(
+                f"Triggered new alert: {alert.title} (severity: {alert.severity.value})"
+            )
 
     async def _notify_alert(self, alert: Alert):
         """
@@ -304,8 +325,10 @@ class AlertManager:
 
             # Mantém limite
             if len(self.resolved_alerts) > self.max_alerts:
-                oldest_id = min(self.resolved_alerts.keys(),
-                              key=lambda x: self.resolved_alerts[x].created_at)
+                oldest_id = min(
+                    self.resolved_alerts.keys(),
+                    key=lambda x: self.resolved_alerts[x].created_at,
+                )
                 del self.resolved_alerts[oldest_id]
 
             logger.info(f"Alert {alert_id} resolved by {by}")
@@ -314,7 +337,7 @@ class AlertManager:
         """Salva um alerta em arquivo."""
         try:
             alert_file = self.alert_dir / f"{alert.alert_id}.json"
-            with open(alert_file, 'w', encoding='utf-8') as f:
+            with open(alert_file, "w", encoding="utf-8") as f:
                 json.dump(asdict(alert), f, indent=2, default=str)
         except Exception as e:
             logger.error(f"Failed to save alert {alert.alert_id}: {e}")
@@ -351,15 +374,15 @@ class AlertManager:
         """Retorna um resumo dos alertas."""
         active_by_severity = {}
         for severity in AlertSeverity:
-            active_by_severity[severity.value] = len([
-                a for a in self.active_alerts.values() if a.severity == severity
-            ])
+            active_by_severity[severity.value] = len(
+                [a for a in self.active_alerts.values() if a.severity == severity]
+            )
 
         return {
             "total_active": len(self.active_alerts),
             "total_resolved": len(self.resolved_alerts),
             "active_by_severity": active_by_severity,
-            "rules_count": len(self.alert_rules)
+            "rules_count": len(self.alert_rules),
         }
 
     # Métodos de configuração de notificações
@@ -375,8 +398,15 @@ class AlertManager:
         self.notification_channels[name] = channel_func
         logger.info(f"Added notification channel: {name}")
 
-    def configure_email(self, smtp_server: str, smtp_port: int, username: str,
-                       password: str, from_email: str, to_emails: List[str]):
+    def configure_email(
+        self,
+        smtp_server: str,
+        smtp_port: int,
+        username: str,
+        password: str,
+        from_email: str,
+        to_emails: List[str],
+    ):
         """
         Configura notificações por email.
 
@@ -394,7 +424,7 @@ class AlertManager:
             "username": username,
             "password": password,
             "from_email": from_email,
-            "to_emails": to_emails
+            "to_emails": to_emails,
         }
 
         # Adiciona canal de email
@@ -407,9 +437,11 @@ class AlertManager:
 
         try:
             msg = MIMEMultipart()
-            msg['From'] = self.email_config['from_email']
-            msg['To'] = ', '.join(self.email_config['to_emails'])
-            msg['Subject'] = f"JARVIS Alert: {alert.title} ({alert.severity.value.upper()})"
+            msg["From"] = self.email_config["from_email"]
+            msg["To"] = ", ".join(self.email_config["to_emails"])
+            msg["Subject"] = (
+                f"JARVIS Alert: {alert.title} ({alert.severity.value.upper()})"
+            )
 
             body = f"""
 JARVIS Alert Notification
@@ -428,19 +460,24 @@ Value: {alert.value}
 Threshold: {alert.threshold}
             """
 
-            msg.attach(MIMEText(body, 'plain'))
+            msg.attach(MIMEText(body, "plain"))
 
-            server = smtplib.SMTP(self.email_config['smtp_server'], self.email_config['smtp_port'])
+            server = smtplib.SMTP(
+                self.email_config["smtp_server"], self.email_config["smtp_port"]
+            )
             server.starttls()
-            server.login(self.email_config['username'], self.email_config['password'])
+            server.login(self.email_config["username"], self.email_config["password"])
             text = msg.as_string()
-            server.sendmail(self.email_config['from_email'], self.email_config['to_emails'], text)
+            server.sendmail(
+                self.email_config["from_email"], self.email_config["to_emails"], text
+            )
             server.quit()
 
             logger.info(f"Sent email notification for alert {alert.alert_id}")
 
         except Exception as e:
             logger.error(f"Failed to send email notification: {e}")
+
 
 # Singleton instance
 alert_manager = AlertManager()

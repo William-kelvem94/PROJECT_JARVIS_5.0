@@ -5,17 +5,14 @@ Encapsulates the system initialization logic, dependency injection,
 and boot sequence management.
 """
 
-import sys
 import logging
-import asyncio
-import threading
-from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from src.utils.config import config
 from src.core.infrastructure.boot_manager import BootManager, BootPriority
 
 logger = logging.getLogger("JARVIS-BOOTSTRAPPER")
+
 
 class SystemBootstrapper:
     """
@@ -63,18 +60,18 @@ class SystemBootstrapper:
         """Initializes the async event bus."""
         try:
             from src.core.infrastructure.async_event_bus import AsyncEventBus
+
             self.event_bus = AsyncEventBus()
             logger.info("✅ AsyncEventBus initialized")
 
             # Register immediately as it's a dependency for others
             self.boot_manager.register_module(
-                "event_bus",
-                lambda: self.event_bus,
-                BootPriority.CRITICAL,
-                []
+                "event_bus", lambda: self.event_bus, BootPriority.CRITICAL, []
             )
         except ImportError:
-            logger.warning("⚠️ AsyncEventBus not available. System using sync fallback.")
+            logger.warning(
+                "⚠️ AsyncEventBus not available. System using sync fallback."
+            )
 
     def _register_components(self):
         """Registers all system components with the BootManager."""
@@ -82,10 +79,7 @@ class SystemBootstrapper:
         # Window Manager (GUI)
         if self.app:
             self.boot_manager.register_module(
-                "window_manager",
-                self._init_window_manager,
-                BootPriority.HIGH,
-                []
+                "window_manager", self._init_window_manager, BootPriority.HIGH, []
             )
 
         # System Integrator (Actions)
@@ -93,7 +87,7 @@ class SystemBootstrapper:
             "system_integrator",
             self._init_system_integrator,
             BootPriority.MEDIUM,
-            ["window_manager"] if self.app else []
+            ["window_manager"] if self.app else [],
         )
 
         # Audio System
@@ -101,7 +95,7 @@ class SystemBootstrapper:
             "audio_system",
             self._init_audio_system,
             BootPriority.MEDIUM,
-            ["system_integrator"]
+            ["system_integrator"],
         )
 
         # Vision System
@@ -109,7 +103,7 @@ class SystemBootstrapper:
             "vision_system",
             self._init_vision_system,
             BootPriority.MEDIUM,
-            ["system_integrator"]
+            ["system_integrator"],
         )
 
         # AI Agent (The Brain)
@@ -117,15 +111,17 @@ class SystemBootstrapper:
             "ai_agent",
             self._init_ai_agent,
             BootPriority.MEDIUM,
-            ["audio_system", "vision_system"]
+            ["audio_system", "vision_system"],
         )
 
     # --- Factory Methods (Lazy Loading) ---
 
     def _init_window_manager(self):
-        if not self.app: return None
+        if not self.app:
+            return None
         try:
             from src.interface.window_manager import get_window_manager
+
             return get_window_manager(self.app)
         except ImportError as e:
             logger.error(f"Failed to load WindowManager: {e}")
@@ -135,6 +131,7 @@ class SystemBootstrapper:
         try:
             # Dynamic import to avoid circular deps
             from src.core.actions.system_integrator import get_system_integrator
+
             return get_system_integrator()
         except ImportError as e:
             logger.error(f"Failed to load SystemIntegrator: {e}")
@@ -143,6 +140,7 @@ class SystemBootstrapper:
     def _init_audio_system(self):
         try:
             from src.core.audio.enhanced_audio import get_audio_system
+
             return get_audio_system(config.DATA_DIR, event_bus=self.event_bus)
         except ImportError as e:
             logger.error(f"Failed to load AudioSystem: {e}")
@@ -151,6 +149,7 @@ class SystemBootstrapper:
     def _init_vision_system(self):
         try:
             from src.core.vision.vision_system import get_vision_system
+
             return get_vision_system(config.DATA_DIR, event_bus=self.event_bus)
         except ImportError as e:
             logger.error(f"Failed to load VisionSystem: {e}")
@@ -159,6 +158,7 @@ class SystemBootstrapper:
     def _init_ai_agent(self):
         try:
             from src.core.intelligence.ai_agent import ai_agent
+
             return ai_agent
         except ImportError as e:
             logger.error(f"Failed to load AI Agent: {e}")

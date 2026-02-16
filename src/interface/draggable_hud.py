@@ -1,6 +1,7 @@
 """Compatibility shim: provide `DraggableHUD` class for legacy imports.
 This maps to `ModernHUD` implemented in `src.interface.modern_hud`.
 """
+
 try:
     from src.interface.modern_hud import ModernHUD as DraggableHUD
 except Exception:
@@ -8,5 +9,6 @@ except Exception:
     class DraggableHUD:
         def __init__(self, *args, **kwargs):
             pass
+
 
 __all__ = ["DraggableHUD"]

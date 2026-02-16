@@ -10,6 +10,9 @@ setlocal EnableDelayedExpansion
 title JARVIS 5.0 - Singularity
 cd /d "%~dp0\..\.."
 
+:: Normalize terminal encoding for consistent Unicode output
+chcp 65001 >nul
+
 :: 1. Environment Configuration
 :: ----------------------------------------------------------------------------------
 set "PYTHONIOENCODING=utf-8"

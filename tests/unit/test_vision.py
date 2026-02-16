@@ -27,12 +27,13 @@ test_dir.mkdir(parents=True, exist_ok=True)
 img = np.ones((600, 800, 3), dtype=np.uint8) * 255
 
 # Adicionar texto
-cv2.putText(img, "JARVIS Vision Test", (50, 100), 
-            cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3)
-cv2.putText(img, "Click Here", (300, 300), 
-            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
-cv2.putText(img, "Settings", (300, 400), 
-            cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 2)
+cv2.putText(
+    img, "JARVIS Vision Test", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 0), 3
+)
+cv2.putText(
+    img, "Click Here", (300, 300), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2
+)
+cv2.putText(img, "Settings", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 2)
 
 # Desenhar retângulos (simular botões)
 cv2.rectangle(img, (280, 250), (480, 330), (0, 0, 255), 2)
@@ -45,9 +46,7 @@ print(f"   ✅ Imagem criada: {test_image_path}")
 # Test 3: Analyze screen
 print("\n3️⃣ ANALISANDO TELA:")
 analysis = vision_enhancer.analyze_screen(
-    str(test_image_path),
-    detect_ui=True,
-    extract_text=True
+    str(test_image_path), detect_ui=True, extract_text=True
 )
 
 print(f"   UI Elements: {len(analysis['ui_elements'])}")
@@ -56,10 +55,12 @@ print(f"   Clickable Areas: {len(analysis['clickable_areas'])}")
 print(f"   Summary: {analysis['summary']}")
 
 # Test 4: Text extraction details
-if analysis['text_regions']:
+if analysis["text_regions"]:
     print("\n4️⃣ TEXTO DETECTADO:")
-    for i, region in enumerate(analysis['text_regions'][:5], 1):
-        print(f"   {i}. '{region['text']}' @ ({region['center']['x']}, {region['center']['y']})")
+    for i, region in enumerate(analysis["text_regions"][:5], 1):
+        print(
+            f"   {i}. '{region['text']}' @ ({region['center']['x']}, {region['center']['y']})"
+        )
         print(f"      Confidence: {region['confidence']:.2f}")
 
 # Test 5: Find element by text

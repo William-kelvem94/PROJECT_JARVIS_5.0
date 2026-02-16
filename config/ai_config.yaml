@@ -83,8 +83,6 @@ brain_router:
       - "claude-3-haiku"
       - "gpt-3.5-turbo"
   
-  offline_mode: false # Set to true to force strictly local
-  
   # Routing thresholds
   complexity_thresholds:
     simple: 0.2

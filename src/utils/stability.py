@@ -4,12 +4,14 @@ import time
 
 logger = logging.getLogger(__name__)
 
+
 class ModelLoadLock:
     """
-    Trava global para evitar que mÃºltiplos modelos neurais pesados 
+    Trava global para evitar que mÃºltiplos modelos neurais pesados
     sejam carregados simultaneamente, prevenindo crashes 0xC0000005 (Access Violation)
     em sistemas com CPU/RAM limitadas.
     """
+
     _lock = threading.Lock()
     _active_model = None
 
@@ -30,6 +32,7 @@ class ModelLoadLock:
         logger.info(f"ðŸ”“ [STABILITY] Trava liberada (anterior: {model})")
         # Pequeno delay para respiro do SO/CPU
         time.sleep(1.0)
+
 
 # InstÃ¢ncia global para facilidade de importaÃ§Ã£o
 model_load_lock = ModelLoadLock

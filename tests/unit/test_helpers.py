@@ -2,17 +2,23 @@
 Testes para utilitários e funções auxiliares
 """
 
-import pytest
 import os
-import re
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch
 import tempfile
 from PIL import Image
 import numpy as np
 from src.utils.helpers import (
-    FileHelper, ImageHelper, TextHelper, DataHelper, SystemHelper,
-    file_helper, image_helper, text_helper, data_helper, system_helper
+    FileHelper,
+    ImageHelper,
+    TextHelper,
+    DataHelper,
+    SystemHelper,
+    file_helper,
+    image_helper,
+    text_helper,
+    data_helper,
+    system_helper,
 )
 
 
@@ -92,7 +98,7 @@ class TestFileHelper:
             filename2 = FileHelper.get_unique_filename(temp_dir, base_name, extension)
             assert filename2 == "test_file_1.txt"
 
-    @patch('src.utils.helpers.logger')
+    @patch("src.utils.helpers.logger")
     def test_cleanup_old_files(self, mock_logger):
         """Testa limpeza de arquivos antigos"""
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -107,6 +113,7 @@ class TestFileHelper:
 
             # Simular arquivo antigo modificando timestamp
             import time
+
             old_timestamp = time.time() - (40 * 24 * 60 * 60)  # 40 dias atrás
             os.utime(old_file, (old_timestamp, old_timestamp))
 
@@ -125,7 +132,7 @@ class TestImageHelper:
     def test_preprocess_image(self):
         """Testa pré-processamento de imagem"""
         # Criar imagem de teste
-        test_image = Image.new('RGB', (100, 100), color='white')
+        test_image = Image.new("RGB", (100, 100), color="white")
 
         # Pré-processar
         processed = ImageHelper.preprocess_image(test_image)
@@ -134,12 +141,12 @@ class TestImageHelper:
         assert isinstance(processed, Image.Image)
 
         # Deve ser convertida para escala de cinza
-        assert processed.mode == 'L'
+        assert processed.mode == "L"
 
     def test_image_to_cv2(self):
         """Testa conversão PIL para OpenCV"""
         # Criar imagem PIL
-        pil_image = Image.new('RGB', (50, 50), color='red')
+        pil_image = Image.new("RGB", (50, 50), color="red")
 
         # Converter para OpenCV
         cv_image = ImageHelper.image_to_cv2(pil_image)
@@ -164,9 +171,10 @@ class TestImageHelper:
     def test_detect_text_regions(self):
         """Testa detecção de regiões de texto"""
         # Criar imagem simples com "texto" (retângulo branco)
-        test_image = Image.new('L', (200, 100), color=0)  # Fundo preto
+        test_image = Image.new("L", (200, 100), color=0)  # Fundo preto
         # Adicionar retângulo branco simulando texto
         from PIL import ImageDraw
+
         draw = ImageDraw.Draw(test_image)
         draw.rectangle([50, 30, 150, 70], fill=255)
 
@@ -197,16 +205,16 @@ class TestTextHelper:
         text = "CPF: 123.456.789-00 Email: test@example.com Valor: R$ 1.234,56"
 
         patterns = {
-            'cpf': r'\b\d{3}\.\d{3}\.\d{3}-\d{2}\b',
-            'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            "cpf": r"\b\d{3}\.\d{3}\.\d{3}-\d{2}\b",
+            "email": r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
         }
 
         results = TextHelper.extract_patterns(text, patterns)
 
-        assert 'cpf' in results
-        assert 'email' in results
-        assert results['cpf'] == ['123.456.789-00']
-        assert results['email'] == ['test@example.com']
+        assert "cpf" in results
+        assert "email" in results
+        assert results["cpf"] == ["123.456.789-00"]
+        assert results["email"] == ["test@example.com"]
 
     def test_normalize_text(self):
         """Testa normalização de texto"""
@@ -246,7 +254,7 @@ class TestDataHelper:
     def test_validate_cpf_valid(self):
         """Testa validação de CPF válido"""
         # CPF válido de exemplo
-        valid_cpf = "123.456.789-09"  # CPF válido para testes
+        valid_cpf = "123.456.789-09"  # CPF válido para testes  # noqa: F841
 
         assert DataHelper.validate_cpf("12345678909")  # Sem formatação
         assert DataHelper.validate_cpf("123.456.789-09")  # Com formatação
@@ -255,21 +263,27 @@ class TestDataHelper:
         """Testa validação de CPF inválido"""
         # CPFs inválidos
         assert not DataHelper.validate_cpf("111.111.111-11")  # Todos dígitos iguais
-        assert not DataHelper.validate_cpf("123.456.789-00")  # Dígito verificador errado
+        assert not DataHelper.validate_cpf(
+            "123.456.789-00"
+        )  # Dígito verificador errado
         assert not DataHelper.validate_cpf("123456789")  # Tamanho errado
 
     def test_validate_cnpj_valid(self):
         """Testa validação de CNPJ válido"""
         # CNPJ válido de exemplo
-        valid_cnpj = "12.345.678/0001-90"
+        valid_cnpj = "12.345.678/0001-90"  # noqa: F841
 
         assert DataHelper.validate_cnpj("12345678000190")  # Sem formatação
         assert DataHelper.validate_cnpj("12.345.678/0001-90")  # Com formatação
 
     def test_validate_cnpj_invalid(self):
         """Testa validação de CNPJ inválido"""
-        assert not DataHelper.validate_cnpj("11.111.111/1111-11")  # Todos dígitos iguais
-        assert not DataHelper.validate_cnpj("12345678000100")  # Dígito verificador errado
+        assert not DataHelper.validate_cnpj(
+            "11.111.111/1111-11"
+        )  # Todos dígitos iguais
+        assert not DataHelper.validate_cnpj(
+            "12345678000100"
+        )  # Dígito verificador errado
 
     def test_format_money(self):
         """Testa formatação de valores monetários"""
@@ -280,12 +294,11 @@ class TestDataHelper:
 
     def test_parse_date(self):
         """Testa parsing de datas"""
-        from datetime import datetime
 
         # Diferentes formatos
         date1 = DataHelper.parse_date("25/12/2023")
         date2 = DataHelper.parse_date("2023-12-25")
-        date3 = DataHelper.parse_date("12/25/2023")
+        date3 = DataHelper.parse_date("12/25/2023")  # noqa: F841
 
         assert date1.day == 25
         assert date1.month == 12
@@ -302,15 +315,23 @@ class TestDataHelper:
 class TestSystemHelper:
     """Testes do SystemHelper"""
 
-    @patch('src.utils.helpers.psutil.virtual_memory')
-    @patch('src.utils.helpers.psutil.cpu_count')
-    @patch('src.utils.helpers.psutil.disk_usage')
-    @patch('src.utils.helpers.platform.system')
-    @patch('src.utils.helpers.platform.version')
-    @patch('src.utils.helpers.platform.python_version')
-    @patch('src.utils.helpers.platform.architecture')
-    def test_get_system_info(self, mock_arch, mock_py_version, mock_version,
-                           mock_system, mock_disk, mock_cpu, mock_memory):
+    @patch("src.utils.helpers.psutil.virtual_memory")
+    @patch("src.utils.helpers.psutil.cpu_count")
+    @patch("src.utils.helpers.psutil.disk_usage")
+    @patch("src.utils.helpers.platform.system")
+    @patch("src.utils.helpers.platform.version")
+    @patch("src.utils.helpers.platform.python_version")
+    @patch("src.utils.helpers.platform.architecture")
+    def test_get_system_info(
+        self,
+        mock_arch,
+        mock_py_version,
+        mock_version,
+        mock_system,
+        mock_disk,
+        mock_cpu,
+        mock_memory,
+    ):
         """Testa obtenção de informações do sistema"""
         # Configurar mocks
         mock_system.return_value = "Windows"
@@ -325,16 +346,16 @@ class TestSystemHelper:
 
         info = SystemHelper.get_system_info()
 
-        assert info['os'] == 'Windows'
-        assert info['os_version'] == '10.0.19041'
-        assert info['python_version'] == '3.9.7'
-        assert info['cpu_count'] == 4
-        assert info['memory_total'] == 8.0  # GB
-        assert info['memory_available'] == 4.0  # GB
-        assert info['disk_total'] == 500.0  # GB
-        assert info['disk_free'] == 200.0  # GB
+        assert info["os"] == "Windows"
+        assert info["os_version"] == "10.0.19041"
+        assert info["python_version"] == "3.9.7"
+        assert info["cpu_count"] == 4
+        assert info["memory_total"] == 8.0  # GB
+        assert info["memory_available"] == 4.0  # GB
+        assert info["disk_total"] == 500.0  # GB
+        assert info["disk_free"] == 200.0  # GB
 
-    @patch('src.utils.helpers.ctypes.windll.shell32.IsUserAnAdmin')
+    @patch("src.utils.helpers.ctypes.windll.shell32.IsUserAnAdmin")
     def test_is_admin_windows(self, mock_is_admin):
         """Testa verificação de privilégios de administrador no Windows"""
         mock_is_admin.return_value = True

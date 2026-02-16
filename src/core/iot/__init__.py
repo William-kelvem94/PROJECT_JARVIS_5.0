@@ -6,4 +6,4 @@ e gerenciamento de automaÃ§Ã£o residencial.
 
 from .iot_manager import IOTManager
 
-__all__ = ['IOTManager']
+__all__ = ["IOTManager"]

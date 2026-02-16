@@ -4,10 +4,10 @@ JARVIS 5.0 - Portability Validator
 Valida se o projeto pode rodar em qualquer PC
 """
 
-import os
 import sys
 
 from pathlib import Path
+
 
 def validate_portability():
     """Valida portabilidade do projeto"""
@@ -20,9 +20,9 @@ def validate_portability():
     # 1. Verificar caminhos hardcoded
     print("📁 Verificando caminhos hardcoded...")
     hardcoded_patterns = [
-        r'C:\\Users\\willi',
-        r'/home/willi',
-        r'williamkelvem64@gmail\.com'
+        r"C:\\Users\\willi",
+        r"/home/willi",
+        r"williamkelvem64@gmail\.com",
     ]
 
     # Buscar padrões de forma multiplataforma usando pathlib e leitura de arquivos
@@ -32,12 +32,14 @@ def validate_portability():
         examples_for_pattern = 0
         for file_path in search_files:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     for lineno, line in enumerate(f, start=1):
                         if pattern in line:
                             issues.append(f"{file_path}:{lineno}:{line.rstrip()}")
                             examples_for_pattern += 1
-                            if examples_for_pattern >= 5:  # Limitar a 5 exemplos por padrão
+                            if (
+                                examples_for_pattern >= 5
+                            ):  # Limitar a 5 exemplos por padrão
                                 break
             except (OSError, UnicodeError):
                 # Ignorar arquivos que não puderem ser lidos
@@ -52,7 +54,7 @@ def validate_portability():
         "START_JARVIS.bat",
         "INSTALL_JARVIS.bat",
         "config/settings.json",
-        "config/ai_config.yaml"
+        "config/ai_config.yaml",
     ]
 
     for file_path in required_files:
@@ -63,9 +65,9 @@ def validate_portability():
     print("🔗 Verificando uso de caminhos relativos...")
     main_py = project_root / "main.py"
     if main_py.exists():
-        with open(main_py, 'r', encoding='utf-8') as f:
+        with open(main_py, "r", encoding="utf-8") as f:
             content = f.read()
-            if 'Path(__file__)' not in content:
+            if "Path(__file__)" not in content:
                 issues.append("main.py não usa caminhos relativos")
 
     # Resultado
@@ -82,6 +84,7 @@ def validate_portability():
         print("✅ NENHUM PROBLEMA ENCONTRADO")
         print("✅ PROJETO TOTALMENTE PORTÁVEL")
         return True
+
 
 if __name__ == "__main__":
     success = validate_portability()

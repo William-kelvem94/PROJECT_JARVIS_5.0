@@ -1,13 +1,10 @@
 import os
 import sys
-import warnings
 import time
-import platform
 import logging
 import asyncio
 import threading
 import signal
-from pathlib import Path
 
 # 🛡️ EARLY ENVIRONMENT CONFIGURATION
 os.environ["PYTHONUTF8"] = "1"
@@ -27,20 +24,26 @@ except Exception as e:
     logger = logging.getLogger("BOOT")
     logger.error(f"Logging setup failed: {e}")
 
+
 # 🛡️ GLOBAL MONKEY PATCHES (Safety checks)
 def apply_patches():
     # OpenVINO Patch
     try:
         import openvino
-        if not hasattr(openvino, 'Node') and 'openvino.runtime' in sys.modules:
-             openvino.Node = getattr(sys.modules['openvino.runtime'], 'Node', None)
-    except ImportError: pass
+
+        if not hasattr(openvino, "Node") and "openvino.runtime" in sys.modules:
+            openvino.Node = getattr(sys.modules["openvino.runtime"], "Node", None)
+    except ImportError:
+        pass
 
     # Transformers Patch
     try:
         import transformers
+
         # Add any specific transformer patches here if needed
-    except ImportError: pass
+    except ImportError:
+        pass
+
 
 apply_patches()
 
@@ -53,11 +56,15 @@ from src.core.management.shutdown_manager import ShutdownManager
 try:
     from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer
     from PyQt6.QtWidgets import QApplication
+
     QT_AVAILABLE = True
 except ImportError:
     QT_AVAILABLE = False
-    class QObject: pass
-    
+
+    class QObject:
+        pass
+
+
 # ============================================================================
 # JARVIS CORE APPLICATION
 # ============================================================================
@@ -66,10 +73,11 @@ class JarvisSingularity(QObject):
     Main Application Controller.
     Orchestrates interaction between the GUI, AI Agent, and Perception Systems.
     """
+
     if QT_AVAILABLE:
         transcription_received = pyqtSignal(object)
         hud_update_requested = pyqtSignal(str, str)
-    
+
     def __init__(self, app, instances):
         super().__init__()
         self.app = app
@@ -80,15 +88,15 @@ class JarvisSingularity(QObject):
         self.ai_agent = instances.get("ai_agent")
         self.audio_system = instances.get("audio_system")
         self.vision_system = instances.get("vision_system")
-        
+
         # State
         self.is_running = False
         self.last_interaction_time = 0
-        
+
         # Subsystems
         self.scheduler = PriorityScheduler()
         self.shutdown_manager = ShutdownManager(self)
-        
+
         # Connect Signals
         if QT_AVAILABLE:
             self.transcription_received.connect(self._on_transcription)
@@ -105,7 +113,7 @@ class JarvisSingularity(QObject):
         """Starts the main event loops and background services."""
         self.is_running = True
         logger.info("🚀 Starting JARVIS Services...")
-        
+
         # Start Scheduler
         threading.Thread(target=self._run_scheduler, daemon=True).start()
 
@@ -114,15 +122,18 @@ class JarvisSingularity(QObject):
             if self.audio_system.start_listening():
                 self.audio_system.on_transcription = self.transcription_received.emit
                 logger.info("🎙️ Audio System Listening")
-        
+
         # Start Vision
         if self.vision_system:
             # Trigger background loading
-            threading.Thread(target=self.vision_system.start_background_loading, daemon=True).start()
+            threading.Thread(
+                target=self.vision_system.start_background_loading, daemon=True
+            ).start()
 
         # Connect GUI
         if self.window_manager:
             from src.interface.window_manager import InterfaceMode
+
             self.window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
             self.window_manager.jarvis_core = self
 
@@ -142,11 +153,15 @@ class JarvisSingularity(QObject):
     # --- Signal Handlers ---
 
     if QT_AVAILABLE:
+
         @pyqtSlot(object)
         def _on_transcription(self, result):
-            if not result or not result.text: return
+            if not result or not result.text:
+                return
             # Simple logic for now - process everything
-            threading.Thread(target=self._process_command, args=(result.text,), daemon=True).start()
+            threading.Thread(
+                target=self._process_command, args=(result.text,), daemon=True
+            ).start()
 
         @pyqtSlot(str, str)
         def _on_hud_update(self, state, text):
@@ -154,10 +169,12 @@ class JarvisSingularity(QObject):
                 hud = self.window_manager.get_hud()
                 if hud:
                     hud.update_state(state)
-                    if text: hud.show_response(text)
+                    if text:
+                        hud.show_response(text)
 
     def _process_command(self, text):
-        if not self.ai_agent: return
+        if not self.ai_agent:
+            return
         try:
             self.hud_update_requested.emit("thinking", "")
 
@@ -166,13 +183,15 @@ class JarvisSingularity(QObject):
             asyncio.set_event_loop(loop)
             response = loop.run_until_complete(self.ai_agent.process_command(text))
             loop.close()
-            
+
             self.hud_update_requested.emit("speaking", str(response))
 
             # Speak response
             from src.core.audio.voice_controller import get_voice_controller
+
             vc = get_voice_controller()
-            if vc: vc.speak(str(response))
+            if vc:
+                vc.speak(str(response))
 
             self.hud_update_requested.emit("idle", "")
 
@@ -180,14 +199,16 @@ class JarvisSingularity(QObject):
             logger.error(f"Error processing command: {e}")
             self.hud_update_requested.emit("error", "Erro ao processar")
 
+
 # ============================================================================
 # MAIN ENTRY POINT
 # ============================================================================
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="JARVIS 5.0 - Singularity Edition")
-    parser.add_argument('--headless', action='store_true', help="Run without GUI")
-    parser.add_argument('--debug', action='store_true', help="Enable debug logging")
+    parser.add_argument("--headless", action="store_true", help="Run without GUI")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
     if args.debug:
@@ -227,7 +248,7 @@ def main():
     if app:
         # Timer to check bootstrap status
         timer = QTimer()
-        
+
         def check_boot():
             if boot_data["status"] == "success":
                 timer.stop()
@@ -239,23 +260,25 @@ def main():
                 app.quit()
 
         timer.timeout.connect(check_boot)
-        timer.start(100) # Check every 100ms
+        timer.start(100)  # Check every 100ms
 
         sys.exit(app.exec())
     else:
         # Headless Loop
         logger.info("⌨️ Running in HEADLESS mode (Ctrl+C to exit)")
-        bootstrap_thread.join() # Wait for boot
+        bootstrap_thread.join()  # Wait for boot
 
         if boot_data["status"] == "success":
             jarvis = JarvisSingularity(None, boot_data["instances"])
             jarvis.start()
             try:
-                while True: time.sleep(1)
+                while True:
+                    time.sleep(1)
             except KeyboardInterrupt:
                 logger.info("Exiting...")
         else:
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

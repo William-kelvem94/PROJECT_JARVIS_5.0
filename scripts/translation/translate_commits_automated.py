@@ -6,8 +6,6 @@ Mantém ordem cronológica e datas originais
 """
 
 import subprocess
-import re
-import sys
 
 # Dicionário de traduções profissionais
 TRANSLATIONS = {
@@ -23,7 +21,16 @@ TRANSLATIONS = {
     "Clean up backup files": "🧹 Limpar arquivos de backup",
     "Improve security and robustness based on code review feedback": "🛡️ Melhorar segurança e robustez baseado no feedback da revisão de código",
     "Update documentation to reflect Google Search implementation": "📝 Atualizar documentação para refletir implementação do Google Search",
-    "Remove obsolete documentation and scripts related to JARVIS 5.0, including analysis, API documentation, architecture, and various setup scripts, to streamline the project structure and focus on essential components.": "🗑️ Remover documentação e scripts obsoletos relacionados ao JARVIS 5.0, incluindo análise, documentação de API, arquitetura e vários scripts de configuração, para simplificar a estrutura do projeto e focar em componentes essenciais",
+    (
+        "Remove obsolete documentation and scripts related to JARVIS 5.0, including "
+        "analysis, API documentation, architecture, and various setup scripts, to "
+        "streamline the project structure and focus on essential components."
+    ): (
+        "🗑️ Remover documentação e scripts obsoletos relacionados ao JARVIS 5.0, "
+        "incluindo análise, documentação de API, arquitetura e vários scripts de "
+        "configuração, para simplificar a estrutura do projeto e focar em "
+        "componentes essenciais"
+    ),
     "Add session_stats.json with session metrics": "📊 Adicionar session_stats.json com métricas de sessão",
     "Add autonomous launcher and project validator": "🚀 Adicionar launcher autônomo e validador de projeto",
     "Add quick setup checkers and improve documentation": "⚡ Adicionar verificadores de configuração rápida e melhorar documentação",
@@ -68,133 +75,171 @@ TRANSLATIONS = {
     "v5.0.0 (Singularity Core) - Final Validation & Singularity Protocol Enabled": "🎯 v5.0.0 (Singularity Core) - Validação Final e Protocolo Singularity Habilitado",
 }
 
+
 def translate_message(msg):
     """Traduz mensagem de commit"""
     # Verifica tradução direta
     if msg in TRANSLATIONS:
         return TRANSLATIONS[msg]
-    
+
     # Remove comentário # empty se existir
     msg = msg.replace(" # empty", "").strip()
-    
+
     # Se já está em português, retorna sem alteração
-    portuguese_words = ['feat', 'fix', 'refactor', 'docs', 'chore', 'style', 'Implementação', 
-                        'Correção', 'Atualiza', 'Adiciona', 'Remove', 'Migração', 'feat(']
+    portuguese_words = [
+        "feat",
+        "fix",
+        "refactor",
+        "docs",
+        "chore",
+        "style",
+        "Implementação",
+        "Correção",
+        "Atualiza",
+        "Adiciona",
+        "Remove",
+        "Migração",
+        "feat(",
+    ]
     if any(word in msg for word in portuguese_words):
         return msg
-    
+
     # Traduções parciais
     translations_map = {
-        'Add ': '📚 Adicionar ',
-        'Fix ': '🔧 Corrigir ',
-        'Update ': '🔄 Atualizar ',
-        'Implement ': '✨ Implementar ',
-        'Remove ': '🗑️ Remover ',
-        'Clean up': '🧹 Limpar',
-        'Complete ': '✅ Completar ',
-        'Initial ': '🎯 Inicial ',
-        'Final ': '🎉 Final ',
-        'SECURITY:': '🔒 SEGURANÇA:',
+        "Add ": "📚 Adicionar ",
+        "Fix ": "🔧 Corrigir ",
+        "Update ": "🔄 Atualizar ",
+        "Implement ": "✨ Implementar ",
+        "Remove ": "🗑️ Remover ",
+        "Clean up": "🧹 Limpar",
+        "Complete ": "✅ Completar ",
+        "Initial ": "🎯 Inicial ",
+        "Final ": "🎉 Final ",
+        "SECURITY:": "🔒 SEGURANÇA:",
     }
-    
+
     translated = msg
     for eng, pt in translations_map.items():
         if msg.startswith(eng):
             translated = msg.replace(eng, pt, 1)
             break
-    
+
     # Se não foi traduzido, adiciona emoji baseado em palavras-chave
     if translated == msg:
-        if 'security' in msg.lower() or 'patch' in msg.lower():
-            translated = '🔒 ' + msg
-        elif 'fix' in msg.lower() or 'error' in msg.lower():
-            translated = '🔧 ' + msg
-        elif 'add' in msg.lower() or 'implement' in msg.lower():
-            translated = '✨ ' + msg
-        elif 'documentation' in msg.lower() or 'doc' in msg.lower():
-            translated = '📚 ' + msg
-    
+        if "security" in msg.lower() or "patch" in msg.lower():
+            translated = "🔒 " + msg
+        elif "fix" in msg.lower() or "error" in msg.lower():
+            translated = "🔧 " + msg
+        elif "add" in msg.lower() or "implement" in msg.lower():
+            translated = "✨ " + msg
+        elif "documentation" in msg.lower() or "doc" in msg.lower():
+            translated = "📚 " + msg
+
     return translated
+
 
 def main():
     print("🔄 Iniciando tradução automática de commits...")
     print("📋 Processando branch: dev-new-version")
-    
+
     # Obtém todos os commits
     result = subprocess.run(
-        ['git', 'log', '--pretty=format:%H|||%s|||%ai|||%an|||%ae', '--reverse'],
+        ["git", "log", "--pretty=format:%H|||%s|||%ai|||%an|||%ae", "--reverse"],
         capture_output=True,
         text=True,
-        encoding='utf-8'
+        encoding="utf-8",
     )
-    
+
     if result.returncode != 0:
         print(f"❌ Erro ao obter commits: {result.stderr}")
         return False
-    
+
     commits = []
-    for line in result.stdout.strip().split('\n'):
-        if '|||' in line:
-            parts = line.split('|||')
+    for line in result.stdout.strip().split("\n"):
+        if "|||" in line:
+            parts = line.split("|||")
             if len(parts) >= 5:
                 hash_c, msg, date, author, email = parts
-                commits.append({
-                    'hash': hash_c.strip(),
-                    'message': msg.strip(),
-                    'date': date.strip(),
-                    'author': author.strip(),
-                    'email': email.strip()
-                })
-    
+                commits.append(
+                    {
+                        "hash": hash_c.strip(),
+                        "message": msg.strip(),
+                        "date": date.strip(),
+                        "author": author.strip(),
+                        "email": email.strip(),
+                    }
+                )
+
     print(f"📊 Total de commits: {len(commits)}")
-    
+
     # Identifica commits em inglês
     english_commits = []
     for commit in commits:
-        msg = commit['message']
+        msg = commit["message"]
         # Verifica se está em inglês
         english_patterns = [
-            'Initial project', 'Add ', 'Fix ', 'Update ', 'Implement ', 'Remove ',
-            'Complete ', 'Final ', 'Clean up', 'Improve ', 'Address ',
-            'SECURITY:', 'Organize:', 'Merge pull request'
+            "Initial project",
+            "Add ",
+            "Fix ",
+            "Update ",
+            "Implement ",
+            "Remove ",
+            "Complete ",
+            "Final ",
+            "Clean up",
+            "Improve ",
+            "Address ",
+            "SECURITY:",
+            "Organize:",
+            "Merge pull request",
         ]
-        
+
         # Ignora se já tem emoji ou se está em português
-        if msg.startswith('🎯') or msg.startswith('📋') or msg.startswith('✨'):
+        if msg.startswith("🎯") or msg.startswith("📋") or msg.startswith("✨"):
             continue
-        if any(word in msg for word in ['Implementação', 'Correção', 'Atualiza', 'feat(', 'fix(', 'refactor(']):
+        if any(
+            word in msg
+            for word in [
+                "Implementação",
+                "Correção",
+                "Atualiza",
+                "feat(",
+                "fix(",
+                "refactor(",
+            ]
+        ):
             continue
         if any(msg.startswith(pattern) for pattern in english_patterns):
             english_commits.append(commit)
-    
+
     print(f"🌍 Commits em inglês encontrados: {len(english_commits)}")
-    
+
     # Mostra preview
     print("\n📝 Preview das traduções:")
     for c in english_commits[:5]:
-        translated = translate_message(c['message'])
+        translated = translate_message(c["message"])
         print(f"  {c['hash'][:8]}: {c['message']}")
         print(f"  ➜ {translated}\n")
-    
+
     if len(english_commits) > 5:
         print(f"  ... e mais {len(english_commits) - 5} commits\n")
-    
+
     response = input("✅ Prosseguir com a tradução? (s/N): ").strip().lower()
-    if response not in ['s', 'sim', 'y', 'yes']:
+    if response not in ["s", "sim", "y", "yes"]:
         print("❌ Tradução cancelada pelo usuário")
         return False
-    
+
     print("\n🔄 Aplicando traduções usando filter-branch...")
-    
+
     # Cria arquivo de mapeamento
-    mapping_file = 'commit_translations_map.txt'
-    with open(mapping_file, 'w', encoding='utf-8') as f:
+    mapping_file = "commit_translations_map.txt"
+    with open(mapping_file, "w", encoding="utf-8") as f:
         for c in english_commits:
-            translated = translate_message(c['message'])
+            translated = translate_message(c["message"])
             f.write(f"{c['hash']}|||{translated}\n")
-    
+
     # Cria script de filtro
-    filter_script = f'''#!/usr/bin/env python3
+    filter_script = f"""#!/usr/bin/env python3
 import sys
 translations = {{}}
 with open('{mapping_file}', 'r', encoding='utf-8') as f:
@@ -213,17 +258,17 @@ for hash_c, trans in translations.items():
         sys.exit(0)
 
 print(commit_msg)
-'''
-    
-    with open('msg_filter.py', 'w', encoding='utf-8') as f:
+"""
+
+    with open("msg_filter.py", "w", encoding="utf-8") as f:
         f.write(filter_script)
-    
+
     # Executa filter-branch para toda a branch
-    cmd = 'git filter-branch -f --msg-filter "python msg_filter.py" --'
-    print(f"🚀 Executando: {cmd}")
-    
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    
+    cmd = ["git", "filter-branch", "-f", "--msg-filter", "python msg_filter.py", "--"]
+    print(f"🚀 Executando: {' '.join(cmd)}")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
     if result.returncode == 0:
         print("✅ Traduções aplicadas com sucesso!")
         print("\n🎉 Histórico reescrito com mensagens em português brasileiro")
@@ -232,18 +277,20 @@ print(commit_msg)
     else:
         print(f"❌ Erro durante filter-branch: {result.stderr}")
         return False
-    
+
     # Limpa arquivos temporários
     import os
+
     try:
         os.remove(mapping_file)
-        os.remove('msg_filter.py')
+        os.remove("msg_filter.py")
     except:
         pass
-    
+
     return True
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
@@ -251,4 +298,5 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"\n❌ Erro: {e}")
         import traceback
+
         traceback.print_exc()

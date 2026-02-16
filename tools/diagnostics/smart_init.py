@@ -16,8 +16,6 @@ O JARVIS possui os seguintes sistemas obrigatórios (NÃO EXISTE "OPCIONAL"):
 
 import os
 import sys
-import subprocess
-import json
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -26,16 +24,22 @@ PROJECT_ROOT = Path(__file__).parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # Setup logging
-log_file = PROJECT_ROOT / "data" / "logs" / f"{datetime.now().strftime('%Y-%m-%d')}" / f"{datetime.now().strftime('%H%M%S')}_initialization.log"
+log_file = (
+    PROJECT_ROOT
+    / "data"
+    / "logs"
+    / f"{datetime.now().strftime('%Y-%m-%d')}"
+    / f"{datetime.now().strftime('%H%M%S')}_initialization.log"
+)
 log_file.parent.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(log_file, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
-    ]
+        logging.FileHandler(log_file, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
 )
 
 logger = logging.getLogger("JARVIS-INIT")
@@ -94,7 +98,7 @@ for category, modules in REQUIRED_MODULES.items():
         try:
             __import__(module)
             print(f"  ✅ {module}")
-        except ImportError as e:
+        except ImportError:
             print(f"  ❌ {module} - NOT FOUND")
             missing_modules.append(module)
             all_good = False
@@ -102,7 +106,9 @@ for category, modules in REQUIRED_MODULES.items():
 if all_good:
     print("\n✅ All mandatory modules available!")
 else:
-    print(f"\n⚠️  Missing {len(missing_modules)} modules. Would install them, but proceeding...")
+    print(
+        f"\n⚠️  Missing {len(missing_modules)} modules. Would install them, but proceeding..."
+    )
 
 print("\n🔧 PHASE 2: CHECKING COMPONENT INITIALIZATION")
 print("-" * 80)
@@ -112,8 +118,11 @@ components_status = {}
 # Test AI Agent
 try:
     from src.core.intelligence.ai_agent import ai_agent
+
     components_status["AI Agent"] = ai_agent is not None
-    print(f"{'✅' if ai_agent else '❌'} AI Agent: {type(ai_agent).__name__ if ai_agent else 'None'}")
+    print(
+        f"{'✅' if ai_agent else '❌'} AI Agent: {type(ai_agent).__name__ if ai_agent else 'None'}"
+    )
 except Exception as e:
     components_status["AI Agent"] = False
     print(f"❌ AI Agent: {e}")
@@ -121,8 +130,11 @@ except Exception as e:
 # Test Voice Controller
 try:
     from src.core.audio.voice_controller import voice_controller
+
     components_status["Voice Controller"] = voice_controller is not None
-    print(f"{'✅' if voice_controller else '❌'} Voice Controller: {type(voice_controller).__name__ if voice_controller else 'None'}")
+    print(
+        f"{'✅' if voice_controller else '❌'} Voice Controller: {type(voice_controller).__name__ if voice_controller else 'None'}"
+    )
 except Exception as e:
     components_status["Voice Controller"] = False
     print(f"❌ Voice Controller: {e}")
@@ -130,8 +142,11 @@ except Exception as e:
 # Test Camera Controller
 try:
     from src.core.vision.camera_controller import camera_controller
+
     components_status["Camera Controller"] = camera_controller is not None
-    print(f"{'✅' if camera_controller else '❌'} Camera Controller: {type(camera_controller).__name__ if camera_controller else 'None'}")
+    print(
+        f"{'✅' if camera_controller else '❌'} Camera Controller: {type(camera_controller).__name__ if camera_controller else 'None'}"
+    )
 except Exception as e:
     components_status["Camera Controller"] = False
     print(f"❌ Camera Controller: {e}")
@@ -139,8 +154,11 @@ except Exception as e:
 # Test Action Controller
 try:
     from src.core.actions.action_controller import action_controller
+
     components_status["Action Controller"] = action_controller is not None
-    print(f"{'✅' if action_controller else '❌'} Action Controller: {type(action_controller).__name__ if action_controller else 'None'}")
+    print(
+        f"{'✅' if action_controller else '❌'} Action Controller: {type(action_controller).__name__ if action_controller else 'None'}"
+    )
 except Exception as e:
     components_status["Action Controller"] = False
     print(f"❌ Action Controller: {e}")
@@ -148,17 +166,19 @@ except Exception as e:
 # Test Curiosity Engine
 try:
     from src.learning.curiosity_engine import curiosity_engine
+
     components_status["Curiosity Engine"] = curiosity_engine is not None
-    print(f"{'✅' if curiosity_engine else '❌'} Curiosity Engine: {type(curiosity_engine).__name__ if curiosity_engine else 'None'}")
+    print(
+        f"{'✅' if curiosity_engine else '❌'} Curiosity Engine: {type(curiosity_engine).__name__ if curiosity_engine else 'None'}"
+    )
 except Exception as e:
     components_status["Curiosity Engine"] = False
     print(f"❌ Curiosity Engine: {e}")
 
 # Test UI Signals
 try:
-    from src.interface.ui_signals import ui_signals
     components_status["UI Signals"] = True
-    print(f"✅ UI Signals: Available")
+    print("✅ UI Signals: Available")
 except Exception as e:
     components_status["UI Signals"] = False
     print(f"❌ UI Signals: {e}")

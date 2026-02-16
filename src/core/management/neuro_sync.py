@@ -9,16 +9,12 @@ Sincroniza: Ollama, ChromaDB, LocalBrain e Curiosity Engine.
 
 import logging
 import os
-import time
 import threading
-from pathlib import Path
-from typing import Dict, Any
-
-from src.utils.config import config
 
 # Optional imports with graceful fallbacks
 try:
     from src.core.intelligence.brain_router import brain_router
+
     BRAIN_ROUTER_AVAILABLE = True
 except (ImportError, OSError):
     brain_router = None
@@ -26,6 +22,7 @@ except (ImportError, OSError):
 
 try:
     from src.core.intelligence.memory import memory_manager
+
     MEMORY_AVAILABLE = True
 except (ImportError, OSError):
     memory_manager = None
@@ -33,6 +30,7 @@ except (ImportError, OSError):
 
 try:
     from src.core.intelligence.local_brain import local_brain
+
     LOCAL_BRAIN_AVAILABLE = True
 except (ImportError, OSError):
     local_brain = None
@@ -40,6 +38,7 @@ except (ImportError, OSError):
 
 try:
     from src.interface.ui_signals import ui_signals
+
     UI_SIGNALS_AVAILABLE = True
 except (ImportError, OSError):
     ui_signals = None
@@ -47,39 +46,42 @@ except (ImportError, OSError):
 
 logger = logging.getLogger("NeuroSync")
 
+
 class NeuroSync:
     """Orquestrador de Sincronização Neural"""
-    
+
     def __init__(self):
         self._sync_active = False
         self.status = {
             "ollama": "pending",
             "memory": "pending",
             "local_brain": "pending",
-            "curiosity": "pending"
+            "curiosity": "pending",
         }
 
     def run_sync(self, blocking=False):
         """Inicia a sincronização neural"""
         if self._sync_active:
             return
-        
+
         self._sync_active = True
         if blocking:
             self._perform_sync()
         else:
-            threading.Thread(target=self._perform_sync, daemon=True, name="NeuroSyncThread").start()
+            threading.Thread(
+                target=self._perform_sync, daemon=True, name="NeuroSyncThread"
+            ).start()
 
     def _perform_sync(self):
         logger.info("🧠 Iniciando Sincronização Neural Stark...")
-        
+
         # Emit UI signal only if available
         if UI_SIGNALS_AVAILABLE and ui_signals:
             try:
                 ui_signals.update_status.emit("Iniciando Sincronização Neural...")
-            except:
+            except Exception:
                 pass  # UI not available, continue silently
-        
+
         # 1. Verificar Ollama
         if BRAIN_ROUTER_AVAILABLE and brain_router:
             try:
@@ -90,7 +92,9 @@ class NeuroSync:
                     logger.info(f"✅ Ollama: {models_count} modelos detectados.")
                 else:
                     self.status["ollama"] = "warning"
-                    logger.warning("⚠️ Ollama: Nenhum modelo detectado. JARVIS operará em modo limitado.")
+                    logger.warning(
+                        "⚠️ Ollama: Nenhum modelo detectado. JARVIS operará em modo limitado."
+                    )
             except Exception as e:
                 self.status["ollama"] = "error"
                 logger.error(f"❌ Erro ao sincronizar Ollama: {e}")
@@ -104,7 +108,9 @@ class NeuroSync:
                 stats = memory_manager.get_stats()
                 if stats.get("chroma_available"):
                     self.status["memory"] = "ready"
-                    logger.info(f"✅ ChromaDB: {stats.get('memories_count', 0)} memórias sincronizadas.")
+                    logger.info(
+                        f"✅ ChromaDB: {stats.get('memories_count', 0)} memórias sincronizadas."
+                    )
                 else:
                     self.status["memory"] = "warning"
                     logger.warning("⚠️ ChromaDB indisponível. Usando cache temporário.")
@@ -118,6 +124,7 @@ class NeuroSync:
         # 3. Verificar Dataset de Treinamento
         try:
             from src.core.management.dataset_collector import dataset_collector
+
             if os.path.exists(dataset_collector.logs_file):
                 logger.info("✅ Dataset: Histórico de treinamento detectado.")
             else:
@@ -140,6 +147,7 @@ class NeuroSync:
         # 5. Functions & Actions Readiness
         try:
             from src.core.actions.system_controller import system_controller
+
             if system_controller:
                 logger.info("🛠️ Funções: Controlador de sistema integrado e pronto.")
         except Exception:
@@ -148,9 +156,12 @@ class NeuroSync:
         # 6. Curiosity Engine Check
         try:
             from src.learning.curiosity_engine import curiosity_engine
+
             if curiosity_engine:
                 self.status["curiosity"] = "ready"
-                logger.info("🔭 Curiosity Engine: Pronta para expansão de conhecimento.")
+                logger.info(
+                    "🔭 Curiosity Engine: Pronta para expansão de conhecimento."
+                )
         except Exception:
             self.status["curiosity"] = "warning"
 
@@ -162,9 +173,16 @@ class NeuroSync:
         """Retorna um relatório legível da saúde neural"""
         report = "ESTADO NEURAL:\n"
         for system, state in self.status.items():
-            icon = "✅" if state == "ready" else "⏳" if state == "syncing" else "⚠️" if state == "warning" else "❌"
+            icon = (
+                "✅"
+                if state == "ready"
+                else (
+                    "⏳" if state == "syncing" else "⚠️" if state == "warning" else "❌"
+                )
+            )
             report += f"  {icon} {system.upper()}: {state.capitalize()}\n"
         return report
+
 
 # Instância global
 neuro_sync = NeuroSync()

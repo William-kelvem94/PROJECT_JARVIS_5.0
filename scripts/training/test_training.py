@@ -3,6 +3,7 @@
 Script de Teste Rápido para Treinamento JARVIS 5.0
 Testa o sistema de treinamento com simulação
 """
+
 import sys
 import os
 from pathlib import Path
@@ -13,6 +14,7 @@ project_root = script_dir.parent.parent.parent
 os.chdir(project_root)
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "src"))
+
 
 def test_training(topic="machine learning", component="study"):
     """Testa o treinamento com tópico e componente específicos"""
@@ -28,9 +30,9 @@ def test_training(topic="machine learning", component="study"):
 
         # Carregar config básica
         config = {
-            'topic': topic,
-            'output_dir': 'data/learning/training_data',
-            'model_name': 'distilgpt2'
+            "topic": topic,
+            "output_dir": "data/learning/training_data",
+            "model_name": "distilgpt2",
         }
 
         print("⏳ Iniciando treinamento simulado...")
@@ -48,10 +50,12 @@ def test_training(topic="machine learning", component="study"):
     except Exception as e:
         print(f"\n❌ Erro durante teste: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
     return True
+
 
 if __name__ == "__main__":
     # Aceitar argumentos de linha de comando

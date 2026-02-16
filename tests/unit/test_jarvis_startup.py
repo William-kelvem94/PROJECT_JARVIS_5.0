@@ -2,9 +2,12 @@
 """
 Simple JARVIS startup test
 """
+
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+
 
 def test_jarvis_startup():
     """Test JARVIS startup step by step"""
@@ -14,11 +17,13 @@ def test_jarvis_startup():
     try:
         print("1. Testing PyQt6...")
         from PyQt6.QtWidgets import QApplication
+
         app = QApplication(sys.argv)
         print("   ✅ PyQt6 OK")
 
         print("2. Testing WindowManager...")
         from src.interface.window_manager import get_window_manager
+
         wm = get_window_manager(app)
         print("   ✅ WindowManager OK")
 
@@ -26,14 +31,16 @@ def test_jarvis_startup():
         print("   Testing audio system...")
         try:
             from src.core.audio.enhanced_audio import get_audio_system
+
             print("   ✅ Audio system import OK")
         except Exception as e:
             print(f"   ⚠️ Audio system failed (non-critical): {e}")
-            audio_system = None
+            audio_system = None  # noqa: F841
 
         print("   Testing vision system...")
         try:
             from src.core.vision.vision_system import get_vision_system
+
             print("   ✅ Vision system import OK")
         except Exception as e:
             print(f"   ❌ Vision system failed: {e}")
@@ -42,6 +49,7 @@ def test_jarvis_startup():
         print("   Testing AI agent...")
         try:
             from src.core.intelligence.ai_agent import ai_agent
+
             print("   ✅ AI Agent import OK")
         except Exception as e:
             print(f"   ❌ AI Agent failed: {e}")
@@ -54,8 +62,12 @@ def test_jarvis_startup():
         instances = {
             "Window Manager": wm,
             "System Integrator": None,  # Skip for test
-            "Audio System": get_audio_system(os.path.join(os.path.dirname(__file__), 'data')),
-            "Vision System": get_vision_system(os.path.join(os.path.dirname(__file__), 'data')),
+            "Audio System": get_audio_system(
+                os.path.join(os.path.dirname(__file__), "data")
+            ),
+            "Vision System": get_vision_system(
+                os.path.join(os.path.dirname(__file__), "data")
+            ),
             "AI Agent": ai_agent,
         }
 
@@ -75,8 +87,10 @@ def test_jarvis_startup():
     except Exception as e:
         print(f"❌ Test failed at step: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(test_jarvis_startup())
