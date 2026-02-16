@@ -440,12 +440,12 @@ class MicrosoftDeviceIdentifier:
             return False
         
         # Verificar se Ã© uma das contas autorizadas
-        authorized_accounts = [
-            "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "" + self.config.get("target_user_email", os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")) + "")) + "",
-            "williamkelvem64@outlook.com", 
-            "williamkelvem64@hotmail.com",
-            "williamkelvem64@live.com"
-        ]
+        from src.utils.config import config
+        target_email = config.get_setting("portability.target_user_email", "")
+
+        authorized_accounts = [target_email]
+        # Remove empty strings from list
+        authorized_accounts = [a for a in authorized_accounts if a]
         
         # Verificar email exato ou se contÃ©m o usuÃ¡rio autorizado
         account_email = self.microsoft_account.account_email.lower()
