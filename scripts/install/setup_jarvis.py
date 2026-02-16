@@ -150,12 +150,15 @@ def install_dependencies():
             except:
                 print_warning(f"Failed to install some packages from {filename}")
                 return False
+        else:
+            print_warning(f"Requirements file not found: {filename}")
         return False
 
     # 1. Try installing from standard requirements files first (BEST PRACTICE)
-    if platform.system() == "Windows":
+    # Use sys.platform for robustness
+    if sys.platform.startswith("win"):
         install_requirements_file("requirements_windows.txt")
-    elif platform.system() == "Linux":
+    elif sys.platform.startswith("linux"):
         install_requirements_file("requirements_linux.txt")
 
     # Always install core requirements
@@ -189,14 +192,14 @@ def install_dependencies():
             print_warning(f"Failed: {dep}")
 
     # Install Windows dependencies if on Windows
-    if platform.system() == "Windows":
+    if sys.platform.startswith("win"):
         print_info("\nInstalling Windows-specific dependencies...")
         for dep in windows_deps:
             if install_package(dep):
                 print_success(f"Installed: {dep}")
             else:
                 print_error(f"Failed to install Windows dependency: {dep}")
-                # We don't fail the whole setup, but warn loudly
+                # Try to continue, maybe it's already installed
     
     return True
 
@@ -291,6 +294,7 @@ def test_basic_functionality():
                 print_success("Windows specific modules (wmi, pycaw) loaded")
             except ImportError as e:
                 print_error(f"Failed to load Windows modules: {e}")
+                # Return False if critical modules are missing
                 return False
 
     except Exception as e:
