@@ -10,9 +10,14 @@ import sys
 import os
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
+
+# Mock winreg for Linux environments
+if sys.platform != "win32":
+    sys.modules["winreg"] = MagicMock()
 
 # Adicionar diretório raiz ao path
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
