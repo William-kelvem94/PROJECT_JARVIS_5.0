@@ -20,6 +20,7 @@ import threading
 import time
 import logging
 import asyncio
+import psutil # Added for memory monitoring
 from typing import Optional, Dict, List, Tuple, Any, Union
 from pathlib import Path
 from datetime import datetime
@@ -263,26 +264,58 @@ class VisionSystem:
             logger.warning("âš ï¸ Vision: start_background_loading jÃ¡ chamado, ignorando")
             return
         self._loading_started = True
-        logger.info("ðŸš€ Vision System: Iniciando carregamento neural post-boot...")
-        # ðŸ”’ Setar flags ANTES de iniciar thread para que wait_for_models saiba que hÃ¡ loading pendente
+        
+        # MEMORY SAFETY CHECK
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 80:
+                logger.warning(f"⚠️ VisionSystem: High RAM usage ({mem.percent}%) - Entering SAFE MODE (FaceID only)")
+                # Only run FaceID in background
+                threading.Thread(target=self._load_known_faces, daemon=True, name="VisionFaceIDOnly").start()
+                return
+        except Exception:
+            pass
+
+        logger.info("🚀 Vision System: Iniciando carregamento neural post-boot...")
+        # 🔒 Setar flags ANTES de iniciar thread para que wait_for_models saiba que há loading pendente
         if EASYOCR_AVAILABLE and not self._ocr_ready:
             self._ocr_loading = True
         if YOLO_AVAILABLE and not self._yolo_ready:
             self._yolo_loading = True
+        
         threading.Thread(target=self.load_heavy_models_async, daemon=True, name="VisionNeuralLoad").start()
 
     def load_heavy_models_async(self):
         """Sequential loading of heavy models to ensure DLL stability on Windows"""
-        # 1. FaceID
-        self._load_known_faces()
+        try:
+            # 1. FaceID (Critical, lightweight)
+            self._load_known_faces()
             
-        # 2. EasyOCR (flags jÃ¡ setadas por start_background_loading)
-        if EASYOCR_AVAILABLE and not self._ocr_ready:
-            self._load_ocr_background()
+            # MEMORY CHECK FOR HEAVY MODELS
+            if psutil.virtual_memory().percent > 85:
+                logger.warning("⚠️ Vision: RAM > 85% - Skipping heavy models (OCR/YOLO)")
+                self._ocr_loading = False
+                self._yolo_loading = False
+                return
+
+            # 2. EasyOCR (flags já setadas por start_background_loading)
+            if EASYOCR_AVAILABLE and not self._ocr_ready:
+                self._load_ocr_background()
             
-        # 3. YOLO (flags jÃ¡ setadas por start_background_loading)
-        if YOLO_AVAILABLE and not self._yolo_ready:
-            self._load_yolo_background()
+            # MEMORY CHECK BEFORE YOLO
+            if psutil.virtual_memory().percent > 85:
+                logger.warning("⚠️ Vision: RAM > 85% - Skipping YOLO")
+                self._yolo_loading = False
+                return
+
+            # 3. YOLO (flags já setadas por start_background_loading)
+            if YOLO_AVAILABLE and not self._yolo_ready:
+                self._load_yolo_background()
+                
+        except Exception as e:
+            logger.error(f"❌ Vision: Error in async loading: {e}")
+            self._ocr_loading = False
+            self._yolo_loading = False
 
     def _load_ocr_background(self):
         """Load EasyOCR in background"""

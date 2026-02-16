@@ -109,8 +109,12 @@ class VoiceController:
         self._is_speaking = False
         self.on_speech_recognized: Optional[Callable[[str], None]] = None
         
-        # Load XTTS in background
-        threading.Thread(target=self._init_xtts, daemon=True).start()
+        # Lazy loading state
+        self._xtts_loading = False
+        self._xtts_ready = False
+        
+        # Load XTTS lazily (removed Thread from __init__)
+        # Model will be loaded on the first speak() call that needs Level 1
 
     def _init_pygame(self):
         """Inicializa o mixer do pygame para reprodução de áudio."""
@@ -140,50 +144,64 @@ class VoiceController:
     def _init_xtts(self):
         """Inicializa o modelo XTTS-v2 localmente."""
         global TTS_AVAILABLE
-
-        # Lazy import of TTS
-        if not TTS_AVAILABLE:
-            try:
-                # Patch BeamSearchScorer before importing TTS
-                try:
-                    import transformers
-                    # If BeamSearchScorer is missing from top-level, try to inject it
-                    if not hasattr(transformers, 'BeamSearchScorer'):
-                        try:
-                            from transformers.generation import BeamSearchScorer
-                            transformers.BeamSearchScorer = BeamSearchScorer
-                        except ImportError:
-                            # Create dummy if everything fails to let it load
-                            class BeamSearchScorer:
-                                def __init__(self, *args, **kwargs): pass
-                            transformers.BeamSearchScorer = BeamSearchScorer
-                except:
-                    pass
-                
-                from TTS.api import TTS
-                TTS_AVAILABLE = True
-                logger.info("✅ TTS imported successfully")
-            except (ImportError, OSError) as e:
-                logger.warning(f"⚠️ TTS import failed, using fallback voice synthesis: {e}")
-                TTS_AVAILABLE = False
-                return
-
-        if not TTS_AVAILABLE:
-            logger.warning("⚠️ XTTS (Coqui) não disponível no sistema.")
+        
+        if self._xtts_ready or self._xtts_loading:
             return
 
+        # Resource Guard: Don't load if system RAM is critically low (>85%)
         try:
+            import psutil
+            mem = psutil.virtual_memory()
+            if mem.percent > 85.0:
+                logger.warning(f"⚠️ Memory Guard: System RAM at {mem.percent}%. Skipping XTTS load.")
+                return
+        except ImportError:
+            pass
+
+        self._xtts_loading = True
+        
+        try:
+            # Lazy import of TTS
+            if not TTS_AVAILABLE:
+                try:
+                    # Patch BeamSearchScorer before importing TTS
+                    import transformers
+                    if not hasattr(transformers, 'BeamSearchScorer'):
+                        from transformers.generation import BeamSearchScorer
+                        transformers.BeamSearchScorer = BeamSearchScorer
+                    
+                    from TTS.api import TTS
+                    TTS_AVAILABLE = True
+                    logger.info("✅ TTS imported successfully")
+                except Exception as e:
+                    logger.warning(f"⚠️ TTS import failed: {e}")
+                    TTS_AVAILABLE = False
+                    self._xtts_loading = False
+                    return
+
+            if not TTS_AVAILABLE:
+                self._xtts_loading = False
+                return
+
             logger.info("🧠 Inicializando Stark Neural Engine (XTTS-v2)...")
-            self.xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
-            if TORCH_AVAILABLE and torch.cuda.is_available():
-                self.xtts_model.to("cuda")
-                logger.info("🚀 XTTS utilizando aceleração CUDA")
-            else:
-                logger.info("🐢 XTTS utilizando CPU (Inferencia mais lenta)")
-            logger.info("✅ XTTS-v2 pronto para uso.")
+            # Trava de Segurança Stark
+            from src.utils.stability import model_load_lock
+            model_load_lock.acquire("XTTS-v2 (Voice)")
+            
+            try:
+                self.xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2")
+                if TORCH_AVAILABLE and torch.cuda.is_available():
+                    self.xtts_model.to("cuda")
+                self._xtts_ready = True
+                logger.info("✅ XTTS-v2 pronto para uso.")
+            finally:
+                model_load_lock.release()
+                
         except Exception as e:
             logger.error(f"❌ Falha ao inicializar XTTS: {e}")
             self.xtts_model = None
+        finally:
+            self._xtts_loading = False
 
     def _get_cache_path(self, text: str) -> Path:
         """Gera o caminho do arquivo de cache baseado no hash do texto."""
@@ -233,7 +251,7 @@ class VoiceController:
         success = False
         
         # Nível 1: XTTS Local
-        if self.xtts_model and self.reference_wav.exists():
+        if self._xtts_ready:
             try:
                 logger.info("🔊 [LEVEL 1] XTTS-v2 Synthesis (Cloning Mode)")
                 self.xtts_model.tts_to_file(
@@ -246,6 +264,10 @@ class VoiceController:
                     success = True
             except Exception as e:
                 logger.warning(f"⚠️ XTTS falhou: {e}")
+        elif not self._xtts_loading and not self._xtts_ready:
+            # Trigger lazy load in background for NEXT time
+            logger.info("🧠 [LAZY] Triggering XTTS background load for future use...")
+            threading.Thread(target=self._init_xtts, daemon=True).start()
 
         # Nível 2: Edge-TTS
         if not success and EDGE_TTS_AVAILABLE:

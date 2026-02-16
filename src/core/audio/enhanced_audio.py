@@ -23,6 +23,7 @@ import queue
 import time
 from pathlib import Path
 from typing import Optional, Dict, List, Tuple, Callable
+import psutil # Added for memory monitoring
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
@@ -258,7 +259,16 @@ class EnhancedAudioSystem:
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
-        logger.info("ðŸš€ Audio System: Iniciando carregamento neural post-boot...")
+        # MEMORY SAFETY CHECK
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 85:
+                logger.warning(f"⚠️ AudioSystem: High RAM usage ({mem.percent}%) - Delaying heavy model loading")
+                return # Skip loading if memory critical
+        except Exception:
+            pass
+
+        logger.info("🚀 Audio System: Iniciando carregamento neural post-boot...")
         threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
     def _initialize_basic_components(self):
@@ -274,58 +284,14 @@ class EnhancedAudioSystem:
 
     def _load_models_background(self):
         """Load heavy AI models in background to prevent 0xC0000005 during boot"""
-        # 1. Faster-Whisper
-        if FASTER_WHISPER_AVAILABLE:
-            try:
-                # ðŸ†• GLOBAL NEURAL LOCK: Serialize heavy loads
-                model_load_lock.acquire("Whisper (Audio Core)")
-                try:
-                    with self._models_lock:
-                        logger.info(f"ðŸ§  Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
-                        
-                        # CRITICAL: Import here to avoid init-time conflicts
-                        from faster_whisper import WhisperModel
-                        
-                        # 4. AbstraÃ§Ã£o de Hardware (Universalidade)
-                        try:
-                            if torch.cuda.is_available():
-                                device = "cuda"
-                                compute_type = "float16"
-                                logger.info(f"   ðŸš€ GPU NVIDIA Detectada: Usando CUDA + Float16")
-                            else:
-                                device = "cpu"
-                                compute_type = "int8"
-                                logger.info(f"   ðŸ’» CPU Detectada: Usando INT8 para economia de memÃ³ria")
-                        except Exception:
-                            device = "cpu"
-                            compute_type = "int8"
-                        
-                        # CRITICAL: cpu_threads=1 for Windows stability
-                        # num_workers=1 to prevent thread pool crashes
-                        self.whisper_model = WhisperModel(
-                            self.whisper_model_size,
-                            device=device,
-                            compute_type=compute_type,
-                            cpu_threads=1,  # Single-threaded for stability
-                            num_workers=1   # Single worker to prevent pool crashes
-                        )
-                        self._whisper_ready = True
-                        logger.info(f"âœ… Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
-                finally:
-                    model_load_lock.release()
-            except Exception as e:
-                self._whisper_ready = False
-                logger.error(f"âŒ Audio Core: Falha no Whisper: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
-
-        # 2. Silero-VAD
+        
+        # 1. Silero-VAD (Priority 1: Lightweight & Essential for 'Awareness')
         if TORCH_AVAILABLE:
             try:
                 model_load_lock.acquire("Silero-VAD (Audio Core)")
                 try:
                     with self._models_lock:
-                        logger.info("ðŸ§  Audio Core: Carregando Silero-VAD...")
+                        logger.info("🧠 Audio Core: Carregando Silero-VAD (Prioridade 1)...")
                         result = torch.hub.load(
                             repo_or_dir='snakers4/silero-vad',
                             model='silero_vad',
@@ -340,12 +306,66 @@ class EnhancedAudioSystem:
                             self.vad_utils = None
                             
                         self._vad_ready = True
-                        logger.info("âœ… Audio Core: Silero-VAD pronto")
+                        logger.info("✅ Audio Core: Silero-VAD pronto")
                 finally:
                     model_load_lock.release()
             except Exception as e:
                 self._vad_ready = False
-                logger.warning(f"âŒ Audio Core: Falha no VAD: {e}")
+                logger.warning(f"❌ Audio Core: Falha no VAD: {e}")
+
+        # MEMORY GUARD BEFORE WHISPER
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 85.0:
+                logger.warning(f"⚠️ AudioSystem: High RAM ({mem.percent}%) - Skipping heavy Whisper load to prevent crash.")
+                return
+        except Exception as e:
+            logger.debug(f"Memory check failed: {e}")
+
+        # 2. Faster-Whisper (Heavy - Priority 2)
+        if FASTER_WHISPER_AVAILABLE:
+            try:
+                # 🔒 GLOBAL NEURAL LOCK: Serialize heavy loads
+                model_load_lock.acquire("Whisper (Audio Core)")
+                try:
+                    with self._models_lock:
+                        logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
+                        
+                        # CRITICAL: Import here to avoid init-time conflicts
+                        from faster_whisper import WhisperModel
+                        
+                        # 4. Abstração de Hardware (Universalidade)
+                        try:
+                            if torch.cuda.is_available():
+                                device = "cuda"
+                                compute_type = "float16"
+                                logger.info(f"   🚀 GPU NVIDIA Detectada: Usando CUDA + Float16")
+                            else:
+                                device = "cpu"
+                                compute_type = "int8"
+                                logger.info(f"   💻 CPU Detectada: Usando INT8 para economia de memória")
+                        except Exception:
+                            device = "cpu"
+                            compute_type = "int8"
+                        
+                        # CRITICAL: cpu_threads=1 for Windows stability
+                        # num_workers=1 to prevent thread pool crashes
+                        self.whisper_model = WhisperModel(
+                            self.whisper_model_size,
+                            device=device,
+                            compute_type=compute_type,
+                            cpu_threads=1,  # Single-threaded for stability
+                            num_workers=1   # Single worker to prevent pool crashes
+                        )
+                        self._whisper_ready = True
+                        logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
+                finally:
+                    model_load_lock.release()
+            except Exception as e:
+                self._whisper_ready = False
+                logger.error(f"❌ Audio Core: Falha no Whisper: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
     def wait_for_models(self, timeout: float = 30.0) -> bool:
         """Wait for background model loading to complete"""

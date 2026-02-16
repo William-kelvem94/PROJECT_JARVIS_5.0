@@ -137,7 +137,17 @@ class UnifiedMemoryManager:
         text = f"User: {prompt}\nJarvis: {response}"
         
         # Cache Update
-        self.prompt_cache[prompt.strip().lower()] = response
+        key = prompt.strip().lower()
+        self.prompt_cache[key] = response
+        
+        # Enforce LRU Limit
+        if len(self.prompt_cache) > self.max_cache:
+            try:
+                # Remove oldest item (Python dicts are ordered by insertion)
+                self.prompt_cache.pop(next(iter(self.prompt_cache)))
+            except (StopIteration, RuntimeError):
+                pass # Dictionary might be empty or changed during iteration
+
         self.short_term.append({"user": prompt, "jarvis": response, "ts": ts})
         
         if self.interactions:

@@ -536,7 +536,7 @@ class PriorityScheduler:
             logger.error(f"💥 Task '{task.name}' failed permanently after {task.max_retries} retries")
     
     def _cleanup_completed_tasks(self):
-        """Clean up completed one-shot tasks"""
+        """Clean up completed one-shot tasks and remove from queues"""
         to_remove = []
         
         for task_id, task in self.tasks.items():
@@ -546,9 +546,22 @@ class PriorityScheduler:
             # Remove permanently failed tasks
             elif task.state == TaskState.FAILED:
                 to_remove.append(task_id)
+            # Remove cancelled tasks
+            elif task.state == TaskState.CANCELLED:
+                to_remove.append(task_id)
         
         for task_id in to_remove:
+            # Also remove from queues to prevent memory leaks/re-execution attempts
+            task = self.tasks[task_id]
+            if task.priority in self.task_queues:
+                try:
+                    self.task_queues[task.priority].remove(task_id)
+                except ValueError:
+                    pass # Task might not be in queue if running/already removed
+            
+            # Remove from tracking dict
             del self.tasks[task_id]
+            logger.debug(f"🧹 Cleaned up task '{task.name}' ({task_id[:8]})")
     
     def _should_throttle(self) -> bool:
         """Check if scheduler should throttle due to system load"""
