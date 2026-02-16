@@ -775,7 +775,7 @@ if __name__ == "__main__":
             received_events.append(event)
         
         # Subscribe to AI events
-        sub_id = event_bus.subscribe(
+        sub_id = event_bus.subscribe(  # noqa: F841
             [EventType.AI_QUERY, EventType.AI_RESPONSE],
             test_subscriber,
             priority_filter=[EventPriority.HIGH, EventPriority.NORMAL]

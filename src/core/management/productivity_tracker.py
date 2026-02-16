@@ -217,7 +217,7 @@ class ProductivityTracker:
                     with open(stats_file, 'r') as f:
                         daily_data = json.load(f)
                         weekly_data.append(daily_data)
-                except:
+                except Exception:
                     pass
         
         # Calcular mÃ©dias

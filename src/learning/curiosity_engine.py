@@ -65,7 +65,12 @@ class CuriosityEngine:
         try:
             from src.interface.ui_signals import ui_signals
             ui_signals.update_curiosity_list.emit(list(self.study_backlog.queue))
+<<<<<<< Updated upstream
         except: pass
+=======
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
         while self.is_studying and not self.study_backlog.empty():
             try:
@@ -73,8 +78,15 @@ class CuriosityEngine:
                 logger.info(f"🔎 Investigando tópico: {topic}")
                 
                 # UI Signal
+<<<<<<< Updated upstream
                 try: ui_signals.update_learning_status.emit(topic, True)
                 except: pass
+=======
+                try:
+                    ui_signals.update_learning_status.emit(topic, True)
+                except Exception:
+                    pass
+>>>>>>> Stashed changes
 
                 # 1. Buscar conhecimento
                 papers = self.fetch_academic_data(topic)
@@ -99,8 +111,19 @@ class CuriosityEngine:
                     self.generate_next_questions(full_text)
                     
                     # Refresh list UI
+<<<<<<< Updated upstream
                     try: ui_signals.update_curiosity_list.emit(list(self.study_backlog.queue))
                     except: pass
+=======
+                    try:
+                        ui_signals.update_curiosity_list.emit(
+                            list(self.study_backlog.queue)
+                        )
+                    except Exception:
+                        pass
+
+                    time.sleep(5)  # Pausa para respirar
+>>>>>>> Stashed changes
 
                     time.sleep(5) # Pausa para respirar
                 
@@ -114,8 +137,15 @@ class CuriosityEngine:
 
         logger.info("💤 Ciclo de estudos finalizado (Backlog vazio ou interrupção).")
         self.is_studying = False
+<<<<<<< Updated upstream
         try: ui_signals.update_learning_status.emit("Nenhum", False)
         except: pass
+=======
+        try:
+            ui_signals.update_learning_status.emit("Nenhum", False)
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
     def fetch_academic_data(self, topic: str) -> List[Dict]:
         """Busca artigos no arXiv"""

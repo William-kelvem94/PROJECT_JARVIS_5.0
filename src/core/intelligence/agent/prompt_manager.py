@@ -23,7 +23,7 @@ class AgentPromptManager:
             from src.core.audio.voice_filter import AtomicVoiceFilter
             if hasattr(AtomicVoiceFilter, 'WAKE_WORDS'):
                 self._wake_words = list(AtomicVoiceFilter.WAKE_WORDS)
-        except:
+        except Exception:
             pass
 
     def get_system_prompt(self, use_structured: bool = True) -> str:

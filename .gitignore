@@ -44,7 +44,6 @@ desktop.ini
 # Logs
 logs/
 *.log
-*.txt
 
 # Dados temporários
 data/cache/
@@ -66,13 +65,24 @@ models/yolo/
 .vscode/launch.json
 .vscode/tasks.json
 # Keep .vscode/settings.json and extensions.json if shared
+<<<<<<< Updated upstream
 # .cursor/ is kept for context rules
+=======
+# Archived hidden folders (moved to .hidden_archive/)
+.antigravity/
+.cursor/
+.hidden_archive/
+auto_generated/
+PR_BODY.md
+>>>>>>> Stashed changes
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION & SECRETS (CRITICAL)
 # -----------------------------------------------------------------------------
 .env
 config/secrets.yaml
+config/settings.json
+config/settings.json.backup
 *.key
 *.pem
 *.pfx
@@ -134,6 +144,9 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 .ipynb_checkpoints/
+
+# Tool caches
+.ruff_cache/
 
 # -----------------------------------------------------------------------------
 # LEGACY & MIGRATION

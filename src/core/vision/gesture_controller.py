@@ -63,7 +63,7 @@ try:
         MEDIAPIPE_AVAILABLE = True
     else:
         MEDIAPIPE_AVAILABLE = False
-except:
+except Exception:
     MEDIAPIPE_AVAILABLE = False
 
 class GestureController:

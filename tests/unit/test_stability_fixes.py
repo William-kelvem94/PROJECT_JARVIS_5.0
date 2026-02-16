@@ -49,7 +49,12 @@ def test_model_unloading():
     try:
         # Test audio system
         from src.core.audio.enhanced_audio import EnhancedAudioSystem
+<<<<<<< Updated upstream
         audio = EnhancedAudioSystem()
+=======
+
+        audio = EnhancedAudioSystem()  # noqa: F841
+>>>>>>> Stashed changes
 
         # Simulate activity
         print("  🎵 Testing audio system activity tracking...")
@@ -57,7 +62,12 @@ def test_model_unloading():
 
         # Test vision system
         from src.core.vision.optimized_yolo_pipeline import OptimizedYOLOPipeline
+<<<<<<< Updated upstream
         vision = OptimizedYOLOPipeline(models_dir=Path("./models"))
+=======
+
+        vision = OptimizedYOLOPipeline(models_dir=Path("./models"))  # noqa: F841
+>>>>>>> Stashed changes
         print("  👁️ Vision system initialized successfully")
         return True
 

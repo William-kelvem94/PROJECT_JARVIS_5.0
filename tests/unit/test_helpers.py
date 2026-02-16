@@ -246,7 +246,7 @@ class TestDataHelper:
     def test_validate_cpf_valid(self):
         """Testa validação de CPF válido"""
         # CPF válido de exemplo
-        valid_cpf = "123.456.789-09"  # CPF válido para testes
+        valid_cpf = "123.456.789-09"  # CPF válido para testes  # noqa: F841
 
         assert DataHelper.validate_cpf("12345678909")  # Sem formatação
         assert DataHelper.validate_cpf("123.456.789-09")  # Com formatação
@@ -261,7 +261,7 @@ class TestDataHelper:
     def test_validate_cnpj_valid(self):
         """Testa validação de CNPJ válido"""
         # CNPJ válido de exemplo
-        valid_cnpj = "12.345.678/0001-90"
+        valid_cnpj = "12.345.678/0001-90"  # noqa: F841
 
         assert DataHelper.validate_cnpj("12345678000190")  # Sem formatação
         assert DataHelper.validate_cnpj("12.345.678/0001-90")  # Com formatação
@@ -285,7 +285,7 @@ class TestDataHelper:
         # Diferentes formatos
         date1 = DataHelper.parse_date("25/12/2023")
         date2 = DataHelper.parse_date("2023-12-25")
-        date3 = DataHelper.parse_date("12/25/2023")
+        date3 = DataHelper.parse_date("12/25/2023")  # noqa: F841
 
         assert date1.day == 25
         assert date1.month == 12

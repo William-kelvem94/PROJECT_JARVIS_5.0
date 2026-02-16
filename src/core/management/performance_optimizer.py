@@ -118,7 +118,7 @@ class ResponseCache:
                 if datetime.now() - cached['timestamp'] >= self.ttl:
                     cache_file.unlink()
                     count += 1
-            except:
+            except Exception:
                 pass
         
         if count > 0:

@@ -330,15 +330,22 @@ class ModernHUD(QMainWindow):
             # Melhor abordagem: WindowManager deve escutar eventos.
             # Por enquanto, vamos fechar o HUD e abrir o dashboard se possível.
             # A arquitetura ideal é o WindowManager gerenciar isso.
+<<<<<<< Updated upstream
             pass 
         except: pass
         
+=======
+            pass
+        except Exception:
+            pass
+
+>>>>>>> Stashed changes
         # Alternativa: Tentar acessar o WindowManager global se disponível
         try:
             from src.interface.window_manager import get_window_manager, InterfaceMode
             wm = get_window_manager()
             wm.switch_mode(InterfaceMode.DASHBOARD)
-        except:
+        except Exception:
             logger.warning("Falha ao contactar WindowManager do HUD")
 
     def _request_orb(self):
@@ -346,7 +353,12 @@ class ModernHUD(QMainWindow):
             from src.interface.window_manager import get_window_manager, InterfaceMode
             wm = get_window_manager()
             wm.switch_mode(InterfaceMode.ORB)
+<<<<<<< Updated upstream
         except: pass
+=======
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
     def _restart_protocols(self):
         """Simula reinício visual"""

@@ -30,10 +30,19 @@ except ImportError:
 
 # Testa face_recognition
 try:
+<<<<<<< Updated upstream
     import face_recognition
     print("✅ face_recognition: Carregado com sucesso")
     # Tenta importar modelos
     import face_recognition_models
+=======
+    import face_recognition  # noqa: F401
+
+    print("✅ face_recognition: Carregado com sucesso")
+    # Tenta importar modelos
+    import face_recognition_models  # noqa: F401
+
+>>>>>>> Stashed changes
     print("✅ face_recognition_models: Encontrado")
 except ImportError as e:
     print(f"❌ Erro no face_recognition: {e}")
@@ -49,7 +58,12 @@ except ImportError as e:
 
 # Testa Voice
 try:
+<<<<<<< Updated upstream
     import webrtcvad
+=======
+    import webrtcvad  # noqa: F401
+
+>>>>>>> Stashed changes
     print("✅ webrtcvad OK")
 except ImportError:
     print("❌ webrtcvad não instalado")

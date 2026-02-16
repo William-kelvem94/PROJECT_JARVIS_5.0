@@ -87,7 +87,7 @@ class PerformanceTestSuite:
         async def run_operation(user_id: int):
             """Executa operação para um usuário."""
             operations_completed = 0
-            user_start = time.time()
+            user_start = time.time()  # noqa: F841
 
             while time.time() - start_time < duration_seconds:
                 op_start = time.time()

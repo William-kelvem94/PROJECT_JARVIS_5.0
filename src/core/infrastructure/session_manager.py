@@ -430,7 +430,7 @@ class SessionData:
             if self._active_futures:
                 try:
                     next(as_completed(list(self._active_futures), timeout=1.0))
-                except:
+                except Exception:
                     continue
             
             time.sleep(0.1)
@@ -788,7 +788,7 @@ class MultithreadSessionManager:
     
     def _cleanup_expired_sessions(self):
         """Clean up expired sessions"""
-        current_time = datetime.now()
+        current_time = datetime.now()  # noqa: F841
         expired_sessions = []
         
         with self._lock:

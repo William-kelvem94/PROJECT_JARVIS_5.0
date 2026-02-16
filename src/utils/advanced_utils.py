@@ -126,4 +126,9 @@ async_runner = AsyncRunner()
 
 # Cleanup on exit
 import atexit
+<<<<<<< Updated upstream
 atexit.register(async_runner.shutdown)
+=======
+
+atexit.register(async_runner.shutdown)  # intentional import at module level
+>>>>>>> Stashed changes

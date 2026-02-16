@@ -132,8 +132,14 @@ class DependencyManager:
         
         # Check PostgreSQL
         try:
+<<<<<<< Updated upstream
             import psycopg2
             capabilities.add('postgresql')
+=======
+            import psycopg2  # noqa: F401
+
+            capabilities.add("postgresql")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         
@@ -142,6 +148,12 @@ class DependencyManager:
             import chromadb
             # Suppress ChromaDB telemetry
             import os
+<<<<<<< Updated upstream
+=======
+
+            import chromadb  # noqa: F401
+
+>>>>>>> Stashed changes
             os.environ["ANONYMIZED_TELEMETRY"] = "False"
             os.environ["POSTHOG_DISABLED"] = "1"
             os.environ["CHROMA_TELEMETRY"] = "False"
@@ -164,22 +176,40 @@ class DependencyManager:
         capabilities = set()
 
         try:
+<<<<<<< Updated upstream
             import ultralytics
             capabilities.add('yolo')
+=======
+            import ultralytics  # noqa: F401
+
+            capabilities.add("yolo")
+>>>>>>> Stashed changes
         except (ImportError, AttributeError) as e:
             # AttributeError covers cases where ultralytics imports but has issues
             logger.debug(f"Ultralytics not available: {e}")
             pass
 
         try:
+<<<<<<< Updated upstream
             import cv2
             capabilities.add('opencv')
+=======
+            import cv2  # noqa: F401
+
+            capabilities.add("opencv")
+>>>>>>> Stashed changes
         except ImportError:
             pass
 
         try:
+<<<<<<< Updated upstream
             from PIL import Image
             capabilities.add('pil')
+=======
+            from PIL import Image  # noqa: F401
+
+            capabilities.add("pil")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         
@@ -194,14 +224,26 @@ class DependencyManager:
         capabilities = set()
         
         try:
+<<<<<<< Updated upstream
             import librosa
             capabilities.add('audio_processing')
+=======
+            import librosa  # noqa: F401
+
+            capabilities.add("audio_processing")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         
         try:
+<<<<<<< Updated upstream
             import soundfile
             capabilities.add('audio_io')
+=======
+            import soundfile  # noqa: F401
+
+            capabilities.add("audio_io")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         
@@ -215,14 +257,26 @@ class DependencyManager:
         capabilities = set()
         
         try:
+<<<<<<< Updated upstream
             import psutil
             capabilities.add('system_stats')
+=======
+            import psutil  # noqa: F401
+
+            capabilities.add("system_stats")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         
         try:
+<<<<<<< Updated upstream
             import schedule  # type: ignore
             capabilities.add('scheduling')
+=======
+            import schedule  # type: ignore  # noqa: F401
+
+            capabilities.add("scheduling")
+>>>>>>> Stashed changes
         except ImportError:
             pass
         

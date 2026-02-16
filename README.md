@@ -329,7 +329,10 @@ venv\Scripts\activate
 # 2. Instalar dependências obrigatórias e sincronizar (biométricas, áudio, monitoramento):
 python scripts/install_democratic_dependencies.py
 # 3. Instalar dependências principais (para a funcionalidade completa)
-pip install -r scripts/install/requirements.txt
+pip install -r requirements.txt
+
+# 3.1 (Opcional) Ferramentas de desenvolvimento e CI
+pip install -r requirements-dev.txt
 
 # 4. Configurar Ollama
 ollama pull llama3
@@ -440,8 +443,8 @@ PROXY_PORT=
 ## 📖 Documentação e Recursos
 
 ### Documentação Técnica
-- **[Mapa de Capacidades](docs/capabilities_map_singularity.md)**: Auditoria completa das funcionalidades do sistema
-- **[Mente Coletiva](docs/MENTE_COLETIVA.md)**: Guia completo da inteligência distribuída
+- **[Mapa de Capacidades](docs/architecture/capabilities_map_singularity.md)**: Auditoria completa das funcionalidades do sistema
+- **[Mente Coletiva](docs/technical/local-network-intelligence.md)**: Guia completo da inteligência distribuída
 - **[Documentação Técnica](docs/)**: Guias detalhados de arquitetura e implementação
 - **[Relatórios de Sistema](docs/reports/)**: Análises de performance e monitoramento
 

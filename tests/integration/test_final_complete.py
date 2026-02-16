@@ -333,7 +333,7 @@ class TestSystemIntegration(unittest.TestCase):
         print("   ✅ IOTManager integrado e funcional")
         
         # 3. Simulação de uso conjunto
-        safe_iot_url = security.validate_web_request(iot.ha_url)
+        self.assertTrue(security.validate_web_request(iot.ha_url))
         # URL local deveria ser segura (melhoria futura: adicionar IPs locais à whitelist)
         
         print("   ✅ Componentes funcionando em conjunto")

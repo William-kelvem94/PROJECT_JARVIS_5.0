@@ -3,15 +3,31 @@ JARVIS 5.0 - Unified Memory Architecture
 Consolidates Interaction, Lessons, Knowledge (RAG), and Vault.
 """
 
+<<<<<<< Updated upstream
 import os
 import logging
 import hashlib
+=======
+import asyncio
+import hashlib
+import logging
+import os
+import shutil
+import sqlite3
+import threading
+>>>>>>> Stashed changes
 import time
 import threading
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from collections import deque
+<<<<<<< Updated upstream
 from pathlib import Path
+=======
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List
+>>>>>>> Stashed changes
 
 try:
     import chromadb
@@ -32,18 +48,36 @@ class UnifiedMemoryManager:
     """Unified memory manager for JARVIS 5.0"""
     
     _instance = None
+<<<<<<< Updated upstream
     
     def __new__(cls):
+=======
+
+    def __new__(cls, *args, **kwargs):
+>>>>>>> Stashed changes
         if cls._instance is None:
             cls._instance = super(UnifiedMemoryManager, cls).__new__(cls)
             cls._instance._initialized = False
         return cls._instance
+<<<<<<< Updated upstream
     
     def __init__(self):
         if self._initialized: return
         from src.utils.config import config
+=======
+
+    def __init__(self, storage_path: str | Path | None = None):
+        if self._initialized:
+            return
+        from src.utils.config import config
+
+        self.project_root = config.PROJECT_ROOT
+>>>>>>> Stashed changes
         # Use unified vector store location
-        self.db_path = config.PROJECT_ROOT / "data" / "memory" / "vector_store"
+        if storage_path is None:
+            self.db_path = self.project_root / "data" / "memory" / "vector_store"
+        else:
+            self.db_path = Path(storage_path)
         self.db_path.mkdir(parents=True, exist_ok=True)
         
         self.client = None
@@ -59,7 +93,12 @@ class UnifiedMemoryManager:
         self.model = None
         self._models_loading = False
         self._lock = threading.Lock()
+<<<<<<< Updated upstream
         
+=======
+        self._schema_recovered = False
+
+>>>>>>> Stashed changes
         self._initialize_db()
         self._initialized = True
         
@@ -100,6 +139,7 @@ class UnifiedMemoryManager:
         if not CHROMA_AVAILABLE:
             logger.warning("ChromaDB offline. Memory running in volatile mode.")
             return
+<<<<<<< Updated upstream
             
         try:
             self.client = chromadb.PersistentClient(
@@ -109,9 +149,157 @@ class UnifiedMemoryManager:
             self.interactions = self.client.get_or_create_collection("jarvis_memory", metadata={"hnsw:space": "cosine"})
             self.lessons = self.client.get_or_create_collection("jarvis_lessons", metadata={"hnsw:space": "cosine"})
             self.knowledge = self.client.get_or_create_collection("jarvis_knowledge", metadata={"hnsw:space": "cosine"})
+=======
+
+        if self._needs_schema_reset():
+            logger.warning(
+                "Detected incompatible ChromaDB schema before initialization. "
+                "Creating backup and resetting vector store."
+            )
+            if not self._backup_and_reset_vector_store():
+                if not self._switch_to_fallback_vector_store():
+                    logger.error(
+                        "Memory initialization aborted: unable to reset schema."
+                    )
+                    return
+            self._schema_recovered = True
+
+        try:
+            self._create_chroma_collections()
+>>>>>>> Stashed changes
             logger.info("✅ Unified Memory collections initialized.")
         except Exception as e:
+            if self._is_schema_mismatch_error(e) and not self._schema_recovered:
+                logger.warning(
+                    "Detected incompatible ChromaDB schema. "
+                    "Creating backup and resetting vector store."
+                )
+                self._stop_chroma_client()
+                if (
+                    self._backup_and_reset_vector_store()
+                    or self._switch_to_fallback_vector_store()
+                ):
+                    self._schema_recovered = True
+                    try:
+                        self._create_chroma_collections()
+                        logger.info(
+                            "✅ Unified Memory collections initialized after schema reset."
+                        )
+                        return
+                    except Exception as retry_error:
+                        logger.error(
+                            f"Memory reinitialization after reset failed: {retry_error}"
+                        )
             logger.error(f"Memory initialization failed: {e}")
+
+    def _create_chroma_collections(self):
+        self.client = chromadb.PersistentClient(
+            path=str(self.db_path), settings=Settings(anonymized_telemetry=False)
+        )
+        self.interactions = self.client.get_or_create_collection(
+            "jarvis_memory", metadata={"hnsw:space": "cosine"}
+        )
+        self.lessons = self.client.get_or_create_collection(
+            "jarvis_lessons", metadata={"hnsw:space": "cosine"}
+        )
+        self.knowledge = self.client.get_or_create_collection(
+            "jarvis_knowledge", metadata={"hnsw:space": "cosine"}
+        )
+
+    def _is_schema_mismatch_error(self, error: Exception) -> bool:
+        message = str(error).lower()
+        return "no such column: collections.topic" in message or (
+            "no such column" in message and "collections." in message
+        )
+
+    def _needs_schema_reset(self) -> bool:
+        db_file = self.db_path / "chroma.sqlite3"
+        if not db_file.exists():
+            return False
+
+        try:
+            with sqlite3.connect(db_file) as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name='collections'"
+                )
+                if not cursor.fetchone():
+                    return False
+
+                cursor.execute("PRAGMA table_info(collections)")
+                columns = {row[1] for row in cursor.fetchall()}
+                # Current runtime expects collections.topic; reset if missing.
+                return bool(columns) and "topic" not in columns
+        except Exception:
+            # If introspection fails, fallback to runtime initialization path.
+            return False
+
+    def _stop_chroma_client(self):
+        if not self.client:
+            return
+
+        try:
+            if hasattr(self.client, "_system"):
+                self.client._system.stop()
+        except Exception:
+            pass
+        finally:
+            self.client = None
+
+    def _backup_and_reset_vector_store(self) -> bool:
+        backup_dir = self.project_root / "data" / "backups" / "chroma_schema"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
+        db_file = self.db_path / "chroma.sqlite3"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        for attempt in range(1, 4):
+            try:
+                if db_file.exists():
+                    backup_file = backup_dir / f"chroma_{timestamp}.sqlite3"
+                    shutil.copy2(db_file, backup_file)
+                    logger.warning(f"ChromaDB backup created at {backup_file}")
+
+                for child in self.db_path.iterdir():
+                    if child.is_file():
+                        child.unlink(missing_ok=True)
+                    else:
+                        shutil.rmtree(child, ignore_errors=True)
+
+                # Optional sanity check to ensure a clean slate.
+                if db_file.exists():
+                    with sqlite3.connect(db_file) as conn:
+                        conn.execute("PRAGMA integrity_check;")
+
+                return True
+            except Exception as backup_error:
+                if attempt < 3 and self._is_file_lock_error(backup_error):
+                    time.sleep(0.5 * attempt)
+                    continue
+                logger.error(f"Failed to backup/reset vector store: {backup_error}")
+                return False
+
+        return False
+
+    def _is_file_lock_error(self, error: Exception) -> bool:
+        message = str(error).lower()
+        return "[winerror 32]" in message or "being used by another process" in message
+
+    def _switch_to_fallback_vector_store(self) -> bool:
+        try:
+            fallback_root = (
+                self.project_root / "data" / "memory" / "vector_store_fallback"
+            )
+            fallback_path = fallback_root / datetime.now().strftime(
+                "runtime_%Y%m%d_%H%M%S"
+            )
+            fallback_path.mkdir(parents=True, exist_ok=True)
+            self.db_path = fallback_path
+            logger.warning(f"Using fallback vector store path: {self.db_path}")
+            return True
+        except Exception as fallback_error:
+            logger.error(f"Failed to allocate fallback vector store: {fallback_error}")
+            return False
 
     def _ensure_model(self):
         if self.model or self._models_loading: return self.model
@@ -259,10 +447,17 @@ class UnifiedMemoryManager:
                         ts_str = metadata.get('ts', '2000-01-01T00:00:00')
                         try:
                             ts = datetime.fromisoformat(ts_str)
+<<<<<<< Updated upstream
                             entries_with_ts.append((results['ids'][i], ts))
                         except:
                             entries_with_ts.append((results['ids'][i], datetime.min))
                     
+=======
+                            entries_with_ts.append((results["ids"][i], ts))
+                        except Exception:
+                            entries_with_ts.append((results["ids"][i], datetime.min))
+
+>>>>>>> Stashed changes
                     # Sort by timestamp
                     entries_with_ts.sort(key=lambda x: x[1])
                     

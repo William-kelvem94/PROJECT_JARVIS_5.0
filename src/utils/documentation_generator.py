@@ -409,7 +409,7 @@ class DocumentationGenerator:
         try:
             relative = file_path.relative_to(self.project_root / "src")
             return str(relative).replace("/", ".").replace("\\", ".").replace(".py", "")
-        except:
+        except Exception:
             return file_path.stem
 
     def _format_entity_documentation(self, entity: CodeEntity) -> str:

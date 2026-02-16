@@ -77,7 +77,7 @@ class NeuroSync:
         if UI_SIGNALS_AVAILABLE and ui_signals:
             try:
                 ui_signals.update_status.emit("Iniciando Sincronização Neural...")
-            except:
+            except Exception:
                 pass  # UI not available, continue silently
         
         # 1. Verificar Ollama

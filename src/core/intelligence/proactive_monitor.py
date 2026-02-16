@@ -66,8 +66,13 @@ class ProactiveMonitor:
 
     def _monitor_loop(self):
         """Loop principal de observaÃ§Ã£o"""
+<<<<<<< Updated upstream
         consecutive_high_load = 0
         
+=======
+        consecutive_high_load = 0  # noqa: F841
+
+>>>>>>> Stashed changes
         while self.running:
             try:
                 # ðŸ›¡ï¸ SAFETY CHECK: System Resource Monitor

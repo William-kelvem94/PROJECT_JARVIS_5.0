@@ -209,8 +209,14 @@ class EnhancedAudioSystem:
         self.sample_rate = 16000
         self.chunk_size = 1024
         self.channels = 1
+<<<<<<< Updated upstream
         
         # Audio processing features (safe config access with fallback for circular imports)
+=======
+
+        # Audio processing features
+        # safe config access with fallback for circular imports
+>>>>>>> Stashed changes
         try:
             from src.utils.config import config as _config
             self.noise_reduction_enabled = _config.get_setting('audio.noise_reduction', True)
@@ -254,9 +260,16 @@ class EnhancedAudioSystem:
         self._initialize_basic_components()
         
         # Start heavy models in background to avoid 0xC0000005 during boot
+<<<<<<< Updated upstream
         # ðŸ†• PASSIVE INIT: Do not start threads in __init__. Call start_background_loading() later.
         # threading.Thread(target=self._load_models_background, daemon=True, name="AudioNeuralLoad").start()
         
+=======
+        # ðŸ†• PASSIVE INIT: do not start threads in __init__ —
+        # call start_background_loading() after GUI boot instead.
+        # threading.Thread(...AudioNeuralLoad).start()  # disabled by default
+
+>>>>>>> Stashed changes
         logger.info("âœ… Enhanced Audio System initialized (Passive Mode)")
         logger.info(f"   Faster-Whisper: {'âœ…' if FASTER_WHISPER_AVAILABLE else 'âŒ'}")
         logger.info(f"   PyAudio: {'âœ…' if PYAUDIO_AVAILABLE else 'âŒ'}")
@@ -268,8 +281,16 @@ class EnhancedAudioSystem:
         try:
             mem = psutil.virtual_memory()
             if mem.percent > 85:
+<<<<<<< Updated upstream
                 logger.warning(f"⚠️ AudioSystem: High RAM usage ({mem.percent}%) - Delaying heavy model loading")
                 return # Skip loading if memory critical
+=======
+                logger.warning(
+                    f"⚠️ AudioSystem: High RAM usage ({mem.percent}%) "
+                    f"- Delaying heavy model loading "
+                )
+                return  # Skip loading if memory critical
+>>>>>>> Stashed changes
         except Exception:
             pass
 
@@ -322,7 +343,14 @@ class EnhancedAudioSystem:
         try:
             mem = psutil.virtual_memory()
             if mem.percent > 85.0:
+<<<<<<< Updated upstream
                 logger.warning(f"⚠️ AudioSystem: High RAM ({mem.percent}%) - Skipping heavy Whisper load to prevent crash.")
+=======
+                logger.warning(
+                    f"⚠️ AudioSystem: High RAM ({mem.percent}%) "
+                    f"- Skipping heavy Whisper load to prevent crash. "
+                )
+>>>>>>> Stashed changes
                 return
         except Exception as e:
             logger.debug(f"Memory check failed: {e}")
@@ -334,8 +362,16 @@ class EnhancedAudioSystem:
                 model_load_lock.acquire("Whisper (Audio Core)")
                 try:
                     with self._models_lock:
+<<<<<<< Updated upstream
                         logger.info(f"🧠 Audio Core: Carregando Faster-Whisper ({self.whisper_model_size})...")
                         
+=======
+                        logger.info(
+                            f"🧠 Audio Core: Carregando Faster-Whisper"
+                            f"({self.whisper_model_size})..."
+                        )
+
+>>>>>>> Stashed changes
                         # CRITICAL: Import here to avoid init-time conflicts
                         from faster_whisper import WhisperModel
                         
@@ -348,7 +384,14 @@ class EnhancedAudioSystem:
                             else:
                                 device = "cpu"
                                 compute_type = "int8"
+<<<<<<< Updated upstream
                                 logger.info(f"   💻 CPU Detectada: Usando INT8 para economia de memória")
+=======
+                                logger.info(
+                                    "   💻 CPU Detectada: Usando INT8 para economia de"
+                                    "memória"
+                                )
+>>>>>>> Stashed changes
                         except Exception:
                             device = "cpu"
                             compute_type = "int8"
@@ -363,7 +406,14 @@ class EnhancedAudioSystem:
                             num_workers=1   # Single worker to prevent pool crashes
                         )
                         self._whisper_ready = True
+<<<<<<< Updated upstream
                         logger.info(f"✅ Audio Core: Whisper pronto (Backend: {device.upper()}, Type: {compute_type})")
+=======
+                        logger.info(
+                            f"✅ Audio Core: Whisper pronto (Backend: {device.upper()},"
+                            f"Type: {compute_type})"
+                        )
+>>>>>>> Stashed changes
                 finally:
                     model_load_lock.release()
             except Exception as e:
@@ -520,12 +570,25 @@ class EnhancedAudioSystem:
                 
                 # Clamp entre 1000 e 5000 para seguranÃ§a
                 dynamic_threshold = max(1000, min(5000, dynamic_threshold))
+<<<<<<< Updated upstream
                 
                 logger.info(f"ðŸ“Š RuÃ­do ambiente medido: RMS mÃ©dio = {ambient_rms_mean:.1f}, std = {ambient_rms_std:.1f}")
                 logger.info(f"ðŸŽ¯ Threshold VAD ajustado: {dynamic_threshold:.1f} (era 2000)")
                 
+=======
+
+                logger.info(
+                    f"ðŸ“Š RuÃ­do ambiente medido: RMS mÃ©dio ="
+                    f"{ambient_rms_mean:.1f}, std = {ambient_rms_std:.1f}"
+                )
+                logger.info(
+                    f"ðŸŽ¯ Threshold VAD ajustado: {dynamic_threshold:.1f} (era 2000)"
+                )
+
+>>>>>>> Stashed changes
                 # Atualizar threshold global usado em _check_voice_activity
-                # Note: Isso afeta apenas o fallback RMS quando VAD model nÃ£o disponÃ­vel
+                # Note: afeta apenas o fallback RMS quando o VAD model não está
+                # disponível em runtime
                 self._dynamic_rms_threshold = dynamic_threshold
                 
                 return dynamic_threshold
@@ -647,12 +710,21 @@ class EnhancedAudioSystem:
                     chunk = self.audio_queue.get(timeout=0.1)
                     audio_buffer.append(chunk)
                 except queue.Empty:
+<<<<<<< Updated upstream
                     # ðŸ”’ Mesmo sem dados, checar timeout de silÃªncio para flush do buffer
                     if voice_detected_in_buffer and (time.time() - last_voice_time) > silence_threshold:
+=======
+                    # ðŸ”’ Mesmo sem dados, checar timeout de silêncio para
+                    # flush do buffer quando excesso de silêncio ocorrer
+                    if (
+                        voice_detected_in_buffer
+                        and (time.time() - last_voice_time) > silence_threshold
+                    ):
+>>>>>>> Stashed changes
                         if voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         else:
-                            pass  # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mÃ­n: {MIN_VOICE_FRAMES})")
+                            pass  # buffer silently discarded (too few voice frames)
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
@@ -674,14 +746,21 @@ class EnhancedAudioSystem:
                         # ðŸ†• FREE WAKE WORD LOGIC (VAD GATE)
                         if self.wake_word_active and not self.is_awake:
                             # Se detectar voz clara e forte, acorda automaticamente
+<<<<<<< Updated upstream
                             # Isso substitui "Hey Jarvis" por "Qualquer fala humana clara"
                             # Para evitar disparos falsos, exigimos confianÃ§a alta do VAD
                             
                             logger.debug("âš¡ VAD Trigger: Voz detectada, acordando sistema...")
+=======
+                            # Substitui o 'Hey Jarvis' por fala humana clara
+                            # Exige confiança alta do VAD para reduzir falsos positivos
+                            logger.debug("VAD trigger: voz detectada — acordando")
+>>>>>>> Stashed changes
                             self.is_awake = True
                             self.state = AudioState.LISTENING
                             if self.on_wake_word_detected:
                                 self.on_wake_word_detected()
+<<<<<<< Updated upstream
                             
                             # NÃ£o quebramos o loop, continuamos processando o buffer atual como comando
                             # break  <-- REMOVIDO para capturar o comando "acordar" junto
@@ -695,6 +774,24 @@ class EnhancedAudioSystem:
                                 rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
                                 if rms > 5000: # Grito ou comando muito alto/claro
                                     logger.debug("âš¡ Fast-Path: Disparando processamento imediato por energia alta")
+=======
+
+                            # Não quebramos o loop — continuamos processando o buffer
+                            # (break removido para capturar o comando 'acordar')
+
+                        if self.is_awake or not self.wake_word_active:
+                            self.state = AudioState.LISTENING
+
+                            # 🔥 FAST-PATH (Fase 5):
+                            # se energia alta e buffer curto, antecipar processamento
+                            if len(audio_buffer) < 15:  # ~300ms de Ã¡udio
+                                rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
+                                if rms > 5000:  # Grito ou comando muito alto/claro
+                                    logger.debug(
+                                        "âš¡ Fast-Path: Disparando processamento "
+                                        "imediato por energia alta"
+                                    )
+>>>>>>> Stashed changes
                                     self._process_audio_buffer(audio_buffer)
                                     audio_buffer = []
                                     voice_detected_in_buffer = False
@@ -707,8 +804,8 @@ class EnhancedAudioSystem:
                         if voice_detected_in_buffer and voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         elif len(audio_buffer) > 0:
-                            # Silencioso descartado - log removido para evitar pollution (~300 linhas/min)
-                            pass  # logger.debug(f"ðŸ”‡ Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
+                            # Silencioso descartado - log removido para evitar pollution
+                            pass  # buffer silently discarded (too few voice frames)
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
@@ -823,7 +920,11 @@ class EnhancedAudioSystem:
                         y=audio_float,
                         sr=self.sample_rate,
                         stationary=True,
+<<<<<<< Updated upstream
                         prop_decrease=0.6  # Reduzido de 0.8 para 0.6 para evitar voz 'robÃ³tica'
+=======
+                        prop_decrease=0.6,  # reduzido para evitar timbre 'robótico'
+>>>>>>> Stashed changes
                     )
                     logger.debug("âœ… Noise reduction applied (+20% accuracy)")
                 except Exception as e:
@@ -843,7 +944,14 @@ class EnhancedAudioSystem:
                     if self.on_speaker_detected:
                         self.on_speaker_detected(speaker_id, confidence)
                 else:
+<<<<<<< Updated upstream
                     logger.warning(f"âš ï¸ Unknown speaker detected (confidence: {confidence:.2f})")
+=======
+                    logger.warning(
+                        f"âš ï¸ Unknown speaker detected (confidence:"
+                        f"{confidence:.2f})"
+                    )
+>>>>>>> Stashed changes
             else:
                 # No speaker verification configured - allow transcription
                 speaker_verified = True
@@ -899,7 +1007,14 @@ class EnhancedAudioSystem:
                                 }
                             )
                         )
+<<<<<<< Updated upstream
                         logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+=======
+                        logger.debug(
+                            f"\ud83d\udce3 Published transcription event:"
+                            f"{result.text[:50]}..."
+                        )
+>>>>>>> Stashed changes
                     except Exception as e:
                         logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
                 
@@ -922,7 +1037,14 @@ class EnhancedAudioSystem:
                                 }
                             )
                         )
+<<<<<<< Updated upstream
                         logger.debug(f"\ud83d\udce3 Published transcription event: {result.text[:50]}...")
+=======
+                        logger.debug(
+                            f"\ud83d\udce3 Published transcription event:"
+                            f"{result.text[:50]}..."
+                        )
+>>>>>>> Stashed changes
                     except Exception as e:
                         logger.warning(f"\u26a0\ufe0f Failed to publish transcription event: {e}")
                     
@@ -986,7 +1108,14 @@ class EnhancedAudioSystem:
                 audio,
                 language="pt", 
                 beam_size=5,
+<<<<<<< Updated upstream
                 initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, portuguÃªs do Brasil.", 
+=======
+                initial_prompt=(
+                    "Jarvis, James, William, Stark, Singularity, comandos do sistema, "
+                    "português do Brasil."
+                ),
+>>>>>>> Stashed changes
                 vad_filter=True,
                 vad_parameters=dict(threshold=0.5, min_silence_duration_ms=500)  # VAD mais equilibrado
             )

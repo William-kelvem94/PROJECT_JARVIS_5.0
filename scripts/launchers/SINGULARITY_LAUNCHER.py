@@ -31,8 +31,15 @@ if os.path.exists(os.path.join(PROJECT_ROOT, "main.py")):
     logger.info(f"📂 [INFRA] Diretório de trabalho ajustado para: {PROJECT_ROOT}")
 
 def ensure_ollama_installed():
+<<<<<<< Updated upstream
     """Verifica se Ollama está instalado, caso contrário instala automaticamente."""
     if shutil.which('ollama'):
+=======
+    """
+    Verifica se Ollama está instalado, caso contrário instala automaticamente.
+    """
+    if shutil.which("ollama"):
+>>>>>>> Stashed changes
         logger.info("[OK] [INFRA] Ollama detectado no sistema.")
         return True
 
@@ -65,11 +72,20 @@ def ensure_ollama_installed():
         logger.info("🔄 Atualizando variáveis de ambiente para a sessão atual...")
         
         # Caminho padrão do Ollama no Windows
+<<<<<<< Updated upstream
         local_app_data = os.environ.get('LOCALAPPDATA', '')
         ollama_path = os.path.join(local_app_data, 'Programs', 'Ollama')
         
         if os.path.exists(os.path.join(ollama_path, 'ollama.exe')):
             # Adiciona ao PATH da sessão atual para que o shutil.which encontre imediatamente
+=======
+        local_app_data = os.environ.get("LOCALAPPDATA", "")
+        ollama_path = os.path.join(local_app_data, "Programs", "Ollama")
+
+        if os.path.exists(os.path.join(ollama_path, "ollama.exe")):
+            # Adiciona ao PATH da sessão atual para que o shutil.which encontre
+            # imediatamente
+>>>>>>> Stashed changes
             os.environ["PATH"] += os.pathsep + ollama_path
             logger.info(f"✅ Caminho do Ollama injetado no PATH: {ollama_path}")
         else:
@@ -87,8 +103,19 @@ def ensure_ollama_installed():
         logger.error(f"[ERR] [ERRO CRITICO] Falha no protocolo de instalacao: {e}")
         sys.exit(1)
 
+<<<<<<< Updated upstream
+=======
+
+"""
+Garante que o servidor Ollama está ativo, iniciando-o de forma invisível se necessário.
+"""
+
+
+>>>>>>> Stashed changes
 def ensure_ollama_running():
-    """Garante que o servidor Ollama está ativo, iniciando-o de forma invisível se necessário."""
+    """
+    Garante que o servidor Ollama está ativo, iniciando-o de forma invisível se necessário.
+    """
     try:
         urllib.request.urlopen(OLLAMA_SERVER_URL, timeout=2)
         logger.info("[OK] [INFRA] Servidor Neural Online.")

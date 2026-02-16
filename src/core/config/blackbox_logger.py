@@ -34,6 +34,12 @@ Usage:
     performance_data = blackbox_logger.get_performance_metrics()
 """
 
+<<<<<<< Updated upstream
+=======
+import json
+import logging
+import os
+>>>>>>> Stashed changes
 import sqlite3
 import logging
 import json
@@ -212,7 +218,19 @@ class BlackboxLogger:
             raise
     
     def _start_maintenance_thread(self):
+<<<<<<< Updated upstream
         """Start background maintenance thread"""
+=======
+        """Start background maintenance thread (skipped in test mode)."""
+
+        # Avoid starting native/background maintenance while running tests
+        if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on"):
+            logging.getLogger(__name__).debug(
+                "JARVIS_TEST_MODE active: skipping Blackbox maintenance thread"
+            )
+            return
+
+>>>>>>> Stashed changes
         def maintenance_worker():
             while True:
                 try:
@@ -575,7 +593,7 @@ class BlackboxLogger:
         """Cleanup resources"""
         try:
             self.info("🧹 Blackbox Logger shutting down", component="blackbox_logger")
-        except:
+        except Exception:
             pass
 
 # Global instance

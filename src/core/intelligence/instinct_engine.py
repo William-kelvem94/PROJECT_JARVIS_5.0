@@ -122,7 +122,13 @@ class InstinctEngine:
         now = datetime.datetime.now()
         dias_semana = ["segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado", "domingo"]
         dia_nome = dias_semana[now.weekday()]
+<<<<<<< Updated upstream
         date_str = now.strftime(f"%d de %B") # Tradução de mês precisaria de locale, mas vamos simplificar
+=======
+        date_str = now.strftime(  # noqa: F841
+            "%d de %B"
+        )  # Tradução de mês precisaria de locale, mas vamos simplificar
+>>>>>>> Stashed changes
         return {
             "thought": "Comando de data detectado via camada de instinto.",
             "final_answer": f"Hoje é {dia_nome}, dia {now.day} de {now.month}, Senhor.",

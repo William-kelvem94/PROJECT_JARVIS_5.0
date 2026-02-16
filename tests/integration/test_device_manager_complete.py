@@ -15,9 +15,15 @@ from pathlib import Path
 # Fix Windows terminal encoding
 if sys.platform == 'win32':
     try:
+<<<<<<< Updated upstream
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
     except:
+=======
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+>>>>>>> Stashed changes
         pass
 
 # Setup paths

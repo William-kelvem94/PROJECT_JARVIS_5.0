@@ -1,4 +1,5 @@
 @echo off
+<<<<<<< Updated upstream
 REM JARVIS 5.0 Startup Script
 
 REM Garantir execução na raiz do projeto
@@ -75,3 +76,15 @@ if errorlevel 1 (
 ) else (
     echo [SUCESSO] JARVIS finalizado normalmente.
 )
+=======
+setlocal
+cd /d "%~dp0"
+
+REM Compatibility shim to centralized launcher
+chcp 65001 >nul
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
+
+call "scripts\launchers\start_jarvis.bat" %*
+exit /b %ERRORLEVEL%
+>>>>>>> Stashed changes

@@ -23,7 +23,16 @@ TRANSLATIONS = {
     "Clean up backup files": "🧹 Limpar arquivos de backup",
     "Improve security and robustness based on code review feedback": "🛡️ Melhorar segurança e robustez baseado no feedback da revisão de código",
     "Update documentation to reflect Google Search implementation": "📝 Atualizar documentação para refletir implementação do Google Search",
-    "Remove obsolete documentation and scripts related to JARVIS 5.0, including analysis, API documentation, architecture, and various setup scripts, to streamline the project structure and focus on essential components.": "🗑️ Remover documentação e scripts obsoletos relacionados ao JARVIS 5.0, incluindo análise, documentação de API, arquitetura e vários scripts de configuração, para simplificar a estrutura do projeto e focar em componentes essenciais",
+    (
+        "Remove obsolete documentation and scripts related to JARVIS 5.0, including "
+        "analysis, API documentation, architecture, and various setup scripts, to "
+        "streamline the project structure and focus on essential components."
+    ): (
+        "🗑️ Remover documentação e scripts obsoletos relacionados ao JARVIS 5.0, "
+        "incluindo análise, documentação de API, arquitetura e vários scripts de "
+        "configuração, para simplificar a estrutura do projeto e focar em "
+        "componentes essenciais"
+    ),
     "Add session_stats.json with session metrics": "📊 Adicionar session_stats.json com métricas de sessão",
     "Add autonomous launcher and project validator": "🚀 Adicionar launcher autônomo e validador de projeto",
     "Add quick setup checkers and improve documentation": "⚡ Adicionar verificadores de configuração rápida e melhorar documentação",

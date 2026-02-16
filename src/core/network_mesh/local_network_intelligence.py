@@ -227,7 +227,12 @@ class LocalNetworkIntelligence:
         
         # Ãudio
         try:
+<<<<<<< Updated upstream
             import sounddevice
+=======
+            import sounddevice  # noqa: F401
+
+>>>>>>> Stashed changes
             capabilities.append("AUDIO_IO")
         except ImportError:
             pass

@@ -12,7 +12,12 @@ from pathlib import Path
 
 # Import types for mapping
 try:
+<<<<<<< Updated upstream
     from src.core.intelligence.structured_output import ActionType
+=======
+    from src.core.intelligence.structured_output import ActionType  # noqa: F401
+
+>>>>>>> Stashed changes
     TYPES_AVAILABLE = True
 except ImportError:
     TYPES_AVAILABLE = False

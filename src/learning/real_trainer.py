@@ -1,13 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-REAL TRAINER - Treinamento Neural Real para JARVIS 5.0
-Sistema de fine-tuning real sem sobrecarga de hardware
-"""
+﻿"""RealTrainer - lightweight incremental training facade."""
+
+from __future__ import annotations
 
 import sys
 import os
 import json
 import logging
+<<<<<<< Updated upstream
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 import torch
@@ -19,10 +18,20 @@ logger = logging.getLogger("REAL-TRAINER")
 
 # Adicionar diretÃ³rio raiz
 sys.path.insert(0, str(Path(__file__).parent.parent))
+=======
+import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from .trainer import LocalTrainer, TrainingConfig
+
+logger = logging.getLogger(__name__)
+>>>>>>> Stashed changes
 
 class RealTrainer:
-    """Treinador neural real com fine-tuning leve"""
+    """High-level trainer wrapper used by semantic feedback and maintenance flows."""
 
+<<<<<<< Updated upstream
     def __init__(self, model_name: str = "distilgpt2", device: str = "cpu", simulate: bool = True):
         # Usar modelo pequeno para desenvolvimento se não especificado
         if model_name == "microsoft/Phi-3-mini-4k-instruct":
@@ -345,16 +354,85 @@ def train_with_real_learning(topic: str, config: Optional[Dict[str, Any]] = None
             logger.info(f"ðŸ“” EstratÃ©gia: {result.get('learning_strategy', 'N/A')}")
             logger.info(f"ðŸ“Š PontuaÃ§Ã£o de avaliaÃ§Ã£o: {result.get('evaluation_score', 'N/A')}")
 
+=======
+    def __init__(self, simulate: bool = True, output_dir: Optional[Path] = None):
+        self.simulate = simulate
+        self.output_dir = Path(output_dir or "data/models/real_trainer")
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        config = TrainingConfig(model_name="Qwen/Qwen2.5-1.5B-Instruct")
+        self.local_trainer = LocalTrainer(config=config, output_dir=self.output_dir)
+
+    def prepare_training_data(
+        self, training_data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        prepared = []
+        for item in training_data or []:
+            if not isinstance(item, dict):
+                continue
+            instruction = str(item.get("instruction", "")).strip()
+            output = str(item.get("output", "")).strip()
+            if not instruction or not output:
+                continue
+            prepared.append(
+                {"instruction": instruction, "output": output, "metadata": item}
+            )
+        return prepared
+
+    def fine_tune_incremental(
+        self, training_examples: List[Dict[str, Any]], topic: str = "incremental"
+    ) -> Dict[str, Any]:
+        prepared = self.prepare_training_data(training_examples)
+        run_dir = self.output_dir / topic
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        if not prepared:
+            result = {
+                "success": False,
+                "reason": "no_valid_examples",
+                "topic": topic,
+                "trained_examples": 0,
+            }
+            self._save_result(run_dir, result)
+>>>>>>> Stashed changes
             return result
 
-        # 2. DESTILAR CONHECIMENTO COM BASE NA ESTRATÃ‰GIA
-        from src.learning.knowledge_distiller import KnowledgeDistiller
+        if self.simulate:
+            time.sleep(min(0.1, 0.01 * len(prepared)))
+            result = {
+                "success": True,
+                "mode": "simulated",
+                "topic": topic,
+                "trained_examples": len(prepared),
+            }
+            self._save_result(run_dir, result)
+            return result
 
+<<<<<<< Updated upstream
         data_dir = Path('data/learning')
         distiller = KnowledgeDistiller(data_dir=data_dir)
+=======
+        result = self.local_trainer.train(
+            train_data=prepared, data_format="instruction"
+        )
+        self.local_trainer.save_model(str(run_dir))
+        wrapped = {
+            "success": True,
+            "mode": "real",
+            "topic": topic,
+            "trained_examples": len(prepared),
+            "trainer_result": result,
+        }
+        self._save_result(run_dir, wrapped)
+        return wrapped
+>>>>>>> Stashed changes
 
-        logger.info("ðŸ“š Destilando conhecimento baseado na estratÃ©gia...")
+    def train(
+        self, training_data: List[Dict[str, Any]], topic: str = "manual"
+    ) -> Dict[str, Any]:
+        return self.fine_tune_incremental(training_data, topic)
 
+<<<<<<< Updated upstream
         # Gerar prompts inteligentes baseados na estratÃ©gia
         prompts = _generate_intelligent_prompts(topic, learning_strategy)
 
@@ -610,3 +688,13 @@ if __name__ == "__main__":
 
     result = train_with_real_learning(topic)
     print(f"Resultado: {result}")
+=======
+    def _save_result(self, run_dir: Path, result: Dict[str, Any]) -> None:
+        (run_dir / "training_result.json").write_text(
+            json.dumps(result, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+
+__all__ = ["RealTrainer"]
+>>>>>>> Stashed changes

@@ -20,14 +20,25 @@ logger = logging.getLogger(__name__)
 
 # Dependências opcionais para metadados
 try:
+<<<<<<< Updated upstream
     from mutagen.id3 import ID3
+=======
+    from mutagen.id3 import ID3  # noqa: F401
+
+>>>>>>> Stashed changes
     MUTAGEN_AVAILABLE = True
 except ImportError:
     MUTAGEN_AVAILABLE = False
 
 try:
+<<<<<<< Updated upstream
     from PIL import Image
     from PIL.ExifTags import TAGS
+=======
+    from PIL import Image  # noqa: F401
+    from PIL.ExifTags import TAGS  # noqa: F401
+
+>>>>>>> Stashed changes
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -48,7 +59,7 @@ class FileIndexer:
             try:
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except:
+            except Exception:
                 return {}
         return {}
 
@@ -159,9 +170,16 @@ class FileIndexer:
                     from PIL import Image
                     try:
                         img = Image.open(file_path)
+<<<<<<< Updated upstream
                         meta['resolution'] = f"{img.width}x{img.height}"
                     except: pass
             
+=======
+                        meta["resolution"] = f"{img.width}x{img.height}"
+                    except Exception:
+                        pass
+
+>>>>>>> Stashed changes
             # ESTRATÉGIA D: Arquivos Compactados
             elif ext in ['.zip', '.rar', '.7z', '.tar', '.gz']:
                 meta['content_type'] = 'archive'
@@ -192,7 +210,7 @@ class FileIndexer:
                 f.seek(max(0, file_size - 1000))
                 tail = f.read(1000)
                 return f"{head}\n\n[... AMOSTRAGEM DE ARQUIVO GRANDE ...]\n\n{tail}"
-        except:
+        except Exception:
             return "[Erro ao ler texto]"
 
     def _read_binary_signature(self, file_path: Path) -> str:
@@ -202,10 +220,22 @@ class FileIndexer:
                 chunk = f.read(4000)
                 # Extrair sequências de 4 ou mais caracteres ASCII imprimíveis
                 import re
+<<<<<<< Updated upstream
                 ascii_strings = re.findall(rb'[ -~]{4,}', chunk)
                 summary = " ".join([s.decode('ascii', errors='ignore') for s in ascii_strings[:10]])
                 return f"Assinatura Binária: {chunk[:16].hex()} | Strings: {summary[:500]}"
         except:
+=======
+
+                ascii_strings = re.findall(rb"[ -~]{4,}", chunk)
+                summary = " ".join(
+                    [s.decode("ascii", errors="ignore") for s in ascii_strings[:10]]
+                )
+                return (
+                    f"Assinatura Binária: {chunk[:16].hex()} | Strings: {summary[:500]}"
+                )
+        except Exception:
+>>>>>>> Stashed changes
             return "Arquivo binário não interpretável."
 
     def _read_pdf_sample(self, file_path: Path) -> str:
@@ -220,10 +250,17 @@ class FileIndexer:
                 if 0 <= i < num_pages:
                     try:
                         extracted = reader.pages[i].extract_text()
+<<<<<<< Updated upstream
                         if extracted: text += extracted + "\n"
                     except: pass
+=======
+                        if extracted:
+                            text += extracted + "\n"
+                    except Exception:
+                        pass
+>>>>>>> Stashed changes
             return text[:2000]
-        except:
+        except Exception:
             return "Falha ao extrair texto do PDF."
 
     def _read_audio_metadata(self, file_path: Path) -> str:
@@ -242,7 +279,12 @@ class FileIndexer:
                 artist = tags.get('TPE1', 'Desconhecido')
                 title = tags.get('TIT2', 'Sem Título')
                 info.append(f"Artista: {artist} | Título: {title}")
+<<<<<<< Updated upstream
             except: pass
+=======
+            except Exception:
+                pass
+>>>>>>> Stashed changes
         return " | ".join(info) if info else "Áudio (Meta indisponível)"
 
     def _read_video_metadata(self, file_path: Path) -> str:
@@ -261,7 +303,7 @@ class FileIndexer:
             
             cap.release()
             return f"Resolução: {width}x{height} | FPS: {round(fps, 2)} | Duração: {round(duration, 2)}s"
-        except:
+        except Exception:
             return "Vídeo (Erro na extração de metadados)"
 
     def _read_archive_contents(self, file_path: Path) -> str:
@@ -275,7 +317,7 @@ class FileIndexer:
                     if len(files) > 20:
                         summary += f" ... e mais {len(files)-20} arquivos."
                     return f"Conteúdo do Zip: {summary}"
-            except:
+            except Exception:
                 return "Arquivo Zip corrompido ou protegido por senha."
         return f"Arquivo compactado ({file_path.suffix})"
 

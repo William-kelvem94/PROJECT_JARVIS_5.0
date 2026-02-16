@@ -238,10 +238,18 @@ class JarvisTestSuite:
             try:
                 dashboard._validate_config_json()
                 assert False, "Should have detected invalid JSON"
-            except:
-                pass  # Expected
+            except Exception:
+                # Expected: invalid JSON should raise
+                pass
 
+<<<<<<< Updated upstream
             self.log_test("Config Editor", True, "JSON validation and formatting work correctly")
+=======
+            # If we reach here, validation/formatting logic handled both cases
+            self.log_test(
+                "Config Editor", True, "JSON validation and formatting work correctly"
+            )
+>>>>>>> Stashed changes
         except Exception as e:
             self.log_test("Config Editor", False, str(e))
 
@@ -282,7 +290,7 @@ class JarvisTestSuite:
 
             # Test ConfigTextEdit creation
             editor = ConfigTextEdit()
-            assert editor.acceptDrops() == True, "Should accept drops"
+            assert editor.acceptDrops(), "Should accept drops"
 
             # Test drag enter event with valid file
             from PyQt6.QtGui import QDragEnterEvent

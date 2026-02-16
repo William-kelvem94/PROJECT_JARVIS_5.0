@@ -28,7 +28,12 @@ except ImportError:
     logger.warning("pyautogui nÃ£o disponÃ­vel")
 
 try:
+<<<<<<< Updated upstream
     from PIL import Image, ImageDraw
+=======
+    from PIL import Image, ImageDraw  # noqa: F401
+
+>>>>>>> Stashed changes
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -164,9 +169,15 @@ class ScreenCapture:
                 if (monitor['left'] <= x < monitor['left'] + monitor['width'] and
                     monitor['top'] <= y < monitor['top'] + monitor['height']):
                     return monitor
+<<<<<<< Updated upstream
             return monitors[1] # Fallback para o primeiro se falhar
         except:
              return self._get_sct().monitors[1]
+=======
+            return monitors[1]  # Fallback para o primeiro se falhar
+        except Exception:
+            return self._get_sct().monitors[1]
+>>>>>>> Stashed changes
 
     def capture_region(self, region: Tuple[int, int, int, int],
                       save_path: Optional[str] = None,
@@ -289,10 +300,18 @@ class ScreenCapture:
             captures = sorted(config.CAPTURES_DIR.glob("capture_*.png"), key=lambda x: x.stat().st_mtime)
             if len(captures) > 100:
                 for old_file in captures[:-100]:
+<<<<<<< Updated upstream
                      try:
                          old_file.unlink()
                          # logger.debug(f"Caputura antiga removida: {old_file.name}")
                      except: pass
+=======
+                    try:
+                        old_file.unlink()
+                        # logger.debug(f"Caputura antiga removida: {old_file.name}")
+                    except Exception:
+                        pass
+>>>>>>> Stashed changes
         except Exception as e:
             logger.warning(f"Falha no cleanup de capturas: {e}")
 
@@ -472,12 +491,23 @@ class ScreenCapture:
         }
         
         try:
+<<<<<<< Updated upstream
              # Window Title
              import pygetwindow as gw
              active = gw.getActiveWindow()
              if active:
                  context["active_window"] = active.title
         except: pass
+=======
+            # Window Title
+            import pygetwindow as gw
+
+            active = gw.getActiveWindow()
+            if active:
+                context["active_window"] = active.title
+        except Exception:
+            pass
+>>>>>>> Stashed changes
 
         # Captura se o hardware permitir
         from src.core.management.hardware_manager import hardware_manager

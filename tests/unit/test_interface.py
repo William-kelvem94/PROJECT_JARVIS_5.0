@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""
-Test script to verify JARVIS interface works
-"""
+"""Lightweight, non-blocking UI smoke tests."""
 
+<<<<<<< Updated upstream
 import sys
 import os
 sys.path.insert(0, 'src')
@@ -10,23 +9,63 @@ sys.path.insert(0, 'src')
 try:
     from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow
     from PyQt6.QtCore import Qt
+=======
+import os
 
-    class TestWindow(QMainWindow):
-        def __init__(self):
-            super().__init__()
-            self.setWindowTitle("JARVIS 5.0 - Interface Test")
-            self.setGeometry(100, 100, 800, 600)
+import pytest
 
+
+def _get_qapplication():
+    from PyQt6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication([])
+    return app
+
+
+def test_pyqt6_imports():
+    try:
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtWidgets import QLabel, QMainWindow
+    except Exception as exc:
+        pytest.fail(f"PyQt6 imports failed: {exc}")
+
+    assert Qt is not None
+    assert QLabel is not None
+    assert QMainWindow is not None
+
+
+def test_window_instantiation_offscreen():
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtWidgets import QLabel, QMainWindow
+>>>>>>> Stashed changes
+
+    app = _get_qapplication()
+    window = QMainWindow()
+    window.setWindowTitle("JARVIS 5.0 - Interface Test")
+    window.setGeometry(100, 100, 800, 600)
+
+<<<<<<< Updated upstream
             label = QLabel("✅ JARVIS Interface is working!\n\nThe GUI framework is functional.")
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.setCentralWidget(label)
+=======
+    label = QLabel("JARVIS Interface smoke test")
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    window.setCentralWidget(label)
+>>>>>>> Stashed changes
 
-    app = QApplication(sys.argv)
-    window = TestWindow()
     window.show()
-    print("✅ Interface test successful - window should be visible")
-    sys.exit(app.exec())
+    app.processEvents()
 
+<<<<<<< Updated upstream
 except Exception as e:
     print(f"❌ Interface test failed: {e}")
     sys.exit(1)
+=======
+    assert window.windowTitle() == "JARVIS 5.0 - Interface Test"
+    window.close()
+>>>>>>> Stashed changes

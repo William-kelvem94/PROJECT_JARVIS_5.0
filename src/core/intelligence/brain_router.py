@@ -19,7 +19,12 @@ except ImportError:
     config = None
 
 try:
+<<<<<<< Updated upstream
     from src.utils.env_manager import get_config
+=======
+    from src.utils.env_manager import get_config  # noqa: F401
+
+>>>>>>> Stashed changes
     ENV_MANAGER_AVAILABLE = True
 except ImportError:
     ENV_MANAGER_AVAILABLE = False
@@ -95,7 +100,7 @@ class BrainRouter:
         import psutil
         try:
             ram_percent = psutil.virtual_memory().percent
-        except:
+        except Exception:
             ram_percent = 50.0
 
         # Se RAM estiver cheia (>75%), descarta modelos imediatamente (0).

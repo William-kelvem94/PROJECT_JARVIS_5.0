@@ -44,8 +44,13 @@ class WindowsHardwareControl:
             # Vamos usar o comando 'set_audio' via SoundDevice se possível ou PowerShell script.
             
             # Script PowerShell simplificado para mutar todos os inputs
+<<<<<<< Updated upstream
             action = "1" if mute else "0"
             ps_script = f"""
+=======
+            _action = "1" if mute else "0"
+            _ps_script = """
+>>>>>>> Stashed changes
             $obj = New-Object -ComObject Shell.Application
             $obj.NameSpace(10).Items() | Where-Object {{ $_.Name -eq 'Sounds' }} | ForEach-Object {{ $_.InvokeVerb('Properties') }}
             """

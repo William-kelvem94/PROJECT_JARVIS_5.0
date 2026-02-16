@@ -2,6 +2,10 @@
 Teste isolado de ChromaDB para diagnóstico
 """
 
+import pytest
+
+pytest.importorskip("chromadb")
+
 print("=" * 70)
 print("🧪 TESTE ISOLADO - ChromaDB")
 print("=" * 70)

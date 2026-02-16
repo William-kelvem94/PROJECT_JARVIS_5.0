@@ -194,9 +194,15 @@ class DemocraticNetworkIntelligence:
                 pass
             
             # MÃ©todo 3: Environment variables
+<<<<<<< Updated upstream
             domain = os.getenv('USERDOMAIN', '')
             user = os.getenv('USERNAME', '')
             if '@' in user:
+=======
+            domain = os.getenv("USERDOMAIN", "")  # noqa: F841
+            user = os.getenv("USERNAME", "")
+            if "@" in user:
+>>>>>>> Stashed changes
                 return user.lower()  # JÃ¡ Ã© email
             
             # Se nÃ£o achou email, tentar construir baseado no domÃ­nio
@@ -706,18 +712,23 @@ async def democratic_training_demo():
     
     # SolicitaÃ§Ã£o 1: Treinamento de voz (pesado)
     print("\nðŸŽ¤ Solicitando treinamento de modelo de voz...")
+<<<<<<< Updated upstream
     task_id_voice = await network.request_distributed_task(
         TaskType.VOICE_TRAINING,
         duration_min=45,
         data_size_mb=500.0,
         priority=8
+=======
+    task_id_voice = await network.request_distributed_task(  # noqa: F841
+        TaskType.VOICE_TRAINING, duration_min=45, data_size_mb=500.0, priority=8
+>>>>>>> Stashed changes
     )
     
     await asyncio.sleep(3)
     
     # SolicitaÃ§Ã£o 2: Fine-tuning de LLM (muito pesado)
     print("\nðŸ§  Solicitando fine-tuning distribuÃ­do de LLM...")
-    task_id_llm = await network.request_distributed_task(
+    task_id_llm = await network.request_distributed_task(  # noqa: F841
         TaskType.LLM_FINETUNING,
         duration_min=120,
         data_size_mb=2000.0, 

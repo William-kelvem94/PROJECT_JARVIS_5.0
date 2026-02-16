@@ -66,12 +66,21 @@ try:
     
     # Silence should return False (RMS ~ 0)
     silence = np.zeros(512, dtype=np.int16)
+<<<<<<< Updated upstream
     assert audio_sys._check_voice_activity(silence) == False, "Silence should be False"
     
     # Loud signal should return True (RMS >> 500)
     loud = np.full(512, 10000, dtype=np.int16)
     assert audio_sys._check_voice_activity(loud) == True, "Loud should be True"
     
+=======
+    assert not audio_sys._check_voice_activity(silence), "Silence should be False"
+
+    # Loud signal should return True (RMS >> 500)
+    loud = np.full(512, 10000, dtype=np.int16)
+    assert audio_sys._check_voice_activity(loud), "Loud should be True"
+
+>>>>>>> Stashed changes
     print("  PASS")
     passed += 1
 except Exception as e:

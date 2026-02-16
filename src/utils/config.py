@@ -322,12 +322,17 @@ class Config:
             import subprocess
             subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
             return True
+<<<<<<< Updated upstream
         except:
             # Fallback para torch se jÃ¡ estiver carregado em algum lugar
+=======
+        except Exception:
+            # Fallback para torch se já estiver carregado em algum lugar
+>>>>>>> Stashed changes
             try:
                 import torch
                 return torch.cuda.is_available()
-            except:
+            except Exception:
                 return False
 
     def _create_directories(self):
@@ -459,6 +464,7 @@ class Config:
                     ai_config = yaml.safe_load(f)
                 
                 # Validar configuração
+<<<<<<< Updated upstream
                 try:
                     validated_config = AIConfigSchema(**ai_config)
                     logger.info("✅ Configurações de IA validadas com sucesso")
@@ -467,6 +473,17 @@ class Config:
                     # Usar valores padrão para campos inválidos
                     ai_config = self._get_default_ai_config()
                 
+=======
+                if PYDANTIC_AVAILABLE:
+                    try:
+                        validated_config = AIConfigSchema(**ai_config)  # noqa: F841
+                        logger.info("✅ Configurações de IA validadas com sucesso")
+                    except ValidationError as e:
+                        logger.error(f"❌ Configuração de IA inválida: {e}")
+                        # Usar valores padrão para campos inválidos
+                        ai_config = self._get_default_ai_config()
+
+>>>>>>> Stashed changes
                 logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
                 return ai_config
             except Exception as e:

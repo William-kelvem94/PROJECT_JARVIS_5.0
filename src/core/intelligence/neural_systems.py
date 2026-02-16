@@ -121,8 +121,13 @@ class NeuralSystemsLoader:
             api_key = os.environ.get("GEMINI_API_KEY")
             if self.config:
                 try:
+<<<<<<< Updated upstream
                     api_key = api_key or self.config.get_setting('brain.gemini_api_key')
                 except:
+=======
+                    api_key = api_key or self.config.get_setting("brain.gemini_api_key")
+                except Exception:
+>>>>>>> Stashed changes
                     pass
             
             from src.core.vision.vision_language_model import VisionQA
@@ -162,8 +167,13 @@ class NeuralSystemsLoader:
             api_key = os.environ.get("GEMINI_API_KEY")
             if self.config:
                 try:
+<<<<<<< Updated upstream
                     api_key = api_key or self.config.get_setting('brain.gemini_api_key')
                 except:
+=======
+                    api_key = api_key or self.config.get_setting("brain.gemini_api_key")
+                except Exception:
+>>>>>>> Stashed changes
                     pass
             
             from src.core.intelligence.react_agent import ReActAgent

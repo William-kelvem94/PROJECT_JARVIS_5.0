@@ -18,7 +18,13 @@ Philosophy:
 - Security: Audit log for privileged operations
 """
 
+<<<<<<< Updated upstream
 import os
+=======
+import logging
+import shlex
+import subprocess
+>>>>>>> Stashed changes
 import sys
 import subprocess
 import logging
@@ -30,6 +36,23 @@ from dataclasses import dataclass
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+SAFE_SHELL_EXECUTABLES = {
+    "python",
+    "python3",
+    "pip",
+    "git",
+    "ollama",
+    "whoami",
+    "hostname",
+    "ipconfig",
+    "tasklist",
+    "systeminfo",
+    "wmic",
+    "powershell",
+    "pwsh",
+    "uname",
+}
 
 # ============================================================================
 # CONDITIONAL IMPORTS (Platform-specific)
@@ -46,27 +69,49 @@ WINDOWS = sys.platform == 'win32'
 
 if WINDOWS:
     try:
+<<<<<<< Updated upstream
         import win32gui
         import win32con
         import win32process
         import win32api
         import win32com.client
+=======
+        import win32api  # noqa: F401
+        import win32com.client  # noqa: F401
+        import win32con
+        import win32gui
+        import win32process
+
+>>>>>>> Stashed changes
         PYWIN32_AVAILABLE = True
     except ImportError:
         PYWIN32_AVAILABLE = False
         logger.warning("âš ï¸ pywin32 not available - Windows API features disabled")
         
     try:
+<<<<<<< Updated upstream
         from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume, ISimpleAudioVolume
         from comtypes import CLSCTX_ALL
         import comtypes
+=======
+        import comtypes  # noqa: F401
+        from comtypes import CLSCTX_ALL  # noqa: F401
+        from pycaw.pycaw import AudioUtilities  # noqa: F401
+        from pycaw.pycaw import IAudioEndpointVolume, ISimpleAudioVolume
+
+>>>>>>> Stashed changes
         PYCAW_AVAILABLE = True
     except ImportError:
         PYCAW_AVAILABLE = False
         logger.warning("âš ï¸ pycaw not available - audio control disabled")
         
     try:
+<<<<<<< Updated upstream
         import wmi
+=======
+        import wmi  # noqa: F401
+
+>>>>>>> Stashed changes
         WMI_AVAILABLE = True
     except ImportError:
         WMI_AVAILABLE = False
@@ -584,7 +629,7 @@ class SystemIntegrator:
                     'bytes_sent': net.bytes_sent,
                     'bytes_recv': net.bytes_recv
                 }
-            except:
+            except Exception:
                 pass
                 
             # Battery (if laptop)
@@ -595,7 +640,7 @@ class SystemIntegrator:
                         'percent': battery.percent,
                         'plugged': battery.power_plugged
                     }
-            except:
+            except Exception:
                 pass
                 
         except Exception as e:
@@ -615,12 +660,21 @@ class SystemIntegrator:
             (success, output)
         """
         try:
+<<<<<<< Updated upstream
             result = subprocess.run(
                 command,
                 shell=True,
                 capture_output=True,
                 text=True,
                 timeout=timeout
+=======
+            argv, validation_error = self._validate_shell_command(command)
+            if validation_error:
+                return False, validation_error
+
+            result = subprocess.run(
+                argv, shell=False, capture_output=True, text=True, timeout=timeout
+>>>>>>> Stashed changes
             )
             
             success = (result.returncode == 0)
@@ -640,7 +694,33 @@ class SystemIntegrator:
         except Exception as e:
             logger.error(f"Command failed: {e}")
             return False, str(e)
+<<<<<<< Updated upstream
             
+=======
+
+    def _validate_shell_command(self, command: str):
+        if not isinstance(command, str) or not command.strip():
+            return None, "Empty command."
+
+        blocked_operators = ("|", "&", ";", ">", "<", "`", "$(")
+        if any(op in command for op in blocked_operators):
+            return None, "Shell operators are not allowed."
+
+        try:
+            argv = shlex.split(command, posix=False)
+        except ValueError:
+            return None, "Invalid command syntax."
+
+        if not argv:
+            return None, "Empty command."
+
+        executable = Path(argv[0]).name.lower()
+        if executable not in SAFE_SHELL_EXECUTABLES:
+            return None, f"Executable '{executable}' is not allowlisted."
+
+        return argv, None
+
+>>>>>>> Stashed changes
     def cleanup(self):
         """Cleanup resources"""
         logger.info("âœ… System Integrator cleaned up")
@@ -710,7 +790,11 @@ if __name__ == "__main__":
     # Test shell command
     print("\n4. Shell Command (systeminfo):")
     if WINDOWS:
+<<<<<<< Updated upstream
         success, output = si.execute_shell_command("systeminfo | findstr /C:\"OS Name\"")
+=======
+        success, output = si.execute_shell_command("systeminfo")
+>>>>>>> Stashed changes
         print(f"   {output.strip()}")
     else:
         success, output = si.execute_shell_command("uname -a")
