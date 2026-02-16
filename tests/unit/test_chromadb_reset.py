@@ -1,4 +1,5 @@
 """Teste pós-reset do ChromaDB"""
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
 
@@ -7,6 +8,9 @@ import pytest
 pytest.importorskip("chromadb")
 
 >>>>>>> Stashed changes
+=======
+
+>>>>>>> dev-new-version
 import sys
 from pathlib import Path
 
@@ -18,7 +22,7 @@ print("=" * 60)
 
 from src.core.intelligence.memory_manager import memory_manager
 
-print(f"\n✅ Memory Manager importado")
+print("\n✅ Memory Manager importado")
 print(f"   ChromaDB disponível: {memory_manager.collection is not None}")
 
 if memory_manager.collection:

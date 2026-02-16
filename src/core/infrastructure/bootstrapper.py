@@ -1,0 +1,165 @@
+"""
+JARVIS 5.0 - System Bootstrapper
+================================
+Encapsulates the system initialization logic, dependency injection,
+and boot sequence management.
+"""
+
+import logging
+from typing import Dict, Any
+
+from src.utils.config import config
+from src.core.infrastructure.boot_manager import BootManager, BootPriority
+
+logger = logging.getLogger("JARVIS-BOOTSTRAPPER")
+
+
+class SystemBootstrapper:
+    """
+    Handles the initialization of all core components using the BootManager.
+    Provides a unified interface for system startup.
+    """
+
+    def __init__(self, app_instance=None):
+        self.app = app_instance
+        self.boot_manager = BootManager()
+        self.instances = {}
+        self.event_bus = None
+
+    async def bootstrap(self) -> Dict[str, Any]:
+        """
+        Runs the full boot sequence.
+
+        Returns:
+            Dict containing initialized instances (window_manager, ai_agent, etc.)
+
+        Raises:
+            RuntimeError: If critical components fail to load.
+        """
+        logger.info("🚀 Starting JARVIS System Bootstrap...")
+
+        # 1. Initialize Event Bus (Critical Infrastructure)
+        await self._init_event_bus()
+
+        # 2. Register Core Components
+        self._register_components()
+
+        # 3. Execute Boot Sequence
+        success = self.boot_manager.start_boot()
+
+        if not success:
+            logger.critical("❌ Boot Sequence FAILED")
+            raise RuntimeError("System failed to boot correctly.")
+
+        self.instances = self.boot_manager.instances
+        logger.info("✅ System Bootstrap COMPLETED successfully")
+
+        return self.instances
+
+    async def _init_event_bus(self):
+        """Initializes the async event bus."""
+        try:
+            from src.core.infrastructure.async_event_bus import AsyncEventBus
+
+            self.event_bus = AsyncEventBus()
+            logger.info("✅ AsyncEventBus initialized")
+
+            # Register immediately as it's a dependency for others
+            self.boot_manager.register_module(
+                "event_bus", lambda: self.event_bus, BootPriority.CRITICAL, []
+            )
+        except ImportError:
+            logger.warning(
+                "⚠️ AsyncEventBus not available. System using sync fallback."
+            )
+
+    def _register_components(self):
+        """Registers all system components with the BootManager."""
+
+        # Window Manager (GUI)
+        if self.app:
+            self.boot_manager.register_module(
+                "window_manager", self._init_window_manager, BootPriority.HIGH, []
+            )
+
+        # System Integrator (Actions)
+        self.boot_manager.register_module(
+            "system_integrator",
+            self._init_system_integrator,
+            BootPriority.MEDIUM,
+            ["window_manager"] if self.app else [],
+        )
+
+        # Audio System
+        self.boot_manager.register_module(
+            "audio_system",
+            self._init_audio_system,
+            BootPriority.MEDIUM,
+            ["system_integrator"],
+        )
+
+        # Vision System
+        self.boot_manager.register_module(
+            "vision_system",
+            self._init_vision_system,
+            BootPriority.MEDIUM,
+            ["system_integrator"],
+        )
+
+        # AI Agent (The Brain)
+        self.boot_manager.register_module(
+            "ai_agent",
+            self._init_ai_agent,
+            BootPriority.MEDIUM,
+            ["audio_system", "vision_system"],
+        )
+
+    # --- Factory Methods (Lazy Loading) ---
+
+    def _init_window_manager(self):
+        if not self.app:
+            return None
+        try:
+            from src.interface.window_manager import get_window_manager
+
+            return get_window_manager(self.app)
+        except ImportError as e:
+            logger.error(f"Failed to load WindowManager: {e}")
+            return None
+
+    def _init_system_integrator(self):
+        try:
+            # Dynamic import to avoid circular deps
+            from src.core.actions.system_integrator import get_system_integrator
+
+            return get_system_integrator()
+        except ImportError as e:
+            logger.error(f"Failed to load SystemIntegrator: {e}")
+            return None
+
+    def _init_audio_system(self):
+        try:
+            from src.core.audio.enhanced_audio import get_audio_system
+
+            return get_audio_system(config.DATA_DIR, event_bus=self.event_bus)
+        except ImportError as e:
+            logger.error(f"Failed to load AudioSystem: {e}")
+            return None
+
+    def _init_vision_system(self):
+        try:
+            from src.core.vision.vision_system import get_vision_system
+
+            return get_vision_system(config.DATA_DIR, event_bus=self.event_bus)
+        except ImportError as e:
+            logger.error(f"Failed to load VisionSystem: {e}")
+            return None
+
+    def _init_ai_agent(self):
+        try:
+            from src.core.intelligence.ai_agent import ai_agent
+
+            return ai_agent
+        except ImportError as e:
+            logger.error(f"Failed to load AI Agent: {e}")
+            return None

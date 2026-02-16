@@ -3,11 +3,13 @@
 JARVIS 5.0 - Verificador de Conhecimento Adquirido
 Demonstra que o treinamento é REAL, não simulação
 """
+
 import sys
-import os
 import json
 from pathlib import Path
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def mostrar_conhecimento_adquirido():
     """Mostra todo o conhecimento que o JARVIS adquiriu"""
@@ -33,24 +35,24 @@ def mostrar_conhecimento_adquirido():
 
     for i, file_path in enumerate(files, 1):
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            topic = data.get('topic', 'Tópico desconhecido')
-            total_examples = data.get('metadata', {}).get('total_examples', 0)
-            method = data.get('metadata', {}).get('method', 'desconhecido')
+            topic = data.get("topic", "Tópico desconhecido")
+            total_examples = data.get("metadata", {}).get("total_examples", 0)
+            method = data.get("metadata", {}).get("method", "desconhecido")
 
             print(f"{i}. 🎯 {topic}")
             print(f"   📊 Exemplos: {total_examples}")
             print(f"   🔧 Método: {method}")
 
             # Mostrar alguns exemplos
-            examples = data.get('examples', [])
+            examples = data.get("examples", [])
             if examples:
                 print("   📝 Exemplos aprendidos:")
                 for j, example in enumerate(examples[:2], 1):  # Máximo 2 exemplos
-                    instruction = example.get('instruction', '')[:80]
-                    output = example.get('output', '')[:80]
+                    instruction = example.get("instruction", "")[:80]
+                    output = example.get("output", "")[:80]
                     print(f"      {j}. Q: {instruction}...")
                     print(f"         R: {output}...")
                 if len(examples) > 2:
@@ -60,6 +62,7 @@ def mostrar_conhecimento_adquirido():
         except Exception as e:
             print(f"❌ Erro ao carregar {file_path.name}: {e}")
             print()
+
 
 def testar_conhecimento():
     """Permite testar o conhecimento adquirido"""
@@ -75,13 +78,14 @@ def testar_conhecimento():
 
     # Escolher um tópico aleatório
     import random
+
     file_path = random.choice(files)
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        examples = data.get('examples', [])
+        examples = data.get("examples", [])
         if not examples:
             print("❌ Este tópico não tem exemplos para testar")
             return
@@ -103,6 +107,7 @@ def testar_conhecimento():
     except Exception as e:
         print(f"❌ Erro ao testar conhecimento: {e}")
 
+
 def demonstrar_rede_neural():
     """Demonstra que há uma rede neural real funcionando"""
     print("\n🧠 DEMONSTRAÇÃO: REDE NEURAL REAL (AGORA COM FINE-TUNING!)")
@@ -122,16 +127,16 @@ def demonstrar_rede_neural():
                     metadata_file = model_dir / "training_metadata.json"
                     adapter_file = model_dir / "adapter_model.safetensors"
 
-                    topic = model_dir.name.replace('_', ' ')
+                    topic = model_dir.name.replace("_", " ")
                     print(f"🤖 Modelo: {topic}")
 
                     if metadata_file.exists():
                         try:
-                            with open(metadata_file, 'r', encoding='utf-8') as f:
+                            with open(metadata_file, "r", encoding="utf-8") as f:
                                 metadata = json.load(f)
-                            loss = metadata.get('final_loss', 'N/A')
-                            samples = metadata.get('training_samples', 'N/A')
-                            method = metadata.get('method', 'N/A')
+                            loss = metadata.get("final_loss", "N/A")
+                            samples = metadata.get("training_samples", "N/A")
+                            method = metadata.get("method", "N/A")
                             print(f"   📊 Loss final: {loss}")
                             print(f"   📝 Amostras: {samples}")
                             print(f"   🔧 Método: {method}")
@@ -139,7 +144,7 @@ def demonstrar_rede_neural():
                             print("   ⚠️  Metadados corrompidos")
 
                     if adapter_file.exists():
-                        size_mb = adapter_file.stat().st_size / (1024*1024)
+                        size_mb = adapter_file.stat().st_size / (1024 * 1024)
                         print(f"   💾 LoRA adapter: {size_mb:.1f} MB")
                     else:
                         print("   ❌ Arquivo LoRA não encontrado")
@@ -154,11 +159,15 @@ def demonstrar_rede_neural():
     models_dir = Path("models")
     if models_dir.exists():
         model_files = list(models_dir.rglob("*"))
-        factory_models = [f for f in model_files if f.suffix in ['.pt', '.bin', '.safetensors'] and 'trained' not in str(f)]
+        factory_models = [
+            f
+            for f in model_files
+            if f.suffix in [".pt", ".bin", ".safetensors"] and "trained" not in str(f)
+        ]
         if factory_models:
             print("📦 MODELOS DE FÁBRICA (não treinados):")
             for model_file in factory_models[:3]:  # Máximo 3
-                size_mb = model_file.stat().st_size / (1024*1024)
+                size_mb = model_file.stat().st_size / (1024 * 1024)
                 print(f"   📁 {model_file.name} ({size_mb:.1f} MB)")
             print()
 
@@ -168,6 +177,7 @@ def demonstrar_rede_neural():
     print("• Metadados de fine-tuning")
     print("• Modelos base + adaptações treinadas")
     print("• Fine-tuning incremental possível")
+
 
 def main():
     while True:
@@ -202,6 +212,7 @@ def main():
             print(f"❌ Erro: {e}")
 
         input("\n⏸️  Pressione Enter para continuar...")
+
 
 if __name__ == "__main__":
     main()

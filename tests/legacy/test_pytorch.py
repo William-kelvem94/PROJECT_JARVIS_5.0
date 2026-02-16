@@ -2,7 +2,9 @@
 🔬 Test PyTorch Installation
 Quick diagnostic for torch/torchvision
 """
+
 import sys
+
 print("=" * 70)
 print("[DIAGNOSTIC] PYTORCH DIAGNOSTIC TEST")
 print("=" * 70)
@@ -11,6 +13,7 @@ print("=" * 70)
 print("\n[TEST 1] Importing torch...")
 try:
     import torch
+
     print("[OK] torch imported")
     print(f"   Version: {torch.__version__}")
     print(f"   Location: {torch.__file__}")
@@ -22,6 +25,7 @@ except Exception as e:
 print("\n[TEST 2] Importing torchvision...")
 try:
     import torchvision
+
     print("[OK] torchvision imported")
     print(f"   Version: {torchvision.__version__}")
 except Exception as e:
@@ -44,7 +48,7 @@ except Exception as e:
 # Test 4: CUDA availability
 print("\n[TEST 4] CUDA availability...")
 if torch.cuda.is_available():
-    print(f"[OK] CUDA AVAILABLE")
+    print("[OK] CUDA AVAILABLE")
     print(f"   Device: {torch.cuda.get_device_name(0)}")
     print(f"   CUDA Version: {torch.version.cuda}")
 else:
@@ -54,15 +58,15 @@ else:
 print("\n[TEST 5] Creating simple neural network...")
 try:
     import torch.nn as nn
-    
+
     class TestModel(nn.Module):
         def __init__(self):
             super().__init__()
             self.fc = nn.Linear(10, 1)
-        
+
         def forward(self, x):
             return self.fc(x)
-    
+
     model = TestModel()
     test_input = torch.randn(1, 10)
     output = model(test_input)

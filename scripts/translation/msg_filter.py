@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import sys
+
 translations = {}
-with open('commit_translations_map.txt', 'r', encoding='utf-8') as f:
+with open("commit_translations_map.txt", "r", encoding="utf-8") as f:
     for line in f:
-        if '|||' in line:
-            hash_c, trans = line.strip().split('|||', 1)
+        if "|||" in line:
+            hash_c, trans = line.strip().split("|||", 1)
             translations[hash_c] = trans
 
 commit_msg = sys.stdin.read().strip()

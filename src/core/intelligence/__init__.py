@@ -31,12 +31,12 @@ from .perception_engine import PerceptionEngine
 from .knowledge_graph import KnowledgeGraph
 
 __all__ = [
-    'AIAgent',
-    'DecisionEngine',
-    'MemoryManager',
-    'memory_manager',
-    'ContextSanitizer',
-    'NeuralSystemsLoader',
-    'PerceptionEngine',
-    'KnowledgeGraph'
+    "AIAgent",
+    "DecisionEngine",
+    "MemoryManager",
+    "memory_manager",
+    "ContextSanitizer",
+    "NeuralSystemsLoader",
+    "PerceptionEngine",
+    "KnowledgeGraph",
 ]

@@ -3,8 +3,8 @@
 
 <<<<<<< Updated upstream
 import sys
-import os
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
 
 try:
     from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow
@@ -14,6 +14,7 @@ import os
 
 import pytest
 
+<<<<<<< HEAD
 
 def _get_qapplication():
     from PyQt6.QtWidgets import QApplication
@@ -50,6 +51,11 @@ def test_window_instantiation_offscreen():
 
 <<<<<<< Updated upstream
             label = QLabel("✅ JARVIS Interface is working!\n\nThe GUI framework is functional.")
+=======
+            label = QLabel(
+                "✅ JARVIS Interface is working!\n\nThe GUI framework is functional."
+            )
+>>>>>>> dev-new-version
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.setCentralWidget(label)
 =======
@@ -65,7 +71,10 @@ def test_window_instantiation_offscreen():
 except Exception as e:
     print(f"❌ Interface test failed: {e}")
     sys.exit(1)
+<<<<<<< HEAD
 =======
     assert window.windowTitle() == "JARVIS 5.0 - Interface Test"
     window.close()
 >>>>>>> Stashed changes
+=======
+>>>>>>> dev-new-version

@@ -4,13 +4,14 @@ Encapsulates all system prompts and identity logic.
 """
 
 import logging
-from typing import List, Optional
+from typing import List
 
 logger = logging.getLogger(__name__)
 
+
 class AgentPromptManager:
     """Manages identity, system prompts and personality for the AI Agent."""
-    
+
     def __init__(self):
         # Default wake words
         self._wake_words = ["jarvis", "singularity", "stark"]
@@ -21,7 +22,8 @@ class AgentPromptManager:
         """Syncs nicknames with AtomicVoiceFilter."""
         try:
             from src.core.audio.voice_filter import AtomicVoiceFilter
-            if hasattr(AtomicVoiceFilter, 'WAKE_WORDS'):
+
+            if hasattr(AtomicVoiceFilter, "WAKE_WORDS"):
                 self._wake_words = list(AtomicVoiceFilter.WAKE_WORDS)
         except Exception:
             pass
@@ -29,7 +31,7 @@ class AgentPromptManager:
     def get_system_prompt(self, use_structured: bool = True) -> str:
         """Returns the main system prompt (Structured or Legacy)."""
         nicknames = ", ".join(self._wake_words)
-        
+
         if use_structured:
             return (
                 "IDENTITY:\n"
@@ -74,18 +76,26 @@ class AgentPromptManager:
     def should_engage(self, text: str, user_looking: bool = False) -> bool:
         """Determines if the input text is directed at the agent."""
         text_lower = text.lower()
-        
+
         # 1. Identity Check
         if any(word in text_lower for word in self._wake_words):
             return True
-            
+
         # 2. Visual Check
         if user_looking:
             return True
-            
+
         # 3. Direct Action Commands
-        direct_keywords = ["abra", "inicie", "pesquise", "mostra", "ajuda", "verificar", "executar"]
+        direct_keywords = [
+            "abra",
+            "inicie",
+            "pesquise",
+            "mostra",
+            "ajuda",
+            "verificar",
+            "executar",
+        ]
         if any(word in text_lower for word in direct_keywords):
             return True
-            
+
         return False

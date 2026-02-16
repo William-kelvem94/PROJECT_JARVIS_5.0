@@ -18,6 +18,7 @@ os.environ.setdefault("JARVIS_TEST_MODE", "1")
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
+
 @pytest.fixture
 def mock_config():
     return {

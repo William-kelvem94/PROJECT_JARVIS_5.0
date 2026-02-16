@@ -23,4 +23,4 @@ except Exception as e:
     # For now, let's allow it to fail or provide a minimal stub if crucial
     neural_memory = None
 
-__all__ = ['neural_memory', 'UnifiedMemoryManager']
+__all__ = ["neural_memory", "UnifiedMemoryManager"]

@@ -7,67 +7,149 @@ Detecta a intenÃ§Ã£o e o domÃ­nio do comando do William.
 """
 
 import logging
-import re
-from typing import Dict, Any, List
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
+
 class AnalisadorContexto:
     """O 'LÃ³bulo Frontal' do Jarvis para detecÃ§Ã£o de intenÃ§Ã£o"""
-    
+
     def __init__(self):
         self.categorias = {
-            "PROGRAMACAO": ["api", "json", "python", "backend", "deploy", "bug", "log", "cÃ³digo", "desenvolver", "git", "stack", "react", "node", "database", "sql"],
-            "PSICOLOGIA": ["relacionamento", "namorada", "sentimento", "trauma", "terapia", "mente", "psicologia", "emoÃ§Ã£o", "conversa"],
-            "HARDWARE": ["cpu", "gpu", "ram", "swap", "temperatura", "clima", "brilho", "volume", "processamento", "iris"],
-            "MULTIMIDIA": ["mÃºsica", "youtube", "ouvir", "video", "play", "pause", "navegador", "chrome", "edge", "spotify"],
-            "AUTONOMIA": ["estude", "estudar", "treine", "treinar", "aprenda", "aprender", "pesquise", "pesquisar", "nexus", "sonhe", "sonhar", "idle", "evoluir"],
-            "NEGOCIOS": ["aluguel", "gestor", "vendas", "cliente", "projeto", "financeiro", "planilha"]
+            "PROGRAMACAO": [
+                "api",
+                "json",
+                "python",
+                "backend",
+                "deploy",
+                "bug",
+                "log",
+                "cÃ³digo",
+                "desenvolver",
+                "git",
+                "stack",
+                "react",
+                "node",
+                "database",
+                "sql",
+            ],
+            "PSICOLOGIA": [
+                "relacionamento",
+                "namorada",
+                "sentimento",
+                "trauma",
+                "terapia",
+                "mente",
+                "psicologia",
+                "emoÃ§Ã£o",
+                "conversa",
+            ],
+            "HARDWARE": [
+                "cpu",
+                "gpu",
+                "ram",
+                "swap",
+                "temperatura",
+                "clima",
+                "brilho",
+                "volume",
+                "processamento",
+                "iris",
+            ],
+            "MULTIMIDIA": [
+                "mÃºsica",
+                "youtube",
+                "ouvir",
+                "video",
+                "play",
+                "pause",
+                "navegador",
+                "chrome",
+                "edge",
+                "spotify",
+            ],
+            "AUTONOMIA": [
+                "estude",
+                "estudar",
+                "treine",
+                "treinar",
+                "aprenda",
+                "aprender",
+                "pesquise",
+                "pesquisar",
+                "nexus",
+                "sonhe",
+                "sonhar",
+                "idle",
+                "evoluir",
+            ],
+            "NEGOCIOS": [
+                "aluguel",
+                "gestor",
+                "vendas",
+                "cliente",
+                "projeto",
+                "financeiro",
+                "planilha",
+            ],
         }
-    
-    def analisar(self, comando: str, vision_text: str = "", window_info: Dict[str, Any] = None) -> Dict[str, Any]:
+
+    def analisar(
+        self, comando: str, vision_text: str = "", window_info: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         """Retorna o contexto predominante e metadados do comando + visÃ£o + janela ativa"""
-        window_title = window_info.get('title', '') if window_info else ''
-        process_name = window_info.get('process_name', '') if window_info else ''
-        
+        window_title = window_info.get("title", "") if window_info else ""
+        process_name = window_info.get("process_name", "") if window_info else ""
+
         merged_text = f"{comando} {vision_text} {window_title} {process_name}".lower()
         scores = {cat: 0 for cat in self.categorias}
-        
+
         # Universal Discovery: Detectar se Ã© um novo programa
         discovered_app = None
-        if process_name and process_name.lower() not in ["explorer.exe", "svchost.exe", "python.exe"]:
-             discovered_app = process_name
-        
+        if process_name and process_name.lower() not in [
+            "explorer.exe",
+            "svchost.exe",
+            "python.exe",
+        ]:
+            discovered_app = process_name
+
         for categoria, palavras in self.categorias.items():
             for palavra in palavras:
                 if palavra in merged_text:
                     # Pesos baseados na origem da informaÃ§Ã£o
                     weight = 1.5
-                    if vision_text and palavra in vision_text.lower(): weight = 3.0
-                    if window_title and palavra in window_title.lower(): weight = 4.0
-                    
-                    if categoria == "AUTONOMIA": weight += 1.0
+                    if vision_text and palavra in vision_text.lower():
+                        weight = 3.0
+                    if window_title and palavra in window_title.lower():
+                        weight = 4.0
+
+                    if categoria == "AUTONOMIA":
+                        weight += 1.0
                     scores[categoria] += weight
-        
-        # LÃ“GICA DE PRECEDÃŠNCIA STARK: 
+
+        # LÃ“GICA DE PRECEDÃŠNCIA STARK:
         if scores["AUTONOMIA"] >= 2.5:
-             scores["AUTONOMIA"] += 5.0
+            scores["AUTONOMIA"] += 5.0
 
         contexto_principal = max(scores, key=scores.get)
-        
+
         if scores[contexto_principal] < 1.0:
             contexto_principal = "GERAL"
-            
-        logger.info(f"ðŸ§  Contexto: {contexto_principal} | App: {process_name} | Win: {window_title}")
-        
+
+        logger.info(
+            f"ðŸ§  Contexto: {contexto_principal} | App: {process_name} | Win: {window_title}"
+        )
+
         return {
             "contexto": contexto_principal,
             "scores": scores,
             "tokens": merged_text.split(),
             "active_app": process_name,
             "window_title": window_title,
-            "discovered_app": discovered_app
+            "discovered_app": discovered_app,
         }
+
 
 # InstÃ¢ncia global
 analisador_contexto = AnalisadorContexto()

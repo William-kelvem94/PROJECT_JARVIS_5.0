@@ -35,26 +35,28 @@ from .module_generator import module_generator
 from .authorization_manager import authorization_manager
 from .voice_commands import evolution_voice_commands
 
+
 # Legacy functions for backward compatibility
 async def start_evolution_services():
     """Inicia todos os serviços de evolução"""
     await evolution_manager.start()
 
+
 async def stop_evolution_services():
     """Para todos os serviços de evolução"""
     await evolution_manager.stop()
 
-__all__ = [
-    'evolution_manager',
-    'self_observer',
-    'advanced_metrics_collector',
-    'auto_healer',
-    'safe_executor',
-    'knowledge_db',
-    'module_generator',
-    'authorization_manager',
-    'evolution_voice_commands',
-    'start_evolution_services',
-    'stop_evolution_services'
-]
 
+__all__ = [
+    "evolution_manager",
+    "self_observer",
+    "advanced_metrics_collector",
+    "auto_healer",
+    "safe_executor",
+    "knowledge_db",
+    "module_generator",
+    "authorization_manager",
+    "evolution_voice_commands",
+    "start_evolution_services",
+    "stop_evolution_services",
+]

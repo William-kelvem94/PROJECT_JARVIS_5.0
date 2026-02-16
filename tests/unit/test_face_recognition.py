@@ -10,9 +10,10 @@ image = np.zeros((100, 100, 3), dtype=np.uint8)
 try:
     # Testa a função básica de localização (não deve encontrar nada, mas não deve dar erro)
     face_locations = face_recognition.face_locations(image)
-    print(f"✅ face_recognition funcionando! Módulo carregado e executando.")
+    print("✅ face_recognition funcionando! Módulo carregado e executando.")
     print(f"   Faces encontradas na imagem teste: {len(face_locations)}")
 except Exception as e:
     print(f"❌ face_recognition falhou na execução: {e}")
     import traceback
+
     traceback.print_exc()

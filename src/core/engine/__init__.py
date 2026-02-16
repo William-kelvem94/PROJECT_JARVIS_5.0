@@ -7,4 +7,4 @@ from .autonomy import *
 from .code_generator import CodeGenerator
 from .codebase_indexer import CodebaseIndexer
 
-__all__ = ['AutonomyCore', 'CodeGenerator', 'CodebaseIndexer']
+__all__ = ["AutonomyCore", "CodeGenerator", "CodebaseIndexer"]
