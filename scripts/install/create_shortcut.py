@@ -3,18 +3,38 @@ import platform
 import subprocess
 from pathlib import Path
 
-def create_shortcut():
-    """Cria um atalho para o JARVIS no Desktop (Cross-platform)"""
+def create_shortcut(prefer_minimal: bool = False):
+    """Cria um atalho para o JARVIS no Desktop (Cross-platform).
+    Se `prefer_minimal` for True tenta usar `start_jarvis_minimal.bat` quando disponível.
+    """
     system = platform.system()
     # Resolver caminhos absolutos
     current_script_path = Path(__file__).resolve()
     project_root = current_script_path.parent.parent.parent
     if system == "Windows":
-        target_script = project_root / "start_jarvis.bat"
+        # Prefer minimal launcher if requested and available
+        minimal_script = project_root / "scripts" / "launchers" / "start_jarvis_minimal.bat"
+        default_script = project_root / "start_jarvis.bat"
+
+        # Decide target script: prefer minimal if asked and exists, else ask user if both exist
+        if prefer_minimal and minimal_script.exists():
+            target_script = minimal_script
+        else:
+            # If minimal exists, offer choice
+            if minimal_script.exists() and default_script.exists():
+                choice = input("Detectei 'start_jarvis_minimal.bat'. Criar atalho para (1) full (start_jarvis.bat) ou (2) minimal? [2]: ") or "2"
+                if choice.strip() == "1":
+                    target_script = default_script
+                else:
+                    target_script = minimal_script
+            else:
+                target_script = default_script
+
         if not target_script.exists():
             print(f"❌ Arquivo de inicialização não encontrado: {target_script}")
             print("   Não foi possível criar o atalho. Verifique se o script de inicialização foi gerado corretamente.")
             return
+
         shortcut_name = input("Nome do atalho (padrão: JARVIS 5.0): ") or "JARVIS 5.0"
         custom_icon = project_root / "resources" / "icon.ico"
         if not custom_icon.exists():
@@ -121,4 +141,10 @@ if __name__ == "__main__":
     - Se houver problemas, verifique permissões, dependências ou execute novamente.
     =============================================
     """)
-    create_shortcut()
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Criador de atalho JARVIS 5.0')
+    parser.add_argument('--minimal', action='store_true', help='Criar atalho apontando para start_jarvis_minimal.bat quando disponível')
+    args = parser.parse_args()
+
+    create_shortcut(prefer_minimal=args.minimal)
