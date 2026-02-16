@@ -778,6 +778,7 @@ class AIAgent:
         """
         Recebe um comando (texto ou voz), captura a tela e decide o que fazer
         """
+        start_time = time.time()
         all_actions = [] # Rastreamento para Fase 4 (DestilaÃ§Ã£o)
         original_command = user_command
         logger.info(f"Agente processando comando: {user_command}")
@@ -1164,11 +1165,13 @@ class AIAgent:
                 learning_engine = get_learning_engine()
                 if learning_engine and learning_engine.is_initialized:
                     # Coletar metadados da interaÃ§Ã£o
+                    latency = time.time() - start_time
                     metadata = {
                         'provider': primary_provider,
                         'turns': current_turn + 1,
                         'actions_executed': len(all_actions),
-                        'emotion': user_emotion if camera_controller else 'neutral'
+                        'emotion': user_emotion if camera_controller else 'neutral',
+                        'latency': latency
                     }
                     
                     # Registrar interação para aprendizado e dinâmica interpessoal

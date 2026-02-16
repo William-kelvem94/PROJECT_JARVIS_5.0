@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Callable
 import yaml
 import threading
+import difflib
 
 # Import new advanced components
 from .dependency_manager import dependency_manager
@@ -440,11 +441,29 @@ class LearningEngine:
         try:
             # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
             if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
                 feedback_value = 0.5  # Neutro por padrÃ£o
+
+                # Heurística 1: Repetição (Sinal de frustração)
+                # Se o usuário repete o comando, provavelmente a resposta anterior foi ruim
+                last_interaction = self.feedback_loop.get_last_interaction()
+                if last_interaction and last_interaction.user_input:
+                    similarity = difflib.SequenceMatcher(None, user_input.lower(), last_interaction.user_input.lower()).ratio()
+                    if similarity > 0.85:
+                        feedback_value = -0.5  # Penaliza repetição
+                        logger.info(f"Implicit Feedback: Repetition detected (Similarity: {similarity:.2f}) -> -0.5")
+
+                # Heurística 2: Latência do Sistema (Sinal de performance ruim)
+                if metadata and 'latency' in metadata:
+                    latency = metadata['latency']
+                    if latency > 10.0:
+                        feedback_value -= 0.3
+                        logger.info(f"Implicit Feedback: High Latency ({latency:.2f}s) -> Penalty -0.3")
+                    elif latency > 5.0:
+                        feedback_value -= 0.1
+                        logger.info(f"Implicit Feedback: Moderate Latency ({latency:.2f}s) -> Penalty -0.1")
+
+                # Clamp value
+                feedback_value = max(-1.0, min(1.0, feedback_value))
             
             from src.learning.feedback_loop import FeedbackEntry
             import hashlib
@@ -506,11 +525,29 @@ class LearningEngine:
         try:
             # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
             if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
                 feedback_value = 0.5  # Neutro por padrÃ£o
+
+                # Heurística 1: Repetição (Sinal de frustração)
+                # Se o usuário repete o comando, provavelmente a resposta anterior foi ruim
+                last_interaction = self.feedback_loop.get_last_interaction()
+                if last_interaction and last_interaction.user_input:
+                    similarity = difflib.SequenceMatcher(None, user_input.lower(), last_interaction.user_input.lower()).ratio()
+                    if similarity > 0.85:
+                        feedback_value = -0.5  # Penaliza repetição
+                        logger.info(f"Implicit Feedback: Repetition detected (Similarity: {similarity:.2f}) -> -0.5")
+
+                # Heurística 2: Latência do Sistema (Sinal de performance ruim)
+                if metadata and 'latency' in metadata:
+                    latency = metadata['latency']
+                    if latency > 10.0:
+                        feedback_value -= 0.3
+                        logger.info(f"Implicit Feedback: High Latency ({latency:.2f}s) -> Penalty -0.3")
+                    elif latency > 5.0:
+                        feedback_value -= 0.1
+                        logger.info(f"Implicit Feedback: Moderate Latency ({latency:.2f}s) -> Penalty -0.1")
+
+                # Clamp value
+                feedback_value = max(-1.0, min(1.0, feedback_value))
             
             from src.learning.feedback_loop import FeedbackEntry
             import hashlib

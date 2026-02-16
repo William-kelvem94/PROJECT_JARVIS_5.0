@@ -265,6 +265,23 @@ class FeedbackDatabase:
         except Exception as e:
             logger.error(f"Error getting preference pairs: {e}")
             return []
+
+    def get_last_interaction(self) -> Optional[FeedbackEntry]:
+        """Get the most recent interaction from the database."""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                SELECT * FROM feedback
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """)
+            row = cursor.fetchone()
+            if row:
+                return self._row_to_feedback(row)
+            return None
+        except Exception as e:
+            logger.error(f"Error getting last interaction: {e}")
+            return None
     
     def _row_to_feedback(self, row: sqlite3.Row) -> FeedbackEntry:
         """Convert database row to FeedbackEntry."""
@@ -747,6 +764,10 @@ class FeedbackLoop:
         except Exception as e:
             logger.error(f"Error analyzing feedback trends: {e}", exc_info=True)
             return {}
+
+    def get_last_interaction(self) -> Optional[FeedbackEntry]:
+        """Get the most recent interaction."""
+        return self.database.get_last_interaction()
     
     def _load_stats(self) -> None:
         """Load statistics from file."""
