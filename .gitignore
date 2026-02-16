@@ -66,7 +66,9 @@ models/yolo/
 .vscode/launch.json
 .vscode/tasks.json
 # Keep .vscode/settings.json and extensions.json if shared
-# .cursor/ is kept for context rules
+# Archived hidden folders (moved to .hidden_archive/)
+.antigravity/
+.cursor/
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION & SECRETS (CRITICAL)
