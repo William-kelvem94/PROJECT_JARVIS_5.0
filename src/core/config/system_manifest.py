@@ -90,6 +90,19 @@ class SystemConfig:
     async_enabled: bool = True
     multiprocessing_enabled: bool = True
     memory_limit_mb: int = 4096
+    
+    # Evolution Layer - Protected Files
+    # These files cannot be auto-modified without explicit human authorization
+    core_protected_files: List[str] = field(default_factory=lambda: [
+        "main.py",
+        "src/core/infrastructure/*",
+        "src/core/config/system_manifest.py",
+        "src/core/config/blackbox_logger.py",
+        "src/core/engine/*",
+        "src/evolution/evolution_manager.py",
+        "src/evolution/authorization_manager.py",
+        "src/evolution/safe_executor.py"
+    ])
 
 @dataclass
 class NetworkConfig:

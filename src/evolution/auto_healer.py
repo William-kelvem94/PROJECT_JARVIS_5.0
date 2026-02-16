@@ -19,7 +19,6 @@ Author: JARVIS 5.0 Evolution Layer
 import json
 import logging
 import asyncio
-import sqlite3
 import hashlib
 import requests
 from datetime import datetime
@@ -29,10 +28,9 @@ from pathlib import Path
 from src.core.config.system_manifest import system_manifest
 from src.core.infrastructure.async_event_bus import event_bus, EventType, EventPriority
 from src.core.infrastructure.async_event_bus import Event
+from src.evolution.knowledge_db import knowledge_db
 
 logger = logging.getLogger(__name__)
-
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "learning" / "knowledge.db"
 
 class AutoHealer:
     """
@@ -51,8 +49,8 @@ class AutoHealer:
             
         self.running = True
         
-        # Inscreve-se no relatório do observador
-        await event_bus.subscribe(
+        # Subscribe to observer reports (not async)
+        event_bus.subscribe(
             EventType.SYSTEM_OBSERVER_REPORT,
             self._handle_observer_report,
             priority_filter=[EventPriority.NORMAL]
@@ -137,6 +135,20 @@ class AutoHealer:
         plan = []
         
         for problem in problems:
+            # Record problem in knowledge base
+            problem_hash = problem.get("hash")
+            if problem_hash:
+                try:
+                    knowledge_db.record_problem(
+                        hash_value=problem_hash,
+                        module=problem.get("component") or problem.get("file") or "unknown",
+                        description=problem.get("message") or problem.get("details") or str(problem),
+                        severity=problem.get("severity", "medium"),
+                        problem_data=problem
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record problem in database: {e}")
+            
             # Check knowledge base first
             solution = self._check_knowledge_base(problem)
             
@@ -145,6 +157,9 @@ class AutoHealer:
                 solution = await self._consult_llm(problem)
             
             if solution:
+                # Attach problem_hash for knowledge tracking
+                if problem_hash:
+                    solution["problem_hash"] = problem_hash
                 plan.append(solution)
                 
         return plan
@@ -155,26 +170,17 @@ class AutoHealer:
             return None
             
         try:
-            with sqlite3.connect(DB_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT action_type, description, files_modified, code_diff 
-                    FROM solutions 
-                    JOIN problems ON solutions.problem_hash = problems.hash
-                    WHERE problems.hash = ? AND solutions.success = 1
-                    ORDER BY solutions.impact_score DESC
-                    LIMIT 1
-                """, (problem["hash"],))
-                
-                row = cursor.fetchone()
-                if row:
-                    return {
-                        "type": row[0],
-                        "description": row[1],
-                        "files": json.loads(row[2]) if row[2] else [],
-                        "diff": row[3],
-                        "source": "knowledge_base"
-                    }
+            solutions = knowledge_db.get_successful_solutions(problem["hash"], limit=1)
+            
+            if solutions:
+                sol = solutions[0]
+                return {
+                    "tipo": sol["action_type"],
+                    "descricao": sol["description"],
+                    "files": json.loads(sol["files_modified"]) if sol["files_modified"] else [],
+                    "codigo_corrigido": sol["code_diff"],
+                    "source": "knowledge_base"
+                }
         except Exception as e:
             logger.error(f"KB Lookup failed: {e}")
             

@@ -166,7 +166,13 @@ except (ImportError, AttributeError) as e:
     STARK_ORCHESTRATOR_AVAILABLE = False
 
 # Optional web server imports (loaded on demand)
-from src.core.management.neuro_sync import neuro_sync
+try:
+    from src.core.management.neuro_sync import neuro_sync
+    NEURO_SYNC_AVAILABLE = True
+except (ImportError, OSError) as e:
+    logger.warning(f"⚠️ NeuroSync not available (may need GUI libraries): {e}")
+    neuro_sync = None
+    NEURO_SYNC_AVAILABLE = False
 
 # Import Boot Manager for infrastructure initialization
 try:
@@ -1604,6 +1610,63 @@ Examples:
                 # Initialize Core
                 jarvis.start()
                 
+                # ========================================================================
+                # 🧬 EVOLUTION LAYER: Self-Healing & Auto-Organization System
+                # ========================================================================
+                # Initialize the Evolution Layer for autonomous system maintenance
+                # This enables self-observation, diagnosis, correction, and auto-development
+                evolution_enabled = os.environ.get("JARVIS_EVOLUTION_ENABLED", "true").lower() == "true"
+                
+                if evolution_enabled:
+                    try:
+                        logger.info("🧬 [EVOLUTION] Initializing Complete Self-Healing System...")
+                        from src.evolution import evolution_manager
+                        from src.core.config.system_manifest import system_manifest
+                        
+                        # Get protected files from system manifest
+                        protected_files = system_manifest.system.core_protected_files
+                        
+                        # Start evolution layer with all features
+                        async def start_evolution():
+                            try:
+                                await evolution_manager.start(
+                                    observer_interval=300,          # Check every 5 minutes
+                                    auto_heal=True,                 # Enable automatic corrections
+                                    initial_scan=True,              # Run initial health check
+                                    enable_module_generation=True,  # Enable auto-development
+                                    enable_voice_commands=True      # Enable voice control
+                                )
+                                logger.info("✅ [EVOLUTION] Complete Self-Healing System operational")
+                                logger.info("   ├─ Auto-Observation: ACTIVE")
+                                logger.info("   ├─ Auto-Diagnosis: ACTIVE")
+                                logger.info("   ├─ Auto-Correction: ACTIVE")
+                                logger.info("   ├─ Auto-Development: ACTIVE")
+                                logger.info("   ├─ Voice Commands: ACTIVE")
+                                logger.info("   └─ Protected Files: ENFORCED")
+                            except Exception as e:
+                                logger.error(f"❌ [EVOLUTION] Failed to start: {e}")
+                        
+                        # Run in event loop
+                        import asyncio
+                        try:
+                            loop = asyncio.get_event_loop()
+                        except RuntimeError:
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                        
+                        loop.create_task(start_evolution())
+                        
+                        # Add to instances for integration
+                        instances["evolution_manager"] = evolution_manager
+                        
+                        logger.info("🧬 [EVOLUTION] Integration complete - System is fully autonomous")
+                        
+                    except Exception as e:
+                        logger.warning(f"⚠️ [EVOLUTION] Could not initialize Evolution Layer: {e}")
+                        logger.warning("   System will continue without self-healing capabilities")
+                else:
+                    logger.info("⚠️ [EVOLUTION] Self-Healing System disabled (set JARVIS_EVOLUTION_ENABLED=true to enable)")
+                
                 # Stop checking
                 boot_checker.stop()
             elif boot_data["status"] == "failed":
@@ -1634,12 +1697,32 @@ Examples:
         traceback.print_exc()
         return 1
     finally:
-        # Garante a limpeza de recursos se o sistema fechar
+        # Ensure cleanup of resources when system shuts down
         # Note: instances and other vars are local to main, so we check local scope if possible
         # or just rely on OS cleanup since we are exiting.
         # But per user request, we add the logging.
         if 'logger' in globals():
-             logger.info("🧹 Encerrando instâncias e limpando memória...")
+            logger.info("🧹 Cleaning up and shutting down...")
+            
+            # Gracefully shutdown Evolution Layer if it was started
+            try:
+                if 'evolution_manager' in locals() or 'instances' in locals():
+                    if 'instances' in locals() and 'evolution_manager' in locals()['instances']:
+                        logger.info("🧬 [EVOLUTION] Shutting down Self-Healing System...")
+                        import asyncio
+                        from src.evolution import evolution_manager
+                        try:
+                            loop = asyncio.get_event_loop()
+                            if not loop.is_closed():
+                                loop.run_until_complete(evolution_manager.stop())
+                        except:
+                            # If event loop is not available, just log
+                            pass
+                        logger.info("✅ [EVOLUTION] Shutdown complete")
+            except Exception as e:
+                logger.warning(f"⚠️ [EVOLUTION] Shutdown warning: {e}")
+            
+            logger.info("🧹 Memory cleanup complete")
 
 if __name__ == "__main__":
     sys.exit(main())
