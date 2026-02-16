@@ -1039,10 +1039,16 @@ class ControlDashboard(QMainWindow):
             engine = get_learning_engine()
             
             if engine:
-                # TODO: Track last interaction ID
-                QMessageBox.information(self, "Feedback Sent", 
-                                       f"Thank you! Your feedback ({'+' if value > 0 else '-'}) will improve JARVIS.")
-                logger.info(f"User feedback: {value}")
+                if hasattr(engine, 'last_interaction_id') and engine.last_interaction_id:
+                    engine.record_explicit_feedback(
+                        interaction_id=engine.last_interaction_id,
+                        feedback_value=value
+                    )
+                    QMessageBox.information(self, "Feedback Sent",
+                                        f"Thank you! Your feedback ({'+' if value > 0 else '-'}) will improve JARVIS.")
+                    logger.info(f"User feedback: {value} for interaction {engine.last_interaction_id}")
+                else:
+                    QMessageBox.warning(self, "No Interaction", "No recent interaction found to rate.")
             else:
                 QMessageBox.warning(self, "Error", "Learning engine not available")
                 
@@ -1062,11 +1068,18 @@ class ControlDashboard(QMainWindow):
             engine = get_learning_engine()
             
             if engine:
-                # TODO: Store correction with last interaction
-                QMessageBox.information(self, "Correction Saved", 
-                                       "Your correction will be used for training!")
-                self.correction_edit.clear()
-                logger.info(f"User correction: {correction}")
+                if hasattr(engine, 'last_interaction_id') and engine.last_interaction_id:
+                    engine.record_explicit_feedback(
+                        interaction_id=engine.last_interaction_id,
+                        feedback_value=0.0, # Neutral feedback with correction implies negative but we leave as 0 or custom
+                        correction=correction
+                    )
+                    QMessageBox.information(self, "Correction Saved",
+                                        "Your correction will be used for training!")
+                    self.correction_edit.clear()
+                    logger.info(f"User correction: {correction} for interaction {engine.last_interaction_id}")
+                else:
+                    QMessageBox.warning(self, "No Interaction", "No recent interaction found to correct.")
             else:
                 QMessageBox.warning(self, "Error", "Learning engine not available")
                 
