@@ -15,10 +15,35 @@ from pathlib import Path
 from typing import Dict, Any
 
 from src.utils.config import config
-from src.core.intelligence.brain_router import brain_router
-from src.core.intelligence.memory import memory_manager
-from src.core.intelligence.local_brain import local_brain
-from src.interface.ui_signals import ui_signals
+
+# Optional imports with graceful fallbacks
+try:
+    from src.core.intelligence.brain_router import brain_router
+    BRAIN_ROUTER_AVAILABLE = True
+except (ImportError, OSError):
+    brain_router = None
+    BRAIN_ROUTER_AVAILABLE = False
+
+try:
+    from src.core.intelligence.memory import memory_manager
+    MEMORY_AVAILABLE = True
+except (ImportError, OSError):
+    memory_manager = None
+    MEMORY_AVAILABLE = False
+
+try:
+    from src.core.intelligence.local_brain import local_brain
+    LOCAL_BRAIN_AVAILABLE = True
+except (ImportError, OSError):
+    local_brain = None
+    LOCAL_BRAIN_AVAILABLE = False
+
+try:
+    from src.interface.ui_signals import ui_signals
+    UI_SIGNALS_AVAILABLE = True
+except (ImportError, OSError):
+    ui_signals = None
+    UI_SIGNALS_AVAILABLE = False
 
 logger = logging.getLogger("NeuroSync")
 
@@ -47,34 +72,48 @@ class NeuroSync:
 
     def _perform_sync(self):
         logger.info("🧠 Iniciando Sincronização Neural Stark...")
-        ui_signals.update_status.emit("Iniciando Sincronização Neural...")
+        
+        # Emit UI signal only if available
+        if UI_SIGNALS_AVAILABLE and ui_signals:
+            try:
+                ui_signals.update_status.emit("Iniciando Sincronização Neural...")
+            except:
+                pass  # UI not available, continue silently
         
         # 1. Verificar Ollama
-        try:
-            brain_router._discover_ollama_models()
-            models_count = len(brain_router.ollama_available_models)
-            if models_count > 0:
-                self.status["ollama"] = "ready"
-                logger.info(f"✅ Ollama: {models_count} modelos detectados.")
-            else:
-                self.status["ollama"] = "warning"
-                logger.warning("⚠️ Ollama: Nenhum modelo detectado. JARVIS operará em modo limitado.")
-        except Exception as e:
-            self.status["ollama"] = "error"
-            logger.error(f"❌ Erro ao sincronizar Ollama: {e}")
+        if BRAIN_ROUTER_AVAILABLE and brain_router:
+            try:
+                brain_router._discover_ollama_models()
+                models_count = len(brain_router.ollama_available_models)
+                if models_count > 0:
+                    self.status["ollama"] = "ready"
+                    logger.info(f"✅ Ollama: {models_count} modelos detectados.")
+                else:
+                    self.status["ollama"] = "warning"
+                    logger.warning("⚠️ Ollama: Nenhum modelo detectado. JARVIS operará em modo limitado.")
+            except Exception as e:
+                self.status["ollama"] = "error"
+                logger.error(f"❌ Erro ao sincronizar Ollama: {e}")
+        else:
+            self.status["ollama"] = "unavailable"
+            logger.info("ℹ️  Brain Router não disponível (modo CLI)")
 
         # 2. Verificar ChromaDB (Memória)
-        try:
-            stats = memory_manager.get_stats()
-            if stats.get("chroma_available"):
-                self.status["memory"] = "ready"
-                logger.info(f"✅ ChromaDB: {stats.get('memories_count', 0)} memórias sincronizadas.")
-            else:
-                self.status["memory"] = "warning"
-                logger.warning("⚠️ ChromaDB indisponível. Usando cache temporário.")
-        except Exception as e:
-            self.status["memory"] = "error"
-            logger.error(f"❌ Erro ao sincronizar Memória: {e}")
+        if MEMORY_AVAILABLE and memory_manager:
+            try:
+                stats = memory_manager.get_stats()
+                if stats.get("chroma_available"):
+                    self.status["memory"] = "ready"
+                    logger.info(f"✅ ChromaDB: {stats.get('memories_count', 0)} memórias sincronizadas.")
+                else:
+                    self.status["memory"] = "warning"
+                    logger.warning("⚠️ ChromaDB indisponível. Usando cache temporário.")
+            except Exception as e:
+                self.status["memory"] = "error"
+                logger.error(f"❌ Erro ao sincronizar Memória: {e}")
+        else:
+            self.status["memory"] = "unavailable"
+            logger.info("ℹ️  Memory Manager não disponível (modo CLI)")
 
         # 3. Verificar Dataset de Treinamento
         try:
@@ -87,15 +126,16 @@ class NeuroSync:
             pass
 
         # 4. Verificar LocalBrain
-        try:
-            if local_brain:
+        if LOCAL_BRAIN_AVAILABLE and local_brain:
+            try:
                 self.status["local_brain"] = "syncing"
                 logger.info("⚡ LocalBrain: Inicialização em segundo plano ativada.")
-            else:
+            except Exception as e:
                 self.status["local_brain"] = "error"
-        except Exception as e:
-            self.status["local_brain"] = "error"
-            logger.error(f"❌ Erro no LocalBrain: {e}")
+                logger.error(f"❌ Erro no LocalBrain: {e}")
+        else:
+            self.status["local_brain"] = "unavailable"
+            logger.info("ℹ️  LocalBrain não disponível (modo CLI)")
 
         # 5. Functions & Actions Readiness
         try:
