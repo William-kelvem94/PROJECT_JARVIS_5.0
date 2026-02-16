@@ -3,29 +3,36 @@
 JARVIS 5.0 - Sistema de Treinamento Interativo
 Script que pergunta ao usuário o que treinar e inicia automaticamente
 """
+
 import sys
 import os
 import threading
-import subprocess
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def start_web_server():
     """Inicia o web server em background para monitoramento"""
     try:
-        from web.web_server import start_server
         import asyncio
         import uvicorn
+
         async def run_server():
-            config = uvicorn.Config('web.web_server:app', host='localhost', port=5000, log_level='warning')
+            config = uvicorn.Config(
+                "web.web_server:app", host="localhost", port=5000, log_level="warning"
+            )
             server = uvicorn.Server(config)
             await server.serve()
+
         asyncio.run(run_server())
     except Exception as e:
         print(f"⚠️  Web server não pôde ser iniciado: {e}")
 
+
 def limpar_tela():
     """Limpa a tela do terminal"""
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
+
 
 def mostrar_menu_principal():
     """Mostra o menu principal do sistema de treinamento"""
@@ -50,6 +57,7 @@ def mostrar_menu_principal():
     print("• distributed - Treinamento Distribuído")
     print("=" * 65)
 
+
 def perguntar_topico():
     """Pergunta ao usuário qual tópico treinar"""
     while True:
@@ -58,6 +66,7 @@ def perguntar_topico():
         if topico:
             return topico
         print("❌ Por favor, digite um tópico válido.")
+
 
 def perguntar_componente():
     """Pergunta qual componente usar"""
@@ -83,9 +92,10 @@ def perguntar_componente():
         else:
             print("❌ Escolha inválida. Tente novamente.")
 
+
 def executar_treinamento(topico, componente):
     """Executa o treinamento com os parâmetros escolhidos"""
-    print(f"\n🚀 Iniciando treinamento...")
+    print("\n🚀 Iniciando treinamento...")
     print(f"📚 Tópico: {topico}")
     print(f"🔧 Componente: {componente}")
     print("=" * 65)
@@ -112,6 +122,7 @@ def executar_treinamento(topico, componente):
     except Exception as e:
         print(f"❌ Erro ao executar treinamento: {e}")
 
+
 def mostrar_instrucoes_finais():
     """Mostra instruções finais para o usuário"""
     print("\n" + "=" * 65)
@@ -121,6 +132,7 @@ def mostrar_instrucoes_finais():
     print("• Verifique data/learning/training_data/ para ver dados gerados")
     print("• Use 'python main.py' para interagir com o JARVIS treinado")
     print("=" * 65)
+
 
 def main():
     """Função principal do programa"""
@@ -142,6 +154,7 @@ def main():
     mostrar_instrucoes_finais()
 
     input("\n⏸️  Pressione Enter para sair...")
+
 
 if __name__ == "__main__":
     main()

@@ -4,8 +4,8 @@ Test script to verify JARVIS interface works
 """
 
 import sys
-import os
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
 
 try:
     from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow
@@ -17,7 +17,9 @@ try:
             self.setWindowTitle("JARVIS 5.0 - Interface Test")
             self.setGeometry(100, 100, 800, 600)
 
-            label = QLabel("✅ JARVIS Interface is working!\n\nThe GUI framework is functional.")
+            label = QLabel(
+                "✅ JARVIS Interface is working!\n\nThe GUI framework is functional."
+            )
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.setCentralWidget(label)
 

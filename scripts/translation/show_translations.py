@@ -5,7 +5,6 @@ Script para traduzir commits um por um usando git commit --amend
 """
 
 import subprocess
-import sys
 
 # Mapeamento de traduções
 TRANSLATIONS = {
@@ -71,16 +70,18 @@ print("\n🔄 Execute manualmente os seguintes comandos para traduzir os commits
 
 # Obtém lista de commits
 result = subprocess.run(
-    ['git', 'log', '--pretty=format:%H|||%s', '--reverse'],
-    capture_output=True, text=True, encoding='utf-8'
+    ["git", "log", "--pretty=format:%H|||%s", "--reverse"],
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
 )
 
-for line in result.stdout.strip().split('\n'):
-    if '|||' in line:
-        hash_c, msg = line.split('|||', 1)
+for line in result.stdout.strip().split("\n"):
+    if "|||" in line:
+        hash_c, msg = line.split("|||", 1)
         if msg.strip() in TRANSLATIONS:
             translated = TRANSLATIONS[msg.strip()]
             print(f"# Traduzindo: {msg.strip()}")
             print(f"git show {hash_c[:8]} --no-patch")
-            print(f'# Traduzido: {translated}')
+            print(f"# Traduzido: {translated}")
             print()

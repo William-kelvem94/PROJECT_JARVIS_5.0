@@ -6,7 +6,6 @@ Centraliza todas as configurações, caminhos e constantes do sistema
 import os
 import json
 import platform
-import sys
 import threading
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -14,6 +13,7 @@ from typing import Dict, Any, Optional
 # Safe Imports
 try:
     import yaml
+
     YAML_AVAILABLE = True
 except ImportError:
     yaml = None
@@ -21,16 +21,23 @@ except ImportError:
 
 try:
     from pydantic import BaseModel, ValidationError, Field
+
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
+
     # Dummy classes for Safe Mode
     class BaseModel:
         def __init__(self, **kwargs):
             for k, v in kwargs.items():
                 setattr(self, k, v)
-    class ValidationError(Exception): pass
-    class Field: pass
+
+    class ValidationError(Exception):
+        pass
+
+    class Field:
+        pass
+
 
 try:
     import jsonschema
@@ -45,8 +52,10 @@ logger = get_component_logger("config")
 
 # Schemas de validação (Conditional)
 if PYDANTIC_AVAILABLE:
+
     class AIConfigSchema(BaseModel):
         """Schema para ai_config.yaml"""
+
         model_name: Optional[str] = None
         max_tokens: Optional[int] = None
         temperature: Optional[float] = None
@@ -58,6 +67,7 @@ if PYDANTIC_AVAILABLE:
 
     class SettingsSchema(BaseModel):
         """Schema para settings.json"""
+
         app: Dict[str, Any]
         capture: Dict[str, Any]
         ocr: Dict[str, Any]
@@ -68,9 +78,15 @@ if PYDANTIC_AVAILABLE:
 
         class Config:
             extra = "allow"
+
 else:
-    class AIConfigSchema(BaseModel): pass
-    class SettingsSchema(BaseModel): pass
+
+    class AIConfigSchema(BaseModel):
+        pass
+
+    class SettingsSchema(BaseModel):
+        pass
+
 
 class Config:
     """Classe singleton para configurações globais"""
@@ -114,13 +130,16 @@ class Config:
         # Carregar variáveis de ambiente
         try:
             from dotenv import load_dotenv
+
             env_path = self.PROJECT_ROOT / ".env"
             if env_path.exists():
                 load_dotenv(dotenv_path=env_path, override=True)
             else:
                 logger.warning(f"⚠️ Arquivo .env não encontrado em {env_path}")
         except ImportError:
-            logger.warning("python-dotenv não instalado. Variáveis de ambiente não carregadas do .env")
+            logger.warning(
+                "python-dotenv não instalado. Variáveis de ambiente não carregadas do .env"
+            )
 
         # Core Data Subdirectories
         self.LOGS_DIR = self.DATA_DIR / "logs"
@@ -143,7 +162,7 @@ class Config:
         self.DATABASE_FILE = self.DB_DIR / "jarvis.db"
         self.FEEDBACK_FILE = self.DB_DIR / "feedback.db"
         self.HEALTH_REPORT_FILE = self.SYSTEM_DIR / "system_health.json"
-        
+
         # Temp & Exports
         self.TEMP_DIR = self.DATA_DIR / "temp"
         self.EXPORTS_DIR = self.DATA_DIR / "exports"
@@ -158,15 +177,17 @@ class Config:
             "os": platform.system(),
             "os_version": platform.version(),
             "python_version": platform.python_version(),
-            "architecture": platform.architecture()[0]
+            "architecture": platform.architecture()[0],
         }
 
         # Caminhos de USUÁRIO (Camada de Sobreposição)
         if self.SYSTEM_INFO["os"] == "Windows":
-            self.USER_CONFIG_DIR = Path(os.environ.get("APPDATA", "~")).expanduser() / "Jarvis"
+            self.USER_CONFIG_DIR = (
+                Path(os.environ.get("APPDATA", "~")).expanduser() / "Jarvis"
+            )
         else:
             self.USER_CONFIG_DIR = Path("~/.config/jarvis").expanduser()
-            
+
         self.USER_SETTINGS_FILE = self.USER_CONFIG_DIR / "settings.json"
         self.USER_AI_CONFIG_FILE = self.USER_CONFIG_DIR / "ai_config.yaml"
         self.USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -177,54 +198,52 @@ class Config:
                 "name": "Jarvis 5.0",
                 "version": "5.0.0",
                 "language": "pt-BR",
-                "theme": "dark"
+                "theme": "dark",
             },
             "capture": {
                 "default_format": "PNG",
                 "quality": 95,
                 "hotkey": "ctrl+shift+s",
                 "auto_save": True,
-                "capture_delay": 0.5
+                "capture_delay": 0.5,
             },
             "ocr": {
                 "engine": "tesseract",  # tesseract, easyocr, or hybrid
                 "languages": ["por", "eng"],
                 "confidence_threshold": 60,
                 "preprocessing": True,
-                "post_correction": True
+                "post_correction": True,
             },
             "processing": {
                 "max_workers": 4,
                 "batch_size": 10,
                 "timeout": 30,
-                "retry_attempts": 3
+                "retry_attempts": 3,
             },
             "storage": {
                 "auto_organize": True,
                 "compression": True,
                 "encryption": False,
-                "retention_days": 365
+                "retention_days": 365,
             },
             "analysis": {
                 "enable_ai": True,
                 "categorization": True,
                 "entity_extraction": True,
-                "sentiment_analysis": False
+                "sentiment_analysis": False,
             },
             "interface": {
                 "minimize_to_tray": True,
                 "show_notifications": True,
                 "auto_start": False,
-                "check_updates": True
+                "check_updates": True,
             },
-            "portability": {
-                "target_user_email": os.getenv("JARVIS_USER_EMAIL", "")
-            },
+            "portability": {"target_user_email": os.getenv("JARVIS_USER_EMAIL", "")},
             "vision": {
                 "yolo_enabled": True,
                 "yolo_model": "models/vision/yolov8n.pt",
-                "yolo_confidence": 0.25
-            }
+                "yolo_confidence": 0.25,
+            },
         }
 
         # Configurações OCR específicas
@@ -232,7 +251,7 @@ class Config:
             "tesseract": {
                 "path": self._find_tesseract_path(),
                 "config": "--oem 3 --psm 6",
-                "timeout": 30
+                "timeout": 30,
             },
             "easyocr": {
                 "gpu": self._has_gpu(),
@@ -242,8 +261,8 @@ class Config:
                 "recog_network": "crnn",
                 "download_enabled": True,
                 "detector": True,
-                "recognizer": True
-            }
+                "recognizer": True,
+            },
         }
 
         # Sugestão de motor baseada em hardware
@@ -257,28 +276,28 @@ class Config:
             "receipt": {
                 "name": "Nota Fiscal",
                 "patterns": ["nota fiscal", "cupom fiscal", "recibo"],
-                "fields": ["numero", "data", "valor", "emitente", "destinatario"]
+                "fields": ["numero", "data", "valor", "emitente", "destinatario"],
             },
             "invoice": {
                 "name": "Fatura",
                 "patterns": ["fatura", "conta", "boleto"],
-                "fields": ["numero", "vencimento", "valor", "pagador", "beneficiario"]
+                "fields": ["numero", "vencimento", "valor", "pagador", "beneficiario"],
             },
             "contract": {
                 "name": "Contrato",
                 "patterns": ["contrato", "acordo", "termo"],
-                "fields": ["numero", "partes", "data", "objeto", "valor"]
+                "fields": ["numero", "partes", "data", "objeto", "valor"],
             },
             "report": {
                 "name": "Relatório",
                 "patterns": ["relatório", "relatorio", "laudo"],
-                "fields": ["titulo", "data", "autor", "conteudo"]
+                "fields": ["titulo", "data", "autor", "conteudo"],
             },
             "form": {
                 "name": "Formulário",
                 "patterns": ["formulário", "formulario", "cadastro"],
-                "fields": ["campos", "valores"]
-            }
+                "fields": ["campos", "valores"],
+            },
         }
 
         # Padrões de extração de dados
@@ -290,7 +309,7 @@ class Config:
             "cep": r"\b\d{5}-?\d{3}\b",
             "money": r"R?\$\s*\d{1,3}(?:\.\d{3})*,\d{2}",
             "date": r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b",
-            "url": r"https?://(?:[-\w.])+(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:\w*))?)?"
+            "url": r"https?://(?:[-\w.])+(?:/(?:[\w/_.])*(?:\?(?:[\w&=%.])*)?(?:#(?:\w*))?)?",
         }
 
         # Categorias de dados
@@ -298,7 +317,7 @@ class Config:
             "personal": ["nome", "cpf", "telefone", "email", "endereco"],
             "financial": ["valor", "conta", "agencia", "banco", "pix"],
             "business": ["cnpj", "empresa", "contrato", "projeto"],
-            "documents": ["numero", "data", "validade", "codigo"]
+            "documents": ["numero", "data", "validade", "codigo"],
         }
 
         # Criar diretórios necessários
@@ -306,7 +325,7 @@ class Config:
 
         # Carregar configurações do usuário
         self.user_settings = self._load_user_settings()
-        
+
         # Carregar configurações de IA
         self.ai_config = self._load_ai_config()
 
@@ -316,7 +335,7 @@ class Config:
         env_path = os.environ.get("TESSERACT_PATH")
         if env_path and os.path.exists(env_path):
             return env_path
-            
+
         # 2. Verificar no próprio diretório do projeto (Portabilidade total)
         local_path = self.PROJECT_ROOT / "tools" / "Tesseract-OCR" / "tesseract.exe"
         if local_path.exists():
@@ -329,7 +348,7 @@ class Config:
             r"D:\Program Files\Tesseract-OCR\tesseract.exe",
             "/usr/bin/tesseract",
             "/usr/local/bin/tesseract",
-            "/opt/homebrew/bin/tesseract" # MacOS
+            "/opt/homebrew/bin/tesseract",  # MacOS
         ]
 
         for path in possible_paths:
@@ -338,6 +357,7 @@ class Config:
 
         # 4. Tentar encontrar via PATH do sistema
         import shutil
+
         tesseract_path = shutil.which("tesseract")
         if tesseract_path:
             return tesseract_path
@@ -348,11 +368,14 @@ class Config:
         """Verifica se há uma GPU NVIDIA disponível (sem circular import)"""
         try:
             import subprocess
+
             if platform.system() == "Windows":
                 # Avoid popping up console window
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL, startupinfo=startupinfo)
+                subprocess.check_output(
+                    ["nvidia-smi"], stderr=subprocess.DEVNULL, startupinfo=startupinfo
+                )
             else:
                 subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
             return True
@@ -360,6 +383,7 @@ class Config:
             # Fallback para torch se já estiver carregado em algum lugar
             try:
                 import torch
+
                 return torch.cuda.is_available()
             except:
                 return False
@@ -383,7 +407,7 @@ class Config:
             self.USERS_DIR,
             self.TESTS_DIR,
             self.TEMP_DIR,
-            self.EXPORTS_DIR
+            self.EXPORTS_DIR,
         ]
 
         for directory in directories:
@@ -395,11 +419,11 @@ class Config:
     def _load_user_settings(self) -> Dict[str, Any]:
         """Carrega configurações do sistema e sobrepõe com as do usuário (Camadas)"""
         settings = self.DEFAULT_SETTINGS.copy()
-        
+
         # 1. Carregar do Sistema (Project Root / config)
         if self.SETTINGS_FILE.exists():
             try:
-                with open(self.SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                with open(self.SETTINGS_FILE, "r", encoding="utf-8") as f:
                     system_settings = json.load(f)
                     self._deep_update(settings, system_settings)
             except Exception as e:
@@ -408,19 +432,25 @@ class Config:
         # 2. Carregar do Usuário (AppData ou ~/.config)
         if self.USER_SETTINGS_FILE.exists():
             try:
-                with open(self.USER_SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                with open(self.USER_SETTINGS_FILE, "r", encoding="utf-8") as f:
                     user_settings = json.load(f)
                     self._deep_update(settings, user_settings)
-                    logger.info(f"✅ Configurações do usuário carregadas de {self.USER_SETTINGS_FILE}")
+                    logger.info(
+                        f"✅ Configurações do usuário carregadas de {self.USER_SETTINGS_FILE}"
+                    )
             except Exception as e:
                 logger.error(f"Erro ao carregar settings do usuário: {e}")
-                
+
         return settings
 
     def _deep_update(self, base_dict: Dict, update_with: Dict):
         """Atualiza dicionário aninhado recursivamente"""
         for k, v in update_with.items():
-            if isinstance(v, dict) and k in base_dict and isinstance(base_dict[k], dict):
+            if (
+                isinstance(v, dict)
+                and k in base_dict
+                and isinstance(base_dict[k], dict)
+            ):
                 self._deep_update(base_dict[k], v)
             else:
                 base_dict[k] = v
@@ -430,12 +460,13 @@ class Config:
         try:
             # Criar backup se arquivo existir
             if self.SETTINGS_FILE.exists():
-                backup_file = self.SETTINGS_FILE.with_suffix('.json.backup')
+                backup_file = self.SETTINGS_FILE.with_suffix(".json.backup")
                 import shutil
+
                 shutil.copy2(self.SETTINGS_FILE, backup_file)
                 logger.debug(f"Backup criado: {backup_file}")
-            
-            with open(self.SETTINGS_FILE, 'w', encoding='utf-8') as f:
+
+            with open(self.SETTINGS_FILE, "w", encoding="utf-8") as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
             logger.info("Configurações do usuário salvas com sucesso")
         except Exception as e:
@@ -443,7 +474,7 @@ class Config:
 
     def get_setting(self, key_path: str, default=None):
         """Obtém uma configuração específica usando notação de ponto"""
-        keys = key_path.split('.')
+        keys = key_path.split(".")
         value = self.user_settings
 
         for key in keys:
@@ -456,7 +487,7 @@ class Config:
 
     def set_setting(self, key_path: str, value: Any):
         """Define uma configuração específica"""
-        keys = key_path.split('.')
+        keys = key_path.split(".")
         config = self.user_settings
 
         # Navegar até o penúltimo nível
@@ -484,7 +515,7 @@ class Config:
     def get_data_categories(self) -> Dict[str, list]:
         """Obtém categorias de dados"""
         return self.DATA_CATEGORIES.copy()
-    
+
     def _load_ai_config(self) -> Dict[str, Any]:
         """Carrega configurações de IA do arquivo YAML"""
         if not YAML_AVAILABLE:
@@ -493,9 +524,9 @@ class Config:
 
         if self.AI_CONFIG_FILE.exists():
             try:
-                with open(self.AI_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                with open(self.AI_CONFIG_FILE, "r", encoding="utf-8") as f:
                     ai_config = yaml.safe_load(f)
-                
+
                 # Validar configuração
                 if PYDANTIC_AVAILABLE:
                     try:
@@ -505,7 +536,7 @@ class Config:
                         logger.error(f"❌ Configuração de IA inválida: {e}")
                         # Usar valores padrão para campos inválidos
                         ai_config = self._get_default_ai_config()
-                
+
                 logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
                 return ai_config
             except Exception as e:
@@ -514,7 +545,7 @@ class Config:
         else:
             logger.warning(f"⚠️ ai_config.yaml não encontrado em {self.AI_CONFIG_FILE}")
             return self._get_default_ai_config()
-    
+
     def _get_default_ai_config(self) -> Dict[str, Any]:
         """Retorna configurações padrão de IA"""
         return {
@@ -522,25 +553,25 @@ class Config:
             "max_tokens": 1000,
             "temperature": 0.7,
             "cache_enabled": True,
-            "long_term_memory_enabled": True
+            "long_term_memory_enabled": True,
         }
-    
+
     def get_ai_config(self, key_path: str = None, default=None):
         """
         Obtém configuração de IA usando notação de ponto.
         """
         if key_path is None:
             return self.ai_config
-        
-        keys = key_path.split('.')
+
+        keys = key_path.split(".")
         value = self.ai_config
-        
+
         for key in keys:
             if isinstance(value, dict) and key in value:
                 value = value[key]
             else:
                 return default
-        
+
         return value
 
     def get_api_key(self, service_name: str) -> Optional[str]:
@@ -549,22 +580,24 @@ class Config:
         """
         try:
             from dotenv import load_dotenv
+
             load_dotenv()
         except ImportError:
             pass
-        
+
         key_map = {
-            'google': 'GOOGLE_API_KEY',
-            'openai': 'OPENAI_API_KEY',
-            'anthropic': 'ANTHROPIC_API_KEY',
-            'porcupine': 'PORCUPINE_ACCESS_KEY',
-            'huggingface': 'HF_TOKEN'
+            "google": "GOOGLE_API_KEY",
+            "openai": "OPENAI_API_KEY",
+            "anthropic": "ANTHROPIC_API_KEY",
+            "porcupine": "PORCUPINE_ACCESS_KEY",
+            "huggingface": "HF_TOKEN",
         }
-        
+
         env_var = key_map.get(service_name.lower())
         if env_var:
             return os.getenv(env_var)
         return None
+
 
 # Instância global
 config = Config()

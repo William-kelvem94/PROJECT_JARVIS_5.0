@@ -3,18 +3,18 @@ JARVIS 5.0 - Self-Learning Evolution Engine
 Sistema de aprendizado contínuo e auto-melhoria
 """
 
-import os
 import json
 import time
 import threading
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 import hashlib
 import re
 
 logger = logging.getLogger(__name__)
+
 
 class SelfLearningEngine:
     """Engine de aprendizado contínuo do JARVIS"""
@@ -53,20 +53,24 @@ class SelfLearningEngine:
         self.is_learning = True
         self.current_session = {
             "start_time": datetime.now().isoformat(),
-            "session_id": hashlib.md5(f"session_{time.time()}".encode()).hexdigest()[:8],
+            "session_id": hashlib.md5(f"session_{time.time()}".encode()).hexdigest()[
+                :8
+            ],
             "activities": [],
             "insights": [],
-            "improvements": []
+            "improvements": [],
         }
 
         self.learning_thread = threading.Thread(
             target=self._continuous_learning_loop,
             daemon=True,
-            name="SelfLearningEngine"
+            name="SelfLearningEngine",
         )
         self.learning_thread.start()
 
-        logger.info("🧠 Self-Learning Engine iniciado - JARVIS aprendendo sobre si mesmo")
+        logger.info(
+            "🧠 Self-Learning Engine iniciado - JARVIS aprendendo sobre si mesmo"
+        )
 
     def stop_continuous_learning(self):
         """Para o aprendizado contínuo e salva o conhecimento"""
@@ -82,8 +86,8 @@ class SelfLearningEngine:
         if self.current_session:
             self.current_session["end_time"] = datetime.now().isoformat()
             self.current_session["duration_seconds"] = (
-                datetime.fromisoformat(self.current_session["end_time"]) -
-                datetime.fromisoformat(self.current_session["start_time"])
+                datetime.fromisoformat(self.current_session["end_time"])
+                - datetime.fromisoformat(self.current_session["start_time"])
             ).total_seconds()
 
             self.learning_sessions.append(self.current_session)
@@ -146,12 +150,14 @@ class SelfLearningEngine:
 
         # Registrar atividade
         if self.current_session:
-            self.current_session["activities"].append({
-                "type": "system_analysis",
-                "timestamp": datetime.now().isoformat(),
-                "duration": analysis_time,
-                "files_analyzed": self.files_analyzed
-            })
+            self.current_session["activities"].append(
+                {
+                    "type": "system_analysis",
+                    "timestamp": datetime.now().isoformat(),
+                    "duration": analysis_time,
+                    "files_analyzed": self.files_analyzed,
+                }
+            )
 
             self.analysis_count += 1
 
@@ -170,46 +176,62 @@ class SelfLearningEngine:
             "classes": 0,
             "functions": 0,
             "imports": {},
-            "complexity_indicators": []
+            "complexity_indicators": [],
         }
 
         for py_file in src_path.rglob("*.py"):
             try:
-                with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(py_file, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 code_stats["python_files"] += 1
-                lines = len(content.split('\n'))
+                lines = len(content.split("\n"))
                 code_stats["total_lines"] += lines
 
                 # Contar classes e funções
-                code_stats["classes"] += len(re.findall(r'^class\s+\w+', content, re.MULTILINE))
-                code_stats["functions"] += len(re.findall(r'^def\s+\w+', content, re.MULTILINE))
+                code_stats["classes"] += len(
+                    re.findall(r"^class\s+\w+", content, re.MULTILINE)
+                )
+                code_stats["functions"] += len(
+                    re.findall(r"^def\s+\w+", content, re.MULTILINE)
+                )
 
                 # Analisar imports
-                imports = re.findall(r'^(?:from\s+[\w.]+\s+import|import\s+[\w.]+)', content, re.MULTILINE)
+                imports = re.findall(
+                    r"^(?:from\s+[\w.]+\s+import|import\s+[\w.]+)",
+                    content,
+                    re.MULTILINE,
+                )
                 for imp in imports:
-                    module = imp.split()[1].split('.')[0]
-                    code_stats["imports"][module] = code_stats["imports"].get(module, 0) + 1
+                    module = imp.split()[1].split(".")[0]
+                    code_stats["imports"][module] = (
+                        code_stats["imports"].get(module, 0) + 1
+                    )
 
                 # Indicadores de complexidade
                 if lines > 500:
-                    code_stats["complexity_indicators"].append({
-                        "file": str(py_file.relative_to(self.project_root)),
-                        "lines": lines,
-                        "issue": "Arquivo muito grande (>500 linhas)"
-                    })
+                    code_stats["complexity_indicators"].append(
+                        {
+                            "file": str(py_file.relative_to(self.project_root)),
+                            "lines": lines,
+                            "issue": "Arquivo muito grande (>500 linhas)",
+                        }
+                    )
 
                 # Funções muito longas
-                functions = re.findall(r'def\s+\w+.*?:.*?(?=\n\s*(?:def|class|$))', content, re.DOTALL)
+                functions = re.findall(
+                    r"def\s+\w+.*?:.*?(?=\n\s*(?:def|class|$))", content, re.DOTALL
+                )
                 for func in functions:
-                    if len(func.split('\n')) > 50:
-                        code_stats["complexity_indicators"].append({
-                            "file": str(py_file.relative_to(self.project_root)),
-                            "function": func.split('\n')[0].strip(),
-                            "lines": len(func.split('\n')),
-                            "issue": "Função muito longa (>50 linhas)"
-                        })
+                    if len(func.split("\n")) > 50:
+                        code_stats["complexity_indicators"].append(
+                            {
+                                "file": str(py_file.relative_to(self.project_root)),
+                                "function": func.split("\n")[0].strip(),
+                                "lines": len(func.split("\n")),
+                                "issue": "Função muito longa (>50 linhas)",
+                            }
+                        )
 
             except Exception as e:
                 logger.debug(f"Erro analisando {py_file}: {e}")
@@ -230,29 +252,35 @@ class SelfLearningEngine:
             "performance_issues": [],
             "crash_reports": [],
             "memory_usage": [],
-            "recent_activity": []
+            "recent_activity": [],
         }
 
         # Analisar arquivos de log recentes
         for log_file in logs_path.glob("*.txt"):
             try:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 # Procurar por erros
-                errors = re.findall(r'ERROR.*?:\s*(.+)', content)
+                errors = re.findall(r"ERROR.*?:\s*(.+)", content)
                 for error in errors:
                     error_key = error[:100]  # Primeiros 100 chars como chave
-                    log_analysis["error_patterns"][error_key] = log_analysis["error_patterns"].get(error_key, 0) + 1
+                    log_analysis["error_patterns"][error_key] = (
+                        log_analysis["error_patterns"].get(error_key, 0) + 1
+                    )
 
                 # Procurar por warnings
-                warnings = re.findall(r'WARNING.*?:\s*(.+)', content)
+                warnings = re.findall(r"WARNING.*?:\s*(.+)", content)
                 for warning in warnings:
                     warn_key = warning[:100]
-                    log_analysis["warning_patterns"][warn_key] = log_analysis["warning_patterns"].get(warn_key, 0) + 1
+                    log_analysis["warning_patterns"][warn_key] = (
+                        log_analysis["warning_patterns"].get(warn_key, 0) + 1
+                    )
 
                 # Procurar por uso de memória
-                memory_matches = re.findall(r'memory.*?:?\s*(\d+(?:\.\d+)?)%', content, re.IGNORECASE)
+                memory_matches = re.findall(
+                    r"memory.*?:?\s*(\d+(?:\.\d+)?)%", content, re.IGNORECASE
+                )
                 for mem in memory_matches:
                     log_analysis["memory_usage"].append(float(mem))
 
@@ -269,22 +297,24 @@ class SelfLearningEngine:
         config_files = [
             "config/ai_config.yaml",
             "config/network_mesh_config.yaml",
-            "config/vector_store_config.yaml"
+            "config/vector_store_config.yaml",
         ]
 
         for config_file in config_files:
             config_path = self.project_root / config_file
             if config_path.exists():
                 try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
+                    with open(config_path, "r", encoding="utf-8") as f:
                         content = f.read()
 
                     # Análise básica de configuração
                     config_analysis[config_file] = {
                         "exists": True,
                         "size": len(content),
-                        "lines": len(content.split('\n')),
-                        "last_modified": datetime.fromtimestamp(config_path.stat().st_mtime).isoformat()
+                        "lines": len(content.split("\n")),
+                        "last_modified": datetime.fromtimestamp(
+                            config_path.stat().st_mtime
+                        ).isoformat(),
                     }
 
                 except Exception as e:
@@ -298,7 +328,7 @@ class SelfLearningEngine:
             "total_sessions": len(self.learning_sessions),
             "knowledge_entries": len(self.knowledge_base),
             "auto_improvements": len(self.auto_improvements),
-            "insights_generated": self.insights_generated
+            "insights_generated": self.insights_generated,
         }
 
         self.knowledge_base["learning_analysis"] = learning_analysis
@@ -310,7 +340,7 @@ class SelfLearningEngine:
             "files_analyzed": self.files_analyzed,
             "avg_analysis_time": 0,  # Será calculado
             "memory_usage_trend": [],
-            "cpu_usage_trend": []
+            "cpu_usage_trend": [],
         }
 
         self.knowledge_base["performance_analysis"] = performance_data
@@ -324,45 +354,55 @@ class SelfLearningEngine:
             code = self.knowledge_base["code_analysis"]
 
             if code["total_lines"] > 10000:
-                insights.append({
-                    "type": "code_complexity",
-                    "priority": "high",
-                    "title": "Base de código muito grande",
-                    "description": f"Sistema tem {code['total_lines']} linhas de código. Considerar modularização.",
-                    "suggestion": "Quebrar em módulos menores e mais especializados"
-                })
+                insights.append(
+                    {
+                        "type": "code_complexity",
+                        "priority": "high",
+                        "title": "Base de código muito grande",
+                        "description": f"Sistema tem {code['total_lines']} linhas de código. Considerar modularização.",
+                        "suggestion": "Quebrar em módulos menores e mais especializados",
+                    }
+                )
 
             if code["complexity_indicators"]:
-                insights.append({
-                    "type": "code_quality",
-                    "priority": "medium",
-                    "title": f"Problemas de complexidade encontrados: {len(code['complexity_indicators'])}",
-                    "description": "Arquivos/funções muito grandes detectados",
-                    "suggestion": "Refatorar código para melhorar manutenibilidade"
-                })
+                insights.append(
+                    {
+                        "type": "code_quality",
+                        "priority": "medium",
+                        "title": f"Problemas de complexidade encontrados: {len(code['complexity_indicators'])}",
+                        "description": "Arquivos/funções muito grandes detectados",
+                        "suggestion": "Refatorar código para melhorar manutenibilidade",
+                    }
+                )
 
         # Insights sobre logs
         if "log_analysis" in self.knowledge_base:
             logs = self.knowledge_base["log_analysis"]
 
             if logs["error_patterns"]:
-                top_errors = sorted(logs["error_patterns"].items(), key=lambda x: x[1], reverse=True)[:3]
-                insights.append({
-                    "type": "error_analysis",
-                    "priority": "high",
-                    "title": f"Erros mais frequentes: {len(logs['error_patterns'])} padrões",
-                    "description": f"Top 3 erros: {', '.join([f'{err[:50]}...' for err, count in top_errors])}",
-                    "suggestion": "Implementar correções para erros recorrentes"
-                })
+                top_errors = sorted(
+                    logs["error_patterns"].items(), key=lambda x: x[1], reverse=True
+                )[:3]
+                insights.append(
+                    {
+                        "type": "error_analysis",
+                        "priority": "high",
+                        "title": f"Erros mais frequentes: {len(logs['error_patterns'])} padrões",
+                        "description": f"Top 3 erros: {', '.join([f'{err[:50]}...' for err, count in top_errors])}",
+                        "suggestion": "Implementar correções para erros recorrentes",
+                    }
+                )
 
             if logs["memory_usage"] and max(logs["memory_usage"]) > 90:
-                insights.append({
-                    "type": "memory_optimization",
-                    "priority": "critical",
-                    "title": "Uso excessivo de memória detectado",
-                    "description": f"Uso máximo de memória: {max(logs['memory_usage']):.1f}%",
-                    "suggestion": "Otimizar gerenciamento de memória e implementar limpeza automática"
-                })
+                insights.append(
+                    {
+                        "type": "memory_optimization",
+                        "priority": "critical",
+                        "title": "Uso excessivo de memória detectado",
+                        "description": f"Uso máximo de memória: {max(logs['memory_usage']):.1f}%",
+                        "suggestion": "Otimizar gerenciamento de memória e implementar limpeza automática",
+                    }
+                )
 
         # Salvar insights
         if self.current_session:
@@ -379,43 +419,49 @@ class SelfLearningEngine:
         if "insights" in self.knowledge_base:
             for insight in self.knowledge_base["insights"]:
                 if insight["priority"] == "critical":
-                    improvements.append({
-                        "type": "critical_fix",
-                        "title": f"Correção crítica: {insight['title']}",
-                        "description": insight["description"],
-                        "implementation": insight["suggestion"],
-                        "estimated_effort": "high",
-                        "priority": "immediate"
-                    })
+                    improvements.append(
+                        {
+                            "type": "critical_fix",
+                            "title": f"Correção crítica: {insight['title']}",
+                            "description": insight["description"],
+                            "implementation": insight["suggestion"],
+                            "estimated_effort": "high",
+                            "priority": "immediate",
+                        }
+                    )
                 elif insight["priority"] == "high":
-                    improvements.append({
-                        "type": "optimization",
-                        "title": f"Otimização: {insight['title']}",
-                        "description": insight["description"],
-                        "implementation": insight["suggestion"],
-                        "estimated_effort": "medium",
-                        "priority": "high"
-                    })
+                    improvements.append(
+                        {
+                            "type": "optimization",
+                            "title": f"Otimização: {insight['title']}",
+                            "description": insight["description"],
+                            "implementation": insight["suggestion"],
+                            "estimated_effort": "medium",
+                            "priority": "high",
+                        }
+                    )
 
         # Melhorias proativas
-        improvements.extend([
-            {
-                "type": "monitoring",
-                "title": "Implementar monitoramento avançado",
-                "description": "Adicionar métricas detalhadas de performance e saúde do sistema",
-                "implementation": "Criar dashboard de monitoramento em tempo real",
-                "estimated_effort": "medium",
-                "priority": "medium"
-            },
-            {
-                "type": "documentation",
-                "title": "Gerar documentação automática",
-                "description": "Sistema deve gerar documentação técnica automaticamente",
-                "implementation": "Implementar geração automática de docs baseada em análise de código",
-                "estimated_effort": "low",
-                "priority": "medium"
-            }
-        ])
+        improvements.extend(
+            [
+                {
+                    "type": "monitoring",
+                    "title": "Implementar monitoramento avançado",
+                    "description": "Adicionar métricas detalhadas de performance e saúde do sistema",
+                    "implementation": "Criar dashboard de monitoramento em tempo real",
+                    "estimated_effort": "medium",
+                    "priority": "medium",
+                },
+                {
+                    "type": "documentation",
+                    "title": "Gerar documentação automática",
+                    "description": "Sistema deve gerar documentação técnica automaticamente",
+                    "implementation": "Implementar geração automática de docs baseada em análise de código",
+                    "estimated_effort": "low",
+                    "priority": "medium",
+                },
+            ]
+        )
 
         # Salvar melhorias
         if self.current_session:
@@ -447,9 +493,11 @@ class SelfLearningEngine:
         """Gera relatório completo do sistema"""
         report_path = docs_path / f"system_report_{timestamp}.md"
 
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Relatório do Sistema JARVIS 5.0\n\n")
-            f.write(f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write("# Relatório do Sistema JARVIS 5.0\n\n")
+            f.write(
+                f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
 
             # Estatísticas gerais
             f.write("## 📊 Estatísticas Gerais\n\n")
@@ -469,7 +517,11 @@ class SelfLearningEngine:
 
             # Problemas críticos
             if "insights" in self.knowledge_base:
-                critical_insights = [i for i in self.knowledge_base["insights"] if i["priority"] == "critical"]
+                critical_insights = [
+                    i
+                    for i in self.knowledge_base["insights"]
+                    if i["priority"] == "critical"
+                ]
                 if critical_insights:
                     f.write("## 🚨 Problemas Críticos\n\n")
                     for insight in critical_insights:
@@ -481,9 +533,11 @@ class SelfLearningEngine:
         """Gera análise detalhada do código"""
         analysis_path = docs_path / f"code_analysis_{timestamp}.md"
 
-        with open(analysis_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Análise de Código - JARVIS 5.0\n\n")
-            f.write(f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        with open(analysis_path, "w", encoding="utf-8") as f:
+            f.write("# Análise de Código - JARVIS 5.0\n\n")
+            f.write(
+                f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
 
             if "code_analysis" in self.knowledge_base:
                 code = self.knowledge_base["code_analysis"]
@@ -497,7 +551,9 @@ class SelfLearningEngine:
                 # Imports mais usados
                 if code["imports"]:
                     f.write("## 📦 Módulos Mais Importados\n\n")
-                    sorted_imports = sorted(code["imports"].items(), key=lambda x: x[1], reverse=True)[:10]
+                    sorted_imports = sorted(
+                        code["imports"].items(), key=lambda x: x[1], reverse=True
+                    )[:10]
                     for module, count in sorted_imports:
                         f.write(f"- `{module}`: {count} importações\n")
                     f.write("\n")
@@ -508,9 +564,9 @@ class SelfLearningEngine:
                     for issue in code["complexity_indicators"][:10]:  # Top 10
                         f.write(f"### {issue['file']}\n")
                         f.write(f"- **Problema:** {issue['issue']}\n")
-                        if 'lines' in issue:
+                        if "lines" in issue:
                             f.write(f"- **Linhas:** {issue['lines']}\n")
-                        if 'function' in issue:
+                        if "function" in issue:
                             f.write(f"- **Função:** `{issue['function']}`\n")
                         f.write("\n")
 
@@ -518,18 +574,15 @@ class SelfLearningEngine:
         """Gera relatório de melhorias sugeridas"""
         improvements_path = docs_path / f"improvements_{timestamp}.md"
 
-        with open(improvements_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Melhorias Sugeridas - JARVIS 5.0\n\n")
-            f.write(f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        with open(improvements_path, "w", encoding="utf-8") as f:
+            f.write("# Melhorias Sugeridas - JARVIS 5.0\n\n")
+            f.write(
+                f"**Gerado em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
 
             if self.auto_improvements:
                 # Agrupar por prioridade
-                by_priority = {
-                    "immediate": [],
-                    "high": [],
-                    "medium": [],
-                    "low": []
-                }
+                by_priority = {"immediate": [], "high": [], "medium": [], "low": []}
 
                 for imp in self.auto_improvements:
                     priority = imp.get("priority", "medium")
@@ -543,15 +596,19 @@ class SelfLearningEngine:
                             f.write(f"### {imp['title']}\n")
                             f.write(f"{imp['description']}\n\n")
                             f.write(f"**Implementação:** {imp['implementation']}\n")
-                            f.write(f"**Esforço estimado:** {imp.get('estimated_effort', 'unknown')}\n\n")
+                            f.write(
+                                f"**Esforço estimado:** {imp.get('estimated_effort', 'unknown')}\n\n"
+                            )
 
     def _generate_troubleshooting_guide(self, docs_path: Path, timestamp: str):
         """Gera guia de troubleshooting baseado em análise de logs"""
         guide_path = docs_path / f"troubleshooting_{timestamp}.md"
 
-        with open(guide_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Guia de Troubleshooting - JARVIS 5.0\n\n")
-            f.write(f"**Gerado automaticamente em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        with open(guide_path, "w", encoding="utf-8") as f:
+            f.write("# Guia de Troubleshooting - JARVIS 5.0\n\n")
+            f.write(
+                f"**Gerado automaticamente em:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
 
             if "log_analysis" in self.knowledge_base:
                 logs = self.knowledge_base["log_analysis"]
@@ -559,20 +616,30 @@ class SelfLearningEngine:
                 # Erros comuns
                 if logs["error_patterns"]:
                     f.write("## 🚨 Erros Mais Comuns\n\n")
-                    sorted_errors = sorted(logs["error_patterns"].items(), key=lambda x: x[1], reverse=True)[:10]
+                    sorted_errors = sorted(
+                        logs["error_patterns"].items(), key=lambda x: x[1], reverse=True
+                    )[:10]
                     for error, count in sorted_errors:
                         f.write(f"### Erro (ocorrências: {count})\n")
                         f.write(f"```\n{error}\n```\n\n")
 
                         # Sugestões básicas de correção
                         if "memory" in error.lower():
-                            f.write("**Solução sugerida:** Verificar uso de memória e implementar limpeza automática\n\n")
+                            f.write(
+                                "**Solução sugerida:** Verificar uso de memória e implementar limpeza automática\n\n"
+                            )
                         elif "thread" in error.lower():
-                            f.write("**Solução sugerida:** Revisar gerenciamento de threads e sincronização\n\n")
+                            f.write(
+                                "**Solução sugerida:** Revisar gerenciamento de threads e sincronização\n\n"
+                            )
                         elif "import" in error.lower():
-                            f.write("**Solução sugerida:** Verificar dependências e instalação de pacotes\n\n")
+                            f.write(
+                                "**Solução sugerida:** Verificar dependências e instalação de pacotes\n\n"
+                            )
                         else:
-                            f.write("**Solução sugerida:** Analisar logs detalhados e contexto do erro\n\n")
+                            f.write(
+                                "**Solução sugerida:** Analisar logs detalhados e contexto do erro\n\n"
+                            )
 
                 # Problemas de performance
                 if logs["memory_usage"]:
@@ -584,7 +651,9 @@ class SelfLearningEngine:
                     f.write(f"- **Uso máximo de memória:** {max_memory:.1f}%\n\n")
 
                     if max_memory > 90:
-                        f.write("⚠️ **ALERTA:** Uso excessivo de memória detectado!\n\n")
+                        f.write(
+                            "⚠️ **ALERTA:** Uso excessivo de memória detectado!\n\n"
+                        )
                         f.write("**Ações recomendadas:**\n")
                         f.write("1. Implementar descarga automática de modelos\n")
                         f.write("2. Otimizar gerenciamento de cache\n")
@@ -600,10 +669,12 @@ class SelfLearningEngine:
             "analysis_count": self.analysis_count,
             "insights_generated": self.insights_generated,
             "improvements_suggested": self.improvements_suggested,
-            "current_session": self.current_session["session_id"] if self.current_session else None
+            "current_session": (
+                self.current_session["session_id"] if self.current_session else None
+            ),
         }
 
-        with open(progress_file, 'w', encoding='utf-8') as f:
+        with open(progress_file, "w", encoding="utf-8") as f:
             json.dump(progress_data, f, indent=2, ensure_ascii=False)
 
     def _load_knowledge_base(self):
@@ -614,7 +685,7 @@ class SelfLearningEngine:
         # Carregar conhecimento
         if knowledge_file.exists():
             try:
-                with open(knowledge_file, 'r', encoding='utf-8') as f:
+                with open(knowledge_file, "r", encoding="utf-8") as f:
                     self.knowledge_base = json.load(f)
             except Exception as e:
                 logger.warning(f"Erro carregando knowledge base: {e}")
@@ -623,7 +694,7 @@ class SelfLearningEngine:
         # Carregar sessões
         if sessions_file.exists():
             try:
-                with open(sessions_file, 'r', encoding='utf-8') as f:
+                with open(sessions_file, "r", encoding="utf-8") as f:
                     self.learning_sessions = json.load(f)
             except Exception as e:
                 logger.warning(f"Erro carregando learning sessions: {e}")
@@ -635,11 +706,11 @@ class SelfLearningEngine:
         sessions_file = self.learning_data_path / "learning_sessions.json"
 
         # Salvar conhecimento
-        with open(knowledge_file, 'w', encoding='utf-8') as f:
+        with open(knowledge_file, "w", encoding="utf-8") as f:
             json.dump(self.knowledge_base, f, indent=2, ensure_ascii=False)
 
         # Salvar sessões
-        with open(sessions_file, 'w', encoding='utf-8') as f:
+        with open(sessions_file, "w", encoding="utf-8") as f:
             json.dump(self.learning_sessions, f, indent=2, ensure_ascii=False)
 
     def _generate_learning_report(self):
@@ -647,14 +718,21 @@ class SelfLearningEngine:
         if not self.current_session:
             return
 
-        report_path = self.learning_data_path / f"session_report_{self.current_session['session_id']}.md"
+        report_path = (
+            self.learning_data_path
+            / f"session_report_{self.current_session['session_id']}.md"
+        )
 
-        with open(report_path, 'w', encoding='utf-8') as f:
-            f.write(f"# Relatório da Sessão de Aprendizado\n\n")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write("# Relatório da Sessão de Aprendizado\n\n")
             f.write(f"**ID da Sessão:** {self.current_session['session_id']}\n")
             f.write(f"**Início:** {self.current_session['start_time']}\n")
-            f.write(f"**Fim:** {self.current_session.get('end_time', 'Em andamento')}\n")
-            f.write(f"**Duração:** {self.current_session.get('duration_seconds', 0):.1f} segundos\n\n")
+            f.write(
+                f"**Fim:** {self.current_session.get('end_time', 'Em andamento')}\n"
+            )
+            f.write(
+                f"**Duração:** {self.current_session.get('duration_seconds', 0):.1f} segundos\n\n"
+            )
 
             # Atividades realizadas
             if self.current_session["activities"]:
@@ -662,8 +740,10 @@ class SelfLearningEngine:
                 for activity in self.current_session["activities"]:
                     f.write(f"- **{activity['type']}** ({activity['timestamp']})\n")
                     f.write(f"  - Duração: {activity.get('duration', 0):.2f}s\n")
-                    if 'files_analyzed' in activity:
-                        f.write(f"  - Arquivos analisados: {activity['files_analyzed']}\n")
+                    if "files_analyzed" in activity:
+                        f.write(
+                            f"  - Arquivos analisados: {activity['files_analyzed']}\n"
+                        )
                     f.write("\n")
 
             # Insights gerados
@@ -680,7 +760,9 @@ class SelfLearningEngine:
                     f.write(f"### {improvement['title']}\n")
                     f.write(f"{improvement['description']}\n\n")
                     f.write(f"**Implementação:** {improvement['implementation']}\n")
-                    f.write(f"**Prioridade:** {improvement.get('priority', 'medium')}\n\n")
+                    f.write(
+                        f"**Prioridade:** {improvement.get('priority', 'medium')}\n\n"
+                    )
 
     def get_learning_stats(self) -> Dict[str, Any]:
         """Retorna estatísticas do aprendizado"""
@@ -691,7 +773,7 @@ class SelfLearningEngine:
             "insights_generated": self.insights_generated,
             "improvements_suggested": self.improvements_suggested,
             "knowledge_entries": len(self.knowledge_base),
-            "last_analysis": self.knowledge_base.get("last_analysis")
+            "last_analysis": self.knowledge_base.get("last_analysis"),
         }
 
     def force_save_knowledge(self):

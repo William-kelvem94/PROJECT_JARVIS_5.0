@@ -32,16 +32,16 @@ for directory in [
     MODELS_DIR,
     CHECKPOINTS_DIR,
     TRAINING_DATA_DIR,
-    VISION_SAMPLES_DIR
+    VISION_SAMPLES_DIR,
 ]:
     directory.mkdir(parents=True, exist_ok=True)
 
 __all__ = [
-    'LEARNING_DATA_DIR',
-    'INTERACTIONS_DIR',
-    'FEEDBACK_DIR',
-    'MODELS_DIR',
-    'CHECKPOINTS_DIR',
-    'TRAINING_DATA_DIR',
-    'VISION_SAMPLES_DIR'
+    "LEARNING_DATA_DIR",
+    "INTERACTIONS_DIR",
+    "FEEDBACK_DIR",
+    "MODELS_DIR",
+    "CHECKPOINTS_DIR",
+    "TRAINING_DATA_DIR",
+    "VISION_SAMPLES_DIR",
 ]

@@ -3,21 +3,27 @@
 JARVIS Dependency Diagnostic and Repair Tool
 Diagnoses and fixes common dependency issues
 """
+
 import os
 import sys
 import subprocess
+import shlex
 import importlib
 import logging
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("DEPENDENCY_DOCTOR")
+
 
 def run_command(cmd, description):
     """Run a command and return success status"""
     try:
         logger.info(f"🔧 {description}...")
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+        args = shlex.split(cmd) if isinstance(cmd, str) else cmd
+        result = subprocess.run(args, capture_output=True, text=True, timeout=300)
         if result.returncode == 0:
             logger.info(f"✅ {description} - SUCCESS")
             return True
@@ -32,6 +38,7 @@ def run_command(cmd, description):
         logger.error(f"💥 {description} - ERROR: {e}")
         return False
 
+
 def test_import(module_name, description):
     """Test if a module can be imported"""
     try:
@@ -44,6 +51,7 @@ def test_import(module_name, description):
     except Exception as e:
         logger.error(f"❌ {description} - ERROR: {e}")
         return False
+
 
 def diagnose_issues():
     """Diagnose common dependency issues"""
@@ -63,6 +71,7 @@ def diagnose_issues():
 
     return issues
 
+
 def repair_issues(issues):
     """Attempt to repair identified issues"""
     logger.info("🔧 TENTANDO CORREÇÕES AUTOMÁTICAS...")
@@ -75,33 +84,40 @@ def repair_issues(issues):
         # Try CPU-only PyTorch first
         if run_command(
             "pip install --upgrade torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu",
-            "Instalando PyTorch CPU-only"
+            "Instalando PyTorch CPU-only",
         ):
             success_count += 1
 
     # Fix transformers/faster-whisper
     if "transformers" in issues or "faster_whisper" in issues:
         logger.info("🔧 Corrigindo Transformers/Faster-Whisper...")
-        if run_command("pip install --upgrade transformers faster-whisper", "Atualizando Transformers"):
+        if run_command(
+            "pip install --upgrade transformers faster-whisper",
+            "Atualizando Transformers",
+        ):
             success_count += 1
 
     # Force reinstall torch if still failing
     if "torch" in issues:
         logger.info("🔧 Forçando reinstalação do PyTorch...")
-        if run_command("pip install --upgrade --force-reinstall torch", "Forçando reinstalação PyTorch"):
+        if run_command(
+            "pip install --upgrade --force-reinstall torch",
+            "Forçando reinstalação PyTorch",
+        ):
             success_count += 1
 
     return success_count
 
+
 def main():
-    print("="*80)
+    print("=" * 80)
     print("🔧 JARVIS DEPENDENCY DOCTOR")
     print("Diagnóstico e correção automática de dependências")
-    print("="*80)
+    print("=" * 80)
 
     # Set environment
-    os.environ['PYTHONUTF8'] = '1'
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    os.environ["PYTHONUTF8"] = "1"
+    os.environ["PYTHONIOENCODING"] = "utf-8"
 
     # Diagnose
     issues = diagnose_issues()
@@ -114,8 +130,10 @@ def main():
 
     # Ask for repair
     try:
-        response = input("\n🔧 Deseja tentar correções automáticas? (y/N): ").strip().lower()
-        if response in ['y', 'yes', 's', 'sim']:
+        response = (
+            input("\n🔧 Deseja tentar correções automáticas? (y/N): ").strip().lower()
+        )
+        if response in ["y", "yes", "s", "sim"]:
             success_count = repair_issues(issues)
 
             if success_count > 0:
@@ -138,12 +156,14 @@ def main():
         logger.info("🛑 Cancelado pelo usuário")
 
     # Show manual solutions
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("🔧 SOLUÇÕES MANUAIS RECOMENDADAS:")
-    print("="*80)
+    print("=" * 80)
     print("1. PyTorch Issues:")
     print("   pip uninstall torch torchvision torchaudio")
-    print("   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu")
+    print(
+        "   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu"
+    )
     print()
     print("2. Encoding Issues:")
     print("   chcp 65001  # Windows UTF-8")
@@ -154,9 +174,10 @@ def main():
     print()
     print("4. Alternative - Use JARVIS Lite:")
     print("   python main_lite.py  # No heavy dependencies")
-    print("="*80)
+    print("=" * 80)
 
     return 1 if issues else 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,6 +1,5 @@
 import sys
 import json
-import pytest
 import logging
 from unittest.mock import MagicMock
 
@@ -8,13 +7,13 @@ from unittest.mock import MagicMock
 # MOCKING DEPENDENCIES
 # ============================================================================
 # Prevent the heavy initialization of src.core.intelligence.__init__
-sys.modules['src.core.intelligence.ai_agent'] = MagicMock()
-sys.modules['src.core.intelligence.decision_engine'] = MagicMock()
-sys.modules['src.core.intelligence.memory'] = MagicMock()
-sys.modules['src.core.intelligence.context_sanitizer'] = MagicMock()
-sys.modules['src.core.intelligence.neural_systems'] = MagicMock()
-sys.modules['src.core.intelligence.perception_engine'] = MagicMock()
-sys.modules['src.core.intelligence.knowledge_graph'] = MagicMock()
+sys.modules["src.core.intelligence.ai_agent"] = MagicMock()
+sys.modules["src.core.intelligence.decision_engine"] = MagicMock()
+sys.modules["src.core.intelligence.memory"] = MagicMock()
+sys.modules["src.core.intelligence.context_sanitizer"] = MagicMock()
+sys.modules["src.core.intelligence.neural_systems"] = MagicMock()
+sys.modules["src.core.intelligence.perception_engine"] = MagicMock()
+sys.modules["src.core.intelligence.knowledge_graph"] = MagicMock()
 
 # Also mock winreg for Linux environments just in case
 if sys.platform != "win32":
@@ -25,19 +24,22 @@ from src.core.intelligence.structured_output import (
     ResponseParser,
     AgentResponse,
     get_actions_schema,
-    get_example_responses
+    get_example_responses,
 )
+
 
 class TestResponseParser:
     """Tests for ResponseParser resilience to malformed JSON and various inputs."""
 
     def test_valid_json(self):
         """Test parsing valid JSON response."""
-        valid_json = json.dumps({
-            "thought": "Valid JSON thought",
-            "actions": [{"action": "wait", "seconds": 1.0}],
-            "final_answer": "Valid JSON answer"
-        })
+        valid_json = json.dumps(
+            {
+                "thought": "Valid JSON thought",
+                "actions": [{"action": "wait", "seconds": 1.0}],
+                "final_answer": "Valid JSON answer",
+            }
+        )
         response = ResponseParser.parse_llm_response(valid_json)
         assert isinstance(response, AgentResponse)
         assert response.thought == "Valid JSON thought"
@@ -86,11 +88,10 @@ class TestResponseParser:
         response = ResponseParser.parse_llm_response(malformed_json)
 
         # Accept either the current specific error message OR the generic fallback
-        assert any(msg in response.thought for msg in [
-            "Resposta não estruturada",
-            "Fallback",
-            "Resposta direta"
-        ])
+        assert any(
+            msg in response.thought
+            for msg in ["Resposta não estruturada", "Fallback", "Resposta direta"]
+        )
 
         # If the code changes to use _fallback_text_parse, response.final_answer will be the cleaned text
         # If it uses the current JSONDecodeError block, it also uses cleaned text
@@ -121,22 +122,21 @@ class TestResponseParser:
 
     def test_extra_fields_ignored(self):
         """Test that extra fields in JSON are ignored (or handled gracefully)."""
-        json_extra = json.dumps({
-            "thought": "Thought",
-            "actions": [],
-            "final_answer": "Answer",
-            "extra_field": "Should be ignored"
-        })
+        json_extra = json.dumps(
+            {
+                "thought": "Thought",
+                "actions": [],
+                "final_answer": "Answer",
+                "extra_field": "Should be ignored",
+            }
+        )
         response = ResponseParser.parse_llm_response(json_extra)
         assert response.thought == "Thought"
 
     def test_missing_fields_validation(self):
         """Test validation error when required fields are missing."""
         # Missing 'thought'
-        json_missing = json.dumps({
-            "actions": [],
-            "final_answer": "Answer"
-        })
+        json_missing = json.dumps({"actions": [], "final_answer": "Answer"})
         # Pydantic validation error raises Exception -> catch in parser -> fallback to text
         response = ResponseParser.parse_llm_response(json_missing)
 
@@ -147,11 +147,13 @@ class TestResponseParser:
     def test_action_validation_error(self):
         """Test validation error for invalid action parameters."""
         # 'wait' requires 'seconds'
-        json_invalid_action = json.dumps({
-            "thought": "Invalid action",
-            "actions": [{"action": "wait"}],
-            "final_answer": "Answer"
-        })
+        json_invalid_action = json.dumps(
+            {
+                "thought": "Invalid action",
+                "actions": [{"action": "wait"}],
+                "final_answer": "Answer",
+            }
+        )
 
         response = ResponseParser.parse_llm_response(json_invalid_action)
         # Should fallback because Pydantic validation fails
@@ -163,7 +165,10 @@ class TestResponseParser:
         with caplog.at_level(logging.ERROR):
             ResponseParser.parse_llm_response(malformed)
 
-        assert "JSON inválido do LLM" in caplog.text or "Erro ao validar resposta" in caplog.text
+        assert (
+            "JSON inválido do LLM" in caplog.text
+            or "Erro ao validar resposta" in caplog.text
+        )
 
     def test_legacy_regex_click_at(self):
         """Test legacy regex fallback for click_at action."""
@@ -204,6 +209,7 @@ class TestResponseParser:
         response = ResponseParser.parse_llm_response(text)
         assert "Modelo retornou bloco vazio" in response.thought
         assert len(response.actions) == 0
+
 
 class TestSchemaAndExamples:
     """Tests for helper functions that generate schemas and examples."""

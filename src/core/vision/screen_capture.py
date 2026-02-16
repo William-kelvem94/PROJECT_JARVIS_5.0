@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # Imports opcionais com graceful fallback
 try:
     import mss
+
     MSS_AVAILABLE = True
 except ImportError:
     MSS_AVAILABLE = False
@@ -22,6 +23,7 @@ except ImportError:
 
 try:
     import pyautogui
+
     PYAUTOGUI_AVAILABLE = True
 except ImportError:
     PYAUTOGUI_AVAILABLE = False
@@ -29,6 +31,7 @@ except ImportError:
 
 try:
     from PIL import Image, ImageDraw
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
@@ -37,14 +40,16 @@ except ImportError:
 try:
     import cv2
     import numpy as np
+
     CV2_AVAILABLE = True
 except ImportError:
     CV2_AVAILABLE = False
     logger.warning("opencv nÃ£o disponÃ­vel")
 
 from src.utils.config import config
-from src.utils.helpers import FileHelper, ImageHelper
+from src.utils.helpers import FileHelper
 from src.database.models import db_manager, Capture
+
 
 class ScreenCapture:
     """Classe principal para captura de tela"""
@@ -54,20 +59,20 @@ class ScreenCapture:
             logger.error("ScreenCapture: mss nÃ£o disponÃ­vel. MÃ³dulo desativado.")
             self.enabled = False
             return
-            
+
         self.enabled = True
         self.capture_active = False
         self.recording_active = False
         self.capture_thread = None
         self.recording_thread = None
-        
+
         # Thread-local storage for mss instances
         self.thread_local = threading.local()
 
         # ConfiguraÃ§Ãµes
-        self.capture_delay = config.get_setting('capture.capture_delay', 0.5)
-        self.default_format = config.get_setting('capture.default_format', 'PNG')
-        self.quality = config.get_setting('capture.quality', 95)
+        self.capture_delay = config.get_setting("capture.capture_delay", 0.5)
+        self.default_format = config.get_setting("capture.default_format", "PNG")
+        self.quality = config.get_setting("capture.quality", 95)
 
         # Callbacks
         self.on_capture_complete: Optional[Callable[[str], None]] = None
@@ -83,35 +88,38 @@ class ScreenCapture:
             self.thread_local.sct = mss.mss()
         return self.thread_local.sct
 
-    def capture_fullscreen(self, save_path: Optional[str] = None,
-                          capture_type: str = 'manual',
-                          monitor_index: Optional[int] = None,
-                          return_image: bool = False) -> Optional[str]:
+    def capture_fullscreen(
+        self,
+        save_path: Optional[str] = None,
+        capture_type: str = "manual",
+        monitor_index: Optional[int] = None,
+        return_image: bool = False,
+    ) -> Optional[str]:
         """
         Captura tela completa ou de um monitor especÃ­fico
-        
+
         Args:
             save_path: Caminho para salvar a captura
             capture_type: Tipo da captura
             monitor_index: Ãndice do monitor
             return_image: Se True, retorna dados da imagem em vez de salvar
-        
+
         Returns:
             Caminho do arquivo salvo ou dados da imagem se return_image=True
         """
         if not self.enabled or not MSS_AVAILABLE:
             logger.warning("Screen capture nÃ£o disponÃ­vel (mss nÃ£o instalado)")
             return None
-            
+
         try:
             sct = self._get_sct()
             if not sct:
                 return None
-            
+
             # Selecionar monitor
             if monitor_index is not None and monitor_index < len(sct.monitors):
                 monitor = sct.monitors[monitor_index]
-            elif capture_type == 'monitor' or capture_type == 'agent':
+            elif capture_type == "monitor" or capture_type == "agent":
                 # Capturar monitor onde estÃ¡ o cursor
                 monitor = self._get_monitor_under_cursor(sct)
             else:
@@ -123,14 +131,16 @@ class ScreenCapture:
             if not PIL_AVAILABLE:
                 logger.error("PIL nÃ£o disponÃ­vel para processar imagem")
                 return None
-            img = Image.frombytes("RGB", screenshot.size, screenshot.bgra, "raw", "BGRX")
+            img = Image.frombytes(
+                "RGB", screenshot.size, screenshot.bgra, "raw", "BGRX"
+            )
 
             if return_image:
                 # Retornar dados da imagem para processamento em memÃ³ria
                 return img
             else:
                 # Salvar captura
-                return self._save_capture(img, save_path, capture_type, 'fullscreen')
+                return self._save_capture(img, save_path, capture_type, "fullscreen")
 
         except Exception as e:
             logger.error(f"Erro na captura de tela completa: {e}")
@@ -142,9 +152,11 @@ class ScreenCapture:
         try:
             sct = self._get_sct()
             count = len(sct.monitors)
-                
+
             for i in range(1, count):
-                path = self.capture_fullscreen(monitor_index=i, capture_type='monitor_batch')
+                path = self.capture_fullscreen(
+                    monitor_index=i, capture_type="monitor_batch"
+                )
                 if path:
                     paths.append(path)
         except Exception as e:
@@ -158,19 +170,24 @@ class ScreenCapture:
                 monitors = sct_instance.monitors
             else:
                 monitors = self._get_sct().monitors
-                    
+
             x, y = pyautogui.position()
             for monitor in monitors[1:]:
-                if (monitor['left'] <= x < monitor['left'] + monitor['width'] and
-                    monitor['top'] <= y < monitor['top'] + monitor['height']):
+                if (
+                    monitor["left"] <= x < monitor["left"] + monitor["width"]
+                    and monitor["top"] <= y < monitor["top"] + monitor["height"]
+                ):
                     return monitor
-            return monitors[1] # Fallback para o primeiro se falhar
+            return monitors[1]  # Fallback para o primeiro se falhar
         except:
-             return self._get_sct().monitors[1]
+            return self._get_sct().monitors[1]
 
-    def capture_region(self, region: Tuple[int, int, int, int],
-                      save_path: Optional[str] = None,
-                      capture_type: str = 'manual') -> Optional[str]:
+    def capture_region(
+        self,
+        region: Tuple[int, int, int, int],
+        save_path: Optional[str] = None,
+        capture_type: str = "manual",
+    ) -> Optional[str]:
         """
         Captura regiÃ£o especÃ­fica da tela
         """
@@ -181,15 +198,18 @@ class ScreenCapture:
             screenshot = pyautogui.screenshot(region=(x, y, width, height))
 
             # Salvar captura
-            return self._save_capture(screenshot, save_path, capture_type, 'region')
+            return self._save_capture(screenshot, save_path, capture_type, "region")
 
         except Exception as e:
             logger.error(f"Erro na captura de regiÃ£o: {e}")
             return None
 
-    def capture_window(self, window_title: str,
-                      save_path: Optional[str] = None,
-                      capture_type: str = 'auto') -> Optional[str]:
+    def capture_window(
+        self,
+        window_title: str,
+        save_path: Optional[str] = None,
+        capture_type: str = "auto",
+    ) -> Optional[str]:
         """
         Captura janela especÃ­fica por tÃ­tulo
         """
@@ -210,8 +230,13 @@ class ScreenCapture:
             logger.error(f"Erro na captura de janela '{window_title}': {e}")
             return None
 
-    def _save_capture(self, image: Any, save_path: Optional[str], 
-                     capture_type: str, capture_method: str) -> Optional[str]:
+    def _save_capture(
+        self,
+        image: Any,
+        save_path: Optional[str],
+        capture_type: str,
+        capture_method: str,
+    ) -> Optional[str]:
         """
         Salva a imagem capturada e registra no banco de dados
         """
@@ -252,28 +277,32 @@ class ScreenCapture:
                     height=height,
                     format=self.default_format,
                     quality=self.quality,
-                    processing_status='pending'
+                    processing_status="pending",
                 )
                 session.add(new_capture)
                 session.commit()
-                
+
                 logger.info(f"Captura salva: {save_path} (ID: {new_capture.id})")
-                
+
                 # Notificar callback
                 if self.on_capture_complete:
                     self.on_capture_complete(str(save_path))
-                    
+
             except Exception as db_error:
                 session.rollback()
                 # Se for erro de hash duplicado, apenas logar como debug (nÃ£o Ã© crÃ­tico)
-                if "UNIQUE constraint failed" in str(db_error) and "file_hash" in str(db_error):
-                    logger.debug(f"Captura duplicada ignorada (hash jÃ¡ existe): {save_path}")
+                if "UNIQUE constraint failed" in str(db_error) and "file_hash" in str(
+                    db_error
+                ):
+                    logger.debug(
+                        f"Captura duplicada ignorada (hash jÃ¡ existe): {save_path}"
+                    )
                     # Retornar o path mesmo assim pois a imagem foi salva
                 else:
                     logger.error(f"Erro ao registrar captura no banco: {db_error}")
             finally:
                 session.close()
-                
+
             return str(save_path)
 
         except Exception as e:
@@ -286,24 +315,28 @@ class ScreenCapture:
     def _cleanup_old_captures(self):
         """MantÃ©m apenas as 100 capturas mais recentes para evitar saturaÃ§Ã£o de disco"""
         try:
-            captures = sorted(config.CAPTURES_DIR.glob("capture_*.png"), key=lambda x: x.stat().st_mtime)
+            captures = sorted(
+                config.CAPTURES_DIR.glob("capture_*.png"),
+                key=lambda x: x.stat().st_mtime,
+            )
             if len(captures) > 100:
                 for old_file in captures[:-100]:
-                     try:
-                         old_file.unlink()
-                         # logger.debug(f"Caputura antiga removida: {old_file.name}")
-                     except: pass
+                    try:
+                        old_file.unlink()
+                        # logger.debug(f"Caputura antiga removida: {old_file.name}")
+                    except:
+                        pass
         except Exception as e:
             logger.warning(f"Falha no cleanup de capturas: {e}")
 
-
-
-            
     # Skipping start_area_selection for brevity as it was just a print
 
-    def start_screen_recording(self, region: Optional[Tuple[int, int, int, int]] = None,
-                              output_path: Optional[str] = None,
-                              duration: Optional[int] = None) -> bool:
+    def start_screen_recording(
+        self,
+        region: Optional[Tuple[int, int, int, int]] = None,
+        output_path: Optional[str] = None,
+        duration: Optional[int] = None,
+    ) -> bool:
         """
         Inicia gravaÃ§Ã£o de tela
         """
@@ -314,8 +347,7 @@ class ScreenCapture:
         try:
             self.recording_active = True
             self.recording_thread = threading.Thread(
-                target=self._record_screen_thread,
-                args=(region, output_path, duration)
+                target=self._record_screen_thread, args=(region, output_path, duration)
             )
             self.recording_thread.daemon = True
             self.recording_thread.start()
@@ -328,8 +360,12 @@ class ScreenCapture:
             self.recording_active = False
             return False
 
-    def _record_screen_thread(self, region: Optional[Tuple[int, int, int, int]],
-                            output_path: Optional[str], duration: Optional[int]):
+    def _record_screen_thread(
+        self,
+        region: Optional[Tuple[int, int, int, int]],
+        output_path: Optional[str],
+        duration: Optional[int],
+    ):
         """Thread para gravaÃ§Ã£o de tela"""
         try:
             # Configurar codec e saÃ­da
@@ -343,10 +379,15 @@ class ScreenCapture:
                 x, y, width, height = region
             else:
                 monitor = sct.monitors[0]
-                x, y, width, height = monitor["left"], monitor["top"], monitor["width"], monitor["height"]
+                x, y, width, height = (
+                    monitor["left"],
+                    monitor["top"],
+                    monitor["width"],
+                    monitor["height"],
+                )
 
             # Configurar writer do OpenCV
-            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            fourcc = cv2.VideoWriter_fourcc(*"XVID")
             fps = 10  # 10 FPS Ã© suficiente para a maioria dos casos
             out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
@@ -361,9 +402,13 @@ class ScreenCapture:
                     break
 
                 # Capturar frame
-                screenshot = sct.grab({"left": x, "top": y, "width": width, "height": height})
+                screenshot = sct.grab(
+                    {"left": x, "top": y, "width": width, "height": height}
+                )
                 frame = np.frombuffer(screenshot.bgra, dtype=np.uint8)
-                frame = frame.reshape((height, width, 4))[:, :, :3]  # Remover canal alpha
+                frame = frame.reshape((height, width, 4))[
+                    :, :, :3
+                ]  # Remover canal alpha
 
                 # Escrever frame
                 out.write(frame)
@@ -374,10 +419,12 @@ class ScreenCapture:
 
             # Finalizar gravaÃ§Ã£o
             out.release()
-            
+
             self.recording_active = False
 
-            logger.info(f"GravaÃ§Ã£o finalizada: {frame_count} frames salvos em {output_path}")
+            logger.info(
+                f"GravaÃ§Ã£o finalizada: {frame_count} frames salvos em {output_path}"
+            )
 
             # Chamar callback se definido
             if self.on_recording_complete:
@@ -390,9 +437,12 @@ class ScreenCapture:
             logger.error(f"Erro na thread de gravaÃ§Ã£o: {e}")
             self.recording_active = False
 
-    def _timer_capture_thread(self, interval_seconds: int,
-                            max_captures: Optional[int],
-                            region: Optional[Tuple[int, int, int, int]]):
+    def _timer_capture_thread(
+        self,
+        interval_seconds: int,
+        max_captures: Optional[int],
+        region: Optional[Tuple[int, int, int, int]],
+    ):
         """Thread para captura por timer"""
         capture_count = 0
 
@@ -406,9 +456,9 @@ class ScreenCapture:
 
                 # Capturar
                 if region:
-                    self.capture_region(region, capture_type='timer')
+                    self.capture_region(region, capture_type="timer")
                 else:
-                    self.capture_fullscreen(capture_type='timer')
+                    self.capture_fullscreen(capture_type="timer")
 
                 capture_count += 1
 
@@ -420,7 +470,9 @@ class ScreenCapture:
                 time.sleep(1)  # Pausa de erro
 
         self.capture_active = False
-        logger.info(f"Thread de captura por timer finalizada. Total de capturas: {capture_count}")
+        logger.info(
+            f"Thread de captura por timer finalizada. Total de capturas: {capture_count}"
+        )
 
     def get_monitor_info(self) -> List[Dict[str, Any]]:
         """Retorna informaÃ§Ãµes dos monitores disponÃ­veis"""
@@ -428,20 +480,24 @@ class ScreenCapture:
         try:
             sct = self._get_sct()
             for i, monitor in enumerate(sct.monitors[1:], 1):  # Pular monitor 0 (todo)
-                monitors.append({
-                    'id': i,
-                    'x': monitor['left'],
-                    'y': monitor['top'],
-                    'width': monitor['width'],
-                    'height': monitor['height'],
-                    'is_primary': i == 1
-                })
+                monitors.append(
+                    {
+                        "id": i,
+                        "x": monitor["left"],
+                        "y": monitor["top"],
+                        "width": monitor["width"],
+                        "height": monitor["height"],
+                        "is_primary": i == 1,
+                    }
+                )
         except Exception as e:
             logger.error(f"Erro ao obter info do monitor: {e}")
-            
+
         return monitors
 
-    def take_screenshot_with_cursor(self, save_path: Optional[str] = None) -> Optional[str]:
+    def take_screenshot_with_cursor(
+        self, save_path: Optional[str] = None
+    ) -> Optional[str]:
         """
         Captura screenshot incluindo o cursor do mouse
 
@@ -466,28 +522,29 @@ class ScreenCapture:
 
     def capture_context(self) -> Dict[str, Any]:
         """Captura contexto visual do desktop de forma econômica"""
-        context = {
-            "timestamp": datetime.now().isoformat(),
-            "active_window": "unknown"
-        }
-        
+        context = {"timestamp": datetime.now().isoformat(), "active_window": "unknown"}
+
         try:
-             # Window Title
-             import pygetwindow as gw
-             active = gw.getActiveWindow()
-             if active:
-                 context["active_window"] = active.title
-        except: pass
+            # Window Title
+            import pygetwindow as gw
+
+            active = gw.getActiveWindow()
+            if active:
+                context["active_window"] = active.title
+        except:
+            pass
 
         # Captura se o hardware permitir
         from src.core.management.hardware_manager import hardware_manager
+
         if not hardware_manager.is_throttled:
             # Captura lo-res para economizar
-            path = self.capture_fullscreen(capture_type='context')
+            path = self.capture_fullscreen(capture_type="context")
             if path:
                 context["image_path"] = path
-                
+
         return context
+
 
 # Instância global
 screen_capture = ScreenCapture()

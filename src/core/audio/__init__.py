@@ -23,11 +23,13 @@ Exemplo de uso:
 from .voice_controller import VoiceController
 from .voice_filter import AtomicVoiceFilter as VoiceFilter
 
+
 # Lazy imports for heavy components
 def __getattr__(name):
     if name == "AdvancedSpeechProcessor":
         try:
             from .advanced_speech_processor import AdvancedSpeechProcessor
+
             return AdvancedSpeechProcessor
         except ImportError as e:
             print(f"WARNING: AdvancedSpeechProcessor not available: {e}")
@@ -35,6 +37,7 @@ def __getattr__(name):
     elif name == "RealtimeTranscriber":
         try:
             from .realtime_transcription import RealtimeTranscriber
+
             return RealtimeTranscriber
         except ImportError as e:
             print(f"WARNING: RealtimeTranscriber not available: {e}")
@@ -42,19 +45,21 @@ def __getattr__(name):
     elif name == "EnhancedAudioSystem":
         try:
             from .enhanced_audio import EnhancedAudioSystem
+
             return EnhancedAudioSystem
         except ImportError as e:
             print(f"WARNING: EnhancedAudioSystem not available: {e}")
             return None
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
+
 # Note: Dynamic attributes via __getattr__ handle the imports lazily
 # to avoid heavy dependencies at startup.
 
 __all__ = [
-    'VoiceController',
-    'VoiceFilter',
-    'AdvancedSpeechProcessor',
-    'RealtimeTranscriber',
-    'EnhancedAudioSystem'
+    "VoiceController",
+    "VoiceFilter",
+    "AdvancedSpeechProcessor",
+    "RealtimeTranscriber",
+    "EnhancedAudioSystem",
 ]

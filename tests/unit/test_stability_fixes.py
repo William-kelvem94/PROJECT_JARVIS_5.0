@@ -4,7 +4,6 @@ JARVIS 5.0 Stability Test Script
 Tests the implemented fixes for memory leaks and component stability.
 """
 
-import os
 import sys
 import time
 import psutil
@@ -14,12 +13,14 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def test_memory_management():
     """Test memory management improvements"""
     print("🧠 Testing Memory Management...")
 
     try:
         from src.core.intelligence.memory.unified_manager import UnifiedMemoryManager
+
         memory = UnifiedMemoryManager()
 
         # Test cache operations
@@ -42,6 +43,7 @@ def test_memory_management():
         print(f"  ❌ Memory test failed: {e}")
         return False
 
+
 def test_model_unloading():
     """Test automatic model unloading"""
     print("🤖 Testing Model Unloading...")
@@ -49,6 +51,7 @@ def test_model_unloading():
     try:
         # Test audio system
         from src.core.audio.enhanced_audio import EnhancedAudioSystem
+
         audio = EnhancedAudioSystem()
 
         # Simulate activity
@@ -57,6 +60,7 @@ def test_model_unloading():
 
         # Test vision system
         from src.core.vision.optimized_yolo_pipeline import OptimizedYOLOPipeline
+
         vision = OptimizedYOLOPipeline(models_dir=Path("./models"))
         print("  👁️ Vision system initialized successfully")
         return True
@@ -64,6 +68,7 @@ def test_model_unloading():
     except Exception as e:
         print(f"  ❌ Model unloading test failed: {e}")
         return False
+
 
 def test_asyncio_fixes():
     """Test asyncio scoping fixes"""
@@ -74,6 +79,7 @@ def test_asyncio_fixes():
         def test_thread():
             try:
                 import asyncio
+
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 loop.close()
@@ -105,6 +111,7 @@ def test_asyncio_fixes():
         print(f"  ❌ AsyncIO test failed: {e}")
         return False
 
+
 def monitor_memory_usage(duration=10):
     """Monitor memory usage during test"""
     print(f"📊 Monitoring memory usage for {duration} seconds...")
@@ -124,6 +131,7 @@ def monitor_memory_usage(duration=10):
 
     # Flag if memory increase is excessive (>100MB)
     return memory_increase < 100
+
 
 def main():
     """Run all stability tests"""
@@ -166,6 +174,7 @@ def main():
     else:
         print("⚠️ Some tests failed. Check the implementation.")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
