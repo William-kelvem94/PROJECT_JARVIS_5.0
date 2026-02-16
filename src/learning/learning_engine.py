@@ -762,8 +762,47 @@ class LearningEngine:
             return
         
         try:
-            # TODO: Atualizar feedback entry existente ou criar nova
-            logger.info(f"ðŸ“ Explicit feedback recorded: {feedback_value} for {interaction_id}")
+            # Search for existing feedback entry
+            existing_entry = self.feedback_loop.get_feedback_by_interaction_id(interaction_id)
+
+            if existing_entry:
+                # Update existing entry
+                existing_entry.feedback_value = feedback_value
+                existing_entry.feedback_type = 'explicit'
+                existing_entry.correction = correction
+
+                from datetime import datetime
+                existing_entry.timestamp = datetime.now().isoformat()
+
+                self.feedback_loop.update_feedback(existing_entry)
+                logger.info(f"📍 Explicit feedback updated: {feedback_value} for {interaction_id}")
+
+            else:
+                # Create new entry if not found (with placeholder text)
+                import hashlib
+                import time
+                from datetime import datetime
+                from src.learning.feedback_loop import FeedbackEntry
+
+                feedback_id = hashlib.md5(
+                    f"{interaction_id}{time.time()}".encode()
+                ).hexdigest()[:16]
+
+                new_entry = FeedbackEntry(
+                    feedback_id=feedback_id,
+                    interaction_id=interaction_id,
+                    user_input="<unknown>",
+                    ai_response="<unknown>",
+                    feedback_type='explicit',
+                    feedback_value=feedback_value,
+                    correction=correction,
+                    timestamp=datetime.now().isoformat(),
+                    metadata={'note': 'Created from explicit feedback without prior context'}
+                )
+
+                self.feedback_loop.add_feedback(new_entry)
+                logger.info(f"📍 Explicit feedback created: {feedback_value} for {interaction_id} (new entry)")
+
         except Exception as e:
             logger.error(f"âŒ Failed to record explicit feedback: {e}")
     

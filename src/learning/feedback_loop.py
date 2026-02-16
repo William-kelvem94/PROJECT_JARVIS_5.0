@@ -238,6 +238,74 @@ class FeedbackDatabase:
             logger.error(f"Error adding preference pair: {e}", exc_info=True)
             return False
     
+    def get_feedback_by_interaction_id(self, interaction_id: str) -> Optional[FeedbackEntry]:
+        """
+        Get the most recent feedback entry for an interaction.
+
+        Args:
+            interaction_id: Interaction ID to search for
+
+        Returns:
+            FeedbackEntry if found, None otherwise
+        """
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("""
+                SELECT * FROM feedback
+                WHERE interaction_id = ?
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (interaction_id,))
+
+            row = cursor.fetchone()
+            if row:
+                return self._row_to_feedback(row)
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting feedback by interaction_id: {e}")
+            return None
+
+    def update_feedback(self, feedback: FeedbackEntry) -> bool:
+        """
+        Update an existing feedback entry.
+
+        Args:
+            feedback: Feedback entry to update
+
+        Returns:
+            True if successful
+        """
+        try:
+            with self._db_lock:
+                cursor = self.conn.cursor()
+                cursor.execute("""
+                    UPDATE feedback
+                    SET user_input = ?,
+                        ai_response = ?,
+                        feedback_type = ?,
+                        feedback_value = ?,
+                        correction = ?,
+                        timestamp = ?,
+                        metadata = ?
+                    WHERE feedback_id = ?
+                """, (
+                    feedback.user_input,
+                    feedback.ai_response,
+                    feedback.feedback_type,
+                    feedback.feedback_value,
+                    feedback.correction,
+                    feedback.timestamp,
+                    json.dumps(feedback.metadata),
+                    feedback.feedback_id
+                ))
+                self.conn.commit()
+                return cursor.rowcount > 0
+
+        except Exception as e:
+            logger.error(f"Error updating feedback: {e}", exc_info=True)
+            return False
+
     def get_feedback_by_type(self, feedback_type: str) -> List[FeedbackEntry]:
         """Get all feedback of a specific type."""
         try:
