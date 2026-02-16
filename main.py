@@ -553,6 +553,16 @@ class JarvisSingularity(QObject):
             except Exception as e:
                 logger.warning(f"⚠️ Network Mesh initialization failed: {e}")
         
+        # 🧠 Self-Learning Evolution Engine (Auto-aprendizado contínuo)
+        self.self_learning_engine = None
+        try:
+            from src.core.evolution.self_learning_engine import SelfLearningEngine
+            self.self_learning_engine = SelfLearningEngine(PROJECT_ROOT)
+            self.self_learning_engine.start_continuous_learning()
+            logger.info("🧠 Self-Learning Engine initialized - JARVIS aprendendo sobre si mesmo")
+        except Exception as e:
+            logger.warning(f"⚠️ Self-Learning Engine initialization failed: {e}")
+        
         # Response lock to avoid overlapping
         self._is_processing = False
         
@@ -1040,6 +1050,16 @@ class JarvisSingularity(QObject):
 
     def shutdown(self):
         """Finalizes all systems and exits gracefully via ShutdownManager"""
+        logger.info("🧠 Iniciando shutdown graceful - salvando conhecimento adquirido...")
+
+        # 🧠 Salvar conhecimento do Self-Learning Engine
+        if hasattr(self, 'self_learning_engine') and self.self_learning_engine:
+            try:
+                self.self_learning_engine.stop_continuous_learning()
+                logger.info("🧠 Conhecimento do Self-Learning Engine salvo com sucesso")
+            except Exception as e:
+                logger.error(f"❌ Erro salvando conhecimento: {e}")
+
         if hasattr(self, 'shutdown_manager') and self.shutdown_manager:
             self.shutdown_manager.graceful_shutdown()
         else:

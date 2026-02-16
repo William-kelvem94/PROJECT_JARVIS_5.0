@@ -800,6 +800,94 @@ class AIAgent:
         ui_signals.update_status.emit("Analisando comando do Senhor...")
 
         # =====================================================================
+        # 🧠 SELF-LEARNING ENGINE COMMANDS (Comandos especiais de auto-aprendizado)
+        # =====================================================================
+        cmd_lower = user_command.lower().strip()
+
+        # Comando para status do aprendizado
+        if cmd_lower in ["status aprendizado", "como está aprendendo", "aprendizado status", "learning status"]:
+            try:
+                # Importar e acessar o SelfLearningEngine através do sistema principal
+                from src.core.evolution.self_learning_engine import SelfLearningEngine
+                from pathlib import Path
+                PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+
+                learning_engine = SelfLearningEngine(PROJECT_ROOT)
+                stats = learning_engine.get_learning_stats()
+
+                response = "🧠 **STATUS DO SISTEMA DE AUTO-APRENDIZADO**\\n\\n"
+                response += f"📊 Sessões totais: {stats['total_sessions']}\\n"
+                response += f"🔄 Sessão ativa: {'Sim' if stats['current_session_active'] else 'Não'}\\n"
+                response += f"📈 Análises realizadas: {stats['analysis_count']}\\n"
+                response += f"💡 Insights gerados: {stats['insights_generated']}\\n"
+                response += f"🚀 Melhorias sugeridas: {stats['improvements_suggested']}\\n"
+                response += f"📚 Entradas de conhecimento: {stats['knowledge_entries']}\\n\\n"
+
+                if stats['current_session_active']:
+                    response += "✅ Sistema de aprendizado está **ATIVO** e analisando continuamente.\\n"
+                else:
+                    response += "⏸️ Sistema de aprendizado está **PAUSADO**.\\n"
+
+                return response
+
+            except Exception as e:
+                logger.error(f"Erro acessando Self-Learning Engine: {e}")
+                return "❌ Erro ao acessar sistema de aprendizado."
+
+        # Comando para forçar análise
+        elif cmd_lower in ["analise sistema", "force analysis", "analyze system"]:
+            try:
+                from src.core.evolution.self_learning_engine import SelfLearningEngine
+                from pathlib import Path
+                PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+
+                learning_engine = SelfLearningEngine(PROJECT_ROOT)
+                learning_engine._analyze_entire_system()
+                learning_engine._generate_insights()
+                learning_engine._generate_auto_documentation()
+
+                return "🧠 **ANÁLISE COMPLETA REALIZADA**\\n\\n✅ Sistema analisado\\n💡 Insights gerados\\n📄 Documentação atualizada\\n\\nVerifique a pasta `docs/auto_generated/` para ver os relatórios gerados automaticamente."
+
+            except Exception as e:
+                logger.error(f"Erro na análise forçada: {e}")
+                return "❌ Erro ao realizar análise do sistema."
+
+        # Comando para mostrar melhorias sugeridas
+        elif cmd_lower in ["melhorias sugeridas", "show improvements", "suggested improvements"]:
+            try:
+                from src.core.evolution.self_learning_engine import SelfLearningEngine
+                from pathlib import Path
+                PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+
+                learning_engine = SelfLearningEngine(PROJECT_ROOT)
+                improvements = learning_engine.auto_improvements
+
+                if not improvements:
+                    return "📝 Nenhuma melhoria sugerida ainda. O sistema precisa de mais tempo aprendendo."
+
+                response = "🚀 **MELHORIAS SUGERIDAS PELO SISTEMA**\\n\\n"
+
+                # Agrupar por prioridade
+                by_priority = {"immediate": [], "high": [], "medium": [], "low": []}
+                for imp in improvements[-10:]:  # Últimas 10
+                    priority = imp.get("priority", "medium")
+                    by_priority[priority].append(imp)
+
+                for priority in ["immediate", "high", "medium", "low"]:
+                    if by_priority[priority]:
+                        response += f"**{priority.upper()} PRIORITY:**\\n"
+                        for imp in by_priority[priority]:
+                            response += f"• {imp['title']}\\n"
+                        response += "\\n"
+
+                response += f"\\n📊 Total de melhorias sugeridas: {len(improvements)}"
+                return response
+
+            except Exception as e:
+                logger.error(f"Erro ao mostrar melhorias: {e}")
+                return "❌ Erro ao acessar melhorias sugeridas."
+
+        # =====================================================================
         # PHASE: INSTINCT LAYER (QUICK RESPONSE - ZERO LATENCY)
         # =====================================================================
         # Antes de ir para a LLM, verificamos se é um comando trivial
