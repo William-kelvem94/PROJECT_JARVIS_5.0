@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Real-time Audio Stream com Silero-VAD
 ===================================================
 Sprint 1: Real-time Transcription

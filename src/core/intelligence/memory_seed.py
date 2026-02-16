@@ -1,10 +1,10 @@
-﻿"""
+"""
 Semeador de MemÃ³ria do Jarvis (Memory Seed)
 Inicializa a memÃ³ria neural com conhecimento bÃ¡sico e regras de comportamento.
 """
 
 import logging
-from src.core.intelligence.memory import memory_manager as neural_memory
+from src.core.intelligence.neural_memory import neural_memory
 
 logger = logging.getLogger(__name__)
 

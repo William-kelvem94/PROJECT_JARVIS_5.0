@@ -1,8 +1,16 @@
-﻿import asyncio
+import asyncio
 import logging
 import json
 
 logger = logging.getLogger(__name__)
+
+# Lazy import para broadcast_message
+try:
+    from src.web.web_server import broadcast_message
+    WEB_SERVER_AVAILABLE = True
+except ImportError:
+    broadcast_message = None
+    WEB_SERVER_AVAILABLE = False
 
 # ReferÃªncia global para o servidor web (opcional, se precisarmos de acesso direto)
 _web_server_ref = None
@@ -30,12 +38,12 @@ def _notify_subscribers(event_type: str, data: dict):
 async def emit_log(message: str, level: str = "INFO"):
     """Envia log para Web e HUD"""
     # 1. Web
-    from src.web.web_server import broadcast_message
-    await broadcast_message({
-        "type": "log",
-        "message": message,
-        "level": level
-    })
+    if WEB_SERVER_AVAILABLE and broadcast_message is not None:
+        await broadcast_message({
+            "type": "log",
+            "message": message,
+            "level": level
+        })
     # 2. Desktop HUD
     _notify_subscribers("log", {"message": message, "level": level})
 
@@ -43,11 +51,11 @@ async def emit_telemetry(cpu: float, memory: float):
     """Envia telemetria para Web e HUD"""
     data = {"cpu": cpu, "memory": memory}
     # 1. Web
-    from src.web.web_server import broadcast_message
-    await broadcast_message({
-        "type": "telemetry",
-        **data
-    })
+    if WEB_SERVER_AVAILABLE and broadcast_message is not None:
+        await broadcast_message({
+            "type": "telemetry",
+            **data
+        })
     # 2. Desktop HUD
     _notify_subscribers("telemetry", data)
 
@@ -63,11 +71,11 @@ async def emit_status(status: str, details: str = "", model: str = None, tier: s
         "tier": tier
     }
     # 1. Web
-    from src.web.web_server import broadcast_message
-    await broadcast_message({
-        "type": "status",
-        **data
-    })
+    if WEB_SERVER_AVAILABLE and broadcast_message is not None:
+        await broadcast_message({
+            "type": "status",
+            **data
+        })
     # 2. Desktop HUD
     _notify_subscribers("status", data)
 

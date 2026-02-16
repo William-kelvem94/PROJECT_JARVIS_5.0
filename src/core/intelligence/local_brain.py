@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cérebro Local do Jarvis 5.0 (Local Brain)
 Implementa um modelo de linguagem reduzido (Micro-LLM) rodando nativamente.
 Fase 5: Modernização Definitiva via Optimum-Intel.
@@ -79,14 +79,25 @@ class LocalBrain:
         # KV Cache Persistence
         self.past_key_values = None
         
-        # Autoload
-        autoload = config.get_ai_config('local_brain.autoload', True)
+        # Autoload - Disabled by default to save memory during system boot
+        autoload = config.get_ai_config('local_brain.autoload', False)
         if autoload:
             self.load_async()
 
     def load_async(self):
         if self._is_loaded or self._is_loading:
             return
+            
+        # Resource Guard: Don't load if system RAM is critically low (>90%)
+        try:
+            import psutil
+            mem = psutil.virtual_memory()
+            if mem.percent > 85.0:
+                logger.warning(f"⚠️ Memory Guard: System RAM at {mem.percent}%. Skipping LocalBrain auto-load to prevent freeze.")
+                return
+        except ImportError:
+            pass
+            
         self._is_loading = True
         threading.Thread(target=self._load_model_background, daemon=True, name="Stark-Neural-Loader").start()
 
@@ -100,6 +111,8 @@ class LocalBrain:
                 logger.info(f"🧠 [LOCAL BRAIN] Iniciando motor neural: {self.model_id}")
                 
                 # 1. Carregar Tokenizer
+                if not TRANSFORMERS_AVAILABLE:
+                    raise ImportError("Transformers library not available for LocalBrain")
                 self.tokenizer = AutoTokenizer.from_pretrained(self.model_id, trust_remote_code=True)
                 
                 # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache Inteligente
@@ -148,9 +161,17 @@ class LocalBrain:
                 # 3. Fallback PyTorch Nativo (Se OpenVINO falhou ou indisponível)
                 if self.model is None:
                     logger.info("🏠 Usando motor PyTorch Nativo (CPU)...")
+                    # Try to use float16/bfloat16 for 50% memory saving if supported
+                    dtype = torch.float32
+                    if TORCH_AVAILABLE:
+                        if torch.cuda.is_available():
+                            dtype = torch.float16
+                        elif hasattr(torch, 'bfloat16'):
+                            dtype = torch.bfloat16
+                    
                     self.model = AutoModelForCausalLM.from_pretrained(
                         self.model_id,
-                        dtype=torch.float32 if torch else None,
+                        dtype=dtype,
                         trust_remote_code=True
                     )
                     self.device = "CPU"

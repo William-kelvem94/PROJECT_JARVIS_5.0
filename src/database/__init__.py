@@ -1,1 +1,1 @@
-﻿# Pacote vazio
+# Pacote vazio

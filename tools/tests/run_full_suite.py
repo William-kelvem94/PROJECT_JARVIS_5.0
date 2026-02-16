@@ -46,7 +46,7 @@ def run_tests(project_root):
     ] + valid_dirs
     
     try:
-        result = subprocess.run(cmd, cwd=project_root)
+        result = subprocess.run(cmd, cwd=project_root, capture_output=False, check=False)
         duration = time.time() - start_time
         
         print("\n" + "="*60)
@@ -59,7 +59,10 @@ def run_tests(project_root):
         return result.returncode
         
     except Exception as e:
-        print(f"\n[CRITICAL] Failed to execute pytest: {e}")
+        print(
+            f"\n[CRITICAL] Failed to execute pytest command {cmd} "
+            f"in directory {project_root}: {e}"
+        )
         return 1
 
 if __name__ == "__main__":

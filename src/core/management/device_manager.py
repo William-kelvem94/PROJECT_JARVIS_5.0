@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS 5.0 - Advanced Device & System Manager
@@ -18,9 +18,6 @@ import os
 import sys
 import webbrowser
 import subprocess
-import winreg
-import ctypes
-from ctypes import cast, POINTER
 import json
 import shutil
 from pathlib import Path
@@ -31,33 +28,40 @@ from enum import Enum
 # Imports principais
 import psutil
 
+# Platform compatibility
+from src.utils.platform_compat import (
+    IS_WINDOWS, IS_LINUX, IS_MAC,
+    winreg, WINREG_AVAILABLE,
+    win32api, win32con, win32security, win32process, PYWIN32_AVAILABLE,
+    wmi, WMI_AVAILABLE,
+    AudioUtilities, IAudioEndpointVolume, CLSCTX_ALL, PYCAW_AVAILABLE,
+    ctypes, CTYPES_AVAILABLE,
+    require_windows, windows_or_fallback
+)
+
+# Define winreg constants for non-Windows platforms
+if not WINREG_AVAILABLE or winreg is None:
+    class _FakeWinreg:
+        REG_SZ = 1
+        REG_DWORD = 4
+        KEY_READ = 0x20019
+        KEY_SET_VALUE = 0x0002
+        HKEY_LOCAL_MACHINE = None
+        HKEY_CURRENT_USER = None
+        def OpenKey(*args, **kwargs): raise NotImplementedError("winreg not available")
+        def CreateKey(*args, **kwargs): raise NotImplementedError("winreg not available")
+        def SetValueEx(*args, **kwargs): raise NotImplementedError("winreg not available")
+        def QueryValueEx(*args, **kwargs): raise NotImplementedError("winreg not available")
+        def CloseKey(*args, **kwargs): pass
+        def DeleteValue(*args, **kwargs): raise NotImplementedError("winreg not available")
+    winreg = _FakeWinreg()
+
 # Imports opcionais com graceful degradation
 try:
     import screen_brightness_control as sbc
     SBC_AVAILABLE = True
 except ImportError:
     SBC_AVAILABLE = False
-    
-try:
-    import wmi
-    WMI_AVAILABLE = True
-except ImportError:
-    WMI_AVAILABLE = False
-
-try:
-    from comtypes import CLSCTX_ALL
-    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-    PYCAW_AVAILABLE = True
-except ImportError:
-    PYCAW_AVAILABLE = False
-
-try:
-    import win32api
-    import win32con
-    import win32security
-    import win32process
-    PYWIN32_AVAILABLE = True
-except ImportError:
     PYWIN32_AVAILABLE = False
 
 logger = logging.getLogger(__name__)

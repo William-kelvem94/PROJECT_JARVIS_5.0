@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Topology Scanner
 ==============================
 MÃ³dulo para mapear a estrutura completa de um projeto e entender o "todo".

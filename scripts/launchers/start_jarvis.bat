@@ -21,7 +21,7 @@ set "VENV_DIR=venv"
 :: ----------------------------------------------------------------------------------
 if not exist "%VENV_DIR%\Scripts\activate.bat" (
     echo [ERROR] Virtual Environment not found!
-    echo [INFO]  Please run 'scripts/install/setup_environment.bat' first.
+    echo [INFO]  Please run 'scripts/install/install_system.py' first.
     pause
     exit /b 1
 )

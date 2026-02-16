@@ -38,6 +38,26 @@ desktop.ini
 *.swp
 *.swo
 *~
+# VSCode
+.vscode/
+
+# Logs
+logs/
+*.log
+*.txt
+
+# Dados temporários
+data/cache/
+data/temp/
+data/audio/temp/
+
+# Modelos
+models/trained/
+models/yolo/
+
+# Outros
+.env
+.idea/
 
 # -----------------------------------------------------------------------------
 # IDE & EDITOR
@@ -65,8 +85,6 @@ data/logs/*
 !data/logs/.gitkeep
 
 # Memory / Database
-data/memory/chroma.sqlite3
-data/memory/*.parquet
 data/memory/*
 !data/memory/.gitkeep
 
@@ -78,22 +96,28 @@ data/temp/
 # -----------------------------------------------------------------------------
 # MEDIA & ASSETS (GENERATED)
 # -----------------------------------------------------------------------------
+# Audio (typically generated)
 *.wav
 *.mp3
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.mp4
 
+# Generated images and videos under data/ and temp-like directories
+data/**/*.png
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.gif
+data/**/*.mp4
+# End MEDIA & ASSETS (GENERATED) section
 # -----------------------------------------------------------------------------
 # AI MODELS (LARGE FILES)
 # -----------------------------------------------------------------------------
 models/*.pt
 models/*.bin
-models/*.gguf
+
 models/*.safetensors
 !models/vision/yolov8n.pt  # Keep small reference models if needed
+models/*.h5
+models/*.pb
+models/*.onnx
 
 # -----------------------------------------------------------------------------
 # TESTING & COVERAGE
@@ -102,6 +126,14 @@ models/*.safetensors
 .coverage
 htmlcov/
 .tox/
+
+# -----------------------------------------------------------------------------
+# PYTHON SPECIFIC
+# -----------------------------------------------------------------------------
+.python-version
+.mypy_cache/
+.dmypy.json
+.ipynb_checkpoints/
 
 # -----------------------------------------------------------------------------
 # LEGACY & MIGRATION

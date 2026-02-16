@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - ReAct Agent (Reasoning + Acting)
 ==============================================
 Sprint 4: Predictive & Autonomous

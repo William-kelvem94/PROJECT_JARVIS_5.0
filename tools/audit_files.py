@@ -18,7 +18,7 @@ def get_file_info(root_dir):
                     try:
                         with open(path, 'r', encoding='utf-8', errors='ignore') as f:
                             line_count = sum(1 for _ in f)
-                    except:
+                    except Exception:
                         pass
                 
                 file_info.append({
@@ -27,12 +27,12 @@ def get_file_info(root_dir):
                     'mod_date': mod_date,
                     'lines': line_count
                 })
-            except Exception as e:
+            except Exception:
                 pass
     return file_info
 
 if __name__ == "__main__":
     root = r"C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0"
     info = get_file_info(root)
-    for i in info:
-        print(f"{i['path']}|{i['size_kb']:.2f}|{i['mod_date']}|{i['lines']}")
+    for file_entry in info:
+        print(f"{file_entry['path']}|{file_entry['size_kb']:.2f}|{file_entry['mod_date']}|{file_entry['lines']}")

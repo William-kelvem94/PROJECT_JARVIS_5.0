@@ -1,4 +1,4 @@
-﻿"""
+"""
 ConfiguraÃ§Ãµes globais do Jarvis 5.0
 Centraliza todas as configuraÃ§Ãµes, caminhos e constantes do sistema
 """
@@ -8,18 +8,16 @@ import json
 import platform
 from pathlib import Path
 from typing import Dict, Any, Optional
-import logging
+
 import yaml
 from pydantic import BaseModel, ValidationError, Field
 import jsonschema
 
-# ConfiguraÃ§Ã£o de logging gerenciada pelo LoggingConfig
+# Configuração de logging centralizada
 from src.utils.logging_config import LoggingConfig
+from src.utils.jarvis_logger import get_component_logger
 
-# SerÃ¡ inicializado no __init__ do Config para garantir paths corretos
-# (Removido basicConfig estÃ¡tico que causava conflitos)
-
-logger = logging.getLogger(__name__)
+logger = get_component_logger("config")
 
 import threading
 
@@ -77,14 +75,14 @@ class Config:
         self.PROJECT_ROOT = Path(__file__).parent.parent.parent
         self.SRC_DIR = self.PROJECT_ROOT / "src"
         self.DATA_DIR = self.PROJECT_ROOT / "data"
-        self.CONFIG_DIR = self.SRC_DIR / "config"
+        self.CONFIG_DIR = self.PROJECT_ROOT / "config"
         self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
         # INICIALIZAR LOGGING EXTENDIDO
         try:
             LoggingConfig.setup_jarvis_logging(self.DATA_DIR)
-            logger.info("âœ… Sistema de Logging Detalhado inicializado.")
+            logger.info("âœ… Sistema de Logging Unificado JARVIS inicializado.")
         except Exception as e:
             print(f"FATAL: Erro ao iniciar logs: {e}")
 

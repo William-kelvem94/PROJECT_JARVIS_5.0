@@ -1,4 +1,4 @@
-﻿"""
+"""
 O Gatilho do Sonho (DreamOrchestrator)
 Monitora ociosisade do sistema para iniciar ciclos de aprendizado autÃ´nomo (Neural Dream).
 """

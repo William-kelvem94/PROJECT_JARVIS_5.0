@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 SEMANTIC FEEDBACK - Sistema de Auto-CorreÃ§Ã£o Evolutiva
 JARVIS 5.0 - AnÃ¡lise semÃ¢ntica e aprendizado adaptativo real

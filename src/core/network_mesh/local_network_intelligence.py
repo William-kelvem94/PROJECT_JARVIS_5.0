@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 JARVIS SINGULARITY - Local Network Intelligence System
@@ -20,7 +20,7 @@ import platform
 import socket
 import hashlib
 import time
-import winreg
+from src.utils.platform_compat import winreg, WINREG_AVAILABLE
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Any, Tuple

@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS AGI - Machine Learning Core
 ==================================
 

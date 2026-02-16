@@ -1,4 +1,4 @@
-﻿"""
+"""
 Vision Enhancer: detecção UI + OCR.
 
 This module avoids importing heavy vision libraries at module import time

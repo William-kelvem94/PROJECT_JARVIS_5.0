@@ -1,4 +1,4 @@
-﻿"""
+"""
 Analisador inteligente de dados extraÃ­dos
 Categoriza e processa dados usando IA e regras
 """

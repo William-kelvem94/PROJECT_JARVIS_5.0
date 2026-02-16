@@ -1,4 +1,4 @@
-﻿"""
+"""
 MÃ³dulo de captura de tela
 ResponsÃ¡vel por capturar screenshots e gravaÃ§Ãµes de tela
 """

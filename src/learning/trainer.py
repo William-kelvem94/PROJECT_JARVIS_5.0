@@ -1,4 +1,4 @@
-﻿"""
+"""
 Local Trainer for JARVIS AGI Machine Learning Core.
 
 This module handles LoRA/QLoRA fine-tuning for various LLMs including
@@ -11,20 +11,17 @@ import logging
 import time
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Tuple, Callable
+from typing import Dict, List, Optional, Any, Tuple, Literal
 from dataclasses import dataclass, field, asdict
 import shutil
 
 try:
     import torch
-    import torch.nn as nn
-    from torch.utils.data import Dataset, DataLoader
+    from torch.utils.data import Dataset
     TORCH_AVAILABLE = True
 except (ImportError, OSError) as e:
     TORCH_AVAILABLE = False
-    torch = None
-    Dataset = None
-    DataLoader = None
+    torch = None  # type: ignore
 
 try:
     from transformers import (
@@ -38,12 +35,12 @@ try:
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
-    AutoModelForCausalLM = None
-    AutoTokenizer = None
-    TrainingArguments = None
-    Trainer = None
-    DataCollatorForLanguageModeling = None
-    EarlyStoppingCallback = None
+    AutoModelForCausalLM = None  # type: ignore
+    AutoTokenizer = None  # type: ignore
+    TrainingArguments = None  # type: ignore
+    Trainer = None  # type: ignore
+    DataCollatorForLanguageModeling = None  # type: ignore
+    EarlyStoppingCallback = None  # type: ignore
 
 try:
     from peft import (
@@ -55,17 +52,17 @@ try:
     PEFT_AVAILABLE = True
 except ImportError:
     PEFT_AVAILABLE = False
-    LoraConfig = None
-    get_peft_model = None
-    prepare_model_for_kbit_training = None
-    PeftModel = None
+    LoraConfig = None  # type: ignore
+    get_peft_model = None  # type: ignore
+    prepare_model_for_kbit_training = None  # type: ignore
+    PeftModel = None  # type: ignore
 
 try:
     from bitsandbytes import BitsAndBytesConfig
     BNB_AVAILABLE = True
 except ImportError:
     BNB_AVAILABLE = False
-    BitsAndBytesConfig = None
+    BitsAndBytesConfig = None  # type: ignore
 
 try:
     from unsloth import FastLanguageModel
@@ -90,7 +87,7 @@ class TrainingConfig:
     lora_alpha: int = 32
     lora_dropout: float = 0.05
     lora_target_modules: List[str] = field(default_factory=lambda: ["q_proj", "k_proj", "v_proj", "o_proj"])
-    lora_bias: str = "none"
+    lora_bias: Literal["none", "all", "lora_only"] = "none"
     
     # Training hyperparameters
     num_train_epochs: int = 3
@@ -113,7 +110,7 @@ class TrainingConfig:
     eval_steps: int = 100
     save_steps: int = 500
     save_total_limit: int = 3
-    evaluation_strategy: str = "steps"
+    eval_strategy: str = "steps"
     
     # Early stopping
     early_stopping_patience: int = 3
@@ -389,17 +386,17 @@ class LocalTrainer:
         """
         if not TORCH_AVAILABLE:
             raise ImportError(
-                "âŒ LocalTrainer requer 'torch'.\n"
+                "❌ LocalTrainer requer 'torch'.\n"
                 "Instale com: pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121"
             )
         if not TRANSFORMERS_AVAILABLE:
             raise ImportError(
-                "âŒ LocalTrainer requer 'transformers'.\n"
+                "❌ LocalTrainer requer 'transformers'.\n"
                 "Instale com: pip install transformers"
             )
         if not PEFT_AVAILABLE:
             raise ImportError(
-                "âŒ LocalTrainer requer 'peft' (Parameter-Efficient Fine-Tuning).\n"
+                "❌ LocalTrainer requer 'peft' (Parameter-Efficient Fine-Tuning).\n"
                 "Instale com: pip install peft"
             )
         
@@ -432,61 +429,49 @@ class LocalTrainer:
         logger.info(f"Output directory: {self.output_dir}")
     
     def _resolve_model_from_tier(self, tier: str) -> str:
-        """Resolve model name from tier using configuration."""
-        try:
-            # Try to load from env_manager first
-            from src.utils.env_manager import get_model_for_tier
-            return get_model_for_tier(tier)
-        except ImportError:
-            # Fallback to direct config loading
-            try:
-                import yaml
-                from pathlib import Path
-                
-                config_dir = Path(__file__).parent.parent.parent / "config"
-                config_file = config_dir / "ai_config.yaml"
-                
-                if config_file.exists():
-                    with open(config_file, 'r', encoding='utf-8') as f:
-                        ai_config = yaml.safe_load(f)
-                    
-                    tier_models = ai_config.get('brain_router', {}).get('ollama_models', {}).get(f'tier_{tier}', [])
-                    if tier_models:
-                        return tier_models[0]
-            except Exception as e:
-                logger.warning(f"Could not load model from config: {e}")
-        
-        # Final fallback - hardcoded but minimal
-        fallback_models = {
-            'ultra': 'deepseek-r1:8b',
-            'pro': 'gemma3:4b', 
-            'fast': 'llama3.2'
+        """
+        Resolve a Hugging Face model identifier from a tier or a model key.
+        The `tier` can be a short key (e.g., 'phi-2'), a tier name ('pro'),
+        or a full Hugging Face model identifier.
+        """
+        # If the tier is a direct key in our supported models, return the corresponding HF ID.
+        if tier in self.SUPPORTED_MODELS:
+            return self.SUPPORTED_MODELS[tier]
+
+        # Map abstract tiers to specific model keys from SUPPORTED_MODELS.
+        tier_to_model_key = {
+            "ultra": "llama-3-8b",
+            "pro": "phi-3",
+            "fast": "gemma-2b",
         }
         
-        model = fallback_models.get(tier, 'gemma3:4b')
-        logger.info(f"Using fallback model for tier '{tier}': {model}")
-        return model
+        if tier in tier_to_model_key:
+            model_key = tier_to_model_key[tier]
+            logger.info(f"Tier '{tier}' resolved to model key '{model_key}'.")
+            return self.SUPPORTED_MODELS[model_key]
+
+        # If it's not a known key or tier, we assume it's already a
+        # valid Hugging Face model identifier.
+        logger.warning(
+            f"Tier '{tier}' is not a known key or tier. "
+            f"Assuming it is a direct Hugging Face model identifier."
+        )
+        return tier
     
     def _setup_device(self) -> str:
         """Setup compute device."""
-        if torch.cuda.is_available():
+        if torch.cuda.is_available():  # type: ignore
             device = "cuda"
-            logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")
-            logger.info(f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
-        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")  # type: ignore
+            logger.info(f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")  # type: ignore
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():  # type: ignore
             device = "mps"
             logger.info("Using MPS (Apple Silicon)")
         else:
             device = "cpu"
-            logger.info("â„¹ï¸ GPU nÃ£o detectada (usando CPU). Treinamento operacional mas limitado.")
+            logger.info("ℹ️ GPU não detectada (usando CPU). Treinamento operacional mas limitado.")
         
         return device
-    
-    def _get_model_name(self, model_key: str) -> str:
-        """Get full model name from key."""
-        if model_key in self.SUPPORTED_MODELS:
-            return self.SUPPORTED_MODELS[model_key]
-        return model_key  # Assume it's already a full model name
     
     def _get_quantization_config(self) -> Optional[Any]:
         """Get quantization configuration."""
@@ -495,14 +480,14 @@ class LocalTrainer:
             return None
         
         if self.config.load_in_4bit:
-            return BitsAndBytesConfig(
+            return BitsAndBytesConfig(  # type: ignore
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.bfloat16 if self.config.bf16 else torch.float16,
+                bnb_4bit_compute_dtype=torch.bfloat16 if self.config.bf16 else torch.float16,  # type: ignore
                 bnb_4bit_use_double_quant=True,
             )
         elif self.config.load_in_8bit:
-            return BitsAndBytesConfig(
+            return BitsAndBytesConfig(  # type: ignore
                 load_in_8bit=True,
             )
         
@@ -522,7 +507,7 @@ class LocalTrainer:
             # Use unsloth if available and requested
             if self.config.use_unsloth and UNSLOTH_AVAILABLE:
                 logger.info("Using unsloth for optimized loading")
-                model, tokenizer = FastLanguageModel.from_pretrained(
+                model, tokenizer = FastLanguageModel.from_pretrained(  # type: ignore
                     model_name=model_name,
                     max_seq_length=self.config.model_max_length,
                     load_in_4bit=self.config.load_in_4bit,
@@ -532,7 +517,7 @@ class LocalTrainer:
                 # Standard loading
                 quantization_config = self._get_quantization_config()
                 
-                model = AutoModelForCausalLM.from_pretrained(
+                model = AutoModelForCausalLM.from_pretrained(  # type: ignore
                     model_name,
                     quantization_config=quantization_config,
                     device_map="auto" if self.device == "cuda" else None,
@@ -540,7 +525,7 @@ class LocalTrainer:
                     trust_remote_code=True,
                 )
                 
-                tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer = AutoTokenizer.from_pretrained(  # type: ignore
                     model_name,
                     cache_dir=self.cache_dir,
                     trust_remote_code=True,
@@ -555,7 +540,7 @@ class LocalTrainer:
             
             # Prepare model for training
             if self.config.load_in_4bit or self.config.load_in_8bit:
-                model = prepare_model_for_kbit_training(
+                model = prepare_model_for_kbit_training(  # type: ignore
                     model,
                     use_gradient_checkpointing=self.config.gradient_checkpointing
                 )
@@ -584,7 +569,7 @@ class LocalTrainer:
             logger.info("Setting up LoRA")
             
             if self.config.use_unsloth and UNSLOTH_AVAILABLE:
-                model = FastLanguageModel.get_peft_model(
+                model = FastLanguageModel.get_peft_model(  # type: ignore
                     model,
                     r=self.config.lora_r,
                     lora_alpha=self.config.lora_alpha,
@@ -594,7 +579,7 @@ class LocalTrainer:
                     use_gradient_checkpointing=self.config.gradient_checkpointing,
                 )
             else:
-                lora_config = LoraConfig(
+                lora_config = LoraConfig(  # type: ignore
                     r=self.config.lora_r,
                     lora_alpha=self.config.lora_alpha,
                     lora_dropout=self.config.lora_dropout,
@@ -603,7 +588,7 @@ class LocalTrainer:
                     task_type="CAUSAL_LM",
                 )
                 
-                model = get_peft_model(model, lora_config)
+                model = get_peft_model(model, lora_config)  # type: ignore
             
             # Print trainable parameters
             trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -619,14 +604,14 @@ class LocalTrainer:
             logger.error(f"Error setting up LoRA: {e}", exc_info=True)
             raise
     
-    def prepare_training_args(self) -> TrainingArguments:
+    def prepare_training_args(self) -> Any:  # type: ignore
         """
         Prepare training arguments.
         
         Returns:
             TrainingArguments object
         """
-        return TrainingArguments(
+        return TrainingArguments(  # type: ignore
             output_dir=str(self.output_dir),
             num_train_epochs=self.config.num_train_epochs,
             per_device_train_batch_size=self.config.per_device_train_batch_size,
@@ -640,7 +625,7 @@ class LocalTrainer:
             eval_steps=self.config.eval_steps,
             save_steps=self.config.save_steps,
             save_total_limit=self.config.save_total_limit,
-            evaluation_strategy=self.config.evaluation_strategy,
+            eval_strategy=self.config.eval_strategy,
             optim=self.config.optimizer,
             lr_scheduler_type=self.config.lr_scheduler_type,
             fp16=self.config.fp16,
@@ -690,11 +675,11 @@ class LocalTrainer:
             if self.device == "cpu":
                 if cpu_usage > 95 or mem_usage > 98:
                     # Zona de Perigo Extremo: Pausa total
-                    raise RuntimeError(f"â›” SISTEMA CRÃTICO (CPU {cpu_usage}%), Treino adiado.")
+                    raise RuntimeError(f"☠️ SISTEMA CRÍTICO (CPU {cpu_usage}%), Treino adiado.")
                 
                 elif cpu_usage > 60:
-                    # Zona de Alta Carga: Modo Stealth (InvisÃ­vel)
-                    logger.warning(f"âš ï¸ Carga Alta ({cpu_usage}%). Ativando STEALTH MODE")
+                    # Zona de Alta Carga: Modo Stealth (Invisível)
+                    logger.warning(f"⚠️ Carga Alta ({cpu_usage}%). Ativando STEALTH MODE")
                     self.config.per_device_train_batch_size = 1
                     self.config.gradient_accumulation_steps = 16 # Acumula mais para compensar
                     time.sleep(1.0) # Espera esfriar
@@ -731,8 +716,8 @@ class LocalTrainer:
             training_args = self.prepare_training_args()
             
             # Data collator
-            data_collator = DataCollatorForLanguageModeling(
-                tokenizer=self.tokenizer,
+            data_collator = DataCollatorForLanguageModeling(  # type: ignore
+                tokenizer=self.tokenizer,  # type: ignore
                 mlm=False
             )
             
@@ -740,13 +725,13 @@ class LocalTrainer:
             callbacks = []
             if self.config.early_stopping_patience > 0 and eval_dataset:
                 callbacks.append(
-                    EarlyStoppingCallback(
+                    EarlyStoppingCallback(  # type: ignore
                         early_stopping_patience=self.config.early_stopping_patience,
                         early_stopping_threshold=self.config.early_stopping_threshold
                     )
                 )
             
-            self.trainer = Trainer(
+            self.trainer = Trainer(  # type: ignore
                 model=model,
                 args=training_args,
                 train_dataset=train_dataset,
@@ -780,7 +765,7 @@ class LocalTrainer:
                 eval_results = self.trainer.evaluate()
                 results["eval_loss"] = eval_results.get("eval_loss")
                 results["eval_perplexity"] = (
-                    torch.exp(torch.tensor(eval_results["eval_loss"])).item()
+                    torch.exp(torch.tensor(eval_results["eval_loss"])).item()  # type: ignore
                     if "eval_loss" in eval_results else None
                 )
             
@@ -829,12 +814,12 @@ class LocalTrainer:
             if self.trainer is None:
                 # Create a temporary trainer for evaluation
                 training_args = self.prepare_training_args()
-                data_collator = DataCollatorForLanguageModeling(
-                    tokenizer=self.tokenizer,
+                data_collator = DataCollatorForLanguageModeling(  # type: ignore
+                    tokenizer=self.tokenizer,  # type: ignore
                     mlm=False
                 )
                 
-                self.trainer = Trainer(
+                self.trainer = Trainer(  # type: ignore
                     model=self.model,
                     args=training_args,
                     eval_dataset=eval_dataset,
@@ -846,7 +831,7 @@ class LocalTrainer:
             # Calculate perplexity
             if "eval_loss" in eval_results:
                 eval_results["perplexity"] = (
-                    torch.exp(torch.tensor(eval_results["eval_loss"])).item()
+                    torch.exp(torch.tensor(eval_results["eval_loss"])).item()  # type: ignore
                 )
             
             logger.info(f"Evaluation results: {eval_results}")
@@ -874,17 +859,17 @@ class LocalTrainer:
             
             if merge_and_unload:
                 logger.info("Merging LoRA weights into base model...")
-                if isinstance(self.model, PeftModel):
-                    merged_model = self.model.merge_and_unload()
-                    merged_model.save_pretrained(save_path)
+                if PEFT_AVAILABLE and PeftModel is not None and isinstance(self.model, PeftModel):
+                    merged_model = self.model.merge_and_unload()  # type: ignore
+                    merged_model.save_pretrained(save_path)  # type: ignore
                 else:
-                    self.model.save_pretrained(save_path)
+                    self.model.save_pretrained(save_path)  # type: ignore
             else:
                 logger.info("Saving model with LoRA adapters...")
-                self.model.save_pretrained(save_path)
+                self.model.save_pretrained(save_path)  # type: ignore
             
             # Save tokenizer
-            self.tokenizer.save_pretrained(save_path)
+            self.tokenizer.save_pretrained(save_path)  # type: ignore
             
             # Save config
             config_path = save_path / "training_config.json"
@@ -913,10 +898,10 @@ class LocalTrainer:
             logger.info(f"Loading checkpoint from {checkpoint_path}")
             
             # Load model
-            self.model = AutoModelForCausalLM.from_pretrained(checkpoint_path)
+            self.model = AutoModelForCausalLM.from_pretrained(checkpoint_path)  # type: ignore
             
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)  # type: ignore
             
             # Load config if exists
             config_path = checkpoint_path / "training_config.json"
@@ -969,7 +954,7 @@ if __name__ == "__main__":
     
     # Create training config
     config = TrainingConfig(
-        model_name="phi-2",
+        model_tier="phi-2",
         model_max_length=1024,
         load_in_4bit=True,
         num_train_epochs=1,

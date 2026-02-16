@@ -1,4 +1,9 @@
-﻿import os
+import os
+import subprocess
+import logging
+from typing import List
+
+logger = logging.getLogger(__name__)
 
 class SecurityManager:
     """
@@ -15,6 +20,55 @@ class SecurityManager:
         "SINGULARITY_LAUNCHER.py", "kill_switch.py", "security_manager.py",
         "main.py", "universal_recovery_manager.py"
     ]
+
+    # Whitelist de comandos permitidos
+    ALLOWED_COMMANDS = [
+        "shutdown", "taskkill", "net", "ipconfig", "ping", "tracert",
+        "systeminfo", "whoami", "hostname", "echo", "dir", "type",
+        "find", "findstr", "fc", "comp", "copy", "move", "del", "rd",
+        "md", "ren", "attrib", "xcopy", "robocopy", "schtasks"
+    ]
+
+    @staticmethod
+    def safe_execute_command(command: str, allowed_commands: List[str] = None) -> subprocess.CompletedProcess:
+        """
+        Execute command with whitelist validation to prevent command injection.
+        
+        Args:
+            command: The command string to execute
+            allowed_commands: List of allowed command prefixes (defaults to ALLOWED_COMMANDS)
+            
+        Returns:
+            subprocess.CompletedProcess object
+            
+        Raises:
+            SecurityError: If command is not in whitelist
+        """
+        if allowed_commands is None:
+            allowed_commands = SecurityManager.ALLOWED_COMMANDS
+            
+        # Validate command is in whitelist
+        command_lower = command.lower().strip()
+        if not any(cmd in command_lower for cmd in allowed_commands):
+            logger.error(f"Command not in whitelist: {command}")
+            raise SecurityError(f"Command not allowed: {command}")
+        
+        # Execute with shell=False for security
+        try:
+            result = subprocess.run(
+                command, 
+                shell=False, 
+                capture_output=True, 
+                text=True, 
+                timeout=30
+            )
+            return result
+        except subprocess.TimeoutExpired:
+            logger.error(f"Command timed out: {command}")
+            raise
+        except Exception as e:
+            logger.error(f"Command execution failed: {command} - {e}")
+            raise
 
     @staticmethod
     def validate_path_access(path: str, mod_type: str = 'read') -> bool:
@@ -50,6 +104,10 @@ class SecurityManager:
         """Bloqueia exfiltraÃ§Ã£o de dados para domÃ­nios desconhecidos"""
         allowed = ["google.com", "googleapis.com", "openai.com", "localhost", "127.0.0.1"]
         return any(domain in url for domain in allowed)
+
+class SecurityError(Exception):
+    """Custom exception for security violations"""
+    pass
 
 # Singleton instance
 security_manager = SecurityManager()

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Security Manager - Sistema de SeguranÃ§a AvanÃ§ado
 Implementa criptografia, controle de acesso e modo privado
 """
@@ -254,21 +254,54 @@ class SecurityManager:
             logger.error(f"Erro ao ler log de auditoria: {e}")
             return []
     
-    def authenticate_user(self, face_encoding=None, password: str = None) -> bool:
+    async def authenticate_user(self, face_encoding=None, password: str = None) -> bool:
         """
-        Autentica usuÃ¡rio via FaceID ou senha
-        
-        Args:
-            face_encoding: Encoding facial (se disponÃ­vel)
-            password: Senha (fallback)
-        
-        Returns:
-            True se autenticado
+        Autentica usuário via FaceID (comparação real) ou senha (hash)
         """
-        # TODO: Implementar autenticaÃ§Ã£o real
-        # Por enquanto, sempre retorna True
-        self.log_audit("AUTH", "Tentativa de autenticaÃ§Ã£o")
-        return True
+        self.log_audit("AUTH", "Iniciando processo de autenticação")
+        
+        # 1. Autenticação por FaceID (Se disponível)
+        if face_encoding is not None:
+            try:
+                import numpy as np
+                import face_recognition
+                
+                # Carregar face do "William" (Dono)
+                authorized_path = self.config_dir / "authorized_face.npy"
+                if authorized_path.exists():
+                    known_encoding = np.load(authorized_path)
+                    results = face_recognition.compare_faces([known_encoding], face_encoding, tolerance=0.5)
+                    
+                    if results[0]:
+                        logger.info("✅ Autenticação facial BEM-SUCEDIDA")
+                        self.log_audit("AUTH_SUCCESS", "Reconhecimento facial: William")
+                        return True
+                    else:
+                        logger.warning("❌ Reconhecimento facial FALHOU (Não autorizado)")
+                        self.log_audit("AUTH_FAILURE", "Face não reconhecida")
+            except ImportError:
+                logger.error("❌ face_recognition ou numpy não instalados para Auth real")
+            except Exception as e:
+                logger.error(f"Erro no processamento facial: {e}")
+
+        # 2. Fallback por Senha (Se implementado)
+        if password:
+            stored_hash_path = self.config_dir / "pass.hash"
+            if stored_hash_path.exists():
+                with open(stored_hash_path, "r") as f:
+                    stored_hash = f.read().strip()
+                current_hash = self.hash_data(password)
+                if current_hash == stored_hash:
+                    logger.info("✅ Autenticação por senha BEM-SUCEDIDA")
+                    return True
+
+        # Se não houver dados de autorização salvos, permitimos para não travar o usuário
+        # mas registramos o aviso. No Modo Singularity, isso deve ser configurado.
+        if not (self.config_dir / "authorized_face.npy").exists():
+            logger.info("ℹ️ Nenhum dado de autorização salvo. Acesso livre concedido.")
+            return True
+            
+        return False
     
     def get_security_status(self) -> Dict[str, Any]:
         """Retorna status de seguranÃ§a do sistema"""

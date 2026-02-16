@@ -1,4 +1,4 @@
-﻿"""
+"""
 Controlador de Gestos (Hands)
 Utiliza MediaPipe para rastreamento de mÃ£os e reconhecimento de gestos.
 """
