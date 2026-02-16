@@ -1247,6 +1247,9 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
 
+    # Minimal mode: skip heavy subsystems (can be triggered by env var or CLI)
+    MINIMAL_MODE = os.environ.get("JARVIS_MINIMAL", "").lower() == "1" or "--minimal" in sys.argv
+
     # Configure logging based on debug flag
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -1502,21 +1505,23 @@ Examples:
                 await asyncio.sleep(1.0)
                 
                 # [STEP 3] Multimedia (Audio)
-                boot_manager.register_module(
-                    "audio_system", 
-                    lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
-                    dependencies=["system_integrator"],
-                    priority=BootPriority.MEDIUM
-                )
+                if not MINIMAL_MODE:
+                    boot_manager.register_module(
+                        "audio_system", 
+                        lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                        dependencies=["system_integrator"],
+                        priority=BootPriority.MEDIUM
+                    )
                 await asyncio.sleep(1.0)
                 
                 # [STEP 4] Computer Vision (Heavy)
-                boot_manager.register_module(
-                    "vision_system",
-                    lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
-                    dependencies=["system_integrator"],
-                    priority=BootPriority.MEDIUM
-                )
+                if not MINIMAL_MODE:
+                    boot_manager.register_module(
+                        "vision_system",
+                        lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                        dependencies=["system_integrator"],
+                        priority=BootPriority.MEDIUM
+                    )
                 await asyncio.sleep(2.0) # More time for Vision models
                 
                 # [STEP 5] AI Agent (Intelligence)
