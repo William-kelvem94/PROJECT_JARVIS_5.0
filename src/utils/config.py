@@ -8,18 +8,16 @@ import json
 import platform
 from pathlib import Path
 from typing import Dict, Any, Optional
-import logging
+
 import yaml
 from pydantic import BaseModel, ValidationError, Field
 import jsonschema
 
-# ConfiguraÃ§Ã£o de logging gerenciada pelo LoggingConfig
+# Configuração de logging centralizada
 from src.utils.logging_config import LoggingConfig
+from src.utils.jarvis_logger import get_component_logger
 
-# SerÃ¡ inicializado no __init__ do Config para garantir paths corretos
-# (Removido basicConfig estÃ¡tico que causava conflitos)
-
-logger = logging.getLogger(__name__)
+logger = get_component_logger("config")
 
 import threading
 
