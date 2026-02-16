@@ -91,6 +91,9 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
+        # Track last interaction for feedback
+        self.last_interaction_id = None
+
         logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
     
@@ -472,71 +475,8 @@ class LearningEngine:
             
             self.feedback_loop.add_feedback(entry)
             
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
-            if feedback_value > 0.7 and self.knowledge_distiller:
-                self.knowledge_distiller.distill_interaction(
-                    user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
-                    success=True
-                )
-            
-        except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
-    
-    def record_interaction(
-        self,
-        user_input: str,
-        ai_response: str,
-        feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Registra uma interaÃ§Ã£o para aprendizado.
-        
-        Args:
-            user_input: Comando do usuÃ¡rio
-            ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
-        """
-        if not self.feedback_loop:
-            return
-        
-        try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
-            if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
-            
-            from src.learning.feedback_loop import FeedbackEntry
-            import hashlib
-            import time
-            from datetime import datetime
-            
-            interaction_id = hashlib.md5(
-                f"{user_input}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            feedback_id = hashlib.md5(
-                f"{interaction_id}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            entry = FeedbackEntry(
-                feedback_id=feedback_id,
-                interaction_id=interaction_id,
-                user_input=user_input,
-                ai_response=ai_response,
-                feedback_type='implicit',
-                feedback_value=feedback_value,
-                timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
-            )
-            
-            self.feedback_loop.add_feedback(entry)
+            # Store last interaction ID
+            self.last_interaction_id = interaction_id
             
             # Store in scalable database if available
             if self.scalable_database:
@@ -762,8 +702,71 @@ class LearningEngine:
             return
         
         try:
-            # TODO: Atualizar feedback entry existente ou criar nova
+            # 1. Update legacy feedback loop
+            # This requires FeedbackLoop to support updates, or we append a new entry
+            if hasattr(self.feedback_loop, 'update_feedback'):
+                self.feedback_loop.update_feedback(interaction_id, feedback_value, correction)
+            else:
+                # Fallback: Log as new entry if update not supported
+                # Note: This is a simplification; ideal would be to update the row
+                logger.info(f"ðŸ“  Updating feedback for {interaction_id}: {feedback_value}")
+
+            # 2. Update Scalable Database
+            if self.scalable_database:
+                sql_conn = self.scalable_database.get_sql_connection()
+                if sql_conn:
+                    cursor = sql_conn.cursor()
+
+                    # Update existing record
+                    query = """
+                        UPDATE interactions
+                        SET feedback_value = ?,
+                            metadata = json_patch(metadata, ?)
+                        WHERE interaction_id = ?
+                    """
+
+                    import json
+                    meta_update = {}
+                    if correction:
+                        meta_update['correction'] = correction
+                    meta_update['explicit_feedback'] = True
+
+                    # Check if json_patch is available (SQLite 3.38+), otherwise simple replacement or logic
+                    # For safety, we might just update feedback_value and append to metadata if possible,
+                    # or just update feedback_value.
+
+                    # Simplified query for standard SQLite without JSON extension guarantees
+                    cursor.execute("""
+                        UPDATE interactions
+                        SET feedback_value = ?
+                        WHERE interaction_id = ?
+                    """, (feedback_value, interaction_id))
+
+                    sql_conn.commit()
+
+            # 3. Update Metrics
+            if self.metrics_dashboard:
+                self.metrics_dashboard.add_training_metric(
+                    job_id="main_session",
+                    metric_name="explicit_feedback",
+                    value=feedback_value,
+                    metadata={
+                        'interaction_id': interaction_id,
+                        'correction': correction
+                    }
+                )
+
             logger.info(f"ðŸ“ Explicit feedback recorded: {feedback_value} for {interaction_id}")
+
+            # 4. Trigger Knowledge Distillation if correction provided
+            if correction and self.knowledge_distiller:
+                self.knowledge_distiller.distill_interaction(
+                    user_command=f"REVISION: {interaction_id}",
+                    thought="User provided correction",
+                    actions=[f"Correction: {correction}"],
+                    success=True
+                )
+
         except Exception as e:
             logger.error(f"âŒ Failed to record explicit feedback: {e}")
     
