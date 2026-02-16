@@ -49,8 +49,8 @@ class AutoHealer:
             
         self.running = True
         
-        # Inscreve-se no relatório do observador
-        await event_bus.subscribe(
+        # Inscreve-se no relatório do observador (subscribe is not async)
+        event_bus.subscribe(
             EventType.SYSTEM_OBSERVER_REPORT,
             self._handle_observer_report,
             priority_filter=[EventPriority.NORMAL]
