@@ -151,14 +151,20 @@ class WatchdogSystem:
                         delta = (current_time - comp.last_heartbeat).total_seconds()
                         
                         # Tolerância: 2x o intervalo esperado
-                        if delta > (comp.heartbeat_interval * 3):
+                        # FASE 5: Grace period de inicialização (primeiros 60s o sistema pode estar lento sob carga de I/O)
+                        uptime = (datetime.now() - getattr(self, 'start_time', datetime.now())).total_seconds()
+                        is_booting = uptime < 60
+                        dead_threshold = comp.heartbeat_interval * (6 if is_booting else 3)
+                        slow_threshold = comp.heartbeat_interval * (3 if is_booting else 1.5)
+
+                        if delta > dead_threshold:
                             # Componente parece morto
                             if comp.status != ComponentStatus.DEAD:
                                 logger.error(f"💀 Watchdog: {name} is DEAD (No heartbeat for {delta:.1f}s)")
                                 comp.status = ComponentStatus.DEAD
                                 self._handle_failure(comp)
                                 
-                        elif delta > (comp.heartbeat_interval * 1.5):
+                        elif delta > slow_threshold:
                             # Componente atrasado
                             if comp.status != ComponentStatus.UNHEALTHY:
                                 logger.warning(f"⚠️ Watchdog: {name} is SLOW (Delayed {delta:.1f}s)")

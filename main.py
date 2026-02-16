@@ -643,7 +643,6 @@ class JarvisSingularity(QObject):
             assert self.network_mesh is not None  # For linter
             try:
                 # Start the network mesh in background
-                import asyncio
                 import threading
                 
                 def run_mesh():
@@ -936,7 +935,6 @@ class JarvisSingularity(QObject):
         """Agent processing loop (Background Thread)"""
         try:
             # 1. Process Command (Async bridge)
-            import asyncio
             try:
                 loop = asyncio.get_event_loop()
             except RuntimeError:
@@ -1338,6 +1336,7 @@ Examples:
         
         async def initialize_with_boot_manager():
             """Initialize all systems using the new Boot Manager infrastructure"""
+            import asyncio # Local import to force visibility in nested scope
             try:
                 if not BOOT_MANAGER_AVAILABLE:
                     logger.error("❌ Boot Manager not available, falling back to legacy boot")
@@ -1379,7 +1378,8 @@ Examples:
                                     proactive_monitor.connect_event_bus(event_bus)
                                     try:
                                         if hasattr(proactive_monitor, 'event_bus') and proactive_monitor.event_bus:
-                                            proactive_monitor.event_bus.loop = asyncio.get_running_loop() # Inject loop for thread safety
+                                            import asyncio as _asyncio # Safe local reference
+                                            proactive_monitor.event_bus.loop = _asyncio.get_running_loop() # Inject loop for thread safety
                                         logger.info("✅ Proactive Monitor connected to Event Bus")
                                     except AttributeError as e:
                                         logger.warning(f"⚠️ Could not set proactive monitor loop: {e}")
@@ -1398,47 +1398,7 @@ Examples:
                         logger.warning(f"Event Bus traceback: {traceback.format_exc()}")
                         event_bus = None
                 
-                # Update HUD status
-                if hud and hasattr(hud, 'show_response'):
-                    hud.show_response("CARREGANDO INFRAESTRUTURA...")
-                
-                # Register core modules with proper dependencies
-                boot_manager.register_module(
-                    "window_manager",
-                    lambda: window_manager,
-                    dependencies=[],
-                    priority=BootPriority.HIGH
-                )
-                
-                boot_manager.register_module(
-                    "system_integrator",
-                    lambda: __import__('src.core.actions.system_integrator', fromlist=['get_system_integrator']).get_system_integrator(),
-                    dependencies=["window_manager"],
-                    priority=BootPriority.MEDIUM
-                )
-                
-                boot_manager.register_module(
-                    "audio_system", 
-                    lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
-                    dependencies=["system_integrator"],
-                    priority=BootPriority.MEDIUM
-                )
-                
-                boot_manager.register_module(
-                    "vision_system",
-                    lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
-                    dependencies=["system_integrator"],
-                    priority=BootPriority.MEDIUM
-                )
-                
-                boot_manager.register_module(
-                    "ai_agent",
-                    lambda: __import__('src.core.intelligence.ai_agent', fromlist=['ai_agent']).ai_agent,
-                    dependencies=["audio_system", "vision_system"],
-                    priority=BootPriority.MEDIUM
-                )
-                
-                # Register Event Bus as a module for other systems to access
+                # [STEP 0] Register Event Bus
                 if event_bus:
                     boot_manager.register_module(
                         "event_bus",
@@ -1446,6 +1406,55 @@ Examples:
                         dependencies=[],
                         priority=BootPriority.HIGH
                     )
+                
+                # Update HUD status
+                if hud and hasattr(hud, 'show_response'):
+                    hud.show_response("CONECTANDO MÓDULOS...")
+                await asyncio.sleep(1.0) # Grace period
+                
+                # [STEP 1] UI Core
+                boot_manager.register_module(
+                    "window_manager",
+                    lambda: window_manager,
+                    dependencies=[],
+                    priority=BootPriority.HIGH
+                )
+                await asyncio.sleep(1.0)
+                
+                # [STEP 2] System Integrator
+                boot_manager.register_module(
+                    "system_integrator",
+                    lambda: __import__('src.core.actions.system_integrator', fromlist=['get_system_integrator']).get_system_integrator(),
+                    dependencies=["window_manager"],
+                    priority=BootPriority.MEDIUM
+                )
+                await asyncio.sleep(1.0)
+                
+                # [STEP 3] Multimedia (Audio)
+                boot_manager.register_module(
+                    "audio_system", 
+                    lambda: __import__('src.core.audio.enhanced_audio', fromlist=['get_audio_system']).get_audio_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                    dependencies=["system_integrator"],
+                    priority=BootPriority.MEDIUM
+                )
+                await asyncio.sleep(1.0)
+                
+                # [STEP 4] Computer Vision (Heavy)
+                boot_manager.register_module(
+                    "vision_system",
+                    lambda: __import__('src.core.vision.vision_system', fromlist=['get_vision_system']).get_vision_system(PROJECT_ROOT / "data" if PROJECT_ROOT else Path("data"), event_bus=event_bus),
+                    dependencies=["system_integrator"],
+                    priority=BootPriority.MEDIUM
+                )
+                await asyncio.sleep(2.0) # More time for Vision models
+                
+                # [STEP 5] AI Agent (Intelligence)
+                boot_manager.register_module(
+                    "ai_agent",
+                    lambda: __import__('src.core.intelligence.ai_agent', fromlist=['ai_agent']).ai_agent,
+                    dependencies=["audio_system", "vision_system"],
+                    priority=BootPriority.MEDIUM
+                )
                 
                 # Initialize all modules
                 logger.info("⚡ [STAGE 2] Starting Boot Manager initialization...")
@@ -1532,7 +1541,6 @@ Examples:
         
         # Start initialization in background thread
         def run_async_boot():
-            import asyncio
             try:
                 # Create new event loop for this thread
                 loop = asyncio.new_event_loop()
@@ -1647,7 +1655,6 @@ Examples:
                                 logger.error(f"❌ [EVOLUTION] Failed to start: {e}")
                         
                         # Run in event loop
-                        import asyncio
                         try:
                             loop = asyncio.get_event_loop()
                         except RuntimeError:
@@ -1709,7 +1716,6 @@ Examples:
                 if 'evolution_manager' in locals() or 'instances' in locals():
                     if 'instances' in locals() and 'evolution_manager' in locals()['instances']:
                         logger.info("🧬 [EVOLUTION] Shutting down Self-Healing System...")
-                        import asyncio
                         from src.evolution import evolution_manager
                         try:
                             loop = asyncio.get_event_loop()

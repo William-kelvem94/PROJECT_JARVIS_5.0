@@ -438,13 +438,26 @@ class LearningEngine:
             return
         
         try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
+            # Coleta feedback implícito se não houver explícito
             if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
+                feedback_value = 0.5  # Valor base
+                
+                # Heurística 1: Latência vs Complexidade (Metadata)
+                if metadata:
+                    latency = metadata.get('latency', 0)
+                    if latency > 0 and latency < 1.0:
+                        feedback_value += 0.1 # Rápido é bom
+                        
+                # Heurística 2: Qualidade Literária
+                if len(ai_response) > 20 and "não sei" not in ai_response.lower():
+                    feedback_value += 0.2
+                
+                # Heurística 3: Erros sintáticos ou placeholders
+                if "placeholder" in ai_response.lower() or "implementar" in ai_response.lower():
+                    feedback_value -= 0.3
+                
+                feedback_value = max(0.0, min(1.0, feedback_value))
+                logger.debug(f"📊 Feedback implícito calculado: {feedback_value:.2f}")
             
             from src.learning.feedback_loop import FeedbackEntry
             import hashlib
@@ -504,13 +517,26 @@ class LearningEngine:
             return
         
         try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
+            # Coleta feedback implícito se não houver explícito
             if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
+                feedback_value = 0.5  # Valor base
+                
+                # Heurística 1: Latência vs Complexidade (Metadata)
+                if metadata:
+                    latency = metadata.get('latency', 0)
+                    if latency > 0 and latency < 1.0:
+                        feedback_value += 0.1 # Rápido é bom
+                        
+                # Heurística 2: Qualidade Literária
+                if len(ai_response) > 20 and "não sei" not in ai_response.lower():
+                    feedback_value += 0.2
+                
+                # Heurística 3: Erros sintáticos ou placeholders
+                if "placeholder" in ai_response.lower() or "implementar" in ai_response.lower():
+                    feedback_value -= 0.3
+                
+                feedback_value = max(0.0, min(1.0, feedback_value))
+                logger.debug(f"📊 Feedback implícito calculado: {feedback_value:.2f}")
             
             from src.learning.feedback_loop import FeedbackEntry
             import hashlib

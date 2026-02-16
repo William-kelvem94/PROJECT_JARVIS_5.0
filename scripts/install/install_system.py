@@ -50,13 +50,14 @@ class JarvisAutoSystem:
     """Sistema inteligente que se auto-configura e corrige"""
     
     def __init__(self):
-        self.project_root = Path(__file__).parent
+        # Corrigido para detectar a raiz real do projeto (subir 2 níveis de scripts/install)
+        self.project_root = Path(__file__).parent.parent.parent
         self.config_dir = self.project_root / "config"
         self.data_dir = self.project_root / "data"
-        self.logs_dir = self.project_root / "logs"
+        self.logs_dir = self.data_dir / "logs"
         
         for d in [self.config_dir, self.data_dir, self.logs_dir]:
-            d.mkdir(exist_ok=True)
+            d.mkdir(exist_ok=True, parents=True)
         
         self.cache = DependencyCache(self.data_dir / "dependency_cache.json")
         self.setup_logging()
@@ -196,7 +197,7 @@ class JarvisAutoSystem:
 
     def validate_system(self):
         self.logger.info("🔍 Validando Sistema...")
-        files = ["src/core/autonomy.py", "main.py", "src/utils/system_monitor.py"]
+        files = ["src/core/engine/autonomy.py", "main.py", "src/utils/system_monitor.py"]
         results = {f: "OK" if (self.project_root / f).exists() else "MISSING" for f in files}
         return results
 

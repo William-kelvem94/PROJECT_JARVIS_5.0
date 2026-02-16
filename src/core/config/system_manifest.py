@@ -132,7 +132,7 @@ class VisionConfig:
     zero_disk_io: bool = True  # Não salvar PNGs por padrão
     
     # Modelos
-    yolo_enabled: bool = False
+    yolo_enabled: bool = True
     yolo_model_path: Optional[str] = None
     
     # Performance
@@ -150,7 +150,7 @@ class AudioConfig:
     
     # Voice Recognition
     speech_recognition_enabled: bool = True
-    wake_word_enabled: bool = False
+    wake_word_enabled: bool = True
     wake_word: str = "jarvis"
     
     # Text-to-Speech

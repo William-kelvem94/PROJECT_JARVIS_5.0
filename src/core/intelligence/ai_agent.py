@@ -398,8 +398,7 @@ class AIAgent:
             logger.info("✅ AI Agent connected to AsyncEventBus.")
             
             # [PHASE 2.3] Proactive Vision Trigger
-            import asyncio
-            asyncio.create_task(self.event_bus.subscribe(EventType.VISION_SCREEN_CHANGE, self._handle_vision_event))
+            self.event_bus.subscribe(EventType.VISION_SCREEN_CHANGE, self._handle_vision_event)
 
     def _get_security_manager(self):
         """Lazy load SecurityManager to avoid circular imports"""
@@ -1527,7 +1526,7 @@ class AIAgent:
         prompt_lower = prompt.lower()
         if any(kw in prompt_lower for kw in ["código", "python", "script", "debug", "analise"]):
             complexity = 0.7
-        elif image_path:
+        elif image_data:
             complexity = 0.8 # Imagem exige mais "cérebro"
             
         # Pede ao router o melhor cérebro local
