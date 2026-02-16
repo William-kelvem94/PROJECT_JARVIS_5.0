@@ -10,3 +10,4 @@ chromadb
 jina
 # Adicione outras dependências específicas do projeto conforme necessário
 aiofiles
+pydantic-settings
