@@ -409,7 +409,6 @@ def main():
     
     # Calculate required steps (all except Ollama and Startup Scripts which are optional)
     optional_steps = {"Ollama (Optional)", "Startup Scripts"}
-    required_count = sum(1 for step_name, _ in results if step_name not in optional_steps)
     failed_required = sum(1 for step_name, result in results 
                          if step_name not in optional_steps and not result)
     
