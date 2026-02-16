@@ -26,7 +26,7 @@ def _create_windows_shortcut(project_root, target_bat):
     """Cria atalho no Windows usando PyWin32 ou PowerShell como fallback"""
     desktop = Path(os.path.expanduser("~/Desktop"))
     shortcut_path = desktop / "JARVIS 5.0.lnk"
-    icon_location = "imageres.dll,100" # Ícone de usuário com configurações (mais apropriado para IA)
+    icon_location = "imageres.dll,23" # Ícone de olho/câmera (visão computacional, mais apropriado para IA)
     
     print("🚀 Gerando atalho JARVIS 5.0 para Windows...")
 

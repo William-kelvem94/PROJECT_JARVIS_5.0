@@ -1,83 +1,66 @@
-# JARVIS 5.0 - Network Mesh Configuration
-# =========================================
-# Configurações da malha de rede distribuída do sistema JARVIS
-
+development:
+  debug_mode: false
+  simulate_network_errors: false
+  test_mode: false
+  verbose_logging: false
+fallback:
+  cache_duration_hours: 24
+  local_storage_only: true
+  max_cache_size_mb: 500
+  offline_mode: true
 network_mesh:
-  # Configurações gerais da malha
-  # ATENÇÃO: Habilitar esta feature conecta o JARVIS a uma rede distribuída
-  # Requer configuração de chaves de criptografia e pode expor dados do sistema
-  enabled: false
-  node_id: "jarvis_main_node"
-  port: 8765
-  discovery_port: 8766
-  
-  # Configurações de conectividade
-  max_connections: 10
-  heartbeat_interval: 30  # segundos
-  connection_timeout: 10  # segundos
-  retry_attempts: 3
-  
-  # Configurações do Google Drive
-  # ATENÇÃO: Sincroniza dados com Google Drive. Requer credenciais válidas
-  # e pode transferir dados sensíveis para a nuvem
-  google_drive:
-    enabled: false
-    sync_interval: 300  # 5 minutos
-    max_file_size: 104857600  # 100MB = 100 * 1024 * 1024 bytes
-    allowed_extensions: [".json", ".yaml", ".txt", ".log", ".py"]
-    excluded_paths: ["__pycache__", ".git", "venv", "temp", "cache"]
-    
-  # Configurações da rede local
-  # ATENÇÃO: Permite descoberta e comunicação na rede local
-  # Pode expor o sistema a outros dispositivos na mesma rede
-  local_network:
-    enabled: false
-    broadcast_enabled: false
-    subnet_scan: false
-    allowed_subnets: ["192.168.1.0/24", "10.0.0.0/16"]
-    
-  # Configurações de privacidade e segurança
-  privacy:
-    encrypt_packets: true
-    encryption_algorithm: "AES-256-GCM"
-    key_storage_backend: "file"
-    initial_key_path: "config/keys/network_mesh_initial.key"
-    encryption_key_rotation_hours: 24
-    log_network_activity: false
-    anonymize_logs: true
-    
-  # Configurações de performance
-  performance:
-    buffer_size: 8192  # bytes
-    compression_enabled: true
-    compression_level: 6
-    batch_operations: true
-    max_batch_size: 100
-    
-  # Configurações de backup e sincronização
   backup:
     auto_backup: false
+    backup_critical_only: true
     backup_interval_hours: 6
     max_backup_versions: 5
-    backup_critical_only: true
-    
-  # Configurações de monitoramento
+  connection_timeout: 10
+  discovery_port: 8766
+  enabled: false
+  google_drive:
+    allowed_extensions:
+    - .json
+    - .yaml
+    - .txt
+    - .log
+    - .py
+    enabled: false
+    excluded_paths:
+    - __pycache__
+    - .git
+    - venv
+    - temp
+    - cache
+    max_file_size: 104857600
+    sync_interval: 300
+  heartbeat_interval: 30
+  local_network:
+    allowed_subnets:
+    - 192.168.1.0/24
+    - 10.0.0.0/16
+    broadcast_enabled: false
+    enabled: false
+    subnet_scan: false
+  max_connections: 10
   monitoring:
     health_checks_enabled: true
     metrics_collection: false
-    performance_monitoring: false
     network_diagnostics: false
-
-# Configurações de fallback (quando network_mesh está desabilitado)
-fallback:
-  local_storage_only: true
-  offline_mode: true
-  cache_duration_hours: 24
-  max_cache_size_mb: 500
-  
-# Configurações de desenvolvimento/debug
-development:
-  debug_mode: false
-  verbose_logging: false
-  simulate_network_errors: false
-  test_mode: false
+    performance_monitoring: false
+  node_id: jarvis_main_node
+  performance:
+    batch_operations: true
+    buffer_size: 8192
+    compression_enabled: true
+    compression_level: 6
+    max_batch_size: 100
+  port: 8765
+  privacy:
+    anonymize_logs: true
+    encrypt_packets: true
+    encryption_algorithm: AES-256-GCM
+    encryption_key_rotation_hours: 24
+    initial_key_path: config/keys/network_mesh_initial.key
+    key_storage_backend: file
+    log_network_activity: false
+  retry_attempts: 3

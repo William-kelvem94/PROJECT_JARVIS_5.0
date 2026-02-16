@@ -245,6 +245,11 @@ class EnhancedAudioSystem:
         self._vad_ready = False
         self._models_lock = threading.Lock()
         
+        # Auto-unload configuration
+        self.auto_unload_timeout = 600  # 10 minutes for audio (less critical than vision)
+        self.last_activity = datetime.now()
+        self._unload_timer: Optional[threading.Timer] = None
+        
         # Initialize basic components
         self._initialize_basic_components()
         
@@ -382,6 +387,64 @@ class EnhancedAudioSystem:
             
         logger.warning("âš ï¸ Timeout waiting for audio models - system may be degraded")
         return self._whisper_ready
+
+    def unload_models(self):
+        """Unload heavy models to free memory"""
+        logger.info("🧠 Audio System: Unloading models to free memory")
+        
+        with self._models_lock:
+            # Unload Whisper model
+            if self.whisper_model:
+                try:
+                    del self.whisper_model
+                    self.whisper_model = None
+                    self._whisper_ready = False
+                    logger.info("✅ Whisper model unloaded")
+                except Exception as e:
+                    logger.error(f"Error unloading Whisper: {e}")
+            
+            # Unload VAD model
+            if self.vad_model:
+                try:
+                    del self.vad_model
+                    self.vad_model = None
+                    self.vad_utils = None
+                    self._vad_ready = False
+                    logger.info("✅ VAD model unloaded")
+                except Exception as e:
+                    logger.error(f"Error unloading VAD: {e}")
+            
+            # Force garbage collection
+            import gc
+            gc.collect()
+            
+            # Clear GPU cache if available
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except ImportError:
+                pass
+
+    def _update_activity(self):
+        """Update last activity timestamp and schedule auto-unload"""
+        self.last_activity = datetime.now()
+        
+        # Cancel existing unload timer
+        if self._unload_timer:
+            self._unload_timer.cancel()
+        
+        # Schedule new unload timer
+        self._unload_timer = threading.Timer(self.auto_unload_timeout, self._auto_unload_models)
+        self._unload_timer.daemon = True
+        self._unload_timer.start()
+    
+    def _auto_unload_models(self):
+        """Auto-unload models after inactivity timeout"""
+        # Check if still inactive
+        if (datetime.now() - self.last_activity).total_seconds() >= self.auto_unload_timeout:
+            logger.info("🧠 Audio System: Auto-unloading models due to inactivity")
+            self.unload_models()
 
     def _load_voice_signatures(self):
         """Load known voice signatures"""
@@ -674,6 +737,9 @@ class EnhancedAudioSystem:
             rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
             return rms > threshold
             
+        # Update activity timestamp for VAD usage
+        self._update_activity()
+            
         try:
             # Convert to float32 and normalize
             audio_float = audio.astype(np.float32) / 32768.0
@@ -907,6 +973,9 @@ class EnhancedAudioSystem:
                 processing_time=0.0
             )
             
+        # Update activity timestamp
+        self._update_activity()
+            
         try:
             start_time = time.time()
             
@@ -973,6 +1042,9 @@ class EnhancedAudioSystem:
                 segments=[],
                 processing_time=0.0
             )
+            
+        # Update activity timestamp
+        self._update_activity()
             
         try:
             # Load audio file

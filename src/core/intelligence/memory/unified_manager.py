@@ -54,6 +54,7 @@ class UnifiedMemoryManager:
         self.short_term = deque(maxlen=15)
         self.prompt_cache = {}
         self.max_cache = 50
+        self.cache_timestamps = {}  # Track access times for LRU
         
         self.model = None
         self._models_loading = False
@@ -136,17 +137,13 @@ class UnifiedMemoryManager:
         mem_id = hashlib.md5(f"{prompt}{ts}".encode()).hexdigest()
         text = f"User: {prompt}\nJarvis: {response}"
         
-        # Cache Update
+        # Cache Update with LRU tracking
         key = prompt.strip().lower()
         self.prompt_cache[key] = response
+        self.cache_timestamps[key] = time.time()
         
-        # Enforce LRU Limit
-        if len(self.prompt_cache) > self.max_cache:
-            try:
-                # Remove oldest item (Python dicts are ordered by insertion)
-                self.prompt_cache.pop(next(iter(self.prompt_cache)))
-            except (StopIteration, RuntimeError):
-                pass # Dictionary might be empty or changed during iteration
+        # Enforce LRU Limit with cleanup
+        self._cleanup_cache_if_needed()
 
         self.short_term.append({"user": prompt, "jarvis": response, "ts": ts})
         
@@ -159,6 +156,8 @@ class UnifiedMemoryManager:
                         embeddings=[emb] if emb else None,
                         metadatas=[metadata or {"ts": ts}]
                     )
+                    # Periodic ChromaDB cleanup
+                    self._cleanup_chromadb_if_needed()
             except Exception as e: logger.debug(f"Persistence error: {e}")
 
     def store_lesson(self, trigger: str, action: str):
@@ -208,3 +207,80 @@ class UnifiedMemoryManager:
         if not self.short_term: return ""
         history = [f"User: {m['user']}\nJarvis: {m['jarvis']}" for m in self.short_term]
         return "[SHORT_TERM_RAM]\n" + "\n---\n".join(history)
+
+    def _cleanup_cache_if_needed(self):
+        """Clean up prompt cache using LRU eviction when over limit"""
+        if len(self.prompt_cache) <= self.max_cache:
+            return
+            
+        # Sort by access time (oldest first)
+        sorted_items = sorted(self.cache_timestamps.items(), key=lambda x: x[1])
+        
+        # Remove oldest entries until we're under the limit
+        items_to_remove = len(self.prompt_cache) - self.max_cache + 5  # Remove extra 5 for buffer
+        
+        for key, _ in sorted_items[:items_to_remove]:
+            if key in self.prompt_cache:
+                del self.prompt_cache[key]
+            if key in self.cache_timestamps:
+                del self.cache_timestamps[key]
+        
+        logger.debug(f"🧹 Cache cleaned: removed {items_to_remove} old entries")
+
+    def _cleanup_chromadb_if_needed(self):
+        """Periodic cleanup of ChromaDB collections to prevent unbounded growth"""
+        if not self.interactions:
+            return
+            
+        try:
+            # Check interaction count periodically (every 100 operations)
+            if not hasattr(self, '_cleanup_counter'):
+                self._cleanup_counter = 0
+            self._cleanup_counter += 1
+            
+            if self._cleanup_counter % 100 != 0:
+                return
+                
+            # Get current counts
+            interaction_count = self.interactions.count()
+            max_interactions = 5000  # Limit to 5K interactions
+            
+            if interaction_count > max_interactions:
+                # Remove oldest entries (keep most recent 80%)
+                keep_count = int(max_interactions * 0.8)
+                remove_count = interaction_count - keep_count
+                
+                # Get all IDs with timestamps
+                results = self.interactions.get(include=['metadatas'])
+                if results['metadatas']:
+                    # Sort by timestamp (oldest first)
+                    entries_with_ts = []
+                    for i, metadata in enumerate(results['metadatas']):
+                        ts_str = metadata.get('ts', '2000-01-01T00:00:00')
+                        try:
+                            ts = datetime.fromisoformat(ts_str)
+                            entries_with_ts.append((results['ids'][i], ts))
+                        except:
+                            entries_with_ts.append((results['ids'][i], datetime.min))
+                    
+                    # Sort by timestamp
+                    entries_with_ts.sort(key=lambda x: x[1])
+                    
+                    # Remove oldest entries
+                    ids_to_remove = [entry[0] for entry in entries_with_ts[:remove_count]]
+                    
+                    with self._lock:
+                        self.interactions.delete(ids=ids_to_remove)
+                    
+                    logger.info(f"🧹 ChromaDB cleaned: removed {remove_count} old interactions")
+                    
+        except Exception as e:
+            logger.debug(f"ChromaDB cleanup failed: {e}")
+
+    def force_cache_cleanup(self):
+        """Force immediate cache cleanup"""
+        self._cleanup_cache_if_needed()
+        
+    def force_chromadb_cleanup(self):
+        """Force immediate ChromaDB cleanup"""
+        self._cleanup_chromadb_if_needed()
