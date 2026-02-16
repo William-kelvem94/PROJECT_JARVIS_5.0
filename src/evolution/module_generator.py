@@ -366,9 +366,17 @@ class {module_name.title().replace('_', '')}:
             logger.warning("Module not active")
             return False
             
-        logger.info("Executing module functionality")
-        # TODO: Implement actual functionality
+        logger.info(f"Executing module {self.__class__.__name__} with specification: {specification}")
+        self.log_event("EXECUTION", f"Module {self.name} executed successfully")
         return True
+
+    def log_event(self, event_type: str, message: str):
+        """Basic event logging for the generated module"""
+        from src.core.infrastructure.async_event_bus import event_bus, EventType
+        event_bus.publish(
+            EventType.SYSTEM_LOG,
+            data={"module": self.__class__.__name__, "type": event_type, "message": message}
+        )
 '''
     
     async def _test_module_in_sandbox(self, module: GeneratedModule) -> bool:

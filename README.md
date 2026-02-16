@@ -39,33 +39,17 @@
 ```
 PROJECT_JARVIS_5.0/
 ├── 📂 config/                    # Configurações do sistema
-│   ├── ai_config.yaml           # Configuração da IA
-│   └── settings.json            # Configurações gerais
-├── 📂 data/                     # Dados e recursos
-│   ├── logs/                    # Logs do sistema
-│   ├── models/                  # Modelos treinados
-│   └── captures/                # Capturas de tela/dados
-├── 📂 demos/                    # Demonstrações e exemplos (arquivos movidos para src/core/)
-│   └── README.md               # Documentação dos arquivos movidos
-├── 📂 docs/                     # Documentação
-│   ├── ai_training/            # Guias de treinamento
-│   ├── technical/              # Documentação técnica
-│   └── ...
-├── 📂 scripts/                  # Scripts utilitários
-│   ├── translation/            # Scripts de tradução
-│   ├── install/                # Scripts de instalação
-│   ├── create_shortcut.py
-│   └── ...
-├── 📂 src/                      # Código fonte principal
-│   ├── core/                   # Núcleo do sistema
-│   ├── interface/              # Interfaces de usuário
-│   └── utils/                  # Utilitários
-├── 📂 tests/                    # Testes automatizados
-├── 📂 tools/                    # Ferramentas de desenvolvimento
-├── 🔧 INSTALL_JARVIS.bat       # Instalador Windows
-├── 🚀 START_JARVIS.bat         # Inicializador
-├── 🧠 main.py                  # Ponto de entrada principal
-└── 📖 README.md                # Esta documentação
+├── 📂 data/                      # Dados e recursos (logs, backups, etc)
+├── 📂 docs/                      # Documentação técnica e relatórios
+├── 📂 models/                    # Modelos de IA locais
+├── 📂 scripts/                   # Scripts de setup, utilitários e automação
+├── 📂 src/                      # Código fonte principal do JARVIS
+├── 📂 tests/                    # Suíte de testes (Integração e unitários)
+├── 📂 tools/                    # Ferramentas auxiliares
+├── 🚀 start_jarvis.bat          # Inicializador principal (Windows)
+├── 🚀 start_jarvis.sh           # Inicializador principal (Linux/Mac)
+├── 🧠 main.py                   # Ponto de entrada do sistema
+└── 📖 README.md                 # Esta documentação
 ```
 
 ---

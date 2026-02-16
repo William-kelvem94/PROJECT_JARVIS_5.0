@@ -61,10 +61,10 @@ brain_router:
       min_ram_gb: 6.0
       min_vram_gb: 4.0
     tier_pro:
-      min_ram_gb: 4.0
+      min_ram_gb: 2.0
       min_vram_gb: 2.0
     tier_fast:
-      min_ram_gb: 1.5
+      min_ram_gb: 0.5
       min_vram_gb: 0.0
   
   # Required models for maintenance checks
@@ -148,7 +148,7 @@ continual_learning:
   # Local Brain (Model to Train)
   local_brain:
     model_path: "Qwen/Qwen2.5-1.5B-Instruct"
-    autoload: true
+    autoload: false
     lora_enabled: true  # Usar LoRA/QLoRA para fine-tuning eficiente
     lora_r: 16
     lora_alpha: 32
@@ -189,7 +189,7 @@ local_brain:
   device: "auto"  # 'auto' agora detecta OpenVINO (Iris Xe) via ComputeOrchestrator
   
   # Autoloading
-  autoload: true
+  autoload: false
 
 # === NEURAL MEMORY CONFIGURATION ===
 neural_memory:

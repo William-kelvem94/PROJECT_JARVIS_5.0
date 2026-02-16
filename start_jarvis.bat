@@ -1,17 +1,11 @@
 @echo off
-REM JARVIS 5.0 Startup Script
+setlocal
+cd /d "%~dp0"
 
-echo Starting JARVIS 5.0...
-
-REM Check Python
-python --version >nul 2>&1
+echo [SYSTEM] Launching JARVIS 5.0 Professional Edition...
+call "scripts\launchers\start_jarvis.bat"
 if errorlevel 1 (
-    echo Error: Python not found
-    exit /b 1
+    echo [ERROR] Launcher returned an error (exit code %ERRORLEVEL%).
+    pause
+    exit /b %ERRORLEVEL%
 )
-
-REM Check dependencies
-python setup_jarvis.py --quick-check
-
-REM Start JARVIS
-python main.py %*

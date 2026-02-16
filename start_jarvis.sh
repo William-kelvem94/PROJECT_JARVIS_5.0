@@ -10,7 +10,7 @@ if ! command -v python3 &> /dev/null; then
 fi
 
 # Check dependencies
-python3 setup_jarvis.py --quick-check
+python3 scripts/install/setup_jarvis.py --quick-check
 
 # Start JARVIS
 python3 main.py "$@"

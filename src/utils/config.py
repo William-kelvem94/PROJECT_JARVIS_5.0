@@ -77,7 +77,7 @@ class Config:
         self.PROJECT_ROOT = Path(__file__).parent.parent.parent
         self.SRC_DIR = self.PROJECT_ROOT / "src"
         self.DATA_DIR = self.PROJECT_ROOT / "data"
-        self.CONFIG_DIR = self.SRC_DIR / "config"
+        self.CONFIG_DIR = self.PROJECT_ROOT / "config"
         self.MODELS_DIR = self.PROJECT_ROOT / "models"
         self.DOCS_DIR = self.PROJECT_ROOT / "docs"
 
