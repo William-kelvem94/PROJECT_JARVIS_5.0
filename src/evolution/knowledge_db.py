@@ -96,11 +96,15 @@ class KnowledgeDatabase:
                 )
             """)
 
-            # Tabela de feedback humano
+            # Human feedback table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS human_feedback (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     solution_id INTEGER NOT NULL,
+                    -- Feedback types:
+                    --   'positive': Solution worked well, improved system
+                    --   'negative': Solution caused problems or didn't work
+                    --   'ignore': Not applicable or false positive
                     feedback TEXT NOT NULL CHECK(feedback IN ('positive', 'negative', 'ignore')),
                     comment TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

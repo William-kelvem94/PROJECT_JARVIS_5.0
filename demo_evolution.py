@@ -43,8 +43,9 @@ async def demo_evolution_layer():
         # 1. Initialize and start the evolution layer
         print("📋 Step 1: Initializing Evolution Layer...")
         print("-" * 70)
+        # Note: Using 60 seconds for demo (faster than production default of 300s)
         await evolution_manager.start(
-            observer_interval=60,  # Check every 60 seconds
+            observer_interval=60,  # Check every 60 seconds (demo mode)
             auto_heal=True,        # Enable auto-healing
             initial_scan=True      # Run initial scan
         )
