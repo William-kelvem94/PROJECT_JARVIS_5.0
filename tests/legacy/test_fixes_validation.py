@@ -5,7 +5,8 @@ Validação das correções aplicadas - Boot Test
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 passed = 0
 failed = 0
@@ -95,7 +96,7 @@ try:
     spec = importlib.util.spec_from_file_location(
         "modern_hud",
         os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            project_root,
             "src",
             "interface",
             "modern_hud.py",
@@ -104,12 +105,11 @@ try:
     # Don't actually load (needs QApplication), just verify syntax
     import py_compile
 
-    hud_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "src",
-        "interface",
-        "modern_hud.py",
-    )
+    hud_candidates = [
+        os.path.join(project_root, "src", "interface", "modern_hud.py"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "interface", "modern_hud.py"),
+    ]
+    hud_path = next((p for p in hud_candidates if os.path.exists(p)), hud_candidates[0])
     py_compile.compile(hud_path, doraise=True)
     print("  PASS (syntax valid)")
     passed += 1
