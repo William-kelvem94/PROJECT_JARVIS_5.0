@@ -244,9 +244,9 @@ class DependencyManager:
             logger.warning(f"Optional dependency '{dependency}' not installed; using fallback capabilities.")
             return True
 
-        # As a last resort (user requested 'everything on') force availability with a warning
-        logger.warning(f"Forcing availability of '{dependency}' even though it's missing. This may degrade functionality.")
-        return True
+        # Dependency is missing and no fallback is available
+        logger.warning(f"Dependency '{dependency}' is missing. This may degrade functionality.")
+        return False
     
     def get_status(self, dependency: str) -> Optional[DependencyStatus]:
         """Get detailed status of a dependency."""
