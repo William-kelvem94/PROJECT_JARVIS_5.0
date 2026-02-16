@@ -492,7 +492,7 @@ class DreamCycle:
             topic = plan['topic']
             priority = gap['priority']
             
-            reflect_logger.reflect(f"ðŸ”¬ TOPIC: {topic.upper()}\nPriority: {priority}/10", layer="RESEARCH-INIT")
+            reflect_logger.reflect(f"ðŸ” TOPIC: {topic.upper()}\nPriority: {priority}/10", layer="RESEARCH-INIT")
             
             # 1. HUB_DISCOVERY (Strict Source: Hugging Face)
             try:

@@ -74,7 +74,7 @@ class NeuralCuriosity:
             from src.learning.learning_engine import get_learning_engine
             engine = get_learning_engine()
             if engine and engine.dream_cycle:
-                reflect_logger.reflect(f"ðŸ”¬ Agendando pesquisa autÃ´noma sobre: {topic}", layer="NEURAL-CURIOSITY")
+                reflect_logger.reflect(f"ðŸ” Agendando pesquisa autÃ´noma sobre: {topic}", layer="NEURAL-CURIOSITY")
                 # Simular uma entrada de feedback para o GapAnalyzer pegar
                 from src.learning.feedback_loop import FeedbackEntry
                 import hashlib
