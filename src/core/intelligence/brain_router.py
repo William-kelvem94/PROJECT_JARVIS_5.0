@@ -54,6 +54,7 @@ class BrainRouter:
         self._last_conn_check = 0
         self._last_model_check = 0
         self.discovery_interval = 60  # Recarregar lista de modelos a cada 60s
+        self.on_heavy_model_loading = None
         
         # Carregar configuraÃ§Ãµes do ai_config.yaml
         if CONFIG_AVAILABLE and config:
@@ -69,10 +70,10 @@ class BrainRouter:
                 self.offline_mode = config.get_ai_config('brain_router.offline_mode', False)
                 logger.info("âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml")
             except Exception as e:
-                logger.warning(f"âš ï¸ BrainRouter: Erro ao carregar config, usando defaults: {e}")
+                logger.warning(f"âš ï¸  BrainRouter: Erro ao carregar config, usando defaults: {e}")
                 self._load_default_config()
         else:
-            logger.warning("âš ï¸ BrainRouter: Config nÃ£o disponÃ­vel, usando defaults")
+            logger.warning("âš ï¸  BrainRouter: Config nÃ£o disponÃ­vel, usando defaults")
             self._load_default_config()
         
         # Discover Ollama models
@@ -86,18 +87,17 @@ class BrainRouter:
         self.ollama_url = 'http://localhost:11434'
         self.ollama_timeout = 2.0
         
-        # ðŸ†• FASE 2: Tiers otimizados para 16GB RAM com quantizaÃ§Ã£o GGUF
-        # tier_ultra: Especialista Pesado (8B-14B) - Tarefas complexas
+        # Defaults alinhados com ai_config.yaml
         self.tier_ultra = ["deepseek-r1:8b", "deepseek-r1:14b", "llama3.3:70b"]
-        
-        # tier_pro: Especialista MÃ©dio (7B-8B) - Tarefas versÃ¡teis
-        self.tier_pro = ["llama3.1:8b", "llama3.3:8b", "qwen2.5:7b", "mistral:7b"]
-        
-        # tier_fast: Sentinela (1.5B-3B) - Respostas rÃ¡pidas e cache
-        self.tier_fast = ["qwen2.5:3b", "qwen2.5:1.5b", "llama3.2:3b", "phi3.5", "gemma2:2b"]
+        self.tier_pro = ["gemma3:4b", "qwen2.5:7b", "llama3.1:8b", "mistral:7b"]
+        self.tier_fast = ["gemma3:4b", "qwen2.5:3b", "phi3.5", "gemma2:2b"]
         
         import psutil
-        ram_percent = psutil.virtual_memory().percent
+        try:
+            ram_percent = psutil.virtual_memory().percent
+        except:
+            ram_percent = 50.0
+
         # Se RAM estiver cheia (>75%), descarta modelos imediatamente (0).
         # Se tiver sobra, mantÃ©m por 5 minutos ("5m") para resposta rÃ¡pida.
         self.dynamic_keep_alive = 0 if ram_percent > 75 else "5m"
@@ -108,9 +108,6 @@ class BrainRouter:
         self.hw_tier_fast = {"min_ram_gb": 2.0, "min_vram_gb": 0.0, "keep_alive": "15m"}  # Cache 15min
         
         self.offline_mode = False
-        
-        # ðŸ†• FASE 2: Callback para UX Masking
-        self.on_heavy_model_loading = None
 
 
     def _discover_ollama_models(self):
@@ -124,16 +121,16 @@ class BrainRouter:
                 logger.info(f"âœ… Ollama: {len(self.ollama_available_models)} modelos instalados.")
             else:
                 self.ollama_available_models = []
-                logger.warning(f"âš ï¸ Ollama respondeu com status {response.status_code}")
+                logger.warning(f"âš ï¸  Ollama respondeu com status {response.status_code}")
         except requests.exceptions.Timeout:
             self.ollama_available_models = []
-            logger.warning("âš ï¸ Ollama nÃ£o respondeu dentro do timeout (5s) - serÃ¡ detectado posteriormente")
+            logger.warning("âš ï¸  Ollama nÃ£o respondeu dentro do timeout (5s) - serÃ¡ detectado posteriormente")
         except requests.exceptions.ConnectionError:
             self.ollama_available_models = []
-            logger.warning("âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente")
+            logger.warning("âš ï¸  Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente")
         except Exception as e:
             self.ollama_available_models = []
-            logger.warning(f"âš ï¸ Erro ao detectar modelos Ollama: {e}")
+            logger.warning(f"âš ï¸  Erro ao detectar modelos Ollama: {e}")
         except Exception:
             self.ollama_available_models = []
             logger.debug("Ollama nÃ£o estÃ¡ rodando no momento.")
@@ -163,7 +160,7 @@ class BrainRouter:
                 logger.info("ðŸ“¡ Sem internet: Usando recursos locais")
             return self._choose_local_brain()
         
-        # PRIVACIDADE CRÃTICA -> NATIVO (Sem rede)
+        # PRIVACIDADE CRÃ TICA -> NATIVO (Sem rede)
         if privacy_level.value >= PrivacyLevel.HIGH.value:
             return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
 
@@ -242,12 +239,12 @@ class BrainRouter:
                 safe_models = [m for m in cloud_models if "gemini" not in m.lower()]
                 if safe_models:
                     model = safe_models[0]
-                    logger.info(f"â˜ï¸ CLOUD ESCALATION ({cloud_tier}): {model}")
+                    logger.info(f"â˜ ï¸  CLOUD ESCALATION ({cloud_tier}): {model}")
                     return {"brain": f"cloud:{model}", "keep_alive": 0, "is_heavy": True}
 
 
         # FALLBACK: Native Micro-LLM (Qwen 0.5B/1.5B)
-        logger.info("ðŸ  Usando LocalBrain nativo")
+        logger.info("ðŸ   Usando LocalBrain nativo")
         return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
     
     
@@ -284,7 +281,7 @@ class BrainRouter:
         """Desativa modo offline"""
         self.offline_mode = False
         self.cloud_available = self._check_cloud_availability()
-        logger.info(f"ðŸŒ MODO ONLINE ATIVADO (Cloud Available: {self.cloud_available})")
+        logger.info(f"ðŸŒ  MODO ONLINE ATIVADO (Cloud Available: {self.cloud_available})")
 
     def check_connectivity(self) -> bool:
         """Verifica conexÃ£o com a internet (cache de 30s)"""

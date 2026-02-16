@@ -9,16 +9,15 @@ def create_shortcut():
     
     # Resolver caminhos absolutos
     current_script_path = Path(__file__).resolve()
+    # Assume script is in scripts/install, so project_root is 2 levels up
     project_root = current_script_path.parent.parent.parent
-    target_bat = project_root / "start_jarvis.bat"
     
-    if not target_bat.exists():
-        target_bat = project_root / "jarvis.bat"
-
     if system == "Windows":
-        _create_windows_shortcut(project_root, target_bat)
+        target_script = project_root / "start_jarvis.bat"
+        _create_windows_shortcut(project_root, target_script)
     elif system == "Linux":
-        _create_linux_shortcut(project_root, target_bat)
+        target_script = project_root / "start_jarvis.sh"
+        _create_linux_shortcut(project_root, target_script)
     else:
         print(f"⚠️ Sistema {system} não suportado para criação automática de atalho.")
 
@@ -26,7 +25,12 @@ def _create_windows_shortcut(project_root, target_bat):
     """Cria atalho no Windows usando PyWin32 ou PowerShell como fallback"""
     desktop = Path(os.path.expanduser("~/Desktop"))
     shortcut_path = desktop / "JARVIS 5.0.lnk"
-    icon_location = "imageres.dll,23" # Ícone de olho/câmera (visão computacional, mais apropriado para IA)
+    icon_location = "imageres.dll,23" # Ícone de olho/câmera
+
+    # Tentar encontrar um ícone personalizado no projeto
+    custom_icon = project_root / "resources" / "icon.ico"
+    if custom_icon.exists():
+        icon_location = str(custom_icon)
     
     print("🚀 Gerando atalho JARVIS 5.0 para Windows...")
 
@@ -40,7 +44,7 @@ def _create_windows_shortcut(project_root, target_bat):
         shortcut.WorkingDirectory = str(project_root)
         shortcut.IconLocation = icon_location
         shortcut.Description = "JARVIS 5.0 - Singularity Protocol"
-        shortcut.save()
+        shortcut.Save()
         print(f"✅ Atalho criado com sucesso via PyWin32: {shortcut_path}")
         return
     except ImportError:
@@ -58,21 +62,32 @@ def _create_windows_shortcut(project_root, target_bat):
         $Shortcut.Description = "JARVIS 5.0 - Singularity Protocol"
         $Shortcut.Save()
         """
-        subprocess.run(["powershell", "-Command", ps_script], check=True, capture_output=True)
+        # Executar PowerShell com bypass de política de execução para garantir sucesso
+        subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps_script], check=True, capture_output=True)
         print(f"✅ Atalho criado com sucesso via PowerShell: {shortcut_path}")
     except Exception as e:
         print(f"❌ Erro ao criar atalho no Windows: {e}")
 
-def _create_linux_shortcut(project_root, target_bat):
+def _create_linux_shortcut(project_root, target_sh):
     """Cria um arquivo .desktop no Linux"""
     desktop = Path(os.path.expanduser("~/Desktop"))
+    if not desktop.exists():
+        # Tentar XDG_DESKTOP_DIR ou criar pasta Desktop se não existir
+        desktop.mkdir(parents=True, exist_ok=True)
+
     shortcut_path = desktop / "jarvis.desktop"
     
+    # Tentar encontrar um ícone personalizado no projeto
+    icon_path = "utilities-terminal"
+    custom_icon_png = project_root / "resources" / "icon.png"
+    if custom_icon_png.exists():
+        icon_path = str(custom_icon_png)
+
     content = f"""[Desktop Entry]
 Name=JARVIS 5.0
 Comment=Singularity Protocol
-Exec=bash "{target_bat}"
-Icon=utilities-terminal
+Exec=bash "{target_sh}"
+Icon={icon_path}
 Terminal=true
 Type=Application
 Categories=Development;AI;
