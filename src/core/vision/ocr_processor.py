@@ -6,8 +6,9 @@ Suporta mÃºltiplos engines: Tesseract, EasyOCR e integraÃ§Ã£o com APIs
 import time
 import logging
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from PIL import Image
+
 try:
     import pytesseract
 except ImportError:
@@ -17,20 +18,24 @@ except ImportError:
 EASYOCR_AVAILABLE = False
 easyocr = None
 
+
 def _ensure_easyocr():
     global EASYOCR_AVAILABLE, easyocr
     if not EASYOCR_AVAILABLE and easyocr is None:
         try:
             import easyocr
+
             EASYOCR_AVAILABLE = True
         except (ImportError, OSError) as e:
             EASYOCR_AVAILABLE = False
             easyocr = None
             logger.debug(f"EasyOCR nÃ£o encontrado. OCR limitado: {e}")
 
+
 try:
     # Just check if easyocr can be imported without actually importing it
     import importlib
+
     easyocr_spec = importlib.util.find_spec("easyocr")
     if easyocr_spec is not None:
         EASYOCR_AVAILABLE = True
@@ -41,9 +46,10 @@ except Exception:
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from src.utils.config import config
 from src.utils.helpers import ImageHelper, TextHelper
-from src.database.models import db_manager, OCRResult, Capture
+from src.database.models import db_manager, OCRResult
 
 logger = logging.getLogger(__name__)
+
 
 class OCRProcessor:
     """Classe principal para processamento OCR"""
@@ -54,11 +60,11 @@ class OCRProcessor:
         self.easyocr_reader = None
 
         # ConfiguraÃ§Ãµes
-        self.ocr_engine = config.get_setting('ocr.engine', 'tesseract')
-        self.languages = config.get_setting('ocr.languages', ['por', 'eng'])
-        self.confidence_threshold = config.get_setting('ocr.confidence_threshold', 60)
-        self.preprocessing = config.get_setting('ocr.preprocessing', True)
-        self.timeout = config.get_setting('processing.timeout', 30)
+        self.ocr_engine = config.get_setting("ocr.engine", "tesseract")
+        self.languages = config.get_setting("ocr.languages", ["por", "eng"])
+        self.confidence_threshold = config.get_setting("ocr.confidence_threshold", 60)
+        self.preprocessing = config.get_setting("ocr.preprocessing", True)
+        self.timeout = config.get_setting("processing.timeout", 30)
 
         # Inicializar engines
         self._initialize_engines()
@@ -69,8 +75,8 @@ class OCRProcessor:
         """Inicializa engines OCR disponÃ­veis"""
         try:
             # Inicializar Tesseract
-            tesseract_config = config.get_ocr_config('tesseract')
-            tesseract_path = tesseract_config.get('path')
+            tesseract_config = config.get_ocr_config("tesseract")
+            tesseract_path = tesseract_config.get("path")
 
             if tesseract_path and Path(tesseract_path).exists():
                 pytesseract.pytesseract.tesseract_cmd = tesseract_path
@@ -101,15 +107,19 @@ class OCRProcessor:
             try:
                 _ensure_easyocr()
                 if EASYOCR_AVAILABLE and easyocr:
-                    easyocr_config = config.get_ocr_config('easyocr')
+                    easyocr_config = config.get_ocr_config("easyocr")
                     self.easyocr_reader = easyocr.Reader(
                         lang_list=self.languages,
-                        gpu=easyocr_config.get('gpu', False),
-                        model_storage_directory=easyocr_config.get('model_storage_directory'),
-                        user_network_directory=easyocr_config.get('user_network_directory'),
-                        detect_network=easyocr_config.get('detect_network', 'craft'),
-                        recog_network=easyocr_config.get('recog_network', 'crnn'),
-                        download_enabled=easyocr_config.get('download_enabled', True)
+                        gpu=easyocr_config.get("gpu", False),
+                        model_storage_directory=easyocr_config.get(
+                            "model_storage_directory"
+                        ),
+                        user_network_directory=easyocr_config.get(
+                            "user_network_directory"
+                        ),
+                        detect_network=easyocr_config.get("detect_network", "craft"),
+                        recog_network=easyocr_config.get("recog_network", "crnn"),
+                        download_enabled=easyocr_config.get("download_enabled", True),
                     )
                     logger.info("EasyOCR reader initialized on demand")
                 else:
@@ -118,8 +128,12 @@ class OCRProcessor:
                 logger.error(f"Erro ao inicializar EasyOCR reader: {e}")
                 self.easyocr_available = False
 
-    def process_image(self, image_path: str, capture_id: Optional[int] = None,
-                     engine: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    def process_image(
+        self,
+        image_path: str,
+        capture_id: Optional[int] = None,
+        engine: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
         """
         Processa imagem com OCR
 
@@ -145,11 +159,15 @@ class OCRProcessor:
             selected_engine = engine or self.ocr_engine
 
             # Processar com engine selecionada
-            if selected_engine == 'tesseract' and self.tesseract_available:
+            if selected_engine == "tesseract" and self.tesseract_available:
                 result = self._process_with_tesseract(image)
-            elif selected_engine == 'easyocr' and self.easyocr_available:
+            elif selected_engine == "easyocr" and self.easyocr_available:
                 result = self._process_with_easyocr(image)
-            elif selected_engine == 'hybrid' and self.tesseract_available and self.easyocr_available:
+            elif (
+                selected_engine == "hybrid"
+                and self.tesseract_available
+                and self.easyocr_available
+            ):
                 result = self._process_hybrid(image)
             else:
                 logger.error(f"Engine OCR '{selected_engine}' nÃ£o disponÃ­vel")
@@ -158,19 +176,23 @@ class OCRProcessor:
             processing_time = time.time() - start_time
 
             # Adicionar metadados
-            result.update({
-                'processing_time': processing_time,
-                'engine_used': selected_engine,
-                'image_path': image_path,
-                'image_size': f"{image.width}x{image.height}",
-                'timestamp': time.time()
-            })
+            result.update(
+                {
+                    "processing_time": processing_time,
+                    "engine_used": selected_engine,
+                    "image_path": image_path,
+                    "image_size": f"{image.width}x{image.height}",
+                    "timestamp": time.time(),
+                }
+            )
 
             # Salvar no banco se capture_id fornecido
             if capture_id:
                 self._save_ocr_result(capture_id, result)
 
-            logger.info(f"OCR processado com sucesso: {image_path} ({processing_time:.2f}s)")
+            logger.info(
+                f"OCR processado com sucesso: {image_path} ({processing_time:.2f}s)"
+            )
             return result
 
         except Exception as e:
@@ -181,65 +203,67 @@ class OCRProcessor:
         """Processa imagem usando Tesseract"""
         try:
             # ConfiguraÃ§Ã£o Tesseract
-            tesseract_config = config.get_ocr_config('tesseract')
-            custom_config = tesseract_config.get('config', '--oem 3 --psm 6')
+            tesseract_config = config.get_ocr_config("tesseract")
+            custom_config = tesseract_config.get("config", "--oem 3 --psm 6")
 
             # Executar OCR
             ocr_data = pytesseract.image_to_data(
                 image,
-                lang='+'.join(self.languages),
+                lang="+".join(self.languages),
                 config=custom_config,
                 output_type=pytesseract.Output.DICT,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
 
             # Extrair texto completo
             raw_text = pytesseract.image_to_string(
                 image,
-                lang='+'.join(self.languages),
+                lang="+".join(self.languages),
                 config=custom_config,
-                timeout=self.timeout
+                timeout=self.timeout,
             )
 
             # Calcular confianÃ§a mÃ©dia
-            confidences = [int(conf) for conf in ocr_data['conf'] if conf != '-1']
+            confidences = [int(conf) for conf in ocr_data["conf"] if conf != "-1"]
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
 
             # Extrair regiÃµes de texto
             text_regions = []
-            for i, conf in enumerate(ocr_data['conf']):
-                if conf != '-1' and int(conf) >= self.confidence_threshold:
-                    text_regions.append({
-                        'text': ocr_data['text'][i],
-                        'x': ocr_data['left'][i],
-                        'y': ocr_data['top'][i],
-                        'width': ocr_data['width'][i],
-                        'height': ocr_data['height'][i],
-                        'confidence': int(conf)
-                    })
+            for i, conf in enumerate(ocr_data["conf"]):
+                if conf != "-1" and int(conf) >= self.confidence_threshold:
+                    text_regions.append(
+                        {
+                            "text": ocr_data["text"][i],
+                            "x": ocr_data["left"][i],
+                            "y": ocr_data["top"][i],
+                            "width": ocr_data["width"][i],
+                            "height": ocr_data["height"][i],
+                            "confidence": int(conf),
+                        }
+                    )
 
             # Limpar texto
             cleaned_text = TextHelper.clean_ocr_text(raw_text)
 
             return {
-                'raw_text': raw_text,
-                'cleaned_text': cleaned_text,
-                'confidence_score': avg_confidence,
-                'text_regions': text_regions,
-                'language': '+'.join(self.languages),
-                'engine': 'tesseract'
+                "raw_text": raw_text,
+                "cleaned_text": cleaned_text,
+                "confidence_score": avg_confidence,
+                "text_regions": text_regions,
+                "language": "+".join(self.languages),
+                "engine": "tesseract",
             }
 
         except Exception as e:
             logger.error(f"Erro no processamento com Tesseract: {e}")
             return {
-                'raw_text': '',
-                'cleaned_text': '',
-                'confidence_score': 0,
-                'text_regions': [],
-                'language': '+'.join(self.languages),
-                'engine': 'tesseract',
-                'error': str(e)
+                "raw_text": "",
+                "cleaned_text": "",
+                "confidence_score": 0,
+                "text_regions": [],
+                "language": "+".join(self.languages),
+                "engine": "tesseract",
+                "error": str(e),
             }
 
     def _process_with_easyocr(self, image: Image.Image) -> Dict[str, Any]:
@@ -247,16 +271,16 @@ class OCRProcessor:
         try:
             # Ensure EasyOCR reader is initialized
             self._ensure_easyocr_reader()
-            
+
             if self.easyocr_reader is None:
                 return {
-                    'text': '',
-                    'confidence': 0,
-                    'language': '+'.join(self.languages),
-                    'engine': 'easyocr',
-                    'error': 'EasyOCR reader not available'
+                    "text": "",
+                    "confidence": 0,
+                    "language": "+".join(self.languages),
+                    "engine": "easyocr",
+                    "error": "EasyOCR reader not available",
                 }
-            
+
             # Converter para array numpy
             cv_image = ImageHelper.image_to_cv2(image)
 
@@ -264,7 +288,7 @@ class OCRProcessor:
             results = self.easyocr_reader.readtext(cv_image)
 
             # Processar resultados
-            raw_text = ' '.join([result[1] for result in results])
+            raw_text = " ".join([result[1] for result in results])
             text_regions = []
 
             total_confidence = 0
@@ -273,14 +297,16 @@ class OCRProcessor:
                 confidence_percent = confidence * 100
 
                 if confidence_percent >= self.confidence_threshold:
-                    text_regions.append({
-                        'text': text,
-                        'x': int(bbox[0][0]),
-                        'y': int(bbox[0][1]),
-                        'width': int(bbox[2][0] - bbox[0][0]),
-                        'height': int(bbox[2][1] - bbox[0][1]),
-                        'confidence': confidence_percent
-                    })
+                    text_regions.append(
+                        {
+                            "text": text,
+                            "x": int(bbox[0][0]),
+                            "y": int(bbox[0][1]),
+                            "width": int(bbox[2][0] - bbox[0][0]),
+                            "height": int(bbox[2][1] - bbox[0][1]),
+                            "confidence": confidence_percent,
+                        }
+                    )
 
                     total_confidence += confidence_percent
 
@@ -290,24 +316,24 @@ class OCRProcessor:
             cleaned_text = TextHelper.clean_ocr_text(raw_text)
 
             return {
-                'raw_text': raw_text,
-                'cleaned_text': cleaned_text,
-                'confidence_score': avg_confidence,
-                'text_regions': text_regions,
-                'language': '+'.join(self.languages),
-                'engine': 'easyocr'
+                "raw_text": raw_text,
+                "cleaned_text": cleaned_text,
+                "confidence_score": avg_confidence,
+                "text_regions": text_regions,
+                "language": "+".join(self.languages),
+                "engine": "easyocr",
             }
 
         except Exception as e:
             logger.error(f"Erro no processamento com EasyOCR: {e}")
             return {
-                'raw_text': '',
-                'cleaned_text': '',
-                'confidence_score': 0,
-                'text_regions': [],
-                'language': '+'.join(self.languages),
-                'engine': 'easyocr',
-                'error': str(e)
+                "raw_text": "",
+                "cleaned_text": "",
+                "confidence_score": 0,
+                "text_regions": [],
+                "language": "+".join(self.languages),
+                "engine": "easyocr",
+                "error": str(e),
             }
 
     def _process_hybrid(self, image: Image.Image) -> Dict[str, Any]:
@@ -319,7 +345,10 @@ class OCRProcessor:
 
             # Combinar resultados
             # Usar o texto com maior confianÃ§a mÃ©dia
-            if tesseract_result['confidence_score'] >= easyocr_result['confidence_score']:
+            if (
+                tesseract_result["confidence_score"]
+                >= easyocr_result["confidence_score"]
+            ):
                 primary_result = tesseract_result
                 secondary_result = easyocr_result
             else:
@@ -327,8 +356,12 @@ class OCRProcessor:
                 secondary_result = tesseract_result
 
             # Melhorar texto combinando regiÃµes
-            combined_regions = primary_result['text_regions'] + secondary_result['text_regions']
-            combined_regions.sort(key=lambda x: (x['y'], x['x']))  # Ordenar por posiÃ§Ã£o
+            combined_regions = (
+                primary_result["text_regions"] + secondary_result["text_regions"]
+            )
+            combined_regions.sort(
+                key=lambda x: (x["y"], x["x"])
+            )  # Ordenar por posiÃ§Ã£o
 
             # Remover duplicatas prÃ³ximas
             filtered_regions = []
@@ -336,9 +369,11 @@ class OCRProcessor:
                 # Verificar se regiÃ£o similar jÃ¡ existe
                 duplicate = False
                 for existing in filtered_regions:
-                    if (abs(region['x'] - existing['x']) < 20 and
-                        abs(region['y'] - existing['y']) < 20 and
-                        abs(region['confidence'] - existing['confidence']) < 10):
+                    if (
+                        abs(region["x"] - existing["x"]) < 20
+                        and abs(region["y"] - existing["y"]) < 20
+                        and abs(region["confidence"] - existing["confidence"]) < 10
+                    ):
                         duplicate = True
                         break
 
@@ -346,27 +381,27 @@ class OCRProcessor:
                     filtered_regions.append(region)
 
             return {
-                'raw_text': primary_result['raw_text'],
-                'cleaned_text': primary_result['cleaned_text'],
-                'confidence_score': primary_result['confidence_score'],
-                'text_regions': filtered_regions,
-                'language': primary_result['language'],
-                'engine': 'hybrid',
-                'engines_used': ['tesseract', 'easyocr'],
-                'tesseract_confidence': tesseract_result['confidence_score'],
-                'easyocr_confidence': easyocr_result['confidence_score']
+                "raw_text": primary_result["raw_text"],
+                "cleaned_text": primary_result["cleaned_text"],
+                "confidence_score": primary_result["confidence_score"],
+                "text_regions": filtered_regions,
+                "language": primary_result["language"],
+                "engine": "hybrid",
+                "engines_used": ["tesseract", "easyocr"],
+                "tesseract_confidence": tesseract_result["confidence_score"],
+                "easyocr_confidence": easyocr_result["confidence_score"],
             }
 
         except Exception as e:
             logger.error(f"Erro no processamento hÃ­brido: {e}")
             return {
-                'raw_text': '',
-                'cleaned_text': '',
-                'confidence_score': 0,
-                'text_regions': [],
-                'language': '+'.join(self.languages),
-                'engine': 'hybrid',
-                'error': str(e)
+                "raw_text": "",
+                "cleaned_text": "",
+                "confidence_score": 0,
+                "text_regions": [],
+                "language": "+".join(self.languages),
+                "engine": "hybrid",
+                "error": str(e),
             }
 
     def _save_ocr_result(self, capture_id: int, ocr_result: Dict[str, Any]):
@@ -374,13 +409,13 @@ class OCRProcessor:
         try:
             ocr_record = OCRResult(
                 capture_id=capture_id,
-                ocr_engine=ocr_result['engine'],
-                language=ocr_result['language'],
-                raw_text=ocr_result['raw_text'],
-                cleaned_text=ocr_result.get('cleaned_text', ''),
-                confidence_score=ocr_result.get('confidence_score', 0),
-                processing_time=ocr_result.get('processing_time', 0),
-                text_regions=ocr_result.get('text_regions', [])
+                ocr_engine=ocr_result["engine"],
+                language=ocr_result["language"],
+                raw_text=ocr_result["raw_text"],
+                cleaned_text=ocr_result.get("cleaned_text", ""),
+                confidence_score=ocr_result.get("confidence_score", 0),
+                processing_time=ocr_result.get("processing_time", 0),
+                text_regions=ocr_result.get("text_regions", []),
             )
 
             db_manager.execute_in_session(lambda session: session.add(ocr_record))
@@ -388,7 +423,9 @@ class OCRProcessor:
         except Exception as e:
             logger.error(f"Erro ao salvar resultado OCR: {e}")
 
-    def process_batch(self, image_paths: List[str], max_workers: int = 4) -> Dict[str, Any]:
+    def process_batch(
+        self, image_paths: List[str], max_workers: int = 4
+    ) -> Dict[str, Any]:
         """
         Processa lote de imagens em paralelo
 
@@ -432,11 +469,11 @@ class OCRProcessor:
         """Retorna lista de engines OCR disponÃ­veis"""
         engines = []
         if self.tesseract_available:
-            engines.append('tesseract')
+            engines.append("tesseract")
         if self.easyocr_available:
-            engines.append('easyocr')
+            engines.append("easyocr")
         if self.tesseract_available and self.easyocr_available:
-            engines.append('hybrid')
+            engines.append("hybrid")
         return engines
 
     def test_engines(self) -> Dict[str, bool]:
@@ -447,51 +484,58 @@ class OCRProcessor:
         if self.tesseract_available:
             try:
                 # Criar imagem de teste simples
-                test_image = Image.new('RGB', (100, 50), color='white')
+                test_image = Image.new("RGB", (100, 50), color="white")
                 result = self._process_with_tesseract(test_image)
-                results['tesseract'] = 'error' not in result
+                results["tesseract"] = "error" not in result
             except Exception:
-                results['tesseract'] = False
+                results["tesseract"] = False
         else:
-            results['tesseract'] = False
+            results["tesseract"] = False
 
         # Testar EasyOCR
         if self.easyocr_available:
             try:
                 self._ensure_easyocr_reader()
                 if self.easyocr_reader is None:
-                    results['easyocr'] = False
+                    results["easyocr"] = False
                 else:
-                    test_image = Image.new('RGB', (100, 50), color='white')
+                    test_image = Image.new("RGB", (100, 50), color="white")
                     cv_image = ImageHelper.image_to_cv2(test_image)
 <<<<<<< Updated upstream
                     test_results = self.easyocr_reader.readtext(cv_image)
+<<<<<<< HEAD
                     results['easyocr'] = True
 =======
                     test_results = self.easyocr_reader.readtext(cv_image)  # noqa: F841
                     results["easyocr"] = True
 >>>>>>> Stashed changes
+=======
+                    results["easyocr"] = True
+>>>>>>> dev-new-version
             except Exception:
-                results['easyocr'] = False
+                results["easyocr"] = False
         else:
-            results['easyocr'] = False
+            results["easyocr"] = False
 
         # Testar hÃ­brido
-        results['hybrid'] = results.get('tesseract', False) and results.get('easyocr', False)
+        results["hybrid"] = results.get("tesseract", False) and results.get(
+            "easyocr", False
+        )
 
         return results
 
     def get_engine_info(self) -> Dict[str, Any]:
         """Retorna informaÃ§Ãµes sobre os engines disponÃ­veis"""
         return {
-            'available_engines': self.get_available_engines(),
-            'default_engine': self.ocr_engine,
-            'languages': self.languages,
-            'confidence_threshold': self.confidence_threshold,
-            'preprocessing_enabled': self.preprocessing,
-            'timeout_seconds': self.timeout,
-            'engine_status': self.test_engines()
+            "available_engines": self.get_available_engines(),
+            "default_engine": self.ocr_engine,
+            "languages": self.languages,
+            "confidence_threshold": self.confidence_threshold,
+            "preprocessing_enabled": self.preprocessing,
+            "timeout_seconds": self.timeout,
+            "engine_status": self.test_engines(),
         }
+
 
 # InstÃ¢ncia global removida para evitar execuÃ§Ã£o durante import
 # ocr_processor = OCRProcessor()

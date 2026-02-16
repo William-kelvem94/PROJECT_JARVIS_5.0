@@ -65,6 +65,7 @@ models/yolo/
 .vscode/launch.json
 .vscode/tasks.json
 # Keep .vscode/settings.json and extensions.json if shared
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 # .cursor/ is kept for context rules
 =======
@@ -75,6 +76,11 @@ models/yolo/
 auto_generated/
 PR_BODY.md
 >>>>>>> Stashed changes
+=======
+# Archived hidden folders (moved to .hidden_archive/)
+.antigravity/
+.cursor/
+>>>>>>> dev-new-version
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION & SECRETS (CRITICAL)

@@ -4,7 +4,6 @@ JARVIS 5.0 - Self-Learning Engine Demo
 Demonstração do sistema de auto-aprendizado
 """
 
-import os
 import sys
 import time
 import asyncio
@@ -12,6 +11,7 @@ from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
+
 
 async def demo_self_learning():
     """Demonstra o Self-Learning Engine em ação"""
@@ -86,7 +86,9 @@ async def demo_self_learning():
     except Exception as e:
         print(f"❌ Erro na demo: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 async def test_learning_commands():
     """Testa os comandos especiais de aprendizado"""
@@ -116,6 +118,7 @@ async def test_learning_commands():
     except Exception as e:
         print(f"❌ Erro nos testes de comandos: {e}")
 
+
 async def main():
     """Função principal da demo"""
     await demo_self_learning()
@@ -129,6 +132,7 @@ async def main():
     print("  • Melhorar seu próprio desempenho")
     print("  • Salvar conhecimento quando encerrado")
     print("\\n🧠 O futuro da IA está aqui - JARVIS aprendendo sobre si mesmo!")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

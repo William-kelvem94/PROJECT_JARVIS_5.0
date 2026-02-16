@@ -7,12 +7,14 @@ import os
 import subprocess
 >>>>>>> Stashed changes
 import sys
-import os
 import subprocess
-import time
 from pathlib import Path
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
+=======
+
+>>>>>>> dev-new-version
 def test_python_syntax():
     """Test that all Python files have valid syntax"""
 =======
@@ -41,30 +43,36 @@ def test_python_syntax() -> bool:
 >>>>>>> Stashed changes
     print("Testing Python syntax...")
     errors = []
-    
+
     for py_file in Path("src").rglob("*.py"):
         try:
             subprocess.run(
                 [sys.executable, "-m", "py_compile", str(py_file)],
                 check=True,
                 capture_output=True,
-                timeout=5
+                timeout=5,
             )
         except subprocess.CalledProcessError as exc:
             stderr = exc.stderr.decode("utf-8", errors="replace")
             errors.append(f"{py_file}: {stderr}")
         except subprocess.TimeoutExpired:
             errors.append(f"{py_file}: Compilation timeout")
-    
+
     if errors:
         print(f"[FAIL] Syntax errors found in {len(errors)} files:")
         for error in errors[:5]:
             print(f"  {error}")
         return False
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     
     print(f"✅ All Python files have valid syntax")
+=======
+
+    print("✅ All Python files have valid syntax")
+>>>>>>> dev-new-version
     return True
+
 
 def test_critical_imports():
     """Test that critical modules can be imported"""
@@ -78,7 +86,7 @@ def test_critical_imports() -> bool:
     """Test that critical modules can be imported."""
 >>>>>>> Stashed changes
     print("\nTesting critical imports...")
-    
+
     critical_modules = [
         "src.core.infrastructure.async_event_bus",
         "src.core.infrastructure.boot_manager",
@@ -87,7 +95,7 @@ def test_critical_imports() -> bool:
         "src.evolution.auto_healer",
         "src.evolution.safe_executor",
     ]
-    
+
     errors = []
     for module in critical_modules:
         try:
@@ -97,6 +105,7 @@ def test_critical_imports() -> bool:
         except Exception as e:
             errors.append(f"{module}: {e}")
             print(f"  ❌ {module}: {e}")
+<<<<<<< HEAD
     
 =======
             print(f"  [OK] {module}")
@@ -105,13 +114,21 @@ def test_critical_imports() -> bool:
             print(f"  [FAIL] {module}: {exc}")
 
 >>>>>>> Stashed changes
+=======
+
+>>>>>>> dev-new-version
     if errors:
         print(f"[FAIL] Import errors in {len(errors)} modules")
         return False
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     
+=======
+
+>>>>>>> dev-new-version
     print("✅ All critical imports successful")
     return True
+
 
 def test_evolution_layer():
     """Test Evolution Layer initialization"""
@@ -125,24 +142,23 @@ def test_evolution_layer() -> bool:
     """Test evolution layer import path stability."""
 >>>>>>> Stashed changes
     print("\nTesting Evolution Layer...")
-    
+
     try:
+<<<<<<< HEAD
 <<<<<<< Updated upstream
         from src.evolution import evolution_manager
+=======
+>>>>>>> dev-new-version
         print("  ✅ evolution_manager imported")
-        
-        from src.evolution import knowledge_db
+
         print("  ✅ knowledge_db imported")
-        
-        from src.evolution import authorization_manager
+
         print("  ✅ authorization_manager imported")
-        
-        from src.evolution import module_generator
+
         print("  ✅ module_generator imported")
-        
-        from src.evolution import voice_commands
+
         print("  ✅ voice_commands imported")
-        
+
         print("✅ Evolution Layer imports successful")
 =======
         from src.evolution import evolution_manager  # noqa: F401
@@ -157,11 +173,15 @@ def test_evolution_layer() -> bool:
         print(f"[FAIL] Evolution Layer import failed: {exc}")
         return False
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
+=======
+
+>>>>>>> dev-new-version
 def test_main_startup():
     """Test that main.py can start (quick test mode)"""
     print("\nTesting main.py startup (this may take a moment)...")
-    
+
     # Create a minimal test that imports main
 =======
 
@@ -189,7 +209,7 @@ except Exception as exc:
     traceback.print_exc()
     raise SystemExit(1)
 """
-    
+
     try:
         result = subprocess.run(
             [sys.executable, "-c", test_script],
@@ -198,15 +218,19 @@ except Exception as exc:
             encoding="utf-8",
             errors="replace",
             timeout=30,
-            cwd=Path.cwd()
+            cwd=Path.cwd(),
         )
+<<<<<<< HEAD
 <<<<<<< Updated upstream
         
+=======
+
+>>>>>>> dev-new-version
         if "IMPORT_SUCCESS" in result.stdout:
             print("✅ main.py imports successfully")
             return True
         else:
-            print(f"❌ main.py import failed")
+            print("❌ main.py import failed")
             print(f"  stdout: {result.stdout[:500]}")
             print(f"  stderr: {result.stderr[:500]}")
             return False
@@ -219,6 +243,7 @@ except Exception as exc:
         print(f"[FAIL] main.py import test error: {exc}")
         return False
 
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 def main():
     """Run all startup tests"""
@@ -238,16 +263,22 @@ def main() -> int:
     """Run all startup tests."""
     print("=" * 60)
 >>>>>>> Stashed changes
+=======
+
+def main():
+    """Run all startup tests"""
+    print("=" * 60)
+>>>>>>> dev-new-version
     print("  JARVIS 5.0 Startup Validation")
-    print("="*60)
-    
+    print("=" * 60)
+
     tests = [
         ("Python Syntax", test_python_syntax),
         ("Critical Imports", test_critical_imports),
         ("Evolution Layer", test_evolution_layer),
         ("Main Startup", test_main_startup),
     ]
-    
+
     results = []
     for test_name, test_func in tests:
         try:
@@ -255,6 +286,7 @@ def main() -> int:
         except Exception as exc:
             print(f"[FAIL] Test '{test_name}' crashed: {exc}")
             results.append((test_name, False))
+<<<<<<< HEAD
 <<<<<<< Updated upstream
     
     # Summary
@@ -263,24 +295,33 @@ def main() -> int:
 
     print("\n" + "=" * 60)
 >>>>>>> Stashed changes
+=======
+
+    # Summary
+    print("\n" + "=" * 60)
+>>>>>>> dev-new-version
     print("  Test Summary")
-    print("="*60)
-    
+    print("=" * 60)
+
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    
+
     for test_name, result in results:
 <<<<<<< Updated upstream
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"{status}  {test_name}")
+<<<<<<< HEAD
     
 =======
         status = "[PASS]" if result else "[FAIL]"
         print(f"{status} {test_name}")
 
 >>>>>>> Stashed changes
+=======
+
+>>>>>>> dev-new-version
     print(f"\nResult: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\nAll tests passed. JARVIS 5.0 is ready to run.")
         return 0
@@ -290,6 +331,7 @@ def main() -> int:
 
     print("\nCritical tests failed. Please review errors above.")
     return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

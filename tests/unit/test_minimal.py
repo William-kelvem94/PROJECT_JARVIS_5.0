@@ -5,13 +5,11 @@ Testa apenas os componentes essenciais sem dependências pesadas
 """
 
 import sys
-import os
 import warnings
-import time
 import platform
 
 # Supress warnings
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 print("🚀 JARVIS 5.0 - Minimal Test")
 print("=" * 50)
@@ -26,10 +24,14 @@ print("✅ Platform:", platform.system(), platform.release())
 try:
 <<<<<<< Updated upstream
     import pygame
+<<<<<<< HEAD
 =======
     import pygame  # noqa: F401
 
 >>>>>>> Stashed changes
+=======
+
+>>>>>>> dev-new-version
     print("✅ Pygame available")
 except ImportError as e:
     print("❌ Pygame failed:", e)

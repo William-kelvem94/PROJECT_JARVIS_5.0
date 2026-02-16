@@ -1,8 +1,8 @@
-
 import ast
 import operator
 import math
 from typing import Any, Union, List, Tuple
+
 
 def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
     """
@@ -39,32 +39,32 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
 
     # Allowed functions mapping
     functions = {
-        'abs': abs,
-        'round': round,
-        'min': min,
-        'max': max,
-        'sum': sum,
-        'pow': pow,
-        'sqrt': math.sqrt,
-        'sin': math.sin,
-        'cos': math.cos,
-        'tan': math.tan,
-        'log': math.log,
-        'exp': math.exp,
-        'ceil': math.ceil,
-        'floor': math.floor,
-        'factorial': math.factorial,
-        'degrees': math.degrees,
-        'radians': math.radians
+        "abs": abs,
+        "round": round,
+        "min": min,
+        "max": max,
+        "sum": sum,
+        "pow": pow,
+        "sqrt": math.sqrt,
+        "sin": math.sin,
+        "cos": math.cos,
+        "tan": math.tan,
+        "log": math.log,
+        "exp": math.exp,
+        "ceil": math.ceil,
+        "floor": math.floor,
+        "factorial": math.factorial,
+        "degrees": math.degrees,
+        "radians": math.radians,
     }
 
     # Allowed constants mapping
     constants = {
-        'pi': math.pi,
-        'e': math.e,
-        'tau': math.tau,
-        'inf': math.inf,
-        'nan': math.nan
+        "pi": math.pi,
+        "e": math.e,
+        "tau": math.tau,
+        "inf": math.inf,
+        "nan": math.nan,
     }
 
     def _eval(node: Any) -> Any:
@@ -122,7 +122,7 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
             raise ValueError("Call to non-named function not allowed")
 
         elif isinstance(node, ast.Expression):
-             return _eval(node.body)
+            return _eval(node.body)
 
         else:
             raise ValueError(f"Node type {type(node).__name__} not allowed")
@@ -133,7 +133,7 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
 
     try:
         # Parse the expression into an AST
-        node = ast.parse(expression.strip(), mode='eval')
+        node = ast.parse(expression.strip(), mode="eval")
         return _eval(node.body)
     except (SyntaxError, ValueError, TypeError) as e:
         raise ValueError(f"Invalid expression: {str(e)}")

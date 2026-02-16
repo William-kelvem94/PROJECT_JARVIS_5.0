@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class BaseHUD(ABC):
     """
     Interface base para todos os componentes de HUD do JARVIS.
@@ -25,9 +26,9 @@ class BaseHUD(ABC):
         """
         self.config = config or {}
         self.is_visible = False
-        self.position = self.config.get('position', {'x': 100, 'y': 100})
-        self.size = self.config.get('size', {'width': 400, 'height': 300})
-        self.opacity = self.config.get('opacity', 0.9)
+        self.position = self.config.get("position", {"x": 100, "y": 100})
+        self.size = self.config.get("size", {"width": 400, "height": 300})
+        self.opacity = self.config.get("opacity", 0.9)
         self.theme = self._load_theme()
 
         logger.info(f"Initialized {self.__class__.__name__} with config: {self.config}")
@@ -36,19 +37,20 @@ class BaseHUD(ABC):
         """Carrega configuração de tema"""
         try:
             from .theme import JarvisTheme
+
             return {
-                'primary': JarvisTheme.PRIMARY_CYAN,
-                'secondary': JarvisTheme.SECONDARY_ORANGE,
-                'background': JarvisTheme.BG_DARK,
-                'text': JarvisTheme.TEXT_PRIMARY
+                "primary": JarvisTheme.PRIMARY_CYAN,
+                "secondary": JarvisTheme.SECONDARY_ORANGE,
+                "background": JarvisTheme.BG_DARK,
+                "text": JarvisTheme.TEXT_PRIMARY,
             }
         except ImportError:
             # Fallback para tema básico
             return {
-                'primary': '#00FFFF',
-                'secondary': '#FF8C00',
-                'background': '#141414',
-                'text': '#FFFFFF'
+                "primary": "#00FFFF",
+                "secondary": "#FF8C00",
+                "background": "#141414",
+                "text": "#FFFFFF",
             }
 
     @abstractmethod
@@ -113,17 +115,18 @@ class BaseHUD(ABC):
     def get_config(self) -> Dict[str, Any]:
         """Retorna configuração atual do HUD"""
         return {
-            'position': self.position,
-            'size': self.size,
-            'opacity': self.opacity,
-            'visible': self.is_visible,
-            'theme': self.theme
+            "position": self.position,
+            "size": self.size,
+            "opacity": self.opacity,
+            "visible": self.is_visible,
+            "theme": self.theme,
         }
 
     def cleanup(self) -> None:
         """Limpa recursos do HUD"""
         self.hide()
         logger.info(f"Cleaned up {self.__class__.__name__}")
+
 
 class HUDManager:
     """
@@ -205,6 +208,7 @@ class HUDManager:
             hud.cleanup()
         self.huds.clear()
         self.active_hud = None
+
 
 # Singleton instance
 hud_manager = HUDManager()

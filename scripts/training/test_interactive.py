@@ -3,10 +3,10 @@
 Script de Teste Automático para Treinamento Interativo
 Simula entrada do usuário para testar o sistema
 """
+
 import sys
-import os
 import subprocess
-import tempfile
+
 
 def test_interactive_training(topic="quantum computing", component="1"):
     """Testa o treinamento interativo com entradas simuladas"""
@@ -17,7 +17,7 @@ def test_interactive_training(topic="quantum computing", component="1"):
     # Caminho para o script interativo
     script_path = "scripts/training/start_training_interactive.py"
 
-    print(f"🧪 Testando treinamento interativo...")
+    print("🧪 Testando treinamento interativo...")
     print(f"📚 Tópico: {topic}")
     print(f"🔧 Componente: {component}")
     print("=" * 50)
@@ -29,7 +29,7 @@ def test_interactive_training(topic="quantum computing", component="1"):
             input=input_data,
             text=True,
             capture_output=True,
-            timeout=60  # 60 segundos timeout
+            timeout=60,  # 60 segundos timeout
         )
 
         print("📤 SAÍDA DO SCRIPT:")
@@ -51,12 +51,13 @@ def test_interactive_training(topic="quantum computing", component="1"):
     except Exception as e:
         print(f"❌ Erro ao executar teste: {e}")
 
+
 if __name__ == "__main__":
     # Testar com diferentes tópicos
     test_cases = [
         ("quantum computing", "1"),  # Avançado
         ("basic programming", "1"),  # Intermediário
-        ("learning colors", "1"),    # Básico
+        ("learning colors", "1"),  # Básico
     ]
 
     for topic, component in test_cases:

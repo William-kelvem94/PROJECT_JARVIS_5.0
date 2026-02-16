@@ -26,6 +26,7 @@ IS_MAC = platform.system() == "Darwin"
 try:
     if IS_WINDOWS:
         import winreg
+
         WINREG_AVAILABLE = True
     else:
         winreg = None
@@ -45,6 +46,7 @@ try:
         import win32process
         import win32security
         import win32com.client
+
         PYWIN32_AVAILABLE = True
     else:
         win32api = None
@@ -67,6 +69,7 @@ except ImportError:
 try:
     if IS_WINDOWS:
         import wmi
+
         WMI_AVAILABLE = True
     else:
         wmi = None
@@ -82,6 +85,7 @@ try:
     if IS_WINDOWS:
         from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
         from comtypes import CLSCTX_ALL
+
         PYCAW_AVAILABLE = True
     else:
         AudioUtilities = None
@@ -102,9 +106,13 @@ try:
         import ctypes
 <<<<<<< Updated upstream
         from ctypes import cast, POINTER
+<<<<<<< HEAD
 =======
 
 >>>>>>> Stashed changes
+=======
+
+>>>>>>> dev-new-version
         CTYPES_AVAILABLE = True
     else:
         ctypes = None
@@ -117,51 +125,65 @@ except ImportError:
 # Helper functions
 # ============================================================================
 
+
 def require_windows(func):
     """Decorator that makes a function Windows-only"""
+
     def wrapper(*args, **kwargs):
         if not IS_WINDOWS:
             logger.warning(f"{func.__name__} is only available on Windows")
             return None
         return func(*args, **kwargs)
+
     return wrapper
+
 
 def windows_or_fallback(fallback_value=None):
     """Decorator that returns fallback value on non-Windows systems"""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             if not IS_WINDOWS:
                 return fallback_value
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 # ============================================================================
 # Platform info
 # ============================================================================
 
+
 def get_platform_info():
     """Get detailed platform information"""
     return {
-        'system': platform.system(),
-        'release': platform.release(),
-        'version': platform.version(),
-        'machine': platform.machine(),
-        'processor': platform.processor(),
-        'is_windows': IS_WINDOWS,
-        'is_linux': IS_LINUX,
-        'is_mac': IS_MAC,
-        'winreg_available': WINREG_AVAILABLE,
-        'pywin32_available': PYWIN32_AVAILABLE,
-        'wmi_available': WMI_AVAILABLE,
-        'pycaw_available': PYCAW_AVAILABLE,
-        'ctypes_available': CTYPES_AVAILABLE
+        "system": platform.system(),
+        "release": platform.release(),
+        "version": platform.version(),
+        "machine": platform.machine(),
+        "processor": platform.processor(),
+        "is_windows": IS_WINDOWS,
+        "is_linux": IS_LINUX,
+        "is_mac": IS_MAC,
+        "winreg_available": WINREG_AVAILABLE,
+        "pywin32_available": PYWIN32_AVAILABLE,
+        "wmi_available": WMI_AVAILABLE,
+        "pycaw_available": PYCAW_AVAILABLE,
+        "ctypes_available": CTYPES_AVAILABLE,
     }
+
 
 # Log platform info on import
 if __name__ != "__main__":
     logger.info(f"Platform: {platform.system()} {platform.release()}")
     if IS_WINDOWS:
-        logger.info(f"Windows modules: winreg={WINREG_AVAILABLE}, pywin32={PYWIN32_AVAILABLE}, wmi={WMI_AVAILABLE}")
+        logger.info(
+            f"Windows modules: winreg={WINREG_AVAILABLE}, pywin32={PYWIN32_AVAILABLE}, wmi={WMI_AVAILABLE}"
+        )
     else:
-        logger.info(f"Running on {platform.system()} - Windows-specific features disabled")
+        logger.info(
+            f"Running on {platform.system()} - Windows-specific features disabled"
+        )

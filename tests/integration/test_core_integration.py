@@ -5,12 +5,11 @@ JARVIS 5.0 - Validação completa dos módulos core e sua integração
 """
 
 import sys
-import os
 import json
 import logging
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 from datetime import datetime
 
 # Adicionar o diretório raiz ao Python path
@@ -19,19 +18,19 @@ sys.path.insert(0, str(current_dir))
 
 # Configurar logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 class CoreIntegrationTester:
     """Testador completo da integração dos módulos core"""
 
     def __init__(self):
         self.results: Dict[str, Any] = {
-            'timestamp': datetime.now().isoformat(),
-            'tests': {},
-            'summary': {}
+            "timestamp": datetime.now().isoformat(),
+            "tests": {},
+            "summary": {},
         }
 
     def run_all_tests(self) -> bool:
@@ -40,12 +39,12 @@ class CoreIntegrationTester:
         print("=" * 60)
 
         tests = [
-            ('imports', self.test_imports),
-            ('orchestrator', self.test_orchestrator),
-            ('security', self.test_security_manager),
-            ('iot', self.test_iot_manager),
-            ('initialization', self.test_full_initialization),
-            ('health_checks', self.test_health_checks)
+            ("imports", self.test_imports),
+            ("orchestrator", self.test_orchestrator),
+            ("security", self.test_security_manager),
+            ("iot", self.test_iot_manager),
+            ("initialization", self.test_full_initialization),
+            ("health_checks", self.test_health_checks),
         ]
 
         passed = 0
@@ -55,38 +54,42 @@ class CoreIntegrationTester:
             print(f"\n🔍 Executando teste: {test_name}")
             try:
                 result = test_func()
-                self.results['tests'][test_name] = result
+                self.results["tests"][test_name] = result
 
-                if result['success']:
+                if result["success"]:
                     print(f"   ✅ {test_name}: PASSOU")
                     passed += 1
                 else:
-                    print(f"   ❌ {test_name}: FALHOU - {result.get('error', 'Erro desconhecido')}")
+                    print(
+                        f"   ❌ {test_name}: FALHOU - {result.get('error', 'Erro desconhecido')}"
+                    )
 
             except Exception as e:
                 logger.error(f"Erro no teste {test_name}: {e}", exc_info=True)
-                self.results['tests'][test_name] = {
-                    'success': False,
-                    'error': str(e),
-                    'details': {}
+                self.results["tests"][test_name] = {
+                    "success": False,
+                    "error": str(e),
+                    "details": {},
                 }
                 print(f"   ❌ {test_name}: ERRO - {e}")
 
         # Resumo final
-        self.results['summary'] = {
-            'total_tests': total,
-            'passed_tests': passed,
-            'failed_tests': total - passed,
-            'success_rate': passed / total if total > 0 else 0
+        self.results["summary"] = {
+            "total_tests": total,
+            "passed_tests": passed,
+            "failed_tests": total - passed,
+            "success_rate": passed / total if total > 0 else 0,
         }
 
-        print(f"\n📊 RESULTADO FINAL: {passed}/{total} testes passaram ({self.results['summary']['success_rate']:.1%})")
+        print(
+            f"\n📊 RESULTADO FINAL: {passed}/{total} testes passaram ({self.results['summary']['success_rate']:.1%})"
+        )
 
         return passed == total
 
     def test_imports(self) -> Dict[str, Any]:
         """Testa todos os imports críticos do core"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         critical_modules = [
             "src.core.management.orchestrator",
@@ -99,7 +102,7 @@ class CoreIntegrationTester:
             "src.core.vision.vision_system",
             "src.core.audio.voice_controller",
             "src.core.intelligence.ai_agent",
-            "src.core.actions.action_controller"
+            "src.core.actions.action_controller",
         ]
 
         successful_imports = 0
@@ -107,18 +110,20 @@ class CoreIntegrationTester:
         for module in critical_modules:
             try:
                 __import__(module)
-                result['details'][module] = {'status': 'success'}
+                result["details"][module] = {"status": "success"}
                 successful_imports += 1
             except Exception as e:
-                result['details'][module] = {'status': 'failed', 'error': str(e)}
-                result['success'] = False
+                result["details"][module] = {"status": "failed", "error": str(e)}
+                result["success"] = False
 
-        result['summary'] = f"{successful_imports}/{len(critical_modules)} imports bem-sucedidos"
+        result["summary"] = (
+            f"{successful_imports}/{len(critical_modules)} imports bem-sucedidos"
+        )
         return result
 
     def test_orchestrator(self) -> Dict[str, Any]:
         """Testa o StarkOrchestrator"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         try:
             from src.core.management.orchestrator import StarkOrchestrator
@@ -137,22 +142,22 @@ class CoreIntegrationTester:
             health = orchestrator.get_system_health()
             info = orchestrator.get_system_info()
 
-            result['details'] = {
-                'health_check': health,
-                'system_info': info,
-                'components_count': info.get('components_count', 0),
-                'is_ready': info.get('is_ready', False)
+            result["details"] = {
+                "health_check": health,
+                "system_info": info,
+                "components_count": info.get("components_count", 0),
+                "is_ready": info.get("is_ready", False),
             }
 
         except Exception as e:
-            result['success'] = False
-            result['error'] = str(e)
+            result["success"] = False
+            result["error"] = str(e)
 
         return result
 
     def test_security_manager(self) -> Dict[str, Any]:
         """Testa o SecurityManager"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         try:
             from src.core.security.security_manager import SecurityManager
@@ -163,13 +168,13 @@ class CoreIntegrationTester:
             test_paths = [
                 "/home/user/documents",
                 "C:\\Users\\user\\Documents",
-                "/tmp/test"
+                "/tmp/test",
             ]
 
             test_urls = [
                 "https://google.com/search",
                 "https://github.com/user/repo",
-                "http://localhost:5000"
+                "http://localhost:5000",
             ]
 
             path_results = {}
@@ -187,41 +192,41 @@ class CoreIntegrationTester:
                 except Exception as e:
                     url_results[url] = f"Error: {e}"
 
-            result['details'] = {
-                'path_validations': path_results,
-                'url_validations': url_results
+            result["details"] = {
+                "path_validations": path_results,
+                "url_validations": url_results,
             }
 
         except Exception as e:
-            result['success'] = False
-            result['error'] = str(e)
+            result["success"] = False
+            result["error"] = str(e)
 
         return result
 
     def test_iot_manager(self) -> Dict[str, Any]:
         """Testa o IOTManager"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         try:
             from src.core.iot.iot_manager import IOTManager
 
             iot = IOTManager()
 
-            result['details'] = {
-                'is_configured': iot.is_configured,
-                'ha_url': getattr(iot, 'ha_url', None),
-                'ha_token_configured': bool(getattr(iot, 'ha_token', None))
+            result["details"] = {
+                "is_configured": iot.is_configured,
+                "ha_url": getattr(iot, "ha_url", None),
+                "ha_token_configured": bool(getattr(iot, "ha_token", None)),
             }
 
         except Exception as e:
-            result['success'] = False
-            result['error'] = str(e)
+            result["success"] = False
+            result["error"] = str(e)
 
         return result
 
     def test_full_initialization(self) -> Dict[str, Any]:
         """Testa a inicialização completa do sistema"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         try:
             from src.core.management.orchestrator import StarkOrchestrator
@@ -243,23 +248,23 @@ class CoreIntegrationTester:
             final_health = orchestrator.get_system_health()
             final_info = orchestrator.get_system_info()
 
-            result['details'] = {
-                'initialization_completed': True,
-                'final_health': final_health,
-                'final_info': final_info,
-                'system_healthy': final_info.get('system_healthy', False),
-                'is_ready': final_info.get('is_ready', False)
+            result["details"] = {
+                "initialization_completed": True,
+                "final_health": final_health,
+                "final_info": final_info,
+                "system_healthy": final_info.get("system_healthy", False),
+                "is_ready": final_info.get("is_ready", False),
             }
 
         except Exception as e:
-            result['success'] = False
-            result['error'] = str(e)
+            result["success"] = False
+            result["error"] = str(e)
 
         return result
 
     def test_health_checks(self) -> Dict[str, Any]:
         """Testa os health checks de todos os módulos"""
-        result = {'success': True, 'details': {}}
+        result = {"success": True, "details": {}}
 
         try:
             from src.core.management.orchestrator import StarkOrchestrator
@@ -275,7 +280,15 @@ class CoreIntegrationTester:
             orchestrator = StarkOrchestrator(mock_jarvis)
 
             # Testar health check de módulos específicos
-            modules_to_check = ['vision', 'audio', 'intelligence', 'actions', 'security', 'iot', 'infrastructure']
+            modules_to_check = [
+                "vision",
+                "audio",
+                "intelligence",
+                "actions",
+                "security",
+                "iot",
+                "infrastructure",
+            ]
 
             health_results = {}
             for module in modules_to_check:
@@ -284,16 +297,18 @@ class CoreIntegrationTester:
                     health_results[module] = status
                 except Exception as e:
                     health_results[module] = f"Error: {e}"
-                    result['success'] = False
+                    result["success"] = False
 
-            result['details'] = {
-                'module_health': health_results,
-                'offline_modules': [m for m, s in health_results.items() if s == 'OFFLINE']
+            result["details"] = {
+                "module_health": health_results,
+                "offline_modules": [
+                    m for m, s in health_results.items() if s == "OFFLINE"
+                ],
             }
 
         except Exception as e:
-            result['success'] = False
-            result['error'] = str(e)
+            result["success"] = False
+            result["error"] = str(e)
 
         return result
 
@@ -303,7 +318,7 @@ class CoreIntegrationTester:
             output_path = Path(output_file)
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(self.results, f, indent=2, ensure_ascii=False, default=str)
 
             print(f"💾 Resultados salvos em: {output_path}")
@@ -315,7 +330,7 @@ class CoreIntegrationTester:
 
     def print_summary(self):
         """Imprime resumo dos resultados"""
-        summary = self.results.get('summary', {})
+        summary = self.results.get("summary", {})
 
         print("\n📊 RESUMO DOS TESTES:")
         print("-" * 40)
@@ -324,14 +339,17 @@ class CoreIntegrationTester:
         print(f"   Testes reprovados: {summary.get('failed_tests', 0)}")
         print(".1%")
 
-        if summary.get('failed_tests', 0) > 0:
+        if summary.get("failed_tests", 0) > 0:
             print("\n❌ TESTES QUE FALHARAM:")
-            for test_name, test_result in self.results.get('tests', {}).items():
-                if not test_result.get('success', False):
-                    error = test_result.get('error', 'Erro desconhecido')
+            for test_name, test_result in self.results.get("tests", {}).items():
+                if not test_result.get("success", False):
+                    error = test_result.get("error", "Erro desconhecido")
                     print(f"   • {test_name}: {error}")
 
-def run_integration_test(output_file: Optional[str] = None, verbose: bool = False) -> bool:
+
+def run_integration_test(
+    output_file: Optional[str] = None, verbose: bool = False
+) -> bool:
     """
     Executa teste completo de integração do core
 
@@ -355,6 +373,7 @@ def run_integration_test(output_file: Optional[str] = None, verbose: bool = Fals
 
     return success
 
+
 def main():
     """Função principal"""
     parser = argparse.ArgumentParser(
@@ -374,12 +393,16 @@ python tests/test_core_integration.py --verbose
 
 # Executar apenas testes específicos
 python tests/test_core_integration.py --tests imports orchestrator
-        """
+        """,
     )
 
-    parser.add_argument('--output', '-o', help='Arquivo para salvar resultados dos testes')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Modo verboso com debug')
-    parser.add_argument('--tests', nargs='*', help='Executar apenas testes específicos')
+    parser.add_argument(
+        "--output", "-o", help="Arquivo para salvar resultados dos testes"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Modo verboso com debug"
+    )
+    parser.add_argument("--tests", nargs="*", help="Executar apenas testes específicos")
 
     args = parser.parse_args()
 
@@ -391,6 +414,7 @@ python tests/test_core_integration.py --tests imports orchestrator
     else:
         print("\n❌ Alguns testes falharam. Verifique os logs acima.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

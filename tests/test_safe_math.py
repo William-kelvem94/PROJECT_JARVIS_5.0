@@ -1,7 +1,7 @@
-
 import unittest
 import math
 from src.utils.safe_math import safe_eval
+
 
 class TestSafeMath(unittest.TestCase):
 
@@ -63,7 +63,7 @@ class TestSafeMath(unittest.TestCase):
         # _eval allows ast.Constant if value is int or float.
         # So string literals should be rejected!
         with self.assertRaises(ValueError):
-             safe_eval("'a' * 100")
+            safe_eval("'a' * 100")
 
     def test_string_literals(self):
         # String literals should be rejected
@@ -80,5 +80,6 @@ class TestSafeMath(unittest.TestCase):
         with self.assertRaises(ValueError):
             safe_eval("1" * 1001)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -13,27 +13,32 @@ from src.core.actions.advanced_action_controller import advanced_action_controll
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("TestPowers")
 
+
 def test_powers():
     logger.info("🚀 Iniciando Teste de Poderes - JARVIS 5.0")
-    
+
     # 1. Leitura da janela em foco
     logger.info("--- 1. Janela em Foco ---")
-    focus_context = advanced_action_controller.get_system_info().get('active_window', {})
+    focus_context = advanced_action_controller.get_system_info().get(
+        "active_window", {}
+    )
     logger.info(f"Janela detectada: {focus_context}")
 
     # 2. Notepad Ghost Typing
     logger.info("--- 2. Notepad Auto-Automation ---")
-    action_controller.hotkey('win', 'r')
+    action_controller.hotkey("win", "r")
     time.sleep(0.5)
-    action_controller.type_text('notepad')
-    action_controller.press_key('enter')
+    action_controller.type_text("notepad")
+    action_controller.press_key("enter")
     time.sleep(1.5)
-    action_controller.type_text("JARVIS 5.0: Produtividade Real ativada. William, o sistema esta operacional.")
+    action_controller.type_text(
+        "JARVIS 5.0: Produtividade Real ativada. William, o sistema esta operacional."
+    )
     time.sleep(2.0)
-    action_controller.hotkey('alt', 'f4')
+    action_controller.hotkey("alt", "f4")
     time.sleep(0.5)
-    action_controller.press_key('right') # Não salvar
-    action_controller.press_key('enter')
+    action_controller.press_key("right")  # Não salvar
+    action_controller.press_key("enter")
     logger.info("Automação de Notepad concluída.")
 
     # 3. Volume Master
@@ -55,6 +60,7 @@ def test_powers():
     logger.info("Brilho restaurado para 100% via WMI")
 
     logger.info("✅ Todos os poderes validados com sucesso.")
+
 
 if __name__ == "__main__":
     test_powers()
