@@ -132,8 +132,12 @@ class HardwareManager:
                 self.tier = "ULTRA"
             else:
                 import psutil
-                logical_cores = psutil.cpu_count(logical=True) or 4
-                physical_cores = psutil.cpu_count(logical=False) or 2
+                try:
+                    logical_cores = psutil.cpu_count(logical=True)
+                    if not isinstance(logical_cores, int):
+                        logical_cores = 4
+                except:
+                    logical_cores = 4
                 
                 if logical_cores >= 12: self.tier = "FAST"
                 elif logical_cores >= 6: self.tier = "BALANCED"
@@ -147,7 +151,10 @@ class HardwareManager:
                 logger.info(f"👑 JARVIS [{self.tier}]: Rodando em GPU Intel ({self.gpu_name} via OpenVINO).")
             else:
                 import psutil
-                logical_cores = psutil.cpu_count(logical=True) or 4
+                try:
+                    logical_cores = psutil.cpu_count(logical=True) or 4
+                except:
+                    logical_cores = 4
                 
                 # ADAPTIVE THREADING: Unlock full potential while preserving GUI responsiveness
                 # Previous "Safe Mode" capped at 1 thread or half cores. 
@@ -309,15 +316,21 @@ class HardwareManager:
         """Retorna RAM livre (GB) e VRAM livre (GB)"""
         self._ensure_hardware_initialized()
         import psutil
-        ram = psutil.virtual_memory()
-        free_ram_gb = ram.available / (1024**3)
+        try:
+            ram = psutil.virtual_memory()
+            free_ram_gb = ram.available / (1024**3)
+        except:
+            free_ram_gb = 0.0
 
         free_vram_gb = 0.0
         if self.device == "cuda":
             _ensure_torch()
-            # torch.cuda.mem_get_info() retorna (free, total) em bytes
-            free, total = torch.cuda.mem_get_info()
-            free_vram_gb = free / (1024**3)
+            try:
+                # torch.cuda.mem_get_info() retorna (free, total) em bytes
+                free, total = torch.cuda.mem_get_info()
+                free_vram_gb = free / (1024**3)
+            except:
+                pass
             
         return {
             "ram_free_gb": round(free_ram_gb, 2),
@@ -407,7 +420,11 @@ class HardwareManager:
     def suggest_optimizations(self) -> str:
         """Analisa o contexto e sugere otimizaÃ§Ãµes soberanas"""
         status = self.get_status()
-        cpu_usage = psutil.cpu_percent()
+        import psutil
+        try:
+            cpu_usage = psutil.cpu_percent()
+        except:
+            cpu_usage = 0
         
         if cpu_usage > 85:
             return "Sugestão: O sistema está sob carga pesada. Recomendo alterar para o modo 'GAMER/HIGH_PERFORMANCE' e reduzir prioridade de processos em background."
@@ -419,20 +436,26 @@ class HardwareManager:
     def get_heartbeat_report(self) -> Dict[str, Any]:
         """Gera um relatório completo de saúde do sistema (Heartbeat)"""
         import psutil
-        cpu = psutil.cpu_percent()
-        ram = psutil.virtual_memory()
+        import time
+        try:
+            cpu = psutil.cpu_percent()
+            ram = psutil.virtual_memory()
+            ram_percent = ram.percent
+        except:
+            cpu = 0
+            ram_percent = 0
         
         # Alertas proativos
         alerts = []
         if cpu > 80: alerts.append("Alta carga de processamento")
-        if ram.percent > 90: alerts.append("Memória RAM quase esgotada")
+        if ram_percent > 90: alerts.append("Memória RAM quase esgotada")
         
         status = self.get_status()
         
         return {
             "timestamp": time.time(),
             "cpu_usage": cpu,
-            "ram_usage": ram.percent,
+            "ram_usage": ram_percent,
             "alerts": alerts,
             "tier": status["tier"],
             "device": status["device"],
