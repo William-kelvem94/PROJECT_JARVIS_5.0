@@ -20,7 +20,7 @@ import platform
 import socket
 import hashlib
 import time
-import winreg
+from src.utils.platform_compat import winreg, WINREG_AVAILABLE
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Any, Tuple
