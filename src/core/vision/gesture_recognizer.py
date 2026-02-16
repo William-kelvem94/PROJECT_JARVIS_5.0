@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gesture Recognition System - Reconhecimento de Gestos com MediaPipe
 Permite controle hands-free do JARVIS
 """

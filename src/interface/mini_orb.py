@@ -1,4 +1,4 @@
-﻿from PyQt6.QtWidgets import QWidget, QMenu, QApplication
+from PyQt6.QtWidgets import QWidget, QMenu, QApplication
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QFont, QAction
 

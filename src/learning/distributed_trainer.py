@@ -1,4 +1,4 @@
-﻿"""
+"""
 Distributed Training Manager for JARVIS Learning Systems.
 
 Supports multi-GPU training, gradient synchronization, and distributed

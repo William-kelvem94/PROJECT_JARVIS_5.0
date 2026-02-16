@@ -1,4 +1,4 @@
-﻿"""
+"""
 Controlador de CÃ¢mera (Eyes)
 ResponsÃ¡vel por detecÃ§Ã£o de presenÃ§a e reconhecimento facial
 """

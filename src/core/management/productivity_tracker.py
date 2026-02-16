@@ -1,4 +1,4 @@
-﻿"""
+"""
 Productivity Tracker - Sistema de Rastreamento de Produtividade
 Monitora uso de aplicaÃ§Ãµes e fornece insights
 """

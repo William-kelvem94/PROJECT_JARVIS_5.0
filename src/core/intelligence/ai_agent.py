@@ -1,4 +1,4 @@
-﻿"""
+"""
 Orquestrador do Agente de IA
 Gerencia interaÃ§Ã£o entre visÃ£o (OCR), decisÃ£o (LLM) e aÃ§Ã£o (PyAutoGUI)
 """

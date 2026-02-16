@@ -1,4 +1,4 @@
-﻿"""
+"""
 Dream Cycle for JARVIS AGI Machine Learning Core.
 
 This module implements autonomous nighttime training through idle detection,

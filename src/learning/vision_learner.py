@@ -1,4 +1,4 @@
-﻿"""
+"""
 Vision Learner for JARVIS AGI Machine Learning Core.
 
 This module implements few-shot learning for YOLO object detection,

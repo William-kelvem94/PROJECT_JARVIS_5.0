@@ -1,4 +1,4 @@
-﻿"""
+"""
 Gerenciador de Coleta de Dados para Auto-Treinamento (Dataset Collector)
 Salva capturas de tela, prompts e respostas da IA para fine-tuning futuro.
 """

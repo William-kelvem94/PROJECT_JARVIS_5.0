@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Speech Processing - Processamento de Voz Neural
 Integra Whisper para STT e prepara para XTTS-v2 TTS
 """

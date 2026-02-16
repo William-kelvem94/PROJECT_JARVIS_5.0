@@ -1,4 +1,4 @@
-﻿"""
+"""
 Feedback Loop for JARVIS AGI Machine Learning Core.
 
 This module implements RLHF/DPO through explicit and implicit feedback

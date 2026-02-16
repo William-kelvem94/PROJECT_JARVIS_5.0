@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import time
 import threading
 from PyQt6.QtCore import QTimer, QCoreApplication

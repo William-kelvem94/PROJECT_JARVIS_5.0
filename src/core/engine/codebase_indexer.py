@@ -1,4 +1,4 @@
-﻿"""
+"""
 Indexador de CÃ³digo para RAG (Knowledge Graph)
 Varre o projeto para extrair conhecimento semÃ¢ntico e armazenar na memÃ³ria neural.
 """

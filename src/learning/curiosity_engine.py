@@ -1,4 +1,4 @@
-﻿"""
+"""
 A BÃºssola de Estudo (Curiosity Engine)
 Busca conhecimento acadÃªmico, gera perguntas e expande a base de conhecimento.
 """

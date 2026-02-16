@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Brain Router (Stark IQ Tiers)
 ==========================================
 Sistema de DecisÃ£o Inteligente para Roteamento Local vs Nuvem.

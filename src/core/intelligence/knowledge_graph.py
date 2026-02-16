@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Knowledge Graph Foundation
 ========================================
 Sprint 2: RAG AvanÃ§ado

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Monitor Proativo do Jarvis (Proactive Monitor)
 Detecta mudanÃ§as significativas na tela em tempo real e aciona o Agente de IA proativamente.
 """

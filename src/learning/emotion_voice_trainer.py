@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Emotion Voice Trainer (CNN 1D)
 ============================================
 Sprint 1: Refinamento Fase 1

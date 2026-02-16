@@ -1,4 +1,4 @@
-﻿"""
+"""
 Advanced Database Layer for JARVIS Learning Systems.
 
 Provides scalable database backends with automatic migration from SQLite

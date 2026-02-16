@@ -1,4 +1,4 @@
-﻿"""
+"""
 Modelos Estruturados para AÃ§Ãµes do Agente
 ==========================================
 Define schemas Pydantic para output estruturado do LLM.

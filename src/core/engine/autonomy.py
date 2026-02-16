@@ -1,4 +1,4 @@
-﻿"""
+"""
 Autonomy Core for JARVIS AGI Machine Learning Core.
 
 This module implements the AI consciousness layer including decision engine,

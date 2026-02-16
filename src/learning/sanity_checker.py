@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Autonomous Sanity Checker
 =====================================
 Executa testes de integridade em tempo real nos subsistemas crÃ­ticos.

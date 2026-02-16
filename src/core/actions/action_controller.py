@@ -1,4 +1,4 @@
-﻿"""
+"""
 Controlador de aÃ§Ãµes do sistema
 Habilita interaÃ§Ã£o com mouse e teclado via PyAutoGUI
 """

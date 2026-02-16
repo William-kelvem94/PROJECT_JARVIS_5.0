@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Perception Engine
 ================================
 CORREÃ‡ÃƒO P2: SeparaÃ§Ã£o do God Object AIAgent

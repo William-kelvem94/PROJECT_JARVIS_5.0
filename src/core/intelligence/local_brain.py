@@ -1,4 +1,4 @@
-﻿"""
+"""
 Cérebro Local do Jarvis 5.0 (Local Brain)
 Implementa um modelo de linguagem reduzido (Micro-LLM) rodando nativamente.
 Fase 5: Modernização Definitiva via Optimum-Intel.

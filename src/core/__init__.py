@@ -1,4 +1,4 @@
-﻿"""JARVIS Core - Sistema Central de InteligÃªncia Artificial
+"""JARVIS Core - Sistema Central de InteligÃªncia Artificial
 
 Este mÃ³dulo contÃ©m todos os componentes centrais do JARVIS, incluindo:
 - Orchestrator: Sistema de inicializaÃ§Ã£o e monitoramento de saÃºde

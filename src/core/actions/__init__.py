@@ -1,4 +1,4 @@
-﻿"""Módulo de Ações JARVIS
+"""Módulo de Ações JARVIS
 
 Controladores de sistema, execução de comandos e workflows automatizados.
 """

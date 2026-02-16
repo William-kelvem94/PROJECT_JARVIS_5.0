@@ -1,4 +1,4 @@
-﻿"""
+"""
 Monitoramento persistente do sistema JARVIS 5.0 (OTIMIZADO)
 """
 import time

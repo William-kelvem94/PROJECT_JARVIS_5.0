@@ -1,4 +1,4 @@
-﻿"""
+"""
 âš™ï¸ JARVIS Management System - Sistema de Gerenciamento
 ====================================================
 

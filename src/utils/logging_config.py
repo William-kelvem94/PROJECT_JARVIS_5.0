@@ -1,4 +1,4 @@
-﻿"""
+"""
 Sistema de Logging ConfigurÃ¡vel com RotaÃ§Ã£o AutomÃ¡tica
 Previne crescimento infinito de logs e mantÃ©m histÃ³rico gerenciÃ¡vel
 """

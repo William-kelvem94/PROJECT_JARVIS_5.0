@@ -1,4 +1,4 @@
-﻿"""
+"""
 Semeador de MemÃ³ria do Jarvis (Memory Seed)
 Inicializa a memÃ³ria neural com conhecimento bÃ¡sico e regras de comportamento.
 """

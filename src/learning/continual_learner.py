@@ -1,4 +1,4 @@
-﻿"""
+"""
 JARVIS 5.0 - Continual Learner System
 Automates the feedback-to-training loop using DPO and preference pairs.
 """

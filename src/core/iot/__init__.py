@@ -1,4 +1,4 @@
-﻿"""MÃ³dulo IoT JARVIS
+"""MÃ³dulo IoT JARVIS
 
 Controle de dispositivos inteligentes, integraÃ§Ã£o com Home Assistant
 e gerenciamento de automaÃ§Ã£o residencial.

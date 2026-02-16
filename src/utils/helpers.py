@@ -1,4 +1,4 @@
-﻿"""
+"""
 FunÃ§Ãµes auxiliares e utilitÃ¡rios para o Jarvis 5.0
 ContÃ©m funÃ§Ãµes comuns usadas em todo o sistema
 """

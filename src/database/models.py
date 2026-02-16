@@ -1,4 +1,4 @@
-﻿"""
+"""
 Modelos de dados e configuraÃ§Ãµes do banco de dados
 Define todas as tabelas e relacionamentos do sistema
 """

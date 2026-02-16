@@ -1,4 +1,4 @@
-﻿"""
+"""
 Organizador de dados extraÃ­dos
 Estrutura e salva dados em diferentes formatos
 """
