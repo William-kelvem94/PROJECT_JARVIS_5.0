@@ -91,6 +91,9 @@ class LearningEngine:
         # Threading for dashboard
         self._dashboard_thread = None
         
+        # Last interaction cache for immediate feedback
+        self.last_interaction: Optional[Dict[str, Any]] = None
+
         logger.info(f"ðŸ§  Learning Engine created (Enabled: {self.enabled}) - forced ON")
         logger.info(f"ðŸ“Š Dependencies available: {self._check_dependencies()}")
     
@@ -418,71 +421,6 @@ class LearningEngine:
             logger.error(f"âŒ Failed to initialize Curiosity Engine: {e}")
             return False
     
-    def record_interaction(
-        self,
-        user_input: str,
-        ai_response: str,
-        feedback_value: Optional[float] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
-        """
-        Registra uma interaÃ§Ã£o para aprendizado.
-        
-        Args:
-            user_input: Comando do usuÃ¡rio
-            ai_response: Resposta do agente
-            feedback_value: Valor de feedback (-1.0 a 1.0) se explÃ­cito
-            metadata: Dados adicionais (latÃªncia, provider usado, etc)
-        """
-        if not self.feedback_loop:
-            return
-        
-        try:
-            # Coleta feedback implÃ­cito se nÃ£o houver explÃ­cito
-            if feedback_value is None:
-                # TODO: Implementar heurÃ­sticas de feedback implÃ­cito
-                # - Tempo de resposta
-                # - UsuÃ¡rio repetiu comando?
-                # - Houve interrupÃ§Ã£o?
-                feedback_value = 0.5  # Neutro por padrÃ£o
-            
-            from src.learning.feedback_loop import FeedbackEntry
-            import hashlib
-            import time
-            from datetime import datetime
-            
-            interaction_id = hashlib.md5(
-                f"{user_input}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            feedback_id = hashlib.md5(
-                f"{interaction_id}{time.time()}".encode()
-            ).hexdigest()[:16]
-            
-            entry = FeedbackEntry(
-                feedback_id=feedback_id,
-                interaction_id=interaction_id,
-                user_input=user_input,
-                ai_response=ai_response,
-                feedback_type='implicit',
-                feedback_value=feedback_value,
-                timestamp=datetime.now().isoformat(),
-                metadata=metadata or {}
-            )
-            
-            self.feedback_loop.add_feedback(entry)
-            
-            # Se foi uma interaÃ§Ã£o bem-sucedida, pode ser um Golden Command
-            if feedback_value > 0.7 and self.knowledge_distiller:
-                self.knowledge_distiller.distill_interaction(
-                    user_command=user_input,
-                    thought="",  # TODO: Capturar raciocÃ­nio do agente
-                    actions=[],  # TODO: Capturar aÃ§Ãµes executadas
-                    success=True
-                )
-            
-        except Exception as e:
-            logger.error(f"âŒ Failed to record interaction: {e}")
     
     def record_interaction(
         self,
@@ -521,6 +459,14 @@ class LearningEngine:
                 f"{user_input}{time.time()}".encode()
             ).hexdigest()[:16]
             
+            # Store last interaction for immediate feedback
+            self.last_interaction = {
+                'interaction_id': interaction_id,
+                'user_input': user_input,
+                'ai_response': ai_response,
+                'timestamp': time.time()
+            }
+
             feedback_id = hashlib.md5(
                 f"{interaction_id}{time.time()}".encode()
             ).hexdigest()[:16]
@@ -762,7 +708,23 @@ class LearningEngine:
             return
         
         try:
-            # TODO: Atualizar feedback entry existente ou criar nova
+            # Check if we have the interaction details stored
+            user_input = "Unknown"
+            ai_response = "Unknown"
+
+            if self.last_interaction and self.last_interaction.get('interaction_id') == interaction_id:
+                user_input = self.last_interaction.get('user_input', "Unknown")
+                ai_response = self.last_interaction.get('ai_response', "Unknown")
+
+            # Record via FeedbackLoop
+            self.feedback_loop.record_explicit_feedback(
+                interaction_id=interaction_id,
+                user_input=user_input,
+                ai_response=ai_response,
+                rating=feedback_value,
+                correction=correction
+            )
+
             logger.info(f"ðŸ“ Explicit feedback recorded: {feedback_value} for {interaction_id}")
         except Exception as e:
             logger.error(f"âŒ Failed to record explicit feedback: {e}")
