@@ -1,30 +1,77 @@
 @echo off
 REM JARVIS 5.0 Startup Script
 
-REM Ensure we are in the project root
+REM Garantir execução na raiz do projeto
 cd /d "%~dp0"
 
-echo Starting JARVIS 5.0...
+echo =============================================
+echo   Iniciando JARVIS 5.0...
+echo =============================================
 
-REM Check Python
+REM Verificar Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo Error: Python not found
+    echo [ERRO] Python não encontrado. Instale o Python 3.11+ em https://www.python.org/downloads/
+    pause
     exit /b 1
 )
 
-REM Check dependencies
-python scripts/install/setup_jarvis.py --quick-check
-if errorlevel 1 (
-    echo Dependencies missing or check failed. Running full setup...
-    REM Use --no-scripts to prevent overwriting this script while running
-    python scripts/install/setup_jarvis.py --no-scripts
+REM Instalar ambiente virtual se não existir
+if not exist venv\Scripts\activate.bat (
+    echo [INFO] Ambiente virtual não encontrado. Criando venv...
+    python -m venv venv
     if errorlevel 1 (
-        echo Error: Setup failed. Please check the logs and try again.
+        echo [ERRO] Falha ao criar venv. Verifique permissões e tente novamente.
         pause
         exit /b 1
     )
 )
 
-REM Start JARVIS
-python main.py %*
+REM Ativar ambiente virtual
+call venv\Scripts\activate.bat
+
+REM Instalar dependências se necessário
+if exist requirements.txt (
+    echo [INFO] Instalando dependências do requirements.txt...
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    if errorlevel 1 (
+        echo [ERRO] Falha ao instalar dependências. Verifique o requirements.txt.
+        pause
+        exit /b 1
+    )
+)
+
+REM Verificar dependências específicas do projeto
+python scripts/install/setup_jarvis.py --quick-check
+if errorlevel 1 (
+    echo [AVISO] Dependências ausentes ou falha na verificação. Executando setup completo...
+    python scripts/install/setup_jarvis.py --no-scripts
+    if errorlevel 1 (
+        echo [ERRO] Setup falhou. Verifique os logs e tente novamente.
+        pause
+        exit /b 1
+    )
+)
+
+REM Modo debug
+set DEBUG_MODE=
+for %%A in (%*) do (
+    if /I "%%A"=="--debug" set DEBUG_MODE=1
+)
+
+REM Executar JARVIS
+if defined DEBUG_MODE (
+    echo [INFO] Executando em modo DEBUG...
+    python main.py --debug %*
+) else (
+    python main.py %*
+)
+
+REM Mensagem final
+if errorlevel 1 (
+    echo [ERRO] JARVIS finalizou com erro. Consulte os logs.
+    pause
+) else (
+    echo [SUCESSO] JARVIS finalizado normalmente.
+)
