@@ -258,20 +258,20 @@ class DecisionEngine:
     
     
     def _build_prompt(self, user_command: str, context: Dict[str, Any]) -> str:
-        """ConstrÃ³i prompt enriquecido com contexto"""
+        """Constrói prompt enriquecido com contexto"""
         
         # Base: user command
         prompt_parts = [f"[COMANDO] {user_command}"]
         
-        # Adicionar contexto de visÃ£o
+        # Adicionar contexto de visão
         if context.get("user_face"):
-            prompt_parts.append(f"\n[VISÃƒO] UsuÃ¡rio identificado: {context['user_face']}")
+            prompt_parts.append(f"\n[VISÃO] Usuário identificado: {context['user_face']}")
         
         # Adicionar contexto emocional
         if context.get("user_emotion") and context["user_emotion"] != "neutral":
-            prompt_parts.append(f"[EMOÃ‡ÃƒO] UsuÃ¡rio estÃ¡: {context['user_emotion']}")
+            prompt_parts.append(f"[EMOÇÃO] Usuário está: {context['user_emotion']}")
         
-        # Adicionar contexto de memÃ³ria (RAG)
+        # Adicionar contexto de memória (RAG)
         if context.get("memory_context"):
             prompt_parts.append(f"\n{context['memory_context']}")
         
@@ -281,7 +281,7 @@ class DecisionEngine:
             prompt_parts.append(f"\n[TEXTO NA TELA] {ocr_preview}")
         
         enriched_prompt = "\n".join(prompt_parts)
-        logger.debug(f"ðŸ“ Prompt: {len(enriched_prompt)} caracteres")
+        logger.debug(f"📝 Prompt: {len(enriched_prompt)} caracteres")
         return enriched_prompt
     
     
