@@ -60,6 +60,10 @@ class BrainRouter:
         self._last_model_check = 0
         self.discovery_interval = 60  # Recarregar lista de modelos a cada 60s
         self.on_heavy_model_loading = None
+        # Audio subsystem awareness
+        self.audio_ready = False
+        self.audio_mock_mode = False
+        self._event_bus = None
 
         # Carregar configurações do ai_config.yaml
         if CONFIG_AVAILABLE and config:
@@ -110,6 +114,17 @@ class BrainRouter:
         logger.info(
             f"✅ BrainRouter: Cloud integration initialized (Available: {self.cloud_available})"
         )
+
+        # Attempt to lazily connect to global event bus if available (safe no-op)
+        try:
+            from src.core.infrastructure.async_event_bus import get_event_bus
+
+            ev = get_event_bus()
+            if ev:
+                # Defer actual subscription to connect_event_bus to avoid event-loop issues
+                self._event_bus = ev
+        except Exception:
+            self._event_bus = None
 
     def _load_default_config(self):
         """Carrega configurações padrão se ai_config.yaml não estiver disponível"""
@@ -375,6 +390,37 @@ class BrainRouter:
 
         # Verificar outros provedores genéricos se configurados
         return False
+
+    def connect_event_bus(self, event_bus):
+        """Connect BrainRouter to the system EventBus and subscribe to audio events."""
+        try:
+            self._event_bus = event_bus
+
+            async def _on_audio_ready(event):
+                payload = getattr(event, "data", {}) or {}
+                available = payload.get("available", False)
+                mock_mode = payload.get("mock", False)
+                self.audio_ready = bool(available)
+                self.audio_mock_mode = bool(mock_mode)
+                logger.info(f"🔊 BrainRouter: audio_ready={self.audio_ready} (mock={self.audio_mock_mode})")
+
+            async def _on_audio_transcription(event):
+                payload = getattr(event, "data", {}) or {}
+                text = payload.get("text", "")
+                if text:
+                    logger.debug(f"🔁 BrainRouter observed transcription: {text[:80]}")
+                    # Optional hook for higher-level routing or analytics
+                    if hasattr(self, "on_audio_transcription") and callable(self.on_audio_transcription):
+                        try:
+                            self.on_audio_transcription(text)
+                        except Exception:
+                            pass
+
+            event_bus.subscribe([EventType.AUDIO_READY], _on_audio_ready)
+            event_bus.subscribe([EventType.AUDIO_TRANSCRIPTION], _on_audio_transcription)
+            logger.debug("BrainRouter subscribed to audio events on EventBus")
+        except Exception as e:
+            logger.warning(f"BrainRouter failed to connect to EventBus: {e}")
 
     def update_status(self, local_load: float = None, cloud_quota: float = None):
         if local_load is not None:

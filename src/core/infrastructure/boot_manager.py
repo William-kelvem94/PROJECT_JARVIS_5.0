@@ -344,7 +344,22 @@ class BootManager:
 
                 if success:
                     self.progress.completed_modules.append(module.name)
+
+                    # Store instance
                     self.instances[module.name] = module.instance
+
+                    # Auto-connect EventBus to modules that implement connect_event_bus
+                    try:
+                        event_bus = self.instances.get("async_event_bus")
+                        if event_bus and hasattr(module.instance, "connect_event_bus"):
+                            try:
+                                module.instance.connect_event_bus(event_bus)
+                                logger.debug(f"🔌 Connected event bus to {module.name}")
+                            except Exception as e:
+                                logger.warning(f"Failed to connect event bus to {module.name}: {e}")
+                    except Exception:
+                        pass
+
                     logger.info(
                         f"✅ {module.name} initialized ({module.init_time:.2f}s)"
                     )

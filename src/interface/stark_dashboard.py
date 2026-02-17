@@ -920,11 +920,12 @@ class StarkDashboard(QMainWindow):
             color = "#8899a6"
 
         from datetime import datetime
+        import html
 
         timestamp = datetime.now().strftime("%H:%M:%S")
 
         # Construir linha HTML
-        log_html = f'<span style="color: #666;">[{timestamp}]</span> <span style="color: {color}; font-weight: bold;">[{level}]</span> <span style="color: #e0e0e0;">{message}</span><br>'
+        log_html = f'<span style="color: #666;">[{timestamp}]</span> <span style="color: {color}; font-weight: bold;">[{level}]</span> <span style="color: #e0e0e0;">{html.escape(message)}</span><br>'
 
         # Append seguro (limitando tamanho para performance)
         current_html = self.log_area.text()
