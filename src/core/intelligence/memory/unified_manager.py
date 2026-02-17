@@ -54,6 +54,8 @@ class UnifiedMemoryManager:
         self.interactions = None
         self.lessons = None
         self.knowledge = None
+        # Backwards compatibility: some callers expect `collection` attribute
+        self.collection = None
 
         self.short_term = deque(maxlen=15)
         self.prompt_cache = {}
@@ -121,6 +123,8 @@ class UnifiedMemoryManager:
             self.knowledge = self.client.get_or_create_collection(
                 "jarvis_knowledge", metadata={"hnsw:space": "cosine"}
             )
+            # Back-compat: expose `collection` as the primary interactions collection
+            self.collection = self.interactions
             logger.info("✅ Unified Memory collections initialized.")
         except Exception as e:
             logger.error(f"Memory initialization failed: {e}")
@@ -141,9 +145,46 @@ class UnifiedMemoryManager:
         return self.model
 
     def _embed(self, text: str):
+        """Obtain embedding — prefer offloading to ProcessWorkerFactory to avoid blocking the main loop."""
+        # Try offloading to a process worker first
+        try:
+            from src.core.infrastructure.process_worker_factory import (
+                process_worker_factory,
+                WorkerType,
+                WorkerConfig,
+            )
+
+            # Ensure factory is running and AI worker type configured
+            if not process_worker_factory._running:
+                try:
+                    process_worker_factory.configure_worker_type(
+                        WorkerType.AI_PROCESSOR,
+                        WorkerConfig(worker_type=WorkerType.AI_PROCESSOR, max_memory_mb=512, max_concurrent_tasks=1),
+                    )
+                except Exception:
+                    pass
+                try:
+                    process_worker_factory.start()
+                except Exception:
+                    pass
+
+            task_id = process_worker_factory.submit_task(
+                WorkerType.AI_PROCESSOR, "text_embedding", text
+            )
+            result = process_worker_factory.get_task_result(task_id, timeout=20.0)
+            if result and result.get("success") and result.get("result") is not None:
+                return result.get("result")
+        except Exception:
+            # Fall back to in-process embedding
+            pass
+
+        # Fallback: local embedding (thread-based)
         model = self._ensure_model()
         if model:
-            return model.encode(text).tolist()
+            try:
+                return model.encode(text).tolist()
+            except Exception:
+                return None
         return None
 
     def store_interaction(self, prompt: str, response: str, metadata: Dict = None):
@@ -201,8 +242,16 @@ class UnifiedMemoryManager:
         except Exception as e:
             logger.error(f"Lesson storage failed: {e}")
 
-    def get_context(self, query: str, n=3) -> str:
-        """Retrieves combined context from interactions and knowledge."""
+    def get_context(self, query: str, n=3, max_memories: int = None) -> str:
+        """Retrieves combined context from interactions and knowledge.
+
+        Backwards-compatible: accepts `max_memories` (used by older callers/tests)
+        which, when provided, overrides `n`.
+        """
+        # Maintain backward compatibility: allow callers to pass `max_memories`
+        if max_memories is not None:
+            n = max_memories
+
         if not self.interactions:
             return ""
         try:
@@ -331,3 +380,67 @@ class UnifiedMemoryManager:
     def force_chromadb_cleanup(self):
         """Force immediate ChromaDB cleanup"""
         self._cleanup_chromadb_if_needed()
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Return lightweight statistics for monitoring and tests."""
+        interactions_count = self.interactions.count() if self.interactions else 0
+        lessons_count = self.lessons.count() if self.lessons else 0
+        knowledge_count = self.knowledge.count() if self.knowledge else 0
+
+        stats = {
+            "db_path": str(self.db_path),
+            "connected": bool(self.client),
+            "short_term_len": len(self.short_term),
+            "prompt_cache_size": len(self.prompt_cache),
+            "collections": {
+                "interactions": interactions_count,
+                "lessons": lessons_count,
+                "knowledge": knowledge_count,
+            },
+            "total_memories": interactions_count + lessons_count + knowledge_count,
+        }
+        return stats
+
+    # Backwards-compatible convenience API expected by older callers/tests
+    def remember(self, command: str, response: str) -> bool:
+        """Save a single interaction (compat wrapper). Returns True on success."""
+        try:
+            self.store_interaction(command, response, metadata={"source": "remember"})
+            return True
+        except Exception:
+            return False
+
+    def recall(self, query: str, top_k: int = 3):
+        """Return a list of similar stored interactions.
+
+        If chromadb is available, use vector search; otherwise fall back to
+        simple substring matching over short-term memory.
+        """
+        results = []
+        try:
+            if self.interactions:
+                emb = self._embed(query)
+                res = self.interactions.query(
+                    query_embeddings=[emb] if emb else None,
+                    query_texts=[query] if not emb else None,
+                    n_results=top_k,
+                )
+
+                docs = res.get("documents", [[]])[0]
+                ids = res.get("ids", [[]])[0]
+                for i, doc in enumerate(docs):
+                    results.append({"command": doc, "similarity": 1.0})
+                return results
+
+            # Fallback: search short-term memory
+            for item in list(self.short_term)[-50:]:
+                if query.lower() in item["user"].lower() or query.lower() in item["jarvis"].lower():
+                    results.append({"command": item["user"], "similarity": 0.9})
+                elif any(tok in item["user"].lower() for tok in query.lower().split()):
+                    results.append({"command": item["user"], "similarity": 0.5})
+                if len(results) >= top_k:
+                    break
+        except Exception:
+            pass
+
+        return results

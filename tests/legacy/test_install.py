@@ -24,7 +24,7 @@ except ImportError:
 try:
     import dlib
 
-    print(f"✅ dlib: {dlib.__version__}")
+    print(f"✅ dlib: {getattr(dlib, '__version__', 'unknown')}")
 except ImportError:
     print("❌ dlib não instalado")
 

@@ -80,8 +80,9 @@ class WorkerConfig:
     worker_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
     # Process configuration
-    max_memory_mb: int = 512
-    max_cpu_percent: float = 80.0
+    # 0 = no enforced limit (allow OS/swap)
+    max_memory_mb: int = 0
+    max_cpu_percent: float = 100.0
     max_tasks_per_worker: int = 100
     worker_timeout_seconds: float = 300  # 5 minutes
 
@@ -93,8 +94,9 @@ class WorkerConfig:
     # Health monitoring
     health_check_interval_seconds: float = 30
     max_consecutive_failures: int = 3
-    restart_on_memory_limit: bool = True
-    restart_on_cpu_limit: bool = True
+    # Do NOT restart workers automatically on resource pressure when running at-limit
+    restart_on_memory_limit: bool = False
+    restart_on_cpu_limit: bool = False
 
     # IPC configuration
     use_shared_memory: bool = True
@@ -349,9 +351,10 @@ class WorkerProcess:
             # Update heartbeat
             self.metrics.last_heartbeat = datetime.now()
 
-            # Check health limits
+            # Check health limits — treat 0 or disabled restart flags as "no enforcement"
             if (
                 self.config.restart_on_memory_limit
+                and self.config.max_memory_mb > 0
                 and self.metrics.current_memory_mb > self.config.max_memory_mb
             ):
                 logger.warning(
@@ -361,6 +364,7 @@ class WorkerProcess:
 
             elif (
                 self.config.restart_on_cpu_limit
+                and self.config.max_cpu_percent > 0
                 and self.metrics.current_cpu_percent > self.config.max_cpu_percent
             ):
                 logger.warning(
@@ -522,6 +526,7 @@ class WorkerProcess:
                 {
                     "ai_inference": self._mock_ai_inference,
                     "train_model": self._mock_train_model,
+                    "text_embedding": self._text_embedding,
                 }
             )
         elif self.config.worker_type == WorkerType.VISION_ANALYZER:
@@ -550,6 +555,18 @@ class WorkerProcess:
         """Mock model training function"""
         time.sleep(0.2)  # Simulate training time
         return {"status": "trained", "epochs": epochs, "accuracy": 0.92}
+
+    def _text_embedding(self, text, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
+        """Compute text embedding inside the worker process (SentenceTransformer)."""
+        try:
+            from sentence_transformers import SentenceTransformer
+            model = SentenceTransformer(model_name)
+            emb = model.encode(text)
+            # Return plain list (JSON-serializable)
+            return emb.tolist()
+        except Exception as e:
+            logger.error(f"Worker text_embedding failed: {e}")
+            return None
 
     def _yolo_inference(self, image, confidence_threshold=0.25, iou_threshold=0.45):
         """Perform real YOLO inference in the worker process"""
@@ -609,7 +626,8 @@ class ProcessWorkerFactory:
     com load balancing, health monitoring e auto-recovery.
     """
 
-    def __init__(self, max_workers_per_type: int = 4):
+    def __init__(self, max_workers_per_type: int = 0):
+        # 0 = no hard upper limit (allow dynamic scaling under heavy load)
         # Worker management
         self._workers: Dict[str, WorkerProcess] = {}
         self._workers_by_type: Dict[WorkerType, List[str]] = defaultdict(list)
@@ -757,7 +775,8 @@ class ProcessWorkerFactory:
             if target_count > current_count:
                 # Scale up
                 for _ in range(target_count - current_count):
-                    if len(current_workers) >= self.max_workers_per_type:
+                    # Only enforce a hard max when configured (> 0)
+                    if self.max_workers_per_type > 0 and len(current_workers) >= self.max_workers_per_type:
                         logger.warning(
                             f"Cannot scale {worker_type.value} beyond max limit ({self.max_workers_per_type})"
                         )

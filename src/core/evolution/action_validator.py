@@ -107,6 +107,17 @@ class ActionValidator:
         except Exception:
             protected = True
 
+        # Auto-approval override by environment (for full-autonomy setups)
+        # If JARVIS_AUTO_APPROVE=1 is set, protected actions will be automatically
+        # approved. USE WITH CAUTION — this bypasses manual/operator approval.
+        try:
+            if protected and os.getenv("JARVIS_AUTO_APPROVE", "0") in ("1", "true", "True"):
+                logger.warning("ActionValidator: JARVIS_AUTO_APPROVE enabled — auto-approving protected action")
+                return ValidationResult(True, False, "auto-approved", {"target": target})
+        except Exception:
+            # non-fatal — fall through to normal checks
+            pass
+
         # Delete/rename on protected paths: block + require approval
         if action_type in ("file_delete", "file_rename") and protected:
             request_id = self._publish_approval_request(action)

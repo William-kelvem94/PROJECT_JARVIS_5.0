@@ -102,6 +102,27 @@ class UnifiedVectorStore:
             self._create_standard_collections()
 
         except Exception as e:
+            msg = str(e)
+            # Detect Chroma instance conflict and try graceful fallback
+            if "An instance of Chroma already exists" in msg:
+                logger.warning(
+                    "Chroma instance conflict detected for path '%s' — attempting fallback client",
+                    self.db_path,
+                )
+                try:
+                    # fallback to in-memory client to keep system operable
+                    self.client = chromadb.Client()
+                    self._available = True
+                    logger.info(
+                        "✅ Vector Store initialized using in-memory Chroma fallback"
+                    )
+                    self._create_standard_collections()
+                    return
+                except Exception as e2:
+                    logger.error(
+                        "Fallback to in-memory Chroma client failed: %s", e2
+                    )
+
             logger.error(f"❌ Vector Store initialization failed: {e}")
             self._available = False
             self.client = None

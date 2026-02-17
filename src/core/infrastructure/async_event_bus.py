@@ -181,7 +181,7 @@ class Subscription:
     data_filter: Optional[Callable[[Dict[str, Any]], bool]] = None
 
     # Configuration
-    max_queue_size: int = 1000
+    max_queue_size: int = 0  # 0 => unbounded (run-at-limit)
     batch_size: int = 1  # Events to process at once
     batch_timeout_seconds: float = 0.1  # Max time to wait for batch
 
@@ -368,6 +368,8 @@ class AsyncEventBus:
         self._subscriptions: Dict[str, Subscription] = {}
         self._running = False
         self._event_dispatcher_task: Optional[asyncio.Task] = None
+        # Watchdog heartbeat task (keeps watchdog informed about event bus liveness)
+        self._watchdog_heartbeat_task: Optional[asyncio.Task] = None
 
         # Preserve configured max queue size so queues can be (re)created in the
         # context of the running event loop inside start()
@@ -421,6 +423,14 @@ class AsyncEventBus:
         # Start event dispatcher
         self._event_dispatcher_task = asyncio.create_task(self._event_dispatcher())
 
+        # Start a lightweight watchdog heartbeat task so the central Watchdog can
+        # track EventBus liveness (prevents false 'DEAD' reports under load).
+        # Create the task unconditionally — the loop will retry importing the
+        # Watchdog if it isn't available yet (handles boot ordering/races).
+        self._watchdog_heartbeat_task = asyncio.create_task(
+            self._watchdog_heartbeat_loop()
+        )
+
         logger.info("✅ Async Event Bus started")
 
     async def stop(self, timeout: float = 30.0):
@@ -438,6 +448,15 @@ class AsyncEventBus:
                 await asyncio.wait_for(self._event_dispatcher_task, timeout=5.0)
             except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
+
+        # Stop watchdog heartbeat task (if running)
+        if self._watchdog_heartbeat_task:
+            self._watchdog_heartbeat_task.cancel()
+            try:
+                await asyncio.wait_for(self._watchdog_heartbeat_task, timeout=2.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
+            self._watchdog_heartbeat_task = None
 
         logger.info("✅ Async Event Bus stopped")
 
@@ -482,7 +501,26 @@ class AsyncEventBus:
                 return event.id
 
             # Add to appropriate priority queue
-            queue = self._event_queues[event.priority]
+            if not self._event_queues:
+                logger.warning("EventBus not fully started yet - persisting/dropping event")
+                # Persist the event if persistence is enabled so it is not lost.
+                if self._persistence:
+                    try:
+                        self._persistence.store_event(event)
+                    except Exception:
+                        logger.debug("Failed to persist event while bus not started")
+                return event.id
+
+            try:
+                queue = self._event_queues[event.priority]
+            except KeyError:
+                logger.warning("EventBus queue for priority not available - persisting/dropping event")
+                if self._persistence:
+                    try:
+                        self._persistence.store_event(event)
+                    except Exception:
+                        logger.debug("Failed to persist event")
+                return event.id
 
             # Non-blocking put (drop if queue is full)
             try:
@@ -541,6 +579,8 @@ class AsyncEventBus:
             batch_timeout_seconds=batch_timeout_seconds,
         )
 
+        # Create event queue honoring requested max_queue_size (0 == unbounded)
+        subscription.event_queue = asyncio.Queue(maxsize=max_queue_size)
         self._subscriptions[subscription.id] = subscription
 
         # Start processing task for this subscription
@@ -657,6 +697,48 @@ class AsyncEventBus:
             except Exception as e:
                 logger.error(f"Event dispatcher error: {e}")
                 await asyncio.sleep(1.0)
+
+    async def _watchdog_heartbeat_loop(self):
+        """Periodic heartbeat to inform the Watchdog the EventBus is alive.
+
+        Robust behaviour: if the Watchdog module isn't available yet (boot-order
+        race), keep retrying until it appears so heartbeats are sent as soon as
+        possible.
+        """
+        try:
+            # Retry import until watchdog is available or bus is stopped
+            watchdog_system = None
+            ComponentStatus = None
+            while self._running and watchdog_system is None:
+                try:
+                    from src.core.infrastructure.watchdog import (
+                        watchdog_system as _ws,
+                        ComponentStatus as _cs,
+                    )
+                    watchdog_system = _ws
+                    ComponentStatus = _cs
+                    logger.debug("EventBus: connected to Watchdog for heartbeats")
+                except Exception:
+                    # Watchdog not ready yet — wait and retry
+                    await asyncio.sleep(1.0)
+
+            # If bus stopped while waiting, exit
+            if not self._running:
+                return
+
+            while self._running:
+                try:
+                    watchdog_system.update_heartbeat(
+                        "event_bus", status=ComponentStatus.HEALTHY
+                    )
+                except Exception:
+                    # Keep going even if watchdog update fails
+                    pass
+                await asyncio.sleep(2.0)
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            logger.error(f"Watchdog heartbeat loop failed: {e}")
 
     async def _dispatch_event(self, event: Event):
         """Dispatch event to matching subscriptions"""

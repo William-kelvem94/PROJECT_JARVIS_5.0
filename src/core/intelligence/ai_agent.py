@@ -521,12 +521,21 @@ class AIAgent:
 
     async def _on_audio_transcription(self, event):
         """Receives audio.transcription events and forwards to process_command.
-
+        
         Runs asynchronously and does not block the event loop while processing.
         """
         try:
-            payload = getattr(event, "data", {}) or {}
-            text = (payload.get("text") or "").strip()
+            data = getattr(event, "data", None)
+            if not data:
+                return
+
+            # Handle both dict and object payloads
+            if isinstance(data, dict):
+                text = data.get("text", "")
+            else:
+                text = getattr(data, "text", "")
+
+            text = str(text).strip()
             if not text:
                 return
 
@@ -535,7 +544,7 @@ class AIAgent:
             # Enfileirar o processamento do comando (fire-and-forget)
             try:
                 import asyncio
-
+                # Use create_task for non-blocking execution in the loop
                 asyncio.create_task(self.process_command(text))
             except Exception as e:
                 # Last-resort: run in thread

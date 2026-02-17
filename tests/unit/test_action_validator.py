@@ -21,7 +21,10 @@ def test_auto_approves_safe_python_modification(tmp_path):
     assert res.requires_approval is False
 
 
-def test_blocks_protected_delete_and_emits_request():
+def test_blocks_protected_delete_and_emits_request(monkeypatch):
+    # Ensure tests are deterministic regardless of developer env (.env)
+    monkeypatch.delenv("JARVIS_AUTO_APPROVE", raising=False)
+
     bus = get_event_bus()
 
     async def _run():
@@ -51,6 +54,17 @@ def test_blocks_protected_delete_and_emits_request():
         await bus.stop()
 
     asyncio.run(_run())
+
+
+def test_env_auto_approves_protected_path(monkeypatch):
+    # When JARVIS_AUTO_APPROVE=1, protected-path actions should be auto-approved
+    monkeypatch.setenv("JARVIS_AUTO_APPROVE", "1")
+    action = {"action_type": "file_modify", "target": "main.py", "proposed_code": "# noop"}
+
+    res = action_validator.validate(action)
+    assert res.approved is True
+    assert res.requires_approval is False
+    assert res.reason == "auto-approved"
 
 
 def test_autopatcher_respects_action_validator(monkeypatch, tmp_path):

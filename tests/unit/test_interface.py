@@ -7,28 +7,35 @@ import sys
 
 sys.path.insert(0, "src")
 
-try:
-    from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow
-    from PyQt6.QtCore import Qt
 
-    class TestWindow(QMainWindow):
-        def __init__(self):
-            super().__init__()
-            self.setWindowTitle("JARVIS 5.0 - Interface Test")
-            self.setGeometry(100, 100, 800, 600)
+def run_interface_test() -> int:
+    """Show a small test window (only when executed directly)."""
+    try:
+        from PyQt6.QtWidgets import QApplication, QLabel, QMainWindow
+        from PyQt6.QtCore import Qt
 
-            label = QLabel(
-                "✅ JARVIS Interface is working!\n\nThe GUI framework is functional."
-            )
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self.setCentralWidget(label)
+        class TestWindow(QMainWindow):
+            def __init__(self):
+                super().__init__()
+                self.setWindowTitle("JARVIS 5.0 - Interface Test")
+                self.setGeometry(100, 100, 800, 600)
 
-    app = QApplication(sys.argv)
-    window = TestWindow()
-    window.show()
-    print("✅ Interface test successful - window should be visible")
-    sys.exit(app.exec())
+                label = QLabel(
+                    "✅ JARVIS Interface is working!\n\nThe GUI framework is functional."
+                )
+                label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.setCentralWidget(label)
 
-except Exception as e:
-    print(f"❌ Interface test failed: {e}")
-    sys.exit(1)
+        app = QApplication(sys.argv)
+        window = TestWindow()
+        window.show()
+        print("✅ Interface test successful - window should be visible")
+        return app.exec()
+
+    except Exception as e:
+        print(f"❌ Interface test failed: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    sys.exit(run_interface_test())

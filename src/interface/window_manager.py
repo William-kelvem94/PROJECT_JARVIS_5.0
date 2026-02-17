@@ -95,6 +95,9 @@ class WindowManager(QObject):
         ui_signals.update_listening_state.connect(self._on_listening_received)
         ui_signals.show_notification.connect(self._on_notification_received)
         ui_signals.update_learning_status.connect(self._on_learning_status)
+        
+        # Connect Internal Status Handler
+        self.status_update.connect(self._handle_status_update)
 
         # Interfaces
         self._hud = None
@@ -118,14 +121,24 @@ class WindowManager(QObject):
         except Exception as e:
             logger.warning(f"âš ï¸ Falha ao conectar ao Signal Hub: {e}")
 
-        # Initialize components
-        self._setup_system_tray()
-        self._setup_global_shortcuts()
-
         # Carregar posições salvas das janelas
         self._load_window_positions()
 
-        logger.info("âœ… Window Manager initialized")
+        # Initialize components via Safe Loader
+        from PyQt6.QtCore import QMetaObject, Q_ARG
+        QMetaObject.invokeMethod(self, "_safe_ui_init", Qt.ConnectionType.QueuedConnection)
+
+        logger.info("✅ Window Manager initialized (UI deferred)")
+
+    @pyqtSlot()
+    def _safe_ui_init(self):
+        """Initialize UI components on the correct thread (Main Thread)"""
+        try:
+            self._setup_system_tray()
+            self._setup_global_shortcuts()
+            logger.info("✅ Window Manager: UI Components Initialized on Main Thread")
+        except Exception as e:
+            logger.error(f"❌ Window Manager UI Init Failed: {e}")
 
     def _setup_system_tray(self):
         """Setup system tray icon and menu"""
@@ -609,14 +622,18 @@ class WindowManager(QObject):
 
     def update_status(self, status_type: str, message: str):
         """
-        Update status on active interface.
+        Update status on active interface (Thread-Safe via Signal).
 
         Args:
             status_type: Type of status update
             message: Status message
         """
+        # Emit signal which will be handled by _handle_status_update on the main thread
         self.status_update.emit(status_type, message)
 
+    @pyqtSlot(str, str)
+    def _handle_status_update(self, status_type: str, message: str):
+        """Slot to handle status updates on the main thread"""
         # Update active interface
         if self.current_mode == InterfaceMode.HUD_OVERLAY and self._hud:
             if hasattr(self._hud, "show_response"):

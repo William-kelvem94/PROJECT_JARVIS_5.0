@@ -14,10 +14,14 @@ from functools import wraps
 from datetime import datetime, timedelta
 import threading
 
+import psutil
+from src.utils.web_emitter import emit_telemetry_sync
+
 logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+
 # RESPONSE CACHE
 # ============================================================================
 class ResponseCache:
@@ -148,8 +152,25 @@ class PerformanceOptimizer:
             "response_times": [],
         }
         self._lock = threading.Lock()
+        self._running = True
+        
+        # Telemetria para o Dashboard Web
+        self._telemetry_thread = threading.Thread(target=self._telemetry_loop, daemon=True)
+        self._telemetry_thread.start()
 
         logger.info("âœ… Performance Optimizer online")
+
+    def _telemetry_loop(self):
+        """Loop de envio de telemetria para o HUD Web"""
+        while self._running:
+            try:
+                cpu = psutil.cpu_percent(interval=None)
+                ram = psutil.virtual_memory().percent
+                emit_telemetry_sync(cpu, ram)
+                time.sleep(2.0)
+            except Exception:
+                time.sleep(10.0)
+
 
     def measure_time(self, func: Callable) -> Callable:
         """
