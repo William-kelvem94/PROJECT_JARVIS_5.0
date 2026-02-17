@@ -1,9 +1,5 @@
 {
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}/src"
-    ],
     "python.languageServer": "Pylance",
-    "python.analysis.typeCheckingMode": "basic",
     "python.analysis.autoImportCompletions": true,
     "editor.formatOnSave": true,
     "editor.rulers": [

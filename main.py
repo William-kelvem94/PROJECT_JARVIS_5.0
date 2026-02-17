@@ -61,8 +61,30 @@ try:
 except ImportError:
     QT_AVAILABLE = False
 
+    # Define dummy classes and functions for headless mode
     class QObject:
-        pass
+        def __init__(self, parent=None):
+            pass
+
+    def pyqtSignal(*args, **kwargs):
+        return object()
+
+    def pyqtSlot(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
+    class QTimer:
+        def __init__(self, parent=None):
+            pass
+        def timeout(self):
+            return self
+        def connect(self, slot):
+            pass
+        def start(self, interval):
+            pass
+        def stop(self):
+            pass
 
 
 # ============================================================================

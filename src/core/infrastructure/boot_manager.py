@@ -502,10 +502,6 @@ class BootManager:
     def _init_qt_application(self) -> Any:
         """Initialize Qt application"""
         try:
-<<<<<<< Updated upstream
-=======
-            from PyQt6.QtCore import QTimer  # noqa: F401
->>>>>>> Stashed changes
             from PyQt6.QtWidgets import QApplication
             from PyQt6.QtCore import QTimer
 

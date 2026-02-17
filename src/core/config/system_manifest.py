@@ -252,9 +252,6 @@ class SystemManifest(BaseSettings):
 
         return report
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
     # ------------------------------------------------------------------
     # Backward-compatibility aliases (legacy code expects flat attributes)
     # ------------------------------------------------------------------
@@ -270,11 +267,6 @@ class SystemManifest(BaseSettings):
     def logs_path(self) -> Path:
         return self.system.logs_path
 
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
 # Global instance
 system_manifest = SystemManifest.get_instance()
 
