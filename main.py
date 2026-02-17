@@ -218,12 +218,20 @@ class JarvisSingularity(QObject):
 
 
 # ============================================================================
-# MAIN ENTRY POINT
+# MAIN ENTRY POINT (lightweight starter)
 # ============================================================================
 def main():
+    """Lightweight launcher that delegates to SystemBootstrapper/BootManager.
+
+    Responsibilities:
+    - Minimal startup logic and environment checks
+    - Delegate component initialization to SystemBootstrapper
+    - Perform optional Ollama health-check after bootstrap
+    - Keep `JarvisSingularity` class intact for tests and backward compatibility
+    """
     import argparse
 
-    parser = argparse.ArgumentParser(description="JARVIS 5.0 - Singularity Edition")
+    parser = argparse.ArgumentParser(description="JARVIS 5.0 - Singularity (light boot)")
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
@@ -231,70 +239,84 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
-    # GUI Initialization
+    # Prepare GUI only if requested and available
     app = None
     if not args.headless and QT_AVAILABLE:
         app = QApplication(sys.argv)
     elif not args.headless and not QT_AVAILABLE:
-        logger.warning("⚠️ PyQt6 not installed. Falling back to HEADLESS mode.")
+        logger.warning("PyQt6 not available — switching to headless mode")
         args.headless = True
 
-    # Bootstrap System
+    # Create bootstrapper (delegates heavy lifting to BootManager)
     bootstrapper = SystemBootstrapper(app)
 
-    # Run Bootstrap in separate thread to not block GUI event loop (if exists)
-    boot_data = {"status": "init", "instances": {}}
+    # Run bootstrap synchronously for headless, or in background for GUI so
+    # the GUI event loop can start immediately.
+    boot_result = {"status": "init", "instances": {}}
 
-    def run_bootstrap():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+    def _run_boot_in_thread():
+        import asyncio
+
         try:
-            boot_data["instances"] = loop.run_until_complete(bootstrapper.bootstrap())
-            boot_data["status"] = "success"
+            boot_result["instances"] = asyncio.run(bootstrapper.bootstrap())
+            boot_result["status"] = "success"
         except Exception as e:
-            logger.critical(f"Bootstrap Failed: {e}")
-            boot_data["status"] = "failed"
-            boot_data["error"] = e
-        finally:
-            loop.close()
+            logger.critical(f"Bootstrap failed: {e}")
+            boot_result["status"] = "failed"
+            boot_result["error"] = e
 
-    bootstrap_thread = threading.Thread(target=run_bootstrap, daemon=True)
-    bootstrap_thread.start()
-
-    # GUI Loop (or Busy Wait for Headless)
     if app:
-        # Timer to check bootstrap status
+        # Start bootstrap in background to keep GUI responsive
+        t = threading.Thread(target=_run_boot_in_thread, daemon=True)
+        t.start()
+
+        # Periodically check bootstrap status and start JarvisSingularity when ready
         timer = QTimer()
 
-        def check_boot():
-            if boot_data["status"] == "success":
+        def _check_and_start():
+            if boot_result["status"] == "success":
                 timer.stop()
-                jarvis = JarvisSingularity(app, boot_data["instances"])
+                jarvis = JarvisSingularity(app, boot_result["instances"])
                 jarvis.start()
-            elif boot_data["status"] == "failed":
+            elif boot_result["status"] == "failed":
                 timer.stop()
-                logger.critical("Exiting due to boot failure.")
+                logger.critical("Boot failed — exiting GUI")
                 app.quit()
 
-        timer.timeout.connect(check_boot)
-        timer.start(100)  # Check every 100ms
-
+        timer.timeout.connect(_check_and_start)
+        timer.start(100)
         sys.exit(app.exec())
-    else:
-        # Headless Loop
-        logger.info("⌨️ Running in HEADLESS mode (Ctrl+C to exit)")
-        bootstrap_thread.join()  # Wait for boot
 
-        if boot_data["status"] == "success":
-            jarvis = JarvisSingularity(None, boot_data["instances"])
-            jarvis.start()
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                logger.info("Exiting...")
-        else:
-            sys.exit(1)
+    # HEADLESS path — run bootstrap synchronously
+    _run_boot_in_thread()
+
+    if boot_result["status"] != "success":
+        logger.critical("Boot failed — aborting")
+        sys.exit(1)
+
+    # Optional: quick Ollama health check (best-effort)
+    try:
+        from src.core.intelligence.ollama_manager import ollama_manager
+
+        try:
+            if not ollama_manager.is_server_running():
+                logger.info("Ollama appears offline; attempting best-effort start")
+                ollama_manager.ensure_server_running()
+        except Exception as _:
+            logger.debug("Ollama health-check failed (non-fatal)")
+    except Exception:
+        # OllamaManager may not be present in all builds — ignore
+        pass
+
+    jarvis = JarvisSingularity(None, boot_result["instances"])
+    jarvis.start()
+
+    # Keep main process alive while components run
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received — shutting down")
 
 
 if __name__ == "__main__":

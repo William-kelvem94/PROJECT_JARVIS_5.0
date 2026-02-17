@@ -486,6 +486,9 @@ class DreamCycle:
         """
         Scans for knowledge gaps and attempts to acquire new information
         from safe external sources (Hugging Face, Google, Official Docs).
+
+        Also performs automated analysis of recent error logs and converts
+        recurring failures into learning notes / training tasks.
         """
         from src.utils.logger_reflection import reflect_logger
         from src.utils.web_search_tool import web_search_tool
@@ -493,6 +496,12 @@ class DreamCycle:
         reflect_logger.reflect(
             "Initiating SELF-EVOLUTION protocol...", layer="AGI-RESEARCH"
         )
+
+        # First: analyze logs for actionable insights
+        try:
+            self._analyze_error_logs()
+        except Exception:
+            logger.debug("Log analysis failed during autonomous research", exc_info=True)
 
         gaps = self.gap_analyzer.analyze_gaps()
         if not gaps:
@@ -608,11 +617,30 @@ class DreamCycle:
         prompt = f'Com base no seguinte contexto sobre {topic}: \'{context}\', gere um par DPO (Chosen/Rejected) para treinamento de uma IA. Retorne apenas JSON no formato: {{"chosen": "...", "rejected": "..."}}'
 
         try:
-            raw_response = ai_agent._call_ollama(
-                prompt,
-                model=teacher_model,
-                system_prompt="VocÃª Ã© um Professor de IA especializado em Synthetic Data Generation.",
-            )
+            # Use async Ollama call from ai_agent but run it synchronously inside this thread
+            try:
+                from src.core.intelligence.ai_agent import ai_agent
+                import asyncio
+
+                loop = asyncio.new_event_loop()
+                try:
+                    asyncio.set_event_loop(loop)
+                    raw_response = loop.run_until_complete(
+                        ai_agent._call_ollama_async(
+                            prompt,
+                            image_data=None,
+                            model=teacher_model,
+                            system_prompt="Voc\u00ea \u00e9 um Professor de IA especializado em Synthetic Data Generation.",
+                        )
+                    )
+                finally:
+                    try:
+                        loop.close()
+                    except Exception:
+                        pass
+            except Exception:
+                # Fallback: keep raw_response empty to proceed safely
+                raw_response = ""
 
             # Limpar resposta para JSON se necessÃ¡rio
             import re
@@ -622,8 +650,8 @@ class DreamCycle:
                 distilled_data = json.loads(json_match.group(0))
             else:
                 distilled_data = {
-                    "chosen": raw_response,
-                    "rejected": f"Eu acho que {topic} Ã© algo irrelevante.",
+                    "chosen": raw_response or f"Explicacao sintetica sobre {topic}",
+                    "rejected": f"Eu acho que {topic} \u00e9 algo irrelevante.",
                 }
 
             dummy_data = {
@@ -752,10 +780,148 @@ class DreamCycle:
             with open(consolidation_log, "w", encoding="utf-8") as f:
                 json.dump(logs, f, indent=2, ensure_ascii=False)
 
+            # Also analyze recent error logs as part of consolidation
+            try:
+                self._analyze_error_logs()
+            except Exception:
+                logger.debug("_analyze_error_logs failed during consolidation", exc_info=True)
+
             logger.info("Data consolidation completed")
 
         except Exception as e:
             logger.error(f"Error consolidating data: {e}", exc_info=True)
+
+    def _analyze_error_logs(self, max_files: int = 6, tail_lines: int = 500) -> int:
+        """Scan recent log files for ERROR/Exception occurrences and convert
+        recurring failures into learning `insights` and (where appropriate)
+        training tasks.
+
+        Returns the number of insights created.
+        """
+        try:
+            search_paths = [
+                self.data_dir / "logs",
+                Path.cwd() / "logs",
+                Path("logs"),
+                Path("src") / "logs",
+            ]
+
+            error_signatures = {}
+
+            files_checked = 0
+            for p in search_paths:
+                if files_checked >= max_files:
+                    break
+                if not p.exists() or not p.is_dir():
+                    continue
+
+                for f in sorted(p.glob("**/*.*")):
+                    if files_checked >= max_files:
+                        break
+                    if f.suffix.lower() not in [".log", ".txt", ".jsonl", ".out"]:
+                        continue
+
+                    try:
+                        lines = f.read_text(encoding="utf-8", errors="ignore").splitlines()
+                        tail = lines[-tail_lines:]
+                    except Exception:
+                        continue
+
+                    files_checked += 1
+
+                    for ln in tail:
+                        if ("error" in ln.lower()) or ("exception" in ln.lower()) or ("traceback" in ln.lower()):
+                            # Normalize signature: remove file paths and timestamps
+                            sig = ln
+                            sig = sig.replace("\\", "/")
+                            # remove absolute paths
+                            import re
+
+                            sig = re.sub(r"[A-Za-z]:/[^\s]+", "<PATH>", sig)
+                            sig = re.sub(r"/[^\s]+/[^\s]+", "<PATH>", sig)
+                            sig_key = re.sub(r"\d+", "#", sig)[:200]
+
+                            error_signatures.setdefault(sig_key, []).append({"line": ln, "file": str(f)})
+
+            insights_dir = self.data_dir / "learning"
+            insights_dir.mkdir(parents=True, exist_ok=True)
+            insights_file = insights_dir / "insights.jsonl"
+
+            created = 0
+            for sig, samples in list(error_signatures.items()):
+                count = len(samples)
+                # Heuristic topic extraction
+                topic = " ".join([w for w in re.findall(r"\b[a-zA-Z_]{4,}\b", sig.lower())[:3]])
+
+                # Determine suggested actions
+                suggestion = "Create a corrective note and add tests / exception handling."
+                if any(k in sig.lower() for k in ["model", "inference", "cuda", "vram", "memory"]):
+                    suggestion = "Schedule model robustness tests; check model loading and consider keep-alive or memory-guard."
+                elif any(k in sig.lower() for k in ["importerror", "module", "filenotfounderror"]):
+                    suggestion = "Add dependency / path validation and fallback; update installer scripts."
+
+                insight = {
+                    "timestamp": datetime.now().isoformat(),
+                    "signature": sig,
+                    "sample_count": count,
+                    "example": samples[0],
+                    "topic": topic,
+                    "suggestion": suggestion,
+                }
+
+                # Append to insights file
+                try:
+                    with open(insights_file, "a", encoding="utf-8") as out:
+                        out.write(json.dumps(insight, ensure_ascii=False) + "\n")
+                    created += 1
+                except Exception:
+                    logger.debug("Failed to write insight", exc_info=True)
+
+                # Convert some insights into training / research tasks
+                try:
+                    if any(k in sig.lower() for k in ["model", "train", "inference"]):
+                        ds_dir = self.data_dir / "training_datasets" / "from_logs"
+                        ds_dir.mkdir(parents=True, exist_ok=True)
+                        ds_path = ds_dir / (f"log_{abs(hash(sig)) % 10000}.jsonl")
+                        sample_obj = {
+                            "prompt": f"Describe the failure observed in logs: {sig}",
+                            "chosen": suggestion,
+                            "rejected": "Ignore the error",
+                        }
+                        with open(ds_path, "a", encoding="utf-8") as f:
+                            f.write(json.dumps(sample_obj, ensure_ascii=False) + "\n")
+
+                        self.add_training_task(
+                            task_id=f"logfix_{abs(hash(sig)) % 10000}_{int(time.time())}",
+                            dataset_path=ds_path,
+                            model_name="jarvis-local-v1",
+                            priority=7,
+                        )
+
+                    # Heuristic: attempt automatic patch for simple runtime errors (safe-by-default)
+                    try:
+                        if any(k in sig.lower() for k in ["modulenotfounderror", "importerror", "indexerror", "typeerror"]):
+                            try:
+                                from src.core.evolution.auto_patcher import auto_patcher
+
+                                # Run patch attempt in background (non-blocking).
+                                import threading
+
+                                threading.Thread(
+                                    target=lambda ins=insight: auto_patcher.attempt_patch_from_insight(ins),
+                                    daemon=True,
+                                ).start()
+                            except Exception:
+                                logger.debug("AutoPatcher not available or failed to start", exc_info=True)
+                except Exception:
+                    logger.debug("Failed to create training task from insight", exc_info=True)
+
+            logger.info(f"Log analysis created {created} insights from {files_checked} files")
+            return created
+
+        except Exception as e:
+            logger.error(f"Error analyzing logs: {e}", exc_info=True)
+            return 0
 
     def get_status(self) -> Dict[str, Any]:
         """

@@ -658,6 +658,20 @@ class AIAgent:
             # Convert to base64 if needed
             pass
 
+        # Ensure Ollama server + model warmed up (best-effort)
+        try:
+            from src.core.intelligence.ollama_manager import ollama_manager
+
+            try:
+                ollama_manager.ensure_server_running()
+                if target_model:
+                    ollama_manager.ensure_model_loaded(target_model, timeout=6)
+                    # keepalive is managed by BrainRouter/DecisionEngine; manager no-op here
+            except Exception:
+                pass
+        except Exception:
+            pass
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(

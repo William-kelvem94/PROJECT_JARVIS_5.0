@@ -65,6 +65,10 @@ class EventType(Enum):
     SYSTEM_CORRECTION_FAILED = "system.correction.failed"
     SYSTEM_CORRECTION_SUCCEEDED = "system.correction.succeeded"
 
+    # Action validation / approval (ActionValidator)
+    ACTION_APPROVAL_REQUEST = "action.approval.request"
+    ACTION_APPROVAL_RESPONSE = "action.approval.response"
+
     # UI events
     UI_COMMAND = "ui.command"
     UI_RESPONSE = "ui.response"
@@ -100,6 +104,7 @@ class EventType(Enum):
     AUDIO_PROCESS = "audio.process"
     AUDIO_VOICE_COMMAND = "audio.voice_command"
     AUDIO_TRANSCRIPTION = "audio.transcription"
+    AUDIO_SPEAK = "audio.speak"  # NEW: Request TTS to speak provided text
     AUDIO_READY = "audio.ready"  # Published when audio subsystem is available (child/worker)
 
     # Network events
@@ -364,11 +369,10 @@ class AsyncEventBus:
         self._running = False
         self._event_dispatcher_task: Optional[asyncio.Task] = None
 
-        # Event queues by priority
-        self._event_queues: Dict[EventPriority, asyncio.Queue] = {
-            priority: asyncio.Queue(maxsize=max_event_queue_size)
-            for priority in EventPriority
-        }
+        # Preserve configured max queue size so queues can be (re)created in the
+        # context of the running event loop inside start()
+        self._max_event_queue_size = max_event_queue_size
+        self._event_queues: Dict[EventPriority, asyncio.Queue] = {}
 
         # Persistence
         self.enable_persistence = enable_persistence
@@ -393,12 +397,24 @@ class AsyncEventBus:
 
     async def start(self):
         """Start the event bus"""
+        # If marked running but dispatcher dead, allow restart
         if self._running:
-            logger.warning("Event bus already running")
-            return
+            if self._event_dispatcher_task and not self._event_dispatcher_task.done():
+                logger.warning("Event bus already running")
+                return
+            else:
+                logger.warning("Event bus marked running but dispatcher not active — restarting")
+                # reset running state and continue to start
+                self._running = False
 
         self._running = True
         self.start_time = datetime.now()
+
+        # (re)create the asyncio queues in the context of the current running loop
+        self._event_queues = {
+            priority: asyncio.Queue(maxsize=self._max_event_queue_size)
+            for priority in EventPriority
+        }
 
         logger.info("🚀 Async Event Bus starting...")
 
@@ -725,9 +741,21 @@ class AsyncEventBus:
         try:
             callback = subscription.callback
 
+            # Debug: log callback invocation info
+            try:
+                cb_name = getattr(callback, "__name__", repr(callback))
+            except Exception:
+                cb_name = repr(callback)
+            logger.debug(
+                f"_invoke_subscription_callback: subscription={subscription.id[:8]} callback={cb_name} events={len(events)}"
+            )
+
             # Process each event in the batch
             for event in events:
                 try:
+                    logger.debug(
+                        f"_invoke_subscription_callback: invoking {cb_name} for event {event.type.value} (id={event.id[:8]})"
+                    )
                     if inspect.iscoroutinefunction(callback):
                         # Async callback
                         await callback(event)
@@ -739,7 +767,26 @@ class AsyncEventBus:
                             await callback(event)
                         elif callback:
                             # It's a sync callable
-                            await loop.run_in_executor(None, callback, event)
+                            # Special-case: if the callable is a bound method of a Qt QObject,
+                            # run it in the current event loop thread (Qt objects must be
+                            # touched from the main thread). Otherwise run in executor.
+                            run_in_executor = True
+                            try:
+                                from PyQt6.QtCore import QObject as _QtQObject
+
+                                if hasattr(callback, "__self__") and isinstance(
+                                    callback.__self__, _QtQObject
+                                ):
+                                    run_in_executor = False
+                            except Exception:
+                                # PyQt not available in this environment — keep default
+                                run_in_executor = True
+
+                            if run_in_executor:
+                                await loop.run_in_executor(None, callback, event)
+                            else:
+                                # Call directly on the loop thread (must be quick)
+                                callback(event)
 
                     subscription.total_events_processed += 1
                     self.total_events_delivered += 1

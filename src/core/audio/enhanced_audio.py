@@ -251,6 +251,44 @@ class EnhancedAudioSystem:
         self.on_transcription: Optional[Callable[[TranscriptionResult], None]] = None
         self.on_speaker_detected: Optional[Callable[[str, float], None]] = None
         self.on_wake_word_detected: Optional[Callable[[], None]] = None
+        # Optional hook for testing / UI: called when TTS request is received
+        self.on_speak: Optional[Callable[[str], None]] = None
+
+        # Subscribe to AUDIO_SPEAK events so the audio subsystem can play TTS
+        try:
+            from src.core.infrastructure.async_event_bus import EventType
+
+            async def _on_audio_speak(event):
+                payload = getattr(event, "data", {}) or {}
+                text = payload.get("text", "")
+                if not text:
+                    return
+
+                # First call test/UI hook if present (non-blocking)
+                try:
+                    if callable(self.on_speak):
+                        try:
+                            self.on_speak(text)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+                # Then trigger actual synthesis in background (do not block event loop)
+                try:
+                    import threading
+
+                    threading.Thread(target=self.speak, args=(text, False), daemon=True).start()
+                except Exception:
+                    try:
+                        self.speak(text)
+                    except Exception:
+                        pass
+
+            if self.event_bus:
+                self.event_bus.subscribe([EventType.AUDIO_SPEAK], _on_audio_speak)
+        except Exception:
+            pass
 
         # Wake word state
         self.porcupine = None

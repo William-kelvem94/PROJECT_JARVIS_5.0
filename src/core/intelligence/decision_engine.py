@@ -21,6 +21,7 @@ ARQUITETURA:
 import logging
 import asyncio
 import aiohttp
+import os
 from typing import Dict, Any, Optional
 from pathlib import Path
 
@@ -103,14 +104,12 @@ class DecisionEngine:
         self.brain_router = brain_router if BRAIN_ROUTER_AVAILABLE else None
         self.local_brain = local_brain if LOCAL_BRAIN_AVAILABLE else None
 
-        # ConfiguraÃ§Ãµes
-        if CONFIG_AVAILABLE:
-            self.api_key = config.GEMINI_API_KEY
+        # Configurações
+        if CONFIG_AVAILABLE and config is not None and hasattr(config, "get_ai_config"):
             self.ollama_url = config.get_ai_config(
                 "brain_router.ollama_url", "http://localhost:11434/api/generate"
             )
         else:
-            self.api_key = None
             self.ollama_url = "http://localhost:11434/api/generate"
 
         # System prompts (dual mode: JSON + Legacy)
@@ -215,9 +214,11 @@ class DecisionEngine:
         )
 
         # FASE 4: Parsear resposta
+        final_answer = None
         if self.use_structured_output and ResponseParser:
             parsed = ResponseParser.parse_llm_response(raw_response)
-            return {
+            final_answer = parsed.final_answer
+            result = {
                 "thought": parsed.thought,
                 "actions": parsed.actions,
                 "final_answer": parsed.final_answer,
@@ -227,13 +228,31 @@ class DecisionEngine:
         else:
             # Fallback legado: Retorna resposta crua
             logger.warning("âš ï¸ Usando fallback legado (sem parser estruturado)")
-            return {
+            final_answer = raw_response
+            result = {
                 "thought": "",
                 "actions": [],
                 "final_answer": raw_response,
                 "provider": primary_provider,
                 "raw_response": raw_response,
             }
+
+        # Publish AUDIO_SPEAK event so the audio subsystem (TTS) can speak the reply
+        try:
+            from src.core.infrastructure.async_event_bus import get_event_bus, EventType, EventPriority
+
+            bus = get_event_bus()
+            if bus and final_answer:
+                bus.publish(
+                    EventType.AUDIO_SPEAK,
+                    {"text": final_answer, "provider": primary_provider},
+                    priority=EventPriority.HIGH,
+                )
+        except Exception:
+            # Non-fatal: if EventBus/AUDIO subsystem not available, continue
+            pass
+
+        return result
 
     def _route_task(
         self, user_command: str, privacy: Optional[str], latency: Optional[str]
@@ -258,9 +277,12 @@ class DecisionEngine:
             if provider_full.startswith("ollama:"):
                 provider = "ollama"
                 self.current_model = provider_full.split(":", 1)[1]
+                # Keep-alive sugerido pelo BrainRouter (ex: '5m' | '15m' | 0)
+                self.current_model_keep_alive = brain_info.get("keep_alive", 0)
             else:
                 provider = provider_full
                 self.current_model = None
+                self.current_model_keep_alive = 0
 
             logger.debug(f"ðŸ§  Brain router: {provider}")
             return provider
@@ -305,6 +327,30 @@ class DecisionEngine:
         if provider == "ollama":
             # Usa o modelo selecionado pelo roteador ou o padrão
             model = getattr(self, "current_model", "gemma3:4b")
+
+            # Garantir servidor/modelo/keep-alive via OllamaManager (se disponível)
+            try:
+                from src.core.intelligence.ollama_manager import ollama_manager
+
+                # Start server if needed
+                ollama_manager.ensure_server_running()
+
+                # Warm-up do modelo (se instalado)
+                try:
+                    ollama_manager.ensure_model_loaded(model)
+                except Exception:
+                    pass
+
+                # Start keep-alive se o roteador sugeriu
+                keep_val = getattr(self, "current_model_keep_alive", 0)
+                try:
+                    ollama_manager.start_keepalive(model, keep_val)
+                except Exception:
+                    pass
+            except Exception:
+                # Silencioso: continuar mesmo que o manager não esteja disponível
+                pass
+
             return await self._call_ollama_async(prompt, image_path, model=model)
         elif provider == "local":
             return await self._call_local_async(prompt)
@@ -357,7 +403,7 @@ class DecisionEngine:
             # HTTP request async com timeout de 30s
             timeout = aiohttp.ClientTimeout(total=30)
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(self.ollama_url, json=payload) as response:
+                async with session.post(str(self.ollama_url), json=payload) as response:
                     if response.status == 200:
                         data = await response.json()
                         response_text = data.get("response", "")
