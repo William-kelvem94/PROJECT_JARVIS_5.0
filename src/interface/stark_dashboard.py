@@ -396,20 +396,12 @@ class StarkDashboard(QMainWindow):
     def _on_event_approval_request(self, event):
         # Emit via ui_signals to guarantee the UI update runs on the Qt main thread
         try:
-            logger.debug(f"StarkDashboard._on_event_approval_request invoked (event_id={getattr(event, 'id', None)})")
             from src.interface.ui_signals import ui_signals
-
             ui_signals.approval_request_received.emit(event)
-            logger.debug(f"StarkDashboard: emitted ui_signals.approval_request_received for event {getattr(event, 'id', None)}")
         except Exception as e:
             logger.error(f"Failed to forward approval request to UI: {e}")
 
     def _add_approval_item(self, event):
-        try:
-            logger.debug(f"StarkDashboard._add_approval_item called (event_id={getattr(event, 'id', None)})")
-        except Exception:
-            pass
-
         req_id = getattr(event, "id", None)
         action = (event.data or {}).get("action") or {}
         action_type = action.get("action_type", "unknown")

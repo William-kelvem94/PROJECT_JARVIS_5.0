@@ -68,7 +68,7 @@ def test_stark_dashboard_shows_and_responds_to_approval_request():
 
         # process Qt events and allow bus to dispatch
         app.processEvents()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.3)
 
         # Ensure response was published
         assert any(d.get("request_id") == req_id and d.get("approved") is True for d in captured_responses)

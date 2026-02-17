@@ -9,7 +9,8 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 # Configure path correctly
-project_root = Path(__file__).parent.parent
+# Ensure `project_root` points to the repository root so `src` is on sys.path
+project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 sys.path.insert(0, str(project_root))
 

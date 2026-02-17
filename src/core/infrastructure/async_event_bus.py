@@ -741,21 +741,9 @@ class AsyncEventBus:
         try:
             callback = subscription.callback
 
-            # Debug: log callback invocation info
-            try:
-                cb_name = getattr(callback, "__name__", repr(callback))
-            except Exception:
-                cb_name = repr(callback)
-            logger.debug(
-                f"_invoke_subscription_callback: subscription={subscription.id[:8]} callback={cb_name} events={len(events)}"
-            )
-
             # Process each event in the batch
             for event in events:
                 try:
-                    logger.debug(
-                        f"_invoke_subscription_callback: invoking {cb_name} for event {event.type.value} (id={event.id[:8]})"
-                    )
                     if inspect.iscoroutinefunction(callback):
                         # Async callback
                         await callback(event)
@@ -763,7 +751,7 @@ class AsyncEventBus:
                         # Sync callback - run in thread pool to avoid blocking
                         loop = asyncio.get_running_loop()
                         if callback and asyncio.iscoroutinefunction(callback):
-                             # Double check if it gained async properties (unlikely but safe)
+                            # Double check if it gained async properties (unlikely but safe)
                             await callback(event)
                         elif callback:
                             # It's a sync callable
