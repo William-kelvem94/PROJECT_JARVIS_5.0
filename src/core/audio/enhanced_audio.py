@@ -64,6 +64,18 @@ except ImportError as e:
 NUMPY_AVAILABLE = True  # Assumed to always be available
 
 
+def _torch_usable() -> bool:
+    """Return True if the imported `torch` module appears usable for VAD ops.
+
+    Some CI/dev environments may have a partially installed or mocked `torch`
+    package that does not expose tensor APIs (e.g. missing `Tensor`/`from_numpy`).
+    Guard VAD usage against that to avoid raising AttributeError during runtime.
+    """
+    return (torch is not None) and hasattr(torch, "from_numpy") and hasattr(
+        torch, "no_grad"
+    ) and hasattr(torch, "Tensor")
+
+
 def _import_faster_whisper():
     """Lazy import of faster_whisper"""
     global WhisperModel, FASTER_WHISPER_AVAILABLE
@@ -861,6 +873,21 @@ class EnhancedAudioSystem:
 
         # Update activity timestamp for VAD usage
         self._update_activity()
+
+        # If `torch` exists but appears incomplete/mocked (missing Tensor/from_numpy/etc.)
+        # disable neural VAD and fallback to the RMS energy gate to avoid crashes.
+        if not _torch_usable():
+            if not getattr(self, "_vad_error_logged", False):
+                logger.warning(
+                    "VAD disabled: torch module not usable for tensor ops - falling back to RMS"
+                )
+                self._vad_error_logged = True
+            # Disable VAD to prevent repeated errors and use RMS fallback (same behaviour
+            # as when `self.vad_model` is None).
+            self.vad_model = None
+            threshold = getattr(self, "_dynamic_rms_threshold", 2000)
+            rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
+            return rms > threshold
 
         try:
             # Convert to float32 and normalize
