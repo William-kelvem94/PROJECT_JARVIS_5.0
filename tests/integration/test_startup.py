@@ -1,5 +1,102 @@
 ﻿#!/usr/bin/env python3
-"""Startup validation for JARVIS 5.0."""
+"""Startup validation for JARVIS 5.0.
+
+Cleaned and normalized test functions to avoid merge-conflict artifacts.
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+
+def _force_utf8_output() -> None:
+    """Normalize stdout/stderr encoding for Windows terminals."""
+    os.environ.setdefault("PYTHONUTF8", "1")
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
+
+
+_force_utf8_output()
+
+
+def test_python_syntax() -> None:
+    """Fail the test if any Python file in src has syntax errors."""
+    errors = []
+    for py_file in Path("src").rglob("*.py"):
+        try:
+            subprocess.run(
+                [sys.executable, "-m", "py_compile", str(py_file)],
+                check=True,
+                capture_output=True,
+                timeout=5,
+            )
+        except subprocess.CalledProcessError as exc:
+            stderr = exc.stderr.decode("utf-8", errors="replace")
+            errors.append(f"{py_file}: {stderr}")
+        except subprocess.TimeoutExpired:
+            errors.append(f"{py_file}: Compilation timeout")
+
+    assert not errors, f"Syntax errors found in files: {errors[:5]}"
+
+
+def test_critical_imports() -> None:
+    """Ensure critical modules import correctly."""
+    critical_modules = [
+        "src.core.infrastructure.async_event_bus",
+        "src.core.infrastructure.boot_manager",
+        "src.evolution.evolution_manager",
+        "src.evolution.self_observer",
+        "src.evolution.auto_healer",
+        "src.evolution.safe_executor",
+    ]
+
+    errors = []
+    for module in critical_modules:
+        try:
+            __import__(module)
+        except Exception as exc:
+            errors.append(f"{module}: {exc}")
+
+    assert not errors, f"Import errors in critical modules: {errors}"
+
+
+def test_evolution_layer() -> None:
+    """Verify evolution layer imports."""
+    try:
+        from src.evolution import evolution_manager  # noqa: F401
+        from src.evolution import self_observer  # noqa: F401
+    except Exception as exc:
+        raise AssertionError(f"Evolution layer import failed: {exc}")
+
+
+def test_main_startup() -> None:
+    """Quick smoke test: import main with safe env overrides."""
+    test_script = (
+        "import os, sys\n"
+        "os.environ['JARVIS_QUICK_TEST'] = 'true'\n"
+        "os.environ['JARVIS_EVOLUTION_ENABLED'] = 'false'\n"
+        "os.environ.setdefault('PYTHONUTF8', '1')\n"
+        "os.environ.setdefault('PYTHONIOENCODING', 'utf-8')\n"
+        "from main import main\n"
+        "print('main-import-ok')\n"
+    )
+
+    proc = subprocess.run(
+        [sys.executable, "-c", test_script],
+        capture_output=True,
+        timeout=10,
+    )
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", errors="replace")
 
 <<<<<<< Updated upstream
 =======

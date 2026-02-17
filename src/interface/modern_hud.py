@@ -344,23 +344,10 @@ class ModernHUD(QMainWindow):
             # Melhor abordagem: WindowManager deve escutar eventos.
             # Por enquanto, vamos fechar o HUD e abrir o dashboard se possível.
             # A arquitetura ideal é o WindowManager gerenciar isso.
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-            pass 
-        except: pass
-        
-=======
             pass
         except Exception:
             pass
 
->>>>>>> Stashed changes
-=======
-            pass
-        except:
-            pass
-
->>>>>>> dev-new-version
         # Alternativa: Tentar acessar o WindowManager global se disponível
         try:
             from src.interface.window_manager import get_window_manager, InterfaceMode

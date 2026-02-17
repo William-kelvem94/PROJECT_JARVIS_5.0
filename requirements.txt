@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-# Requisitos principais do JARVIS 5.0
-python-dotenv
-pyqt6
-torch
-transformers
-mediapipe
-vosk
-edge-tts
-chromadb
-jina
-# Adicione outras dependências específicas do projeto conforme necessário
-aiofiles
-pydantic-settings
-=======
-=======
->>>>>>> dev-new-version
 # JARVIS 5.0 - CORE REQUIREMENTS (Cross-Platform)
 # Core
 torch>=2.1.0; sys_platform != 'darwin'
@@ -90,12 +72,9 @@ pycaw>=20211221; sys_platform == 'win32'
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 websockets>=12.0
-<<<<<<< HEAD
->>>>>>> Stashed changes
-=======
+openvino-dev>=2024.1.0
 
 # Development
 black>=23.0.0
 flake8>=6.0.0
 pytest>=7.4.0
->>>>>>> dev-new-version
