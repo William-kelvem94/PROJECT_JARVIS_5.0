@@ -18,36 +18,16 @@ class TestHiveMind:
         return
 
         # Armazenar memória curta
-<<<<<<< Updated upstream
-        hybrid_memory.store_short_term("user", "Teste de memória")
-<<<<<<< HEAD
-        
-=======
         hybrid_memory.store_short_term("user", "Teste de memória")  # noqa: F821
 
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
         # Verificar contexto
         context = hybrid_memory.get_context()  # noqa: F821
         assert len(context) > 0
         assert context[-1]["content"] == "Teste de memória"
 
         # Limpar
-<<<<<<< Updated upstream
-        hybrid_memory.clear_short_term()
-        assert len(hybrid_memory.get_context()) == 0
-<<<<<<< HEAD
-    
-=======
         hybrid_memory.clear_short_term()  # noqa: F821
         assert len(hybrid_memory.get_context()) == 0  # noqa: F821
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
     def test_context_sync(self):
         """Testa sincronização de contexto (SKIP)"""
         return

@@ -135,38 +135,17 @@ class DependencyManager:
 
         # Check PostgreSQL
         try:
-<<<<<<< Updated upstream
-            import psycopg2
-<<<<<<< HEAD
-            capabilities.add('postgresql')
-=======
             import psycopg2  # noqa: F401
-
             capabilities.add("postgresql")
->>>>>>> Stashed changes
-=======
-
-            capabilities.add("postgresql")
->>>>>>> dev-new-version
         except ImportError:
             pass
 
         # Check ChromaDB (Vector Database)
         try:
-            import chromadb
+            import chromadb  # noqa: F401
 
             # Suppress ChromaDB telemetry
             import os
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
-
-            import chromadb  # noqa: F401
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
             os.environ["ANONYMIZED_TELEMETRY"] = "False"
             os.environ["POSTHOG_DISABLED"] = "1"
             os.environ["CHROMA_TELEMETRY"] = "False"
@@ -189,34 +168,16 @@ class DependencyManager:
         capabilities = set()
 
         try:
-<<<<<<< Updated upstream
-            import ultralytics
-<<<<<<< HEAD
-            capabilities.add('yolo')
-=======
             import ultralytics  # noqa: F401
-
             capabilities.add("yolo")
->>>>>>> Stashed changes
-=======
-
-            capabilities.add("yolo")
->>>>>>> dev-new-version
         except (ImportError, AttributeError) as e:
             # AttributeError covers cases where ultralytics imports but has issues
             logger.debug(f"Ultralytics not available: {e}")
             pass
 
         try:
-<<<<<<< Updated upstream
-            import cv2
-<<<<<<< HEAD
-            capabilities.add('opencv')
-=======
             import cv2  # noqa: F401
-
             capabilities.add("opencv")
->>>>>>> Stashed changes
 =======
 
             capabilities.add("opencv")
