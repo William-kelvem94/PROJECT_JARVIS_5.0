@@ -9,7 +9,17 @@ USAGE: from src.core.multimodal_fusion import MultimodalFusion
 
 import sys
 from pathlib import Path
-import numpy as np
+try:
+    import numpy as np
+
+    NUMPY_AVAILABLE = True
+except (ImportError, OSError):
+    NUMPY_AVAILABLE = False
+
+    class MockNumpy:
+        ndarray = type("ndarray", (), {})
+
+    np = MockNumpy()
 import logging
 from typing import Optional, Dict, List, Tuple
 

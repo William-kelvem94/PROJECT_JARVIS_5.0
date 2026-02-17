@@ -527,8 +527,8 @@ class WorkerProcess:
         elif self.config.worker_type == WorkerType.VISION_ANALYZER:
             common_functions.update(
                 {
+                    "yolo_inference": self._yolo_inference,
                     "analyze_image": self._mock_analyze_image,
-                    "detect_objects": self._mock_detect_objects,
                 }
             )
         elif self.config.worker_type == WorkerType.AUDIO_PROCESSOR:
@@ -551,15 +551,44 @@ class WorkerProcess:
         time.sleep(0.2)  # Simulate training time
         return {"status": "trained", "epochs": epochs, "accuracy": 0.92}
 
+    def _yolo_inference(self, image, confidence_threshold=0.25, iou_threshold=0.45):
+        """Perform real YOLO inference in the worker process"""
+        try:
+            from ultralytics import YOLO
+            import numpy as np
+            
+            # This would ideally use a cached model resource in the worker
+            # For now, we load it or use a simple singleton pattern in the worker
+            if not hasattr(self, '_yolo_model'):
+                model_path = "models/vision/yolov8n.pt" # Default
+                self._yolo_model = YOLO(model_path)
+            
+            results = self._yolo_model(image, conf=confidence_threshold, iou=iou_threshold, verbose=False)
+            
+            detections = []
+            for r in results:
+                boxes = r.boxes
+                for box in boxes:
+                    b = box.xyxy[0].tolist()  # get box coordinates in (top, left, bottom, right) format
+                    c = box.cls
+                    detections.append({
+                        "class_id": int(c),
+                        "class_name": self._yolo_model.names[int(c)],
+                        "confidence": float(box.conf),
+                        "bbox": b,
+                        "center": [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2],
+                        "area": (b[2] - b[0]) * (b[3] - b[1])
+                    })
+            
+            return detections
+        except Exception as e:
+            logger.error(f"YOLO inference error in worker: {e}")
+            return []
+
     def _mock_analyze_image(self, image_path):
         """Mock image analysis function"""
         time.sleep(0.05)  # Simulate processing time
         return {"objects": ["person", "car"], "confidence": 0.88}
-
-    def _mock_detect_objects(self, image_data):
-        """Mock object detection function"""
-        time.sleep(0.08)  # Simulate detection time
-        return {"detections": [{"class": "person", "bbox": [10, 20, 100, 200]}]}
 
     def _mock_process_audio(self, audio_data):
         """Mock audio processing function"""
@@ -948,7 +977,8 @@ class ProcessWorkerFactory:
         with self._lock:
             # Count workers by type and state
             workers_by_type = {}
-            workers_by_state = defaultdict(int)
+            from typing import DefaultDict
+            workers_by_state: DefaultDict[str, int] = defaultdict(int)
             total_tasks_in_progress = 0
 
             for worker_type, worker_ids in self._workers_by_type.items():
@@ -958,8 +988,8 @@ class ProcessWorkerFactory:
                     if worker:
                         stats = worker.get_stats()
                         worker_stats.append(stats)
-                        workers_by_state[stats["state"]] += 1
-                        total_tasks_in_progress += stats["current_tasks"]
+                        workers_by_state[str(stats["state"])] += 1
+                        total_tasks_in_progress += int(stats["current_tasks"])
 
                 workers_by_type[worker_type.value] = {
                     "count": len(worker_ids),

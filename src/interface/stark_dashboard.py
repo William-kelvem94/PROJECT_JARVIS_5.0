@@ -974,8 +974,17 @@ class StarkDashboard(QMainWindow):
             if frame is None and not hasattr(self, "_cap"):
                 # Inicialização lazy do OpenCV para teste standalone
                 import cv2
+                from src.core.config.system_manifest import system_manifest
+                try:
+                    from src.core.vision.camera_controller import MockVideoCapture
+                except Exception:
+                    MockVideoCapture = None
 
-                self._cap = cv2.VideoCapture(0)
+                self._cap = (
+                    MockVideoCapture(0)
+                    if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture
+                    else cv2.VideoCapture(0)
+                )
 
             if frame is None and hasattr(self, "_cap"):
                 ret, img = self._cap.read()

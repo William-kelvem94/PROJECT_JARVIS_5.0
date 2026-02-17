@@ -374,6 +374,10 @@ class AIAgent:
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
         self.event_bus = None
 
+        # Sensory awareness (agent nasce 'cego' até receber VISION_READY)
+        self.vision_ready = False
+        self.vision_mock_mode = False
+
     def connect_event_bus(self, event_bus):
         """Connects AI Agent to AsyncEventBus"""
         try:
@@ -382,9 +386,17 @@ class AIAgent:
             self.event_bus = event_bus
             if self.event_bus:
                 logger.info("✅ AI Agent connected to AsyncEventBus.")
+                # Subscrição padrão (visão dinâmica)
                 self.event_bus.subscribe(
                     EventType.VISION_SCREEN_CHANGE, self._handle_vision_event
                 )
+
+                # Ouvido para prontidão do subsistema de visão (Boot orientado a eventos)
+                try:
+                    self.event_bus.subscribe(EventType.VISION_READY, self._on_vision_ready)
+                    logger.debug("AI Agent subscribed to VISION_READY events")
+                except Exception as e:
+                    logger.debug(f"Failed to subscribe to VISION_READY: {e}")
         except Exception as e:
             logger.warning(f"Failed to connect event bus: {e}")
 
@@ -434,6 +446,45 @@ class AIAgent:
                 target=voice_controller.speak, args=(message,), daemon=True
             ).start()
 
+    async def _on_vision_ready(self, event):
+        """Callback acionado quando o subsistema de visão publica VISION_READY.
+
+        Atualiza o estado interno (`vision_ready`, `vision_mock_mode`) e
+        informa via log/voz se apropriado.
+        """
+        try:
+            payload = getattr(event, "data", {}) or {}
+            available = payload.get("available", False)
+            mock_mode = payload.get("mock", False)
+
+            if available:
+                self.vision_ready = True
+                self.vision_mock_mode = bool(mock_mode)
+
+                logger.info(
+                    f"👁️ Vision subsystem ready (mock={self.vision_mock_mode}) — AI Agent now 'can see'"
+                )
+
+                # Feedback auditável (voz opcional)
+                try:
+                    if voice_controller:
+                        threading.Thread(
+                            target=voice_controller.speak,
+                            args=(
+                                "Sistemas visuais online. Operando em modo de simulação." 
+                                if self.vision_mock_mode
+                                else "Sistemas visuais online.",
+                            ),
+                            daemon=True,
+                        ).start()
+                except Exception:
+                    pass
+            else:
+                self.vision_ready = False
+                logger.warning("⚠️ Vision subsystem reported NOT available — agent remains blind")
+        except Exception as e:
+            logger.error(f"Error handling VISION_READY event: {e}")
+
     async def process_command(self, user_command: str) -> str:
         """Main processing loop for user commands."""
         logger.info(f"Processing command: {user_command}")
@@ -462,7 +513,8 @@ class AIAgent:
         # 3. Vision Context
         vision_text = ""
         screenshot_image = None
-        if screen_capture:
+        # Só usar visão se o subsistema reportou prontidão (Boot orientado a eventos)
+        if screen_capture and getattr(self, "vision_ready", False):
             # Simple synchronous capture for robustness in this refactor
             try:
                 screenshot_image = screen_capture.capture_fullscreen(
@@ -477,6 +529,9 @@ class AIAgent:
                     )
             except Exception as e:
                 logger.error(f"Screenshot failed: {e}")
+        else:
+            if screen_capture and not getattr(self, "vision_ready", False):
+                logger.debug("Vision subsystem not ready — skipping screenshot_capture")
 
         # 4. Memory Context
         memory_context = ""

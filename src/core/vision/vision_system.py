@@ -16,11 +16,12 @@ Architecture:
 - Security: FaceID validation for commands
 """
 
+import multiprocessing
 import threading
 import time
 import logging
 import asyncio
-import psutil  # Added for memory monitoring
+import psutil 
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 from datetime import datetime
@@ -34,6 +35,8 @@ from src.core.vision.optimized_yolo_pipeline import (
     DetectionMode,
 )
 from src.core.infrastructure.process_worker_factory import TaskPriority
+from src.core.config.system_manifest import system_manifest
+from src.core.infrastructure.async_event_bus import EventType, EventPriority
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +66,41 @@ except ImportError as e:
     logger.critical(f"❌ opencv-python REQUIRED: {e}")
     CV2_AVAILABLE = False
     cv2 = None
+
+
+class MockVideoCapture:
+    """Minimal mock replacement for cv2.VideoCapture used for CI/tests.
+
+    Implements: isOpened(), read() -> (ret, frame), release(). Produces
+    a black frame (or noise) matching system_manifest.vision.resolution.
+    """
+
+    def __init__(self, index=0, frame_type: str = "black"):
+        self._opened = True
+        self.index = index
+        self.frame_type = frame_type
+        try:
+            self.width, self.height = system_manifest.vision.resolution
+        except Exception:
+            self.width, self.height = (1280, 720)
+
+    def isOpened(self):
+        return self._opened
+
+    def read(self):
+        if NUMPY_AVAILABLE:
+            if self.frame_type == "noise":
+                frame = (np.random.rand(self.height, self.width, 3) * 255).astype(
+                    np.uint8
+                )
+            else:
+                frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+            return True, frame
+        return False, None
+
+    def release(self):
+        self._opened = False
+
 
 try:
     import face_recognition
@@ -146,7 +184,12 @@ class VisionSystem:
     - Maintains audit log of vision operations
     """
 
-    def __init__(self, data_dir: Optional[Path] = None, event_bus=None):
+    def __init__(
+        self,
+        data_dir: Optional[Path] = None,
+        event_bus=None,
+        use_multiprocessing: Optional[bool] = None,
+    ):
         """
         Initialize Vision System.
 
@@ -154,19 +197,11 @@ class VisionSystem:
             data_dir: Directory for faces, models, screenshots
             event_bus: Event bus instance for module communication
         """
-        from src.utils.config import config
-
-        self.event_bus = event_bus
-        if CV2_AVAILABLE:
-            # ðŸ†• ADAPTIVE THREADING: Only limit on weak CPUs
-            if hardware_manager.get_tier() in ["LITE", "BALANCED"]:
-                cv2.setNumThreads(1)
-            # On FAST/ULTRA, let it fly (default OMP behavior)
-
-        self.data_dir = data_dir or config.DATA_DIR
+        # Use system_manifest for everything
+        self.data_dir = data_dir or (system_manifest.paths["base"] / "data")
         self.faces_dir = self.data_dir / "faces"
         self.screenshots_dir = self.data_dir / "screenshots"
-        self.models_dir = config.MODELS_DIR
+        self.models_dir = system_manifest.paths["base"] / "models"
 
         # Create directories
         self.faces_dir.mkdir(parents=True, exist_ok=True)
@@ -198,13 +233,10 @@ class VisionSystem:
         self._async_thread = None
         self._start_async_bridge()
 
-        # Load system configuration
-        try:
-            from src.core.config.system_manifest import system_manifest
-
-            self.zero_disk_mode = system_manifest.vision.zero_disk_io
-        except ImportError:
-            self.zero_disk_mode = True  # Default to memory-only operations
+        # Zero-Disk-IO configuration
+        self.zero_disk_mode = not system_manifest.vision.save_captures_to_disk
+        self.camera_index = system_manifest.vision.camera_index
+        self.face_detection_model = "hog" if not system_manifest.vision.use_gpu else "cnn"
 
         # Monitor Thread Safety
         self._monitor_thread = None
@@ -218,9 +250,22 @@ class VisionSystem:
         self.ocr_cache_hits = 0
         self.ocr_cache_misses = 0
 
+        # Multiprocessing Configuration (Fase 1.5)
+        if use_multiprocessing is not None:
+            self.use_multiprocessing = use_multiprocessing
+        else:
+            self.use_multiprocessing = system_manifest.vision.multiprocessing_enabled
+        self._vision_process = None
+        self._inbox = None
+        self._outbox = None
+        self._ipc_bridge = None
+
         # Initialize components (Passive)
         self.sct = None
-        self._initialize_components()
+        if not self.use_multiprocessing:
+            self._initialize_components()
+        else:
+            self._setup_multiprocessing()
 
         # ðŸ†• PASSIVE INIT: Do not start loading in __init__
         # self.load_heavy_models_async()
@@ -272,6 +317,28 @@ class VisionSystem:
             self._yolo_loading = False
             self._yolo_ready = False
 
+    def _setup_multiprocessing(self):
+        """Prepara as queues e a ponte IPC para o processo de visão"""
+        from multiprocessing import Queue
+        from src.core.vision.vision_process import run_vision_service
+        from src.core.infrastructure.ipc_event_bridge import IPCEventBridge
+
+        self._inbox = Queue()
+        self._outbox = Queue()
+
+        # Inicia o processo independente
+        self._vision_process = multiprocessing.Process(
+            target=run_vision_service,
+            args=(self._outbox, self._inbox),  # Invertido: Inbox do filho é Outbox do pai
+            name="JARVIS-Vision-Service",
+            daemon=True
+        )
+        
+        # Inicia a ponte no processo principal
+        self._ipc_bridge = IPCEventBridge(self._inbox, self._outbox)
+        
+        logger.info("⚡ Vision Multiprocessing setup complete")
+
     def _initialize_components(self):
         """Initialize vision components"""
         # ðŸ†• PASSIVE: Do nothing here. Wait for start_background_loading()
@@ -279,6 +346,14 @@ class VisionSystem:
 
     def start_background_loading(self):
         """Trigger background loading of heavy neural models (Call after GUI boot)"""
+        if self.use_multiprocessing:
+            # Em modo multiprocesso, os modelos são carregados no processo filho.
+            # No pai, apenas marcamos como pronto para evitar bloqueios de UI.
+            self._ocr_ready = True
+            self._yolo_ready = True
+            logger.info("⚡ Vision Background loading skipped in Main Process (Handled by Child Process)")
+            return
+
         # Guard: prevent double-call
         if getattr(self, "_loading_started", False):
             logger.warning(
@@ -499,47 +574,92 @@ class VisionSystem:
             logger.info(f"âœ… FaceID: {count} perfis biomÃ©tricos sincronizados.")
 
     def start_monitoring(self):
-        """Start continuous webcam monitoring in background thread"""
+        """Start continuous webcam monitoring in background thread or separate process"""
         if self.is_running:
             logger.warning("Vision monitoring already running")
             return
 
         self.is_running = True
-        self.mode = VisionMode.MONITORING
 
-        self._monitor_thread = threading.Thread(
-            target=self._monitor_loop, daemon=True, name="VisionMonitor"
-        )
-        self._monitor_thread.start()
+        if self.use_multiprocessing:
+            logger.info("👁️ Starting Vision Service Process...")
+            if self._vision_process:
+                self._vision_process.start()
+            if self._ipc_bridge:
+                self._ipc_bridge.start()
+        else:
+            self.mode = VisionMode.MONITORING
+            self._monitor_thread = threading.Thread(
+                target=self._monitor_loop, daemon=True, name="VisionMonitor"
+            )
+            self._monitor_thread.start()
 
-        logger.info("âœ… Vision monitoring started")
+        logger.info("✅ Vision monitoring started")
 
     def stop_monitoring(self):
-        """Stop continuous monitoring"""
+        """Stop vision monitoring"""
         self.is_running = False
+        
+        if self.use_multiprocessing:
+            if self._vision_process and self._vision_process.is_alive():
+                self._vision_process.terminate()
+            if self._ipc_bridge:
+                self._ipc_bridge.stop()
+        else:
+            if self._monitor_thread:
+                self._monitor_thread.join(timeout=2.0)
 
-        if self._monitor_thread:
-            self._monitor_thread.join(timeout=2)
-
-        if self.camera:
-            self.camera.release()
-            self.camera = None
+            if self.camera:
+                self.camera.release()
+                self.camera = None
 
         self.mode = VisionMode.IDLE
-        logger.info("âœ… Vision monitoring stopped")
+        logger.info("🛑 Vision monitoring stopped")
 
     def _monitor_loop(self):
         """Background monitoring loop"""
         try:
-            # Open camera
-            self.camera = cv2.VideoCapture(self.camera_index)
+            # Open camera (use mock when configured to avoid blocking hardware init)
+            if system_manifest.vision.mock_camera:
+                logger.info("👁️ Using MockVideoCapture (mock_camera=True)")
+                self.camera = MockVideoCapture(self.camera_index)
+            else:
+                self.camera = cv2.VideoCapture(self.camera_index)
 
-            if not self.camera.isOpened():
+            if not self.camera or not self.camera.isOpened():
                 logger.error("Failed to open camera")
                 self.mode = VisionMode.ERROR
+                try:
+                    if self.event_bus:
+                        self.event_bus.publish(
+                            EventType.VISION_READY,
+                            {
+                                "camera_index": self.camera_index,
+                                "mock": system_manifest.vision.mock_camera,
+                                "available": False,
+                            },
+                            priority=EventPriority.HIGH,
+                        )
+                except Exception:
+                    pass
                 return
 
             logger.info("ðŸ“¹ Camera opened, monitoring started")
+
+            # Notify system that vision/camera is ready (useful for boot orchestration)
+            try:
+                if self.event_bus:
+                    self.event_bus.publish(
+                        EventType.VISION_READY,
+                        {
+                            "camera_index": self.camera_index,
+                            "mock": system_manifest.vision.mock_camera,
+                            "available": True,
+                        },
+                        priority=EventPriority.HIGH,
+                    )
+            except Exception as e:
+                logger.debug(f"Failed to publish VISION_READY: {e}")
 
             frame_count = 0
             check_interval = 30  # Check every 30 frames (~1 second at 30fps)
@@ -657,7 +777,10 @@ class VisionSystem:
         try:
             # Use existing camera or open new one
             if not self.camera or not self.camera.isOpened():
-                self.camera = cv2.VideoCapture(self.camera_index)
+                if system_manifest.vision.mock_camera:
+                    self.camera = MockVideoCapture(self.camera_index)
+                else:
+                    self.camera = cv2.VideoCapture(self.camera_index)
 
             if not self.camera.isOpened():
                 logger.error("Failed to open camera")
@@ -768,13 +891,14 @@ class VisionSystem:
                     timestamp=datetime.now(), screen_text="Screen capture failed"
                 )
 
-            # Save screenshot ONLY if explicitly requested (Zero-Disk-IO Optimization)
+            # Save screenshot ONLY if debug_mode or save_captures_to_disk is True (Zero-Disk-IO)
             screenshot_path = None
-            if save_screenshot:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                screenshot_path = self.screenshots_dir / f"screen_{timestamp}.png"
-                cv2.imwrite(str(screenshot_path), screenshot)
-                logger.debug(f"📸 Screenshot saved to disk: {screenshot_path}")
+            if save_screenshot or system_manifest.debug_mode:
+                if system_manifest.vision.save_captures_to_disk or system_manifest.debug_mode:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    screenshot_path = self.screenshots_dir / f"screen_{timestamp}.png"
+                    cv2.imwrite(str(screenshot_path), screenshot)
+                    logger.debug(f"📸 Screenshot saved to disk: {screenshot_path}")
 
             # Extract text with OCR (Processes directly from memory/ndarray)
             screen_text = None
@@ -972,11 +1096,10 @@ class VisionSystem:
 
             # Save face image (optimized for Zero-Disk-IO)
             face_path = self.faces_dir / f"{name}.jpg"
-            if not self.zero_disk_mode:
-                # Traditional disk storage
+            if not self.zero_disk_mode or system_manifest.debug_mode:
+                # Traditional disk storage (Save if not Zero-Disk or if Debug Mode is ON)
                 if image_path:
                     import shutil
-
                     shutil.copy(image_path, face_path)
                 else:
                     cv2.imwrite(str(face_path), frame)

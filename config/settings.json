@@ -1,0 +1,13 @@
+{
+    "ai": {
+        "provider": "gemini"
+    },
+    "system": {
+        "debug_mode": false,
+        "log_level": "INFO"
+    },
+    "database": {
+        "vector_store_path": "data/memory/vector_store",
+        "log_database_path": "data/logs/blackbox.db"
+    }
+}

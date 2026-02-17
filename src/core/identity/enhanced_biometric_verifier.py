@@ -22,6 +22,13 @@ import logging
 # Imports obrigatÃ³rios de face recognition
 import face_recognition
 
+# Mock camera support
+from src.core.config.system_manifest import system_manifest
+try:
+    from src.core.vision.camera_controller import MockVideoCapture
+except Exception:
+    MockVideoCapture = None
+
 # Imports obrigatÃ³rios de Ã¡udio
 import pyaudio
 import librosa
@@ -231,7 +238,11 @@ class EnhancedBiometricVerifier:
         face_encodings = []
 
         try:
-            cap = cv2.VideoCapture(0)
+            if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture:
+                cap = MockVideoCapture(0)
+            else:
+                cap = cv2.VideoCapture(0)
+
             if not cap.isOpened():
                 print("âŒ NÃ£o foi possÃ­vel acessar a webcam")
                 return []
@@ -515,7 +526,11 @@ class EnhancedBiometricVerifier:
         """ðŸ“· VERIFICA IDENTIDADE FACIAL"""
 
         try:
-            cap = cv2.VideoCapture(0)
+            if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture:
+                cap = MockVideoCapture(0)
+            else:
+                cap = cv2.VideoCapture(0)
+
             if not cap.isOpened():
                 return None
 

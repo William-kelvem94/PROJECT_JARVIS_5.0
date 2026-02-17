@@ -1232,22 +1232,114 @@ class EnhancedAudioSystem:
 _audio_system: Optional[EnhancedAudioSystem] = None
 
 
+class _AudioServiceProxy:
+    """Proxy returned to main process when audio runs in a separate process.
+
+    - Subscribes to `audio.transcription` on the local event bus and forwards
+      payloads to `on_transcription` callback (mimics EnhancedAudioSystem API).
+    - Holds references to the IPC queues and process so the parent can manage it.
+    """
+
+    def __init__(self, event_bus, inbox, outbox, process):
+        self.event_bus = event_bus
+        self._inbox = inbox
+        self._outbox = outbox
+        self._process = process
+        self.on_transcription = None
+        self.on_speaker_detected = None
+        self.on_wake_word_detected = None
+
+        # Subscribe to transcription events and forward to local callback
+        try:
+            from src.core.infrastructure.async_event_bus import EventType
+
+            async def _forward(event):
+                payload = event.data or {}
+                # Build a lightweight object with .text to match existing callbacks
+                from types import SimpleNamespace
+
+                obj = SimpleNamespace(
+                    text=payload.get("text", ""),
+                    language=payload.get("language", None),
+                    confidence=payload.get("confidence", 0.0),
+                    speaker_id=payload.get("speaker_id", None),
+                    speaker_verified=payload.get("speaker_verified", False),
+                    processing_time=payload.get("processing_time", 0.0),
+                    timestamp=payload.get("timestamp", None),
+                )
+
+                if callable(self.on_transcription):
+                    try:
+                        self.on_transcription(obj)
+                    except Exception:
+                        pass
+
+            if self.event_bus:
+                self.event_bus.subscribe([EventType.AUDIO_TRANSCRIPTION], _forward)
+        except Exception:
+            pass
+
+    def start_listening(self):
+        # Child process starts listening automatically at spawn; proxy only
+        # needs to expose the method for compatibility.
+        return True
+
+    def stop_listening(self):
+        # Send a stop command to the child via IPC if necessary (not implemented)
+        try:
+            if self._process and self._process.is_alive():
+                return True
+        except Exception:
+            pass
+        return False
+
+
 def get_audio_system(
     data_dir: Optional[Path] = None, event_bus=None
-) -> EnhancedAudioSystem:
-    """
-    Get or create Audio System singleton.
-
-    Args:
-        data_dir: Data directory (for first call)
-        event_bus: Event bus instance for module communication
-
-    Returns:
-        EnhancedAudioSystem instance
+):
+    """Return the singleton EnhancedAudioSystem or a process-proxy when
+    `system_manifest.audio.multiprocessing_enabled` is True.
     """
     global _audio_system
 
-    if _audio_system is None:
+    from src.core.config.system_manifest import system_manifest
+
+    # If multiprocessing for audio is enabled - spawn child service and return proxy
+    if getattr(system_manifest.audio, "multiprocessing_enabled", False):
+        # If we already created a proxy, return it
+        if _audio_system is not None and isinstance(_audio_system, _AudioServiceProxy):
+            return _audio_system
+
+        # Start child process and IPC bridge (pattern same as VisionService)
+        try:
+            from multiprocessing import Queue, Process
+            from src.core.audio.audio_process import run_audio_service
+            from src.core.infrastructure.ipc_event_bridge import IPCEventBridge
+
+            _inbox = Queue()
+            _outbox = Queue()
+
+            proc = Process(
+                target=run_audio_service,
+                args=(_outbox, _inbox),  # child(inbox, outbox) -> pass swapped
+                name="JARVIS-Audio-Service",
+                daemon=True,
+            )
+            proc.start()
+
+            # Start IPC bridge on parent side
+            _ipc_bridge = IPCEventBridge(_inbox, _outbox)
+            _ipc_bridge.start()
+
+            proxy = _AudioServiceProxy(event_bus, _inbox, _outbox, proc)
+            _audio_system = proxy
+            return _audio_system
+        except Exception as e:
+            logger.error(f"Failed to spawn audio service process: {e}")
+            # Fall back to local audio system
+
+    # Default (in-process) behavior
+    if _audio_system is None or isinstance(_audio_system, _AudioServiceProxy):
         _audio_system = EnhancedAudioSystem(data_dir, event_bus)
 
     return _audio_system
