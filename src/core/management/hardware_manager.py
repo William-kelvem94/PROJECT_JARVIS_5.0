@@ -188,6 +188,27 @@ class HardwareManager:
                 else:
                     threads = max(1, logical_cores // 2)  # LITE mode still conservative
 
+                # Apply ai_config.yaml override if present
+                try:
+                    from src.utils.config import config as global_config
+                    cfg_threads = global_config.get_ai_config("resources.torch_threads", None)
+                    if cfg_threads:
+                        cfg_val = int(cfg_threads)
+                        if cfg_val > 0:
+                            threads = cfg_val
+                except Exception:
+                    pass
+
+                # Honor environment override if present (allows quick tuning)
+                try:
+                    env_threads = os.environ.get("JARVIS_FORCE_TORCH_THREADS")
+                    if env_threads:
+                        env_val = int(env_threads)
+                        if env_val > 0:
+                            threads = env_val
+                except Exception:
+                    pass
+
                 if TORCH_AVAILABLE and torch:
                     torch.set_num_threads(threads)
 
@@ -197,9 +218,12 @@ class HardwareManager:
 
             # During test runs we avoid starting background threads that use native
             # extensions (psutil, tqdm monitors, etc.) to reduce flakiness and crashes.
-            if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on"):
+            is_pytest = ("PYTEST_CURRENT_TEST" in os.environ) or (
+                os.environ.get("PYTEST_ADDOPTS") is not None
+            )
+            if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on") or is_pytest:
                 logger.info(
-                    "JARVIS_TEST_MODE enabled: skipping hardware monitoring thread startup"
+                    "Test mode detected: skipping hardware monitoring thread startup"
                 )
             else:
                 self._start_monitoring_thread()
@@ -207,7 +231,11 @@ class HardwareManager:
 
     def _start_monitoring_thread(self):
         """Inicia monitoramento em background para alertas proativos"""
-        if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on"):
+        # Respect both explicit test-mode flag and pytest environment
+        is_pytest = ("PYTEST_CURRENT_TEST" in os.environ) or (
+            os.environ.get("PYTEST_ADDOPTS") is not None
+        )
+        if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on") or is_pytest:
             logger.debug(
                 "Test mode active: not starting HardwareProactiveMonitor thread"
             )

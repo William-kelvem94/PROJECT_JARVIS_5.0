@@ -10,6 +10,7 @@ import secrets
 import uvicorn
 import glob
 import aiofiles
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ app = FastAPI(title="JARVIS 5.0 - Control Dashboard")
 security = HTTPBearer()
 API_KEY = secrets.token_urlsafe(32)  # Gerar chave única por sessão
 logger.info("🔑 API Key gerada com sucesso.")
+START_TIME = time.time()
 
 
 def verify_api_key(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -57,10 +59,18 @@ async def get_dashboard():
         return HTMLResponse(f.read())
 
 
+# Unauthenticated health endpoint used by DeploymentManager / Docker HEALTHCHECK
+@app.get("/health")
+async def health():
+    """Lightweight unauthenticated health check for orchestration tools."""
+    uptime = time.time() - START_TIME
+    return JSONResponse(content={"status": "ok", "uptime_seconds": round(uptime, 2)})
+
+
 # API para dados de treinamento
 @app.get("/api/training-data")
-async def get_training_data(api_key: str = Depends(verify_api_key)):
-    """Retorna dados de treinamento disponíveis"""
+async def get_training_data():
+    """Retorna dados de treinamento disponíveis (PÚBLICO para Dashboard Local)"""
     try:
         # Caminho para dados de treinamento
         training_dir = (
@@ -101,17 +111,53 @@ async def get_training_data(api_key: str = Depends(verify_api_key)):
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
-# WebSocket para Logs e Telemetria em Tempo Real
+
+# WebSocket para Logs, Telemetria e Comandos em Tempo Real
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    client_host = websocket.client.host if websocket.client else "unknown"
+    logger.info(f"🔌 Novo HUD conectado via WebSocket: {client_host}")
     connected_clients.add(websocket)
     try:
+        # Enviar mensagem de boas vindas
+        await websocket.send_text(json.dumps({"type": "log", "message": "Conexão Stark estabelecida.", "level": "INFO"}))
+
+        async def telemetry_loop():
+            import psutil
+            while True:
+                try:
+                    cpu = psutil.cpu_percent(interval=0.5)
+                    mem = psutil.virtual_memory().percent
+                    await websocket.send_text(json.dumps({
+                        "type": "telemetry",
+                        "cpu": cpu,
+                        "memory": mem
+                    }))
+                    await asyncio.sleep(1.0)
+                except Exception as e:
+                    logger.error(f"Erro no envio de telemetria: {e}")
+                    break
+
+        telemetry_task = asyncio.create_task(telemetry_loop())
+
         while True:
-            # Manter a conexão viva (ping/pong implícito do FastAPI)
-            data = await websocket.receive_text()
-            # Opcional: processar comandos vindos da web
-    except WebSocketDisconnect:
+            try:
+                data = await websocket.receive_text()
+                # Opcional: processar comandos vindos da web
+                # Exemplo: comandos de voz/texto podem ser tratados aqui
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"Erro no WebSocket: {e}")
+                break
+
+        telemetry_task.cancel()
+        try:
+            await telemetry_task
+        except Exception:
+            pass
+    finally:
         connected_clients.remove(websocket)
 
 

@@ -27,6 +27,8 @@ def test_attempt_patch_declined_without_permission(tmp_path):
 
 
 def test_attempt_patch_applies_when_allowed(tmp_path, monkeypatch):
+    # Ensure test environment is deterministic
+    monkeypatch.delenv("JARVIS_AUTO_PATCH_RUN_TESTS", raising=False)
     # Enable self-patch
     monkeypatch.setenv("JARVIS_ALLOW_SELF_PATCH", "1")
 
@@ -99,6 +101,8 @@ def test_autopatcher_respects_action_validator(monkeypatch, tmp_path):
 
 
 def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_path):
+    # Ensure test environment is deterministic
+    monkeypatch.delenv("JARVIS_AUTO_PATCH_RUN_TESTS", raising=False)
     # Verify AutoPatcher registers pending approval and ActionApprovalManager executes on approval
     monkeypatch.setenv("JARVIS_ALLOW_SELF_PATCH", "1")
 
@@ -160,3 +164,31 @@ def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_
             await bus.stop()
 
         asyncio.run(_run_flow())
+
+
+def test_autopatcher_applies_when_env_auto_approves(monkeypatch, tmp_path):
+    # End-to-end: if JARVIS_AUTO_APPROVE=1 and self-patch allowed, AutoPatcher should apply protected-file changes
+    monkeypatch.setenv("JARVIS_ALLOW_SELF_PATCH", "1")
+    monkeypatch.setenv("JARVIS_AUTO_APPROVE", "1")
+
+    # Create a 'protected' file by naming it main.py (ActionValidator treats 'main.py' as protected)
+    sample = tmp_path / "main.py"
+    sample.write_text("def a():\n    return 1\n", encoding="utf-8")
+
+    insight = {"signature": "err", "example": {"file": str(sample)}}
+
+    patched = "```python\ndef a():\n    return 2\n```"
+
+    async def fake_llm(*args, **kwargs):
+        return patched
+
+    # Patch AutoPatcher's internal LLM caller to avoid importing ai_agent (and its heavy deps)
+    with patch("src.core.evolution.auto_patcher.AutoPatcher._call_llm_for_patch", return_value=patched):
+        from src.core.evolution.auto_patcher import auto_patcher
+
+        ok, msg = auto_patcher.attempt_patch_from_insight(insight)
+
+    assert ok is True, msg
+    assert "Patched" in msg or "backup" in msg or "Patched (backup" in msg or "Patched (backup:" in msg
+    txt = sample.read_text(encoding="utf-8")
+    assert "return 2" in txt

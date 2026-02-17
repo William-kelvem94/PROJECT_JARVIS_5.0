@@ -1141,18 +1141,18 @@ class EnhancedAudioSystem:
         try:
             start_time = time.time()
 
-            # Transcribe (ForÃ§ado em PT-BR para comando do usuÃ¡rio)
+            # Transcribe (Forçado em PT-BR para comando do usuário)
             # beam_size=5 increases accuracy significantly on CPU
-            # ðŸ”¥ VAD threshold aumentado de 0.5 para 0.7 (mais rigoroso)
+            # 🔥 VAD ajustado para 0.35 (Sensível a sussurros noturnos)
             segments, info = self.whisper_model.transcribe(
                 audio,
                 language="pt",
                 beam_size=5,
-                initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, portuguÃªs do Brasil.",
+                initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, português do Brasil.",
                 vad_filter=True,
                 vad_parameters=dict(
-                    threshold=0.5, min_silence_duration_ms=500
-                ),  # VAD mais equilibrado
+                    threshold=0.35, min_silence_duration_ms=400
+                ),
             )
 
             # Collect segments
@@ -1318,31 +1318,43 @@ class _AudioServiceProxy:
         try:
             from src.core.infrastructure.async_event_bus import EventType
 
-            async def _forward(event):
-                payload = event.data or {}
-                # Build a lightweight object with .text to match existing callbacks
-                from types import SimpleNamespace
+            # Define forwarding logic
+            def _forward_sync(event):
+                """Sync wrapper for forwarding events"""
+                if not callable(self.on_transcription):
+                    return
+                    
+                try:
+                    payload = event.data or {}
+                    # Build a lightweight object with .text to match existing callbacks
+                    from types import SimpleNamespace
 
-                obj = SimpleNamespace(
-                    text=payload.get("text", ""),
-                    language=payload.get("language", None),
-                    confidence=payload.get("confidence", 0.0),
-                    speaker_id=payload.get("speaker_id", None),
-                    speaker_verified=payload.get("speaker_verified", False),
-                    processing_time=payload.get("processing_time", 0.0),
-                    timestamp=payload.get("timestamp", None),
-                )
-
-                if callable(self.on_transcription):
-                    try:
-                        self.on_transcription(obj)
-                    except Exception:
-                        pass
+                    obj = SimpleNamespace(
+                        text=payload.get("text", ""),
+                        language=payload.get("language", None),
+                        confidence=payload.get("confidence", 0.0),
+                        speaker_id=payload.get("speaker_id", None),
+                        speaker_verified=payload.get("speaker_verified", False),
+                        processing_time=payload.get("processing_time", 0.0),
+                        timestamp=payload.get("timestamp", None),
+                    )
+                    
+                    # Call the callback (which is likely the UI signal emitter)
+                    self.on_transcription(obj)
+                except Exception as e:
+                    logger.error(f"Error forwarding audio event: {e}")
 
             if self.event_bus:
-                self.event_bus.subscribe([EventType.AUDIO_TRANSCRIPTION], _forward)
-        except Exception:
-            pass
+                # Subscribe sync wrapper to the async event bus
+                # The event bus handles the async-to-sync bridge if needed, 
+                # or we just rely on the fact that we are in a thread.
+                self.event_bus.subscribe(EventType.AUDIO_TRANSCRIPTION, _forward_sync)
+                
+                # Also subscribe to WAKE_WORD
+                self.event_bus.subscribe(EventType.WAKE_WORD, lambda e: self.on_wake_word_detected() if callable(self.on_wake_word_detected) else None)
+                
+        except Exception as e:
+            logger.error(f"Failed to setup proxy subscriptions: {e}")
 
     def start_listening(self):
         # Child process starts listening automatically at spawn; proxy only

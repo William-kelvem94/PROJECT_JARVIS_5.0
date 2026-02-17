@@ -3,7 +3,14 @@ Controlador de aÃ§Ãµes do sistema
 Habilita interaÃ§Ã£o com mouse e teclado via PyAutoGUI
 """
 
-import pyautogui
+# pyautogui is optional at import-time; fail gracefully and keep the module available
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except Exception:
+    pyautogui = None
+    PYAUTOGUI_AVAILABLE = False
+
 import time
 import logging
 from typing import List, Dict, Any

@@ -36,35 +36,41 @@ ai_agent:
 brain_router:
   # Ollama Models (Local LLMs)
   ollama_models:
-    tier_ultra:  # Genius tier - Alta complexidade
-      - "deepseek-r1:8b"
-      - "deepseek-r1:14b"
+    tier_ultra:  # Genius tier - Alta complexidade (Prioridade Absoluta)
+      - "deepseek-r1:67b"
+      - "deepseek-r1:32b"
       - "llama3.3:70b"
+      - "qwen2.5:72b"
+      - "llama3.1:70b"
+      - "deepseek-r1:14b"
+      - "deepseek-r1:8b" # Fallback decente
     
     tier_pro:  # Versatile tier - Média-Alta complexidade
-      - "gemma3:4b"    # ✅ Preferido (instrução 2026-02-10)
-      - "qwen2.5:7b"
+      - "gemma3:4b"  
+      - "qwen2.5:32b"
+      - "qwen2.5:14b"
+      - "mistral-nemo:12b"
       - "llama3.1:8b"
-      - "llama3.2"
-      - "mistral"
     
-    tier_fast:  # Fast tier - Uso geral econômico
-      - "gemma3:4b"    # ✅ Rápido e capaz
-      - "qwen2.5:3b"   # ✅ Fallback leve
-      - "phi3.5"
-      - "phi3"
-      - "gemma2:9b"
+    tier_cloud: # Modelos Cloud-Only (Ollama Connect)
+      - "glm-5:cloud"   # 744B reasoning powerhouse
+      - "minimax-m2.5:cloud"  # Productivity & Coding
+      - "qwen-max:cloud"
   
-  # Hardware requirements per tier
+  # Chave pública para autenticação Ollama Cloud
+  ollama_key: "185919827dee4d1e80a03dd78ed017ea.V25w0L3H2Fn36laihGuc09xH"
+  holoerty_active: true
+
+  # Hardware requirements per tier (RELAXED FOR PRO MODE)
   hardware_requirements:
     tier_ultra:
-      min_ram_gb: 6.0
-      min_vram_gb: 4.0
+      min_ram_gb: 0.0  # UNLIMITED (Trust Swap)
+      min_vram_gb: 0.0
     tier_pro:
-      min_ram_gb: 2.0
-      min_vram_gb: 2.0
+      min_ram_gb: 0.0
+      min_vram_gb: 0.0
     tier_fast:
-      min_ram_gb: 0.5
+      min_ram_gb: 0.0
       min_vram_gb: 0.0
   
   # Required models for maintenance checks
@@ -85,11 +91,11 @@ brain_router:
   
   offline_mode: false # Set to true to force strictly local
   
-  # Routing thresholds
+  # Routing thresholds (Aggressive for Intelligence)
   complexity_thresholds:
-    simple: 0.2
-    medium: 0.5
-    complex: 0.8
+    simple: 0.1    # Anything above trivial goes to better models
+    medium: 0.4
+    complex: 0.7
     ultra_complex: 0.9
   
   # Latency requirements (seconds)
@@ -140,9 +146,9 @@ continual_learning:
     enabled: true
     night_start_hour: 22  # 22h - 10 PM
     night_end_hour: 6     # 6h - 6 AM
-    min_idle_duration: 300  # 5 minutos de inatividade
-    max_cpu_percent: 20.0  # CPU abaixo de 20%
-    max_memory_percent: 80.0  # RAM abaixo de 80%
+    min_idle_duration: 0    # Run-at-limit: immediate eligibility
+    max_cpu_percent: 100.0  # Allow DreamCycle even at high CPU
+    max_memory_percent: 100.0  # Allow DreamCycle even at high RAM
     check_interval: 60  # Verificar a cada 1 minuto
     
   # Local Brain (Model to Train)
@@ -278,16 +284,29 @@ vision:
     cooldown: 600.0        # Espera após um gatilho (segundos)
     sensitivity: 0.15      # % de mudança para disparar análise (0.0 a 1.0)
 
+# === RESOURCES / WATCHDOG TUNING ===
+resources:
+  torch_threads: 2             # Número de threads que o PyTorch deve usar por processo (configurável)
+  system_limits:
+    max_memory_usage: 1.0        # Permite usar 100% da RAM
+    enable_swap_usage: true      # Autoriza uso do disco como RAM (swap/pagefile)
+    critical_cleanup: false      # PROÍBE o Watchdog de matar processos por memória
+    check_interval: 5.0          # Verificações menos frequentes (segundos)
+    warning_threshold_percent: 95 # Warn only at 95%
+
 # === PERFORMANCE MONITORING ===
 performance:
+  # Mode: 'dev' | 'pro' — 'pro' usa mais recursos para máxima performance
+  mode: "pro"
+  use_all_cores: true
   # Metrics collection
   collect_metrics: true
-  metrics_interval: 60  # segundos
+  metrics_interval: 300  # segundos
   
   # Performance thresholds
-  max_response_time: 5.0  # segundos
-  max_memory_usage_gb: 8.0
-  max_cpu_usage_percent: 80.0
+  max_response_time: 10.0  # Allow longer thinking
+  max_memory_usage_gb: 128.0   # Unlimited effectively
+  max_cpu_usage_percent: 100.0 # Full throttle
   
   # Auto-optimization
   auto_optimize: true
@@ -330,6 +349,9 @@ security:
 
 # === AUDIO & VOICE ===
 audio:
+  enabled: true
+  tts_engine: "edge-tts"         # 'edge-tts', 'coqui', 'pyttsx3'
+  speech_recognition_enabled: true
   vad_calibration_duration: 3.0  # Tempo de escuta para calibrar ruído ambiente
   default_tts: "edge"            # 'edge', 'gtts', 'xtts'
   offline_tts_fallback: true

@@ -10,6 +10,12 @@ import os
 import requests
 from enum import Enum
 
+# EventBus types (used for subscriptions)
+try:
+    from src.core.infrastructure.async_event_bus import EventType
+except Exception:
+    EventType = None
+
 # Safe Imports
 try:
     from src.utils.config import config
@@ -228,19 +234,43 @@ class BrainRouter:
         if privacy_level.value >= PrivacyLevel.HIGH.value:
             return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
 
-        # Capturar Hardware em tempo real
-        try:
-            from src.core.management.hardware_manager import hardware_manager
+        # ROTEAMENTO OLLAMA (TIERS)
+        # Check Force Pro Mode
+        force_pro = False
+        if CONFIG_AVAILABLE and config:
+            force_pro = config.get_ai_config("performance.mode") == "pro"
 
-            mem = hardware_manager.get_memory_status()
-            free_ram = mem["ram_free_gb"]
-            free_vram = mem["vram_free_gb"]
-        except Exception as e:
-            logger.warning(f"Erro ao ler hardware info: {e}")
-            free_ram, free_vram = 4.0, 0.0
+        if force_pro:
+            # Fake infinite RAM to force best model selection
+            logger.info("🚀 PRO MODE: Ignorando limites de hardware para seleção de modelo.")
+            free_ram = 999.0
+            free_vram = 999.0
+        else:
+            # Capturar Hardware em tempo real
+            try:
+                from src.core.management.hardware_manager import hardware_manager
+                mem = hardware_manager.get_memory_status()
+                free_ram = mem["ram_free_gb"]
+                free_vram = mem["vram_free_gb"]
+            except Exception as e:
+                logger.warning(f"Erro ao ler hardware info: {e}")
+                free_ram, free_vram = 4.0, 0.0
 
         # ROTEAMENTO OLLAMA (TIERS)
         if self.ollama_available_models:
+            # ☁️ TIER HOLOERTY (CLOUD) - Prioridade Máxima se ativo e complexo
+            if task_complexity >= 0.8: # Only for very hard tasks
+                 cloud_tier = self.config.get_ai_config("brain_router.ollama_models.tier_cloud", [])
+                 for model_pattern in cloud_tier:
+                     # Check if we can use this cloud model (assuming it's 'pulled' or mapped)
+                     # We treat :cloud models as always available if configured
+                     logger.info(f"☁️ TIER HOLOERTY: Routing to {model_pattern}")
+                     return {
+                        "brain": f"ollama:{model_pattern}",
+                        "keep_alive": "5m", 
+                        "is_heavy": True
+                     }
+
             # TIER ULTRA: Gênio (DeepSeek-R1) -> Alta Complexidade + Recursos Livres
             min_ram_ultra = self.hw_tier_ultra.get("min_ram_gb", 10.0)
             min_vram_ultra = self.hw_tier_ultra.get("min_vram_gb", 4.0)

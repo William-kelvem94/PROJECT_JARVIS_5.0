@@ -19,9 +19,14 @@ sys.path.insert(0, project_root)
 # Mock de módulos problemáticos antes do import
 sys.modules["mediapipe"] = Mock()
 sys.modules["tensorflow"] = Mock()
-sys.modules["cv2"] = Mock()
+# Provide lightweight mocks with expected attributes to avoid Import-time checks
+_mock_cv2 = Mock()
+_mock_cv2.__version__ = "4.5.0"
+sys.modules["cv2"] = _mock_cv2
 sys.modules["face_recognition"] = Mock()
-sys.modules["dlib"] = Mock()
+_mock_dlib = Mock()
+_mock_dlib.__version__ = "19.22.0"
+sys.modules["dlib"] = _mock_dlib
 
 from src.core.orchestrator import StarkOrchestrator
 
@@ -50,9 +55,9 @@ class TestStarkOrchestrator(unittest.TestCase):
         self.assertEqual(len(self.orchestrator.components), 0)
         self.assertIsInstance(self.orchestrator.components, dict)
 
-    @patch("src.core.orchestrator.SecurityManager")
-    @patch("src.core.orchestrator.IOTManager")
-    @patch("src.core.orchestrator.FallbackSystem")
+    @patch("src.core.management.orchestrator.SecurityManager")
+    @patch("src.core.management.orchestrator.IOTManager")
+    @patch("src.core.management.orchestrator.FallbackSystem")
     def test_stark_system_initialization_complete_success(
         self, mock_fallback, mock_iot, mock_security
     ):
@@ -91,12 +96,12 @@ class TestStarkOrchestrator(unittest.TestCase):
         mock_interface.assert_called_once()
 
     @patch(
-        "src.core.orchestrator.SecurityManager",
+        "src.core.management.orchestrator.SecurityManager",
         side_effect=Exception("Security init failed"),
     )
-    @patch("src.core.orchestrator.IOTManager")
-    @patch("src.core.orchestrator.FallbackSystem")
-    @patch("src.core.orchestrator.logger")
+    @patch("src.core.management.orchestrator.IOTManager")
+    @patch("src.core.management.orchestrator.FallbackSystem")
+    @patch("src.core.management.orchestrator.logger")
     def test_stark_system_initialization_partial_failure(
         self, mock_logger, mock_fallback, mock_iot, mock_security
     ):
@@ -387,7 +392,12 @@ class TestStarkOrchestratorIntegration(unittest.TestCase):
 
                     # Verifica estado final
                     self.assertTrue(self.orchestrator.is_ready)
-                    self.assertEqual(len(self.orchestrator.components), 3)
+                    # multiple optional components may be registered; ensure the
+                    # three core components exist
+                    self.assertGreaterEqual(len(self.orchestrator.components), 3)
+                    self.assertIn("security", self.orchestrator.components)
+                    self.assertIn("iot", self.orchestrator.components)
+                    self.assertIn("fallback", self.orchestrator.components)
 
                     # Verifica health
                     health = self.orchestrator.get_system_health()

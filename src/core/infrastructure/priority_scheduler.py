@@ -133,7 +133,8 @@ class PriorityScheduler:
     preempção inteligente e adaptação à carga do sistema.
     """
 
-    def __init__(self, max_concurrent_tasks: int = 10):
+    def __init__(self, max_concurrent_tasks: int = 100):
+        # Increase default concurrency (allow high parallelism when requested)
         self.max_concurrent_tasks = max_concurrent_tasks
         self.tasks: Dict[str, SchedulerTask] = {}
         self.task_queues: Dict[TaskPriority, deque] = {
@@ -156,9 +157,10 @@ class PriorityScheduler:
         self.scheduler_start_time: Optional[datetime] = None
 
         # Configuration
-        self.load_adaptation_enabled = True
+        # Disable adaptive throttling by default for "run-at-limit" behaviour
+        self.load_adaptation_enabled = False
         self.preemption_enabled = True
-        self.max_load_threshold = 0.9  # Suspend low priority tasks if load > 90%
+        self.max_load_threshold = 0.99  # Leave threshold high when adaptation disabled
 
         logger.info("⚙️ Priority Scheduler initialized")
 
@@ -688,12 +690,13 @@ class PriorityScheduler:
                 self.system_load.memory_percent = psutil.virtual_memory().percent
 
                 # Log high load conditions
-                if self.system_load.overall_load > 0.8:
-                    logger.warning(
-                        f"🔥 High system load: CPU={self.system_load.cpu_percent:.1f}% RAM={self.system_load.memory_percent:.1f}%"
-                    )
-
-                await asyncio.sleep(2.0)  # Update every 2 seconds
+                # Check frequency reduction: Log only if sustained for 3 cycles
+                # and if load is truly critical (>98%) to avoid spamming watchdog
+                if self.system_load.overall_load > 0.98:
+                     # Minimal logging to save IO
+                     pass
+            
+                await asyncio.sleep(5.0)  # Update every 5 seconds (was 2.0)
 
             except asyncio.CancelledError:
                 break

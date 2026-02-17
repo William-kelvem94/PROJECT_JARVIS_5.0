@@ -55,8 +55,9 @@ class ConfigManager:
         """Retorna configurações padrão"""
         return {
             "system": {
-                "max_memory_mb": 1024,
-                "max_cpu_percent": 80,
+                # 0 = no enforced memory cap (allow OS/swap), CPU default 100%
+                "max_memory_mb": 0,
+                "max_cpu_percent": 100,
                 "log_level": "INFO",
                 "timeout_seconds": 30,
             },

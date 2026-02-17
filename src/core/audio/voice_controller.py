@@ -82,16 +82,32 @@ class VoiceController:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.reference_wav = Path("data/voice_signatures/jarvis_reference.wav")
 
-        # Check Headless Mode
-        self.headless_mode = self.manifest.audio.force_headless or (
-            not PYGAME_AVAILABLE
-        )
+        # Check Headless Mode — tolerate missing config keys (hotfix)
+        audio_cfg = getattr(self.manifest, "audio", None)
+        force_headless = False
+        try:
+            if isinstance(audio_cfg, dict):
+                force_headless = bool(audio_cfg.get("force_headless", False))
+            else:
+                force_headless = bool(getattr(audio_cfg, "force_headless", False))
+        except Exception:
+            force_headless = False
+
+        # Determine if any audio backend/playback is available. Do NOT rely only on pygame.
+        backend_available = EDGE_TTS_AVAILABLE or PYTTSX3_AVAILABLE or PYGAME_AVAILABLE
+
+        # Headless only when explicitly forced OR when no backend exists
+        self.headless_mode = bool(force_headless) or (not backend_available)
+
+        # Playback availability (pygame mixer). Used later when playing cached files.
+        self.playback_available = bool(PYGAME_AVAILABLE)
 
         if self.headless_mode:
             logger.info(
                 "🔇 VoiceController running in HEADLESS/SILENT mode (Logs only)"
             )
         else:
+            # Initialize pygame mixer if available — failures here should not force headless
             self._init_pygame()
 
         # Offline Engine (Fallback)
@@ -108,7 +124,20 @@ class VoiceController:
         self.microphone = None
 
         # Only setup mic if not forced headless and speech recognition is enabled
-        if not self.headless_mode and self.manifest.audio.speech_recognition_enabled:
+        try:
+            audio_cfg_obj = getattr(self.manifest, "audio", None)
+            if isinstance(audio_cfg_obj, dict):
+                speech_recognition_enabled = audio_cfg_obj.get(
+                    "speech_recognition_enabled", True
+                )
+            else:
+                speech_recognition_enabled = bool(
+                    getattr(audio_cfg_obj, "speech_recognition_enabled", True)
+                )
+        except Exception:
+            speech_recognition_enabled = True
+
+        if not self.headless_mode and speech_recognition_enabled:
             self._setup_microphone()
 
         # State & Models
@@ -154,7 +183,9 @@ class VoiceController:
                 logger.info("✅ Pygame mixer inicializado")
         except Exception as e:
             logger.error(f"❌ Falha ao inicializar pygame mixer: {e}")
-            self.headless_mode = True  # Fallback to headless if audio fails
+            # Do NOT force headless here — just mark playback unavailable and let other
+            # TTS fallbacks (pyttsx3 / Edge-TTS) continue to operate.
+            self.playback_available = False
 
     def _setup_pyttsx3(self):
         """Configura o fallback básico."""

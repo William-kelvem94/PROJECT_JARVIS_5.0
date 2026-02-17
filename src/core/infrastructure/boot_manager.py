@@ -663,8 +663,30 @@ class BootManager:
             from src.core.infrastructure.async_event_bus import get_event_bus
 
             bus = get_event_bus()
-            # Note: bus.start() is typically called when the main loop starts
-            # but we can do it here if it's safe.
+            # Ensure the EventBus is started early so subscribers/publishers and
+            # the Watchdog heartbeat are active immediately. Start in the
+            # running asyncio loop if available; otherwise spawn a background
+            # thread to run the bus.start() coroutine.
+            import asyncio
+            import threading
+
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.create_task(bus.start())
+                else:
+                    def _bg_start():
+                        try:
+                            import asyncio as _asyncio
+
+                            _asyncio.run(bus.start())
+                        except Exception as _e:
+                            logger.warning(f"Background event bus start failed: {_e}")
+
+                    threading.Thread(target=_bg_start, daemon=True).start()
+            except Exception as _e:
+                logger.warning(f"Could not auto-start event bus: {_e}")
+
             return bus
         except ImportError as e:
             logger.error(f"Failed to import async event bus: {e}")
@@ -694,7 +716,9 @@ class BootManager:
 
             # Register core components
             watchdog_system.register_component("priority_scheduler", heartbeat_interval=2.0)
-            watchdog_system.register_component("event_bus", heartbeat_interval=5.0)
+            # Give the EventBus a larger heartbeat window to tolerate heavy-load
+            # spikes during startup and long-running DreamCycle activity.
+            watchdog_system.register_component("event_bus", heartbeat_interval=10.0)
             
             # Start monitoring thread
             watchdog_system.start()

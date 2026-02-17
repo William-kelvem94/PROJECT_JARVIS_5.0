@@ -10,12 +10,11 @@ try:
 except ImportError:
     OPENVINO_AVAILABLE = False
 
-try:
-    import onnxruntime as ort
-
-    ORT_AVAILABLE = True
-except ImportError:
-    ORT_AVAILABLE = False
+# ORT (onnxruntime) is imported lazily inside _detect_hardware to avoid
+# loading native extensions during pytest / import-time on platforms where
+# the native wheel may crash the interpreter.
+ORT_AVAILABLE = False
+ort = None
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +70,18 @@ class ComputeOrchestrator:
             except Exception as e:
                 logger.warning(f"âš ï¸ Erro ao inicializar OpenVINO: {e}")
 
-        # 3. Verificar DirectML (Universal Windows)
+        # 3. Verificar DirectML (onnxruntime) - lazy import to avoid crashing at
+        # import-time on platforms where the native extension is unstable.
+        try:
+            if ort is None:
+                import importlib
+
+                ort = importlib.import_module("onnxruntime")
+            ORT_AVAILABLE = True
+        except Exception:
+            ORT_AVAILABLE = False
+            ort = None
+
         if ORT_AVAILABLE and hasattr(ort, "get_available_providers"):
             try:
                 providers = ort.get_available_providers()

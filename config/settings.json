@@ -1,13 +1,71 @@
 {
-    "ai": {
-        "provider": "gemini"
-    },
-    "system": {
-        "debug_mode": false,
-        "log_level": "INFO"
-    },
-    "database": {
-        "vector_store_path": "data/memory/vector_store",
-        "log_database_path": "data/logs/blackbox.db"
-    }
+  "app": {
+    "name": "Jarvis 5.0",
+    "version": "5.0.0",
+    "language": "pt-BR",
+    "theme": "dark"
+  },
+  "capture": {
+    "default_format": "PNG",
+    "quality": 95,
+    "hotkey": "ctrl+shift+s",
+    "auto_save": true,
+    "capture_delay": 0.5
+  },
+  "ocr": {
+    "engine": "tesseract",
+    "languages": [
+      "por",
+      "eng"
+    ],
+    "confidence_threshold": 60,
+    "preprocessing": true,
+    "post_correction": true
+  },
+  "processing": {
+    "max_workers": 4,
+    "batch_size": 10,
+    "timeout": 30,
+    "retry_attempts": 3
+  },
+  "storage": {
+    "auto_organize": true,
+    "compression": true,
+    "encryption": false,
+    "retention_days": 365
+  },
+  "analysis": {
+    "enable_ai": true,
+    "categorization": true,
+    "entity_extraction": true,
+    "sentiment_analysis": false
+  },
+  "interface": {
+    "minimize_to_tray": true,
+    "show_notifications": true,
+    "auto_start": false,
+    "check_updates": true
+  },
+  "portability": {
+    "target_user_email": ""
+  },
+  "vision": {
+    "yolo_enabled": true,
+    "yolo_model": "models/vision/yolov8n.pt",
+    "yolo_confidence": 0.25
+  },
+  "ai": {
+    "provider": "gemini"
+  },
+  "system": {
+    "debug_mode": false,
+    "log_level": "INFO"
+  },
+  "database": {
+    "vector_store_path": "data/memory/vector_store",
+    "log_database_path": "data/logs/blackbox.db"
+  },
+  "test": {
+    "value": "test_data"
+  }
 }

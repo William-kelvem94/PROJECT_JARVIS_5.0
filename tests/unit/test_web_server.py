@@ -75,3 +75,15 @@ async def test_get_training_data_empty():
     data = json.loads(response.body.decode())
     assert data == []
     assert response.status_code == 200
+
+
+def test_health_endpoint_is_public_and_returns_ok():
+    from fastapi.testclient import TestClient
+    from src.web.web_server import app
+
+    client = TestClient(app)
+    resp = client.get("/health")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload.get("status") == "ok"
+    assert "uptime_seconds" in payload

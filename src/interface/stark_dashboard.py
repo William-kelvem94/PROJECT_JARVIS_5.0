@@ -957,22 +957,34 @@ class StarkDashboard(QMainWindow):
 
             # Consumo Real
             cpu_usage = psutil.cpu_percent()
-            self.ai_cpu_usage_label.setText(f"Sistema CPU: {cpu_usage:.1f}%")
+            self.ai_cpu_dedicated.setText(f"CPU Dedicado: {cpu_usage:.1f}%")
 
             ram = psutil.virtual_memory()
-            self.ai_memory_usage_label.setText(
-                f"RAM Livre: {ram.available / (1024**3):.1f}GB"
+            self.ai_memory_dedicated.setText(
+                f"RAM Dedicado: {ram.percent:.1f}%"
             )
 
             if self.gpu_available:
                 vram_free = status.get("vram_free_gb", 0)
-                self.ai_gpu_usage_label.setText(f"VRAM Livre: {vram_free:.1f}GB")
+                # self.ai_gpu_dedicated.setText(f"VRAM Livre: {vram_free:.1f}GB")
+                # No dashboard fixo, vamos usar o label certo
+                if hasattr(self, "ai_gpu_dedicated"):
+                    self.ai_gpu_dedicated.setText(f"GPU Dedicado: {100 - (vram_free/16)*100:.1f}%")
 
             # Threads e Processos
             self.ai_threads.setText(f"Threads IA: {status['threads']}")
             self.ai_processes.setText(
                 f"Acelerador: {status['accelerator'] or 'Nenhum'}"
             )
+
+            # Tempo de Resposta (Performance Optimizer Integration)
+            try:
+                from src.core.management.performance_optimizer import performance_optimizer
+                stats = performance_optimizer.get_stats()
+                avg_time = stats.get("avg_response_time", "0.00s")
+                self.ai_response_time.setText(f"Tempo Resposta: {avg_time}")
+            except:
+                self.ai_response_time.setText("Tempo Resposta: --")
 
         except Exception as e:
             logger.error(f"Erro ao atualizar métricas da IA: {e}")
@@ -1015,21 +1027,51 @@ class StarkDashboard(QMainWindow):
             self.active_model_text.setText(f"Core Engine: {device.upper()} ({hw_name})")
 
             # 3. Funções Ativas (Dinâmico)
-            # 3. Funções Ativas (Baseado nas Threads do Python)
+            # 3. Funções Ativas (Baseado nas Threads e Processos)
             import threading
+            import psutil as ps
 
             active_threads = [t.name for t in threading.enumerate()]
+            
+            # Verificar se existem processos do JARVIS rodando além do principal via cmdline
+            is_audio_proc = False
+            is_vision_proc = False
+            
+            try:
+                for p in ps.process_iter(['name', 'cmdline']):
+                    try:
+                        # Check name first
+                        name = p.info['name'].lower() if p.info['name'] else ""
+                        cmdline = p.info['cmdline'] if p.info['cmdline'] else []
+                        cmd_str = " ".join(cmdline).lower()
+                        
+                        # Child processes might show up as python.exe with specific script args
+                        # or if we named the process explicitly in multiprocessing (which sets name mostly in Python < 3.8 or via setproctitle if installed)
+                        # Windows usually shows just python.exe, so checking cmdline is crucial.
+                        
+                        if "audio_process" in cmd_str or "jarvis-audio-service" in name or "jarvis-audio-service" in cmd_str:
+                            is_audio_proc = True
+                        
+                        if "vision_process" in cmd_str or "jarvis-vision-service" in name or "jarvis-vision-service" in cmd_str:
+                            is_vision_proc = True
+                            
+                    except (ps.NoSuchProcess, ps.AccessDenied, ps.ZombieProcess):
+                        continue
+            except Exception as e:
+                logger.warning(f"Error scanning processes: {e}")
 
             # Mapeamento de threads para nomes "Stark"
             stark_modules = []
-            if any("Camera" in t for t in active_threads):
+            if any("Vision" in t for t in active_threads) or \
+               any("Camera" in t for t in active_threads) or \
+               is_vision_proc:
                 stark_modules.append("• Sentinel Vision (ONLINE)")
             else:
                 stark_modules.append("• Sentinel Vision (OFFLINE)")
 
-            if any("Voice" in t for t in active_threads) or any(
-                "Audio" in t for t in active_threads
-            ):
+            if any("Audio" in t for t in active_threads) or \
+               any("Voice" in t for t in active_threads) or \
+               is_audio_proc:
                 stark_modules.append("• Voice Array (LISTENING)")
             else:
                 stark_modules.append("• Voice Array (MUTED/OFFLINE)")

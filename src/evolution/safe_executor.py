@@ -20,6 +20,9 @@ import shutil
 import logging
 import py_compile
 import time
+import os
+import sys
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
@@ -202,7 +205,21 @@ class SafeExecutor:
             logger.error("Syntax error in modified file")
             return False
 
-        # 2. Basic Import Check (Runtime)
+        # 2. Optional test-run as part of validation (controlled by env var JARVIS_SAFE_RUN_TESTS)
+        if os.environ.get("JARVIS_SAFE_RUN_TESTS", "0").lower() in ("1", "true", "yes"):
+            try:
+                logger.info("🔬 Running unit tests as part of SafeExecutor validation...")
+                cmd = [sys.executable, "-m", "pytest", "-q", "tests/unit", "-k", "not integration"]
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if proc.returncode != 0:
+                    logger.error("Unit tests failed during SafeExecutor validation:\n" + proc.stdout + proc.stderr)
+                    return False
+                logger.info("✅ Unit tests passed during SafeExecutor validation")
+            except Exception as e:
+                logger.error(f"Failed to run unit tests during validation: {e}")
+                return False
+
+        # 3. Basic Import Check (Runtime)
         # TODO: Run specific unit tests if available
 
         return True

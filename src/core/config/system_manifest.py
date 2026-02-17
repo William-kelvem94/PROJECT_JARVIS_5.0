@@ -26,6 +26,12 @@ class AIModelConfig(BaseModel):
     context_window: int = 4096
     temperature: float = 0.7
 
+    # Ollama host/port (optional) — some modules reference these directly
+    ollama_host: str = "localhost"
+    ollama_port: int = 11434
+    # Backwards-compatible alias for older modules that reference Ollama model
+    ollama_model: str = Field(default_factory=lambda: os.getenv("AI_MODEL", "llama3:8b"))
+
 class VisionConfig(BaseModel):
     """Configuração do Sistema de Visão (Heimdall)"""
     enabled: bool = True
@@ -58,6 +64,11 @@ class SecurityConfig(BaseModel):
     require_voice_auth: bool = False
     admin_users: List[str] = ["William"]
 
+    # New flags used by orchestrator and security subsystems
+    require_hardware_acceleration: bool = False
+    allow_cpu_fallback: bool = True
+    semantic_validation: bool = False
+
 
 class NetworkConfig(BaseModel):
     """Configuração do Network Mesh (usada por Boot Manager e Network modules)"""
@@ -80,6 +91,9 @@ class SystemManifest(BaseModel):
     system_name: str = "JARVIS"
     version: str = "5.0.0-Singularity"
     debug_mode: bool = True
+
+    # Explicit project_root field for compatibility with older modules/tests
+    project_root: Path = BASE_DIR
     
     # Sub-configurações
     ai: AIModelConfig
@@ -95,6 +109,24 @@ class SystemManifest(BaseModel):
         "memory": MEMORY_DIR,
         "vector_store": MEMORY_DIR / "vector_store"
     }
+
+    # Backwards-compatible helpers expected by legacy modules/tests
+    @property
+    def system(self):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            data_path=DATA_DIR,
+            logs_path=self.paths.get("logs", LOG_DIR),
+        )
+
+    @property
+    def database(self):
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            vector_store_path=self.paths.get("vector_store", MEMORY_DIR / "vector_store")
+        )
 
     @classmethod
     def load_system(cls) -> "SystemManifest":
@@ -124,7 +156,15 @@ try:
     sys_config = SystemManifest.load_system()
     # Alias para compatibilidade se necessário
     system_manifest = sys_config
-    
+
+    # Backwards-compatible attributes expected in various modules/tests
+    try:
+        # project_root used in older modules — set via object.__setattr__ because
+        # SystemManifest is a Pydantic model and disallows arbitrary attrs by default
+        object.__setattr__(sys_config, "project_root", BASE_DIR)
+    except Exception:
+        pass
+
     # Cria diretórios essenciais se não existirem
     sys_config.paths["logs"].mkdir(parents=True, exist_ok=True)
     sys_config.paths["vector_store"].mkdir(parents=True, exist_ok=True)

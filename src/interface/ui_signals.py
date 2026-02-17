@@ -34,6 +34,23 @@ class UISignals(QObject):
             # avoid PyQt runtime errors when attributes are accessed before
             # Python-level __init__ completes.
             QObject.__init__(inst)
+            # If a QApplication already exists, ensure the UISignals QObject
+            # lives in the application's main thread to avoid cross-thread
+            # parenting issues (see Qt warning about creating children in
+            # different threads).
+            try:
+                from PyQt6.QtWidgets import QApplication
+
+                app = QApplication.instance()
+                if app is not None:
+                    try:
+                        inst.moveToThread(app.thread())
+                    except Exception:
+                        # best-effort; if it fails keep going
+                        pass
+            except Exception:
+                pass
+
             cls._instance = inst
         return cls._instance
 

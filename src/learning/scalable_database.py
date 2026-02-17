@@ -578,16 +578,41 @@ class VectorDatabase(DatabaseInterface):
             os.environ["CHROMA_TELEMETRY"] = "False"
             os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
 
-            self.client = chromadb.PersistentClient(path=str(self.db_path))
-            self.collection = self.client.get_or_create_collection(
-                name="feedback", metadata={"hnsw:space": "cosine"}
-            )
+            try:
+                self.client = chromadb.PersistentClient(path=str(self.db_path))
+                self.collection = self.client.get_or_create_collection(
+                    name="feedback", metadata={"hnsw:space": "cosine"}
+                )
 
-            logger.info(f"âœ… Connected to ChromaDB: {self.db_path}")
-            return True
+                logger.info(f"âœ… Connected to ChromaDB: {self.db_path}")
+                return True
+
+            except Exception as e_inner:
+                msg = str(e_inner)
+                # If conflict (another Chroma instance), try safe in-memory fallback
+                if "An instance of Chroma already exists" in msg:
+                    logger.warning(
+                        "Chroma instance conflict detected for '%s' — falling back to in-memory client",
+                        self.db_path,
+                    )
+                    try:
+                        self.client = chromadb.Client()
+                        self.collection = self.client.get_or_create_collection(
+                            name="feedback", metadata={"hnsw:space": "cosine"}
+                        )
+                        logger.info("âœ… Connected to ChromaDB using in-memory fallback")
+                        return True
+                    except Exception as e_fallback:
+                        logger.error(
+                            "In-memory Chroma fallback failed: %s", e_fallback
+                        )
+                        return False
+
+                logger.error(f"Failed to connect to ChromaDB: {e_inner}")
+                return False
 
         except Exception as e:
-            logger.error(f"Failed to connect to ChromaDB: {e}")
+            logger.error(f"ChromaDB not available or import failed: {e}")
             return False
 
     def create_tables(self) -> bool:

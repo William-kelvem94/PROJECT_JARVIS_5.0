@@ -38,11 +38,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IdleConditions:
-    """Conditions for determining system idle state."""
+    """Conditions for determining system idle state (relaxed for run-at-limit)."""
 
-    max_cpu_percent: float = 20.0
-    max_memory_percent: float = 80.0
-    min_idle_duration_seconds: int = 300  # 5 minutes
+    # Set permissive defaults so DreamCycle can run even under heavy load
+    max_cpu_percent: float = 100.0
+    max_memory_percent: float = 100.0
+    min_idle_duration_seconds: int = 0  # immediate eligibility
     night_start_hour: int = 22  # 10 PM
     night_end_hour: int = 6  # 6 AM
     check_interval_seconds: int = 60
@@ -448,7 +449,16 @@ class DreamCycle:
                 task = self.training_queue.get_next_task()
 
                 if task is None:
-                    logger.info("Queue empty. Initiating AUTONOMOUS RESEARCH PHASE...")
+                    logger.info("Queue empty. Initiating AUTONOMOUS SELF-IMPROVEMENT PHASE...")
+                    
+                    # 1. Code Doctor (Fix bugs)
+                    try:
+                        from src.core.evolution.code_doctor import code_doctor
+                        code_doctor.heal_system()
+                    except Exception as e:
+                        logger.error(f"CodeDoctor failed: {e}")
+
+                    # 2. Research (Fill knowledge gaps)
                     self._perform_autonomous_research()
                     break
 
@@ -899,20 +909,19 @@ class DreamCycle:
                         )
 
                     # Heuristic: attempt automatic patch for simple runtime errors (safe-by-default)
-                    try:
-                        if any(k in sig.lower() for k in ["modulenotfounderror", "importerror", "indexerror", "typeerror"]):
-                            try:
-                                from src.core.evolution.auto_patcher import auto_patcher
+                    if any(k in sig.lower() for k in ["modulenotfounderror", "importerror", "indexerror", "typeerror"]):
+                        try:
+                            from src.core.evolution.auto_patcher import auto_patcher
 
-                                # Run patch attempt in background (non-blocking).
-                                import threading
+                            # Run patch attempt in background (non-blocking).
+                            import threading
 
-                                threading.Thread(
-                                    target=lambda ins=insight: auto_patcher.attempt_patch_from_insight(ins),
-                                    daemon=True,
-                                ).start()
-                            except Exception:
-                                logger.debug("AutoPatcher not available or failed to start", exc_info=True)
+                            threading.Thread(
+                                target=lambda ins=insight: auto_patcher.attempt_patch_from_insight(ins),
+                                daemon=True,
+                            ).start()
+                        except Exception:
+                            logger.debug("AutoPatcher not available or failed to start", exc_info=True)
                 except Exception:
                     logger.debug("Failed to create training task from insight", exc_info=True)
 
