@@ -11,37 +11,44 @@ os.environ["PYTHONUTF8"] = "1"
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Configure Logging (Unified)
-from src.utils.config import config
-from src.utils.jarvis_logger import setup_jarvis_logging, apply_global_duplicate_filter
+from src.core.config.system_manifest import system_manifest
+from src.core.config.blackbox_logger import setup_blackbox_integration, blackbox_logger
 
-# Setup Logger
+# mark as used to satisfy linters/static analysis (values are still available for runtime use)
+_ = system_manifest
+_ = blackbox_logger
+
+# Initialize Foundation
 try:
-    logging_system = setup_jarvis_logging(config.DATA_DIR)
-    logger = logging_system.get_logger("BOOT")
-    apply_global_duplicate_filter(logging.getLogger())
+    setup_blackbox_integration()
+    logger = logging.getLogger("BOOT")
+    logger.info("📡 Blackbox Logging Integration Active")
 except Exception as e:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("BOOT")
-    logger.error(f"Logging setup failed: {e}")
+    logger.error(f"Foundation setup failed: {e}")
 
 
 # 🛡️ GLOBAL MONKEY PATCHES (Safety checks)
-def apply_patches():
-    # OpenVINO Patch
-    try:
-        import openvino
+import importlib
 
-        if not hasattr(openvino, "Node") and "openvino.runtime" in sys.modules:
-            openvino.Node = getattr(sys.modules["openvino.runtime"], "Node", None)
-    except ImportError:
+def apply_patches():
+    # OpenVINO Patch (use importlib to avoid static-analysis unresolved-import warnings)
+    try:
+        openvino = importlib.import_module("openvino")
+        if "openvino.runtime" in sys.modules:
+            node_cls = getattr(sys.modules["openvino.runtime"], "Node", None)
+            if node_cls is not None and not hasattr(openvino, "Node"):
+                setattr(openvino, "Node", node_cls)
+    except Exception:
+        # not available at runtime, ignore
         pass
 
-    # Transformers Patch
+    # Transformers Patch (use importlib to avoid static-analysis unresolved-import warnings)
     try:
-        import transformers
-
+        transformers = importlib.import_module("transformers")
         # Add any specific transformer patches here if needed
-    except ImportError:
+    except Exception:
         pass
 
 
@@ -53,12 +60,21 @@ from src.core.infrastructure.priority_scheduler import PriorityScheduler
 from src.core.management.shutdown_manager import ShutdownManager
 
 # Qt Imports (Conditional)
-try:
-    from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot, QTimer
-    from PyQt6.QtWidgets import QApplication
+import importlib
 
+QtCore = None
+QtWidgets = None
+QT_AVAILABLE = False
+try:
+    QtCore = importlib.import_module("PyQt6.QtCore")
+    QtWidgets = importlib.import_module("PyQt6.QtWidgets")
+    QObject = getattr(QtCore, "QObject")
+    pyqtSignal = getattr(QtCore, "pyqtSignal")
+    pyqtSlot = getattr(QtCore, "pyqtSlot")
+    QTimer = getattr(QtCore, "QTimer")
+    QApplication = getattr(QtWidgets, "QApplication")
     QT_AVAILABLE = True
-except ImportError:
+except Exception:
     QT_AVAILABLE = False
 
     class QObject:
@@ -106,8 +122,9 @@ class JarvisSingularity(QObject):
         logger.info("✨ Singularity Core Initialized")
 
     def _setup_signals(self):
-        signal.signal(signal.SIGINT, lambda _, __: self.shutdown())
-        signal.signal(signal.SIGTERM, lambda _, __: self.shutdown())
+        # Use variadic lambda to avoid unused-parameter linter hints
+        signal.signal(signal.SIGINT, lambda *args: self.shutdown())
+        signal.signal(signal.SIGTERM, lambda *args: self.shutdown())
 
     def start(self):
         """Starts the main event loops and background services."""

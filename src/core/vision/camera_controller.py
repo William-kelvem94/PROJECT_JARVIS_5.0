@@ -21,6 +21,44 @@ except ImportError:
     CV2_AVAILABLE = False
     cv2 = None
 
+# Support for mock camera (used in CI / when no hardware available)
+from src.core.config.system_manifest import system_manifest
+
+class MockVideoCapture:
+    """Simple mock for cv2.VideoCapture used during tests/CI.
+
+    Produces a black frame (or noise) with resolution from system_manifest.
+    """
+
+    def __init__(self, index=0, frame_type: str = "black"):
+        self._opened = True
+        self.index = index
+        self.frame_type = frame_type
+        try:
+            self.width, self.height = system_manifest.vision.resolution
+        except Exception:
+            self.width, self.height = (1280, 720)
+
+    def isOpened(self):
+        return self._opened
+
+    def read(self):
+        try:
+            import numpy as np
+
+            if self.frame_type == "noise":
+                frame = (np.random.rand(self.height, self.width, 3) * 255).astype(
+                    np.uint8
+                )
+            else:
+                frame = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+            return True, frame
+        except Exception:
+            return False, None
+
+    def release(self):
+        self._opened = False
+
 from src.utils.config import config
 from src.core.intelligence.emotion_detector import emotion_detector
 from src.core.management.hardware_manager import hardware_manager
@@ -170,14 +208,18 @@ class CameraController:
             import platform
 
             if platform.system() == "Windows":
-                test_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
-                if test_capture and test_capture.isOpened():
-                    test_capture.release()
-                    logger.info("✅ Permissões de câmera verificadas")
+                # If mock mode is enabled, skip real permission check
+                if system_manifest.vision.mock_camera:
+                    logger.info("✅ Permissões de câmera simuladas (mock_camera=True)")
                 else:
-                    logger.error("❌ Sem permissão para acessar a câmera.")
-                    self.is_monitoring = False
-                    return
+                    test_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+                    if test_capture and test_capture.isOpened():
+                        test_capture.release()
+                        logger.info("✅ Permissões de câmera verificadas")
+                    else:
+                        logger.error("❌ Sem permissão para acessar a câmera.")
+                        self.is_monitoring = False
+                        return
         except Exception:
             pass
 
@@ -187,18 +229,23 @@ class CameraController:
         try:
             logger.info("📹 Opening camera...")
 
-            for attempt in range(3):
-                try:
-                    # Use hardware lock to prevent conflicts with heavy loads
-                    with hardware_manager.neural_lock:
-                        video_capture = cv2.VideoCapture(
-                            self.camera_index, cv2.CAP_DSHOW
-                        )
-                    if video_capture and video_capture.isOpened():
-                        break
-                except Exception as e:
-                    logger.warning(f"Tentativa {attempt+1} de abrir câmera falhou: {e}")
-                    time.sleep(1)
+            # If mock mode is enabled, use MockVideoCapture immediately
+            if system_manifest.vision.mock_camera:
+                logger.info("👁️ Using MockVideoCapture in CameraController (mock_camera=True)")
+                video_capture = MockVideoCapture(self.camera_index)
+            else:
+                for attempt in range(3):
+                    try:
+                        # Use hardware lock to prevent conflicts with heavy loads
+                        with hardware_manager.neural_lock:
+                            video_capture = cv2.VideoCapture(
+                                self.camera_index, cv2.CAP_DSHOW
+                            )
+                        if video_capture and video_capture.isOpened():
+                            break
+                    except Exception as e:
+                        logger.warning(f"Tentativa {attempt+1} de abrir câmera falhou: {e}")
+                        time.sleep(1)
 
             if not video_capture or not video_capture.isOpened():
                 logger.error(f"Não foi possível abrir a câmera {self.camera_index}.")
@@ -361,7 +408,11 @@ class CameraController:
             return False
 
         try:
-            video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+            if system_manifest.vision.mock_camera:
+                video_capture = MockVideoCapture(self.camera_index)
+            else:
+                video_capture = cv2.VideoCapture(self.camera_index, cv2.CAP_DSHOW)
+
             if not video_capture.isOpened():
                 return False
 

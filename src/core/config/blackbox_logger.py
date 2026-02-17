@@ -102,8 +102,9 @@ class BlackboxLogger:
             try:
                 from src.core.config.system_manifest import system_manifest
 
-                self.db_path = Path(system_manifest.database.log_database_path)
-            except ImportError:
+                # No novo manifest, usamos a chave 'logs' do dicionário de caminhos
+                self.db_path = system_manifest.paths["logs"] / "blackbox.db"
+            except (ImportError, KeyError, AttributeError):
                 # Fallback path
                 current_file = Path(__file__).resolve()
                 project_root = current_file.parent.parent.parent.parent

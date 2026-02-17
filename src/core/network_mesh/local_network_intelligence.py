@@ -254,12 +254,18 @@ class LocalNetworkIntelligence:
 
         # Webcam/Camera
         try:
-            import cv2
+            from src.core.config.system_manifest import system_manifest
 
-            cap = cv2.VideoCapture(0)
-            if cap.isOpened():
+            if getattr(system_manifest.vision, "mock_camera", False):
+                # In CI / mock mode, report camera capability without touching hardware
                 capabilities.append("CAMERA")
-            cap.release()
+            else:
+                import cv2
+
+                cap = cv2.VideoCapture(0)
+                if cap.isOpened():
+                    capabilities.append("CAMERA")
+                cap.release()
         except ImportError:
             pass
 

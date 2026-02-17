@@ -155,10 +155,28 @@ class BootManager:
         )
 
         self.register_module(
+            "async_event_bus",
+            self._init_async_event_bus,
+            BootPriority.CRITICAL,
+            dependencies=["system_manifest"],
+            required=True,
+            timeout_seconds=5,
+        )
+
+        self.register_module(
+            "priority_scheduler",
+            self._init_priority_scheduler,
+            BootPriority.CRITICAL,
+            dependencies=["async_event_bus"],
+            required=True,
+            timeout_seconds=10,
+        )
+
+        self.register_module(
             "blackbox_logger",
             self._init_blackbox_logger,
             BootPriority.CRITICAL,
-            dependencies=["system_manifest"],
+            dependencies=["system_manifest", "async_event_bus"],
             required=True,
             timeout_seconds=10,
         )
@@ -243,7 +261,7 @@ class BootManager:
             "watchdog_supervisor",
             self._init_watchdog_supervisor,
             BootPriority.BACKGROUND,
-            dependencies=["system_manifest"],
+            dependencies=["system_manifest", "priority_scheduler"],
             required=False,
             timeout_seconds=10,
         )
@@ -624,14 +642,54 @@ class BootManager:
             logger.warning(f"Network mesh not available: {e}")
             return None
 
-    def _init_watchdog_supervisor(self) -> Any:
-        """Initialize watchdog supervisor (will be implemented in next task)"""
+    def _init_async_event_bus(self) -> Any:
+        """Initialize unified async event bus"""
         try:
-            # Placeholder - will be implemented in task 1.4
-            logger.info("Watchdog supervisor - placeholder (to be implemented)")
-            return None
+            from src.core.infrastructure.async_event_bus import get_event_bus
+
+            bus = get_event_bus()
+            # Note: bus.start() is typically called when the main loop starts
+            # but we can do it here if it's safe.
+            return bus
+        except ImportError as e:
+            logger.error(f"Failed to import async event bus: {e}")
+            raise
+
+    def _init_priority_scheduler(self) -> Any:
+        """Initialize priority scheduler (The Maestro)"""
+        try:
+            from src.core.infrastructure.priority_scheduler import get_priority_scheduler
+
+            scheduler = get_priority_scheduler()
+            # Start scheduler immediately
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(scheduler.start())
+            
+            return scheduler
+        except ImportError as e:
+            logger.error(f"Failed to import priority scheduler: {e}")
+            raise
+
+    def _init_watchdog_supervisor(self) -> Any:
+        """Initialize watchdog supervisor"""
+        try:
+            from src.core.infrastructure.watchdog import watchdog_system
+
+            # Register core components
+            watchdog_system.register_component("priority_scheduler", heartbeat_interval=2.0)
+            watchdog_system.register_component("event_bus", heartbeat_interval=5.0)
+            
+            # Start monitoring thread
+            watchdog_system.start()
+            
+            return watchdog_system
+        except ImportError as e:
+            logger.error(f"Failed to import watchdog system: {e}")
+            raise
         except Exception as e:
-            logger.warning(f"Watchdog supervisor not available: {e}")
+            logger.warning(f"Watchdog supervisor initialization failed: {e}")
             return None
 
 

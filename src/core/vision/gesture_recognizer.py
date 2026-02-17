@@ -16,6 +16,10 @@ except (ImportError, OSError) as e:
     cv2 = None
     logging.warning(f"âš ï¸ cv2 not available in gesture_recognizer: {e}")
 
+# Support mock camera
+from src.core.config.system_manifest import system_manifest
+from src.core.vision.camera_controller import MockVideoCapture
+
 try:
     import numpy as np
 
@@ -277,7 +281,10 @@ if __name__ == "__main__":
     gesture_recognizer.register_gesture_callback(GestureType.PEACE, on_peace)
 
     # Capturar da webcam
-    cap = cv2.VideoCapture(0)
+    if system_manifest.vision.mock_camera:
+        cap = MockVideoCapture(0)
+    else:
+        cap = cv2.VideoCapture(0)
 
     while cap.isOpened():
         ret, frame = cap.read()

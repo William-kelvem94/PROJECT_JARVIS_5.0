@@ -418,21 +418,83 @@ class PriorityScheduler:
         """Single scheduler cycle - select and execute tasks"""
         current_time = datetime.now()
 
+        # Update activity for watchdog
+        self.pulse()
+
         # Clean up completed tasks
         self._cleanup_completed_tasks()
 
-        # Check if we can start new tasks
-        if len(self._running_tasks) >= self.max_concurrent_tasks:
-            return  # At capacity
-
-        # Apply load-based throttling
-        if self._should_throttle():
-            return
+        # Apply load-based adaptation (Dynamic concurrency)
+        self._adapt_concurrency_to_load()
 
         # Find next task to execute (priority-based)
         next_task = self._get_next_ready_task(current_time)
         if next_task:
-            await self._execute_task(next_task)
+            # Check if we need preemption
+            if len(self._running_tasks) >= self.max_concurrent_tasks:
+                if self.preemption_enabled and next_task.priority <= TaskPriority.CRITICAL:
+                    # Try to preempt a lower priority task
+                    if self._preempt_lower_priority_task(next_task.priority):
+                        # Task was preempted, slot is open
+                        await self._execute_task(next_task)
+            else:
+                # Room for more tasks
+                await self._execute_task(next_task)
+
+    def _adapt_concurrency_to_load(self):
+        """Dynamically adjust max concurrent tasks based on system load"""
+        if not self.load_adaptation_enabled:
+            return
+
+        load = self.system_load.overall_load
+        
+        # Adjust concurrency thresholds
+        if load > 0.9:  # Critical load
+            self.max_concurrent_tasks = max(2, self.max_concurrent_tasks // 2)
+        elif load > 0.75:  # High load
+            self.max_concurrent_tasks = 5
+        elif load < 0.3:  # Low load
+            self.max_concurrent_tasks = 15
+        else:
+            self.max_concurrent_tasks = 10
+
+    def _preempt_lower_priority_task(self, high_priority: TaskPriority) -> bool:
+        """Find and cancel a task with lower priority than the caller"""
+        # Find candidates (tasks with significantly lower priority)
+        candidates = []
+        for task_id, asyncio_task in self._running_tasks.items():
+            task = self.tasks.get(task_id)
+            if task and task.priority > high_priority + 10:  # At least 1 level lower
+                candidates.append(task)
+
+        if not candidates:
+            return False
+
+        # Sort by priority (lowest first) and then by runtime (longest first)
+        candidates.sort(key=lambda t: (t.priority, -t.metrics.total_runtime), reverse=True)
+        
+        task_to_preempt = candidates[0]
+        logger.info(f"⚡ Preempting task '{task_to_preempt.name}' to make room for higher priority task")
+        
+        # Suspend/Cancel task
+        if task_to_preempt.asyncio_task:
+            task_to_preempt.asyncio_task.cancel()
+            task_to_preempt.state = TaskState.PENDING
+            # It will be retried in the next cycle if periodic/continuous
+            return True
+            
+        return False
+
+    def pulse(self):
+        """Update heartbeat for watchdog integration"""
+        try:
+            from src.core.infrastructure.watchdog import watchdog_system, ComponentStatus
+            watchdog_system.update_heartbeat(
+                "priority_scheduler", 
+                status=ComponentStatus.HEALTHY if self._running else ComponentStatus.DEGRADED
+            )
+        except Exception:
+            pass
 
     def _get_next_ready_task(self, current_time: datetime) -> Optional[SchedulerTask]:
         """Get the next ready task based on priority and timing"""
@@ -548,9 +610,7 @@ class PriorityScheduler:
                 del self._running_tasks[task.id]
             task.asyncio_task = None
 
-    async def _handle_task_error(
-        self, task: SchedulerTask, error: Exception, start_time: float
-    ):
+    async def _handle_task_error(self, task: SchedulerTask, error: Exception, start_time: float):
         """Handle task execution error"""
         runtime = time.time() - start_time
         task.metrics.failure_count += 1
@@ -558,6 +618,22 @@ class PriorityScheduler:
         task.metrics.last_runtime = runtime
 
         logger.warning(f"⚠️ Task '{task.name}' failed: {error}")
+
+        # Emit event for monitoring
+        try:
+            from src.core.infrastructure.async_event_bus import event_bus, EventType
+            event_bus.publish(
+                EventType.SYSTEM_ERROR,
+                {
+                    "task_name": task.name,
+                    "error": str(error),
+                    "failure_count": task.metrics.failure_count,
+                    "permanent": task.metrics.failure_count >= task.max_retries
+                },
+                source="priority_scheduler"
+            )
+        except Exception:
+            pass
 
         # Check if we should retry
         if task.metrics.failure_count < task.max_retries:
@@ -591,14 +667,7 @@ class PriorityScheduler:
                 to_remove.append(task_id)
 
         for task_id in to_remove:
-            # Also remove from queues to prevent memory leaks/re-execution attempts
             task = self.tasks[task_id]
-            if task.priority in self.task_queues:
-                try:
-                    self.task_queues[task.priority].remove(task_id)
-                except ValueError:
-                    pass  # Task might not be in queue if running/already removed
-
             # Remove from tracking dict
             del self.tasks[task_id]
             logger.debug(f"🧹 Cleaned up task '{task.name}' ({task_id[:8]})")
@@ -635,6 +704,11 @@ class PriorityScheduler:
 
 # Global instance
 priority_scheduler = PriorityScheduler()
+
+
+def get_priority_scheduler() -> PriorityScheduler:
+    """Get the global unified priority scheduler instance"""
+    return priority_scheduler
 
 if __name__ == "__main__":
     # Test the scheduler

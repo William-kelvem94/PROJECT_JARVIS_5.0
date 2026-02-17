@@ -8,7 +8,8 @@ and boot sequence management.
 import logging
 from typing import Dict, Any
 
-from src.utils.config import config
+from src.core.config.system_manifest import system_manifest
+from src.core.config.blackbox_logger import blackbox_logger, setup_blackbox_integration
 from src.core.infrastructure.boot_manager import BootManager, BootPriority
 
 logger = logging.getLogger("JARVIS-BOOTSTRAPPER")
@@ -37,6 +38,9 @@ class SystemBootstrapper:
             RuntimeError: If critical components fail to load.
         """
         logger.info("🚀 Starting JARVIS System Bootstrap...")
+
+        # 0. Initialize DNA (System Manifest & Blackbox Logger)
+        self._init_foundation()
 
         # 1. Initialize Event Bus (Critical Infrastructure)
         await self._init_event_bus()
@@ -141,7 +145,7 @@ class SystemBootstrapper:
         try:
             from src.core.audio.enhanced_audio import get_audio_system
 
-            return get_audio_system(config.DATA_DIR, event_bus=self.event_bus)
+            return get_audio_system(system_manifest.paths["base"] / "data", event_bus=self.event_bus)
         except ImportError as e:
             logger.error(f"Failed to load AudioSystem: {e}")
             return None
@@ -150,7 +154,7 @@ class SystemBootstrapper:
         try:
             from src.core.vision.vision_system import get_vision_system
 
-            return get_vision_system(config.DATA_DIR, event_bus=self.event_bus)
+            return get_vision_system(system_manifest.paths["base"] / "data", event_bus=self.event_bus)
         except ImportError as e:
             logger.error(f"Failed to load VisionSystem: {e}")
             return None
@@ -163,3 +167,15 @@ class SystemBootstrapper:
         except ImportError as e:
             logger.error(f"Failed to load AI Agent: {e}")
             return None
+    def _init_foundation(self):
+        """Initializes the system's DNA (Manifest and Logging)"""
+        try:
+            # Manifest is already initialized as a global singleton, but we log its status
+            logger.info("📜 System Manifest (DNA) LOADED")
+
+            # Setup Blackbox integration
+            setup_blackbox_integration()
+            blackbox_logger.info("📦 Blackbox Logger ACTIVATED", component="bootstrapper")
+
+        except Exception as e:
+            logger.error(f"Failed to initialize foundation: {e}")

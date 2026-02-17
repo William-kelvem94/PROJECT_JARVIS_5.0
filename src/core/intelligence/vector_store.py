@@ -23,6 +23,7 @@ import os
 from pathlib import Path
 from typing import Dict, Any
 import threading
+from src.core.config.system_manifest import system_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -63,18 +64,15 @@ class UnifiedVectorStore:
         os.environ["CHROMA_TELEMETRY"] = "False"
         os.environ["CHROMA_SERVER_NO_TELEMETRY"] = "True"
 
-        # Get project root
+        # Unified vector store path
         try:
-            from src.utils.config import config
-
-            project_root = config.PROJECT_ROOT
-        except ImportError:
-            # Fallback path discovery
+            from src.core.config.system_manifest import system_manifest
+            self.db_path = Path(system_manifest.paths["vector_store"])
+        except (ImportError, KeyError, AttributeError):
+            # Fallback path discover
             current_file = Path(__file__).resolve()
             project_root = current_file.parent.parent.parent.parent
-
-        # Unified vector store path
-        self.db_path = project_root / "data" / "memory" / "vector_store"
+            self.db_path = project_root / "data" / "memory" / "vector_store"
         self.db_path.mkdir(parents=True, exist_ok=True)
 
         self.client = None

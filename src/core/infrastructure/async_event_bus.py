@@ -23,6 +23,7 @@ import asyncio
 import logging
 import time
 import json
+import traceback
 from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any, Callable, Coroutine, Union, Set
@@ -91,6 +92,7 @@ class EventType(Enum):
     VISION_ANALYZE = "vision.analyze"
     VISION_SCREEN_CHANGE = "vision.screen_change"
     VISION_SCREEN_ANALYSIS = "vision.screen_analysis"
+    VISION_READY = "vision.ready"  # Published when camera / vision subsystem is available (or mock active)
 
     # Audio events
     AUDIO_INPUT = "audio.input"
@@ -98,6 +100,7 @@ class EventType(Enum):
     AUDIO_PROCESS = "audio.process"
     AUDIO_VOICE_COMMAND = "audio.voice_command"
     AUDIO_TRANSCRIPTION = "audio.transcription"
+    AUDIO_READY = "audio.ready"  # Published when audio subsystem is available (child/worker)
 
     # Network events
     NETWORK_REQUEST = "network.request"
@@ -129,6 +132,7 @@ class Event:
 
     # Metadata
     tags: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
     ttl_seconds: Optional[float] = None  # Time to live
     retry_count: int = 0
     max_retries: int = 3
@@ -431,6 +435,7 @@ class AsyncEventBus:
         correlation_id: Optional[str] = None,
         tags: Optional[List[str]] = None,
         ttl_seconds: Optional[float] = None,
+        ipc_metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
         Publish an event
@@ -446,6 +451,7 @@ class AsyncEventBus:
             target=target,
             correlation_id=correlation_id,
             tags=tags or [],
+            metadata=ipc_metadata or {},
             ttl_seconds=ttl_seconds,
         )
 
@@ -727,19 +733,36 @@ class AsyncEventBus:
                         await callback(event)
                     else:
                         # Sync callback - run in thread pool to avoid blocking
-                        loop = asyncio.get_event_loop()
+                        loop = asyncio.get_running_loop()
                         if callback and asyncio.iscoroutinefunction(callback):
+                             # Double check if it gained async properties (unlikely but safe)
                             await callback(event)
                         elif callback:
-                            with ThreadPoolExecutor(max_workers=1) as executor:
-                                await loop.run_in_executor(executor, callback, event)
+                            # It's a sync callable
+                            await loop.run_in_executor(None, callback, event)
 
                     subscription.total_events_processed += 1
                     self.total_events_delivered += 1
 
+                except TypeError as e:
+                    # SPECIFIC TRAP FOR THE "object str can't be used in 'await' expression"
+                    if "object str can't be used in 'await' expression" in str(e):
+                        logger.critical(
+                            f"🚨 CRITICAL TYPE ERROR in Subscription {subscription.id[:8]}!\n"
+                            f"Callback '{getattr(callback, '__name__', 'Unknown')}' returned a STRING that was awaited.\n"
+                            f"Traceback: {traceback.format_exc()}"
+                        )
+                    else:
+                        logger.error(
+                             f"Callback TypeError for subscription {subscription.id[:8]}: {e}\n{traceback.format_exc()}"
+                        )
+                    subscription.error_count += 1
+                    subscription.last_error = str(e)
+                    self.total_delivery_failures += 1
+
                 except Exception as e:
                     logger.error(
-                        f"Callback error for subscription {subscription.id[:8]}: {e}"
+                        f"Callback error for subscription {subscription.id[:8]}: {e}\n{traceback.format_exc()}"
                     )
                     subscription.error_count += 1
                     subscription.last_error = str(e)
@@ -786,6 +809,16 @@ class AsyncEventBus:
 
 # Global instance
 event_bus = AsyncEventBus()
+
+
+def get_event_bus() -> AsyncEventBus:
+    """Get the global unified event bus instance"""
+    return event_bus
+
+
+def get_instance() -> AsyncEventBus:
+    """Alias for get_event_bus (backward compatibility)"""
+    return event_bus
 
 
 # Event publishing helpers
