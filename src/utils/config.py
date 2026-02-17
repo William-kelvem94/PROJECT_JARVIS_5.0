@@ -379,17 +379,8 @@ class Config:
             else:
                 subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
             return True
-<<<<<<< Updated upstream
-        except:
-<<<<<<< HEAD
-            # Fallback para torch se jÃ¡ estiver carregado em algum lugar
-=======
         except Exception:
             # Fallback para torch se já estiver carregado em algum lugar
->>>>>>> Stashed changes
-=======
-            # Fallback para torch se já estiver carregado em algum lugar
->>>>>>> dev-new-version
             try:
                 import torch
 
@@ -537,35 +528,15 @@ class Config:
                     ai_config = yaml.safe_load(f)
 
                 # Validar configuração
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-                try:
-                    validated_config = AIConfigSchema(**ai_config)
-                    logger.info("✅ Configurações de IA validadas com sucesso")
-                except ValidationError as e:
-                    logger.error(f"❌ Configuração de IA inválida: {e}")
-                    # Usar valores padrão para campos inválidos
-                    ai_config = self._get_default_ai_config()
-                
-=======
-                if PYDANTIC_AVAILABLE:
-                    try:
-                        validated_config = AIConfigSchema(**ai_config)  # noqa: F841
-=======
                 if PYDANTIC_AVAILABLE:
                     try:
                         validated_config = AIConfigSchema(**ai_config)
->>>>>>> dev-new-version
                         logger.info("✅ Configurações de IA validadas com sucesso")
                     except ValidationError as e:
                         logger.error(f"❌ Configuração de IA inválida: {e}")
                         # Usar valores padrão para campos inválidos
                         ai_config = self._get_default_ai_config()
 
-<<<<<<< HEAD
->>>>>>> Stashed changes
-=======
->>>>>>> dev-new-version
                 logger.info("✅ Configurações de IA carregadas de ai_config.yaml")
                 return ai_config
             except Exception as e:

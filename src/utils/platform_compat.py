@@ -104,15 +104,7 @@ except ImportError:
 try:
     if IS_WINDOWS:
         import ctypes
-<<<<<<< Updated upstream
         from ctypes import cast, POINTER
-<<<<<<< HEAD
-=======
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
         CTYPES_AVAILABLE = True
     else:
         ctypes = None

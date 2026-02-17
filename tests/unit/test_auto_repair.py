@@ -55,16 +55,7 @@ except Exception:
 
 # 3. Verificar face_recognition
 try:
-<<<<<<< Updated upstream
-    import face_recognition
-<<<<<<< HEAD
-=======
     import face_recognition  # noqa: F401
-
->>>>>>> Stashed changes
-=======
-
->>>>>>> dev-new-version
     print("✅ face_recognition disponível")
 except ImportError:
     print("❌ face_recognition não disponível")
