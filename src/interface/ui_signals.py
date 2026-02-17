@@ -24,6 +24,9 @@ class UISignals(QObject):
     update_learning_status = pyqtSignal(str, bool)  # (tópico_atual, is_studying)
     update_curiosity_list = pyqtSignal(list)  # Lista de tÃ³picos pendentes
 
+    # Approval requests (from ActionValidator -> UI)
+    approval_request_received = pyqtSignal(object)  # Event object (pending approval)
+
     def __new__(cls):
         if cls._instance is None:
             inst = super(UISignals, cls).__new__(cls)

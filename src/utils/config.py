@@ -601,3 +601,32 @@ class Config:
 
 # Instância global
 config = Config()
+
+
+class ConfigManager:
+    """Backward-compatible facade for tests/tools expecting a ConfigManager.
+
+    Provides a minimal `validate_config` method used by the comprehensive
+    test suite. This intentionally performs a lightweight structural check
+    so tests can run in CI without pulling heavy validation dependencies.
+    """
+
+    def __init__(self):
+        pass
+
+    def validate_config(self, cfg: Dict[str, Any]):
+        """Validate that essential top-level sections exist in the config.
+
+        Raises an exception if validation fails.
+        """
+        if not isinstance(cfg, dict):
+            raise TypeError("Config must be a dict")
+
+        required = ["ai", "vision", "audio"]
+        missing = [k for k in required if k not in cfg]
+        if missing:
+            raise ValueError(f"Missing required config sections: {', '.join(missing)}")
+
+        # Basic sanity: ai.model_name may be optional; accept any dict for now
+        return True
+

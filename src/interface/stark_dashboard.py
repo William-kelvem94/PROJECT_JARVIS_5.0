@@ -22,6 +22,10 @@ from PyQt6.QtGui import QAction
 
 from PyQt6.QtCore import QObject
 
+# Event bus for approvals
+from src.core.infrastructure.async_event_bus import get_event_bus, EventType
+from src.core.evolution.action_approval import action_approval_manager
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,7 +57,8 @@ try:
     import torch
 
     TORCH_AVAILABLE = True
-except ImportError:
+except Exception:
+    # Catch broad exceptions because some torch installs raise OSError on import
     TORCH_AVAILABLE = False
 
 try:
@@ -61,7 +66,7 @@ try:
 
     pynvml.nvmlInit()
     NVML_AVAILABLE = True
-except ImportError:
+except Exception:
     NVML_AVAILABLE = False
 
 
@@ -120,6 +125,14 @@ class StarkDashboard(QMainWindow):
 
         ui_signals.update_learning_status.connect(self._handle_learning_status)
         ui_signals.update_curiosity_list.connect(self._handle_curiosity_list)
+        ui_signals.approval_request_received.connect(self._add_approval_item)
+
+        # Pending approvals (Human‑in‑the‑Loop) storage
+        self._pending_approval_widgets: dict = {}
+
+        # Attempt to subscribe to approval requests when EventBus becomes available
+        # Expose a public method `start_approval_listener()` so tests / bootstrap can
+        # register the dashboard with the EventBus in the correct event-loop context.
 
         # Setup Logging Bridge (Python Logging -> Dashboard Console)
         self.log_signaler = QtLogSignaler()
@@ -140,6 +153,7 @@ class StarkDashboard(QMainWindow):
         # Abas
         self.setup_monitor_tab()
         self.setup_sentinel_tab()  # Nova Aba de Visão
+        self.setup_approvals_tab()  # ← Aba de Aprovações pendentes (HITL)
         self.setup_ai_brain_tab()
         self.setup_cognitive_tab()
         self.setup_config_tab()
@@ -312,6 +326,154 @@ class StarkDashboard(QMainWindow):
 
         tab.setLayout(layout)
         self.tab_widget.addTab(tab, "👁️ Sentinel")
+
+    def setup_approvals_tab(self):
+        """Aba de Aprovações Pendentes (Human‑in‑the‑Loop)
+
+        Mostra pedidos que exigem aprovação (ex: AutoPatcher). Permite aprovar
+        ou rejeitar diretamente a partir do dashboard — publica resposta no EventBus.
+        """
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        header = QLabel("Aprovações Pendentes")
+        header.setStyleSheet("font-weight: bold; font-size: 16px; color: #00c3ff;")
+        layout.addWidget(header)
+
+        info = QLabel(
+            "Aqui aparecem ações bloqueadas pelo Sentinela. Revise e aprove/rejeite."
+        )
+        info.setWordWrap(True)
+        info.setStyleSheet("color: #8899a6; margin-bottom: 8px;")
+        layout.addWidget(info)
+
+        # Container onde os pedidos pendentes serão empilhados
+        self.approvals_container = QWidget()
+        self.approvals_layout = QVBoxLayout()
+        self.approvals_layout.setSpacing(8)
+        self.approvals_container.setLayout(self.approvals_layout)
+
+        scroll = QScrollArea()
+        scroll.setWidget(self.approvals_container)
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(240)
+        layout.addWidget(scroll)
+
+        # Button to refresh / clear
+        btn_layout = QHBoxLayout()
+        self.clear_approvals_btn = QPushButton("Limpar lista")
+        self.clear_approvals_btn.clicked.connect(self._clear_approvals_ui)
+        btn_layout.addWidget(self.clear_approvals_btn)
+        layout.addLayout(btn_layout)
+
+        tab.setLayout(layout)
+        self.tab_widget.addTab(tab, "🔒 Aprovações")
+
+    def _clear_approvals_ui(self):
+        for rid, info in list(self._pending_approval_widgets.items()):
+            w = info.get("widget")
+            try:
+                self.approvals_layout.removeWidget(w)
+                w.setParent(None)
+            except Exception:
+                pass
+        self._pending_approval_widgets.clear()
+
+    def start_approval_listener(self) -> bool:
+        """Subscribe to ACTION_APPROVAL_REQUEST on EventBus. Call from an async context (or after bus started).
+
+        Returns True if subscription succeeded, False otherwise.
+        """
+        try:
+            bus = get_event_bus()
+            sub_id = bus.subscribe([EventType.ACTION_APPROVAL_REQUEST], self._on_event_approval_request)
+            logger.info("StarkDashboard: subscribed to ACTION_APPROVAL_REQUEST")
+            return bool(sub_id)
+        except Exception as e:
+            logger.debug(f"StarkDashboard: could not subscribe to approvals (bus not ready): {e}")
+            return False
+
+    def _on_event_approval_request(self, event):
+        # Emit via ui_signals to guarantee the UI update runs on the Qt main thread
+        try:
+            logger.debug(f"StarkDashboard._on_event_approval_request invoked (event_id={getattr(event, 'id', None)})")
+            from src.interface.ui_signals import ui_signals
+
+            ui_signals.approval_request_received.emit(event)
+            logger.debug(f"StarkDashboard: emitted ui_signals.approval_request_received for event {getattr(event, 'id', None)}")
+        except Exception as e:
+            logger.error(f"Failed to forward approval request to UI: {e}")
+
+    def _add_approval_item(self, event):
+        try:
+            logger.debug(f"StarkDashboard._add_approval_item called (event_id={getattr(event, 'id', None)})")
+        except Exception:
+            pass
+
+        req_id = getattr(event, "id", None)
+        action = (event.data or {}).get("action") or {}
+        action_type = action.get("action_type", "unknown")
+        target = action.get("target", "-")
+
+
+    def _add_approval_item(self, event):
+        req_id = getattr(event, "id", None)
+        action = (event.data or {}).get("action") or {}
+        action_type = action.get("action_type", "unknown")
+        target = action.get("target", "-")
+
+        box = QGroupBox(f"Pedido: {req_id[:8] if req_id else 'n/a'}")
+        layout = QHBoxLayout()
+
+        txt = QLabel(f"{action_type} — {target}")
+        txt.setStyleSheet("color: #e0e0e0;")
+        layout.addWidget(txt)
+
+        # Approve / Reject buttons
+        approve_btn = QPushButton("APROVAR")
+        reject_btn = QPushButton("REJEITAR")
+        approve_btn.setStyleSheet("background-color: #0b8a3e; color: #fff;")
+        reject_btn.setStyleSheet("background-color: #8a0b0b; color: #fff;")
+
+        layout.addWidget(approve_btn)
+        layout.addWidget(reject_btn)
+
+        box.setLayout(layout)
+        self.approvals_layout.addWidget(box)
+
+        # store references
+        if req_id:
+            self._pending_approval_widgets[req_id] = {
+                "widget": box,
+                "approve_button": approve_btn,
+                "reject_button": reject_btn,
+                "action": action,
+            }
+
+        # Connect callbacks
+        approve_btn.clicked.connect(lambda _, rid=req_id: self._send_approval(rid, True))
+        reject_btn.clicked.connect(lambda _, rid=req_id: self._send_approval(rid, False))
+
+    def _send_approval(self, request_id: str, approved: bool):
+        try:
+            bus = get_event_bus()
+            bus.publish(
+                EventType.ACTION_APPROVAL_RESPONSE,
+                {"request_id": request_id, "approved": approved, "approver": "stark_dashboard"},
+                source="stark_dashboard",
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish approval response: {e}")
+
+        # remove UI widget immediately
+        entry = self._pending_approval_widgets.pop(request_id, None)
+        if entry:
+            w = entry.get("widget")
+            try:
+                self.approvals_layout.removeWidget(w)
+                w.setParent(None)
+            except Exception:
+                pass
 
     def setup_cognitive_tab(self):
         """Aba do Laboratório Cognitivo (Curiosity Engine)"""
