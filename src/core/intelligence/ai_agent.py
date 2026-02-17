@@ -374,9 +374,11 @@ class AIAgent:
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
         self.event_bus = None
 
-        # Sensory awareness (agent nasce 'cego' até receber VISION_READY)
+        # Sensory awareness (agent nasce 'cego' até receber VISION_READY/AUDIO_READY)
         self.vision_ready = False
         self.vision_mock_mode = False
+        self.audio_ready = False
+        self.audio_mock_mode = False
 
     def connect_event_bus(self, event_bus):
         """Connects AI Agent to AsyncEventBus"""
@@ -397,6 +399,21 @@ class AIAgent:
                     logger.debug("AI Agent subscribed to VISION_READY events")
                 except Exception as e:
                     logger.debug(f"Failed to subscribe to VISION_READY: {e}")
+
+                # Ouvido para subsistema de áudio (AUDIO_READY + transcrições)
+                try:
+                    self.event_bus.subscribe(EventType.AUDIO_READY, self._on_audio_ready)
+                    self.event_bus.subscribe(EventType.AUDIO_TRANSCRIPTION, self._on_audio_transcription)
+                    logger.debug("AI Agent subscribed to AUDIO_READY and AUDIO_TRANSCRIPTION events")
+                except Exception as e:
+                    logger.debug(f"Failed to subscribe to audio events: {e}")
+
+                # Let BrainRouter also be aware of the event bus if present
+                try:
+                    if self.brain_router and hasattr(self.brain_router, "connect_event_bus"):
+                        self.brain_router.connect_event_bus(self.event_bus)
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"Failed to connect event bus: {e}")
 
@@ -484,6 +501,47 @@ class AIAgent:
                 logger.warning("⚠️ Vision subsystem reported NOT available — agent remains blind")
         except Exception as e:
             logger.error(f"Error handling VISION_READY event: {e}")
+
+    async def _on_audio_ready(self, event):
+        """Handler for AUDIO_READY - updates audio_ready state."""
+        try:
+            payload = getattr(event, "data", {}) or {}
+            available = payload.get("available", False)
+            mock_mode = payload.get("mock", False)
+
+            self.audio_ready = bool(available)
+            self.audio_mock_mode = bool(mock_mode)
+
+            if available:
+                logger.info(f"🔊 Audio subsystem ready (mock={self.audio_mock_mode})")
+            else:
+                logger.warning("🔇 Audio subsystem reported NOT available")
+        except Exception as e:
+            logger.error(f"Error handling AUDIO_READY event: {e}")
+
+    async def _on_audio_transcription(self, event):
+        """Receives audio.transcription events and forwards to process_command.
+
+        Runs asynchronously and does not block the event loop while processing.
+        """
+        try:
+            payload = getattr(event, "data", {}) or {}
+            text = (payload.get("text") or "").strip()
+            if not text:
+                return
+
+            logger.debug(f"🔊 AUDIO_TRANSCRIPTION received: {text[:80]}")
+
+            # Enfileirar o processamento do comando (fire-and-forget)
+            try:
+                import asyncio
+
+                asyncio.create_task(self.process_command(text))
+            except Exception as e:
+                # Last-resort: run in thread
+                threading.Thread(target=lambda: asyncio.run(self.process_command(text)), daemon=True).start()
+        except Exception as e:
+            logger.error(f"Error handling AUDIO_TRANSCRIPTION: {e}")
 
     async def process_command(self, user_command: str) -> str:
         """Main processing loop for user commands."""
