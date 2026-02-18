@@ -564,5 +564,5 @@ def get_hardware_manager():
     return _hardware_manager_instance
 
 
-# InstÃ¢ncia global
-hardware_manager = get_hardware_manager()
+# Instância global
+hardware_manager = None

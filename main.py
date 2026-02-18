@@ -73,29 +73,30 @@ def apply_patches():
             logger.debug(f"Unexpected error importing {module_name}: {e}")
 
 
-apply_patches()
+# apply_patches()
 
 # Import Core Components
 
-# Qt Imports (Conditional)
-
+# QT_AVAILABLE block commented out for debug
+QT_AVAILABLE = False
 QtCore = None
 QtWidgets = None
-QT_AVAILABLE = False
-try:
-    QtCore = importlib.import_module("PyQt6.QtCore")
-    QtWidgets = importlib.import_module("PyQt6.QtWidgets")
-    QObject = getattr(QtCore, "QObject")
-    pyqtSignal = getattr(QtCore, "pyqtSignal")
-    pyqtSlot = getattr(QtCore, "pyqtSlot")
-    QTimer = getattr(QtCore, "QTimer")
-    QApplication = getattr(QtWidgets, "QApplication")
-    QT_AVAILABLE = True
-except Exception:
-    QT_AVAILABLE = False
+QObject = object
 
-    class QObject:
-        pass
+# try:
+#     QtCore = importlib.import_module("PyQt6.QtCore")
+#     QtWidgets = importlib.import_module("PyQt6.QtWidgets")
+#     QObject = getattr(QtCore, "QObject")
+#     pyqtSignal = getattr(QtCore, "pyqtSignal")
+#     pyqtSlot = getattr(QtCore, "pyqtSlot")
+#     QTimer = getattr(QtCore, "QTimer")
+#     QApplication = getattr(QtWidgets, "QApplication")
+#     QT_AVAILABLE = True
+# except Exception:
+#     QT_AVAILABLE = False
+#
+#     class QObject:
+#         pass
 
 
 # ============================================================================
@@ -368,6 +369,7 @@ def main():
     )
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    print("DEBUG: Parsing args")
     args = parser.parse_args()
 
     if args.debug:
@@ -375,6 +377,7 @@ def main():
 
     # Prepare GUI only if requested and available
     app = None
+    print("DEBUG: Checking GUI availability")
     if not args.headless and QT_AVAILABLE:
         app = QApplication(sys.argv)
     elif not args.headless and not QT_AVAILABLE:
@@ -382,7 +385,9 @@ def main():
         args.headless = True
 
     # Create bootstrapper (delegates heavy lifting to BootManager)
+    print("DEBUG: Instantiating SystemBootstrapper")
     bootstrapper = SystemBootstrapper(app)
+    print("DEBUG: SystemBootstrapper instantiated")
 
     # Run bootstrap synchronously for headless, or in background for GUI so
     # the GUI event loop can start immediately.
@@ -457,4 +462,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    print("DEBUG: Calling main()")
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        with open("crash.log", "w", encoding="utf-8") as f:
+            f.write(f"CRASH: {e}\n\n")
+            traceback.print_exc(file=f)
+        print(f"CRASH DETECTED: {e}")
+        sys.exit(1)

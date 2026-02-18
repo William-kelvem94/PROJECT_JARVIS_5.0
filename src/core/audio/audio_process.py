@@ -35,7 +35,7 @@ class AudioService:
         self.inbox = inbox
         self.outbox = outbox
         self.event_bus = get_event_bus()
-        self.bridge = IPCEventBridge(self.inbox, self.outbox)
+        self.bridge = IPCEventBridge(self.inbox, self.outbox, event_bus=self.event_bus)
         self.audio = None
         self._running = False
 
