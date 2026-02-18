@@ -285,6 +285,15 @@ class CircuitBreaker:
 
     def start(self):
         """Start the circuit breaker (enables health checking)"""
+        # Allow disabling circuit breakers via env for low-RAM / debug runs
+        try:
+            import os
+            if os.getenv("JARVIS_DISABLE_CIRCUIT_BREAKER", "0") == "1":
+                logger.info(f"⚠️ Circuit Breaker '{self.config.name}' disabled via JARVIS_DISABLE_CIRCUIT_BREAKER")
+                self.config.health_check_enabled = False
+        except Exception:
+            pass
+
         if self._running:
             return
 

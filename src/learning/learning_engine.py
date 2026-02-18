@@ -51,9 +51,17 @@ class LearningEngine:
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         # Components (Lazy initialized or during initialize())
-        self.health_monitor = HealthMonitor(check_interval=120.0)
-        self.training_orchestrator = TrainingOrchestrator(models_dir=self.models_dir)
-        self.model_registry_manager = ModelRegistryManager(models_dir=self.models_dir)
+        # Initialize with config values where applicable
+        self.health_monitor = HealthMonitor(
+            check_interval=self.config.monitoring.collection_interval
+        )
+        self.training_orchestrator = TrainingOrchestrator(
+            models_dir=self.models_dir,
+            max_concurrent_jobs=2  # Default, not yet in config
+        )
+        self.model_registry_manager = ModelRegistryManager(
+            models_dir=self.models_dir
+        )
         self.dream_cycle = None
         
         # Legacy/Internal objects (initialized on demand)
@@ -81,6 +89,8 @@ class LearningEngine:
                 raw_data = yaml.safe_load(f) or {}
                 
             # Extrair seção 'continual_learning' se existir
+            # Note: ai_config.yaml might have duplicate keys, PyYAML takes the last one.
+            # We expect the new schema (Phase 2) to be at the end.
             learning_data = raw_data.get('continual_learning', {})
             return LearningConfig.from_dict(learning_data)
             
@@ -145,6 +155,7 @@ class LearningEngine:
             
         return True
 
+    @safe_execute(default=False)
     def add_training_task(self, **kwargs) -> bool:
         """Agenda uma nova tarefa de treinamento via orchestrator."""
         if not self.is_initialized:
@@ -157,6 +168,7 @@ class LearningEngine:
         )
         return bool(job_id)
 
+    @safe_execute(default={})
     def get_status(self) -> Dict[str, Any]:
         """Retorna status unificado do motor cognitivo."""
         status = {
@@ -173,6 +185,7 @@ class LearningEngine:
             
         return status
 
+    @safe_execute()
     def shutdown(self):
         """Desliga graciosamente todos os componentes."""
         logger.info("🔄 Shutting down Learning Engine...")
@@ -180,8 +193,11 @@ class LearningEngine:
         if self.dream_cycle:
             self.dream_cycle.stop()
             
-        self.training_orchestrator.shutdown()
-        self.health_monitor.stop()
+        if self.training_orchestrator:
+            self.training_orchestrator.shutdown()
+            
+        if self.health_monitor:
+            self.health_monitor.stop()
         
         self.is_initialized = False
         logger.info("✅ Learning Engine shutdown OK")

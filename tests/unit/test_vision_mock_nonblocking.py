@@ -74,7 +74,7 @@ def test_vision_service_ipc_responds_quickly_with_mock_camera():
     vision_process.start()
 
     async def _run_ipc_test():
-        local_bridge = IPCEventBridge(queue_from_vision, queue_to_vision)
+        local_bridge = IPCEventBridge(queue_from_vision, queue_to_vision, event_bus)
         local_bridge.start()
 
         await event_bus.start()

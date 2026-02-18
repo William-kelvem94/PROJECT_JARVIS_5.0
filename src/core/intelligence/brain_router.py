@@ -66,7 +66,7 @@ class BrainRouter:
         self._last_conn_check = 0
         self._last_model_check = 0
         self.discovery_interval = 60  # Recarregar lista de modelos a cada 60s
-        self.on_heavy_model_loading = None
+        self.on_heavy_model_loading: Optional[Callable[[str], None]] = None
         # Optional callback for audio transcription events
         self.on_audio_transcription = None
         # Audio subsystem awareness

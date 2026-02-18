@@ -87,11 +87,13 @@ Todos os 9 arquivos modificados passaram na validação `ast.parse()`:
 - **Conteúdo**: Coordenação dos 3 novos componentes acima.
 - **Benefício**: Código limpo, extensível e com responsabilidades únicas.
 
-### 2.5 🔲 Integrar `config_schema.py` no `LearningEngine.__init__` (Próximo Passo)
-- **Objetivo**: Substituir `config.get()` ad-hoc por carregamento unificado.
+### 2.5 ✅ Integrar `config_schema.py` no `LearningEngine.__init__`
+- **Concluído**: Sim
+- **Status**: Integrado usando `_load_typed_config` e passando configurações tipadas para os componentes.
 
-### 2.6 🔲 Integrar `safe_execute` nos métodos restantes do `learning_engine.py`
-- **Objetivo**: Garantir 100% de cobertura de blindagem contra crashes.
+### 2.6 ✅ Integrar `safe_execute` nos métodos restantes do `learning_engine.py`
+- **Concluído**: Sim
+- **Status**: Aplicado em `add_training_task`, `get_status` e `shutdown`.
 
 ---
 
@@ -100,7 +102,7 @@ Todos os 9 arquivos modificados passaram na validação `ast.parse()`:
 ### 3.1 🔲 Padrão Strategy para treinamento
 ### 3.2 🔲 Padrão Repository para dados
 ### 3.3 🔲 Refatorar `learning_engine.py` para delegar mais responsabilidades
-### 3.4 🔲 Testes unitários para módulos críticos
+### 3.4 🔲 Testes unitários para módulos críticos (Em progresso)
 
 ---
 
@@ -115,3 +117,4 @@ Todos os 9 arquivos modificados passaram na validação `ast.parse()`:
 | Linhas em `model_registry_manager.py` | 5 (stub) | **~250** |
 | Cobertura de Responsabilidade Única | Baixa | **Alta** |
 | Novos módulos de serviço | 0 | **5** |
+| Integração de Configuração Tipada | Parcial | **Completa** |

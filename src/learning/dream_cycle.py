@@ -4,14 +4,13 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Optional, Callable, Dict, Any
-from dataclasses import dataclass, field
+from typing import Optional, Dict, Any
 
-from .config_schema import IdleConditions, DreamCycleConfig
-from .idle_detector import IdleDetector
-from .training_scheduler import TrainingScheduler, TrainingTask
-from .research_engine import ResearchEngine
-from ..utils.safe_execute import safe_execute
+from src.learning.config_schema import DreamCycleConfig
+from src.learning.idle_detector import IdleDetector
+from src.learning.training_scheduler import TrainingScheduler, TrainingTask
+from src.learning.research_engine import ResearchEngine
+from utils.safe_execute import safe_execute
 
 logger = logging.getLogger("JARVIS-DREAM-CYCLE")
 

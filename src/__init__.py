@@ -1,31 +1,40 @@
 """Jarvis 5.0 - Pacote Principal"""
 
-# ðŸ›¡ï¸ GLOBAL MONKEY PATCH: CorreÃ§Ã£o CrÃ­tica para OpenVINO/Optimum-Intel
-# Previne erro 'module openvino has no attribute Node' e 'No module named
-# openvino.op'
+# ðŸ›¡ï¸ GLOBAL MONKEY PATCH: OpenVINO compatibility
+# NOTE: importing OpenVINO at package import time can be heavy and causes
+# multiprocessing child-spawn to hang on Windows (import side-effects).
+# Apply the compatibility shim lazily and only within the main process.
 try:
     import sys
-    import openvino  # type: ignore
+    import multiprocessing
 
-    # 1. Patch Node - Favorece topo (OpenVINO 2023.1+)
-    node_obj = getattr(openvino, "Node", None)
-    if not node_obj and "openvino.runtime" in sys.modules:
-        node_obj = getattr(sys.modules["openvino.runtime"], "Node", None)
+    if multiprocessing.current_process().name == "MainProcess":
+        try:
+            import openvino  # type: ignore
 
-    if node_obj:
-        if not hasattr(openvino, "Node"):
-            openvino.Node = node_obj
+            # 1. Patch Node (OpenVINO runtime differences)
+            node_obj = getattr(openvino, "Node", None)
+            if not node_obj and "openvino.runtime" in sys.modules:
+                node_obj = getattr(sys.modules["openvino.runtime"], "Node", None)
 
-    # 2. Patch op module
-    op_obj = getattr(openvino, "op", None)
-    if not op_obj and "openvino.runtime" in sys.modules:
-        op_obj = getattr(sys.modules["openvino.runtime"], "op", None)
+            if node_obj and not hasattr(openvino, "Node"):
+                openvino.Node = node_obj
 
-    if op_obj:
-        sys.modules["openvino.op"] = op_obj
-        if not hasattr(openvino, "op"):
-            openvino.op = op_obj
+            # 2. Patch op module
+            op_obj = getattr(openvino, "op", None)
+            if not op_obj and "openvino.runtime" in sys.modules:
+                op_obj = getattr(sys.modules["openvino.runtime"], "op", None)
+
+            if op_obj:
+                sys.modules["openvino.op"] = op_obj
+                if not hasattr(openvino, "op"):
+                    openvino.op = op_obj
+        except Exception:
+            # If OpenVINO isn't available or fails, silently continue.
+            pass
 except Exception:
+    # If multiprocessing isn't available or any unexpected error occurs,
+    # continue without applying the shim.
     pass
 
 # NumPy 2.0 compatibility shim: some downstream libs still reference removed

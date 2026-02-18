@@ -12,9 +12,16 @@ import asyncio
 import threading
 import signal
 
+# ─────────────────────────────────────────────────────────────────---------
+# Configuration constants
+DEFAULT_BOOT_CHECK_INTERVAL = 200  # ms
+BOOT_FINALIZE_DELAY = 1000  # ms
+PYTHON_ENCODING = "utf-8"
+# ─────────────────────────────────────────────────────────────────---------
+
 # 🛡️ EARLY ENVIRONMENT CONFIGURATION
 os.environ["PYTHONUTF8"] = "1"
-os.environ["PYTHONIOENCODING"] = "utf-8"
+os.environ["PYTHONIOENCODING"] = PYTHON_ENCODING
 
 # Configure Logging (Unified)
 
@@ -37,26 +44,33 @@ except Exception as e:
 # 🛡️ GLOBAL MONKEY PATCHES (Safety checks)
 
 
-def apply_patches():
-    # OpenVINO Patch (use importlib to avoid static-analysis unresolved-import
-    # warnings)
-    try:
-        openvino = importlib.import_module("openvino")
-        if "openvino.runtime" in sys.modules:
-            node_cls = getattr(sys.modules["openvino.runtime"], "Node", None)
-            if node_cls is not None and not hasattr(openvino, "Node"):
-                setattr(openvino, "Node", node_cls)
-    except Exception:
-        # not available at runtime, ignore
-        pass
+def _apply_openvino_patch(openvino_module):
+    """Patch specific to OpenVINO: expose Node from openvino.runtime if present."""
+    if "openvino.runtime" in sys.modules:
+        node_cls = getattr(sys.modules["openvino.runtime"], "Node", None)
+        if node_cls is not None and not hasattr(openvino_module, "Node"):
+            setattr(openvino_module, "Node", node_cls)
+            logger.debug("Applied OpenVINO Node patch")
 
-    # Transformers Patch (use importlib to avoid static-analysis
-    # unresolved-import warnings)
-    try:
-        transformers = importlib.import_module("transformers")
-        # Add any specific transformer patches here if needed
-    except Exception:
-        pass
+
+def apply_patches():
+    """Applies optional runtime patches safely (non-fatal)."""
+    patches = [
+        ("openvino", _apply_openvino_patch),
+        ("transformers", lambda mod: None),  # placeholder for future patches
+    ]
+
+    for module_name, patch_func in patches:
+        try:
+            module = importlib.import_module(module_name)
+            try:
+                patch_func(module)
+            except Exception as e:
+                logger.debug(f"Patch for {module_name} failed: {e}")
+        except ImportError:
+            logger.debug(f"{module_name} not available - skipping patch")
+        except Exception as e:
+            logger.debug(f"Unexpected error importing {module_name}: {e}")
 
 
 apply_patches()
@@ -108,13 +122,12 @@ class JarvisSingularity(QObject):
         self.audio_system = instances.get("audio_system")
         self.vision_system = instances.get("vision_system")
         self.event_bus = instances.get("async_event_bus") or instances.get("event_bus")
+        self.scheduler = instances.get("priority_scheduler") or PriorityScheduler()
 
-        # State
-        self.is_running = False
-        self.last_interaction_time = 0
+        # Estado inicializado de forma clara
+        self._initialize_state()
 
         # Subsystems
-        self.scheduler = PriorityScheduler()
         self.shutdown_manager = ShutdownManager(self)
 
         # Connect Signals
@@ -125,6 +138,12 @@ class JarvisSingularity(QObject):
 
         logger.info("✨ Singularity Core Initialized")
 
+    def _initialize_state(self):
+        """Inicializa o estado básico do núcleo JARVIS."""
+        self.is_running = False
+        self.last_interaction_time = 0
+        self._services_started = False
+
     def _setup_signals(self):
         # Use variadic lambda to avoid unused-parameter linter hints
         signal.signal(signal.SIGINT, lambda *args: self.shutdown())
@@ -132,7 +151,7 @@ class JarvisSingularity(QObject):
 
     def start(self):
         """Starts the main event loops and background services."""
-        if hasattr(self, '_services_started') and self._services_started:
+        if self._services_started:
             logger.warning("Services already started - skipping redundant start")
             return
         self._services_started = True
@@ -178,66 +197,74 @@ class JarvisSingularity(QObject):
         # ✅ ACIONAR PROTOCOLO DE FINALIZAÇÃO DE BOOT (Correção Definitiva)
         # Usa QTimer para garantir que rode na thread principal do Qt após breve delay
         if QT_AVAILABLE and self.app:
-            QTimer.singleShot(1000, self._finalize_boot_sequence)
+            QTimer.singleShot(BOOT_FINALIZE_DELAY, self._finalize_boot_sequence)
         else:
             # Em modo headless, roda direto
             threading.Thread(target=self._finalize_boot_sequence_headless, daemon=True).start()
 
     def _finalize_boot_sequence(self):
-        """
-        Garante que a UI e o EventBus estejam sincronizados no estado ONLINE.
-        Executado na thread principal do Qt via QTimer.singleShot.
-        """
+        """Garante que a UI e o EventBus estejam sincronizados no estado ONLINE."""
+        # Import locally to avoid module import cycles during bootstrap
+        from src.interface.ui_signals import ui_signals
+        from src.core.infrastructure.async_event_bus import EventType
+
+        def _update_ui_state():
+            ui_signals.update_boot_stage.emit("SYSTEM ONLINE", 100)
+            ui_signals.update_status.emit("ONLINE")
+            ui_signals.update_listening_state.emit(True)
+
+        def _publish_system_event():
+            # Use getattr to safely access EventType members that might be dynamically added or renamed
+            event_type_online = getattr(EventType, "SYSTEM_ONLINE", None)
+            if self.event_bus and event_type_online:
+                self.event_bus.publish(event_type_online, {
+                    "timestamp": time.time(),
+                    "status": "fully_operational"
+                })
+
         def _do_finalize():
             logger.info("🔧 Finalizing Boot Sequence (UI Thread)...")
             try:
-                # 1. Forçar UI para 100% e Online
-                from src.interface.ui_signals import ui_signals
-                from src.core.infrastructure.async_event_bus import EventType
-                
-                ui_signals.update_boot_stage.emit("SYSTEM ONLINE", 100)
-                ui_signals.update_status.emit("ONLINE")
-                ui_signals.update_listening_state.emit(True)
-                
-                # 2. Publicar evento de sistema online no barramento
-                if self.event_bus:
-                    self.event_bus.publish(EventType.SYSTEM_ONLINE, {
-                        "timestamp": time.time(),
-                        "status": "fully_operational"
-                    })
-                
+                _update_ui_state()
+                _publish_system_event()
                 logger.info("✅ Boot Sequence Finalized: HUD Online & Events Active")
-
             except Exception as e:
                 logger.error(f"❌ Error finalizing boot: {e}")
 
         # Garantir execução na main thread
         if QT_AVAILABLE and self.app:
-             QTimer.singleShot(0, _do_finalize)
+            QTimer.singleShot(0, _do_finalize)
         else:
-             _do_finalize()
+            _do_finalize()
 
     def _finalize_boot_sequence_headless(self):
         """Versão headless da finalização de boot"""
-        time.sleep(1)
+        time.sleep(BOOT_FINALIZE_DELAY / 1000)
         logger.info("🔧 Finalizing Boot Sequence (Headless)...")
         try:
              from src.core.infrastructure.async_event_bus import EventType
-             if hasattr(self, 'event_bus') and self.event_bus:
-                self.event_bus.publish(EventType.SYSTEM_ONLINE, {
+             if hasattr(self, 'event_bus') and self.event_bus and hasattr(EventType, 'SYSTEM_ONLINE'):
+                self.event_bus.publish(getattr(EventType, 'SYSTEM_ONLINE'), {
                     "timestamp": time.time(),
                     "status": "fully_operational_headless"
                 })
         except Exception as e:
             logger.error(f"❌ Error finalizing boot (headless): {e}")
 
+    async def _run_scheduler_async(self):
+        """Versão assíncrona do scheduler que mantém o loop enquanto o core estiver rodando."""
+        try:
+            await self.scheduler.start()
+            while self.is_running:
+                await asyncio.sleep(1)
+        except Exception as e:
+            logger.error(f"❌ Scheduler error: {e}")
+
     def _run_scheduler(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            # Iniciar scheduler e manter loop rodando
-            loop.run_until_complete(self.scheduler.start())
-            loop.run_forever()
+            loop.run_until_complete(self._run_scheduler_async())
         except Exception as e:
             logger.error(f"❌ Scheduler thread died: {e}")
         finally:
@@ -394,7 +421,7 @@ def main():
                 app.quit()
 
         timer.timeout.connect(_check_and_start)
-        timer.start(200)  # Checar a cada 200ms
+        timer.start(DEFAULT_BOOT_CHECK_INTERVAL)  # Checar a cada DEFAULT_BOOT_CHECK_INTERVAL ms
         sys.exit(app.exec())
 
     # HEADLESS path — run bootstrap synchronously

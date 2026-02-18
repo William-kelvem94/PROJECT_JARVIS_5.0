@@ -180,6 +180,7 @@ class UniversalRecoveryManager:
 
         # Integration points
         self.fallback_system = None  # Will be injected
+        self.health_callbacks: Dict[str, Callable[[], Dict[str, Any]]] = {}
 
         self._register_default_strategies()
         self._load_historical_data()
@@ -287,8 +288,24 @@ class UniversalRecoveryManager:
             logger.debug(f"ðŸ“Š Registered module for monitoring: {module_name}")
         return self.module_health[module_name]
 
+    def register_health_callback(
+        self, module_name: str, callback: Callable[[], Dict[str, Any]]
+    ):
+        """Register a callback function that returns health status for a module"""
+        self.health_callbacks[module_name] = callback
+        logger.debug(f"ðŸ“‹ Registered health callback for: {module_name}")
+
     def start_monitoring(self):
         """Start real-time health monitoring"""
+        # Allow tests / low-RAM machines to opt-out of health monitoring
+        try:
+            import os
+            if os.getenv("JARVIS_DISABLE_HEALTH_MONITOR", "0") == "1":
+                logger.info("⚠️ Health monitoring disabled via JARVIS_DISABLE_HEALTH_MONITOR")
+                return
+        except Exception:
+            pass
+
         if self.monitoring_active:
             return
 
@@ -354,7 +371,22 @@ class UniversalRecoveryManager:
     def _check_module_health(self, health: ModuleHealth):
         """Check health of a specific module"""
 
-        # Update metrics if module is still loaded
+        # 1. Update via callback if available
+        if health.module_name in self.health_callbacks:
+            try:
+                callback_res = self.health_callbacks[health.module_name]()
+                if callback_res and callback_res.get("status") == "unhealthy":
+                    health.is_healthy = False
+                    self._trigger_recovery(
+                        failure_type=FailureType.MODULE_CRASH,
+                        module_name=health.module_name,
+                        error_message=callback_res.get("message", "Module reported unhealthy status via callback"),
+                        severity=callback_res.get("severity", 6),
+                    )
+            except Exception as e:
+                logger.error(f"❌ Health callback failed for {health.module_name}: {e}")
+
+        # 2. Update metrics if module is still loaded
         try:
             module = sys.modules.get(health.module_name)
             if module:
