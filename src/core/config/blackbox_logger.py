@@ -102,7 +102,8 @@ class BlackboxLogger:
             try:
                 from src.core.config.system_manifest import system_manifest
 
-                # No novo manifest, usamos a chave 'logs' do dicionário de caminhos
+                # No novo manifest, usamos a chave 'logs' do dicionário de
+                # caminhos
                 self.db_path = system_manifest.paths["logs"] / "blackbox.db"
             except (ImportError, KeyError, AttributeError):
                 # Fallback path
@@ -563,7 +564,7 @@ class BlackboxLogger:
                 cursor = conn.execute(
                     """
                     SELECT level, COUNT(*) as count
-                    FROM logs 
+                    FROM logs
                     WHERE level IN ('ERROR', 'CRITICAL') AND created_at >= ?
                     GROUP BY level
                 """,
@@ -575,7 +576,7 @@ class BlackboxLogger:
                 cursor = conn.execute(
                     """
                     SELECT component, COUNT(*) as count
-                    FROM logs 
+                    FROM logs
                     WHERE level IN ('ERROR', 'CRITICAL') AND created_at >= ?
                     GROUP BY component
                     ORDER BY count DESC
@@ -591,7 +592,7 @@ class BlackboxLogger:
                 cursor = conn.execute(
                     """
                     SELECT error_code, COUNT(*) as count
-                    FROM logs 
+                    FROM logs
                     WHERE level IN ('ERROR', 'CRITICAL') AND error_code IS NOT NULL AND created_at >= ?
                     GROUP BY error_code
                     ORDER BY count DESC
@@ -663,7 +664,7 @@ class BlackboxLogger:
         """Cleanup resources"""
         try:
             self.info("🧹 Blackbox Logger shutting down", component="blackbox_logger")
-        except:
+        except BaseException:
             pass
 
 

@@ -8,6 +8,7 @@ Responsabilidades:
 
 Este módulo expõe a instância singleton `ollama_manager`.
 """
+
 from __future__ import annotations
 
 import logging
@@ -19,6 +20,7 @@ from typing import Dict, Optional
 
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except Exception:
     requests = None
@@ -46,7 +48,7 @@ class OllamaManager:
         self._keepalive: Dict[str, Dict] = {}
         self._lock = threading.Lock()
 
-    # ----------------------------- Server health --------------------------------
+    # ----------------------------- Server health ----------------------------
     def is_server_running(self, timeout: float = 2.0) -> bool:
         """Checa se o servidor Ollama responde à API de tags."""
         if REQUESTS_AVAILABLE and requests is not None:
@@ -80,13 +82,19 @@ class OllamaManager:
             logger.warning("OllamaManager: binário 'ollama' não encontrado no PATH")
             return False
 
-        logger.info("OllamaManager: servidor offline — iniciando 'ollama serve' em background")
+        logger.info(
+            "OllamaManager: servidor offline — iniciando 'ollama serve' em background"
+        )
         try:
             creationflags = 0
             if sys.platform == "win32":
                 creationflags = subprocess.CREATE_NO_WINDOW
 
-            subprocess.Popen([ollama_bin, "serve"], creationflags=creationflags, start_new_session=True)
+            subprocess.Popen(
+                [ollama_bin, "serve"],
+                creationflags=creationflags,
+                start_new_session=True,
+            )
 
             # Poll até o timeout
             start = time.time()
@@ -96,13 +104,15 @@ class OllamaManager:
                     return True
                 time.sleep(0.5)
 
-            logger.error("OllamaManager: tempo esgotado ao esperar o servidor Ollama iniciar")
+            logger.error(
+                "OllamaManager: tempo esgotado ao esperar o servidor Ollama iniciar"
+            )
             return False
         except Exception as e:
             logger.error(f"OllamaManager: falha ao iniciar servidor Ollama: {e}")
             return False
 
-    # ----------------------------- Models / Load ---------------------------------
+    # ----------------------------- Models / Load ----------------------------
     def list_models(self) -> list:
         """Retorna lista de modelos instalados localmente (consultando /api/tags).
         Em caso de erro, retorna lista vazia.
@@ -136,31 +146,44 @@ class OllamaManager:
             logger.debug("OllamaManager.ensure_model_loaded: model_name vazio")
             return False
 
-        # Se o modelo não estiver instalado, retornamos False (não puxamos automaticamente)
+        # Se o modelo não estiver instalado, retornamos False (não puxamos
+        # automaticamente)
         if not self.is_model_installed(model_name):
-            logger.warning(f"OllamaManager: modelo '{model_name}' não encontrado localmente")
+            logger.warning(
+                f"OllamaManager: modelo '{model_name}' não encontrado localmente"
+            )
             return False
 
         # Heartbeat / warm-up via pequena chamada ao endpoint generate
         payload = {"model": model_name, "prompt": "<keep-alive>", "stream": False}
         try:
             if not REQUESTS_AVAILABLE or requests is None:
-                logger.debug("OllamaManager: requests não disponível; não é possível aquecer o modelo")
+                logger.debug(
+                    "OllamaManager: requests não disponível; não é possível aquecer o modelo"
+                )
                 return False
 
             start = time.time()
-            resp = requests.post(f"{self.server_url}/api/generate", json=payload, timeout=min(10, timeout))
+            resp = requests.post(
+                f"{self.server_url}/api/generate",
+                json=payload,
+                timeout=min(10, timeout),
+            )
             if resp.status_code == 200:
                 logger.info(f"OllamaManager: modelo '{model_name}' aquecido na memória")
                 return True
             else:
-                logger.warning(f"OllamaManager: warm-up '{model_name}' retornou status {resp.status_code}")
+                logger.warning(
+                    f"OllamaManager: warm-up '{model_name}' retornou status {resp.status_code}"
+                )
                 return False
         except Exception as e:
-            logger.debug(f"OllamaManager: erro no warm-up do modelo '{model_name}': {e}")
+            logger.debug(
+                f"OllamaManager: erro no warm-up do modelo '{model_name}': {e}"
+            )
             return False
 
-    # ----------------------------- Keep-Alive -----------------------------------
+    # ----------------------------- Keep-Alive -------------------------------
     @staticmethod
     def _keepalive_interval_from_keepalive_value(value) -> int:
         """Converte valores do tipo '5m'|'15m'|int para segundos.
@@ -197,10 +220,13 @@ class OllamaManager:
         """
         interval = self._keepalive_interval_from_keepalive_value(keep_alive_value)
         if interval <= 0:
-            logger.debug(f"OllamaManager.start_keepalive: keep_alive desativado para {model_name}")
+            logger.debug(
+                f"OllamaManager.start_keepalive: keep_alive desativado para {model_name}"
+            )
             return False
 
-        # Heartbeat: enviar warm-up a cada metade do intervalo configurado, com piso em 60s
+        # Heartbeat: enviar warm-up a cada metade do intervalo configurado, com
+        # piso em 60s
         heartbeat = max(60, int(interval / 2))
 
         with self._lock:
@@ -208,13 +234,17 @@ class OllamaManager:
                 # atualizar intervalo se necessário
                 entry = self._keepalive[model_name]
                 entry["interval"] = heartbeat
-                logger.debug(f"OllamaManager: keepalive já ativo para {model_name}, atualizando intervalo={heartbeat}s")
+                logger.debug(
+                    f"OllamaManager: keepalive já ativo para {model_name}, atualizando intervalo={heartbeat}s"
+                )
                 return True
 
             stop_event = threading.Event()
 
             def _hb_loop(stop_evt: threading.Event, model: str, _intv: int):
-                logger.info(f"OllamaManager: iniciando keep-alive para {model} (interval {_intv}s)")
+                logger.info(
+                    f"OllamaManager: iniciando keep-alive para {model} (interval {_intv}s)"
+                )
                 while not stop_evt.wait(_intv):
                     try:
                         # Apenas tentar aquecer — erros são silenciosos
@@ -223,8 +253,14 @@ class OllamaManager:
                         pass
                 logger.info(f"OllamaManager: keep-alive finalizado para {model}")
 
-            t = threading.Thread(target=_hb_loop, args=(stop_event, model_name, heartbeat), daemon=True)
-            self._keepalive[model_name] = {"thread": t, "stop_event": stop_event, "interval": heartbeat}
+            t = threading.Thread(
+                target=_hb_loop, args=(stop_event, model_name, heartbeat), daemon=True
+            )
+            self._keepalive[model_name] = {
+                "thread": t,
+                "stop_event": stop_event,
+                "interval": heartbeat,
+            }
             t.start()
             return True
 
@@ -250,7 +286,8 @@ class OllamaManager:
                 pass
 
 
-# Helper: cross-platform shutil.which (avoid importing shutil at top to keep file small)
+# Helper: cross-platform shutil.which (avoid importing shutil at top to
+# keep file small)
 def shutil_which(cmd: str) -> Optional[str]:
     try:
         import shutil

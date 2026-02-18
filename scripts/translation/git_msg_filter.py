@@ -68,7 +68,7 @@ translations = {
 # Lê a mensagem do commit da entrada padrão
 try:
     commit_msg = sys.stdin.read().strip()
-except:
+except BaseException:
     # Se houver erro de leitura, tenta com encoding diferente
     import codecs
 
@@ -79,12 +79,12 @@ except:
 if commit_msg in translations:
     try:
         print(translations[commit_msg])
-    except:
+    except BaseException:
         # Se falhar ao imprimir, tenta sem emojis ou com replace
         print(commit_msg)
 else:
     try:
         print(commit_msg)
-    except:
+    except BaseException:
         # Substitui caracteres problemáticos
         print(commit_msg.encode("utf-8", errors="replace").decode("utf-8"))

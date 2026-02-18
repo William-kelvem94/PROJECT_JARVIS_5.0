@@ -21,8 +21,10 @@ try:
     NUMPY_AVAILABLE = True
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
+
     class MockNumpy:
         ndarray = type("ndarray", (), {})
+
     np = MockNumpy()
     logging.warning(f"âš ï¸ numpy not available in emotion_detector: {e}")
 

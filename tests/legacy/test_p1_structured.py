@@ -60,7 +60,7 @@ def test_1_structured_models():
             invalid_click = ClickAction(x=-1, y=200)  # x negativo
             print("❌ Validação falhou (deveria rejeitar x negativo)")
             return False
-        except:
+        except BaseException:
             print("✅ Validação funcionando (rejeitou x negativo)")
 
         return True

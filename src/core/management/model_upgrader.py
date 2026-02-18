@@ -64,7 +64,7 @@ class ModelUpgrader:
                 ["ollama", "--version"], capture_output=True, timeout=5
             )
             return result.returncode == 0
-        except:
+        except BaseException:
             return False
 
     def upgrade_qwen_to_3b(self) -> bool:

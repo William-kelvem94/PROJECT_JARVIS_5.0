@@ -58,7 +58,8 @@ try:
 
     TORCH_AVAILABLE = True
 except Exception:
-    # Catch broad exceptions because some torch installs raise OSError on import
+    # Catch broad exceptions because some torch installs raise OSError on
+    # import
     TORCH_AVAILABLE = False
 
 try:
@@ -132,7 +133,8 @@ class StarkDashboard(QMainWindow):
 
         # Attempt to subscribe to approval requests when EventBus becomes available
         # Expose a public method `start_approval_listener()` so tests / bootstrap can
-        # register the dashboard with the EventBus in the correct event-loop context.
+        # register the dashboard with the EventBus in the correct event-loop
+        # context.
 
         # Setup Logging Bridge (Python Logging -> Dashboard Console)
         self.log_signaler = QtLogSignaler()
@@ -182,7 +184,8 @@ class StarkDashboard(QMainWindow):
 
     def _request_mode_switch(self, mode_str):
         """Request interface mode change via WindowManager"""
-        # Para evitar dependência circular, importamos InterfaceMode apenas aqui
+        # Para evitar dependência circular, importamos InterfaceMode apenas
+        # aqui
         try:
             from src.interface.window_manager import InterfaceMode
 
@@ -386,17 +389,23 @@ class StarkDashboard(QMainWindow):
         """
         try:
             bus = get_event_bus()
-            sub_id = bus.subscribe([EventType.ACTION_APPROVAL_REQUEST], self._on_event_approval_request)
+            sub_id = bus.subscribe(
+                [EventType.ACTION_APPROVAL_REQUEST], self._on_event_approval_request
+            )
             logger.info("StarkDashboard: subscribed to ACTION_APPROVAL_REQUEST")
             return bool(sub_id)
         except Exception as e:
-            logger.debug(f"StarkDashboard: could not subscribe to approvals (bus not ready): {e}")
+            logger.debug(
+                f"StarkDashboard: could not subscribe to approvals (bus not ready): {e}"
+            )
             return False
 
     def _on_event_approval_request(self, event):
-        # Emit via ui_signals to guarantee the UI update runs on the Qt main thread
+        # Emit via ui_signals to guarantee the UI update runs on the Qt main
+        # thread
         try:
             from src.interface.ui_signals import ui_signals
+
             ui_signals.approval_request_received.emit(event)
         except Exception as e:
             logger.error(f"Failed to forward approval request to UI: {e}")
@@ -406,7 +415,6 @@ class StarkDashboard(QMainWindow):
         action = (event.data or {}).get("action") or {}
         action_type = action.get("action_type", "unknown")
         target = action.get("target", "-")
-
 
     def _add_approval_item(self, event):
         req_id = getattr(event, "id", None)
@@ -443,15 +451,23 @@ class StarkDashboard(QMainWindow):
             }
 
         # Connect callbacks
-        approve_btn.clicked.connect(lambda _, rid=req_id: self._send_approval(rid, True))
-        reject_btn.clicked.connect(lambda _, rid=req_id: self._send_approval(rid, False))
+        approve_btn.clicked.connect(
+            lambda _, rid=req_id: self._send_approval(rid, True)
+        )
+        reject_btn.clicked.connect(
+            lambda _, rid=req_id: self._send_approval(rid, False)
+        )
 
     def _send_approval(self, request_id: str, approved: bool):
         try:
             bus = get_event_bus()
             bus.publish(
                 EventType.ACTION_APPROVAL_RESPONSE,
-                {"request_id": request_id, "approved": approved, "approver": "stark_dashboard"},
+                {
+                    "request_id": request_id,
+                    "approved": approved,
+                    "approver": "stark_dashboard",
+                },
                 source="stark_dashboard",
             )
         except Exception as e:
@@ -554,7 +570,7 @@ class StarkDashboard(QMainWindow):
                     curiosity_engine.study_backlog.get()
                 self._handle_curiosity_list([])
                 self.status_bar.showMessage("🗑️ Backlog de pesquisa limpo.", 3000)
-        except:
+        except BaseException:
             pass
 
     def _handle_learning_status(self, topic, is_studying):
@@ -899,7 +915,8 @@ class StarkDashboard(QMainWindow):
                     self.gpu_gauge.set_value(gpu_usage)
                     self.gpu_chart.add_data(gpu_usage)
                 else:
-                    # Fallback para uso de memória GPU se não conseguir utilization
+                    # Fallback para uso de memória GPU se não conseguir
+                    # utilization
                     gpu_memory_usage = self._get_gpu_memory_usage()
                     if gpu_memory_usage is not None:
                         self.gpu_gauge.set_value(gpu_memory_usage)
@@ -960,16 +977,16 @@ class StarkDashboard(QMainWindow):
             self.ai_cpu_dedicated.setText(f"CPU Dedicado: {cpu_usage:.1f}%")
 
             ram = psutil.virtual_memory()
-            self.ai_memory_dedicated.setText(
-                f"RAM Dedicado: {ram.percent:.1f}%"
-            )
+            self.ai_memory_dedicated.setText(f"RAM Dedicado: {ram.percent:.1f}%")
 
             if self.gpu_available:
                 vram_free = status.get("vram_free_gb", 0)
                 # self.ai_gpu_dedicated.setText(f"VRAM Livre: {vram_free:.1f}GB")
                 # No dashboard fixo, vamos usar o label certo
                 if hasattr(self, "ai_gpu_dedicated"):
-                    self.ai_gpu_dedicated.setText(f"GPU Dedicado: {100 - (vram_free/16)*100:.1f}%")
+                    self.ai_gpu_dedicated.setText(
+                        f"GPU Dedicado: {100 - (vram_free/16)*100:.1f}%"
+                    )
 
             # Threads e Processos
             self.ai_threads.setText(f"Threads IA: {status['threads']}")
@@ -979,11 +996,14 @@ class StarkDashboard(QMainWindow):
 
             # Tempo de Resposta (Performance Optimizer Integration)
             try:
-                from src.core.management.performance_optimizer import performance_optimizer
+                from src.core.management.performance_optimizer import (
+                    performance_optimizer,
+                )
+
                 stats = performance_optimizer.get_stats()
                 avg_time = stats.get("avg_response_time", "0.00s")
                 self.ai_response_time.setText(f"Tempo Resposta: {avg_time}")
-            except:
+            except BaseException:
                 self.ai_response_time.setText("Tempo Resposta: --")
 
         except Exception as e:
@@ -997,14 +1017,15 @@ class StarkDashboard(QMainWindow):
             # 1. Status do Cérebro (Verificação Real)
             is_brain_loaded = False
             try:
-                # Tenta verificar se o objeto ai_agent existe e tem modelo carregado
+                # Tenta verificar se o objeto ai_agent existe e tem modelo
+                # carregado
                 if (
                     self.jarvis
                     and hasattr(self.jarvis, "ai_agent")
                     and self.jarvis.ai_agent
                 ):
                     is_brain_loaded = True
-            except:
+            except BaseException:
                 pass
 
             brain_status = (
@@ -1032,29 +1053,39 @@ class StarkDashboard(QMainWindow):
             import psutil as ps
 
             active_threads = [t.name for t in threading.enumerate()]
-            
-            # Verificar se existem processos do JARVIS rodando além do principal via cmdline
+
+            # Verificar se existem processos do JARVIS rodando além do
+            # principal via cmdline
             is_audio_proc = False
             is_vision_proc = False
-            
+
             try:
-                for p in ps.process_iter(['name', 'cmdline']):
+                for p in ps.process_iter(["name", "cmdline"]):
                     try:
                         # Check name first
-                        name = p.info['name'].lower() if p.info['name'] else ""
-                        cmdline = p.info['cmdline'] if p.info['cmdline'] else []
+                        name = p.info["name"].lower() if p.info["name"] else ""
+                        cmdline = p.info["cmdline"] if p.info["cmdline"] else []
                         cmd_str = " ".join(cmdline).lower()
-                        
+
                         # Child processes might show up as python.exe with specific script args
                         # or if we named the process explicitly in multiprocessing (which sets name mostly in Python < 3.8 or via setproctitle if installed)
-                        # Windows usually shows just python.exe, so checking cmdline is crucial.
-                        
-                        if "audio_process" in cmd_str or "jarvis-audio-service" in name or "jarvis-audio-service" in cmd_str:
+                        # Windows usually shows just python.exe, so checking
+                        # cmdline is crucial.
+
+                        if (
+                            "audio_process" in cmd_str
+                            or "jarvis-audio-service" in name
+                            or "jarvis-audio-service" in cmd_str
+                        ):
                             is_audio_proc = True
-                        
-                        if "vision_process" in cmd_str or "jarvis-vision-service" in name or "jarvis-vision-service" in cmd_str:
+
+                        if (
+                            "vision_process" in cmd_str
+                            or "jarvis-vision-service" in name
+                            or "jarvis-vision-service" in cmd_str
+                        ):
                             is_vision_proc = True
-                            
+
                     except (ps.NoSuchProcess, ps.AccessDenied, ps.ZombieProcess):
                         continue
             except Exception as e:
@@ -1062,16 +1093,20 @@ class StarkDashboard(QMainWindow):
 
             # Mapeamento de threads para nomes "Stark"
             stark_modules = []
-            if any("Vision" in t for t in active_threads) or \
-               any("Camera" in t for t in active_threads) or \
-               is_vision_proc:
+            if (
+                any("Vision" in t for t in active_threads)
+                or any("Camera" in t for t in active_threads)
+                or is_vision_proc
+            ):
                 stark_modules.append("• Sentinel Vision (ONLINE)")
             else:
                 stark_modules.append("• Sentinel Vision (OFFLINE)")
 
-            if any("Audio" in t for t in active_threads) or \
-               any("Voice" in t for t in active_threads) or \
-               is_audio_proc:
+            if (
+                any("Audio" in t for t in active_threads)
+                or any("Voice" in t for t in active_threads)
+                or is_audio_proc
+            ):
                 stark_modules.append("• Voice Array (LISTENING)")
             else:
                 stark_modules.append("• Voice Array (MUTED/OFFLINE)")
@@ -1098,7 +1133,7 @@ class StarkDashboard(QMainWindow):
                     "• Modo de Resposta: Adaptativo",
                 ]
                 self.learning_stats.setText("\n".join(learning_info))
-            except:
+            except BaseException:
                 self.learning_stats.setText("• Memória: Modo Fallback (RAM)")
 
         except Exception as e:
@@ -1150,12 +1185,13 @@ class StarkDashboard(QMainWindow):
                 self.add_log_message(level, message)
             else:
                 self.add_log_message("INFO", msg)
-        except:
+        except BaseException:
             self.add_log_message("SYSTEM", msg)
 
     def _update_camera_feed(self):
         """Atualiza o feed da câmera real na aba Sentinel"""
-        # Só atualiza se a aba Sentinel estiver visível para economizar recursos
+        # Só atualiza se a aba Sentinel estiver visível para economizar
+        # recursos
         if self.tab_widget.currentIndex() != 1:
             return
 
@@ -1167,11 +1203,13 @@ class StarkDashboard(QMainWindow):
                 if hasattr(system, "last_frame") and system.last_frame is not None:
                     frame = system.last_frame
 
-            # Se não tiver acesso ao sistema global, tentar captura direta (apenas para teste visual)
+            # Se não tiver acesso ao sistema global, tentar captura direta
+            # (apenas para teste visual)
             if frame is None and not hasattr(self, "_cap"):
                 # Inicialização lazy do OpenCV para teste standalone
                 import cv2
                 from src.core.config.system_manifest import system_manifest
+
                 try:
                     from src.core.vision.camera_controller import MockVideoCapture
                 except Exception:
@@ -1179,7 +1217,8 @@ class StarkDashboard(QMainWindow):
 
                 self._cap = (
                     MockVideoCapture(0)
-                    if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture
+                    if getattr(system_manifest.vision, "mock_camera", False)
+                    and MockVideoCapture
                     else cv2.VideoCapture(0)
                 )
 

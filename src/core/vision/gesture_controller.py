@@ -3,15 +3,17 @@ Controlador de Gestos (Hands)
 Utiliza MediaPipe para rastreamento de mÃ£os e reconhecimento de gestos.
 """
 
+from src.core.actions.action_controller import action_controller
+from src.utils.config import config
+from collections import deque
+from typing import Optional, Tuple, Any
+import math
+import time
 import os
 import logging
 import warnings
 
 warnings.filterwarnings("ignore", message=".*mediapipe.*")
-import time
-import math
-from typing import Optional, Tuple, Any
-from collections import deque
 
 try:
     import cv2
@@ -31,8 +33,6 @@ except (ImportError, OSError) as e:
     np = None
     logging.warning(f"âš ï¸ numpy not available in gesture_controller: {e}")
 
-from src.utils.config import config
-from src.core.actions.action_controller import action_controller
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ try:
         MEDIAPIPE_AVAILABLE = True
     else:
         MEDIAPIPE_AVAILABLE = False
-except:
+except BaseException:
     MEDIAPIPE_AVAILABLE = False
 
 
@@ -130,7 +130,8 @@ class GestureController:
                     from mediapipe.tasks import python
                     from mediapipe.tasks.python import vision
 
-                    # Carregar modelo (precisa baixar o arquivo .task se nÃ£o existir)
+                    # Carregar modelo (precisa baixar o arquivo .task se nÃ£o
+                    # existir)
                     model_path = config.get_setting(
                         "sensory.hand_landmarker_path",
                         "models/vision/hand_landmarker.task",
@@ -141,7 +142,8 @@ class GestureController:
                             f"Modelo Task nÃ£o encontrado em {model_path}. Tentando baixar/localizar..."
                         )
                         # Link para download: https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
-                        # Como nÃ£o podemos baixar facilmente agora, marcamos como indisponÃ­vel se falhar
+                        # Como nÃ£o podemos baixar facilmente agora, marcamos
+                        # como indisponÃ­vel se falhar
 
                     base_options = python.BaseOptions(model_asset_path=model_path)
                     options = vision.HandLandmarkerOptions(
@@ -220,7 +222,8 @@ class GestureController:
     def _classify_gesture(self, landmarks) -> str:
         """Classifica o gesto baseado nos pontos da mÃ£o"""
         # Extrair coordenadas Y dos dedos (Top vs Bottom)
-        # Pontos: 4 (DedÃ£o), 8 (Indicador), 12 (MÃ©dio), 16 (Anelar), 20 (MÃ­nimo)
+        # Pontos: 4 (DedÃ£o), 8 (Indicador), 12 (MÃ©dio), 16 (Anelar), 20
+        # (MÃ­nimo)
 
         points = landmarks.landmark
 
@@ -314,7 +317,8 @@ class GestureController:
 
     def _handle_pinch_volume(self, landmarks):
         """Controla volume baseado na distÃ¢ncia lateral/vertical entre dedos ou movimento"""
-        # SimplificaÃ§Ã£o: Usar a altura da mÃ£o para aumentar/diminuir volume enquanto pinÃ§a
+        # SimplificaÃ§Ã£o: Usar a altura da mÃ£o para aumentar/diminuir volume
+        # enquanto pinÃ§a
         p4 = landmarks.landmark[4]
         p8 = landmarks.landmark[8]
 
@@ -368,5 +372,6 @@ def get_gesture_controller():
     return _gesture_controller_instance
 
 
-# Para compatibilidade, manter gesture_controller como alias (inicialmente None)
+# Para compatibilidade, manter gesture_controller como alias (inicialmente
+# None)
 gesture_controller = None

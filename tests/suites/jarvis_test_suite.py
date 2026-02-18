@@ -262,7 +262,8 @@ class SystemTestSuite(JarvisTestSuite):
     def test_full_system_startup(self):
         """Testa inicialização completa do sistema."""
         # Este teste seria mais complexo em um ambiente real
-        # Por enquanto, apenas verifica se os módulos principais podem ser importados
+        # Por enquanto, apenas verifica se os módulos principais podem ser
+        # importados
 
         try:
             import src.core.main

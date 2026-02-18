@@ -21,7 +21,7 @@ import threading
 import time
 import logging
 import asyncio
-import psutil 
+import psutil
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 from datetime import datetime
@@ -236,7 +236,9 @@ class VisionSystem:
         # Zero-Disk-IO configuration
         self.zero_disk_mode = not system_manifest.vision.save_captures_to_disk
         self.camera_index = system_manifest.vision.camera_index
-        self.face_detection_model = "hog" if not system_manifest.vision.use_gpu else "cnn"
+        self.face_detection_model = (
+            "hog" if not system_manifest.vision.use_gpu else "cnn"
+        )
 
         # Monitor Thread Safety
         self._monitor_thread = None
@@ -329,14 +331,15 @@ class VisionSystem:
         # Inicia o processo independente
         self._vision_process = multiprocessing.Process(
             target=run_vision_service,
-            args=(self._outbox, self._inbox),  # Invertido: Inbox do filho é Outbox do pai
+            # Invertido: Inbox do filho é Outbox do pai
+            args=(self._outbox, self._inbox),
             name="JARVIS-Vision-Service",
-            daemon=True
+            daemon=True,
         )
-        
+
         # Inicia a ponte no processo principal
         self._ipc_bridge = IPCEventBridge(self._inbox, self._outbox)
-        
+
         logger.info("⚡ Vision Multiprocessing setup complete")
 
     def _initialize_components(self):
@@ -351,7 +354,9 @@ class VisionSystem:
             # No pai, apenas marcamos como pronto para evitar bloqueios de UI.
             self._ocr_ready = True
             self._yolo_ready = True
-            logger.info("⚡ Vision Background loading skipped in Main Process (Handled by Child Process)")
+            logger.info(
+                "⚡ Vision Background loading skipped in Main Process (Handled by Child Process)"
+            )
             return
 
         # Guard: prevent double-call
@@ -461,14 +466,17 @@ class VisionSystem:
                 # The callback will set _yolo_ready inside the coroutine
                 # But we can also set the loading flag here
                 self._yolo_loading = (
-                    False  # _initialize_pipeline_async is fast (just scheduling)?
+                    # _initialize_pipeline_async is fast (just scheduling)?
+                    False
                 )
                 # Actually, initialization takes time. But `run_coroutine_threadsafe` returns immediately.
-                # We should manage _yolo_loading better. But for now, let it be.
+                # We should manage _yolo_loading better. But for now, let it
+                # be.
 
                 # Re-set loading until future completes?
                 # The _initialize_pipeline_async sets _yolo_ready=True at the end.
-                # _yolo_loading=False is set in the original implementation AFTER loading.
+                # _yolo_loading=False is set in the original implementation
+                # AFTER loading.
 
                 # Correct approach:
                 # _initialize_pipeline_async will set self._yolo_ready = True.
@@ -599,7 +607,7 @@ class VisionSystem:
     def stop_monitoring(self):
         """Stop vision monitoring"""
         self.is_running = False
-        
+
         if self.use_multiprocessing:
             if self._vision_process and self._vision_process.is_alive():
                 self._vision_process.terminate()
@@ -619,7 +627,8 @@ class VisionSystem:
     def _monitor_loop(self):
         """Background monitoring loop"""
         try:
-            # Open camera (use mock when configured to avoid blocking hardware init)
+            # Open camera (use mock when configured to avoid blocking hardware
+            # init)
             if system_manifest.vision.mock_camera:
                 logger.info("👁️ Using MockVideoCapture (mock_camera=True)")
                 self.camera = MockVideoCapture(self.camera_index)
@@ -646,7 +655,8 @@ class VisionSystem:
 
             logger.info("ðŸ“¹ Camera opened, monitoring started")
 
-            # Notify system that vision/camera is ready (useful for boot orchestration)
+            # Notify system that vision/camera is ready (useful for boot
+            # orchestration)
             try:
                 if self.event_bus:
                     self.event_bus.publish(
@@ -891,10 +901,14 @@ class VisionSystem:
                     timestamp=datetime.now(), screen_text="Screen capture failed"
                 )
 
-            # Save screenshot ONLY if debug_mode or save_captures_to_disk is True (Zero-Disk-IO)
+            # Save screenshot ONLY if debug_mode or save_captures_to_disk is
+            # True (Zero-Disk-IO)
             screenshot_path = None
             if save_screenshot or system_manifest.debug_mode:
-                if system_manifest.vision.save_captures_to_disk or system_manifest.debug_mode:
+                if (
+                    system_manifest.vision.save_captures_to_disk
+                    or system_manifest.debug_mode
+                ):
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     screenshot_path = self.screenshots_dir / f"screen_{timestamp}.png"
                     cv2.imwrite(str(screenshot_path), screenshot)
@@ -1062,7 +1076,7 @@ class VisionSystem:
             window = win32gui.GetForegroundWindow()
             title = win32gui.GetWindowText(window)
             return title if title else None
-        except:
+        except BaseException:
             return None
 
     def register_new_face(self, name: str, image_path: Optional[Path] = None) -> bool:
@@ -1097,9 +1111,11 @@ class VisionSystem:
             # Save face image (optimized for Zero-Disk-IO)
             face_path = self.faces_dir / f"{name}.jpg"
             if not self.zero_disk_mode or system_manifest.debug_mode:
-                # Traditional disk storage (Save if not Zero-Disk or if Debug Mode is ON)
+                # Traditional disk storage (Save if not Zero-Disk or if Debug
+                # Mode is ON)
                 if image_path:
                     import shutil
+
                     shutil.copy(image_path, face_path)
                 else:
                     cv2.imwrite(str(face_path), frame)

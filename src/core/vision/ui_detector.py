@@ -7,15 +7,16 @@ inicialização. A importação acontece de forma preguiçosa quando o detector 
 instanciado e ativado via configuração.
 """
 
+from src.utils.config import config
 import os
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-# Indicador de disponibilidade do Ultralytics (definido durante a inicialização preguiçosa)
+# Indicador de disponibilidade do Ultralytics (definido durante a
+# inicialização preguiçosa)
 ULTRALYTICS_AVAILABLE = False
 
-from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 

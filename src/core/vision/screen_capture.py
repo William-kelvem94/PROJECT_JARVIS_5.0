@@ -3,6 +3,9 @@ MÃ³dulo de captura de tela
 ResponsÃ¡vel por capturar screenshots e gravaÃ§Ãµes de tela
 """
 
+from src.database.models import db_manager, Capture
+from src.utils.helpers import FileHelper
+from src.utils.config import config
 import time
 import threading
 import logging
@@ -45,10 +48,6 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
     logger.warning("opencv nÃ£o disponÃ­vel")
-
-from src.utils.config import config
-from src.utils.helpers import FileHelper
-from src.database.models import db_manager, Capture
 
 
 class ScreenCapture:
@@ -179,7 +178,7 @@ class ScreenCapture:
                 ):
                     return monitor
             return monitors[1]  # Fallback para o primeiro se falhar
-        except:
+        except BaseException:
             return self._get_sct().monitors[1]
 
     def capture_region(
@@ -290,7 +289,8 @@ class ScreenCapture:
 
             except Exception as db_error:
                 session.rollback()
-                # Se for erro de hash duplicado, apenas logar como debug (nÃ£o Ã© crÃ­tico)
+                # Se for erro de hash duplicado, apenas logar como debug (nÃ£o
+                # Ã© crÃ­tico)
                 if "UNIQUE constraint failed" in str(db_error) and "file_hash" in str(
                     db_error
                 ):
@@ -324,7 +324,7 @@ class ScreenCapture:
                     try:
                         old_file.unlink()
                         # logger.debug(f"Caputura antiga removida: {old_file.name}")
-                    except:
+                    except BaseException:
                         pass
         except Exception as e:
             logger.warning(f"Falha no cleanup de capturas: {e}")
@@ -531,7 +531,7 @@ class ScreenCapture:
             active = gw.getActiveWindow()
             if active:
                 context["active_window"] = active.title
-        except:
+        except BaseException:
             pass
 
         # Captura se o hardware permitir

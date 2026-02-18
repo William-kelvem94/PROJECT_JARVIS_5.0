@@ -311,7 +311,7 @@ class MetricsPersistence:
             with sqlite3.connect(str(self.db_path)) as conn:
                 conn.execute(
                     """
-                    INSERT INTO system_metrics 
+                    INSERT INTO system_metrics
                     (timestamp, cpu_usage, memory_usage, disk_usage, gpu_metrics, active_jobs)
                     VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -342,7 +342,7 @@ class MetricsPersistence:
             with sqlite3.connect(str(self.db_path)) as conn:
                 conn.execute(
                     """
-                    INSERT INTO training_metrics 
+                    INSERT INTO training_metrics
                     (timestamp, job_id, metric_name, metric_value, metadata)
                     VALUES (?, ?, ?, ?, ?)
                 """,
@@ -721,7 +721,7 @@ class WebDashboard:
             try {
                 const response = await fetch('/api/system/current');
                 const data = await response.json();
-                
+
                 if (data.error) {
                     console.log('No metrics available yet');
                     return;
@@ -739,7 +739,7 @@ class WebDashboard:
                 // Update charts with historical data
                 await updateCharts();
 
-                document.getElementById('lastUpdate').textContent = 
+                document.getElementById('lastUpdate').textContent =
                     'Last updated: ' + new Date().toLocaleTimeString();
 
             } catch (error) {
@@ -755,7 +755,7 @@ class WebDashboard:
                 const card = document.createElement('div');
                 card.className = 'gpu-card';
 
-                const status = metrics.utilization_percent ? 
+                const status = metrics.utilization_percent ?
                     (metrics.utilization_percent > 10 ? 'active' : 'idle') : 'idle';
 
                 card.innerHTML = `
@@ -779,17 +779,17 @@ class WebDashboard:
 
                 if (systemData.length > 0) {
                     const timestamps = systemData.map(d => d.timestamp * 1000);
-                    
+
                     systemChart.data.datasets[0].data = systemData.map((d, i) => ({
                         x: timestamps[i],
                         y: d.cpu_usage_percent
                     }));
-                    
+
                     systemChart.data.datasets[1].data = systemData.map((d, i) => ({
                         x: timestamps[i],
                         y: d.memory_usage_percent
                     }));
-                    
+
                     systemChart.data.datasets[2].data = systemData.map((d, i) => ({
                         x: timestamps[i],
                         y: d.disk_usage_percent
@@ -799,7 +799,7 @@ class WebDashboard:
                 }
 
                 // Training metrics would be updated here when jobs are active
-                
+
             } catch (error) {
                 console.error('Error updating charts:', error);
             }
@@ -813,7 +813,7 @@ class WebDashboard:
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
             fetchMetrics();
-            
+
             // Auto-refresh every 5 seconds
             setInterval(fetchMetrics, 5000);
         });

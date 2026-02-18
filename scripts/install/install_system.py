@@ -29,7 +29,7 @@ class DependencyCache:
             try:
                 with open(self.cache_file, "r") as f:
                     return json.load(f)
-            except:
+            except BaseException:
                 pass
         return {}
 
@@ -54,7 +54,8 @@ class JarvisAutoSystem:
     """Sistema inteligente que se auto-configura e corrige"""
 
     def __init__(self):
-        # Corrigido para detectar a raiz real do projeto (subir 2 níveis de scripts/install)
+        # Corrigido para detectar a raiz real do projeto (subir 2 níveis de
+        # scripts/install)
         self.project_root = Path(__file__).parent.parent.parent
         self.config_dir = self.project_root / "config"
         self.data_dir = self.project_root / "data"
@@ -210,7 +211,7 @@ class JarvisAutoSystem:
                 else "torchaudio==2.0.2" if "2.0" in v else "torchaudio"
             )
             subprocess.run([sys.executable, "-m", "pip", "install", pkg])
-        except:
+        except BaseException:
             subprocess.run([sys.executable, "-m", "pip", "install", "torchaudio"])
 
     def _install_resemblyzer(self):

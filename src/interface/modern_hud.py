@@ -38,7 +38,8 @@ class ArcReactorWidget(QWidget):
         self.color_boot = JarvisTheme.get_color_with_alpha(
             JarvisTheme.ACCENT_GOLD, JarvisTheme.ALPHA_HIGH
         )
-        self.color_study = QColor(138, 43, 226, 200)  # BlueViolet para Hiper-Foco
+        # BlueViolet para Hiper-Foco
+        self.color_study = QColor(138, 43, 226, 200)
         self.color_glow = JarvisTheme.get_color_with_alpha(
             JarvisTheme.PRIMARY_CYAN, JarvisTheme.ALPHA_GLOW
         )
@@ -345,7 +346,7 @@ class ModernHUD(QMainWindow):
             # Por enquanto, vamos fechar o HUD e abrir o dashboard se possível.
             # A arquitetura ideal é o WindowManager gerenciar isso.
             pass
-        except:
+        except BaseException:
             pass
 
         # Alternativa: Tentar acessar o WindowManager global se disponível
@@ -354,7 +355,7 @@ class ModernHUD(QMainWindow):
 
             wm = get_window_manager()
             wm.switch_mode(InterfaceMode.DASHBOARD)
-        except:
+        except BaseException:
             logger.warning("Falha ao contactar WindowManager do HUD")
 
     def _request_orb(self):
@@ -363,7 +364,7 @@ class ModernHUD(QMainWindow):
 
             wm = get_window_manager()
             wm.switch_mode(InterfaceMode.ORB)
-        except:
+        except BaseException:
             pass
 
     def _restart_protocols(self):

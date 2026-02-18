@@ -104,7 +104,8 @@ class SystemController:
                 }
 
             # 3. VALIDAÃ‡ÃƒO FUNCIONAL: Subprocesso isolado
-            # Tenta rodar o arquivo para ver se nÃ£o quebra no import/runtime bÃ¡sico
+            # Tenta rodar o arquivo para ver se nÃ£o quebra no import/runtime
+            # bÃ¡sico
             val_script = f"""
 import sys
 import os

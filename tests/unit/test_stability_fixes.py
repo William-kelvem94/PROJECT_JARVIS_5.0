@@ -56,7 +56,8 @@ def test_model_unloading():
 
         # Simulate activity
         print("  🎵 Testing audio system activity tracking...")
-        # This would normally trigger _update_activity, but we can't easily test without actual processing
+        # This would normally trigger _update_activity, but we can't easily
+        # test without actual processing
 
         # Test vision system
         from src.core.vision.optimized_yolo_pipeline import OptimizedYOLOPipeline

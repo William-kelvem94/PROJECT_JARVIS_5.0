@@ -180,24 +180,9 @@ class ControlDashboard(QMainWindow):
     config_changed = pyqtSignal(dict)  # Configuration updated
 
     def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("JARVIS Singularity - Control Dashboard")
-        self.setGeometry(100, 100, 1200, 800)
-
-        # Aplicar tema unificado
-        JarvisTheme.apply_theme(self)
-
-        # Load configuration
-        self.config = self._load_config()
-
-        # Setup UI
-        self._setup_ui()
-
-        # Start monitoring
-        self._start_monitoring()
-
-        logger.info("âœ… Control Dashboard initialized")
+        # Interface desativada
+        logger.info("Control Dashboard está desativado por configuração.")
+        return
 
     def _load_config(self) -> Dict:
         """Load configuration from file with project root awareness"""
@@ -1168,7 +1153,9 @@ class ControlDashboard(QMainWindow):
                 ):
                     engine.record_explicit_feedback(
                         interaction_id=engine.last_interaction_id,
-                        feedback_value=0.0,  # Neutral feedback with correction implies negative but we leave as 0 or custom
+                        feedback_value=0.0,
+                        # Neutral feedback with correction implies negative but
+                        # we leave as 0 or custom
                         correction=correction,
                     )
                     QMessageBox.information(
@@ -1283,18 +1270,18 @@ class ControlDashboard(QMainWindow):
                 color: #FFFFFF;
                 font-family: 'Segoe UI', 'Bahnschrift', 'Arial';
             }
-            
+
             #sidebar {
                 background: #050A14;
                 border-right: 1px solid rgba(255, 255, 255, 0.05);
             }
-            
+
             #top_header {
                 background: #02050A;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 padding: 0 20px;
             }
-            
+
             #hud_action_button {
                 background: rgba(0, 242, 255, 0.05);
                 color: #00F2FF;
@@ -1306,12 +1293,12 @@ class ControlDashboard(QMainWindow):
                 letter-spacing: 2px;
                 margin: 20px;
             }
-            
+
             #hud_action_button:hover {
                 background: rgba(0, 242, 255, 0.15);
                 border: 1px solid #00F2FF;
             }
-            
+
             QGroupBox {
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 4px;
@@ -1323,7 +1310,7 @@ class ControlDashboard(QMainWindow):
                 text-transform: uppercase;
                 letter-spacing: 1px;
             }
-            
+
             QLineEdit, QTextEdit, QComboBox, QSpinBox, QDoubleSpinBox {
                 background: rgba(255, 255, 255, 0.03);
                 border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1331,12 +1318,12 @@ class ControlDashboard(QMainWindow):
                 border-radius: 2px;
                 color: white;
             }
-            
+
             QLineEdit:focus, QTextEdit:focus, QComboBox:focus {
                 border: 1px solid #00F2FF;
                 background: rgba(0, 242, 255, 0.02);
             }
-            
+
             QPushButton {
                 background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1345,7 +1332,7 @@ class ControlDashboard(QMainWindow):
                 color: white;
                 font-weight: 500;
             }
-            
+
             QPushButton:hover {
                 background: rgba(255, 255, 255, 0.1);
                 border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1359,32 +1346,32 @@ class ControlDashboard(QMainWindow):
                 text-align: right;
                 margin-right: 5px;
             }
-            
+
             QProgressBar::chunk {
                 background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #006FB2, stop:1 #00F2FF);
                 width: 1px;
             }
-            
+
             QListWidget, QTableWidget, QHeaderView::section {
                 background: #030814;
                 border: 1px solid rgba(255, 255, 255, 0.05);
                 color: rgba(255, 255, 255, 0.8);
                 padding: 5px;
             }
-            
+
             QScrollBar:vertical {
                 border: none;
                 background: #02050A;
                 width: 8px;
                 margin: 0px;
             }
-            
+
             QScrollBar::handle:vertical {
                 background: rgba(255, 255, 255, 0.1);
                 min-height: 20px;
                 border-radius: 4px;
             }
-            
+
             QScrollBar::handle:vertical:hover {
                 background: rgba(255, 255, 255, 0.2);
             }

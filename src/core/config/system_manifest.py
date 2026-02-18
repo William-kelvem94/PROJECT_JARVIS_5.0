@@ -18,8 +18,10 @@ DATA_DIR = BASE_DIR / "data"
 LOG_DIR = DATA_DIR / "logs"
 MEMORY_DIR = DATA_DIR / "memory"
 
+
 class AIModelConfig(BaseModel):
     """Configuração para modelos de IA (Local e Nuvem)"""
+
     provider: str = Field(..., description="ollama, gemini, openai, local")
     model_name: str = Field(..., description="Nome técnico do modelo (ex: llama3:8b)")
     timeout: int = 30
@@ -30,35 +32,45 @@ class AIModelConfig(BaseModel):
     ollama_host: str = "localhost"
     ollama_port: int = 11434
     # Backwards-compatible alias for older modules that reference Ollama model
-    ollama_model: str = Field(default_factory=lambda: os.getenv("AI_MODEL", "llama3:8b"))
+    ollama_model: str = Field(
+        default_factory=lambda: os.getenv("AI_MODEL", "llama3:8b")
+    )
+
 
 class VisionConfig(BaseModel):
     """Configuração do Sistema de Visão (Heimdall)"""
+
     enabled: bool = True
     camera_index: int = 0
     resolution: tuple = (1280, 720)
     use_gpu: bool = True
-    # Zero-Disk-IO: Define se salva capturas no disco (Falso por padrão para performance)
-    save_captures_to_disk: bool = False 
+    # Zero-Disk-IO: Define se salva capturas no disco (Falso por padrão para
+    # performance)
+    save_captures_to_disk: bool = False
     face_recognition_enabled: bool = True
     yolo_model_path: str = "yolov8n.pt"
     multiprocessing_enabled: bool = True
-    # Use um 'mock' de câmera (black frame / noise) para CI/testes quando não houver hardware
+    # Use um 'mock' de câmera (black frame / noise) para CI/testes quando não
+    # houver hardware
     mock_camera: bool = False
+
 
 class AudioConfig(BaseModel):
     """Configuração de Áudio e Voz"""
+
     input_device_index: Optional[int] = None
     output_device_index: Optional[int] = None
     wake_word: str = "jarvis"
     wake_word_sensitivity: float = 0.5
-    tts_engine: str = "edge-tts" # edge-tts, coqui, pyttsx3
-    voice_name: str = "pt-BR-AntonioNeural" # Exemplo para Edge-TTS
+    tts_engine: str = "edge-tts"  # edge-tts, coqui, pyttsx3
+    voice_name: str = "pt-BR-AntonioNeural"  # Exemplo para Edge-TTS
     # Executar o subsistema de áudio em processo separado para evitar bloqueios
     multiprocessing_enabled: bool = True
 
+
 class SecurityConfig(BaseModel):
     """Configurações de Segurança e Permissões"""
+
     sandbox_mode: bool = True
     allowed_shell_commands: List[str] = ["echo", "dir", "ls", "whoami"]
     require_voice_auth: bool = False
@@ -72,6 +84,7 @@ class SecurityConfig(BaseModel):
 
 class NetworkConfig(BaseModel):
     """Configuração do Network Mesh (usada por Boot Manager e Network modules)"""
+
     enabled: bool = True
     discovery_port: int = 5000
     device_name: str = "JARVIS-PRIMARY"
@@ -85,29 +98,30 @@ class NetworkConfig(BaseModel):
 
 class SystemManifest(BaseModel):
     """
-    O DNA do JARVIS. 
+    O DNA do JARVIS.
     Centraliza todas as configurações em um objeto validado.
     """
+
     system_name: str = "JARVIS"
     version: str = "5.0.0-Singularity"
     debug_mode: bool = True
 
     # Explicit project_root field for compatibility with older modules/tests
     project_root: Path = BASE_DIR
-    
+
     # Sub-configurações
     ai: AIModelConfig
     vision: VisionConfig
     audio: AudioConfig
     security: SecurityConfig
     network: NetworkConfig
-    
+
     # Caminhos Críticos
     paths: Dict[str, Path] = {
         "base": BASE_DIR,
         "logs": LOG_DIR,
         "memory": MEMORY_DIR,
-        "vector_store": MEMORY_DIR / "vector_store"
+        "vector_store": MEMORY_DIR / "vector_store",
     }
 
     # Backwards-compatible helpers expected by legacy modules/tests
@@ -125,7 +139,9 @@ class SystemManifest(BaseModel):
         from types import SimpleNamespace
 
         return SimpleNamespace(
-            vector_store_path=self.paths.get("vector_store", MEMORY_DIR / "vector_store")
+            vector_store_path=self.paths.get(
+                "vector_store", MEMORY_DIR / "vector_store"
+            )
         )
 
     @classmethod
@@ -151,6 +167,7 @@ class SystemManifest(BaseModel):
             ),
         )
 
+
 # Instância Global (Singleton)
 try:
     sys_config = SystemManifest.load_system()
@@ -160,7 +177,8 @@ try:
     # Backwards-compatible attributes expected in various modules/tests
     try:
         # project_root used in older modules — set via object.__setattr__ because
-        # SystemManifest is a Pydantic model and disallows arbitrary attrs by default
+        # SystemManifest is a Pydantic model and disallows arbitrary attrs by
+        # default
         object.__setattr__(sys_config, "project_root", BASE_DIR)
     except Exception:
         pass
@@ -168,7 +186,7 @@ try:
     # Cria diretórios essenciais se não existirem
     sys_config.paths["logs"].mkdir(parents=True, exist_ok=True)
     sys_config.paths["vector_store"].mkdir(parents=True, exist_ok=True)
-    
+
     logger.info("✅ SystemManifest carregado com sucesso.")
 except Exception as e:
     print(f"CRITICAL: Falha ao carregar SystemManifest: {e}")

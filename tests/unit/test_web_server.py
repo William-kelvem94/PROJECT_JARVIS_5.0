@@ -43,7 +43,8 @@ def setup_training_data():
 @pytest.mark.asyncio
 async def test_get_training_data_returns_correct_sanitized_data(setup_training_data):
     # Execute
-    # We pass a dummy api_key because in direct function call, dependencies are not resolved.
+    # We pass a dummy api_key because in direct function call, dependencies
+    # are not resolved.
     response = await get_training_data("dummy_key")
 
     assert response.status_code == 200

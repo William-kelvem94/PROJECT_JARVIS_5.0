@@ -11,6 +11,7 @@ from src.core.infrastructure.async_event_bus import event_bus, EventType, EventP
 
 from src.core.vision.camera_controller import CameraController
 
+
 def test_mock_camera_capture_and_non_blocking_start():
     """VisionSystem should use MockVideoCapture when configured and start quickly."""
     # Ensure mock mode in-process
@@ -30,7 +31,8 @@ def test_mock_camera_capture_and_non_blocking_start():
     assert frame is not None
     assert hasattr(frame, "shape")
 
-    # shape should be consistent with manifest resolution (may be rotated by different backends)
+    # shape should be consistent with manifest resolution (may be rotated by
+    # different backends)
     width, height = system_manifest.vision.resolution
     assert frame.shape[2] == 3
 
@@ -127,7 +129,8 @@ def test_vision_service_ipc_responds_quickly_with_mock_camera():
 
     results = asyncio.run(_run_ipc_test())
 
-    # Ensure we received all echoes and RTTs are small (mock camera => no hardware delay)
+    # Ensure we received all echoes and RTTs are small (mock camera => no
+    # hardware delay)
     assert len(results) == 8, f"Expected 8 echoes, got {len(results)}"
     assert sum(results) / len(results) < 300.0
 

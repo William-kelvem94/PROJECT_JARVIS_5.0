@@ -301,7 +301,8 @@ class DeploymentManager:
             stop_result = await self._run_command(
                 ["sudo", "systemctl", "stop", f"jarvis-{environment}"]
             )
-            logs.extend(stop_result["logs"])  # Não trata como erro se já estava parado
+            # Não trata como erro se já estava parado
+            logs.extend(stop_result["logs"])
 
             # Inicia novo serviço
             logs.append("Starting service...")

@@ -3,13 +3,13 @@ Suite de Testes Completa - JARVIS 5.0 Evolution
 Valida todos os módulos implementados
 """
 
+import logging
 import sys
 from pathlib import Path
 
 # Adicionar src ao path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import logging
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ def test_workflow_engine():
 
         # Teste 3: Executar workflow
         result = workflow_engine.execute_workflow("test_workflow")
-        assert result == True
+        assert result
         print("✅ Teste 3.3: Workflow executado")
 
         # Teste 4: Salvar e carregar
@@ -223,7 +223,7 @@ def test_security_manager():
 
         # Teste 3: Modo privado
         security_manager.enable_private_mode()
-        assert security_manager.private_mode == True
+        assert security_manager.private_mode
         print("✅ Teste 6.3: Modo privado ativado")
 
         security_manager.disable_private_mode()

@@ -15,18 +15,24 @@ import threading
 import queue
 import json
 from typing import Dict, List, Optional, Any, Set
-from src.core.infrastructure.async_event_bus import get_event_bus, Event, EventType, EventPriority
+from src.core.infrastructure.async_event_bus import (
+    get_event_bus,
+    Event,
+    EventType,
+    EventPriority,
+)
 
 logger = logging.getLogger(__name__)
+
 
 class IPCEventBridge:
     """
     Bridge que conecta o barramento de eventos entre processos.
-    
+
     Implementa um canal bidirecional usando multiprocessing.Queue para sincronizar
     eventos entre o processo pai (Kernel) e processos filhos (Workers/Serviços).
     """
-    
+
     def __init__(self, inbox: multiprocessing.Queue, outbox: multiprocessing.Queue):
         """
         Args:
@@ -39,7 +45,7 @@ class IPCEventBridge:
         self._threads: List[threading.Thread] = []
         self._event_bus = get_event_bus()
         self._bridge_id = f"bridge_{id(self)}"
-        
+
         # Tipos de eventos que NÃO devem ser propagados (loop prevention)
         self._local_only_types: Set[EventType] = {
             EventType.SYSTEM_HEALTH_CHECK,  # Evita tempestade de heartbeats
@@ -50,25 +56,30 @@ class IPCEventBridge:
         """Inicia a sincronização"""
         if self._running:
             return
-            
+
         self._running = True
-        
+
         # Capture the running loop for thread-safe operations
         try:
             self._loop = asyncio.get_running_loop()
         except RuntimeError:
-            logger.warning("Starting IPC Bridge without active event loop - remote events may fail to publish locally")
+            logger.warning(
+                "Starting IPC Bridge without active event loop - remote events may fail to publish locally"
+            )
             self._loop = None
 
         # 1. Local -> Remote (Direct subscription on main loop)
         self._setup_local_subscription()
-        
+
         # 2. Remote -> Local (Thread to blocking read from Queue)
-        # We need a thread because Queue.get() is blocking and we can't block the async loop
-        t2 = threading.Thread(target=self._remote_to_local_loop, daemon=True, name="IPC_RemoteToLocal")
+        # We need a thread because Queue.get() is blocking and we can't block
+        # the async loop
+        t2 = threading.Thread(
+            target=self._remote_to_local_loop, daemon=True, name="IPC_RemoteToLocal"
+        )
         t2.start()
         self._threads.append(t2)
-        
+
         logger.info("🌉 IPC Event Bridge started")
 
     def stop(self):
@@ -79,16 +90,17 @@ class IPCEventBridge:
 
     def _setup_local_subscription(self):
         """Configura a subscrição de eventos locais"""
-        
+
         # Callback para o subscriber local
         async def on_local_event(event: Event):
             if not self._running:
                 return
-                
-            # Evita propagar eventos que vieram da ponte (loop) ou marcados como locais
+
+            # Evita propagar eventos que vieram da ponte (loop) ou marcados
+            # como locais
             if event.metadata.get("ipc_source") or event.type in self._local_only_types:
                 return
-                
+
             try:
                 # Serializa o evento (DataClasses -> Dict)
                 event_data = {
@@ -96,7 +108,7 @@ class IPCEventBridge:
                     "data": event.data,
                     "priority": event.priority.value,
                     "source": event.source,
-                    "metadata": {**event.metadata, "ipc_source": True}
+                    "metadata": {**event.metadata, "ipc_source": True},
                 }
                 # Non-blocking put works fine from main loop
                 self.outbox.put_nowait(event_data)
@@ -110,63 +122,59 @@ class IPCEventBridge:
         try:
             self._event_bus.subscribe(list(EventType), on_local_event)
         except Exception as e:
-             logger.error(f"Failed to subscribe to local events: {e}")
+            logger.error(f"Failed to subscribe to local events: {e}")
 
     def _remote_to_local_loop(self):
         """Escuta a inbox e publica eventos no barramento local"""
-        logger.info(f"IPC Remote->Local loop started on thread {threading.current_thread().name}")
+        logger.info(
+            f"IPC Remote->Local loop started on thread {threading.current_thread().name}"
+        )
         while self._running:
             try:
                 # Block with timeout to check for _running flag
-                remote_event = self.inbox.get(timeout=1.0)
-                
-                # Publica no Barramento Local
-                # Deve ser thread-safe pois estamos em outra thread
+                # Drene a fila com timeout para permitir parada limpa
+                try:
+                    remote_event_dict = self.inbox.get(timeout=0.5)
+                except queue.Empty:
+                    continue
+
+                if not remote_event_dict or "type" not in remote_event_dict:
+                    continue
+
+                # Publica no Barramento Local de forma Thread-Safe
                 if self._loop and self._loop.is_running():
                     self._loop.call_soon_threadsafe(
-                        self._publish_remote_event, 
-                        remote_event
+                        self._publish_remote_event_safe, remote_event_dict
                     )
                 else:
-                    logger.warning("Cannot publish remote event: No active event loop")
-                
-            except queue.Empty:
-                continue
-            except Exception as e:
-                logger.error(f"Error in IPC remote-to-local: {e}")
+                    logger.warning(
+                        "Cannot publish remote event: No active event loop captured"
+                    )
 
-    def _publish_remote_event(self, remote_event):
-        """Helper to publish event on the loop"""
+            except Exception as e:
+                logger.error(f"Error in IPC remote-to-local loop: {e}")
+
+    def _publish_remote_event_safe(self, remote_event_dict: Dict[str, Any]):
+        """Helper executado dentro do loop principal para publicar evento com segurança"""
         try:
-            # logger.debug(f"Bridging remote event: {remote_event['type']}")
+            # Reconstrói argumentos para publicação
+            event_type = EventType(remote_event_dict["type"])
+            data = remote_event_dict.get("data", {})
+            priority = EventPriority(remote_event_dict.get("priority", "normal"))
+            source = remote_event_dict.get("source", "remote")
+            # Adiciona prefixo se não tiver
+            if not source.startswith("remote."):
+                source = f"remote.{source}"
+            
+            metadata = remote_event_dict.get("metadata", {})
+            
+            # Publish é síncrono (apenas coloca na queue async), mas deve rodar na thread do loop
             self._event_bus.publish(
-                EventType(remote_event["type"]),
-                remote_event["data"],
-                priority=EventPriority(remote_event["priority"]),
-                source=f"remote.{remote_event['source']}",
-                ipc_metadata=remote_event["metadata"]
+                event_type,
+                data=data,
+                priority=priority,
+                source=source,
+                ipc_metadata=metadata,
             )
         except Exception as e:
-             logger.error(f"Error publishing remote event: {e}")
-
-    def _remote_to_local_loop(self):
-        """Escuta a inbox e publica eventos no barramento local"""
-        while self._running:
-            try:
-                # Block with timeout to check for _running flag
-                remote_event = self.inbox.get(timeout=1.0)
-                
-                # Publica no Barramento Local
-                # Usamos publish() que é thread-safe e agendado no loop do asyncio
-                self._event_bus.publish(
-                    EventType(remote_event["type"]),
-                    remote_event["data"],
-                    priority=EventPriority(remote_event["priority"]),
-                    source=f"remote.{remote_event['source']}",
-                    ipc_metadata=remote_event["metadata"]
-                )
-                
-            except queue.Empty:
-                continue
-            except Exception as e:
-                logger.error(f"Error in IPC remote-to-local: {e}")
+            logger.error(f"Error publishing bridged event: {e}")

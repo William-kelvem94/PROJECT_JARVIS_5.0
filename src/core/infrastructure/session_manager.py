@@ -210,7 +210,8 @@ class ThreadSafeCache:
     """Cache threadsafe para dados de sessão"""
 
     def __init__(self, max_size: int = 1000, ttl_seconds: float = 3600):
-        self._cache: Dict[str, Tuple[Any, float]] = {}  # key -> (value, timestamp)
+        # key -> (value, timestamp)
+        self._cache: Dict[str, Tuple[Any, float]] = {}
         self._lock = RLock()
         self.max_size = max_size
         self.ttl_seconds = ttl_seconds
@@ -455,7 +456,7 @@ class SessionData:
             if self._active_futures:
                 try:
                     next(as_completed(list(self._active_futures), timeout=1.0))
-                except:
+                except BaseException:
                     continue
 
             time.sleep(0.1)

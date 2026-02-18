@@ -172,8 +172,8 @@ class SQLiteDatabase(DatabaseInterface):
                 cursor = self.connection.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO feedback 
-                    (id, interaction_id, user_input, ai_response, feedback_type, 
+                    INSERT INTO feedback
+                    (id, interaction_id, user_input, ai_response, feedback_type,
                      feedback_value, correction, timestamp, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -213,8 +213,8 @@ class SQLiteDatabase(DatabaseInterface):
                 cursor = self.connection.cursor()
                 cursor.execute(
                     """
-                    SELECT * FROM feedback 
-                    ORDER BY timestamp DESC 
+                    SELECT * FROM feedback
+                    ORDER BY timestamp DESC
                     LIMIT ?
                 """,
                     (limit,),
@@ -245,7 +245,7 @@ class SQLiteDatabase(DatabaseInterface):
                            f2.ai_response, f2.feedback_value
                     FROM feedback f1
                     JOIN feedback f2 ON f1.user_input = f2.user_input
-                    WHERE f1.id != f2.id 
+                    WHERE f1.id != f2.id
                     AND abs(f1.feedback_value - f2.feedback_value) > 0.3
                     ORDER BY RANDOM()
                     LIMIT ?
@@ -407,7 +407,7 @@ class PostgreSQLDatabase(DatabaseInterface):
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
-                        INSERT INTO feedback 
+                        INSERT INTO feedback
                         (user_input, ai_response, feedback_type, feedback_value, correction, metadata)
                         VALUES (%s, %s, %s, %s, %s, %s)
                         RETURNING id
@@ -454,11 +454,11 @@ class PostgreSQLDatabase(DatabaseInterface):
                 with conn.cursor() as cursor:
                     cursor.execute(
                         """
-                        SELECT id, interaction_id, user_input, ai_response, 
-                               feedback_type, feedback_value, correction, 
+                        SELECT id, interaction_id, user_input, ai_response,
+                               feedback_type, feedback_value, correction,
                                timestamp, metadata
-                        FROM feedback 
-                        ORDER BY timestamp DESC 
+                        FROM feedback
+                        ORDER BY timestamp DESC
                         LIMIT %s
                     """,
                         (limit,),
@@ -493,11 +493,12 @@ class PostgreSQLDatabase(DatabaseInterface):
             conn = self.connection_pool.getconn()
             try:
                 with conn.cursor() as cursor:
-                    # Use similarity search and window functions for better pairs
+                    # Use similarity search and window functions for better
+                    # pairs
                     cursor.execute(
                         """
                         WITH similar_prompts AS (
-                            SELECT 
+                            SELECT
                                 f1.user_input,
                                 f1.ai_response as response1,
                                 f1.feedback_value as value1,
@@ -589,7 +590,8 @@ class VectorDatabase(DatabaseInterface):
 
             except Exception as e_inner:
                 msg = str(e_inner)
-                # If conflict (another Chroma instance), try safe in-memory fallback
+                # If conflict (another Chroma instance), try safe in-memory
+                # fallback
                 if "An instance of Chroma already exists" in msg:
                     logger.warning(
                         "Chroma instance conflict detected for '%s' — falling back to in-memory client",
@@ -600,12 +602,12 @@ class VectorDatabase(DatabaseInterface):
                         self.collection = self.client.get_or_create_collection(
                             name="feedback", metadata={"hnsw:space": "cosine"}
                         )
-                        logger.info("âœ… Connected to ChromaDB using in-memory fallback")
+                        logger.info(
+                            "âœ… Connected to ChromaDB using in-memory fallback"
+                        )
                         return True
                     except Exception as e_fallback:
-                        logger.error(
-                            "In-memory Chroma fallback failed: %s", e_fallback
-                        )
+                        logger.error("In-memory Chroma fallback failed: %s", e_fallback)
                         return False
 
                 logger.error(f"Failed to connect to ChromaDB: {e_inner}")

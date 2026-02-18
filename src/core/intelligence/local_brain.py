@@ -132,7 +132,8 @@ class LocalBrain:
                     self.model_id, trust_remote_code=True
                 )
 
-                # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache Inteligente
+                # 2. Tentar Aceleração OpenVINO (Optimum Intel) com Cache
+                # Inteligente
                 if (
                     OPENVINO_AVAILABLE
                     and os.environ.get("JARVIS_DISABLE_OPENVINO") != "1"
@@ -182,10 +183,12 @@ class LocalBrain:
                             )
                             self.model = None
 
-                # 3. Fallback PyTorch Nativo (Se OpenVINO falhou ou indisponível)
+                # 3. Fallback PyTorch Nativo (Se OpenVINO falhou ou
+                # indisponível)
                 if self.model is None:
                     logger.info("🏠 Usando motor PyTorch Nativo (CPU)...")
-                    # Try to use float16/bfloat16 for 50% memory saving if supported
+                    # Try to use float16/bfloat16 for 50% memory saving if
+                    # supported
                     dtype = torch.float32
                     if TORCH_AVAILABLE:
                         if torch.cuda.is_available():

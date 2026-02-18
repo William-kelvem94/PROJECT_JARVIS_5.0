@@ -29,7 +29,11 @@ class ContextSanitizer:
         """Limpa completamente o contexto tÃ©cnico"""
         sanitized = raw_context
         for pattern, replacement in cls.SANITIZATION_RULES.items():
-            sanitized = re.sub(pattern, replacement, sanitized, flags=re.IGNORECASE)
+            sanitized = re.sub(
+                pattern,
+                replacement,
+                sanitized,
+                flags=re.IGNORECASE)
 
         # Remove mÃºltiplos espaÃ§os e linhas vazias
         sanitized = "\n".join(
@@ -46,13 +50,14 @@ class ContextSanitizer:
 
         # Se for disct, converte para string
         if isinstance(technical_context, dict):
-            context_str = json.dumps(technical_context, indent=2, ensure_ascii=False)
+            context_str = json.dumps(
+                technical_context, indent=2, ensure_ascii=False)
         else:
             context_str = str(technical_context)
 
         clean_context = cls.sanitize_context(context_str)
 
-        return f"""VocÃª Ã© JARVIS, assistente pessoal do William. 
+        return f"""VocÃª Ã© JARVIS, assistente pessoal do William.
 
 REGRAS ABSOLUTAS DE VOZ:
 1. Fale APENAS em portuguÃªs do Brasil.

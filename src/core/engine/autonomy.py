@@ -303,7 +303,8 @@ class DecisionEngine:
 
         # === DECISÃƒO ADAPTATIVA ===
 
-        # 1. MODO SEGURO: SituaÃ§Ã£o crÃ­tica + baixa confianÃ§a = sÃ³ aÃ§Ãµes comprovadas
+        # 1. MODO SEGURO: SituaÃ§Ã£o crÃ­tica + baixa confianÃ§a = sÃ³ aÃ§Ãµes
+        # comprovadas
         if is_critical and respond_confidence < 0.7:
             return Decision(
                 decision_id=self._generate_decision_id(),
@@ -314,7 +315,8 @@ class DecisionEngine:
                 context=context,
             )
 
-        # 2. MODO ATIVO: Alta confianÃ§a + input do usuÃ¡rio = responder imediatamente
+        # 2. MODO ATIVO: Alta confianÃ§a + input do usuÃ¡rio = responder
+        # imediatamente
         if context.user_input and respond_confidence >= 0.8:
             return Decision(
                 decision_id=self._generate_decision_id(),
@@ -325,7 +327,8 @@ class DecisionEngine:
                 context=context,
             )
 
-        # 3. MODO EXPLORAÃ‡ÃƒO: ConfianÃ§a mÃ©dia + nÃ£o urgente = tentar nova abordagem
+        # 3. MODO EXPLORAÃ‡ÃƒO: ConfianÃ§a mÃ©dia + nÃ£o urgente = tentar nova
+        # abordagem
         if not is_urgent and not is_critical and 0.5 <= respond_confidence < 0.8:
             # 30% de chance de explorar
             if random.random() < 0.3:
@@ -360,7 +363,8 @@ class DecisionEngine:
                 context=context,
             )
 
-        # 6. MODO ATIVO: Sem input mas alta confianÃ§a para sugestÃ£o = sugerir proativamente
+        # 6. MODO ATIVO: Sem input mas alta confianÃ§a para sugestÃ£o = sugerir
+        # proativamente
         if not context.user_input and suggest_confidence >= 0.7:
             # 20% de chance de sugerir proativamente
             if random.random() < 0.2:

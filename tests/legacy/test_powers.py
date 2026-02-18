@@ -1,3 +1,6 @@
+from src.core.actions.advanced_action_controller import advanced_action_controller
+from src.core.actions.action_controller import action_controller
+from src.core.management.device_manager import device_manager
 import sys
 import os
 import time
@@ -6,9 +9,6 @@ import logging
 # Adicionar src ao path
 sys.path.append(os.path.join(os.getcwd()))
 
-from src.core.management.device_manager import device_manager
-from src.core.actions.action_controller import action_controller
-from src.core.actions.advanced_action_controller import advanced_action_controller
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("TestPowers")
@@ -44,7 +44,8 @@ def test_powers():
     # 3. Volume Master
     logger.info("--- 3. Teste de Áudio (20% -> Original) ---")
     # Nota: DeviceManager.mute(False) e Volume control
-    # Pegar volume atual não é trivial no pycaw sem código extra, vamos apenas setar.
+    # Pegar volume atual não é trivial no pycaw sem código extra, vamos apenas
+    # setar.
     device_manager.set_volume(20)
     logger.info("Volume setado para 20%")
     time.sleep(2.0)

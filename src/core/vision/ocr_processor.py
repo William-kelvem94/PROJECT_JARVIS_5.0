@@ -3,6 +3,10 @@ Processador OCR para extraÃ§Ã£o de texto de imagens
 Suporta mÃºltiplos engines: Tesseract, EasyOCR e integraÃ§Ã£o com APIs
 """
 
+from src.database.models import db_manager, OCRResult
+from src.utils.helpers import ImageHelper, TextHelper
+from src.utils.config import config
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import logging
 from pathlib import Path
@@ -41,12 +45,8 @@ try:
         EASYOCR_AVAILABLE = True
     else:
         EASYOCR_AVAILABLE = False
-except:
+except BaseException:
     EASYOCR_AVAILABLE = False
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from src.utils.config import config
-from src.utils.helpers import ImageHelper, TextHelper
-from src.database.models import db_manager, OCRResult
 
 logger = logging.getLogger(__name__)
 

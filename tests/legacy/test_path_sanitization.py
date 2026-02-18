@@ -1,10 +1,9 @@
+from src.core.audio.voice_controller import VoiceController
 import sys
 import os
 
 # Adicionar o root do projeto ao path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-from src.core.audio.voice_controller import VoiceController
 
 
 def test_sanitization():

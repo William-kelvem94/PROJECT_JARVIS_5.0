@@ -115,19 +115,19 @@ class KnowledgeDatabase:
 
             # Índices para otimização
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_problems_hash 
+                CREATE INDEX IF NOT EXISTS idx_problems_hash
                 ON problems(hash)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_problems_module 
+                CREATE INDEX IF NOT EXISTS idx_problems_module
                 ON problems(module)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_solutions_problem_hash 
+                CREATE INDEX IF NOT EXISTS idx_solutions_problem_hash
                 ON solutions(problem_hash)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_solutions_success 
+                CREATE INDEX IF NOT EXISTS idx_solutions_success
                 ON solutions(success)
             """)
 
@@ -167,7 +167,7 @@ class KnowledgeDatabase:
                 # Atualizar contagem e última ocorrência
                 cursor.execute(
                     """
-                    UPDATE problems 
+                    UPDATE problems
                     SET occurrences = occurrences + 1,
                         last_seen = CURRENT_TIMESTAMP
                     WHERE hash = ?
@@ -336,7 +336,7 @@ class KnowledgeDatabase:
 
             # Taxa de sucesso
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful
                 FROM solutions
@@ -373,14 +373,15 @@ class KnowledgeDatabase:
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
-            # Remove problemas não vistos há mais de X dias sem soluções bem-sucedidas
+            # Remove problemas não vistos há mais de X dias sem soluções
+            # bem-sucedidas
             cursor.execute(
                 """
                 DELETE FROM problems
                 WHERE last_seen < datetime('now', '-' || ? || ' days')
                 AND hash NOT IN (
-                    SELECT DISTINCT problem_hash 
-                    FROM solutions 
+                    SELECT DISTINCT problem_hash
+                    FROM solutions
                     WHERE success = 1
                 )
             """,

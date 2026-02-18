@@ -13,7 +13,8 @@ logger = logging.getLogger(__name__)
 
 # Windows Constants for Volume/Mute
 # Based on Core Audio APIs (MMDevApi.h)
-# Simplified implementation using endpointvolume or command line tools for stability
+# Simplified implementation using endpointvolume or command line tools for
+# stability
 
 
 class WindowsHardwareControl:
@@ -47,7 +48,8 @@ class WindowsHardwareControl:
         try:
             # Fallback PowerShell para mutar microfone (Input Device)
             # Nota: PowerShell nativo para mutar MIC é complexo sem módulos extras.
-            # Vamos usar o comando 'set_audio' via SoundDevice se possível ou PowerShell script.
+            # Vamos usar o comando 'set_audio' via SoundDevice se possível ou
+            # PowerShell script.
 
             # Script PowerShell simplificado para mutar todos os inputs
             action = "1" if mute else "0"
@@ -56,9 +58,11 @@ class WindowsHardwareControl:
             $obj.NameSpace(10).Items() | Where-Object { $_.Name -eq 'Sounds' } | ForEach-Object { $_.InvokeVerb('Properties') }
             """
             # Por enquanto, vamos usar uma abordagem de "soft mute" se o hard mute falhar
-            # Ou usar bibliotecas como 'pyaudio' para fechar o stream se estivermos dentro do app.
+            # Ou usar bibliotecas como 'pyaudio' para fechar o stream se
+            # estivermos dentro do app.
 
-            logger.info(f"Microfone {'mutado' if mute else 'desmutado'} (Antifeedback)")
+            logger.info(
+                f"Microfone {'mutado' if mute else 'desmutado'} (Antifeedback)")
             return True
         except Exception as e:
             logger.error(f"Erro ao mutar microfone: {e}")

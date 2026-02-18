@@ -10,7 +10,8 @@ new_imports = "from src.core.intelligence.agent import AgentPromptManager, Agent
 content = content.replace("class AIAgent:", new_imports)
 
 # 2. Refactor __init__
-# We'll use a regex to find the __init__ and replace everything up to the first method
+# We'll use a regex to find the __init__ and replace everything up to the
+# first method
 init_pattern = re.compile(
     r"def __init__\(self, provider: str = \'ollama\'\):.*?def ", re.DOTALL
 )
@@ -22,7 +23,7 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
         # =====================================================================
         self.prompt_manager = AgentPromptManager()
         self.engagement_manager = AgentEngagementManager(self)
-        
+
         # =====================================================================
         # 🛠️ AUTO-RECOVERY INTEGRATION (Unified)
         # =====================================================================
@@ -34,10 +35,10 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
         # =====================================================================
         self.safe_mode = False
         self._verify_critical_dependencies()
-        
+
         self.provider = provider
         self.api_key = None # 100% Local Mode
-        
+
         # Carregar URL do Ollama do env_manager
         try:
             from src.utils.env_manager import get_config
@@ -45,7 +46,7 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
             self.ollama_url = config_obj.ollama_url + "/api/generate" if config_obj else "http://localhost:11434/api/generate"
         except ImportError:
             self.ollama_url = "http://localhost:11434/api/generate"
-        
+
         # Carregar configurações de IA
         try:
             from src.utils.config import config
@@ -58,15 +59,15 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
             self.ai_config = {}
             self.max_react_turns = 5
             self.screenshot_timeout = 5.0
-        
+
         # Histórico de conversação
         self.chat_history = []
-        
+
         # Brain Router - Sistema de Decisão Inteligente
         try:
             from src.core.intelligence.brain_router import brain_router
             self.brain_router = brain_router
-            
+
             # 🎭 FASE 2: Conectar UX Masking
             if self.brain_router:
                 self.brain_router.on_heavy_model_loading = self._on_heavy_model_loading
@@ -74,14 +75,14 @@ new_init = '''def __init__(self, provider: str = 'ollama'):
         except Exception as e:
             logger.warning(f"⚠️ Brain Router não disponível: {e}")
             self.brain_router = None
-        
+
         # Advanced Controllers
         self.advanced_actions = advanced_action_controller if ADVANCED_ACTIONS_AVAILABLE else None
         self.advanced_vision = advanced_vision_pipeline if ADVANCED_VISION_AVAILABLE else None
         self.advanced_speech = advanced_speech_processor if ADVANCED_SPEECH_AVAILABLE else None
         self.workflow_engine = workflow_engine if WORKFLOW_ENGINE_AVAILABLE else None
         self.security_advanced = security_manager_advanced if ADVANCED_SECURITY_AVAILABLE else None
-        
+
         # Sync system prompt from manager
         self.use_structured_output = STRUCTURE_OUTPUT_AVAILABLE
         self.system_prompt = self.prompt_manager.get_system_prompt(self.use_structured_output)

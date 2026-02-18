@@ -5,10 +5,13 @@ from pathlib import Path
 from datetime import datetime
 
 # Garantir que o output suporte UTF-8 (para emojis no Windows)
-if sys.stdout.encoding.lower() != 'utf-8':
+if sys.stdout.encoding.lower() != "utf-8":
     try:
         import io
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
     except Exception:
         pass
 
@@ -21,12 +24,17 @@ MEMORY_DIR = DATA_DIR / "memory"
 
 # Candidatos à migração
 SOURCE_BRAIN = MEMORY_DIR / "neural"  # O "Vencedor" (Maior tamanho)
-TARGET_BRAIN = MEMORY_DIR / "vector_store" # O destino oficial do Manifesto
-BACKUP_DIR = DATA_DIR / "backups" / f"memory_fragmented_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+TARGET_BRAIN = MEMORY_DIR / "vector_store"  # O destino oficial do Manifesto
+BACKUP_DIR = (
+    DATA_DIR
+    / "backups"
+    / f"memory_fragmented_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+)
+
 
 def perform_surgery():
     print(f"🏥 Iniciando Cirurgia de Memória JARVIS...")
-    
+
     # 1. Criar backup de segurança
     if not BACKUP_DIR.exists():
         BACKUP_DIR.mkdir(parents=True)
@@ -36,7 +44,7 @@ def perform_surgery():
     conflicts = [
         MEMORY_DIR / "chroma.sqlite3",
         MEMORY_DIR / "chroma_db",
-        DATA_DIR / "tests" / "chromadb"
+        DATA_DIR / "tests" / "chromadb",
     ]
 
     for conflict in conflicts:
@@ -53,13 +61,18 @@ def perform_surgery():
         if TARGET_BRAIN.exists():
             # Se o destino já existe e tem conteúdo, arquiva
             if any(TARGET_BRAIN.iterdir()):
-                print(f"ℹ️ O destino {TARGET_BRAIN.name} já existe e não está vazio. Arquivando o antigo antes de substituir.")
+                print(
+                    f"ℹ️ O destino {TARGET_BRAIN.name} já existe e não está vazio. Arquivando o antigo antes de substituir."
+                )
                 shutil.move(str(TARGET_BRAIN), str(BACKUP_DIR / "vector_store_old"))
             else:
-                # Se está vazio, apenas remove para permitir o move do SOURCE_BRAIN
+                # Se está vazio, apenas remove para permitir o move do
+                # SOURCE_BRAIN
                 TARGET_BRAIN.rmdir()
-        
-        print(f"🧠 Migrando dados neurais ({SOURCE_BRAIN.name}) para a nova estrutura ({TARGET_BRAIN.name})...")
+
+        print(
+            f"🧠 Migrando dados neurais ({SOURCE_BRAIN.name}) para a nova estrutura ({TARGET_BRAIN.name})..."
+        )
         shutil.move(str(SOURCE_BRAIN), str(TARGET_BRAIN))
         print(f"✅ Transplante concluído com sucesso.")
     else:
@@ -69,6 +82,7 @@ def perform_surgery():
             TARGET_BRAIN.mkdir(parents=True, exist_ok=True)
 
     print(f"🏁 Cirurgia finalizada. O JARVIS agora tem uma Única Fonte da Verdade.")
+
 
 if __name__ == "__main__":
     perform_surgery()

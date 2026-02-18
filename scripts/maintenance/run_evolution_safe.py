@@ -1,3 +1,5 @@
+from src.evolution import evolution_manager
+import sys
 import asyncio
 import os
 import signal
@@ -6,13 +8,14 @@ from pathlib import Path
 
 # Ensure project src is on path when running as script
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-import sys
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.evolution import evolution_manager
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 async def main():
     # Ensure SafeExecutor will run pytest before applying fixes

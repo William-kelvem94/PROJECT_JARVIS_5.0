@@ -47,7 +47,8 @@ def test_blocks_protected_delete_and_emits_request(monkeypatch):
 
         # allow small time for delivery
         await asyncio.sleep(0.05)
-        # delivery to subscribers happens asynchronously; assert the event was published
+        # delivery to subscribers happens asynchronously; assert the event was
+        # published
         assert bus.total_events_published >= 1
 
         bus.unsubscribe(sub_id)
@@ -57,9 +58,14 @@ def test_blocks_protected_delete_and_emits_request(monkeypatch):
 
 
 def test_env_auto_approves_protected_path(monkeypatch):
-    # When JARVIS_AUTO_APPROVE=1, protected-path actions should be auto-approved
+    # When JARVIS_AUTO_APPROVE=1, protected-path actions should be
+    # auto-approved
     monkeypatch.setenv("JARVIS_AUTO_APPROVE", "1")
-    action = {"action_type": "file_modify", "target": "main.py", "proposed_code": "# noop"}
+    action = {
+        "action_type": "file_modify",
+        "target": "main.py",
+        "proposed_code": "# noop",
+    }
 
     res = action_validator.validate(action)
     assert res.approved is True
@@ -85,10 +91,15 @@ def test_autopatcher_respects_action_validator(monkeypatch, tmp_path):
         return patched
 
     # Force the validator to decline the action
-    with patch("src.core.evolution.action_validator.action_validator.validate", return_value=ValidationResult(False, True, "forced-decline")):
+    with patch(
+        "src.core.evolution.action_validator.action_validator.validate",
+        return_value=ValidationResult(False, True, "forced-decline"),
+    ):
         from src.core.evolution.auto_patcher import auto_patcher
 
-        with patch("src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm):
+        with patch(
+            "src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm
+        ):
             ok, msg = auto_patcher.attempt_patch_from_insight(insight)
 
     assert ok is False

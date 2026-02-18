@@ -4,6 +4,8 @@ JARVIS 5.0 - Treinamento Corrigido
 Versão melhorada com dashboard funcionando
 """
 
+from src.utils.web_emitter import emit_log_sync
+import logging
 import sys
 import os
 import threading
@@ -12,8 +14,6 @@ import asyncio
 sys.path.insert(0, "src")
 
 # Configurar logging para usar web_emitter
-import logging
-from src.utils.web_emitter import emit_log_sync
 
 
 class WebSocketHandler(logging.Handler):

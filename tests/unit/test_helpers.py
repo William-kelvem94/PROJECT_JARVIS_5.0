@@ -360,7 +360,7 @@ class TestSystemHelper:
         """Testa verificação de privilégios de administrador no Windows"""
         mock_is_admin.return_value = True
 
-        assert SystemHelper.is_admin() == True
+        assert SystemHelper.is_admin()
 
         mock_is_admin.return_value = False
 

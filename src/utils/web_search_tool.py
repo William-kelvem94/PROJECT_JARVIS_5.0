@@ -6,7 +6,8 @@ Permite que o Jarvis busque informaÃ§Ãµes no Google de forma autÃ´noma.
 import logging
 from typing import List
 
-# from src.core.security.security_manager import security_manager (Removido para evitar import circular)
+# from src.core.security.security_manager import security_manager
+# (Removido para evitar import circular)
 
 try:
     from googlesearch import search
@@ -50,7 +51,8 @@ class WebSearchTool:
 
         results = []
         try:
-            # advanced=True retornaria objetos Result, mas a lib padrÃ£o retorna strings
+            # advanced=True retornaria objetos Result, mas a lib padrÃ£o
+            # retorna strings
             for url in search(query, num_results=num_results, advanced=True):
                 # Extrair tÃ­tulo e descriÃ§Ã£o se available, ou apenas URL
                 results.append(

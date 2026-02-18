@@ -315,15 +315,15 @@ vision:
   enabled: {str(config['vision']['enabled']).lower()}
   faceid_enabled: {str(config['vision']['faceid_enabled']).lower()}
   face_detection_model: "{config['vision']['face_detection_model']}"
-  
+
 audio:
   enabled: {str(config['audio']['enabled']).lower()}
   stt_model: "{config['audio']['stt_model']}"
   tts_engine: "{config['audio']['tts_engine']}"
-  
+
 system:
   god_mode: {str(config['system']['god_mode_enabled']).lower()}
-  
+
 ai:
   local_model: "{config['ai']['local_model']}"
   model_name: "{config['ai']['model_name']}"

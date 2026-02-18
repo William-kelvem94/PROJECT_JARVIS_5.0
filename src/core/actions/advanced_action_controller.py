@@ -107,7 +107,8 @@ class AdvancedActionController:
                     exe_path = proc.info.get("exe") or ""
                     exe_name = os.path.basename(exe_path).lower() if exe_path else ""
 
-                    # Comparar exatamente com o nome do processo ou nome do executável
+                    # Comparar exatamente com o nome do processo ou nome do
+                    # executável
                     if (
                         target_name == proc_name
                         or target_name == exe_name

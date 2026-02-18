@@ -4,6 +4,12 @@ TESTE - Sistema de Auto-Correção Evolutiva
 Demonstra o JARVIS aprendendo com dissonâncias semânticas
 """
 
+from src.learning.semantic_feedback import (
+    get_semantic_analyzer,
+    process_interaction_feedback,
+)
+from pathlib import Path
+import time
 import sys
 import io
 
@@ -11,16 +17,9 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-import time
-from pathlib import Path
 
 # Adicionar diretório raiz
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-from src.learning.semantic_feedback import (
-    get_semantic_analyzer,
-    process_interaction_feedback,
-)
 
 
 def simulate_learning_scenario():

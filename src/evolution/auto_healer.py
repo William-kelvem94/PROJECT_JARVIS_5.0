@@ -234,10 +234,10 @@ class AutoHealer:
         return f"""
         Você é um engenheiro de software sênior mantendo o sistema JARVIS.
         Analise o seguinte problema e sugira uma correção.
-        
+
         PROBLEMA:
         {json.dumps(problem, indent=2)}
-        
+
         REGRAS:
         1. Responda APENAS com um JSON válido.
         2. O JSON deve ter os campos: "tipo" (codigo/configuracao), "descricao", "arquivo" (caminho), "codigo_corrigido" (conteudo completo ou trecho), "linha_inicio" (opcional).

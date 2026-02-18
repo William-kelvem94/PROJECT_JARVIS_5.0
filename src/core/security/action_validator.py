@@ -117,7 +117,8 @@ class ActionValidator:
                 logger.warning(f"Failed to log evolution event: {e}")
 
             if not path.exists():
-                # Arquivo novo nÃ£o precisa de backup, mas precisa de validaÃ§Ã£o de path
+                # Arquivo novo nÃ£o precisa de backup, mas precisa de
+                # validaÃ§Ã£o de path
                 safe, reason = self.validate_action("write_file", filepath)
                 if not safe:
                     raise PermissionError(reason)

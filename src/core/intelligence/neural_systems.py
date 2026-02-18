@@ -118,7 +118,7 @@ class NeuralSystemsLoader:
             if self.config:
                 try:
                     api_key = api_key or self.config.get_setting("brain.gemini_api_key")
-                except:
+                except BaseException:
                     pass
 
             from src.core.vision.vision_language_model import VisionQA
@@ -158,7 +158,7 @@ class NeuralSystemsLoader:
             if self.config:
                 try:
                     api_key = api_key or self.config.get_setting("brain.gemini_api_key")
-                except:
+                except BaseException:
                     pass
 
             from src.core.intelligence.react_agent import ReActAgent

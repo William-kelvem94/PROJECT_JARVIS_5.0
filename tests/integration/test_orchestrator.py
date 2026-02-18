@@ -5,6 +5,7 @@ Testa inicialização de módulos, verificação de saúde, reinicialização de
 tratamento de erros e integração completa dos novos módulos Security e IoT.
 """
 
+from src.core.orchestrator import StarkOrchestrator
 import unittest
 from unittest.mock import Mock, patch
 import logging
@@ -19,7 +20,8 @@ sys.path.insert(0, project_root)
 # Mock de módulos problemáticos antes do import
 sys.modules["mediapipe"] = Mock()
 sys.modules["tensorflow"] = Mock()
-# Provide lightweight mocks with expected attributes to avoid Import-time checks
+# Provide lightweight mocks with expected attributes to avoid Import-time
+# checks
 _mock_cv2 = Mock()
 _mock_cv2.__version__ = "4.5.0"
 sys.modules["cv2"] = _mock_cv2
@@ -27,8 +29,6 @@ sys.modules["face_recognition"] = Mock()
 _mock_dlib = Mock()
 _mock_dlib.__version__ = "19.22.0"
 sys.modules["dlib"] = _mock_dlib
-
-from src.core.orchestrator import StarkOrchestrator
 
 
 class TestStarkOrchestrator(unittest.TestCase):
@@ -431,7 +431,8 @@ class TestStarkOrchestratorIntegration(unittest.TestCase):
                         # Executa inicialização
                         self.orchestrator.initialize_stark_system()
 
-                    # Sistema não está completamente pronto mas parcialmente funcional
+                    # Sistema não está completamente pronto mas parcialmente
+                    # funcional
                     self.assertFalse(self.orchestrator.is_ready)
 
                     # Alguns componentes funcionaram

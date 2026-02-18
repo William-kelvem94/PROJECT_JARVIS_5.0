@@ -28,7 +28,8 @@ class UserManager:
 
         self.users = self._load_users()
 
-        # Garantir que o William (Master) esteja sempre lá se for o primeiro boot
+        # Garantir que o William (Master) esteja sempre lá se for o primeiro
+        # boot
         if not self.users:
             self.register_user("William", "Master/Owner", role="master")
 

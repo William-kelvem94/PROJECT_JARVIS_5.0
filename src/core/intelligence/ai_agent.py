@@ -186,12 +186,20 @@ try:
 except ImportError:
     knowledge_distiller = None
 
-try:
-    from src.learning.curiosity_engine import CuriosityEngine
+curiosity_engine = None
 
-    curiosity_engine = CuriosityEngine()
-except ImportError:
-    curiosity_engine = None
+
+def get_curiosity_engine():
+    global curiosity_engine
+    if curiosity_engine is None:
+        try:
+            from src.learning.curiosity_engine import CuriosityEngine
+
+            curiosity_engine = CuriosityEngine()
+        except ImportError:
+            curiosity_engine = None
+    return curiosity_engine
+
 
 # ============================================================================
 # VISION ENHANCER
@@ -245,11 +253,14 @@ try:
     from src.core.vision.os_monitor import get_active_window_context
     from src.core.security.action_validator import action_validator
 except ImportError:
-    get_active_window_context = lambda: {
-        "title": "Unknown",
-        "executable": "Unknown",
-        "process_name": "Unknown",
-    }
+
+    def get_active_window_context():
+        return {
+            "title": "Unknown",
+            "executable": "Unknown",
+            "process_name": "Unknown",
+        }
+
     action_validator = None
 
 try:
@@ -310,6 +321,147 @@ except ImportError:
 
 class AIAgent:
     """Classe principal do Agente Inteligente"""
+
+    async def self_repair(self, root_path: str = None):
+        """
+        O coração da auto-correção: 
+        1. Analisa os logs de erro
+        2. Identifica o arquivo problemático
+        3. Pede ao Ollama para corrigir o código
+        4. Aplica o patch
+        """
+        import os
+        import re
+        import logging
+        from pathlib import Path
+
+        logger = logging.getLogger("AIAgent.SelfRepair")
+        
+        if root_path is None:
+            root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+            
+        log_file = Path(root_path) / "data" / "logs" / "errors_critical.log"
+        if not log_file.exists():
+            # Tentar fallback
+            log_file = Path(root_path) / "data" / "logs" / "jarvis_main.log"
+            
+        if not log_file.exists():
+            logger.info("Nenhum log de erro encontrado para auto-reparo.")
+            return
+
+        logger.info(f"🦾 Iniciando ciclo de auto-reparo assistido por IA...")
+        
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+                logs = f.readlines()[-100:] # Ler as últimas 100 linhas
+            
+            error_context = "".join(logs)
+            
+            # Tentar identificar o arquivo com erro no traceback
+            # Padrão: File "c:\...\file.py", line 123
+            matches = re.findall(r'File "(.+?)", line (\d+)', error_context)
+            if not matches:
+                logger.info("Nenhum traceback de arquivo identificado nos logs.")
+                return
+            
+            # Pegar o último arquivo mencionado (geralmente onde o erro estourou)
+            target_file, line_num = matches[-1]
+            
+            if not os.path.exists(target_file):
+                logger.warning(f"Arquivo identificado {target_file} não existe no sistema.")
+                return
+
+            logger.info(f"🛠️ Tentando corrigir erro em {target_file} na linha {line_num}...")
+            
+            with open(target_file, "r", encoding="utf-8") as f:
+                original_code = f.read()
+            
+            prompt = f"""
+            Você é o motor de auto-evolução do JARVIS 5.0.
+            Analise o seguinte erro e o código do arquivo abaixo.
+            ERRO:
+            {error_context}
+
+            ARQUIVO ORIGINAL ({target_file}):
+            {original_code}
+
+            Sua tarefa: Forneça APENAS o código Python completo corrigido para este arquivo.
+            Não inclua explicações, apenas o código fonte puro.
+            Remova bugs, corrija imports ou lógica quebrada que causou o erro acima.
+            """
+            
+            # Chamar o Ollama para a correção
+            fixed_code = await self._call_ollama_async(prompt, model="deepseek-r1:8b") # Usar um modelo melhor para código
+            
+            if "```python" in fixed_code:
+                fixed_code = fixed_code.split("```python")[1].split("```")[0].strip()
+            elif "```" in fixed_code:
+                fixed_code = fixed_code.split("```")[1].split("```")[0].strip()
+            
+            if len(fixed_code) > 10 and "def" in fixed_code or "import" in fixed_code:
+                # Fazer backup antes de aplicar
+                backup_path = target_file + ".bak"
+                with open(backup_path, "w", encoding="utf-8") as f:
+                    f.write(original_code)
+                
+                with open(target_file, "w", encoding="utf-8") as f:
+                    f.write(fixed_code)
+                
+                logger.info(f"✅ AUTO-REPARO APLICADO em {target_file}. Backup criado em {backup_path}")
+                if voice_controller:
+                    voice_controller.speak(f"Eu identifiquei um erro em {os.path.basename(target_file)} e acabei de aplicar uma auto-correção.")
+            
+        except Exception as e:
+            logger.error(f"Falha no ciclo de auto-reparo: {e}")
+
+    def analyze_codebase(self, root_path: str = None):
+        """
+        Analisa e sugere/aplica correções em todos os arquivos Python do projeto.
+        Se root_path não for informado, usa o diretório do projeto principal.
+        """
+        import os
+        import subprocess
+        import sys
+        import logging
+        import asyncio
+
+        logger = logging.getLogger("AIAgent.AutoAnalysis")
+
+        if root_path is None:
+            # Project root (src/core/intelligence -> ../../.. => project root)
+            root_path = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../../..")
+            )
+        logger.info(f"🔎 Iniciando autoanálise de código em: {root_path}")
+
+        # 1. Listar todos os arquivos Python
+        py_files = []
+        for dirpath, dirnames, filenames in os.walk(root_path):
+            for fname in filenames:
+                if fname.endswith(".py") and "__pycache__" not in dirpath and "venv" not in dirpath:
+                    py_files.append(os.path.join(dirpath, fname))
+
+        logger.info(f"Foram encontrados {len(py_files)} arquivos Python para análise.")
+
+        # 2. Rodar autopep8/black para padronização e correção automática
+        for f in py_files:
+            try:
+                subprocess.run([sys.executable, "-m", "autopep8", "--in-place", "--aggressive", "--aggressive", f], check=False)
+                subprocess.run([sys.executable, "-m", "black", f, "--quiet"], check=False)
+            except Exception as e:
+                pass
+
+        # 3. Disparar Auto-reparo Baseado em Logs
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.create_task(self.self_repair(root_path))
+            else:
+                asyncio.run(self.self_repair(root_path))
+        except Exception:
+            pass
+
+        logger.info("✅ Autoanálise e autocorreção concluídas.")
 
     def __init__(self, provider: str = "ollama"):
         self.auto_recovery = None
@@ -374,7 +526,8 @@ class AIAgent:
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
         self.event_bus = None
 
-        # Sensory awareness (agent nasce 'cego' até receber VISION_READY/AUDIO_READY)
+        # Sensory awareness (agent nasce 'cego' até receber
+        # VISION_READY/AUDIO_READY)
         self.vision_ready = False
         self.vision_mock_mode = False
         self.audio_ready = False
@@ -393,24 +546,35 @@ class AIAgent:
                     EventType.VISION_SCREEN_CHANGE, self._handle_vision_event
                 )
 
-                # Ouvido para prontidão do subsistema de visão (Boot orientado a eventos)
+                # Ouvido para prontidão do subsistema de visão (Boot orientado
+                # a eventos)
                 try:
-                    self.event_bus.subscribe(EventType.VISION_READY, self._on_vision_ready)
+                    self.event_bus.subscribe(
+                        EventType.VISION_READY, self._on_vision_ready
+                    )
                     logger.debug("AI Agent subscribed to VISION_READY events")
                 except Exception as e:
                     logger.debug(f"Failed to subscribe to VISION_READY: {e}")
 
                 # Ouvido para subsistema de áudio (AUDIO_READY + transcrições)
                 try:
-                    self.event_bus.subscribe(EventType.AUDIO_READY, self._on_audio_ready)
-                    self.event_bus.subscribe(EventType.AUDIO_TRANSCRIPTION, self._on_audio_transcription)
-                    logger.debug("AI Agent subscribed to AUDIO_READY and AUDIO_TRANSCRIPTION events")
+                    self.event_bus.subscribe(
+                        EventType.AUDIO_READY, self._on_audio_ready
+                    )
+                    self.event_bus.subscribe(
+                        EventType.AUDIO_TRANSCRIPTION, self._on_audio_transcription
+                    )
+                    logger.debug(
+                        "AI Agent subscribed to AUDIO_READY and AUDIO_TRANSCRIPTION events"
+                    )
                 except Exception as e:
                     logger.debug(f"Failed to subscribe to audio events: {e}")
 
                 # Let BrainRouter also be aware of the event bus if present
                 try:
-                    if self.brain_router and hasattr(self.brain_router, "connect_event_bus"):
+                    if self.brain_router and hasattr(
+                        self.brain_router, "connect_event_bus"
+                    ):
                         self.brain_router.connect_event_bus(self.event_bus)
                 except Exception:
                     pass
@@ -418,20 +582,21 @@ class AIAgent:
             logger.warning(f"Failed to connect event bus: {e}")
 
     def _verify_critical_dependencies(self):
-        """Checks for critical dependencies and sets Safe Mode."""
-        critical_modules = {
+        """Checks for dependencies and logs warnings, but avoids blocking the brain."""
+        modules = {
             "voice_controller": voice_controller,
             "vision_enhancer": vision_enhancer,
             "screen_capture": screen_capture,
             "action_controller": action_controller,
         }
 
-        missing = [name for name, mod in critical_modules.items() if mod is None]
+        missing = [name for name, mod in modules.items() if mod is None]
 
         if missing:
-            self.safe_mode = True
-            logger.critical(f"❌ MISSING CRITICAL MODULES: {missing}")
-            logger.critical("🔒 ENTERING SAFE MODE")
+            logger.warning(f"⚠️ Algumas funcionalidades estão offline: {missing}")
+            # Não ativamos mais o safe_mode por falta de visão ou áudio, 
+            # o JARVIS deve tentar persistir sempre.
+            self.safe_mode = False 
         else:
             self.safe_mode = False
 
@@ -488,9 +653,11 @@ class AIAgent:
                         threading.Thread(
                             target=voice_controller.speak,
                             args=(
-                                "Sistemas visuais online. Operando em modo de simulação." 
-                                if self.vision_mock_mode
-                                else "Sistemas visuais online.",
+                                (
+                                    "Sistemas visuais online. Operando em modo de simulação."
+                                    if self.vision_mock_mode
+                                    else "Sistemas visuais online."
+                                ),
                             ),
                             daemon=True,
                         ).start()
@@ -498,7 +665,9 @@ class AIAgent:
                     pass
             else:
                 self.vision_ready = False
-                logger.warning("⚠️ Vision subsystem reported NOT available — agent remains blind")
+                logger.warning(
+                    "⚠️ Vision subsystem reported NOT available — agent remains blind"
+                )
         except Exception as e:
             logger.error(f"Error handling VISION_READY event: {e}")
 
@@ -521,7 +690,7 @@ class AIAgent:
 
     async def _on_audio_transcription(self, event):
         """Receives audio.transcription events and forwards to process_command.
-        
+
         Runs asynchronously and does not block the event loop while processing.
         """
         try:
@@ -544,11 +713,14 @@ class AIAgent:
             # Enfileirar o processamento do comando (fire-and-forget)
             try:
                 import asyncio
+
                 # Use create_task for non-blocking execution in the loop
                 asyncio.create_task(self.process_command(text))
             except Exception as e:
                 # Last-resort: run in thread
-                threading.Thread(target=lambda: asyncio.run(self.process_command(text)), daemon=True).start()
+                threading.Thread(
+                    target=lambda: asyncio.run(self.process_command(text)), daemon=True
+                ).start()
         except Exception as e:
             logger.error(f"Error handling AUDIO_TRANSCRIPTION: {e}")
 
@@ -580,7 +752,8 @@ class AIAgent:
         # 3. Vision Context
         vision_text = ""
         screenshot_image = None
-        # Só usar visão se o subsistema reportou prontidão (Boot orientado a eventos)
+        # Só usar visão se o subsistema reportou prontidão (Boot orientado a
+        # eventos)
         if screen_capture and getattr(self, "vision_ready", False):
             # Simple synchronous capture for robustness in this refactor
             try:
@@ -605,7 +778,7 @@ class AIAgent:
         if memory_manager:
             try:
                 memory_context = memory_manager.get_context(user_command)
-            except:
+            except BaseException:
                 pass
 
         # 5. Build Prompt
@@ -628,7 +801,7 @@ class AIAgent:
                 le = get_learning_engine()
                 if le:
                     le.record_interaction(user_command, response)
-            except:
+            except BaseException:
                 pass
 
         # 9. Speak
@@ -653,7 +826,7 @@ class AIAgent:
         # Try to get better model from config
         try:
             target_model = get_model_for_tier("pro")
-        except:
+        except BaseException:
             pass
 
         payload = {
@@ -675,7 +848,8 @@ class AIAgent:
                 ollama_manager.ensure_server_running()
                 if target_model:
                     ollama_manager.ensure_model_loaded(target_model, timeout=6)
-                    # keepalive is managed by BrainRouter/DecisionEngine; manager no-op here
+                    # keepalive is managed by BrainRouter/DecisionEngine;
+                    # manager no-op here
             except Exception:
                 pass
         except Exception:

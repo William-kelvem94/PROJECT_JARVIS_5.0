@@ -123,7 +123,8 @@ class UnifiedMemoryManager:
             self.knowledge = self.client.get_or_create_collection(
                 "jarvis_knowledge", metadata={"hnsw:space": "cosine"}
             )
-            # Back-compat: expose `collection` as the primary interactions collection
+            # Back-compat: expose `collection` as the primary interactions
+            # collection
             self.collection = self.interactions
             logger.info("✅ Unified Memory collections initialized.")
         except Exception as e:
@@ -159,7 +160,11 @@ class UnifiedMemoryManager:
                 try:
                     process_worker_factory.configure_worker_type(
                         WorkerType.AI_PROCESSOR,
-                        WorkerConfig(worker_type=WorkerType.AI_PROCESSOR, max_memory_mb=512, max_concurrent_tasks=1),
+                        WorkerConfig(
+                            worker_type=WorkerType.AI_PROCESSOR,
+                            max_memory_mb=512,
+                            max_concurrent_tasks=1,
+                        ),
                     )
                 except Exception:
                     pass
@@ -352,7 +357,7 @@ class UnifiedMemoryManager:
                         try:
                             ts = datetime.fromisoformat(ts_str)
                             entries_with_ts.append((results["ids"][i], ts))
-                        except:
+                        except BaseException:
                             entries_with_ts.append((results["ids"][i], datetime.min))
 
                     # Sort by timestamp
@@ -434,7 +439,10 @@ class UnifiedMemoryManager:
 
             # Fallback: search short-term memory
             for item in list(self.short_term)[-50:]:
-                if query.lower() in item["user"].lower() or query.lower() in item["jarvis"].lower():
+                if (
+                    query.lower() in item["user"].lower()
+                    or query.lower() in item["jarvis"].lower()
+                ):
                     results.append({"command": item["user"], "similarity": 0.9})
                 elif any(tok in item["user"].lower() for tok in query.lower().split()):
                     results.append({"command": item["user"], "similarity": 0.5})

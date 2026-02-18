@@ -1,3 +1,5 @@
+from src.core.intelligence.local_brain import local_brain
+from src.core.management.hardware_manager import hardware_manager
 import logging
 import sys
 import os
@@ -6,8 +8,6 @@ import time
 # Adicionar root ao path
 sys.path.append(os.getcwd())
 
-from src.core.management.hardware_manager import hardware_manager
-from src.core.intelligence.local_brain import local_brain
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("VERIFY-PHASE5")
@@ -38,7 +38,8 @@ def test_kv_cache_speed():
     cold_time = time.time() - start
     logger.info(f"⏱️ Cold response time: {cold_time:.2f}s")
 
-    # Simular segundo turno (quente - deve ser mais rápido no processamento de prompt)
+    # Simular segundo turno (quente - deve ser mais rápido no processamento de
+    # prompt)
     start = time.time()
     res2 = local_brain.generate_response(prompt2, use_cache=True)
     warm_time = time.time() - start
@@ -54,7 +55,8 @@ def test_kv_cache_speed():
 
 if __name__ == "__main__":
     test_hardware_optimization()
-    # Note: KV Cache test depends on model loading, skip if model not available in CI/Tests
+    # Note: KV Cache test depends on model loading, skip if model not
+    # available in CI/Tests
     if os.environ.get("SKIP_HEAVY_TESTS") != "1":
         try:
             test_kv_cache_speed()

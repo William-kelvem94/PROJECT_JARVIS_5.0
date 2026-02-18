@@ -156,12 +156,12 @@ class FeedbackDatabase:
 
             # Create indexes
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_feedback_type 
+                CREATE INDEX IF NOT EXISTS idx_feedback_type
                 ON feedback(feedback_type)
             """)
 
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_feedback_timestamp 
+                CREATE INDEX IF NOT EXISTS idx_feedback_timestamp
                 ON feedback(timestamp)
             """)
 
@@ -188,8 +188,8 @@ class FeedbackDatabase:
                 cursor = self.conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO feedback 
-                    (feedback_id, interaction_id, user_input, ai_response, 
+                    INSERT INTO feedback
+                    (feedback_id, interaction_id, user_input, ai_response,
                      feedback_type, feedback_value, correction, timestamp, metadata)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -711,7 +711,8 @@ class FeedbackLoop:
         """
         try:
             # This is a simplified version
-            # In a real implementation, would query database with date filtering
+            # In a real implementation, would query database with date
+            # filtering
 
             all_feedback = (
                 self.database.get_feedback_by_type("explicit")

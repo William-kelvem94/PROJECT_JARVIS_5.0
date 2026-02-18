@@ -55,7 +55,9 @@ class AgentEngagementManager:
                     pass
 
             # 2. Workflow Perception
-            if hasattr(self.agent, "screen_capture") and self.agent.screen_capture:
+            if hasattr(
+                    self.agent,
+                    "screen_capture") and self.agent.screen_capture:
                 try:
                     activity = "Atividade de tela observada"  # Placeholder for complex analysis
                     if hasattr(self.agent, "memory_manager"):

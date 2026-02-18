@@ -50,7 +50,7 @@ class FileIndexer:
             try:
                 with open(self.cache_file, "r", encoding="utf-8") as f:
                     return json.load(f)
-            except:
+            except BaseException:
                 return {}
         return {}
 
@@ -190,7 +190,7 @@ class FileIndexer:
                     try:
                         img = Image.open(file_path)
                         meta["resolution"] = f"{img.width}x{img.height}"
-                    except:
+                    except BaseException:
                         pass
 
             # ESTRATÉGIA D: Arquivos Compactados
@@ -198,7 +198,8 @@ class FileIndexer:
                 meta["content_type"] = "archive"
                 meta["summary"] = self._read_archive_contents(file_path)
 
-            # ESTRATÉGIA E: Arquivos Binários Desconhecidos (Fallback Universal)
+            # ESTRATÉGIA E: Arquivos Binários Desconhecidos (Fallback
+            # Universal)
             else:
                 meta["content_type"] = "binary"
                 meta["summary"] = self._read_binary_signature(file_path)
@@ -223,7 +224,7 @@ class FileIndexer:
                 f.seek(max(0, file_size - 1000))
                 tail = f.read(1000)
                 return f"{head}\n\n[... AMOSTRAGEM DE ARQUIVO GRANDE ...]\n\n{tail}"
-        except:
+        except BaseException:
             return "[Erro ao ler texto]"
 
     def _read_binary_signature(self, file_path: Path) -> str:
@@ -241,7 +242,7 @@ class FileIndexer:
                 return (
                     f"Assinatura Binária: {chunk[:16].hex()} | Strings: {summary[:500]}"
                 )
-        except:
+        except BaseException:
             return "Arquivo binário não interpretável."
 
     def _read_pdf_sample(self, file_path: Path) -> str:
@@ -259,10 +260,10 @@ class FileIndexer:
                         extracted = reader.pages[i].extract_text()
                         if extracted:
                             text += extracted + "\n"
-                    except:
+                    except BaseException:
                         pass
             return text[:2000]
-        except:
+        except BaseException:
             return "Falha ao extrair texto do PDF."
 
     def _read_audio_metadata(self, file_path: Path) -> str:
@@ -282,7 +283,7 @@ class FileIndexer:
                 artist = tags.get("TPE1", "Desconhecido")
                 title = tags.get("TIT2", "Sem Título")
                 info.append(f"Artista: {artist} | Título: {title}")
-            except:
+            except BaseException:
                 pass
         return " | ".join(info) if info else "Áudio (Meta indisponível)"
 
@@ -303,7 +304,7 @@ class FileIndexer:
 
             cap.release()
             return f"Resolução: {width}x{height} | FPS: {round(fps, 2)} | Duração: {round(duration, 2)}s"
-        except:
+        except BaseException:
             return "Vídeo (Erro na extração de metadados)"
 
     def _read_archive_contents(self, file_path: Path) -> str:
@@ -318,7 +319,7 @@ class FileIndexer:
                     if len(files) > 20:
                         summary += f" ... e mais {len(files)-20} arquivos."
                     return f"Conteúdo do Zip: {summary}"
-            except:
+            except BaseException:
                 return "Arquivo Zip corrompido ou protegido por senha."
         return f"Arquivo compactado ({file_path.suffix})"
 

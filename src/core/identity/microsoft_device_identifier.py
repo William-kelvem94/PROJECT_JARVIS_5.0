@@ -149,7 +149,7 @@ class MicrosoftDeviceIdentifier:
                 account_info.is_administrator = (
                     ctypes.windll.shell32.IsUserAnAdmin() != 0
                 )
-            except:
+            except BaseException:
                 pass
 
             # 2. TENTAR REGISTRY - LOGON UI (Ãšltima conta que fez login)
@@ -222,7 +222,7 @@ class MicrosoftDeviceIdentifier:
                         account_info.account_email = fqdn
                         if account_info.account_type == "local":
                             account_info.account_type = "domain"
-            except:
+            except BaseException:
                 pass
 
             # 6. SE AINDA Ã‰ LOCAL, TENTAR DETECTAR VIA REGISTRY USERS
@@ -398,7 +398,7 @@ class MicrosoftDeviceIdentifier:
                     if "googledrivesync" in proc_name or "google drive" in proc_name:
                         google_drive_running = True
                         break
-            except:
+            except BaseException:
                 pass
 
             # 3. TENTAR DETECTAR CONTA VIA REGISTRY

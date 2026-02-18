@@ -509,7 +509,7 @@ class SystemHelper:
             return False
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except BaseException:
             return False
 
     @staticmethod

@@ -1,5 +1,6 @@
 """Teste rápido de lazy loading"""
 
+from src.core.intelligence.neural_memory import neural_memory
 import time
 import sys
 from pathlib import Path
@@ -14,7 +15,6 @@ print("=" * 60)
 # Teste 1: Import rápido
 print("\n1️⃣ Testando import (deve ser rápido - sem carregar embeddings)...")
 start = time.time()
-from src.core.intelligence.neural_memory import neural_memory
 
 elapsed = time.time() - start
 

@@ -4,6 +4,9 @@ Teste de Compatibilidade PyTorch 2026
 Verifica se torch_dtype foi substituído por dtype
 """
 
+import os
+from pathlib import Path
+import warnings
 import sys
 import io
 
@@ -11,11 +14,8 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-import warnings
-from pathlib import Path
 
 # 🔧 BOOTSTRAP DE CAMINHO DE MÓDULO (Resolução de 'No module named src')
-import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 

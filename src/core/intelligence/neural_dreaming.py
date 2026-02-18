@@ -24,7 +24,11 @@ class NeuralDreaming:
         self.priority_mode = "BACKGROUND"  # BACKGROUND ou FOCUS
         self.current_topic = None
 
-    def start_dream(self, topic: str, duration_min: int = 60, focus_mode: bool = False):
+    def start_dream(
+            self,
+            topic: str,
+            duration_min: int = 60,
+            focus_mode: bool = False):
         """Inicia o processo de 'Sonho' (Treinamento/Estudo)"""
         if self.is_dreaming:
             logger.warning("Jarvis jÃ¡ estÃ¡ em modo Dreaming.")
@@ -71,15 +75,16 @@ class NeuralDreaming:
             )
 
             trainer = LocalTrainer(
-                config=dream_config, output_dir=Path("data/models/dream_checkpoints")
-            )
+                config=dream_config,
+                output_dir=Path("data/models/dream_checkpoints"))
 
             logger.info(
                 f"ðŸ§  InÃ­cio do Ciclo REM: Ajustando sinapses sobre '{topic}'..."
             )
 
             # Simular dados baseados no tÃ³pico (Isso deveria vir da memÃ³ria)
-            # Por enquanto, criamos um dataset sintÃ©tico mÃ­nimo para exercitar os pesos
+            # Por enquanto, criamos um dataset sintÃ©tico mÃ­nimo para
+            # exercitar os pesos
             dummy_data = [
                 {
                     "instruction": f"Explain {topic}",
@@ -90,7 +95,8 @@ class NeuralDreaming:
 
             while time.time() < end_time and self.is_dreaming:
                 try:
-                    # Executa um ciclo de treino real (o Safety Gate do trainer protegerÃ¡ a CPU)
+                    # Executa um ciclo de treino real (o Safety Gate do trainer
+                    # protegerÃ¡ a CPU)
                     trainer.train(train_data=dummy_data)
 
                     elapsed = (time.time() - start_time) / 60
@@ -102,7 +108,8 @@ class NeuralDreaming:
                     time.sleep(30)
 
                 except RuntimeError as re:
-                    logger.warning(f"â¸ï¸ Sonho pausado por carga do sistema: {re}")
+                    logger.warning(
+                        f"â¸ï¸ Sonho pausado por carga do sistema: {re}")
                     time.sleep(60)  # Espera 1 min se o sistema estiver cheio
                 except Exception as e:
                     logger.error(f"âŒ Pesadelo (Erro no treino): {e}")

@@ -1,3 +1,5 @@
+from src.core.vision.screen_capture import screen_capture
+from src.core.intelligence.ai_agent import ai_agent
 import sys
 import os
 import logging
@@ -6,8 +8,6 @@ import time
 # Setup paths
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.intelligence.ai_agent import ai_agent
-from src.core.vision.screen_capture import screen_capture
 
 # Mock logger
 logging.basicConfig(level=logging.INFO)
@@ -25,11 +25,13 @@ def test_hybrid_vision():
 
     print(f"  ✅ Captured: {capture_path}")
 
-    # 2. Run Hybrid Analysis (Mocking UI detection if needed or letting it run real)
+    # 2. Run Hybrid Analysis (Mocking UI detection if needed or letting it run
+    # real)
     print("  🧠 Running Hybrid Analysis (Level 1 -> Level 2)...")
 
     # We expect Level 1 to run. Level 2 depends on content.
-    # To test escalation, we might need a complex screen or mock the ui_detector.
+    # To test escalation, we might need a complex screen or mock the
+    # ui_detector.
 
     start_time = time.time()
     result = ai_agent.process_hybrid_vision(capture_path)

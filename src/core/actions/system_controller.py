@@ -5,6 +5,7 @@
 # Prioriza comandos diretos sobre automaÃ§Ã£o visual
 # ============================================================================
 
+import psutil  # Sempre disponÃ­vel (fallback)
 import subprocess
 import logging
 from ctypes import cast, POINTER
@@ -59,7 +60,6 @@ except ImportError:
     PYCAW_AVAILABLE = False
     logging.warning("âš ï¸ pycaw nÃ£o disponÃ­vel - controle de Ã¡udio desabilitado")
 
-import psutil  # Sempre disponÃ­vel (fallback)
 
 # -------------------------------------------------------------------------
 # LOGGER
@@ -320,7 +320,7 @@ class SystemController:
                 timeout=2,
             )
             return True
-        except:
+        except BaseException:
             return False
 
     # -------------------------------------------------------------------------

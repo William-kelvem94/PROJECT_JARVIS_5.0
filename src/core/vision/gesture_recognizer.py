@@ -58,7 +58,7 @@ try:
         MEDIAPIPE_AVAILABLE = True
     else:
         MEDIAPIPE_AVAILABLE = False
-except:
+except BaseException:
     MEDIAPIPE_AVAILABLE = False
 
 

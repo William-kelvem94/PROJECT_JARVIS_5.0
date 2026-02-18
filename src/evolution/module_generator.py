@@ -70,12 +70,12 @@ class GeneratedModule:
             "specification": self.specification,
             "status": self.status,
             "created_at": self.created_at.isoformat(),
-            "file_path": str(self.file_path) if self.file_path else None,
+            "file_path": str(
+                self.file_path) if self.file_path else None,
             "error_count": self.error_count,
             "last_error": self.last_error,
             "monitoring_until": (
-                self.monitoring_until.isoformat() if self.monitoring_until else None
-            ),
+                self.monitoring_until.isoformat() if self.monitoring_until else None),
         }
 
 
@@ -106,12 +106,15 @@ class ModuleGenerator:
         self.running = True
 
         # Subscribe to user requests for new features
-        event_bus.subscribe(EventType.UI_COMMAND, self._handle_generation_request)
+        event_bus.subscribe(
+            EventType.UI_COMMAND,
+            self._handle_generation_request)
 
         # Start monitoring task
         self._monitor_task = asyncio.create_task(self._monitor_modules())
 
-        logger.info("🧬 Module Generator started - Auto-Development Layer active")
+        logger.info(
+            "🧬 Module Generator started - Auto-Development Layer active")
 
     async def stop(self):
         """Stop the module generator"""
@@ -241,8 +244,8 @@ class ModuleGenerator:
         # Extract key words and create name
         words = specification.lower().split()
         key_words = [
-            w for w in words if len(w) > 3 and w not in ["with", "for", "the", "and"]
-        ]
+            w for w in words if len(w) > 3 and w not in [
+                "with", "for", "the", "and"]]
         name = "_".join(key_words[:3]) if key_words else "generated_module"
 
         # Sanitize
@@ -331,7 +334,10 @@ Generate ONLY the Python code, no explanations."""
             # Return a basic template as fallback
             return self._generate_basic_template(module_name, specification)
 
-    def _generate_basic_template(self, module_name: str, specification: str) -> str:
+    def _generate_basic_template(
+            self,
+            module_name: str,
+            specification: str) -> str:
         """Generate a basic module template if LLM fails"""
         return f'''#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -348,27 +354,27 @@ logger = logging.getLogger(__name__)
 
 class {module_name.title().replace('_', '')}:
     """Auto-generated module class"""
-    
+
     def __init__(self):
         self.active = False
         logger.info(f"{{self.__class__.__name__}} initialized")
-        
+
     async def start(self):
         """Start the module"""
         self.active = True
         logger.info(f"{{self.__class__.__name__}} started")
-        
+
     async def stop(self):
         """Stop the module"""
         self.active = False
         logger.info(f"{{self.__class__.__name__}} stopped")
-        
+
     async def execute(self, *args, **kwargs):
         """Main execution method"""
         if not self.active:
             logger.warning("Module not active")
             return False
-            
+
         logger.info(f"Executing module {self.__class__.__name__} with specification: {specification}")
         self.log_event("EXECUTION", f"Module {self.name} executed successfully")
         return True
@@ -406,7 +412,8 @@ class {module_name.title().replace('_', '')}:
 
                 if result.returncode != 0:
                     logger.error(f"Syntax error: {result.stderr}")
-                    module.test_results = {"syntax": False, "error": result.stderr}
+                    module.test_results = {
+                        "syntax": False, "error": result.stderr}
                     return False
 
                 # Test 2: Import check
@@ -460,7 +467,8 @@ class {module_name.title().replace('_', '')}:
             module_path = f"src.plugins.auto_generated.{module.name}"
 
             # Import the module
-            spec = importlib.util.spec_from_file_location(module.name, module.file_path)
+            spec = importlib.util.spec_from_file_location(
+                module.name, module.file_path)
             if not spec or not spec.loader:
                 logger.error("Failed to create module spec")
                 return False

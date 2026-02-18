@@ -46,10 +46,10 @@ brain_router:
       - "deepseek-r1:8b" # Fallback decente
     
     tier_pro:  # Versatile tier - Média-Alta complexidade
-      - "gemma3:4b"  
-      - "qwen2.5:32b"
-      - "qwen2.5:14b"
-      - "mistral-nemo:12b"
+      - "qwen2.5-coder:7b"
+      - "deepseek-r1:8b"
+      - "gemma3:4b"
+      - "qwen2.5:7b"
       - "llama3.1:8b"
     
     tier_cloud: # Modelos Cloud-Only (Ollama Connect)
@@ -371,3 +371,45 @@ debug:
   save_failed_screenshots: true
   profiling_enabled: true
   neural_reflection: true  # Ativa o Raio-X do pensamento no terminal
+
+# === CONTINUAL LEARNING ===
+# Configuração do sistema de aprendizado autônomo (Fase 2 Refactoring)
+continual_learning:
+  general:
+    enabled: true
+    log_level: "INFO"
+
+  dream_cycle:
+    enabled: true
+    idle_conditions:
+      max_cpu_percent: 20.0
+      max_memory_percent: 80.0
+      min_idle_duration_seconds: 300   # 5 minutos de ociosidade mínima
+      check_interval_seconds: 60       # Verificar a cada 1 minuto
+      night_start_hour: 22             # Início do período noturno (22h)
+      night_end_hour: 6                # Fim do período noturno (6h)
+    research_enabled: true
+    max_research_topics_per_cycle: 2
+
+  training:
+    enabled: true
+    model_tier: "pro"          # ultra | pro | fast
+    max_length: 2048
+    batch_size: 4
+    learning_rate: 0.0002      # 2e-4
+    epochs: 3
+    gradient_accumulation_steps: 4
+    backend: "local"           # local | distributed
+
+  database:
+    enabled: true
+    backend: "sqlite"          # sqlite | postgresql | chromadb
+    auto_migrate: true
+    max_connections: 10
+    sqlite_path: "data/learning.db"
+
+  monitoring:
+    enabled: true
+    collection_interval: 1.0   # segundos entre coletas de métricas
+    web_port: 8080
+    log_level: "INFO"

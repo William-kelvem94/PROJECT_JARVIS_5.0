@@ -31,6 +31,7 @@ try:
     ENV_MANAGER_AVAILABLE = True
 except ImportError:
     ENV_MANAGER_AVAILABLE = False
+    get_config = None
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,8 @@ class BrainRouter:
         self._last_model_check = 0
         self.discovery_interval = 60  # Recarregar lista de modelos a cada 60s
         self.on_heavy_model_loading = None
+        # Optional callback for audio transcription events
+        self.on_audio_transcription = None
         # Audio subsystem awareness
         self.audio_ready = False
         self.audio_mock_mode = False
@@ -121,13 +124,15 @@ class BrainRouter:
             f"✅ BrainRouter: Cloud integration initialized (Available: {self.cloud_available})"
         )
 
-        # Attempt to lazily connect to global event bus if available (safe no-op)
+        # Attempt to lazily connect to global event bus if available (safe
+        # no-op)
         try:
             from src.core.infrastructure.async_event_bus import get_event_bus
 
             ev = get_event_bus()
             if ev:
-                # Defer actual subscription to connect_event_bus to avoid event-loop issues
+                # Defer actual subscription to connect_event_bus to avoid
+                # event-loop issues
                 self._event_bus = ev
         except Exception:
             self._event_bus = None
@@ -146,7 +151,7 @@ class BrainRouter:
 
         try:
             ram_percent = psutil.virtual_memory().percent
-        except:
+        except BaseException:
             ram_percent = 50.0
 
         # Se RAM estiver cheia (>75%), descarta modelos imediatamente (0).
@@ -201,9 +206,6 @@ class BrainRouter:
         except Exception as e:
             self.ollama_available_models = []
             logger.warning(f"⚠️ Erro ao detectar modelos Ollama: {e}")
-        except Exception:
-            self.ollama_available_models = []
-            logger.debug("Ollama não está rodando no momento.")
 
     def choose_brain(
         self,
@@ -211,11 +213,13 @@ class BrainRouter:
         privacy_level: PrivacyLevel = PrivacyLevel.MEDIUM,
         latency_requirement: LatencyRequirement = LatencyRequirement.MODERATE,
     ) -> dict:
+        _ = latency_requirement  # silence unused warning
         """
         Versão Stark IQ 11.2 - Escolha adaptativa baseada em Memória e Tiers
         Retorna: {'brain': 'ollama:<modelo>'|'local'|'cloud', 'keep_alive': 0|'15m', 'is_heavy': bool}
         """
-        # Periodic Re-discovery of models (perfeito para downloads em background)
+        # Periodic Re-discovery of models (perfeito para downloads em
+        # background)
         import time
 
         if time.time() - self._last_model_check > self.discovery_interval:
@@ -242,13 +246,16 @@ class BrainRouter:
 
         if force_pro:
             # Fake infinite RAM to force best model selection
-            logger.info("🚀 PRO MODE: Ignorando limites de hardware para seleção de modelo.")
+            logger.info(
+                "🚀 PRO MODE: Ignorando limites de hardware para seleção de modelo."
+            )
             free_ram = 999.0
             free_vram = 999.0
         else:
             # Capturar Hardware em tempo real
             try:
                 from src.core.management.hardware_manager import hardware_manager
+
                 mem = hardware_manager.get_memory_status()
                 free_ram = mem["ram_free_gb"]
                 free_vram = mem["vram_free_gb"]
@@ -259,25 +266,39 @@ class BrainRouter:
         # ROTEAMENTO OLLAMA (TIERS)
         if self.ollama_available_models:
             # ☁️ TIER HOLOERTY (CLOUD) - Prioridade Máxima se ativo e complexo
-            if task_complexity >= 0.8: # Only for very hard tasks
-                 cloud_tier = self.config.get_ai_config("brain_router.ollama_models.tier_cloud", [])
-                 for model_pattern in cloud_tier:
-                     # Check if we can use this cloud model (assuming it's 'pulled' or mapped)
-                     # We treat :cloud models as always available if configured
-                     logger.info(f"☁️ TIER HOLOERTY: Routing to {model_pattern}")
-                     return {
+            if task_complexity >= 0.8:  # Only for very hard tasks
+                cloud_tier = []
+                if CONFIG_AVAILABLE and config:
+                    cloud_tier = config.get_ai_config(
+                        "brain_router.ollama_models.tier_cloud", []
+                    )
+                for model_pattern in cloud_tier or []:
+                    # Check if we can use this cloud model (assuming it's 'pulled' or mapped)
+                    # We treat :cloud models as always available if configured
+                    logger.info(f"☁️ TIER HOLOERTY: Routing to {model_pattern}")
+                    return {
                         "brain": f"ollama:{model_pattern}",
-                        "keep_alive": "5m", 
-                        "is_heavy": True
-                     }
+                        "keep_alive": "5m",
+                        "is_heavy": True,
+                    }
 
-            # TIER ULTRA: Gênio (DeepSeek-R1) -> Alta Complexidade + Recursos Livres
-            min_ram_ultra = self.hw_tier_ultra.get("min_ram_gb", 10.0)
-            min_vram_ultra = self.hw_tier_ultra.get("min_vram_gb", 4.0)
+            # TIER ULTRA: Gênio (DeepSeek-R1) -> Alta Complexidade + Recursos
+            # Livres
+            min_ram_ultra = (
+                self.hw_tier_ultra.get("min_ram_gb", 10.0)
+                if self.hw_tier_ultra
+                else 10.0
+            )
+            min_vram_ultra = (
+                self.hw_tier_ultra.get("min_vram_gb", 4.0)
+                if self.hw_tier_ultra
+                else 4.0
+            )
+            tier_ultra = self.tier_ultra if self.tier_ultra else []
             if task_complexity >= 0.7 and (
                 free_ram > min_ram_ultra or free_vram > min_vram_ultra
             ):
-                for model_pattern in self.tier_ultra:
+                for model_pattern in tier_ultra:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🧠 TIER ULTRA: {available_model}")
@@ -289,17 +310,26 @@ class BrainRouter:
                                 )
                             return {
                                 "brain": f"ollama:{available_model}",
-                                "keep_alive": self.hw_tier_ultra.get("keep_alive", 0),
+                                "keep_alive": (
+                                    self.hw_tier_ultra.get("keep_alive", 0)
+                                    if self.hw_tier_ultra
+                                    else 0
+                                ),
                                 "is_heavy": True,
                             }
 
             # TIER PRO: Versátil (Llama 3.x) -> Média-Alta Complexidade
-            min_ram_pro = self.hw_tier_pro.get("min_ram_gb", 6.0)
-            min_vram_pro = self.hw_tier_pro.get("min_vram_gb", 2.0)
+            min_ram_pro = (
+                self.hw_tier_pro.get("min_ram_gb", 6.0) if self.hw_tier_pro else 6.0
+            )
+            min_vram_pro = (
+                self.hw_tier_pro.get("min_vram_gb", 2.0) if self.hw_tier_pro else 2.0
+            )
+            tier_pro = self.tier_pro if self.tier_pro else []
             if task_complexity >= 0.4 and (
                 free_ram > min_ram_pro or free_vram > min_vram_pro
             ):
-                for model_pattern in self.tier_pro:
+                for model_pattern in tier_pro:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"🎯 TIER PRO: {available_model}")
@@ -310,21 +340,30 @@ class BrainRouter:
                                 )
                             return {
                                 "brain": f"ollama:{available_model}",
-                                "keep_alive": self.hw_tier_pro.get("keep_alive", 0),
+                                "keep_alive": (
+                                    self.hw_tier_pro.get("keep_alive", 0)
+                                    if self.hw_tier_pro
+                                    else 0
+                                ),
                                 "is_heavy": True,
                             }
 
             # TIER FAST: Rápido (Qwen / Phi) -> Uso geral econômico
-            min_ram_fast = self.hw_tier_fast.get("min_ram_gb", 2.0)
+            min_ram_fast = (
+                self.hw_tier_fast.get("min_ram_gb", 2.0) if self.hw_tier_fast else 2.0
+            )
+            tier_fast = self.tier_fast if self.tier_fast else []
             if free_ram > min_ram_fast:
-                for model_pattern in self.tier_fast:
+                for model_pattern in tier_fast:
                     for available_model in self.ollama_available_models:
                         if model_pattern in available_model.lower():
                             logger.info(f"⚡ TIER FAST: {available_model}")
                             return {
                                 "brain": f"ollama:{available_model}",
-                                "keep_alive": self.hw_tier_fast.get(
-                                    "keep_alive", "15m"
+                                "keep_alive": (
+                                    self.hw_tier_fast.get("keep_alive", "15m")
+                                    if self.hw_tier_fast
+                                    else "15m"
                                 ),
                                 "is_heavy": False,
                             }
@@ -334,7 +373,7 @@ class BrainRouter:
             cloud_tier = "tier_ultra" if task_complexity >= 0.9 else "tier_pro"
             cloud_models = (
                 config.get_ai_config(f"brain_router.cloud_models.{cloud_tier}", [])
-                if CONFIG_AVAILABLE
+                if CONFIG_AVAILABLE and config
                 else []
             )
 
@@ -354,13 +393,16 @@ class BrainRouter:
         logger.info("🏠 Usando LocalBrain nativo")
         return {"brain": "local", "keep_alive": "15m", "is_heavy": False}
 
-    def _choose_local_brain(self) -> str:
+    def _choose_local_brain(self) -> dict:
         """Escolhe o melhor modelo local disponível (Modo Offline)"""
         if not self.ollama_available_models:
             return {"brain": "local"}
 
         # Tentar tiers em ordem de preferência
-        all_tiers = self.tier_ultra + self.tier_pro + self.tier_fast
+        tier_ultra = self.tier_ultra if isinstance(self.tier_ultra, list) else []
+        tier_pro = self.tier_pro if isinstance(self.tier_pro, list) else []
+        tier_fast = self.tier_fast if isinstance(self.tier_fast, list) else []
+        all_tiers = tier_ultra + tier_pro + tier_fast
 
         for model_pattern in all_tiers:
             for available_model in self.ollama_available_models:
@@ -432,7 +474,9 @@ class BrainRouter:
                 mock_mode = payload.get("mock", False)
                 self.audio_ready = bool(available)
                 self.audio_mock_mode = bool(mock_mode)
-                logger.info(f"🔊 BrainRouter: audio_ready={self.audio_ready} (mock={self.audio_mock_mode})")
+                logger.info(
+                    f"🔊 BrainRouter: audio_ready={self.audio_ready} (mock={self.audio_mock_mode})"
+                )
 
             async def _on_audio_transcription(event):
                 payload = getattr(event, "data", {}) or {}
@@ -440,19 +484,28 @@ class BrainRouter:
                 if text:
                     logger.debug(f"🔁 BrainRouter observed transcription: {text[:80]}")
                     # Optional hook for higher-level routing or analytics
-                    if hasattr(self, "on_audio_transcription") and callable(self.on_audio_transcription):
+                    if getattr(
+                        self, "on_audio_transcription", None
+                    ) is not None and callable(self.on_audio_transcription):
                         try:
                             self.on_audio_transcription(text)
                         except Exception:
                             pass
 
-            event_bus.subscribe([EventType.AUDIO_READY], _on_audio_ready)
-            event_bus.subscribe([EventType.AUDIO_TRANSCRIPTION], _on_audio_transcription)
-            logger.debug("BrainRouter subscribed to audio events on EventBus")
+            if EventType is not None:
+                event_bus.subscribe([EventType.AUDIO_READY], _on_audio_ready)
+                event_bus.subscribe(
+                    [EventType.AUDIO_TRANSCRIPTION], _on_audio_transcription
+                )
+                logger.debug("BrainRouter subscribed to audio events on EventBus")
+            else:
+                logger.warning(
+                    "EventType is not available; cannot subscribe to audio events."
+                )
         except Exception as e:
             logger.warning(f"BrainRouter failed to connect to EventBus: {e}")
 
-    def update_status(self, local_load: float = None, cloud_quota: float = None):
+    def update_status(self, local_load: float = 0.0, cloud_quota: float = 0.0):
         if local_load is not None:
             self.local_load = max(0.0, min(1.0, local_load))
         if cloud_quota is not None:

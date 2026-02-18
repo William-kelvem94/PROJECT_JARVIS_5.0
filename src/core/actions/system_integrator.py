@@ -604,7 +604,7 @@ class SystemIntegrator:
                     "bytes_sent": net.bytes_sent,
                     "bytes_recv": net.bytes_recv,
                 }
-            except:
+            except BaseException:
                 pass
 
             # Battery (if laptop)
@@ -615,7 +615,7 @@ class SystemIntegrator:
                         "percent": battery.percent,
                         "plugged": battery.power_plugged,
                     }
-            except:
+            except BaseException:
                 pass
 
         except Exception as e:

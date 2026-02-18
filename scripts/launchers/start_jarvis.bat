@@ -12,10 +12,12 @@ cd /d "%~dp0\..\.."
 
 :: 1. Environment Configuration
 :: ----------------------------------------------------------------------------------
+chcp 65001 >nul 2>&1
 set "PYTHONIOENCODING=utf-8"
 set "PYTHONUTF8=1"
 set "CUDA_LAUNCH_BLOCKING=1"
 set "VENV_DIR=venv"
+set "JARVIS_ENV=production"
 
 :: 2. Virtual Environment Check
 :: ----------------------------------------------------------------------------------
@@ -33,6 +35,7 @@ call "%VENV_DIR%\Scripts\activate.bat"
 :: ----------------------------------------------------------------------------------
 echo [INFO] Initializing Core Systems...
 echo.
+set "PYTHONPATH=%CD%"
 python main.py
 
 if %ERRORLEVEL% NEQ 0 (

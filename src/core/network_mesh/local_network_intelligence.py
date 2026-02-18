@@ -257,7 +257,8 @@ class LocalNetworkIntelligence:
             from src.core.config.system_manifest import system_manifest
 
             if getattr(system_manifest.vision, "mock_camera", False):
-                # In CI / mock mode, report camera capability without touching hardware
+                # In CI / mock mode, report camera capability without touching
+                # hardware
                 capabilities.append("CAMERA")
             else:
                 import cv2

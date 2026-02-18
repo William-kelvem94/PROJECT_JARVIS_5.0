@@ -67,7 +67,7 @@ class ActionHandler:
             if match:
                 return json.loads(match.group(1))
             return json.loads(text)
-        except:
+        except BaseException:
             return None
 
     def parse_legacy_actions(self, text: str) -> List[Dict[str, Any]]:

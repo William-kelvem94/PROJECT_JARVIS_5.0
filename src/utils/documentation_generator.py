@@ -117,7 +117,8 @@ class DocumentationGenerator:
 
         # Análise básica do projeto
         project_name = project_info.get("name", "JARVIS 5.0")
-        description = project_info.get("description", "Advanced AI Assistant System")
+        description = project_info.get(
+            "description", "Advanced AI Assistant System")
 
         # Estrutura de seções
         sections = [
@@ -224,75 +225,72 @@ class DocumentationGenerator:
             f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
         ]
 
-        guide.extend(
-            [
-                "## Prerequisites\n",
-                "- Python 3.8+\n",
-                "- pip\n",
-                "- Virtual environment (recommended)\n",
-                "- Git\n\n",
-                "## Local Development Setup\n",
-                "```bash\n",
-                "# Clone the repository\n",
-                "git clone <repository-url>\n",
-                "cd PROJECT_JARVIS_5.0\n\n",
-                "# Create virtual environment\n",
-                "python -m venv venv\n",
-                "source venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n",
-                "# Install dependencies\n",
-                "pip install -r requirements.txt\n\n",
-                "# Run tests\n",
-                "python -m pytest tests/\n\n",
-                "# Start the system\n",
-                "python main.py\n",
-                "```\n\n",
-                "## Production Deployment\n",
-                "### Option 1: Docker Deployment\n",
-                "```bash\n",
-                "# Build Docker image\n",
-                "docker build -t jarvis-5.0 .\n\n",
-                "# Run container\n",
-                "docker run -d --name jarvis jarvis-5.0\n",
-                "```\n\n",
-                "### Option 2: Systemd Service\n",
-                "```bash\n",
-                "# Create systemd service file\n",
-                "sudo nano /etc/systemd/system/jarvis.service\n\n",
-                "# Service content:\n",
-                "[Unit]\n",
-                "Description=JARVIS 5.0 AI Assistant\n",
-                "After=network.target\n\n",
-                "[Service]\n",
-                "Type=simple\n",
-                "User=jarvis\n",
-                "WorkingDirectory=/opt/jarvis\n",
-                "ExecStart=/opt/jarvis/venv/bin/python main.py\n",
-                "Restart=always\n\n",
-                "[Install]\n",
-                "WantedBy=multi-user.target\n\n",
-                "# Enable and start service\n",
-                "sudo systemctl enable jarvis\n",
-                "sudo systemctl start jarvis\n",
-                "```\n\n",
-                "## Configuration\n",
-                "Copy and modify configuration files:\n",
-                "```bash\n",
-                "cp config/*.yaml config/production/\n",
-                "nano config/production/*.yaml  # Edit for production\n",
-                "```\n\n",
-                "## Monitoring\n",
-                "- Check logs: `tail -f data/logs/*.txt`\n",
-                "- Monitor processes: `ps aux | grep python`\n",
-                "- System resources: `htop` or `top`\n\n",
-                "## Backup\n",
-                "```bash\n",
-                "# Backup data directory\n",
-                "tar -czf backup_$(date +%Y%m%d).tar.gz data/\n\n",
-                "# Backup configuration\n",
-                "cp -r config/ config_backup/\n",
-                "```\n\n",
-            ]
-        )
+        guide.extend(["## Prerequisites\n",
+                      "- Python 3.8+\n",
+                      "- pip\n",
+                      "- Virtual environment (recommended)\n",
+                      "- Git\n\n",
+                      "## Local Development Setup\n",
+                      "```bash\n",
+                      "# Clone the repository\n",
+                      "git clone <repository-url>\n",
+                      "cd PROJECT_JARVIS_5.0\n\n",
+                      "# Create virtual environment\n",
+                      "python -m venv venv\n",
+                      "source venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n",
+                      "# Install dependencies\n",
+                      "pip install -r requirements.txt\n\n",
+                      "# Run tests\n",
+                      "python -m pytest tests/\n\n",
+                      "# Start the system\n",
+                      "python main.py\n",
+                      "```\n\n",
+                      "## Production Deployment\n",
+                      "### Option 1: Docker Deployment\n",
+                      "```bash\n",
+                      "# Build Docker image\n",
+                      "docker build -t jarvis-5.0 .\n\n",
+                      "# Run container\n",
+                      "docker run -d --name jarvis jarvis-5.0\n",
+                      "```\n\n",
+                      "### Option 2: Systemd Service\n",
+                      "```bash\n",
+                      "# Create systemd service file\n",
+                      "sudo nano /etc/systemd/system/jarvis.service\n\n",
+                      "# Service content:\n",
+                      "[Unit]\n",
+                      "Description=JARVIS 5.0 AI Assistant\n",
+                      "After=network.target\n\n",
+                      "[Service]\n",
+                      "Type=simple\n",
+                      "User=jarvis\n",
+                      "WorkingDirectory=/opt/jarvis\n",
+                      "ExecStart=/opt/jarvis/venv/bin/python main.py\n",
+                      "Restart=always\n\n",
+                      "[Install]\n",
+                      "WantedBy=multi-user.target\n\n",
+                      "# Enable and start service\n",
+                      "sudo systemctl enable jarvis\n",
+                      "sudo systemctl start jarvis\n",
+                      "```\n\n",
+                      "## Configuration\n",
+                      "Copy and modify configuration files:\n",
+                      "```bash\n",
+                      "cp config/*.yaml config/production/\n",
+                      "nano config/production/*.yaml  # Edit for production\n",
+                      "```\n\n",
+                      "## Monitoring\n",
+                      "- Check logs: `tail -f data/logs/*.txt`\n",
+                      "- Monitor processes: `ps aux | grep python`\n",
+                      "- System resources: `htop` or `top`\n\n",
+                      "## Backup\n",
+                      "```bash\n",
+                      "# Backup data directory\n",
+                      "tar -czf backup_$(date +%Y%m%d).tar.gz data/\n\n",
+                      "# Backup configuration\n",
+                      "cp -r config/ config_backup/\n",
+                      "```\n\n",
+                      ])
 
         return "\n".join(guide)
 
@@ -320,13 +318,15 @@ class DocumentationGenerator:
 
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ClassDef):
-                        entities.append(self._extract_class_entity(node, py_file))
+                        entities.append(
+                            self._extract_class_entity(
+                                node, py_file))
                     elif isinstance(node, ast.FunctionDef) and not isinstance(
                         node, ast.AsyncFunctionDef
                     ):
                         entities.append(
-                            self._extract_function_entity(node, py_file, "function")
-                        )
+                            self._extract_function_entity(
+                                node, py_file, "function"))
                     elif isinstance(node, ast.AsyncFunctionDef):
                         entities.append(
                             self._extract_function_entity(
@@ -339,7 +339,10 @@ class DocumentationGenerator:
 
         return entities
 
-    def _extract_class_entity(self, node: ast.ClassDef, file_path: Path) -> CodeEntity:
+    def _extract_class_entity(
+            self,
+            node: ast.ClassDef,
+            file_path: Path) -> CodeEntity:
         """Extrai entidade de classe."""
         docstring = ast.get_docstring(node)
         signature = f"class {node.name}"
@@ -428,8 +431,14 @@ class DocumentationGenerator:
         """Obtém nome do módulo a partir do caminho."""
         try:
             relative = file_path.relative_to(self.project_root / "src")
-            return str(relative).replace("/", ".").replace("\\", ".").replace(".py", "")
-        except:
+            return str(relative).replace(
+                "/",
+                ".").replace(
+                "\\",
+                ".").replace(
+                ".py",
+                "")
+        except BaseException:
             return file_path.stem
 
     def _format_entity_documentation(self, entity: CodeEntity) -> str:
@@ -444,7 +453,8 @@ class DocumentationGenerator:
             formatted_doc = self._format_docstring(entity.docstring)
             doc.append(f"{formatted_doc}\n")
 
-        doc.append(f"**File:** {entity.file_path.name}:{entity.line_number}\n\n")
+        doc.append(
+            f"**File:** {entity.file_path.name}:{entity.line_number}\n\n")
 
         return "".join(doc)
 

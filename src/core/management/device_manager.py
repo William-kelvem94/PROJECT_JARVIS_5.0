@@ -944,7 +944,8 @@ class AdvancedDeviceManager:
             except Exception as e:
                 logger.warning(f"âš ï¸ Falha no SBC: {e}. Tentando fallback WMI...")
 
-        # 2. Fallback Definitive: WMI (ForÃ§a o hardware do notebook - Samsung Fix)
+        # 2. Fallback Definitive: WMI (ForÃ§a o hardware do notebook - Samsung
+        # Fix)
         try:
             import wmi
 
@@ -1256,7 +1257,7 @@ class AdvancedDeviceManager:
             try:
                 proc.kill()
                 return True
-            except:
+            except BaseException:
                 return False
         except Exception as e:
             logger.error(f"âŒ Erro ao encerrar processo {pid}: {e}")
@@ -1592,7 +1593,7 @@ class AdvancedDeviceManager:
                 try:
                     proc = psutil.Process(pid)
                     info["process_name"] = proc.name()
-                except:
+                except BaseException:
                     pass
         except Exception as e:
             logger.debug(f"Erro ao obter info da janela em primeiro plano: {e}")

@@ -66,7 +66,8 @@ class ShutdownManager:
             "ðŸ’¾ Memory Systems": "memory_manager",
             "ðŸ–¥ï¸ GUI Systems": "window_manager",
             "ðŸ“Š Monitoring": "proactive_monitor",
-            # Core Engine geralmente refere-se ao prÃ³prio loop ou integraÃ§Ã£o, pode nÃ£o ter um mÃ©todo direto
+            # Core Engine geralmente refere-se ao prÃ³prio loop ou
+            # integraÃ§Ã£o, pode nÃ£o ter um mÃ©todo direto
         }
 
         attr_name = component_map.get(name)
@@ -88,7 +89,8 @@ class ShutdownManager:
 
                 # Aguarda timeout (simulado para threads que nÃ£o bloqueiam)
                 # Em um cenÃ¡rio real, join() seria ideal, mas timeout funciona para forÃ§ar progresso
-                # time.sleep(timeout) -> Removido para shutdown mais Ã¡gil, ou reduzido
+                # time.sleep(timeout) -> Removido para shutdown mais Ã¡gil, ou
+                # reduzido
 
                 logger.info(f"âœ… {name} desligado")
             except Exception as e:

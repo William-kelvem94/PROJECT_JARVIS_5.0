@@ -1,3 +1,4 @@
+from src.utils.config import config
 import json
 import logging
 from pathlib import Path
@@ -102,6 +103,5 @@ class KnowledgeDistiller:
 
 
 # InstÃ¢ncia global
-from src.utils.config import config
 
 knowledge_distiller = KnowledgeDistiller(Path(config.PROJECT_ROOT) / "data")

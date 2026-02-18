@@ -9,7 +9,8 @@ class DemocraticCore:
     """
 
     def __init__(self, core):
-        logger.warning("Using DemocraticCore stub — full implementation not present.")
+        logger.warning(
+            "Using DemocraticCore stub — full implementation not present.")
         self.core = core
 
     def initialize(self):

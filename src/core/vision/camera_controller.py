@@ -3,6 +3,9 @@ Controlador de Câmera (Eyes)
 Responsável por detecção de presença e reconhecimento facial
 """
 
+from src.utils.config import config
+from src.core.management.hardware_manager import hardware_manager
+from src.core.intelligence.emotion_detector import emotion_detector
 import threading
 import time
 import logging
@@ -23,6 +26,7 @@ except ImportError:
 
 # Support for mock camera (used in CI / when no hardware available)
 from src.core.config.system_manifest import system_manifest
+
 
 class MockVideoCapture:
     """Simple mock for cv2.VideoCapture used during tests/CI.
@@ -59,9 +63,6 @@ class MockVideoCapture:
     def release(self):
         self._opened = False
 
-from src.utils.config import config
-from src.core.intelligence.emotion_detector import emotion_detector
-from src.core.management.hardware_manager import hardware_manager
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +147,8 @@ class CameraController:
             + list(faces_dir.glob("*.jpeg"))
         ):
             try:
-                # O nome do arquivo é o nome da pessoa (remove sufixo de ângulo)
+                # O nome do arquivo é o nome da pessoa (remove sufixo de
+                # ângulo)
                 raw_name = file_path.stem
                 name = raw_name.split("_")[0]
 
@@ -231,12 +233,15 @@ class CameraController:
 
             # If mock mode is enabled, use MockVideoCapture immediately
             if system_manifest.vision.mock_camera:
-                logger.info("👁️ Using MockVideoCapture in CameraController (mock_camera=True)")
+                logger.info(
+                    "👁️ Using MockVideoCapture in CameraController (mock_camera=True)"
+                )
                 video_capture = MockVideoCapture(self.camera_index)
             else:
                 for attempt in range(3):
                     try:
-                        # Use hardware lock to prevent conflicts with heavy loads
+                        # Use hardware lock to prevent conflicts with heavy
+                        # loads
                         with hardware_manager.neural_lock:
                             video_capture = cv2.VideoCapture(
                                 self.camera_index, cv2.CAP_DSHOW
@@ -244,7 +249,9 @@ class CameraController:
                         if video_capture and video_capture.isOpened():
                             break
                     except Exception as e:
-                        logger.warning(f"Tentativa {attempt+1} de abrir câmera falhou: {e}")
+                        logger.warning(
+                            f"Tentativa {attempt+1} de abrir câmera falhou: {e}"
+                        )
                         time.sleep(1)
 
             if not video_capture or not video_capture.isOpened():
@@ -363,7 +370,7 @@ class CameraController:
                     try:
                         emotion_data = emotion_detector.detect_emotion_from_frame(frame)
                         self.current_emotion = emotion_data["emotion"]
-                    except:
+                    except BaseException:
                         pass
 
                 process_this_frame = not process_this_frame
@@ -384,9 +391,9 @@ class CameraController:
                                         processed_frame, cv2.COLOR_BGR2RGB
                                     )
                                     self.on_frame_ready(rgb_frame)
-                                except:
+                                except BaseException:
                                     pass
-                    except:
+                    except BaseException:
                         pass
 
                 sleep_time = (

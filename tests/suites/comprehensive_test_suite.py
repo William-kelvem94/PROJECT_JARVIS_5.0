@@ -204,7 +204,8 @@ class JarvisTestSuite:
 
     def test_log_filters(self):
         """Test log filtering functionality"""
-        # SKIPPED: UI tests rely on PyQt widgets and a display; skip in headless/CI
+        # SKIPPED: UI tests rely on PyQt widgets and a display; skip in
+        # headless/CI
         print("\n📝 Skipping Log Filters UI test in headless environment")
         self.log_test(
             "Log Filters",
@@ -266,7 +267,7 @@ class JarvisTestSuite:
 
             # Test ConfigTextEdit creation
             editor = ConfigTextEdit()
-            assert editor.acceptDrops() == True, "Should accept drops"
+            assert editor.acceptDrops(), "Should accept drops"
 
             # Test drag enter event with valid file
             mime_data = QMimeData()

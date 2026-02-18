@@ -12,6 +12,7 @@ Behavior:
 - Publishes `EventType.AUDIO_READY` (available: True/False, mock: False)
 - Keeps running until terminated
 """
+
 import asyncio
 import logging
 import multiprocessing
@@ -19,7 +20,11 @@ import threading
 import time
 from pathlib import Path
 
-from src.core.infrastructure.async_event_bus import get_event_bus, EventType, EventPriority
+from src.core.infrastructure.async_event_bus import (
+    get_event_bus,
+    EventType,
+    EventPriority,
+)
 from src.core.infrastructure.ipc_event_bridge import IPCEventBridge
 
 logger = logging.getLogger("AudioProcess")

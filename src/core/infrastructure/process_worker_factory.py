@@ -94,7 +94,8 @@ class WorkerConfig:
     # Health monitoring
     health_check_interval_seconds: float = 30
     max_consecutive_failures: int = 3
-    # Do NOT restart workers automatically on resource pressure when running at-limit
+    # Do NOT restart workers automatically on resource pressure when running
+    # at-limit
     restart_on_memory_limit: bool = False
     restart_on_cpu_limit: bool = False
 
@@ -351,7 +352,8 @@ class WorkerProcess:
             # Update heartbeat
             self.metrics.last_heartbeat = datetime.now()
 
-            # Check health limits — treat 0 or disabled restart flags as "no enforcement"
+            # Check health limits — treat 0 or disabled restart flags as "no
+            # enforcement"
             if (
                 self.config.restart_on_memory_limit
                 and self.config.max_memory_mb > 0
@@ -556,10 +558,13 @@ class WorkerProcess:
         time.sleep(0.2)  # Simulate training time
         return {"status": "trained", "epochs": epochs, "accuracy": 0.92}
 
-    def _text_embedding(self, text, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
+    def _text_embedding(
+        self, text, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    ):
         """Compute text embedding inside the worker process (SentenceTransformer)."""
         try:
             from sentence_transformers import SentenceTransformer
+
             model = SentenceTransformer(model_name)
             emb = model.encode(text)
             # Return plain list (JSON-serializable)
@@ -573,30 +578,36 @@ class WorkerProcess:
         try:
             from ultralytics import YOLO
             import numpy as np
-            
+
             # This would ideally use a cached model resource in the worker
-            # For now, we load it or use a simple singleton pattern in the worker
-            if not hasattr(self, '_yolo_model'):
-                model_path = "models/vision/yolov8n.pt" # Default
+            # For now, we load it or use a simple singleton pattern in the
+            # worker
+            if not hasattr(self, "_yolo_model"):
+                model_path = "models/vision/yolov8n.pt"  # Default
                 self._yolo_model = YOLO(model_path)
-            
-            results = self._yolo_model(image, conf=confidence_threshold, iou=iou_threshold, verbose=False)
-            
+
+            results = self._yolo_model(
+                image, conf=confidence_threshold, iou=iou_threshold, verbose=False
+            )
+
             detections = []
             for r in results:
                 boxes = r.boxes
                 for box in boxes:
-                    b = box.xyxy[0].tolist()  # get box coordinates in (top, left, bottom, right) format
+                    # get box coordinates in (top, left, bottom, right) format
+                    b = box.xyxy[0].tolist()
                     c = box.cls
-                    detections.append({
-                        "class_id": int(c),
-                        "class_name": self._yolo_model.names[int(c)],
-                        "confidence": float(box.conf),
-                        "bbox": b,
-                        "center": [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2],
-                        "area": (b[2] - b[0]) * (b[3] - b[1])
-                    })
-            
+                    detections.append(
+                        {
+                            "class_id": int(c),
+                            "class_name": self._yolo_model.names[int(c)],
+                            "confidence": float(box.conf),
+                            "bbox": b,
+                            "center": [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2],
+                            "area": (b[2] - b[0]) * (b[3] - b[1]),
+                        }
+                    )
+
             return detections
         except Exception as e:
             logger.error(f"YOLO inference error in worker: {e}")
@@ -776,7 +787,10 @@ class ProcessWorkerFactory:
                 # Scale up
                 for _ in range(target_count - current_count):
                     # Only enforce a hard max when configured (> 0)
-                    if self.max_workers_per_type > 0 and len(current_workers) >= self.max_workers_per_type:
+                    if (
+                        self.max_workers_per_type > 0
+                        and len(current_workers) >= self.max_workers_per_type
+                    ):
                         logger.warning(
                             f"Cannot scale {worker_type.value} beyond max limit ({self.max_workers_per_type})"
                         )
@@ -973,7 +987,8 @@ class ProcessWorkerFactory:
                         else:
                             self.total_tasks_failed += 1
 
-                        # Log result (in real implementation, would store or forward results)
+                        # Log result (in real implementation, would store or
+                        # forward results)
                         task_id = result.get("task_id", "unknown")
                         success = result.get("success", False)
                         duration = result.get("duration_seconds", 0.0)
@@ -997,6 +1012,7 @@ class ProcessWorkerFactory:
             # Count workers by type and state
             workers_by_type = {}
             from typing import DefaultDict
+
             workers_by_state: DefaultDict[str, int] = defaultdict(int)
             total_tasks_in_progress = 0
 

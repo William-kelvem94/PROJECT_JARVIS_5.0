@@ -107,7 +107,7 @@ class KnowledgeGapAnalyzer:
                             or data.get("confidence", 1.0) < 0.6
                         ):
                             commands.append(data.get("command", ""))
-                    except:
+                    except Exception:
                         continue
         except Exception as e:
             logger.error(f"Error reading interactions log: {e}")

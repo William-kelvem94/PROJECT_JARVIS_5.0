@@ -1,3 +1,5 @@
+from src.core.actions.advanced_action_controller import advanced_action_controller
+from src.learning.knowledge_distiller import knowledge_distiller
 import logging
 import sys
 import os
@@ -5,8 +7,6 @@ import os
 # Adicionar root ao path
 sys.path.append(os.getcwd())
 
-from src.learning.knowledge_distiller import knowledge_distiller
-from src.core.actions.advanced_action_controller import advanced_action_controller
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("VERIFY-PHASE4")
@@ -35,7 +35,8 @@ def test_window_management():
     logger.info("Testing Window Management (Dry Run)...")
     # Apenas verifica se o método existe e não quebra com parâmetros mock
     try:
-        # Tenta focar a janela atual (deve funcionar se houver uma janela ativa)
+        # Tenta focar a janela atual (deve funcionar se houver uma janela
+        # ativa)
         advanced_action_controller.window_manage(operation="focus")
         logger.info("✅ Window Management: Basic call SUCCESS")
     except Exception as e:

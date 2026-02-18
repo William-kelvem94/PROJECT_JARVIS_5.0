@@ -685,7 +685,8 @@ class TrendAnalyzer:
         self.trained = False
 
     def train(self, data: List[SystemMetrics]):
-        # Marcar como treinado e armazenar estatÃ­sticas simples do conjunto de treinamento
+        # Marcar como treinado e armazenar estatÃ­sticas simples do conjunto de
+        # treinamento
         self.trained = True
         self.training_size = len(data)
         if self.training_size:
@@ -703,7 +704,8 @@ class AnomalyDetector:
         self.trained = False
 
     def train(self, data: List[SystemMetrics]):
-        # Marcar como treinado e calcular estatÃ­sticas bÃ¡sicas para detecÃ§Ã£o de anomalias
+        # Marcar como treinado e calcular estatÃ­sticas bÃ¡sicas para
+        # detecÃ§Ã£o de anomalias
         self.trained = True
         self.training_size = len(data)
         if self.training_size:
@@ -723,7 +725,8 @@ class TimeSeriesPredictor:
         self.trained = False
 
     def train(self, data: List[SystemMetrics]):
-        # Marcar como treinado e armazenar metadados da sÃ©rie temporal para uso futuro
+        # Marcar como treinado e armazenar metadados da sÃ©rie temporal para
+        # uso futuro
         self.trained = True
         self.training_size = len(data)
         if self.training_size:
@@ -799,7 +802,8 @@ async def predictive_analytics_demo():
     print("\n⚙️ CENÁRIO 2: CPU Degradation com Overheating")
 
     for i in range(4):
-        cpu_usage = 65 + i * 12  # 65%, 77%, 89%, 101% (impossível, mas para teste)
+        # 65%, 77%, 89%, 101% (impossível, mas para teste)
+        cpu_usage = 65 + i * 12
         temp = 52 + i * 15  # 52°, 67°, 82°, 97°
 
         metrics = SystemMetrics(

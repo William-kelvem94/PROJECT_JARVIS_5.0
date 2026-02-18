@@ -137,7 +137,8 @@ class DemocraticPredictiveAnalytics:
 
         # Estado do sistema
         self.is_running = False
-        self.metrics_history: Dict[str, deque] = {}  # device_id -> deque of metrics
+        # device_id -> deque of metrics
+        self.metrics_history: Dict[str, deque] = {}
         self.device_profiles: Dict[str, DevicePerformanceProfile] = {}
         self.active_alerts: Dict[str, PredictiveAlert] = {}
 
@@ -281,7 +282,7 @@ class DemocraticPredictiveAnalytics:
                     gpu = gpus[0]
                     gpu_percent = gpu.load * 100
                     gpu_memory_mb = gpu.memoryUsed
-            except:
+            except BaseException:
                 pass
 
             # MÃ©tricas de rede
@@ -372,7 +373,7 @@ class DemocraticPredictiveAnalytics:
                 uptime_hours=np.random.normal(72, 24),  # ~3 dias mÃ©dia
                 temperature_c=np.random.normal(45, 10),
             )
-        except:
+        except BaseException:
             return None
 
     def _store_metrics(self, metrics: SystemMetrics):
@@ -748,7 +749,8 @@ class DemocraticPredictiveAnalytics:
             if len(metrics_queue) < 20:  # Precisa de histÃ³rico mÃ­nimo
                 continue
 
-            recent_metrics = list(metrics_queue)[-100:]  # Ãšltimas 100 amostras
+            # Ãšltimas 100 amostras
+            recent_metrics = list(metrics_queue)[-100:]
 
             # Calcular estatÃ­sticas
             cpu_values = [m.cpu_percent for m in recent_metrics]
@@ -888,7 +890,8 @@ class DemocraticPredictiveAnalytics:
         """ðŸš‘ RESPOSTA AUTOMÃTICA DE EMERGÃŠNCIA"""
         print(f"ðŸš‘ Executando resposta automÃ¡tica para: {alert.alert_id}")
 
-        # Se Ã© falha de hardware crÃ­tica, solicitar takeover na rede democrÃ¡tica
+        # Se Ã© falha de hardware crÃ­tica, solicitar takeover na rede
+        # democrÃ¡tica
         if (
             alert.prediction_type == PredictionType.HARDWARE_FAILURE
             and self.democratic_network

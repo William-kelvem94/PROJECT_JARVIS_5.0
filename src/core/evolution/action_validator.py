@@ -11,6 +11,7 @@ API mínima:
 
 Designed to be conservative and easy to unit-test.
 """
+
 from __future__ import annotations
 
 import ast
@@ -46,6 +47,7 @@ class ValidationResult:
     details: Optional[Dict[str, Any]] = None
     request_id: Optional[str] = None
 
+
 class ActionValidator:
     def __init__(self, protected_paths: Optional[List[str]] = None):
         self.protected_paths = protected_paths or DEFAULT_PROTECTED
@@ -73,11 +75,18 @@ class ActionValidator:
         bus = get_event_bus()
         try:
             # publish using the EventType enum directly (simpler / more robust)
-            event_id = bus.publish(EventType.ACTION_APPROVAL_REQUEST, {"action": action}, source="action_validator", priority=EventPriority.CRITICAL)
+            event_id = bus.publish(
+                EventType.ACTION_APPROVAL_REQUEST,
+                {"action": action},
+                source="action_validator",
+                priority=EventPriority.CRITICAL,
+            )
             return event_id
         except Exception:
             # best-effort: if bus not running, still return requires_approval
-            logger.debug("ActionValidator: failed to publish approval request (bus may be stopped)")
+            logger.debug(
+                "ActionValidator: failed to publish approval request (bus may be stopped)"
+            )
             return None
 
     def validate(self, action: Dict[str, Any]) -> ValidationResult:
@@ -111,9 +120,17 @@ class ActionValidator:
         # If JARVIS_AUTO_APPROVE=1 is set, protected actions will be automatically
         # approved. USE WITH CAUTION — this bypasses manual/operator approval.
         try:
-            if protected and os.getenv("JARVIS_AUTO_APPROVE", "0") in ("1", "true", "True"):
-                logger.warning("ActionValidator: JARVIS_AUTO_APPROVE enabled — auto-approving protected action")
-                return ValidationResult(True, False, "auto-approved", {"target": target})
+            if protected and os.getenv("JARVIS_AUTO_APPROVE", "0") in (
+                "1",
+                "true",
+                "True",
+            ):
+                logger.warning(
+                    "ActionValidator: JARVIS_AUTO_APPROVE enabled — auto-approving protected action"
+                )
+                return ValidationResult(
+                    True, False, "auto-approved", {"target": target}
+                )
         except Exception:
             # non-fatal — fall through to normal checks
             pass
@@ -121,25 +138,38 @@ class ActionValidator:
         # Delete/rename on protected paths: block + require approval
         if action_type in ("file_delete", "file_rename") and protected:
             request_id = self._publish_approval_request(action)
-            return ValidationResult(False, True, "protected-path", {"target": target}, request_id=request_id)
+            return ValidationResult(
+                False, True, "protected-path", {"target": target}, request_id=request_id
+            )
 
         # Modification of protected paths: require explicit approval
         if action_type == "file_modify" and protected:
             # allow only after explicit human approval
             request_id = self._publish_approval_request(action)
-            return ValidationResult(False, True, "protected-path-modify", {"target": target}, request_id=request_id)
+            return ValidationResult(
+                False,
+                True,
+                "protected-path-modify",
+                {"target": target},
+                request_id=request_id,
+            )
 
         # If modifying python files, run a syntax check
-        if action_type == "file_modify" and (str(target).endswith(".py") or action.get("proposed_code")):
+        if action_type == "file_modify" and (
+            str(target).endswith(".py") or action.get("proposed_code")
+        ):
             code = action.get("proposed_code") or ""
             ok, err = self._python_syntax_ok(code)
             if not ok:
                 return ValidationResult(False, False, f"syntax-error: {err}", {})
 
-        # Exec commands: be conservative — require approval for commands touching FS
+        # Exec commands: be conservative — require approval for commands
+        # touching FS
         if action_type == "exec_command":
             cmd = str(target)
-            if any(tok in cmd for tok in ["rm ", "del ", "format ", "shutdown", "reboot"]):
+            if any(
+                tok in cmd for tok in ["rm ", "del ", "format ", "shutdown", "reboot"]
+            ):
                 self._publish_approval_request(action)
                 return ValidationResult(False, True, "dangerous-exec", {"cmd": cmd})
 

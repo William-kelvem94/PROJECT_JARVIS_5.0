@@ -10,10 +10,11 @@ import logging
 
 logger = logging.getLogger("jarvis.watchdog")
 
+
 class WatchdogSystem:
     def __init__(self):
         self.dev_disable_memory_enforcement = True
-        
+
     def register_component(self, *args, **kwargs):
         pass
 
@@ -28,6 +29,7 @@ class WatchdogSystem:
 
     def shutdown(self):
         pass
+
 
 # Singleton
 watchdog_system = WatchdogSystem()

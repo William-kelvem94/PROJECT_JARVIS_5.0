@@ -62,7 +62,8 @@ class RealTrainer:
                     {
                         "pad_token": "[PAD]",
                         "eos_token": "</s>",
-                        "encode": lambda self, text: [1, 2, 3, 4, 5],  # Mock encoding
+                        # Mock encoding
+                        "encode": lambda self, text: [1, 2, 3, 4, 5],
                         "decode": lambda self, tokens: "Mock decoded text",
                     },
                 )()
@@ -198,7 +199,8 @@ class RealTrainer:
             # Preparar dataset
             dataset = SimpleDataset(training_data, self.tokenizer, self.max_length)
 
-            # Configurar LoRA para fine-tuning leve (só se PEFT estiver disponível)
+            # Configurar LoRA para fine-tuning leve (só se PEFT estiver
+            # disponível)
             if peft_available:
                 lora_config = LoraConfig(
                     r=8,  # Rank baixo para leveza
@@ -232,7 +234,8 @@ class RealTrainer:
             try:
                 Path(training_args.output_dir).mkdir(parents=True, exist_ok=True)
             except Exception:
-                # Fallback simples caso o atributo seja diferente ou ocorra erro
+                # Fallback simples caso o atributo seja diferente ou ocorra
+                # erro
                 tmp_out = f"data/temp/temp_training_{topic.replace(' ', '_')}"
                 Path(tmp_out).mkdir(parents=True, exist_ok=True)
 
@@ -446,7 +449,8 @@ def train_with_real_learning(
             f"ðŸŽ¯ Iniciando fine-tuning inteligente com estratÃ©gia {learning_strategy['type']}..."
         )
 
-        trainer = RealTrainer(simulate=False)  # Forçar treinamento real se solicitado
+        # Forçar treinamento real se solicitado
+        trainer = RealTrainer(simulate=False)
         training_examples = trainer.prepare_training_data(training_data)
         result = trainer.fine_tune_incremental(
             training_examples, topic, learning_strategy

@@ -12,6 +12,7 @@ API principal (singleton):
 
 Design: conservador — execuções são feitas em thread separada; falhas geram eventos de falha.
 """
+
 from __future__ import annotations
 
 import logging
@@ -41,7 +42,8 @@ class ActionApprovalManager:
             return
 
         bus = get_event_bus()
-        # subscribe only if bus appears runnable; tests will call this after bus.start()
+        # subscribe only if bus appears runnable; tests will call this after
+        # bus.start()
         try:
             bus.subscribe([EventType.ACTION_APPROVAL_RESPONSE], self._on_response)
             self._listening = True
@@ -49,7 +51,13 @@ class ActionApprovalManager:
         except Exception as e:
             logger.debug(f"ActionApprovalManager: could not subscribe to EventBus: {e}")
 
-    def register_pending(self, request_id: str, callback: Callable[[], Any], meta: Optional[Dict] = None, ttl_seconds: int = 86400):
+    def register_pending(
+        self,
+        request_id: str,
+        callback: Callable[[], Any],
+        meta: Optional[Dict] = None,
+        ttl_seconds: int = 86400,
+    ):
         """Register a pending action that will be executed when approval is received.
 
         Returns True if registered, False if a pending with same id exists.
@@ -72,11 +80,15 @@ class ActionApprovalManager:
             approved = bool(data.get("approved"))
 
             if not req_id:
-                logger.debug("ActionApprovalManager: approval response missing request_id")
+                logger.debug(
+                    "ActionApprovalManager: approval response missing request_id"
+                )
                 return
 
             if req_id not in self._pending:
-                logger.debug(f"ActionApprovalManager: no pending action for request_id={req_id}")
+                logger.debug(
+                    f"ActionApprovalManager: no pending action for request_id={req_id}"
+                )
                 return
 
             entry = self._pending.pop(req_id)
@@ -88,7 +100,9 @@ class ActionApprovalManager:
                     try:
                         if cb is not None:
                             result = cb()
-                            logger.info(f"ActionApprovalManager: action {req_id} executed (result={result})")
+                            logger.info(
+                                f"ActionApprovalManager: action {req_id} executed (result={result})"
+                            )
                             # publish success
                             try:
                                 get_event_bus().publish(
@@ -100,7 +114,9 @@ class ActionApprovalManager:
                             except Exception:
                                 pass
                         else:
-                            logger.error(f"ActionApprovalManager: callback for action {req_id} is None")
+                            logger.error(
+                                f"ActionApprovalManager: callback for action {req_id} is None"
+                            )
                             try:
                                 get_event_bus().publish(
                                     EventType.SYSTEM_CORRECTION_FAILED,
@@ -111,7 +127,9 @@ class ActionApprovalManager:
                             except Exception:
                                 pass
                     except Exception as e:
-                        logger.error(f"ActionApprovalManager: action {req_id} failed: {e}")
+                        logger.error(
+                            f"ActionApprovalManager: action {req_id} failed: {e}"
+                        )
                         try:
                             get_event_bus().publish(
                                 EventType.SYSTEM_CORRECTION_FAILED,
@@ -125,7 +143,9 @@ class ActionApprovalManager:
                 t = threading.Thread(target=_run_cb, daemon=True)
                 t.start()
             else:
-                logger.info(f"ActionApprovalManager: action {req_id} explicitly rejected")
+                logger.info(
+                    f"ActionApprovalManager: action {req_id} explicitly rejected"
+                )
                 try:
                     get_event_bus().publish(
                         EventType.SYSTEM_CORRECTION_FAILED,
@@ -137,9 +157,13 @@ class ActionApprovalManager:
                     pass
 
         except Exception as e:
-            logger.error(f"ActionApprovalManager: failed to handle approval response: {e}")
+            logger.error(
+                f"ActionApprovalManager: failed to handle approval response: {e}"
+            )
 
-    def approve_via_bus(self, request_id: str, approved: bool = True, approver: Optional[str] = None):
+    def approve_via_bus(
+        self, request_id: str, approved: bool = True, approver: Optional[str] = None
+    ):
         """Convenience: publish approval response on the EventBus."""
         try:
             get_event_bus().publish(
@@ -149,13 +173,24 @@ class ActionApprovalManager:
             )
             return True
         except Exception as e:
-            logger.debug(f"ActionApprovalManager: failed to publish approval response: {e}")
+            logger.debug(
+                f"ActionApprovalManager: failed to publish approval response: {e}"
+            )
             return False
 
-    def approve_direct(self, request_id: str, approved: bool = True, approver: Optional[str] = None):
+    def approve_direct(
+        self, request_id: str, approved: bool = True, approver: Optional[str] = None
+    ):
         """Directly invoke the approval handler (bypasses EventBus). Useful for tests or embedded controllers."""
         try:
-            ev = Event(type=EventType.ACTION_APPROVAL_RESPONSE, data={"request_id": request_id, "approved": approved, "approver": approver})
+            ev = Event(
+                type=EventType.ACTION_APPROVAL_RESPONSE,
+                data={
+                    "request_id": request_id,
+                    "approved": approved,
+                    "approver": approver,
+                },
+            )
             # Call handler synchronously
             self._on_response(ev)
             return True

@@ -12,7 +12,7 @@ def check_cuda():
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True)
         return result.returncode == 0
-    except:
+    except BaseException:
         return False
 
 
@@ -37,7 +37,7 @@ def install_pytorch():
             ],
             capture_output=True,
         )
-    except:
+    except BaseException:
         pass
 
     print("[2/3] Detecting hardware configuration...")

@@ -54,8 +54,11 @@ class NeuralCuriosity:
         if now - self.last_inquiry_time < self.inquiry_cooldown:
             return None
 
-        # 2. PROJETO: Entendimento do Todo (Se for a primeira vez ou contexto importante)
-        if contexto in ["PROGRAMACAO", "NEGOCIOS"] and not self.current_topology:
+        # 2. PROJETO: Entendimento do Todo (Se for a primeira vez ou contexto
+        # importante)
+        if contexto in [
+            "PROGRAMACAO",
+                "NEGOCIOS"] and not self.current_topology:
             try:
                 from src.learning.topology_scanner import TopologyScanner
 
@@ -66,7 +69,7 @@ class NeuralCuriosity:
                     layer="NEURAL-CURIOSITY",
                 )
                 return f"William, analisei a estrutura deste projeto. Me parece ser um '{self.current_topology['main_purpose']}' usando {', '.join(self.current_topology['tech_stack'])}. Qual o objetivo final dessa arquitetura? Entender o 'todo' me ajuda a ser mais assertivo."
-            except:
+            except Exception:
                 pass
 
         # 3. INTERAÃ‡ÃƒO: Contexto EspecÃ­fico
@@ -76,9 +79,8 @@ class NeuralCuriosity:
         is_new = contexto not in self.known_contexts
         self.known_contexts.add(contexto)
 
-        if is_new or (
-            "desenvolver" in user_command.lower() or "criar" in user_command.lower()
-        ):
+        if is_new or ("desenvolver" in user_command.lower()
+                      or "criar" in user_command.lower()):
             self.last_inquiry_time = now
             reflect_logger.reflect(
                 f"ðŸ’¡ Oportunidade de Aprendizado detectada em {contexto}",
@@ -109,12 +111,15 @@ class NeuralCuriosity:
                 from datetime import datetime
 
                 entry = FeedbackEntry(
-                    feedback_id=hashlib.md5(f"gap_{topic}".encode()).hexdigest()[:8],
+                    feedback_id=hashlib.md5(
+                        f"gap_{topic}".encode()).hexdigest()[:8],
                     interaction_id="research_trigger",
                     user_input=f"Pesquisa proativa: {topic}",
                     ai_response="Agendado",
                     feedback_type="implicit",
-                    feedback_value=-0.1,  # Valor levemente negativo para o GapAnalyzer considerar um "gap"
+                    feedback_value=-0.1,
+                    # Valor levemente negativo para o GapAnalyzer considerar um
+                    # "gap"
                     timestamp=datetime.now().isoformat(),
                     metadata={"research_topic": topic, "proactive": True},
                 )

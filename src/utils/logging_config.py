@@ -130,7 +130,8 @@ class LoggingConfig:
         # Handler de console (opcional)
         if console_output:
             console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setLevel(logging.WARNING)  # Console sÃ³ para warnings+
+            # Console sÃ³ para warnings+
+            console_handler.setLevel(logging.WARNING)
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
 

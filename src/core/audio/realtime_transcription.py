@@ -287,7 +287,7 @@ class RealtimeTranscriber:
                     from src.core.management.hardware_manager import hardware_manager
 
                     is_throttled = hardware_manager.is_throttled
-                except:
+                except BaseException:
                     is_throttled = False
 
                 interval = 2.0 if is_throttled else 1.0  # Menos scans se estiver pesado

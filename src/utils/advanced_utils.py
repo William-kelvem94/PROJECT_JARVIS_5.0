@@ -4,6 +4,7 @@ JARVIS 5.0 - Advanced Utilities
 Utilitários avançados para otimização de performance e segurança.
 """
 
+import atexit
 import logging
 import importlib
 from typing import Any, Dict
@@ -134,6 +135,5 @@ memory_manager = MemoryManager()
 async_runner = AsyncRunner()
 
 # Cleanup on exit
-import atexit
 
 atexit.register(async_runner.shutdown)
