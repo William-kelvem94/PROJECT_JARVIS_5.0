@@ -697,6 +697,20 @@ except Exception:
     system_integrator = None
 
 
+
+# Singleton instance
+_system_integrator_instance = None
+
+
+def get_system_integrator() -> "SystemIntegrator":
+    """Factory function to get SystemIntegrator singleton"""
+    global _system_integrator_instance
+    if _system_integrator_instance is None:
+        _system_integrator_instance = SystemIntegrator()
+        logger.info("ðŸ› ï¸  System Integrator (God Mode) initialized")
+    return _system_integrator_instance
+
+
 # Testing
 if __name__ == "__main__":
     logging.basicConfig(

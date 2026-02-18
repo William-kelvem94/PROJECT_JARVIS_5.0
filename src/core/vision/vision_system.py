@@ -199,6 +199,7 @@ class VisionSystem:
             event_bus: Event bus instance for module communication
         """
         # Use system_manifest for everything
+        self.event_bus = event_bus  # Store for use by sub-components
         self.data_dir = data_dir or (system_manifest.paths["base"] / "data")
         self.faces_dir = self.data_dir / "faces"
         self.screenshots_dir = self.data_dir / "screenshots"
@@ -339,7 +340,15 @@ class VisionSystem:
         )
 
         # Inicia a ponte no processo principal
-        self._ipc_bridge = IPCEventBridge(self._inbox, self._outbox)
+        # Fallback to global event bus if not provided at construction time
+        _bus = self.event_bus
+        if _bus is None:
+            try:
+                from src.core.infrastructure.async_event_bus import get_event_bus
+                _bus = get_event_bus()
+            except Exception:
+                pass
+        self._ipc_bridge = IPCEventBridge(self._inbox, self._outbox, event_bus=_bus)
 
         logger.info("⚡ Vision Multiprocessing setup complete")
 

@@ -1431,8 +1431,16 @@ def get_audio_system(data_dir: Optional[Path] = None, event_bus=None):
             )
             proc.start()
 
+            # Get EventBus if not provided - needed for IPC Bridge
+            if event_bus is None:
+                try:
+                    from src.core.infrastructure.async_event_bus import get_event_bus
+                    event_bus = get_event_bus()
+                except ImportError:
+                    pass
+
             # Start IPC bridge on parent side
-            _ipc_bridge = IPCEventBridge(_inbox, _outbox)
+            _ipc_bridge = IPCEventBridge(_inbox, _outbox, event_bus=event_bus)
             _ipc_bridge.start()
 
             proxy = _AudioServiceProxy(event_bus, _inbox, _outbox, proc)

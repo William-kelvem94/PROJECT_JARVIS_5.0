@@ -1663,8 +1663,8 @@ class AdvancedDeviceManager:
 
 # ==================== SINGLETON PATTERN ====================
 
-# InstÃ¢ncia global do gerenciador avanÃ§ado
-device_manager = AdvancedDeviceManager()
+# Instância global do gerenciador avançado
+device_manager = None
 
 # Manter compatibilidade com cÃ³digo antigo
 __all__ = [
