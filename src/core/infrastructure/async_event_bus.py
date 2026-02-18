@@ -786,9 +786,9 @@ class AsyncEventBus:
             while self._running and watchdog_system is None:
                 try:
                     from src.core.infrastructure.watchdog import (
-                        watchdog_system as _ws,
-                        ComponentStatus as _cs,
+                        watchdog_system as _ws
                     )
+                    from src.core.infrastructure.watchdog import WatchdogStatus as _cs
 
                     watchdog_system = _ws
                     ComponentStatus = _cs
