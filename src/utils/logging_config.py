@@ -204,11 +204,21 @@ class LoggingConfig:
         """
         from datetime import datetime
 
-        date_str = datetime.now().strftime("%Y-%m-%d")
+        now = datetime.now()
+        date_str = now.strftime("%Y-%m-%d")
+        time_str = now.strftime("%H%M%S")
 
-        # Criar diretÃ³rio da sessÃ£o (ex: data/logs/2026-02-10/)
-        session_dir = data_dir / "logs" / date_str
+        # Criar diretório da sessão (ex: data/logs/2026-02-10/20260218_153012/)
+        session_dir = data_dir / "logs" / date_str / f"{date_str.replace('-','')}_{time_str}"
         session_dir.mkdir(parents=True, exist_ok=True)
+
+        # Escrever arquivo pointer com a sessão atual e manter cópias "latest" em data/logs/ para compatibilidade
+        try:
+            latest_pointer = data_dir / "logs" / "last_session.txt"
+            latest_pointer.write_text(str(session_dir), encoding="utf-8")
+        except Exception:
+            # Não falhar o boot por causa de pointer
+            pass
 
         loggers = {}
 
@@ -222,6 +232,25 @@ class LoggingConfig:
             console_output=True,
         )
 
+        # Também manter uma cópia "latest" em data/logs/ (compatibilidade com scripts legados)
+        try:
+            latest_main = data_dir / "logs" / "jarvis_main.log"
+            latest_main.parent.mkdir(parents=True, exist_ok=True)
+            latest_main_handler = RotatingFileHandler(
+                filename=str(latest_main),
+                maxBytes=10 * 1024 * 1024,
+                backupCount=5,
+                encoding="utf-8",
+            )
+            latest_main_handler.setLevel(logging.INFO)
+            latest_main_handler.setFormatter(
+                logging.Formatter(LoggingConfig.DEFAULT_FORMAT)
+            )
+            # Anexar ao logger principal 'jarvis' para duplicar em raiz
+            logging.getLogger("jarvis").addHandler(latest_main_handler)
+        except Exception:
+            pass
+
         # 2. Logger DETALHADO (Debug total - Arquivo gigante, mas Ãºtil)
         # Capture root logger 'jarvis' debugs too
         debug_handler = RotatingFileHandler(
@@ -233,6 +262,22 @@ class LoggingConfig:
         debug_handler.setLevel(logging.DEBUG)
         debug_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
         logging.getLogger().addHandler(debug_handler)  # Attach to root
+
+        # Criar cópia "latest" do log de debug em data/logs/ (compatibilidade)
+        try:
+            latest_debug = data_dir / "logs" / "jarvis_detailed_debug.log"
+            latest_debug.parent.mkdir(parents=True, exist_ok=True)
+            global_debug_handler = RotatingFileHandler(
+                filename=str(latest_debug),
+                maxBytes=20 * 1024 * 1024,
+                backupCount=3,
+                encoding="utf-8",
+            )
+            global_debug_handler.setLevel(logging.DEBUG)
+            global_debug_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
+            logging.getLogger().addHandler(global_debug_handler)
+        except Exception:
+            pass
 
         # 3. Componentes EspecÃ­ficos (Separados para clareza)
 
@@ -270,6 +315,24 @@ class LoggingConfig:
         error_handler.setLevel(logging.ERROR)
         error_handler.setFormatter(logging.Formatter(LoggingConfig.DEFAULT_FORMAT))
         logging.getLogger().addHandler(error_handler)
+
+        # Também manter uma cópia "latest" de erros críticos na raiz data/logs/ para compatibilidade
+        try:
+            latest_errors = data_dir / "logs" / "errors_critical.log"
+            latest_errors.parent.mkdir(parents=True, exist_ok=True)
+            latest_errors_handler = RotatingFileHandler(
+                filename=str(latest_errors),
+                maxBytes=5 * 1024 * 1024,
+                backupCount=5,
+                encoding="utf-8",
+            )
+            latest_errors_handler.setLevel(logging.ERROR)
+            latest_errors_handler.setFormatter(
+                logging.Formatter(LoggingConfig.DEFAULT_FORMAT)
+            )
+            logging.getLogger().addHandler(latest_errors_handler)
+        except Exception:
+            pass
 
         # 5. Filtrar avisos inofensivos de terÃ§eitos
         logging.getLogger("easyocr").setLevel(logging.ERROR)
