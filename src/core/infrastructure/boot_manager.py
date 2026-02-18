@@ -607,14 +607,34 @@ class BootManager:
             raise
 
     def _init_ai_agent(self) -> Any:
-        """Initialize AI agent"""
-        try:
-            from src.core.intelligence.ai_agent import ai_agent
+        """Initialize AI agent (defensive import to avoid intermittent NameError for decorators)
 
-            return ai_agent
-        except ImportError as e:
-            logger.error(f"Failed to initialize AI agent: {e}")
-            raise
+        Some modules occasionally raise "name 'safe_execute' is not defined" during
+        import due to import-order races. Retry once and preload `safe_execute` if
+        that specific NameError occurs.
+        """
+        for attempt in range(2):
+            try:
+                from src.core.intelligence.ai_agent import ai_agent
+
+                return ai_agent
+            except Exception as e:
+                # If the failure looks like the historical `safe_execute` NameError,
+                # try preloading the safe_execute utilities and retry once.
+                if "safe_execute" in str(e):
+                    try:
+                        from src.utils.safe_execute import safe_execute, safe_context  # noqa: F401
+                        logger.warning(
+                            "Preloaded src.utils.safe_execute to mitigate import race"
+                        )
+                    except Exception as _ie:
+                        logger.warning(f"Preload of safe_execute failed: {_ie}")
+
+                logger.error(f"Failed to initialize AI agent (attempt {attempt+1}): {e}")
+                time.sleep(0.5)
+
+        # If we get here, re-raise the last exception to surface the root cause
+        raise RuntimeError("AI agent initialization failed after retries")
 
     def _init_audio_system(self) -> Any:
         """Initialize audio system"""

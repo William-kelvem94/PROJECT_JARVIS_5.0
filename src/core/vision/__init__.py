@@ -101,9 +101,9 @@ __all__ = [
 
 
 def get_vision_system(*args, **kwargs):
-    from .vision_system import VisionSystem
+    from .vision_system import get_vision_system as _get_vision_system
 
-    return VisionSystem(*args, **kwargs)
+    return _get_vision_system(*args, **kwargs)
 
 
 # Export symbols

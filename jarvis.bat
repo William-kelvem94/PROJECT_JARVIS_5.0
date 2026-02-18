@@ -8,3 +8,6 @@ if errorlevel 1 (
     echo [ERROR] Script "scripts\launchers\start_jarvis.bat" returned an error (exit code %ERRORLEVEL%).
     exit /b %ERRORLEVEL%
 )
+
+echo [SYSTEM] Jarvis Launcher has finished execution.
+endlocal        

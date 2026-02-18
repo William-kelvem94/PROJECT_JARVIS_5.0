@@ -196,8 +196,8 @@ class Subscription:
     error_count: int = 0
     last_error: Optional[str] = None
 
-    # Queue for async processing
-    event_queue: asyncio.Queue = field(default_factory=lambda: asyncio.Queue())
+    # Queue for async processing (initialized lazily when event loop is available)
+    event_queue: Optional[asyncio.Queue] = field(default=None)
 
     def matches(self, event: Event) -> bool:
         """Check if event matches this subscription filters"""
@@ -402,6 +402,10 @@ class AsyncEventBus:
 
         logger.info("📡 Async Event Bus initialized")
 
+    def subscribe_all(self, callback: Callable[[Any], Union[None, Coroutine]], **kwargs) -> str:
+        """Subscribe to all event types (convenience)."""
+        return self.subscribe(list(EventType), callback, **kwargs)
+
     async def start(self):
         """Start the event bus"""
         # If marked running but dispatcher dead, allow restart
@@ -438,7 +442,23 @@ class AsyncEventBus:
             self._watchdog_heartbeat_loop()
         )
 
+        # Start processing tasks for any subscriptions registered before the loop started
+        # (e.g., subscriptions created during synchronous __init__ of other modules)
+        for subscription in list(self._subscriptions.values()):
+            if subscription.is_active:
+                # Re-create queue in the running loop context if needed
+                try:
+                    if subscription.event_queue is None or subscription.event_queue.maxsize != subscription.max_queue_size:
+                        subscription.event_queue = asyncio.Queue(maxsize=subscription.max_queue_size)
+                except Exception:
+                    pass
+                try:
+                    asyncio.create_task(self._process_subscription(subscription))
+                except Exception as e:
+                    logger.warning(f"Failed to start subscription task: {e}")
+
         logger.info("✅ Async Event Bus started")
+
 
     async def stop(self, timeout: float = 30.0):
         """Stop the event bus gracefully"""
@@ -607,6 +627,12 @@ class AsyncEventBus:
         if isinstance(event_types, EventType):
             event_types = [event_types]
 
+        # Create the event queue - handle case where no event loop is running yet
+        try:
+            sub_queue: Optional[asyncio.Queue] = asyncio.Queue(maxsize=max_queue_size)
+        except RuntimeError:
+            sub_queue = None
+
         subscription = Subscription(
             event_types=set(event_types),
             callback=callback,
@@ -619,18 +645,25 @@ class AsyncEventBus:
             batch_timeout_seconds=batch_timeout_seconds,
         )
 
-        # Create event queue honoring requested max_queue_size (0 == unbounded)
-        subscription.event_queue = asyncio.Queue(maxsize=max_queue_size)
+        # Assign the queue if successfully created
+        if sub_queue is not None:
+            subscription.event_queue = sub_queue
+
         self._subscriptions[subscription.id] = subscription
 
-        # Start processing task for this subscription
-        asyncio.create_task(self._process_subscription(subscription))
+        # Start processing task only if an event loop is running
+        try:
+            asyncio.create_task(self._process_subscription(subscription))
+        except RuntimeError:
+            # No running event loop - task will be started when bus.start() is called
+            pass
 
         logger.debug(
             f"📋 New subscription: {[t.value for t in event_types]} (ID: {subscription.id[:8]})"
         )
 
         return subscription.id
+
 
     def unsubscribe(self, subscription_id: str) -> bool:
         """Unsubscribe from events"""
@@ -657,7 +690,7 @@ class AsyncEventBus:
             "total_events_processed": sub.total_events_processed,
             "error_count": sub.error_count,
             "last_error": sub.last_error,
-            "queue_size": sub.event_queue.qsize(),
+            "queue_size": sub.event_queue.qsize() if sub.event_queue else 0,
             "last_event_time": (
                 sub.last_event_time.isoformat() if sub.last_event_time else None
             ),
@@ -802,6 +835,10 @@ class AsyncEventBus:
         # Deliver to each matching subscription
         for subscription in matching_subscriptions:
             try:
+                if subscription.event_queue is None:
+                    # Queue not yet initialized (subscription registered before loop started)
+                    # Initialize it now
+                    subscription.event_queue = asyncio.Queue(maxsize=subscription.max_queue_size)
                 await subscription.event_queue.put(event)
                 subscription.total_events_received += 1
                 subscription.last_event_time = datetime.now()
@@ -812,6 +849,10 @@ class AsyncEventBus:
 
     async def _process_subscription(self, subscription: Subscription):
         """Process events for a specific subscription"""
+        # Ensure the queue is initialized
+        if subscription.event_queue is None:
+            subscription.event_queue = asyncio.Queue(maxsize=subscription.max_queue_size)
+
         while subscription.is_active and self._running:
             try:
                 events_batch = []

@@ -156,10 +156,21 @@ class PerformanceOptimizer:
         self._running = True
 
         # Telemetria para o Dashboard Web
-        self._telemetry_thread = threading.Thread(
-            target=self._telemetry_loop, daemon=True
-        )
-        self._telemetry_thread.start()
+        try:
+            import os
+            if os.getenv("JARVIS_DISABLE_RESOURCE_LIMITS", "0") == "1":
+                logger.info("⚠️ Performance telemetry disabled via JARVIS_DISABLE_RESOURCE_LIMITS")
+            else:
+                self._telemetry_thread = threading.Thread(
+                    target=self._telemetry_loop, daemon=True
+                )
+                self._telemetry_thread.start()
+        except Exception:
+            # Fallback: start telemetry if import/os check fails
+            self._telemetry_thread = threading.Thread(
+                target=self._telemetry_loop, daemon=True
+            )
+            self._telemetry_thread.start()
 
         logger.info("âœ… Performance Optimizer online")
 

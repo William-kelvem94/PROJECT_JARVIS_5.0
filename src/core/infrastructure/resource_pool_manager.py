@@ -347,6 +347,20 @@ class ResourcePool(Generic[T]):
 
     async def start(self):
         """Start the resource pool"""
+        # Allow tests / low-RAM machines to opt-out of aggressive resource management
+        try:
+            import os
+            if os.getenv("JARVIS_DISABLE_RESOURCE_LIMITS", "0") == "1":
+                logger.info(f"⚠️ Resource pool '{self.config.name}': resource limits disabled via JARVIS_DISABLE_RESOURCE_LIMITS - starting in passive mode")
+                self._running = True
+                self.pool_start_time = datetime.now()
+                self.state = PoolState.ACTIVE
+                await self._create_initial_resources()
+                logger.info(f"✅ Resource pool '{self.config.name}' started (passive)")
+                return
+        except Exception:
+            pass
+
         if self._running:
             return
 

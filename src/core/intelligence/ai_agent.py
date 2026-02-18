@@ -3,9 +3,16 @@ Orquestrador do Agente de IA
 Gerencia interação entre visão (OCR), decisão (LLM) e ação (PyAutoGUI)
 """
 
+# Ensure project root is on sys.path so imports like `from src...` work when running this file directly.
+import os
+import sys
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import logging
 import threading
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 # Safe Library Imports
 try:
@@ -14,7 +21,6 @@ try:
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
-    requests = None
 
 try:
     import aiohttp
@@ -63,7 +69,7 @@ except ImportError:
         def get_last_system_errors(self):
             return []
 
-        def set_system_volume(self, *args):
+        def set_system_volume(self, *_, **__):
             pass
 
     hw_control = MockHW()
@@ -85,10 +91,10 @@ except ImportError:
         def should_initiate_conversation(self):
             return False
 
-        def record_interaction(self, *args, **kwargs):
+        def record_interaction(self, *_ , **__):
             pass
 
-        def update_visual_context(self, *args):
+        def update_visual_context(self, *_):
             pass
 
     context_manager = MockContext()
@@ -266,8 +272,8 @@ except ImportError:
 try:
     from src.utils.web_emitter import emit_status_sync, emit_log_sync
 except ImportError:
-    emit_status_sync = lambda *args, **kwargs: None
-    emit_log_sync = lambda *args, **kwargs: None
+    emit_status_sync = lambda *_ , **__: None
+    emit_log_sync = lambda *_ , **__: None
 
 # ============================================================================
 # ADVANCED MODULES
@@ -305,14 +311,12 @@ except ImportError:
     workflow_engine = None
 
 try:
-    from src.core.security.security_manager_advanced import (
-        security_manager as security_manager_advanced,
-    )
+    from src.core.security.security_manager_advanced import SecurityManager
 
     ADVANCED_SECURITY_AVAILABLE = True
 except ImportError:
     ADVANCED_SECURITY_AVAILABLE = False
-    security_manager_advanced = None
+    SecurityManager = None
 
 # ============================================================================
 # AI AGENT CLASS
@@ -322,7 +326,7 @@ except ImportError:
 class AIAgent:
     """Classe principal do Agente Inteligente"""
 
-    async def self_repair(self, root_path: str = None):
+    async def self_repair(self, root_path: Optional[str] = None):
         """
         O coração da auto-correção: 
         1. Analisa os logs de erro
@@ -414,7 +418,7 @@ class AIAgent:
         except Exception as e:
             logger.error(f"Falha no ciclo de auto-reparo: {e}")
 
-    def analyze_codebase(self, root_path: str = None):
+    def analyze_codebase(self, root_path: Optional[str] = None):
         """
         Analisa e sugere/aplica correções em todos os arquivos Python do projeto.
         Se root_path não for informado, usa o diretório do projeto principal.
@@ -436,7 +440,7 @@ class AIAgent:
 
         # 1. Listar todos os arquivos Python
         py_files = []
-        for dirpath, dirnames, filenames in os.walk(root_path):
+        for dirpath, _, filenames in os.walk(root_path):
             for fname in filenames:
                 if fname.endswith(".py") and "__pycache__" not in dirpath and "venv" not in dirpath:
                     py_files.append(os.path.join(dirpath, fname))
@@ -448,7 +452,7 @@ class AIAgent:
             try:
                 subprocess.run([sys.executable, "-m", "autopep8", "--in-place", "--aggressive", "--aggressive", f], check=False)
                 subprocess.run([sys.executable, "-m", "black", f, "--quiet"], check=False)
-            except Exception as e:
+            except Exception:
                 pass
 
         # 3. Disparar Auto-reparo Baseado em Logs
@@ -506,9 +510,12 @@ class AIAgent:
             advanced_speech_processor if ADVANCED_SPEECH_AVAILABLE else None
         )
         self.workflow_engine = workflow_engine if WORKFLOW_ENGINE_AVAILABLE else None
-        self.security_advanced = (
-            security_manager_advanced if ADVANCED_SECURITY_AVAILABLE else None
-        )
+        self.security_advanced = None  # type: ignore
+        if ADVANCED_SECURITY_AVAILABLE and SecurityManager:
+            try:
+                self.security_advanced = SecurityManager(config_dir="data/security")
+            except Exception as e:
+                logger.debug(f"Failed to load advanced security manager: {e}")
 
         # Agent Delegates
         try:
@@ -671,6 +678,32 @@ class AIAgent:
         except Exception as e:
             logger.error(f"Error handling VISION_READY event: {e}")
 
+    def process_hybrid_vision(self, image_path: str, complexity: str = "auto") -> dict:
+        """
+        Backwards-compatible wrapper for hybrid vision diagnostics/tests.
+
+        Delegates to the AdvancedVisionPipeline when available (levels 1-3),
+        otherwise falls back to the lightweight VisionEnhancer. Returns a
+        dictionary with `source` ("local" | "cloud") and `analysis`.
+        """
+        try:
+            # Prefer the higher-level pipeline when it's present on the agent
+            if hasattr(self, "advanced_vision") and self.advanced_vision:
+                analysis = self.advanced_vision.analyze(image_path, complexity=complexity)
+                source = "cloud" if analysis.get("level_used", 1) >= 3 else "local"
+                return {"source": source, "analysis": analysis}
+
+            # Fallback to the lightweight vision_enhancer singleton
+            if vision_enhancer:
+                analysis = vision_enhancer.analyze_screen(image_path=image_path, detect_ui=True, extract_text=True)
+                return {"source": "local", "analysis": analysis}
+
+            # No vision capability available
+            return {"source": "local", "analysis": {"error": "no vision modules available"}}
+        except Exception as e:
+            logger.error(f"process_hybrid_vision failed: {e}")
+            return {"source": "local", "analysis": {"error": str(e)}}
+
     async def _on_audio_ready(self, event):
         """Handler for AUDIO_READY - updates audio_ready state."""
         try:
@@ -815,8 +848,8 @@ class AIAgent:
         self,
         prompt: str,
         image_data: Any = None,
-        model: str = None,
-        system_prompt: str = None,
+        model: Optional[str] = None,
+        system_prompt: Optional[str] = None,
     ) -> str:
         if not AIOHTTP_AVAILABLE:
             return "Erro: aiohttp não instalado."
@@ -856,9 +889,14 @@ class AIAgent:
             pass
 
         try:
+            if not aiohttp:
+                return "Erro: aiohttp não disponível."
+
             async with aiohttp.ClientSession() as session:
                 async with session.post(
-                    self.ollama_url, json=payload, timeout=60
+                    self.ollama_url, 
+                    json=payload, 
+                    timeout=aiohttp.ClientTimeout(total=60)
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -872,9 +910,15 @@ class AIAgent:
     def _clean_response_for_speech(self, text: str) -> str:
         return text.replace("*", "").strip()
 
-    async def _handle_vision_event(self, event_data: dict):
+    async def _handle_vision_event(self, _event_data: dict):
         pass
 
 
 # Global Instance
 ai_agent = AIAgent()
+
+# If running as a script, fix sys.path for relative imports
+if __name__ == "__main__":
+    import sys
+    import os
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../..")))

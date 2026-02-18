@@ -22,6 +22,7 @@ import time
 import logging
 import asyncio
 import psutil
+import os
 from typing import Optional, Dict, List, Any
 from pathlib import Path
 from datetime import datetime
@@ -369,16 +370,20 @@ class VisionSystem:
 
         # MEMORY SAFETY CHECK
         try:
-            mem = psutil.virtual_memory()
-            if mem.percent > 80:
-                logger.warning(
-                    f"⚠️ VisionSystem: High RAM usage ({mem.percent}%) - Entering SAFE MODE (FaceID only)"
-                )
-                # Only run FaceID in background
-                threading.Thread(
-                    target=self._load_known_faces, daemon=True, name="VisionFaceIDOnly"
-                ).start()
-                return
+            # Allow tests / low-RAM machines to bypass SAFE MODE via env var
+            if os.getenv("JARVIS_DISABLE_SAFE_MODE", "0") == "1":
+                logger.info("⚠️ SAFE MODE bypassed via JARVIS_DISABLE_SAFE_MODE (start_background_loading)")
+            else:
+                mem = psutil.virtual_memory()
+                if mem.percent > 80:
+                    logger.warning(
+                        f"⚠️ VisionSystem: High RAM usage ({mem.percent}%) - Entering SAFE MODE (FaceID only)"
+                    )
+                    # Only run FaceID in background
+                    threading.Thread(
+                        target=self._load_known_faces, daemon=True, name="VisionFaceIDOnly"
+                    ).start()
+                    return
         except Exception:
             pass
 
@@ -400,27 +405,30 @@ class VisionSystem:
             self._load_known_faces()
 
             # MEMORY CHECK FOR HEAVY MODELS
-            if psutil.virtual_memory().percent > 85:
-                logger.warning(
-                    "⚠️ Vision: RAM > 85% - Skipping heavy models (OCR/YOLO)"
-                )
-                self._ocr_loading = False
-                self._yolo_loading = False
-                return
+            if os.getenv("JARVIS_DISABLE_SAFE_MODE", "0") == "1":
+                logger.info("⚠️ SAFE MODE bypassed via JARVIS_DISABLE_SAFE_MODE (load_heavy_models_async) - attempting to load heavy models")
+            else:
+                if psutil.virtual_memory().percent > 85:
+                    logger.warning(
+                        "⚠️ Vision: RAM > 85% - Skipping heavy models (OCR/YOLO)"
+                    )
+                    self._ocr_loading = False
+                    self._yolo_loading = False
+                    return
 
-            # 2. EasyOCR (flags já setadas por start_background_loading)
-            if EASYOCR_AVAILABLE and not self._ocr_ready:
-                self._load_ocr_background()
+                # 2. EasyOCR (flags já setadas por start_background_loading)
+                if EASYOCR_AVAILABLE and not self._ocr_ready:
+                    self._load_ocr_background()
 
-            # MEMORY CHECK BEFORE YOLO
-            if psutil.virtual_memory().percent > 85:
-                logger.warning("⚠️ Vision: RAM > 85% - Skipping YOLO")
-                self._yolo_loading = False
-                return
+                # MEMORY CHECK BEFORE YOLO
+                if psutil.virtual_memory().percent > 85:
+                    logger.warning("⚠️ Vision: RAM > 85% - Skipping YOLO")
+                    self._yolo_loading = False
+                    return
 
-            # 3. YOLO (flags já setadas por start_background_loading)
-            if YOLO_AVAILABLE and not self._yolo_ready:
-                self._load_yolo_background()
+                # 3. YOLO (flags já setadas por start_background_loading)
+                if YOLO_AVAILABLE and not self._yolo_ready:
+                    self._load_yolo_background()
 
         except Exception as e:
             logger.error(f"❌ Vision: Error in async loading: {e}")

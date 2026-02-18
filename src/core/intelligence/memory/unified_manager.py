@@ -111,6 +111,43 @@ class UnifiedMemoryManager:
             return
 
         try:
+            # Auto-migrate ChromaDB SQLite schema (backwards compatibility)
+            try:
+                sqlite_path = self.db_path / "chroma.sqlite3"
+                if sqlite_path.exists():
+                    import sqlite3 as _sqlite
+
+                    with _sqlite.connect(sqlite_path) as _conn:
+                        cur = _conn.cursor()
+
+                        # collections migration (existing fix)
+                        cur.execute("PRAGMA table_info('collections')")
+                        existing = [r[1] for r in cur.fetchall()]
+                        if "topic" not in existing:
+                            cur.execute(
+                                "ALTER TABLE collections ADD COLUMN topic TEXT DEFAULT NULL"
+                            )
+                            logger.info(
+                                "🔧 ChromaDB schema migration: added 'topic' column to collections"
+                            )
+
+                        # segments migration (missing in some older DBs)
+                        cur.execute("PRAGMA table_info('segments')")
+                        seg_cols = [r[1] for r in cur.fetchall()]
+                        if "topic" not in seg_cols:
+                            try:
+                                cur.execute(
+                                    "ALTER TABLE segments ADD COLUMN topic TEXT DEFAULT NULL"
+                                )
+                                logger.info(
+                                    "🔧 ChromaDB schema migration: added 'topic' column to segments"
+                                )
+                            except Exception as _seg_e:
+                                # Some older chroma versions may not expose 'segments' table
+                                logger.debug(f"Segments migration skipped: {_seg_e}")
+            except Exception as _e:
+                logger.warning(f"ChromaDB schema auto-migration failed: {_e}")
+
             self.client = chromadb.PersistentClient(
                 path=str(self.db_path), settings=Settings(anonymized_telemetry=False)
             )
