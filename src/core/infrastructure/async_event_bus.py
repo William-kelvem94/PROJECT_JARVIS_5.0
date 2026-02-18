@@ -783,18 +783,15 @@ class AsyncEventBus:
             # Retry import until watchdog is available or bus is stopped
             watchdog_system = None
             ComponentStatus = None
-            while self._running and watchdog_system is None:
+            while self._running and (watchdog_system is None or ComponentStatus is None):
                 try:
-                    from src.core.infrastructure.watchdog import (
-                        watchdog_system as _ws
-                    )
-                    from src.core.infrastructure.watchdog import WatchdogStatus as _cs
-
-                    watchdog_system = _ws
-                    ComponentStatus = _cs
-                    logger.debug("EventBus: connected to Watchdog for heartbeats")
-                except Exception:
-                    # Watchdog not ready yet — wait and retry
+                    from src.core.infrastructure import watchdog as _watchdog_mod
+                    watchdog_system = getattr(_watchdog_mod, "watchdog_system", None)
+                    ComponentStatus = getattr(_watchdog_mod, "ComponentStatus", None)
+                    if watchdog_system and ComponentStatus:
+                        logger.debug("EventBus: connected to Watchdog for heartbeats")
+                except Exception as import_exc:
+                    logger.debug(f"EventBus: Watchdog not ready yet ({import_exc}) — waiting...")
                     await asyncio.sleep(1.0)
 
             # If bus stopped while waiting, exit
@@ -803,12 +800,12 @@ class AsyncEventBus:
 
             while self._running:
                 try:
-                    watchdog_system.update_heartbeat(
-                        "event_bus", status=ComponentStatus.HEALTHY
-                    )
-                except Exception:
-                    # Keep going even if watchdog update fails
-                    pass
+                    if watchdog_system and ComponentStatus and hasattr(watchdog_system, "update_heartbeat") and hasattr(ComponentStatus, "HEALTHY"):
+                        watchdog_system.update_heartbeat(
+                            "event_bus", status=ComponentStatus.HEALTHY
+                        )
+                except Exception as e:
+                    logger.debug(f"EventBus: Watchdog heartbeat update failed: {e}")
                 await asyncio.sleep(2.0)
         except asyncio.CancelledError:
             return
