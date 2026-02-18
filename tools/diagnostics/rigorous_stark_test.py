@@ -127,7 +127,8 @@ class StarkRigorousTester:
 
         try:
             # O Nexus deve recusar tópicos nulos ou perigosos (se implementado)
-            # Como ainda não temos o sanitizer completo, vamos testar o fluxo de comando
+            # Como ainda não temos o sanitizer completo, vamos testar o fluxo
+            # de comando
             res = stark_nexus.pesquisar("TESTE", "IA Moderna")
             print("  ✅ Fluxo do Nexus operacional.")
             return True

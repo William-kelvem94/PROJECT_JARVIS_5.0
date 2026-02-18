@@ -3,9 +3,11 @@ Controlador de aÃ§Ãµes do sistema
 Habilita interaÃ§Ã£o com mouse e teclado via PyAutoGUI
 """
 
-# pyautogui is optional at import-time; fail gracefully and keep the module available
+# pyautogui is optional at import-time; fail gracefully and keep the
+# module available
 try:
     import pyautogui
+
     PYAUTOGUI_AVAILABLE = True
 except Exception:
     pyautogui = None
@@ -283,7 +285,8 @@ class ActionController:
                     break
 
             if label_region:
-                # EstratÃ©gia: Clicar 100 pixels Ã  direita do centro do label (comum para inputs)
+                # EstratÃ©gia: Clicar 100 pixels Ã  direita do centro do label
+                # (comum para inputs)
                 x = label_region["x"] + label_region["width"] + 50
                 y = label_region["y"] + (label_region["height"] // 2)
 

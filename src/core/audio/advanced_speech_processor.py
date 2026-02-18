@@ -25,7 +25,8 @@ class AdvancedSpeechProcessor:
         self.tts_available = False
         self.tts_engine = None
 
-        # self._init_whisper() # Desativado o auto-load para economizar recursos (Uso sob demanda)
+        # self._init_whisper() # Desativado o auto-load para economizar
+        # recursos (Uso sob demanda)
         self._init_tts()
 
     def _init_whisper(self):
@@ -153,7 +154,7 @@ class AdvancedSpeechProcessor:
                 rate = wf.getframerate()
                 duration = frames / float(rate)
                 return duration
-        except:
+        except BaseException:
             return 0.0
 
     def analyze_speech_emotion(self, audio_path: str) -> Dict[str, Any]:
@@ -171,7 +172,8 @@ class AdvancedSpeechProcessor:
             mfccs = np.mean(librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40).T, axis=0)
 
             # Simple Intensity Logic (Fallback/Baseline)
-            # Em versÃµes futuras, usaremos um modelo .pth/.onnx prÃ©-treinado aqui
+            # Em versÃµes futuras, usaremos um modelo .pth/.onnx prÃ©-treinado
+            # aqui
             intensity = np.sqrt(np.mean(y**2))
 
             emotion = "neutral"
@@ -188,7 +190,8 @@ class AdvancedSpeechProcessor:
                 "emotion": emotion,
                 "confidence": confidence,
                 "intensity": float(intensity),
-                "mfcc_fingerprint": mfccs.tolist()[:5],  # Apenas o inÃ­cio para log
+                # Apenas o inÃ­cio para log
+                "mfcc_fingerprint": mfccs.tolist()[:5],
             }
         except Exception as e:
             logger.error(f"Erro na anÃ¡lise de emoÃ§Ã£o vocal: {e}")
@@ -203,7 +206,8 @@ class AdvancedSpeechProcessor:
             from pyannote.audio import Pipeline
 
             # Pipeline requer token do HuggingFace (USER precisarÃ¡ configurar se usar pyannote oficial)
-            # Por enquanto, mantemos uma lÃ³gica estruturada que o usuÃ¡rio pode expandir
+            # Por enquanto, mantemos uma lÃ³gica estruturada que o usuÃ¡rio
+            # pode expandir
             pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization@2.1", use_auth_token=True
             )

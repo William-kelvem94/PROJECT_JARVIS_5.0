@@ -434,7 +434,10 @@ class PriorityScheduler:
         if next_task:
             # Check if we need preemption
             if len(self._running_tasks) >= self.max_concurrent_tasks:
-                if self.preemption_enabled and next_task.priority <= TaskPriority.CRITICAL:
+                if (
+                    self.preemption_enabled
+                    and next_task.priority <= TaskPriority.CRITICAL
+                ):
                     # Try to preempt a lower priority task
                     if self._preempt_lower_priority_task(next_task.priority):
                         # Task was preempted, slot is open
@@ -449,7 +452,7 @@ class PriorityScheduler:
             return
 
         load = self.system_load.overall_load
-        
+
         # Adjust concurrency thresholds
         if load > 0.9:  # Critical load
             self.max_concurrent_tasks = max(2, self.max_concurrent_tasks // 2)
@@ -473,27 +476,39 @@ class PriorityScheduler:
             return False
 
         # Sort by priority (lowest first) and then by runtime (longest first)
-        candidates.sort(key=lambda t: (t.priority, -t.metrics.total_runtime), reverse=True)
-        
+        candidates.sort(
+            key=lambda t: (t.priority, -t.metrics.total_runtime), reverse=True
+        )
+
         task_to_preempt = candidates[0]
-        logger.info(f"⚡ Preempting task '{task_to_preempt.name}' to make room for higher priority task")
-        
+        logger.info(
+            f"⚡ Preempting task '{task_to_preempt.name}' to make room for higher priority task"
+        )
+
         # Suspend/Cancel task
         if task_to_preempt.asyncio_task:
             task_to_preempt.asyncio_task.cancel()
             task_to_preempt.state = TaskState.PENDING
             # It will be retried in the next cycle if periodic/continuous
             return True
-            
+
         return False
 
     def pulse(self):
         """Update heartbeat for watchdog integration"""
         try:
-            from src.core.infrastructure.watchdog import watchdog_system, ComponentStatus
+            from src.core.infrastructure.watchdog import (
+                watchdog_system,
+                ComponentStatus,
+            )
+
             watchdog_system.update_heartbeat(
-                "priority_scheduler", 
-                status=ComponentStatus.HEALTHY if self._running else ComponentStatus.DEGRADED
+                "priority_scheduler",
+                status=(
+                    ComponentStatus.HEALTHY
+                    if self._running
+                    else ComponentStatus.DEGRADED
+                ),
             )
         except Exception:
             pass
@@ -612,7 +627,9 @@ class PriorityScheduler:
                 del self._running_tasks[task.id]
             task.asyncio_task = None
 
-    async def _handle_task_error(self, task: SchedulerTask, error: Exception, start_time: float):
+    async def _handle_task_error(
+        self, task: SchedulerTask, error: Exception, start_time: float
+    ):
         """Handle task execution error"""
         runtime = time.time() - start_time
         task.metrics.failure_count += 1
@@ -624,15 +641,16 @@ class PriorityScheduler:
         # Emit event for monitoring
         try:
             from src.core.infrastructure.async_event_bus import event_bus, EventType
+
             event_bus.publish(
                 EventType.SYSTEM_ERROR,
                 {
                     "task_name": task.name,
                     "error": str(error),
                     "failure_count": task.metrics.failure_count,
-                    "permanent": task.metrics.failure_count >= task.max_retries
+                    "permanent": task.metrics.failure_count >= task.max_retries,
                 },
-                source="priority_scheduler"
+                source="priority_scheduler",
             )
         except Exception:
             pass
@@ -691,11 +709,12 @@ class PriorityScheduler:
 
                 # Log high load conditions
                 # Check frequency reduction: Log only if sustained for 3 cycles
-                # and if load is truly critical (>98%) to avoid spamming watchdog
+                # and if load is truly critical (>98%) to avoid spamming
+                # watchdog
                 if self.system_load.overall_load > 0.98:
-                     # Minimal logging to save IO
-                     pass
-            
+                    # Minimal logging to save IO
+                    pass
+
                 await asyncio.sleep(5.0)  # Update every 5 seconds (was 2.0)
 
             except asyncio.CancelledError:
@@ -712,6 +731,7 @@ priority_scheduler = PriorityScheduler()
 def get_priority_scheduler() -> PriorityScheduler:
     """Get the global unified priority scheduler instance"""
     return priority_scheduler
+
 
 if __name__ == "__main__":
     # Test the scheduler

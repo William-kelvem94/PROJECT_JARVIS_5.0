@@ -20,7 +20,8 @@ def test_stark_dashboard_shows_and_responds_to_approval_request():
         await bus.stop()
         await bus.start()
 
-        # ensure dashboard subscribes to approvals (must succeed inside running loop)
+        # ensure dashboard subscribes to approvals (must succeed inside running
+        # loop)
         assert dashboard.start_approval_listener() is True
 
         # subscribe to approval responses to assert publish from UI
@@ -37,7 +38,8 @@ def test_stark_dashboard_shows_and_responds_to_approval_request():
 
         bus.subscribe([EventType.ACTION_APPROVAL_REQUEST], _req_handler)
 
-        # Publish an approval request and use the returned event id as request_id
+        # Publish an approval request and use the returned event id as
+        # request_id
         req_id = bus.publish(
             EventType.ACTION_APPROVAL_REQUEST,
             {"action": {"action_type": "file_modify", "target": "src/core/main.py"}},
@@ -49,7 +51,9 @@ def test_stark_dashboard_shows_and_responds_to_approval_request():
         app.processEvents()
 
         # EventBus should have dispatched the request to subscribers
-        assert any(e.id == req_id for e in approval_requests), "EventBus did not dispatch ACTION_APPROVAL_REQUEST to subscribers"
+        assert any(
+            e.id == req_id for e in approval_requests
+        ), "EventBus did not dispatch ACTION_APPROVAL_REQUEST to subscribers"
 
         # Wait for the dashboard to receive and display the pending approval
         found = False
@@ -71,7 +75,10 @@ def test_stark_dashboard_shows_and_responds_to_approval_request():
         await asyncio.sleep(0.3)
 
         # Ensure response was published
-        assert any(d.get("request_id") == req_id and d.get("approved") is True for d in captured_responses)
+        assert any(
+            d.get("request_id") == req_id and d.get("approved") is True
+            for d in captured_responses
+        )
 
         # Widget should be removed from UI
         assert req_id not in dashboard._pending_approval_widgets

@@ -35,7 +35,7 @@ try:
         subprocess.run([sys.executable, "-m", "pip", "install", "torchaudio==2.1.0"])
     else:
         subprocess.run([sys.executable, "-m", "pip", "install", "torchaudio"])
-except:
+except BaseException:
     print("⚠️ PyTorch não encontrado")
 
 print("✅ Correção de emergência aplicada!")

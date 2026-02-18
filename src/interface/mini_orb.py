@@ -10,7 +10,8 @@ class MiniOrb(QWidget):
     """
 
     # Signals
-    mode_switch_requested = pyqtSignal(object)  # Request switch to Dashboard/HUD
+    # Request switch to Dashboard/HUD
+    mode_switch_requested = pyqtSignal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)

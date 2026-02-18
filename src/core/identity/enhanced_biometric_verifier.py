@@ -24,6 +24,7 @@ import face_recognition
 
 # Mock camera support
 from src.core.config.system_manifest import system_manifest
+
 try:
     from src.core.vision.camera_controller import MockVideoCapture
 except Exception:
@@ -238,7 +239,10 @@ class EnhancedBiometricVerifier:
         face_encodings = []
 
         try:
-            if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture:
+            if (
+                getattr(system_manifest.vision, "mock_camera", False)
+                and MockVideoCapture
+            ):
                 cap = MockVideoCapture(0)
             else:
                 cap = cv2.VideoCapture(0)
@@ -526,7 +530,10 @@ class EnhancedBiometricVerifier:
         """ðŸ“· VERIFICA IDENTIDADE FACIAL"""
 
         try:
-            if getattr(system_manifest.vision, "mock_camera", False) and MockVideoCapture:
+            if (
+                getattr(system_manifest.vision, "mock_camera", False)
+                and MockVideoCapture
+            ):
                 cap = MockVideoCapture(0)
             else:
                 cap = cv2.VideoCapture(0)

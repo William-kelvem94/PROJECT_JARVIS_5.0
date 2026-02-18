@@ -24,7 +24,9 @@ class DreamOrchestrator:
         # ConfiguraÃ§Ãµes de Gatilho
         self.IDLE_CPU_THRESHOLD = 15.0  # %
         self.IDLE_TIME_REQUIRED = (
-            600  # segundos (10 min) - DEBUG: Usar 60s para teste rÃ¡pido se necessÃ¡rio
+            # segundos (10 min) - DEBUG: Usar 60s para teste rÃ¡pido se
+            # necessÃ¡rio
+            600
         )
         self.CHECK_INTERVAL = 60  # segundos
 
@@ -127,7 +129,8 @@ class DreamOrchestrator:
             self.curiosity_engine.stop_study()
 
         if self.dream_thread and self.dream_thread.is_alive():
-            # NÃ£o podemos matar threads em Python facilmente, mas o engine deve checar flag is_dreaming
+            # NÃ£o podemos matar threads em Python facilmente, mas o engine
+            # deve checar flag is_dreaming
             pass
 
 

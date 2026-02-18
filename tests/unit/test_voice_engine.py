@@ -1,3 +1,4 @@
+from src.core.audio.voice_controller import VoiceController
 import sys
 import asyncio
 import logging
@@ -5,8 +6,6 @@ from pathlib import Path
 
 # Adicionar o diretório raiz ao sys.path para importações
 sys.path.append(str(Path(__name__).parent.absolute()))
-
-from src.core.audio.voice_controller import VoiceController
 
 
 async def test_engine():

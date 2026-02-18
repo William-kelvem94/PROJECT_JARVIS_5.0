@@ -368,13 +368,15 @@ class ResourcePool(Generic[T]):
         self._health_check_thread.start()
 
         self._scaling_thread = threading.Thread(
-            target=self._scaling_loop, name=f"scaling_{self.config.name}", daemon=True
-        )
+            target=self._scaling_loop,
+            name=f"scaling_{self.config.name}",
+            daemon=True)
         self._scaling_thread.start()
 
         self._cleanup_thread = threading.Thread(
-            target=self._cleanup_loop, name=f"cleanup_{self.config.name}", daemon=True
-        )
+            target=self._cleanup_loop,
+            name=f"cleanup_{self.config.name}",
+            daemon=True)
         self._cleanup_thread.start()
 
         logger.info(f"✅ Resource pool '{self.config.name}' started")
@@ -473,7 +475,8 @@ class ResourcePool(Generic[T]):
             with self._lock:
                 self._resource_available.wait(timeout=0.1)
 
-        raise TimeoutError(f"Timeout acquiring resource from pool '{self.config.name}'")
+        raise TimeoutError(
+            f"Timeout acquiring resource from pool '{self.config.name}'")
 
     async def _release_resource(self, resource: PooledResource[T]):
         """Release resource back to pool"""
@@ -489,9 +492,9 @@ class ResourcePool(Generic[T]):
 
             # Validate resource
             if resource.resource is not None and not self.factory.validate_resource(
-                resource.resource
-            ):
-                logger.warning(f"Resource {resource.resource_id[:8]} failed validation")
+                    resource.resource):
+                logger.warning(
+                    f"Resource {resource.resource_id[:8]} failed validation")
                 await self._destroy_resource(resource)
                 self._resource_available.notify_all()
                 return
@@ -576,7 +579,8 @@ class ResourcePool(Generic[T]):
             )
 
         except Exception as e:
-            logger.error(f"Error destroying resource {resource.resource_id[:8]}: {e}")
+            logger.error(
+                f"Error destroying resource {resource.resource_id[:8]}: {e}")
 
     async def _destroy_all_resources(self):
         """Destroy all resources in pool"""
@@ -586,7 +590,8 @@ class ResourcePool(Generic[T]):
         for resource in resource_list:
             await self._destroy_resource(resource)
 
-    async def _check_resource_health(self, resource: PooledResource[T]) -> bool:
+    async def _check_resource_health(
+            self, resource: PooledResource[T]) -> bool:
         """Check if resource is healthy"""
         try:
             resource.state = ResourceState.CHECKING
@@ -625,7 +630,8 @@ class ResourcePool(Generic[T]):
             try:
                 asyncio.run(self._run_health_checks())
 
-                self._stop_event.wait(timeout=self.config.health_check_interval_seconds)
+                self._stop_event.wait(
+                    timeout=self.config.health_check_interval_seconds)
 
             except Exception as e:
                 logger.error(
@@ -653,10 +659,12 @@ class ResourcePool(Generic[T]):
             try:
                 asyncio.run(self._check_scaling())
 
-                self._stop_event.wait(timeout=self.config.scale_check_interval_seconds)
+                self._stop_event.wait(
+                    timeout=self.config.scale_check_interval_seconds)
 
             except Exception as e:
-                logger.error(f"Scaling loop error for pool '{self.config.name}': {e}")
+                logger.error(
+                    f"Scaling loop error for pool '{self.config.name}': {e}")
                 time.sleep(5.0)
 
     async def _check_scaling(self):
@@ -702,7 +710,8 @@ class ResourcePool(Generic[T]):
             ):
 
                 self.state = PoolState.SCALING_DOWN
-                scale_down_count = min(2, total_resources - self.config.min_size)
+                scale_down_count = min(
+                    2, total_resources - self.config.min_size)
 
                 logger.info(
                     f"📉 Scaling down pool '{self.config.name}' by {scale_down_count} resources (utilization: {utilization:.2%})"
@@ -732,7 +741,8 @@ class ResourcePool(Generic[T]):
                 self._stop_event.wait(timeout=60.0)  # Check every minute
 
             except Exception as e:
-                logger.error(f"Cleanup loop error for pool '{self.config.name}': {e}")
+                logger.error(
+                    f"Cleanup loop error for pool '{self.config.name}': {e}")
                 time.sleep(5.0)
 
     async def _cleanup_expired_resources(self):
@@ -825,12 +835,15 @@ class ResourcePool(Generic[T]):
                     unhealthy_resources += 1
 
             utilization = (
-                (in_use_resources / total_resources * 100) if total_resources > 0 else 0
-            )
+                (in_use_resources /
+                 total_resources *
+                 100) if total_resources > 0 else 0)
 
             uptime = None
             if self.pool_start_time:
-                uptime = (datetime.now() - self.pool_start_time).total_seconds()
+                uptime = (
+                    datetime.now() -
+                    self.pool_start_time).total_seconds()
 
             return {
                 "name": self.config.name,

@@ -14,6 +14,7 @@ Responsible for applying safe, test-verified code fixes suggested by the DreamCy
 
 This is intentionally conservative: no automatic repo commits, no remote pushes.
 """
+
 from __future__ import annotations
 
 import logging
@@ -37,7 +38,8 @@ class AutoPatcher:
         self.enabled = os.getenv(SELF_PATCH_ENV, "0") in ("1", "true", "True")
 
     def is_allowed(self) -> bool:
-        # Re-evaluate environment variable at call-time so tests can enable/disable dynamically
+        # Re-evaluate environment variable at call-time so tests can
+        # enable/disable dynamically
         return os.getenv(SELF_PATCH_ENV, "0") in ("1", "true", "True")
 
     def _extract_file_from_insight(self, insight: Dict) -> Optional[Path]:
@@ -85,7 +87,8 @@ class AutoPatcher:
             coro = ai_agent._call_ollama_async(prompt, image_data=None, model=model)
 
             try:
-                # If there's a running loop in this thread, use run_coroutine_threadsafe
+                # If there's a running loop in this thread, use
+                # run_coroutine_threadsafe
                 running_loop = asyncio.get_running_loop()
             except RuntimeError:
                 running_loop = None
@@ -96,7 +99,9 @@ class AutoPatcher:
                 try:
                     return fut.result(timeout=30) or ""
                 except Exception as e:
-                    logger.error(f"AutoPatcher: llm coroutine scheduled but failed: {e}")
+                    logger.error(
+                        f"AutoPatcher: llm coroutine scheduled but failed: {e}"
+                    )
                     return ""
             else:
                 # No running loop in this thread — run the coroutine directly
@@ -111,12 +116,16 @@ class AutoPatcher:
 
     def _extract_code_block(self, llm_response: str) -> Optional[str]:
         # Look for fenced ``` blocks
-        m = re.search(r"```(?:python|py)?\n([\s\S]+?)\n```", llm_response, re.IGNORECASE)
+        m = re.search(
+            r"```(?:python|py)?\n([\s\S]+?)\n```", llm_response, re.IGNORECASE
+        )
         if m:
             return m.group(1)
 
         # Otherwise try to heuristically extract the largest python-like chunk
-        candidates = re.findall(r"(^def\s+[\s\S]+$)|(^class\s+[\s\S]+$)", llm_response, re.M)
+        candidates = re.findall(
+            r"(^def\s+[\s\S]+$)|(^class\s+[\s\S]+$)", llm_response, re.M
+        )
         if candidates:
             # join tuples and return first non-empty
             for cand in candidates:
@@ -124,13 +133,16 @@ class AutoPatcher:
                     if c and len(c) > 20:
                         return c
 
-        # As a last resort, if the response looks like a full file (contains 'import' and 'def')
+        # As a last resort, if the response looks like a full file (contains
+        # 'import' and 'def')
         if "import" in llm_response and "def " in llm_response:
             return llm_response
 
         return None
 
-    def _syntax_check(self, code: str, filename_for_compile: str = "<patched>") -> Tuple[bool, Optional[str]]:
+    def _syntax_check(
+        self, code: str, filename_for_compile: str = "<patched>"
+    ) -> Tuple[bool, Optional[str]]:
         try:
             compile(code, filename_for_compile, "exec")
             return True, None
@@ -155,7 +167,10 @@ class AutoPatcher:
             try:
                 txt = p.read_text(encoding="utf-8", errors="ignore")
                 # match imports or direct references to the module basename
-                if re.search(rf"\b(import|from)\s+{re.escape(base)}\b", txt) or base in txt:
+                if (
+                    re.search(rf"\b(import|from)\s+{re.escape(base)}\b", txt)
+                    or base in txt
+                ):
                     matches.append(str(p))
             except Exception:
                 continue
@@ -173,7 +188,9 @@ class AutoPatcher:
         import os
 
         if os.getenv("PYTEST_CURRENT_TEST") is not None:
-            logger.debug("AutoPatcher: skipping running pytest while under pytest runner")
+            logger.debug(
+                "AutoPatcher: skipping running pytest while under pytest runner"
+            )
             return True, "tests-skipped-running-under-pytest"
 
         test_files = self._find_related_tests(module_path)
@@ -181,7 +198,12 @@ class AutoPatcher:
             return True, "no-tests-found"
 
         try:
-            cmd = [shutil.which("python") or sys_executable(), "-m", "pytest", "-q"] + test_files
+            cmd = [
+                shutil.which("python") or sys_executable(),
+                "-m",
+                "pytest",
+                "-q",
+            ] + test_files
             proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             ok = proc.returncode == 0
             out = proc.stdout + "\n" + proc.stderr
@@ -211,7 +233,8 @@ class AutoPatcher:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(new_code)
 
-            # Optionally run related pytest tests (disabled by default for safety in CI)
+            # Optionally run related pytest tests (disabled by default for
+            # safety in CI)
             if os.getenv("JARVIS_AUTO_PATCH_RUN_TESTS", "0") in ("1", "true", "True"):
                 tests_ok, test_out = self._run_pytests_for_module(file_path)
                 if not tests_ok:
@@ -277,25 +300,34 @@ class AutoPatcher:
             }
             validation = action_validator.validate(act)
 
-            # If validator requires approval and provided a request_id, register pending
+            # If validator requires approval and provided a request_id,
+            # register pending
             if validation.requires_approval:
                 req_id = getattr(validation, "request_id", None)
                 if req_id:
-                    # Register pending action so approval can trigger apply_patch
+                    # Register pending action so approval can trigger
+                    # apply_patch
                     def _apply_cb():
                         ok2, msg2 = self.apply_patch(file_path, code)
                         return {"ok": ok2, "msg": msg2}
 
-                    registered = action_approval_manager.register_pending(req_id, _apply_cb, meta={"file": str(file_path)})
+                    registered = action_approval_manager.register_pending(
+                        req_id, _apply_cb, meta={"file": str(file_path)}
+                    )
                     if registered:
-                        logger.info(f"AutoPatcher: registered pending approval (request_id={req_id})")
+                        logger.info(
+                            f"AutoPatcher: registered pending approval (request_id={req_id})"
+                        )
                         return False, f"approval-pending:{req_id}"
                     else:
                         # already pending
                         return False, "approval-already-pending"
 
-                # No request_id -> validator declined or returned structured reason
-                logger.warning(f"AutoPatcher: ActionValidator declined/required-approval: {validation.reason}")
+                # No request_id -> validator declined or returned structured
+                # reason
+                logger.warning(
+                    f"AutoPatcher: ActionValidator declined/required-approval: {validation.reason}"
+                )
                 return False, validation.reason or "action-not-approved"
         except Exception as e:
             logger.debug(f"AutoPatcher: ActionValidator unavailable: {e}")

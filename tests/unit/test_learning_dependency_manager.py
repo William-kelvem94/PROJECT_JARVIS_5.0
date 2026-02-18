@@ -1,3 +1,4 @@
+from learning.dependency_manager import DependencyManager, DependencyStatus
 import unittest
 from unittest.mock import patch
 import sys
@@ -6,12 +7,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from learning.dependency_manager import DependencyManager, DependencyStatus
-
 
 class TestDependencyManager(unittest.TestCase):
     def setUp(self):
-        # We need to mock _check_all_dependencies to avoid real checks during init
+        # We need to mock _check_all_dependencies to avoid real checks during
+        # init
         with patch.object(DependencyManager, "_check_all_dependencies"):
             self.dm = DependencyManager()
 

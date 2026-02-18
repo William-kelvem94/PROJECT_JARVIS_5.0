@@ -23,7 +23,7 @@ class AutoConfigurator:
         """Verifica se tem privilégios de administrador"""
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except BaseException:
             return False
 
     def log(self, level, msg):
@@ -61,7 +61,7 @@ class AutoConfigurator:
             winreg.CloseKey(key)
             self.log("OK", "  [OK] Visual C++ already installed")
             return True
-        except:
+        except BaseException:
             pass
 
         if not self.is_admin:
@@ -148,7 +148,7 @@ class AutoConfigurator:
             if res.returncode == 0:
                 self.log("OK", "  [OK] Ollama already in PATH")
                 return True
-        except:
+        except BaseException:
             pass
 
         # Procura instalação padrão

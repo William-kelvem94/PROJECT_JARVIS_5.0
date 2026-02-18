@@ -74,7 +74,7 @@ class IOTManager:
             headers = {"Authorization": f"Bearer {self.ha_token}"}
             response = requests.get(url, headers=headers, timeout=5)
             return response.json() if response.status_code == 200 else None
-        except:
+        except BaseException:
             return None
 
 

@@ -36,7 +36,7 @@ class PortabilityFixer:
                     ).read()
                     if result.strip():
                         issues[pattern_name].extend(result.strip().split("\n"))
-                except:
+                except BaseException:
                     pass
 
         return issues
@@ -111,7 +111,8 @@ class PortabilityFixer:
                         content,
                     )
 
-                    # Para casos onde não há self.config, usar variável de ambiente
+                    # Para casos onde não há self.config, usar variável de
+                    # ambiente
                     content = re.sub(
                         r'"williamkelvem64@gmail\.com"',
                         'os.getenv("JARVIS_USER_EMAIL", "")',
@@ -242,7 +243,7 @@ def validate_portability():
     hardcoded_patterns = [
         r'C:\\\\Users\\\\willi',
         r'/home/willi',
-        r'williamkelvem64@gmail\.com'
+        r'williamkelvem64@gmail\\.com'
     ]
 
     for pattern in hardcoded_patterns:

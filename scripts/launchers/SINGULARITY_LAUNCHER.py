@@ -27,7 +27,8 @@ except Exception as e:
 
 OLLAMA_INSTALLER_URL = "https://ollama.com/download/OllamaSetup.exe"
 
-# Ajustar CWD para o root do projeto se disparado de dentro de /scripts/launchers
+# Ajustar CWD para o root do projeto se disparado de dentro de
+# /scripts/launchers
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if os.path.exists(os.path.join(PROJECT_ROOT, "main.py")):
     os.chdir(PROJECT_ROOT)
@@ -79,7 +80,8 @@ def ensure_ollama_installed():
         ollama_path = os.path.join(local_app_data, "Programs", "Ollama")
 
         if os.path.exists(os.path.join(ollama_path, "ollama.exe")):
-            # Adiciona ao PATH da sessão atual para que o shutil.which encontre imediatamente
+            # Adiciona ao PATH da sessão atual para que o shutil.which encontre
+            # imediatamente
             os.environ["PATH"] += os.pathsep + ollama_path
             logger.info(f"✅ Caminho do Ollama injetado no PATH: {ollama_path}")
         else:
@@ -128,7 +130,7 @@ def ensure_ollama_running():
                     urllib.request.urlopen(OLLAMA_SERVER_URL, timeout=1)
                     logger.info("[OK] [INFRA] Motor Neural ativado e pronto.")
                     return True
-                except:
+                except BaseException:
                     time.sleep(1)
 
             logger.error(

@@ -45,12 +45,7 @@ def test_attempt_patch_applies_when_allowed(tmp_path, monkeypatch):
     }
 
     # Mock LLM response to return full-file patched content inside ``` ```
-    patched = (
-        "```python\n"
-        "def greet(name):\n"
-        "    return f'Hello {name}'\n"
-        "```"
-    )
+    patched = "```python\n" "def greet(name):\n" "    return f'Hello {name}'\n" "```"
 
     async def fake_llm(*args, **kwargs):
         return patched
@@ -59,7 +54,9 @@ def test_attempt_patch_applies_when_allowed(tmp_path, monkeypatch):
     assert os.getenv("JARVIS_ALLOW_SELF_PATCH") == "1"
     assert auto_patcher.is_allowed() is True
 
-    with patch("src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm):
+    with patch(
+        "src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm
+    ):
         ok, msg = auto_patcher.attempt_patch_from_insight(insight)
 
     assert ok is True, msg
@@ -90,10 +87,15 @@ def test_autopatcher_respects_action_validator(monkeypatch, tmp_path):
     # Force the validator to decline the action (no request_id)
     from src.core.evolution.action_validator import ValidationResult
 
-    with patch("src.core.evolution.action_validator.action_validator.validate", return_value=ValidationResult(False, True, "forced-decline")):
+    with patch(
+        "src.core.evolution.action_validator.action_validator.validate",
+        return_value=ValidationResult(False, True, "forced-decline"),
+    ):
         from src.core.evolution.auto_patcher import auto_patcher
 
-        with patch("src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm):
+        with patch(
+            "src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_llm
+        ):
             ok, msg = auto_patcher.attempt_patch_from_insight(insight)
 
     assert ok is False
@@ -103,7 +105,8 @@ def test_autopatcher_respects_action_validator(monkeypatch, tmp_path):
 def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_path):
     # Ensure test environment is deterministic
     monkeypatch.delenv("JARVIS_AUTO_PATCH_RUN_TESTS", raising=False)
-    # Verify AutoPatcher registers pending approval and ActionApprovalManager executes on approval
+    # Verify AutoPatcher registers pending approval and ActionApprovalManager
+    # executes on approval
     monkeypatch.setenv("JARVIS_ALLOW_SELF_PATCH", "1")
 
     sample = tmp_path / "sample_protect.py"
@@ -120,14 +123,20 @@ def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_
     # Make validator indicate approval required and supply a request_id
     from src.core.evolution.action_validator import ValidationResult
 
-    fake_validation = ValidationResult(False, True, "approval-needed", request_id="REQ-42")
+    fake_validation = ValidationResult(
+        False, True, "approval-needed", request_id="REQ-42"
+    )
 
-    with patch("src.core.evolution.action_validator.action_validator.validate", return_value=fake_validation):
+    with patch(
+        "src.core.evolution.action_validator.action_validator.validate",
+        return_value=fake_validation,
+    ):
         from src.core.evolution.auto_patcher import auto_patcher
         from src.core.evolution.action_approval import action_approval_manager
         from src.core.infrastructure.async_event_bus import get_event_bus, EventType
 
-        # Start event bus and approval manager listener inside same running loop
+        # Start event bus and approval manager listener inside same running
+        # loop
         bus = get_event_bus()
 
         import asyncio
@@ -136,11 +145,17 @@ def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_
             await bus.start()
             action_approval_manager.start_listening()
 
-            # Call attempt_patch_from_insight in a thread to avoid nested event-loop issues
+            # Call attempt_patch_from_insight in a thread to avoid nested
+            # event-loop issues
             loop = asyncio.get_running_loop()
             # Patch AutoPatcher's LLM wrapper to avoid nested event-loop issues
-            with patch("src.core.evolution.auto_patcher.AutoPatcher._call_llm_for_patch", return_value=patched):
-                ok, msg = await loop.run_in_executor(None, lambda: auto_patcher.attempt_patch_from_insight(insight))
+            with patch(
+                "src.core.evolution.auto_patcher.AutoPatcher._call_llm_for_patch",
+                return_value=patched,
+            ):
+                ok, msg = await loop.run_in_executor(
+                    None, lambda: auto_patcher.attempt_patch_from_insight(insight)
+                )
 
             # Should not apply immediately; should register pending
             assert ok is False
@@ -149,7 +164,9 @@ def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_
             assert "REQ-42" in action_approval_manager._pending
 
             # Approve directly (reliable in unit tests)
-            action_approval_manager.approve_direct("REQ-42", approved=True, approver="unittest")
+            action_approval_manager.approve_direct(
+                "REQ-42", approved=True, approver="unittest"
+            )
 
             # allow background thread to run
             await asyncio.sleep(0.1)
@@ -167,11 +184,13 @@ def test_autopatcher_registers_pending_and_applies_on_approval(monkeypatch, tmp_
 
 
 def test_autopatcher_applies_when_env_auto_approves(monkeypatch, tmp_path):
-    # End-to-end: if JARVIS_AUTO_APPROVE=1 and self-patch allowed, AutoPatcher should apply protected-file changes
+    # End-to-end: if JARVIS_AUTO_APPROVE=1 and self-patch allowed, AutoPatcher
+    # should apply protected-file changes
     monkeypatch.setenv("JARVIS_ALLOW_SELF_PATCH", "1")
     monkeypatch.setenv("JARVIS_AUTO_APPROVE", "1")
 
-    # Create a 'protected' file by naming it main.py (ActionValidator treats 'main.py' as protected)
+    # Create a 'protected' file by naming it main.py (ActionValidator treats
+    # 'main.py' as protected)
     sample = tmp_path / "main.py"
     sample.write_text("def a():\n    return 1\n", encoding="utf-8")
 
@@ -182,13 +201,22 @@ def test_autopatcher_applies_when_env_auto_approves(monkeypatch, tmp_path):
     async def fake_llm(*args, **kwargs):
         return patched
 
-    # Patch AutoPatcher's internal LLM caller to avoid importing ai_agent (and its heavy deps)
-    with patch("src.core.evolution.auto_patcher.AutoPatcher._call_llm_for_patch", return_value=patched):
+    # Patch AutoPatcher's internal LLM caller to avoid importing ai_agent (and
+    # its heavy deps)
+    with patch(
+        "src.core.evolution.auto_patcher.AutoPatcher._call_llm_for_patch",
+        return_value=patched,
+    ):
         from src.core.evolution.auto_patcher import auto_patcher
 
         ok, msg = auto_patcher.attempt_patch_from_insight(insight)
 
     assert ok is True, msg
-    assert "Patched" in msg or "backup" in msg or "Patched (backup" in msg or "Patched (backup:" in msg
+    assert (
+        "Patched" in msg
+        or "backup" in msg
+        or "Patched (backup" in msg
+        or "Patched (backup:" in msg
+    )
     txt = sample.read_text(encoding="utf-8")
     assert "return 2" in txt

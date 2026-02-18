@@ -98,7 +98,7 @@ class AdvancedVisionPipeline:
             from src.core.management.hardware_manager import hardware_manager
 
             is_throttled = hardware_manager.is_throttled
-        except:
+        except BaseException:
             pass
 
         # NÃ­vel 2: AnÃ¡lise intermediÃ¡ria

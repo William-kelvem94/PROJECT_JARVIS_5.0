@@ -69,9 +69,8 @@ def verificar_dados_treinamento():
             print(f"  • {f}")
 
         # Verificar último arquivo
-        latest_file = max(
-            [os.path.join(training_dir, f) for f in files], key=os.path.getmtime
-        )
+        latest_file = max([os.path.join(training_dir, f)
+                           for f in files], key=os.path.getmtime)
 
         try:
             with open(latest_file, "r", encoding="utf-8") as f:
@@ -133,8 +132,10 @@ def iniciar_web_server():
 
         def run_server():
             config = uvicorn.Config(
-                "web.web_server:app", host="localhost", port=5000, log_level="warning"
-            )
+                "web.web_server:app",
+                host="localhost",
+                port=5000,
+                log_level="warning")
             server = uvicorn.Server(config)
             asyncio.run(server.serve())
 

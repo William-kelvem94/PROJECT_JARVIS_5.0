@@ -1,3 +1,9 @@
+from src.core.management.shutdown_manager import ShutdownManager
+from src.core.infrastructure.priority_scheduler import PriorityScheduler
+from src.core.infrastructure.bootstrapper import SystemBootstrapper
+import importlib
+from src.core.config.blackbox_logger import setup_blackbox_integration, blackbox_logger
+from src.core.config.system_manifest import system_manifest
 import os
 import sys
 import time
@@ -11,10 +17,9 @@ os.environ["PYTHONUTF8"] = "1"
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # Configure Logging (Unified)
-from src.core.config.system_manifest import system_manifest
-from src.core.config.blackbox_logger import setup_blackbox_integration, blackbox_logger
 
-# mark as used to satisfy linters/static analysis (values are still available for runtime use)
+# mark as used to satisfy linters/static analysis (values are still
+# available for runtime use)
 _ = system_manifest
 _ = blackbox_logger
 
@@ -30,10 +35,11 @@ except Exception as e:
 
 
 # 🛡️ GLOBAL MONKEY PATCHES (Safety checks)
-import importlib
+
 
 def apply_patches():
-    # OpenVINO Patch (use importlib to avoid static-analysis unresolved-import warnings)
+    # OpenVINO Patch (use importlib to avoid static-analysis unresolved-import
+    # warnings)
     try:
         openvino = importlib.import_module("openvino")
         if "openvino.runtime" in sys.modules:
@@ -44,7 +50,8 @@ def apply_patches():
         # not available at runtime, ignore
         pass
 
-    # Transformers Patch (use importlib to avoid static-analysis unresolved-import warnings)
+    # Transformers Patch (use importlib to avoid static-analysis
+    # unresolved-import warnings)
     try:
         transformers = importlib.import_module("transformers")
         # Add any specific transformer patches here if needed
@@ -55,12 +62,8 @@ def apply_patches():
 apply_patches()
 
 # Import Core Components
-from src.core.infrastructure.bootstrapper import SystemBootstrapper
-from src.core.infrastructure.priority_scheduler import PriorityScheduler
-from src.core.management.shutdown_manager import ShutdownManager
 
 # Qt Imports (Conditional)
-import importlib
 
 QtCore = None
 QtWidgets = None
@@ -104,6 +107,7 @@ class JarvisSingularity(QObject):
         self.ai_agent = instances.get("ai_agent")
         self.audio_system = instances.get("audio_system")
         self.vision_system = instances.get("vision_system")
+        self.event_bus = instances.get("async_event_bus") or instances.get("event_bus")
 
         # State
         self.is_running = False
@@ -128,6 +132,11 @@ class JarvisSingularity(QObject):
 
     def start(self):
         """Starts the main event loops and background services."""
+        if hasattr(self, '_services_started') and self._services_started:
+            logger.warning("Services already started - skipping redundant start")
+            return
+        self._services_started = True
+
         self.is_running = True
         logger.info("🚀 Starting JARVIS Services...")
 
@@ -137,7 +146,19 @@ class JarvisSingularity(QObject):
         # Start Audio Listening
         if self.audio_system:
             if self.audio_system.start_listening():
-                self.audio_system.on_transcription = self.transcription_received.emit
+                # Em modo headless (sem Qt), usar callback direto em vez de sinal Qt
+                if QT_AVAILABLE and self.app:
+                    self.audio_system.on_transcription = self.transcription_received.emit
+                else:
+                    # Headless: processar transcrição diretamente via thread
+                    def _headless_transcription_callback(result):
+                        if result and getattr(result, "text", ""):
+                            threading.Thread(
+                                target=self._process_command,
+                                args=(result.text,),
+                                daemon=True,
+                            ).start()
+                    self.audio_system.on_transcription = _headless_transcription_callback
                 logger.info("🎙️ Audio System Listening")
 
         # Start Vision
@@ -154,11 +175,74 @@ class JarvisSingularity(QObject):
             self.window_manager.switch_mode(InterfaceMode.HUD_OVERLAY)
             self.window_manager.jarvis_core = self
 
+        # ✅ ACIONAR PROTOCOLO DE FINALIZAÇÃO DE BOOT (Correção Definitiva)
+        # Usa QTimer para garantir que rode na thread principal do Qt após breve delay
+        if QT_AVAILABLE and self.app:
+            QTimer.singleShot(1000, self._finalize_boot_sequence)
+        else:
+            # Em modo headless, roda direto
+            threading.Thread(target=self._finalize_boot_sequence_headless, daemon=True).start()
+
+    def _finalize_boot_sequence(self):
+        """
+        Garante que a UI e o EventBus estejam sincronizados no estado ONLINE.
+        Executado na thread principal do Qt via QTimer.singleShot.
+        """
+        def _do_finalize():
+            logger.info("🔧 Finalizing Boot Sequence (UI Thread)...")
+            try:
+                # 1. Forçar UI para 100% e Online
+                from src.interface.ui_signals import ui_signals
+                from src.core.infrastructure.async_event_bus import EventType
+                
+                ui_signals.update_boot_stage.emit("SYSTEM ONLINE", 100)
+                ui_signals.update_status.emit("ONLINE")
+                ui_signals.update_listening_state.emit(True)
+                
+                # 2. Publicar evento de sistema online no barramento
+                if self.event_bus:
+                    self.event_bus.publish(EventType.SYSTEM_ONLINE, {
+                        "timestamp": time.time(),
+                        "status": "fully_operational"
+                    })
+                
+                logger.info("✅ Boot Sequence Finalized: HUD Online & Events Active")
+
+            except Exception as e:
+                logger.error(f"❌ Error finalizing boot: {e}")
+
+        # Garantir execução na main thread
+        if QT_AVAILABLE and self.app:
+             QTimer.singleShot(0, _do_finalize)
+        else:
+             _do_finalize()
+
+    def _finalize_boot_sequence_headless(self):
+        """Versão headless da finalização de boot"""
+        time.sleep(1)
+        logger.info("🔧 Finalizing Boot Sequence (Headless)...")
+        try:
+             from src.core.infrastructure.async_event_bus import EventType
+             if hasattr(self, 'event_bus') and self.event_bus:
+                self.event_bus.publish(EventType.SYSTEM_ONLINE, {
+                    "timestamp": time.time(),
+                    "status": "fully_operational_headless"
+                })
+        except Exception as e:
+            logger.error(f"❌ Error finalizing boot (headless): {e}")
+
     def _run_scheduler(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.scheduler.start())
-        loop.run_forever()
+        try:
+            # Iniciar scheduler e manter loop rodando
+            loop.run_until_complete(self.scheduler.start())
+            loop.run_forever()
+        except Exception as e:
+            logger.error(f"❌ Scheduler thread died: {e}")
+        finally:
+            loop.close()
+            logger.info("Scheduler loop closed")
 
     def shutdown(self):
         logger.info("🛑 Shutting down...")
@@ -193,7 +277,9 @@ class JarvisSingularity(QObject):
         if not self.ai_agent:
             return
         try:
-            self.hud_update_requested.emit("thinking", "")
+            # Emitir sinal de status apenas se Qt estiver disponível
+            if QT_AVAILABLE and self.app:
+                self.hud_update_requested.emit("thinking", "")
 
             # Sync wrapper for async agent processing
             loop = asyncio.new_event_loop()
@@ -201,7 +287,8 @@ class JarvisSingularity(QObject):
             response = loop.run_until_complete(self.ai_agent.process_command(text))
             loop.close()
 
-            self.hud_update_requested.emit("speaking", str(response))
+            if QT_AVAILABLE and self.app:
+                self.hud_update_requested.emit("speaking", str(response))
 
             # Speak response
             from src.core.audio.voice_controller import get_voice_controller
@@ -210,17 +297,35 @@ class JarvisSingularity(QObject):
             if vc:
                 vc.speak(str(response))
 
-            self.hud_update_requested.emit("idle", "")
+            if QT_AVAILABLE and self.app:
+                self.hud_update_requested.emit("idle", "")
 
         except Exception as e:
             logger.error(f"Error processing command: {e}")
-            self.hud_update_requested.emit("error", "Erro ao processar")
+            if QT_AVAILABLE and self.app:
+                self.hud_update_requested.emit("error", "Erro ao processar")
 
 
 # ============================================================================
 # MAIN ENTRY POINT (lightweight starter)
 # ============================================================================
+def _enforce_single_instance():
+    """Ensure no other JARVIS instance is running"""
+    import psutil
+    pid = os.getpid()
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            if proc.info['pid'] == pid: continue
+            cmd = proc.info.get('cmdline') or []
+            # Check strictly for python running this main.py
+            if 'python' in proc.info['name'].lower() and any('main.py' in str(s) for s in cmd):
+                 logger.warning(f"Concurrent JARVIS found (PID {proc.info['pid']}). Aborting.")
+                 sys.exit(0)
+        except Exception:
+            pass
+
 def main():
+    _enforce_single_instance()
     """Lightweight launcher that delegates to SystemBootstrapper/BootManager.
 
     Responsibilities:
@@ -231,7 +336,9 @@ def main():
     """
     import argparse
 
-    parser = argparse.ArgumentParser(description="JARVIS 5.0 - Singularity (light boot)")
+    parser = argparse.ArgumentParser(
+        description="JARVIS 5.0 - Singularity (light boot)"
+    )
     parser.add_argument("--headless", action="store_true", help="Run without GUI")
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
@@ -270,7 +377,8 @@ def main():
         t = threading.Thread(target=_run_boot_in_thread, daemon=True)
         t.start()
 
-        # Periodically check bootstrap status and start JarvisSingularity when ready
+        # Periodically check bootstrap status and start JarvisSingularity when
+        # ready
         timer = QTimer()
 
         def _check_and_start():
@@ -278,13 +386,15 @@ def main():
                 timer.stop()
                 jarvis = JarvisSingularity(app, boot_result["instances"])
                 jarvis.start()
+                # Manter referência para evitar garbage collection
+                app._jarvis = jarvis
             elif boot_result["status"] == "failed":
                 timer.stop()
                 logger.critical("Boot failed — exiting GUI")
                 app.quit()
 
         timer.timeout.connect(_check_and_start)
-        timer.start(100)
+        timer.start(200)  # Checar a cada 200ms
         sys.exit(app.exec())
 
     # HEADLESS path — run bootstrap synchronously

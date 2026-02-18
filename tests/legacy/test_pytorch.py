@@ -5,6 +5,7 @@ Quick diagnostic for torch/torchvision
 
 import sys
 
+
 def run_pytorch_diagnostic():
     print("=" * 70)
     print("[DIAGNOSTIC] PYTORCH DIAGNOSTIC TEST")
@@ -83,6 +84,7 @@ def run_pytorch_diagnostic():
     print("=" * 70)
 
 
-# Only run diagnostics when executed directly; pytest will simply import this module
+# Only run diagnostics when executed directly; pytest will simply import
+# this module
 if __name__ == "__main__":
     run_pytorch_diagnostic()

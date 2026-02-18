@@ -7,6 +7,14 @@ FASE 1.5: Processo independente para o sistema de visão.
 Elimina o bloqueio do GIL e permite processamento paralelo real.
 """
 
+from src.core.config.system_manifest import system_manifest
+from src.core.vision.vision_system import VisionSystem
+from src.core.infrastructure.ipc_event_bridge import IPCEventBridge
+from src.core.infrastructure.async_event_bus import (
+    get_event_bus,
+    EventType,
+    EventPriority,
+)
 import sys
 import os
 import asyncio
@@ -20,23 +28,19 @@ root_dir = Path(__file__).resolve().parents[3]
 if str(root_dir) not in sys.path:
     sys.path.insert(0, str(root_dir))
 
-from src.core.infrastructure.async_event_bus import get_event_bus, EventType, EventPriority
-from src.core.infrastructure.ipc_event_bridge import IPCEventBridge
-from src.core.vision.vision_system import VisionSystem
-from src.core.config.system_manifest import system_manifest
 
 # Configuração de Logs para o processo filho
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("VisionProcess")
+
 
 class VisionService:
     """
     Controlador do Serviço de Visão rodando em seu próprio processo.
     """
-    
+
     def __init__(self, inbox: multiprocessing.Queue, outbox: multiprocessing.Queue):
         self.inbox = inbox
         self.outbox = outbox
@@ -49,17 +53,19 @@ class VisionService:
         """Inicia o serviço"""
         logger.info("👁️ Starting Vision Service Process...")
         self._running = True
-        
+
         # 1. Inicia o Barramento de Eventos Local
         await self.event_bus.start()
-        
+
         # 2. Inicia a Ponte IPC
         self.bridge = IPCEventBridge(self.inbox, self.outbox)
         self.bridge.start()
-        
+
         # 3. Inicia o Vision System (dentro deste processo)
-        self.vision_system = VisionSystem(event_bus=self.event_bus, use_multiprocessing=False)
-        
+        self.vision_system = VisionSystem(
+            event_bus=self.event_bus, use_multiprocessing=False
+        )
+
         # Handler para teste de latência (RTT)
         async def on_ping(event):
             # Echo back
@@ -67,16 +73,16 @@ class VisionService:
             self.event_bus.publish(
                 EventType.VISION_SCREEN_ANALYSIS,
                 {
-                    "echo": event.data.get("payload"), 
+                    "echo": event.data.get("payload"),
                     "request_ts": request_ts,
-                    "response_ts": asyncio.get_event_loop().time()
+                    "response_ts": asyncio.get_event_loop().time(),
                 },
-                priority=EventPriority.HIGH
+                priority=EventPriority.HIGH,
             )
-            
+
         self.event_bus.subscribe([EventType.VISION_ANALYZE], on_ping)
-        
-        # O VisionSystem original inicia threads (_monitor_loop). 
+
+        # O VisionSystem original inicia threads (_monitor_loop).
         # Como estamos em um processo exclusivo, isso é perfeito.
         # Start monitoring and background loading in a separate thread to
         # prevent any blocking camera initialization (cv2.VideoCapture can
@@ -94,9 +100,9 @@ class VisionService:
         threading.Thread(
             target=_deferred_start, daemon=True, name="VisionMonitorStarter"
         ).start()
-        
+
         logger.info("✅ Vision Service is now running in independent process")
-        
+
         # Mantém o processo vivo e processando eventos
         try:
             while self._running:
@@ -115,14 +121,15 @@ class VisionService:
         await self.event_bus.stop()
         logger.info("✅ Vision Service Process stopped")
 
+
 def run_vision_service(inbox, outbox):
     """Entry point para multiprocessing.Process"""
     service = VisionService(inbox, outbox)
-    
+
     # Setup asyncio loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    
+
     try:
         loop.run_until_complete(service.start())
     except KeyboardInterrupt:
@@ -130,6 +137,7 @@ def run_vision_service(inbox, outbox):
     finally:
         loop.run_until_complete(service.stop())
         loop.close()
+
 
 if __name__ == "__main__":
     # Teste isolado (precisaria de queues fakes)

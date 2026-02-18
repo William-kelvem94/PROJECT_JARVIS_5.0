@@ -406,7 +406,8 @@ class DistributedTrainer:
             from torch.utils.data import DataLoader
             from torch.utils.data.distributed import DistributedSampler
 
-            # Load dataset (placeholder - implement based on your dataset format)
+            # Load dataset (placeholder - implement based on your dataset
+            # format)
             dataset = self._load_dataset(dataset_path)
 
             # Create distributed sampler

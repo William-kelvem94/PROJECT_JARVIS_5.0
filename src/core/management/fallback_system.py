@@ -81,7 +81,8 @@ class FallbackSystem:
 
                 # ðŸ†• Trigger auto-recovery for layer failures
                 layer_name = f"fallback_layer_{i}"
-                severity = min(10, 3 + i)  # Increasing severity with layer depth
+                # Increasing severity with layer depth
+                severity = min(10, 3 + i)
                 self.trigger_auto_recovery(e, layer_name, severity)
 
                 continue
@@ -102,7 +103,8 @@ class FallbackSystem:
 
         # Esta camada Ã© apenas um proxy, a lÃ³gica real estÃ¡ no AIAgent
         # Se o AIAgent retornar erro ou string vazia, consideramos falha
-        # Mas como o AIAgent jÃ¡ tem sua lÃ³gica interna, aqui simulamos a validaÃ§Ã£o
+        # Mas como o AIAgent jÃ¡ tem sua lÃ³gica interna, aqui simulamos a
+        # validaÃ§Ã£o
 
         # Validar conexÃ£o internet
         # if not internet: raise Exception("No internet")

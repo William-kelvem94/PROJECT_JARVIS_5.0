@@ -86,7 +86,7 @@ class EvolutionEngine:
             try:
                 with open(file, "r", encoding="utf-8") as f:
                     self.failure_patterns = json.load(f)
-            except:
+            except BaseException:
                 self.failure_patterns = []
 
     def _save_failures(self):

@@ -140,7 +140,7 @@ def demonstrar_rede_neural():
                             print(f"   📊 Loss final: {loss}")
                             print(f"   📝 Amostras: {samples}")
                             print(f"   🔧 Método: {method}")
-                        except:
+                        except BaseException:
                             print("   ⚠️  Metadados corrompidos")
 
                     if adapter_file.exists():

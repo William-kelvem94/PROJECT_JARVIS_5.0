@@ -34,7 +34,8 @@ class VisionEnhancer:
         logger.info("Inicializando Vision Enhancer (lazy-load de dependências)...")
 
         # Lazy initialize heavy libraries only when explicitly requested
-        # The actual loading is deferred until a method that needs them is called.
+        # The actual loading is deferred until a method that needs them is
+        # called.
 
     def analyze_screen(
         self,

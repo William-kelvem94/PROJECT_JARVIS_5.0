@@ -1,3 +1,4 @@
+import speech_recognition as sr
 import os
 import asyncio
 import threading
@@ -26,7 +27,6 @@ try:
 except ImportError:
     PYTTSX3_AVAILABLE = False
 
-import speech_recognition as sr
 
 # Try to import ui_signals for status updates
 try:
@@ -93,13 +93,15 @@ class VoiceController:
         except Exception:
             force_headless = False
 
-        # Determine if any audio backend/playback is available. Do NOT rely only on pygame.
+        # Determine if any audio backend/playback is available. Do NOT rely
+        # only on pygame.
         backend_available = EDGE_TTS_AVAILABLE or PYTTSX3_AVAILABLE or PYGAME_AVAILABLE
 
         # Headless only when explicitly forced OR when no backend exists
         self.headless_mode = bool(force_headless) or (not backend_available)
 
-        # Playback availability (pygame mixer). Used later when playing cached files.
+        # Playback availability (pygame mixer). Used later when playing cached
+        # files.
         self.playback_available = bool(PYGAME_AVAILABLE)
 
         if self.headless_mode:
@@ -107,7 +109,8 @@ class VoiceController:
                 "🔇 VoiceController running in HEADLESS/SILENT mode (Logs only)"
             )
         else:
-            # Initialize pygame mixer if available — failures here should not force headless
+            # Initialize pygame mixer if available — failures here should not
+            # force headless
             self._init_pygame()
 
         # Offline Engine (Fallback)
@@ -123,7 +126,8 @@ class VoiceController:
         self.recognizer = sr.Recognizer()
         self.microphone = None
 
-        # Only setup mic if not forced headless and speech recognition is enabled
+        # Only setup mic if not forced headless and speech recognition is
+        # enabled
         try:
             audio_cfg_obj = getattr(self.manifest, "audio", None)
             if isinstance(audio_cfg_obj, dict):
@@ -366,7 +370,8 @@ class VoiceController:
         if not success and EDGE_TTS_AVAILABLE:
             try:
                 logger.info("🌐 [LEVEL 2] Edge-TTS Synthesis (Neural Cloud)")
-                # Usar um loop específico para evitar conflito com loops já rodando
+                # Usar um loop específico para evitar conflito com loops já
+                # rodando
                 try:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)

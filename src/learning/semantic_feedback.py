@@ -166,7 +166,8 @@ class SemanticFeedbackAnalyzer:
             hash_obj = hashlib.md5(text.encode())
             # Converter hash para array numpy
             hash_bytes = hash_obj.digest()
-            return np.array([b / 255.0 for b in hash_bytes[:32]])  # 32 dimensÃµes
+            # 32 dimensÃµes
+            return np.array([b / 255.0 for b in hash_bytes[:32]])
 
         try:
             import torch
@@ -184,7 +185,8 @@ class SemanticFeedbackAnalyzer:
             with torch.no_grad():
                 outputs = self.model(**inputs, output_hidden_states=True)
                 # Usar embeddings da Ãºltima camada
-                embeddings = outputs.hidden_states[-1].mean(dim=1)  # Mean pooling
+                # Mean pooling
+                embeddings = outputs.hidden_states[-1].mean(dim=1)
 
             # Converter para numpy e normalizar
             intent_vector = embeddings.squeeze().numpy()
@@ -220,7 +222,8 @@ class SemanticFeedbackAnalyzer:
 
         max_dissonance = 0.0
 
-        for prev_interaction in previous_interactions[-3:]:  # Ãšltimas 3 interaÃ§Ãµes
+        # Ãšltimas 3 interaÃ§Ãµes
+        for prev_interaction in previous_interactions[-3:]:
             if (
                 prev_interaction.user_intent_vector is not None
                 and current_interaction.user_intent_vector is not None
@@ -232,7 +235,8 @@ class SemanticFeedbackAnalyzer:
                     current_interaction.user_intent_vector,
                 )
 
-                # DissonÃ¢ncia = 1 - similaridade (se similaridade baixa = alta dissonÃ¢ncia)
+                # DissonÃ¢ncia = 1 - similaridade (se similaridade baixa = alta
+                # dissonÃ¢ncia)
                 dissonance = 1.0 - similarity
 
                 # Considerar tambÃ©m qualidade da resposta anterior

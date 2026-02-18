@@ -95,7 +95,8 @@ def validate_ai_agent_logic():
             # This essentially tests the "Emergency Protocol" or "Local Brain" fallback path logic
             # We just want to ensure it doesn't crash
             logger.info("Simulating process_command...")
-            # Note: process_command is complex and threaded, we might just test internal methods logic
+            # Note: process_command is complex and threaded, we might just test
+            # internal methods logic
 
             provider = ai_agent.provider
             logger.info(f"Default Provider Configured: {provider}")

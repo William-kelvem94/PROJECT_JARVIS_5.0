@@ -3,6 +3,7 @@ Vision Learner for JARVIS AGI Machine Learning Core.
 Updated for robustness and safety.
 """
 
+from src.utils.config import config
 import logging
 from pathlib import Path
 from datetime import datetime
@@ -60,8 +61,6 @@ except ImportError:
     YOLO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-
-from src.utils.config import config
 
 
 @dataclass
@@ -153,7 +152,8 @@ class VisionLearner:
             logger.error(f"Failed to load YOLO: {e}")
 
     # ... (Rest of the class logic would go here, simplified for this refactor to ensure safety) ...
-    # Maintaining the core functionality but ensuring it doesn't crash on import.
+    # Maintaining the core functionality but ensuring it doesn't crash on
+    # import.
 
 
 if __name__ == "__main__":

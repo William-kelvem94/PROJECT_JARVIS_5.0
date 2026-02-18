@@ -93,7 +93,8 @@ class OCRResult(Base):
     cleaned_text = Column(Text, nullable=True)
     confidence_score = Column(Float, nullable=True)
     processing_time = Column(Float, nullable=True)  # segundos
-    text_regions = Column(JSON, nullable=True)  # coordenadas das regiÃµes de texto
+    # coordenadas das regiÃµes de texto
+    text_regions = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamentos
@@ -165,7 +166,8 @@ class DocumentCategory(Base):
         JSON, nullable=True
     )  # palavras-chave que levaram Ã  categorizaÃ§Ã£o
     ai_suggestion = Column(Boolean, default=False)  # se foi sugerido por IA
-    manual_override = Column(Boolean, default=False)  # se foi definido manualmente
+    # se foi definido manualmente
+    manual_override = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relacionamentos
@@ -192,8 +194,10 @@ class ProcessingLog(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     capture_id = Column(Integer, ForeignKey("captures.id"), nullable=True)
-    log_level = Column(String(20), default="INFO")  # DEBUG, INFO, WARNING, ERROR
-    module = Column(String(100), nullable=False)  # screen_capture, ocr_processor, etc.
+    # DEBUG, INFO, WARNING, ERROR
+    log_level = Column(String(20), default="INFO")
+    # screen_capture, ocr_processor, etc.
+    module = Column(String(100), nullable=False)
     message = Column(Text, nullable=False)
     details = Column(JSON, nullable=True)  # informaÃ§Ãµes adicionais em JSON
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -219,7 +223,8 @@ class ExportHistory(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     export_type = Column(String(50), nullable=False)  # json, csv, pdf, excel
     file_path = Column(String(500), nullable=False)
-    filters_used = Column(JSON, nullable=True)  # filtros aplicados na exportaÃ§Ã£o
+    # filtros aplicados na exportaÃ§Ã£o
+    filters_used = Column(JSON, nullable=True)
     record_count = Column(Integer, default=0)
     file_size_mb = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -252,7 +257,8 @@ class DatabaseManager:
             database_url = f"sqlite:///{config.DATABASE_FILE}"
             self.engine = create_engine(
                 database_url,
-                connect_args={"check_same_thread": False},  # NecessÃ¡rio para SQLite
+                connect_args={"check_same_thread": False},
+                # NecessÃ¡rio para SQLite
                 echo=False,  # Desabilitar logs SQL em produÃ§Ã£o
             )
 
@@ -398,7 +404,8 @@ class DatabaseManager:
         cutoff_date = datetime.utcnow() - datetime.timedelta(days=days_to_keep)
 
         def _cleanup(session):
-            # Remover capturas antigas e seus dados relacionados (cascade delete)
+            # Remover capturas antigas e seus dados relacionados (cascade
+            # delete)
             old_captures = (
                 session.query(Capture).filter(Capture.created_at < cutoff_date).all()
             )

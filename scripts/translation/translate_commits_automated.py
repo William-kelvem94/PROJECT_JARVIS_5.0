@@ -275,7 +275,7 @@ print(commit_msg)
     try:
         os.remove(mapping_file)
         os.remove("msg_filter.py")
-    except:
+    except BaseException:
         pass
 
     return True

@@ -277,7 +277,8 @@ class UniversalRecoveryManager:
         self.recovery_strategies[failure_type].append(strategy_func)
         strategy_name = f"{failure_type.value}::{strategy_func.__name__}"
         if strategy_name not in self.strategy_success_rates:
-            self.strategy_success_rates[strategy_name] = 0.5  # Default 50% success rate
+            # Default 50% success rate
+            self.strategy_success_rates[strategy_name] = 0.5
 
     def register_module(self, module_name: str) -> ModuleHealth:
         """Register a module for health monitoring"""
@@ -706,7 +707,7 @@ class UniversalRecoveryManager:
                     if sys.platform == "win32"
                     else 10
                 )
-            except:
+            except BaseException:
                 pass
 
             # Add small delay to reduce CPU pressure
@@ -734,7 +735,7 @@ class UniversalRecoveryManager:
             try:
                 socket.create_connection(("8.8.8.8", 53), timeout=5)
                 network_ok = True
-            except:
+            except BaseException:
                 network_ok = False
 
             if network_ok:
@@ -841,7 +842,7 @@ class UniversalRecoveryManager:
                     try:
                         Path(dir_path).mkdir(parents=True, exist_ok=True)
                         created.append(dir_path)
-                    except:
+                    except BaseException:
                         pass
 
                 if created:
@@ -909,7 +910,7 @@ class UniversalRecoveryManager:
             # Avoid logging if logger might be gone
             try:
                 logger.error(f"âŒ Could not save historical data: {e}")
-            except:
+            except BaseException:
                 pass
 
     def get_recovery_stats(self) -> Dict[str, Any]:
@@ -1005,7 +1006,7 @@ class UniversalRecoveryManager:
             if self.monitoring_active:
                 self.stop_monitoring()
             self._save_historical_data()
-        except:
+        except BaseException:
             pass
 
 

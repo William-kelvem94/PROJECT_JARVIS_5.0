@@ -239,7 +239,8 @@ class DemocraticNetworkIntelligence:
         system_info = {
             "account": self.device_account,
             "node": platform.node(),
-            "processor": platform.processor()[:50],  # Truncar pra evitar variaÃ§Ãµes
+            # Truncar pra evitar variaÃ§Ãµes
+            "processor": platform.processor()[:50],
             "system": platform.system(),
         }
 
@@ -685,7 +686,7 @@ class DemocraticNetworkIntelligence:
 
         return str(cloud_model_file)
 
-    # ===== PLACEHOLDER METHODS (implementaÃ§Ã£o completa seria muito extensa) =====
+    # ===== PLACEHOLDER METHODS (implementaÃ§Ã£o completa seria muito extensa)
 
     async def _register_device(self):
         """ImplementaÃ§Ã£o simplificada"""

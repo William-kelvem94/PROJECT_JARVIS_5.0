@@ -149,7 +149,8 @@ class SelfObserver:
 
                 metrics["gpu_util"] = util.gpu
                 metrics["gpu_temp"] = temp
-                # pynvml.nvmlShutdown() # Keep initialized might be better for freq calls
+                # pynvml.nvmlShutdown() # Keep initialized might be better for
+                # freq calls
             except Exception as e:
                 logger.warning(f"Failed to read GPU metrics: {e}")
 
@@ -268,7 +269,7 @@ class SelfObserver:
             if requests:
                 requests.get("https://www.google.com", timeout=2)
                 status["internet"] = True
-        except:
+        except BaseException:
             pass
 
         # Check Ollama
@@ -279,7 +280,7 @@ class SelfObserver:
                 res = requests.get(f"http://{host}:{port}/api/tags", timeout=2)
                 if res.status_code == 200:
                     status["ollama"] = True
-        except:
+        except BaseException:
             pass
 
         return status

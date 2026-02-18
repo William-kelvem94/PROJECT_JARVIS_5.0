@@ -379,13 +379,13 @@ class Config:
             else:
                 subprocess.check_output(["nvidia-smi"], stderr=subprocess.DEVNULL)
             return True
-        except:
+        except BaseException:
             # Fallback para torch se já estiver carregado em algum lugar
             try:
                 import torch
 
                 return torch.cuda.is_available()
-            except:
+            except BaseException:
                 return False
 
     def _create_directories(self):
@@ -629,4 +629,3 @@ class ConfigManager:
 
         # Basic sanity: ai.model_name may be optional; accept any dict for now
         return True
-

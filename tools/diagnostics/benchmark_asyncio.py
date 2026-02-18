@@ -4,12 +4,12 @@ Benchmark AsyncIO - Comparação de Performance
 Testa melhorias de performance com async/await vs threading
 """
 
+import sys
 import asyncio
 import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent
-import sys
 
 sys.path.insert(0, str(PROJECT_ROOT))
 

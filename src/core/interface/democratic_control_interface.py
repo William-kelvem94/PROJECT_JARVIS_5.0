@@ -58,8 +58,15 @@ class DemocraticControlInterface:
     - Treinamento distribuÃ­do
     - Monitoramento em tempo real
     - ConfiguraÃ§Ã£o de webhooks e integraÃ§Ãµes
+    """
 
-    âœ¨ LIBERDADE TOTAL - SEM PRÃ‰-CONFIGURAÃ‡Ã•ES
+    def __init__(self, *args, **kwargs):
+        # Interface desativada
+        logger.info(
+            "Democratic Control Interface está desativada por configuração.")
+        return
+
+    âœ¨ LIBERDADE TOTAL - SEM PRÃ‰- CONFIGURAÃ‡Ã•ES
     """
 
     def __init__(self, jarvis_core):
@@ -401,7 +408,11 @@ class DemocraticControlInterface:
             frame = tk.Frame(status_grid, bg="#1a1a1a")
             frame.grid(row=row, column=col, sticky="ew", padx=10, pady=5)
 
-            ttk.Label(frame, text=label, style="Status.TLabel").pack(anchor="w")
+            ttk.Label(
+    frame,
+    text=label,
+    style="Status.TLabel").pack(
+        anchor="w")
             self.network_labels[key] = ttk.Label(
                 frame, text="ðŸ” Detectando...", style="Status.TLabel"
             )
@@ -702,7 +713,10 @@ class DemocraticControlInterface:
         metrics_grid.columnconfigure(1, weight=1)
 
         # ===== LOGS EM TEMPO REAL =====
-        logs_frame = ttk.LabelFrame(monitoring_frame, text="Real-time Logs", padding=10)
+        logs_frame = ttk.LabelFrame(
+    monitoring_frame,
+    text="Real-time Logs",
+     padding=10)
         logs_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
         # Log viewer
@@ -740,7 +754,10 @@ class DemocraticControlInterface:
         )
 
         self.log_filter_var = tk.StringVar()
-        log_filter = ttk.Entry(log_controls, textvariable=self.log_filter_var, width=20)
+        log_filter = ttk.Entry(
+    log_controls,
+    textvariable=self.log_filter_var,
+     width=20)
         log_filter.pack(side="left", padx=5)
         log_filter.bind("<KeyRelease>", self._filter_logs)
 
@@ -751,7 +768,8 @@ class DemocraticControlInterface:
         self.notebook.add(power_frame, text="ðŸ”¥ Power Tools")
 
         # ===== EXECUÃ‡ÃƒO REMOTA =====
-        remote_frame = ttk.LabelFrame(power_frame, text="Remote Execution", padding=10)
+        remote_frame = ttk.LabelFrame(
+    power_frame, text="Remote Execution", padding=10)
         remote_frame.pack(fill="x", padx=10, pady=5)
 
         # Console remoto
@@ -786,7 +804,10 @@ class DemocraticControlInterface:
         target_combo = ttk.Combobox(
             target_frame,
             textvariable=self.target_device_var,
-            values=["Todos os Dispositivos", "LÃ­der Atual", "Dispositivo EspecÃ­fico"],
+            values=[
+    "Todos os Dispositivos",
+    "LÃ­der Atual",
+     "Dispositivo EspecÃ­fico"],
         )
         target_combo.pack(side="left", padx=5)
 
@@ -916,8 +937,10 @@ class DemocraticControlInterface:
         try:
             # 1. Microsoft Device Identifier
             self._log("ðŸ” Inicializando identificaÃ§Ã£o Microsoft...")
-            data_path = Path(self.jarvis_core.config["system"]["base_path"]) / "data"
-            self.microsoft_identifier = MicrosoftDeviceIdentifier(str(data_path))
+            data_path = Path(
+    self.jarvis_core.config["system"]["base_path"]) / "data"
+            self.microsoft_identifier = MicrosoftDeviceIdentifier(
+                str(data_path))
             self.microsoft_identifier.initialize()
 
             # 2. Biometric Verifier
@@ -957,7 +980,8 @@ class DemocraticControlInterface:
                     "account_email",
                     "unknown",
                 )
-                self.ms_status_label.config(text=f"âœ… Conectado: {account_email}")
+                self.ms_status_label.config(
+    text=f"âœ… Conectado: {account_email}")
             else:
                 self.ms_status_label.config(text="âŒ Conta nÃ£o detectada")
 
@@ -967,9 +991,11 @@ class DemocraticControlInterface:
                 and hasattr(self.microsoft_identifier, "google_drive_detected")
                 and getattr(self.microsoft_identifier, "google_drive_detected", False)
             ):
-                self.drive_status_label.config(text="âœ… Google Drive detectado")
+                self.drive_status_label.config(
+                    text="âœ… Google Drive detectado")
             else:
-                self.drive_status_label.config(text="âŒ Google Drive nÃ£o encontrado")
+                self.drive_status_label.config(
+    text="âŒ Google Drive nÃ£o encontrado")
 
             # Biometric Status
             if self.biometric_verifier:
@@ -979,7 +1005,8 @@ class DemocraticControlInterface:
                         text=f"âœ… Configurado - {status['face_samples']} faces, {status['voice_samples']} voice"
                     )
                 else:
-                    self.bio_status_label.config(text="âš™ï¸ NÃ£o configurado")
+                    self.bio_status_label.config(
+                        text="âš™ï¸ NÃ£o configurado")
 
         except Exception as e:
             self._log(f"âŒ Erro atualizando status: {e}")
@@ -1001,12 +1028,13 @@ class DemocraticControlInterface:
 
         # Iniciar loop
         if self.root is not None:
-            self.root.after(1000, refresh_loop)  # Primeiro refresh em 1 segundo
+            # Primeiro refresh em 1 segundo
+            self.root.after(1000, refresh_loop)
 
     # ===== MÃ‰TODOS DE CALLBACK =====
 
     def _redetect_microsoft_account(self):
-        """ðŸ” RE-DETECTA CONTA MICROSOFT"""
+        """ðŸ” RE - DETECTA CONTA MICROSOFT"""
 
         self._log("ðŸ”„ Re-detectando conta Microsoft...")
 
@@ -1019,7 +1047,8 @@ class DemocraticControlInterface:
                         self.root.after(0, self._update_initial_status)
                     self._log("âœ… Re-detecÃ§Ã£o concluÃ­da")
                 else:
-                    self._log("âŒ Sistema de identificaÃ§Ã£o nÃ£o inicializado")
+                    self._log(
+                        "âŒ Sistema de identificaÃ§Ã£o nÃ£o inicializado")
             except Exception as e:
                 self._log(f"âŒ Erro na re-detecÃ§Ã£o: {e}")
 
@@ -1045,22 +1074,38 @@ class DemocraticControlInterface:
         email_frame = tk.Frame(config_window, bg="#1a1a1a")
         email_frame.pack(fill="x", padx=20, pady=5)
 
-        ttk.Label(email_frame, text="Email:", style="Status.TLabel").pack(side="left")
+        ttk.Label(
+    email_frame,
+    text="Email:",
+    style="Status.TLabel").pack(
+        side="left")
 
         from src.utils.config import config
 
         target_email = config.get_setting("portability.target_user_email", "")
 
         email_var = tk.StringVar(value=target_email)
-        ttk.Entry(email_frame, textvariable=email_var, width=40).pack(side="right")
+        ttk.Entry(
+    email_frame,
+    textvariable=email_var,
+    width=40).pack(
+        side="right")
 
         # Display name
         name_frame = tk.Frame(config_window, bg="#1a1a1a")
         name_frame.pack(fill="x", padx=20, pady=5)
 
-        ttk.Label(name_frame, text="Nome:", style="Status.TLabel").pack(side="left")
+        ttk.Label(
+    name_frame,
+    text="Nome:",
+    style="Status.TLabel").pack(
+        side="left")
         name_var = tk.StringVar()
-        ttk.Entry(name_frame, textvariable=name_var, width=40).pack(side="right")
+        ttk.Entry(
+    name_frame,
+    textvariable=name_var,
+    width=40).pack(
+        side="right")
 
         # BotÃµes
         button_frame = tk.Frame(config_window, bg="#1a1a1a")
@@ -1069,7 +1114,8 @@ class DemocraticControlInterface:
         def save_manual_config():
             if self.microsoft_identifier:
                 # ConfiguraÃ§Ã£o manual (implementar mÃ©todo no identifier)
-                self._log(f"ðŸ’¾ ConfiguraÃ§Ã£o manual salva: {email_var.get()}")
+                self._log(
+                    f"ðŸ’¾ ConfiguraÃ§Ã£o manual salva: {email_var.get()}")
                 config_window.destroy()
                 self._update_initial_status()
             else:
@@ -1114,7 +1160,12 @@ class DemocraticControlInterface:
         )
         details_text.configure(yscrollcommand=scrollbar.set)
 
-        details_text.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        details_text.pack(
+    side="left",
+    fill="both",
+    expand=True,
+    padx=10,
+     pady=10)
         scrollbar.pack(side="right", fill="y", pady=10)
 
         # Obter e exibir detalhes
@@ -1136,7 +1187,8 @@ class DemocraticControlInterface:
                         f"ðŸ‘¤ Nome: {getattr(account, 'display_name', 'unknown')}\n"
                     )
                     # details_info += f"ðŸ†” User ID: {getattr(account, 'user_id', 'unknown')}\n"
-                    # details_info += f"ðŸ  Microsoft ID: {getattr(account, 'microsoft_id', 'unknown')}\n\n"
+                    # details_info += f"ðŸ  Microsoft ID: {getattr(account,
+                    # 'microsoft_id', 'unknown')}\n\n"
                 else:
                     details_info += "âŒ Conta Microsoft nÃ£o detectada\n\n"
 
@@ -1149,7 +1201,8 @@ class DemocraticControlInterface:
                     details_info += "ðŸ–¥ï¸ DEVICE FINGERPRINT:\n"
                     details_info += f"ðŸ†” Device ID: {getattr(fingerprint, 'device_id', 'unknown')}\n"
                     details_info += f"ðŸ’» Computer Name: {getattr(fingerprint, 'computer_name', 'unknown')}\n"
-                    # details_info += f"ðŸ”§ CPU ID: {getattr(fingerprint, 'cpu_id', 'unknown')}\n"
+                    # details_info += f"ðŸ”§ CPU ID: {getattr(fingerprint,
+                    # 'cpu_id', 'unknown')}\n"
                     details_info += f"ðŸ  Motherboard: {getattr(fingerprint, 'motherboard_serial', 'unknown')}\n"
                     details_info += f"âš¡ BIOS: {getattr(fingerprint, 'bios_serial', 'unknown')}\n\n"
                 else:
@@ -1175,7 +1228,8 @@ class DemocraticControlInterface:
                 details_text.insert(tk.END, details_info)
 
             except Exception as e:
-                details_text.insert(tk.END, f"âŒ Erro carregando detalhes: {e}")
+                details_text.insert(
+    tk.END, f"âŒ Erro carregando detalhes: {e}")
 
         threading.Thread(target=load_details, daemon=True).start()
 
@@ -1240,7 +1294,11 @@ class DemocraticControlInterface:
             prefs_path.parent.mkdir(parents=True, exist_ok=True)
 
             with open(prefs_path, "w", encoding="utf-8") as f:
-                json.dump(self.user_preferences, f, indent=2, ensure_ascii=False)
+                json.dump(
+    self.user_preferences,
+    f,
+    indent=2,
+     ensure_ascii=False)
 
         except Exception as e:
             print(f"âŒ Erro salvando preferÃªncias: {e}")
@@ -1411,7 +1469,8 @@ class DemocraticControlInterface:
         try:
             # CPU Usage
             cpu_percent = psutil.cpu_percent(interval=0.1)
-            self.metrics_labels["cpu"].config(text=f"CPU Usage: {cpu_percent:.1f}%")
+            self.metrics_labels["cpu"].config(
+    text=f"CPU Usage: {cpu_percent:.1f}%")
 
             # Memory Usage
             memory = psutil.virtual_memory()

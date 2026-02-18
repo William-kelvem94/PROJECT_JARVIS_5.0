@@ -1,11 +1,10 @@
+from src.learning.sanity_checker import get_sanity_checker
 import sys
 import os
 from pathlib import Path
 
 # Adicionar root ao sys.path
 sys.path.append(os.getcwd())
-
-from src.learning.sanity_checker import get_sanity_checker
 
 
 def final_audit():

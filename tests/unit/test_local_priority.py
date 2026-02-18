@@ -1,3 +1,4 @@
+from src.core.intelligence.ai_agent import ai_agent
 import sys
 import os
 from unittest.mock import MagicMock
@@ -5,7 +6,6 @@ from unittest.mock import MagicMock
 # Setup paths
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.core.intelligence.ai_agent import ai_agent
 
 # Mock components to avoid real API/Network calls during this specific logic test
 # Mock components for local verification

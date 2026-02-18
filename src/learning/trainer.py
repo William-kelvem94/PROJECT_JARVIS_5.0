@@ -444,7 +444,8 @@ class LocalTrainer:
         The `tier` can be a short key (e.g., 'phi-2'), a tier name ('pro'),
         or a full Hugging Face model identifier.
         """
-        # If the tier is a direct key in our supported models, return the corresponding HF ID.
+        # If the tier is a direct key in our supported models, return the
+        # corresponding HF ID.
         if tier in self.SUPPORTED_MODELS:
             return self.SUPPORTED_MODELS[tier]
 
@@ -472,8 +473,12 @@ class LocalTrainer:
         """Setup compute device."""
         if torch.cuda.is_available():  # type: ignore
             device = "cuda"
-            logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")  # type: ignore
-            logger.info(f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")  # type: ignore
+            # type: ignore
+            logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")
+            # type: ignore
+            logger.info(
+                f"CUDA memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB"
+            )
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():  # type: ignore
             device = "mps"
             logger.info("Using MPS (Apple Silicon)")
@@ -788,7 +793,9 @@ class LocalTrainer:
                 eval_results = self.trainer.evaluate()
                 results["eval_loss"] = eval_results.get("eval_loss")
                 results["eval_perplexity"] = (
-                    torch.exp(torch.tensor(eval_results["eval_loss"])).item()  # type: ignore
+                    torch.exp(
+                        torch.tensor(eval_results["eval_loss"])
+                    ).item()  # type: ignore
                     if "eval_loss" in eval_results
                     else None
                 )
@@ -921,10 +928,14 @@ class LocalTrainer:
             logger.info(f"Loading checkpoint from {checkpoint_path}")
 
             # Load model
-            self.model = AutoModelForCausalLM.from_pretrained(checkpoint_path)  # type: ignore
+            self.model = AutoModelForCausalLM.from_pretrained(
+                checkpoint_path
+            )  # type: ignore
 
             # Load tokenizer
-            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint_path, trust_remote_code=True)  # type: ignore
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                checkpoint_path, trust_remote_code=True
+            )  # type: ignore
 
             # Load config if exists
             config_path = checkpoint_path / "training_config.json"

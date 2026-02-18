@@ -93,7 +93,8 @@ class ProactiveMonitor:
                     continue
                 elif cpu_load > 60:
                     time.sleep(5)  # Modo normal
-                # Se livre, continua a cada self.check_interval (padrÃ£o 2s ou config)
+                # Se livre, continua a cada self.check_interval (padrÃ£o 2s ou
+                # config)
 
                 # Capturar frame atual (em baixa resoluÃ§Ã£o para performance)
                 screenshot = screen_capture.capture_fullscreen(capture_type="monitor")
@@ -106,7 +107,8 @@ class ProactiveMonitor:
                     time.sleep(self.check_interval)
                     continue
 
-                # Converter para escala de cinza e aplicar blur para ignorar ruÃ­do pequeno
+                # Converter para escala de cinza e aplicar blur para ignorar
+                # ruÃ­do pequeno
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 gray = cv2.GaussianBlur(gray, (21, 21), 0)
 

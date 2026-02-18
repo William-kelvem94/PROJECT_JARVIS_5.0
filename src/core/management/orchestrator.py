@@ -38,7 +38,8 @@ class StarkOrchestrator:
         self.maintenance_manager = MaintenanceManager()
 
         # 2. Bloqueio de Hardware: Verificação de Aceleração (STRICT)
-        # O sistema DEVE falhar se o hardware não estiver alinhado, a menos que permitido explicitamente.
+        # O sistema DEVE falhar se o hardware não estiver alinhado, a menos que
+        # permitido explicitamente.
 
         logger.info("🛡️ Verificando Alinhamento de Hardware (Hardware Lock)...")
         max_retries = 3
@@ -46,7 +47,8 @@ class StarkOrchestrator:
 
         for i in range(max_retries):
             if compute_orchestrator.verify_acceleration():
-                logger.info("✅ Hardware Alignment Successful (Acceleration Active)")
+                logger.info(
+                    "✅ Hardware Alignment Successful (Acceleration Active)")
                 acceleration_active = True
                 break
             logger.warning(
@@ -224,7 +226,9 @@ class StarkOrchestrator:
             self.components["shutdown"] = self.jarvis.shutdown_manager
 
     def _init_interface_orchestration(self):
-        if hasattr(self.jarvis, "window_manager") and self.jarvis.window_manager:
+        if hasattr(
+                self.jarvis,
+                "window_manager") and self.jarvis.window_manager:
             wm = self.jarvis.window_manager
             self.components["window_manager"] = wm
 
@@ -281,7 +285,8 @@ class StarkOrchestrator:
             elif module_name == "iot":
                 if "iot" in self.components:
                     iot_mgr = self.components["iot"]
-                    if hasattr(iot_mgr, "is_configured") and iot_mgr.is_configured:
+                    if hasattr(iot_mgr,
+                               "is_configured") and iot_mgr.is_configured:
                         return "ONLINE"
                     else:
                         return "DEGRADED"
@@ -345,7 +350,8 @@ class StarkOrchestrator:
             logger.info(f"✅ {component_name} reinicializado com sucesso")
             return True
         except Exception as e:
-            logger.error(f"❌ Falha na reinicialização de {component_name}: {e}")
+            logger.error(
+                f"❌ Falha na reinicialização de {component_name}: {e}")
             return False
 
     def get_system_info(self) -> Dict[str, Any]:

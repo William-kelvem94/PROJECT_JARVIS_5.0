@@ -25,7 +25,8 @@ def validate_portability():
         r"williamkelvem64@gmail\.com",
     ]
 
-    # Buscar padrões de forma multiplataforma usando pathlib e leitura de arquivos
+    # Buscar padrões de forma multiplataforma usando pathlib e leitura de
+    # arquivos
     search_files = list(project_root.rglob("*.py")) + list(project_root.rglob("*.md"))
 
     for pattern in hardcoded_patterns:

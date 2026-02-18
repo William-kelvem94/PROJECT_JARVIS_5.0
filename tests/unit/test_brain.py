@@ -4,6 +4,7 @@ import logging
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+
 def run_brain_checks() -> int:
     """Run quick smoke checks for LocalBrain without exiting on import."""
     logging.basicConfig(level=logging.INFO)

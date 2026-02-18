@@ -6,15 +6,14 @@ Teste do Sistema de Logging Melhorado JARVIS
 Testa o novo sistema unificado de logging com prevenção de duplicatas
 """
 
+from src.core.config.blackbox_logger import blackbox_logger
+from src.utils.jarvis_logger import get_component_logger, setup_jarvis_logging
 import sys
 import time
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.utils.jarvis_logger import get_component_logger, setup_jarvis_logging
-from src.core.config.blackbox_logger import blackbox_logger
 
 
 def test_unified_logging():

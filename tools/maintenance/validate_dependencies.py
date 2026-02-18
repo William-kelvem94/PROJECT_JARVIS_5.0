@@ -69,10 +69,11 @@ def check_package(import_name, pip_name, use_pip_show=False):
                     timeout=10,
                 )
                 if result.returncode == 0:
+                    # Return False but no pkg name means "Installed but Broken"
                     return (
                         False,
                         None,
-                    )  # Return False but no pkg name means "Installed but Broken"
+                    )
                 return False, pip_name
     except Exception:
         return False, pip_name

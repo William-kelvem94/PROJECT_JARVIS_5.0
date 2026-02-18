@@ -12,7 +12,11 @@ import xml.etree.ElementTree as ET
 try:
     from src.utils.env_manager import get_model_for_tier
 except ImportError:
-    get_model_for_tier = lambda tier: "deepseek-r1:8b"  # Fallback
+
+    def get_model_for_tier(tier):
+        return "deepseek-r1:8b"  # Fallback
+
+
 from typing import List, Dict
 
 try:
@@ -50,7 +54,8 @@ class CuriosityEngine:
                 f"🧠 Nova curiosidade registrada: {feature_or_topic}. Pesquisa agendada."
             )
 
-            # Armazenar no ChromaDB se disponÃ­vel (para persistÃªncia entre boots)
+            # Armazenar no ChromaDB se disponÃ­vel (para persistÃªncia entre
+            # boots)
             if self.memory_manager:
                 self.memory_manager.save_to_vault(
                     f"O sistema tentou mas não soube como executar: {feature_or_topic}",
@@ -70,7 +75,7 @@ class CuriosityEngine:
             from src.interface.ui_signals import ui_signals
 
             ui_signals.update_curiosity_list.emit(list(self.study_backlog.queue))
-        except:
+        except Exception:
             pass
 
         while self.is_studying and not self.study_backlog.empty():
@@ -81,7 +86,7 @@ class CuriosityEngine:
                 # UI Signal
                 try:
                     ui_signals.update_learning_status.emit(topic, True)
-                except:
+                except Exception:
                     pass
 
                 # 1. Buscar conhecimento
@@ -116,7 +121,7 @@ class CuriosityEngine:
                         ui_signals.update_curiosity_list.emit(
                             list(self.study_backlog.queue)
                         )
-                    except:
+                    except Exception:
                         pass
 
                     time.sleep(5)  # Pausa para respirar
@@ -133,7 +138,7 @@ class CuriosityEngine:
         self.is_studying = False
         try:
             ui_signals.update_learning_status.emit("Nenhum", False)
-        except:
+        except Exception:
             pass
 
     def fetch_academic_data(self, topic: str) -> List[Dict]:

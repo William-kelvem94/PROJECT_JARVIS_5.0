@@ -174,7 +174,8 @@ class DependencyManager:
 
             capabilities.add("yolo")
         except (ImportError, AttributeError) as e:
-            # AttributeError covers cases where ultralytics imports but has issues
+            # AttributeError covers cases where ultralytics imports but has
+            # issues
             logger.debug(f"Ultralytics not available: {e}")
             pass
 

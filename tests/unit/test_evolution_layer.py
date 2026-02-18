@@ -5,6 +5,12 @@ Unit tests for JARVIS 5.0 Evolution Layer
 Tests the self-healing system components
 """
 
+from src.evolution.evolution_manager import EvolutionManager
+from src.evolution.safe_executor import SafeExecutor
+from src.evolution.auto_healer import AutoHealer
+from src.evolution.self_observer import SelfObserver
+from src.evolution.knowledge_db import KnowledgeDatabase
+import pytest
 import sys
 import tempfile
 import shutil
@@ -13,13 +19,6 @@ import sqlite3
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
-import pytest
-from src.evolution.knowledge_db import KnowledgeDatabase
-from src.evolution.self_observer import SelfObserver
-from src.evolution.auto_healer import AutoHealer
-from src.evolution.safe_executor import SafeExecutor
-from src.evolution.evolution_manager import EvolutionManager
 
 
 class TestKnowledgeDatabase:
@@ -43,7 +42,7 @@ class TestKnowledgeDatabase:
         with sqlite3.connect(str(self.db_path)) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT name FROM sqlite_master 
+                SELECT name FROM sqlite_master
                 WHERE type='table' AND name IN ('problems', 'solutions', 'human_feedback')
             """)
             tables = [row[0] for row in cursor.fetchall()]

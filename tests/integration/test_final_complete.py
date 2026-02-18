@@ -347,7 +347,8 @@ class TestSystemIntegration(unittest.TestCase):
 
         # 3. Simulação de uso conjunto
         safe_iot_url = security.validate_web_request(iot.ha_url)
-        # URL local deveria ser segura (melhoria futura: adicionar IPs locais à whitelist)
+        # URL local deveria ser segura (melhoria futura: adicionar IPs locais à
+        # whitelist)
 
         print("   ✅ Componentes funcionando em conjunto")
         print("   🎯 Integração completa: SUCESSO!")

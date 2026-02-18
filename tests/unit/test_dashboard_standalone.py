@@ -1,3 +1,4 @@
+from src.interface.stark_dashboard import StarkDashboard
 import sys
 import os
 import logging
@@ -6,7 +7,6 @@ from PyQt6.QtWidgets import QApplication
 # Adicionar raiz do projeto ao path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".")))
 
-from src.interface.stark_dashboard import StarkDashboard
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

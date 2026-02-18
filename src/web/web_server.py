@@ -1,3 +1,5 @@
+import os
+import typing
 import logging
 import asyncio
 import json
@@ -14,7 +16,19 @@ import time
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="JARVIS 5.0 - Control Dashboard")
+try:
+    from fastapi import FastAPI
+except ImportError:
+    FastAPI = None
+
+# Create FastAPI `app` when fastapi is installed so decorators and imports work
+app: typing.Optional["FastAPI"] = None
+if FastAPI is not None:
+    app = FastAPI(title="JARVIS 5.0 - Control Dashboard")
+
+# Toggle actual server startup via environment variable. Routes remain
+# defined for tests/imports.
+ENABLE_WEB_SERVER = os.environ.get("JARVIS_ENABLE_WEBSERVER", "0") == "1"
 
 # Segurança básica
 security = HTTPBearer()
@@ -48,18 +62,21 @@ STATIC_DIR.mkdir(parents=True, exist_ok=True)
 connected_clients = set()
 
 
-# Rota para o Dashboard Principal
-@app.get("/")
-async def get_dashboard():
-    index_file = STATIC_DIR / "index.html"
-    if not index_file.exists():
-        # Criar um index básico provisório se não existir
-        return HTMLResponse("<h1>JARVIS Web Dashboard - Aguardando Front-end</h1>")
-    with open(index_file, "r", encoding="utf-8") as f:
-        return HTMLResponse(f.read())
+# Rotas só são definidas se app estiver ativo
+if app is not None:
+
+    @app.get("/")
+    async def get_dashboard():
+        index_file = STATIC_DIR / "index.html"
+        if not index_file.exists():
+            # Criar um index básico provisório se não existir
+            return HTMLResponse("<h1>JARVIS Web Dashboard - Aguardando Front-end</h1>")
+        with open(index_file, "r", encoding="utf-8") as f:
+            return HTMLResponse(f.read())
 
 
-# Unauthenticated health endpoint used by DeploymentManager / Docker HEALTHCHECK
+# Unauthenticated health endpoint used by DeploymentManager / Docker
+# HEALTHCHECK
 @app.get("/health")
 async def health():
     """Lightweight unauthenticated health check for orchestration tools."""
@@ -111,7 +128,6 @@ async def get_training_data():
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
 
-
 # WebSocket para Logs, Telemetria e Comandos em Tempo Real
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -121,19 +137,26 @@ async def websocket_endpoint(websocket: WebSocket):
     connected_clients.add(websocket)
     try:
         # Enviar mensagem de boas vindas
-        await websocket.send_text(json.dumps({"type": "log", "message": "Conexão Stark estabelecida.", "level": "INFO"}))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "log",
+                    "message": "Conexão Stark estabelecida.",
+                    "level": "INFO",
+                }
+            )
+        )
 
         async def telemetry_loop():
             import psutil
+
             while True:
                 try:
                     cpu = psutil.cpu_percent(interval=0.5)
                     mem = psutil.virtual_memory().percent
-                    await websocket.send_text(json.dumps({
-                        "type": "telemetry",
-                        "cpu": cpu,
-                        "memory": mem
-                    }))
+                    await websocket.send_text(
+                        json.dumps({"type": "telemetry", "cpu": cpu, "memory": mem})
+                    )
                     await asyncio.sleep(1.0)
                 except Exception as e:
                     logger.error(f"Erro no envio de telemetria: {e}")
@@ -175,6 +198,19 @@ async def broadcast_message(message: dict):
 
 
 def start_server(host="0.0.0.0", port=5000):
+    """Start the web dashboard server only if ENABLE_WEB_SERVER is true.
+
+    Returns a uvicorn.Server instance when enabled, otherwise returns None.
+    """
+    if not ENABLE_WEB_SERVER:
+        logger.warning(
+            "🌐 Web dashboard disabled (set JARVIS_ENABLE_WEBSERVER=1 to enable)."
+        )
+        return None
+
+    if app is None:
+        raise RuntimeError("FastAPI is not available; cannot start web server.")
+
     logger.info(f"🌐 Iniciando Web Dashboard em http://{host}:{port}")
     config = uvicorn.Config(app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)

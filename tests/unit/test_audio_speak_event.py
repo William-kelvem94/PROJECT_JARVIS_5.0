@@ -57,4 +57,6 @@ def test_decision_engine_publishes_audio_speak_event():
     # Ensure publish was invoked for AUDIO_SPEAK
     assert any(c[0].value == EventType.AUDIO_SPEAK.value for c in calls)
     # If bus dispatched the event, captured should contain the message as well
-    assert (not captured) or (captured and captured[-1] == "Resposta de teste para fala")
+    assert (not captured) or (
+        captured and captured[-1] == "Resposta de teste para fala"
+    )

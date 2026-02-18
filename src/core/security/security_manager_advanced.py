@@ -244,7 +244,7 @@ class SecurityManager:
                 try:
                     event = json.loads(line.strip())
                     events.append(event)
-                except:
+                except BaseException:
                     continue
 
             return events
@@ -301,7 +301,8 @@ class SecurityManager:
                     return True
 
         # Se não houver dados de autorização salvos, permitimos para não travar o usuário
-        # mas registramos o aviso. No Modo Singularity, isso deve ser configurado.
+        # mas registramos o aviso. No Modo Singularity, isso deve ser
+        # configurado.
         if not (self.config_dir / "authorized_face.npy").exists():
             logger.info("ℹ️ Nenhum dado de autorização salvo. Acesso livre concedido.")
             return True

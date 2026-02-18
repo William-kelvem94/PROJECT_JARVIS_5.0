@@ -76,7 +76,7 @@ try:
         print("✅ Ollama Local: ONLINE")
     else:
         print(f"⚠️ Ollama Local: STATUS {resp.status_code}")
-except:
+except BaseException:
     print("❌ Ollama Local: OFFLINE (Certifique-se que o Ollama está rodando)")
 
 try:
@@ -84,7 +84,7 @@ try:
         print("✅ Gemini API Key: CONFIGURADA")
     else:
         print("⚠️ Gemini API Key: NÃO ENCONTRADA (Usará modo local)")
-except:
+except BaseException:
     pass
 
 print("\n" + "=" * 70)

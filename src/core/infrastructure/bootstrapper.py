@@ -94,28 +94,34 @@ class SystemBootstrapper:
             ["window_manager"] if self.app else [],
         )
 
-        # Audio System
+        # Audio System (optional - não bloqueia o boot)
         self.boot_manager.register_module(
             "audio_system",
             self._init_audio_system,
-            BootPriority.MEDIUM,
+            BootPriority.LOW,
             ["system_integrator"],
+            required=False,
+            timeout_seconds=60,
         )
 
-        # Vision System
+        # Vision System (optional - não bloqueia o boot)
         self.boot_manager.register_module(
             "vision_system",
             self._init_vision_system,
-            BootPriority.MEDIUM,
+            BootPriority.LOW,
             ["system_integrator"],
+            required=False,
+            timeout_seconds=60,
         )
 
-        # AI Agent (The Brain)
+        # AI Agent (The Brain) - inicia independente de áudio/visão
         self.boot_manager.register_module(
             "ai_agent",
             self._init_ai_agent,
             BootPriority.MEDIUM,
-            ["audio_system", "vision_system"],
+            ["system_integrator"],  # Só depende do integrador, não de áudio/visão
+            required=True,
+            timeout_seconds=60,  # Aumentado para 60s pois carrega muitos módulos
         )
 
     # --- Factory Methods (Lazy Loading) ---
@@ -145,7 +151,9 @@ class SystemBootstrapper:
         try:
             from src.core.audio.enhanced_audio import get_audio_system
 
-            return get_audio_system(system_manifest.paths["base"] / "data", event_bus=self.event_bus)
+            return get_audio_system(
+                system_manifest.paths["base"] / "data", event_bus=self.event_bus
+            )
         except ImportError as e:
             logger.error(f"Failed to load AudioSystem: {e}")
             return None
@@ -154,7 +162,9 @@ class SystemBootstrapper:
         try:
             from src.core.vision.vision_system import get_vision_system
 
-            return get_vision_system(system_manifest.paths["base"] / "data", event_bus=self.event_bus)
+            return get_vision_system(
+                system_manifest.paths["base"] / "data", event_bus=self.event_bus
+            )
         except ImportError as e:
             logger.error(f"Failed to load VisionSystem: {e}")
             return None
@@ -167,15 +177,19 @@ class SystemBootstrapper:
         except ImportError as e:
             logger.error(f"Failed to load AI Agent: {e}")
             return None
+
     def _init_foundation(self):
         """Initializes the system's DNA (Manifest and Logging)"""
         try:
-            # Manifest is already initialized as a global singleton, but we log its status
+            # Manifest is already initialized as a global singleton, but we log
+            # its status
             logger.info("📜 System Manifest (DNA) LOADED")
 
             # Setup Blackbox integration
             setup_blackbox_integration()
-            blackbox_logger.info("📦 Blackbox Logger ACTIVATED", component="bootstrapper")
+            blackbox_logger.info(
+                "📦 Blackbox Logger ACTIVATED", component="bootstrapper"
+            )
 
         except Exception as e:
             logger.error(f"Failed to initialize foundation: {e}")

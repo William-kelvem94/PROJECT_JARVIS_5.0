@@ -16,6 +16,8 @@ Features:
 - Low-latency processing
 """
 
+import pyaudio
+import soundfile as sf
 import logging
 import threading
 import queue
@@ -71,9 +73,12 @@ def _torch_usable() -> bool:
     package that does not expose tensor APIs (e.g. missing `Tensor`/`from_numpy`).
     Guard VAD usage against that to avoid raising AttributeError during runtime.
     """
-    return (torch is not None) and hasattr(torch, "from_numpy") and hasattr(
-        torch, "no_grad"
-    ) and hasattr(torch, "Tensor")
+    return (
+        (torch is not None)
+        and hasattr(torch, "from_numpy")
+        and hasattr(torch, "no_grad")
+        and hasattr(torch, "Tensor")
+    )
 
 
 def _import_faster_whisper():
@@ -110,11 +115,8 @@ def _import_torch():
     return TORCH_AVAILABLE
 
 
-import soundfile as sf
-
 SOUNDFILE_AVAILABLE = True
 
-import pyaudio
 
 PYAUDIO_AVAILABLE = True
 
@@ -241,7 +243,8 @@ class EnhancedAudioSystem:
         self.chunk_size = 1024
         self.channels = 1
 
-        # Audio processing features (safe config access with fallback for circular imports)
+        # Audio processing features (safe config access with fallback for
+        # circular imports)
         try:
             from src.utils.config import config as _config
 
@@ -286,11 +289,14 @@ class EnhancedAudioSystem:
                 except Exception:
                     pass
 
-                # Then trigger actual synthesis in background (do not block event loop)
+                # Then trigger actual synthesis in background (do not block
+                # event loop)
                 try:
                     import threading
 
-                    threading.Thread(target=self.speak, args=(text, False), daemon=True).start()
+                    threading.Thread(
+                        target=self.speak, args=(text, False), daemon=True
+                    ).start()
                 except Exception:
                     try:
                         self.speak(text)
@@ -310,7 +316,8 @@ class EnhancedAudioSystem:
             self.wake_word_active = _config.get_setting("audio.wake_word_enabled", True)
         except Exception:
             self.wake_word_active = True
-        # ðŸ†• ALWAYS LISTENING MODE: Se nÃ£o tiver wake word, fica sempre acordado
+        # ðŸ†• ALWAYS LISTENING MODE: Se nÃ£o tiver wake word, fica sempre
+        # acordado
         self.is_awake = (
             not self.wake_word_active
         )  # ComeÃ§a acordado se wake word desabilitado
@@ -627,7 +634,8 @@ class EnhancedAudioSystem:
                 ambient_rms_std = np.std(ambient_samples)
 
                 # ðŸ”¥ Threshold dinÃ¢mico: mÃ©dia + 2.5 * desvio padrÃ£o
-                # Isso captura apenas Ã¡udio SIGNIFICATIVAMENTE mais alto que ambiente
+                # Isso captura apenas Ã¡udio SIGNIFICATIVAMENTE mais alto que
+                # ambiente
                 dynamic_threshold = ambient_rms_mean + (2.5 * ambient_rms_std)
 
                 # Clamp entre 1000 e 5000 para seguranÃ§a
@@ -641,7 +649,8 @@ class EnhancedAudioSystem:
                 )
 
                 # Atualizar threshold global usado em _check_voice_activity
-                # Note: Isso afeta apenas o fallback RMS quando VAD model nÃ£o disponÃ­vel
+                # Note: Isso afeta apenas o fallback RMS quando VAD model nÃ£o
+                # disponÃ­vel
                 self._dynamic_rms_threshold = dynamic_threshold
 
                 return dynamic_threshold
@@ -703,7 +712,7 @@ class EnhancedAudioSystem:
                 self.audio_stream.stop_stream()
                 self.audio_stream.close()
                 self.audio_stream = None
-            except:
+            except BaseException:
                 pass
 
         if self._process_thread:
@@ -764,7 +773,8 @@ class EnhancedAudioSystem:
                     chunk = self.audio_queue.get(timeout=0.1)
                     audio_buffer.append(chunk)
                 except queue.Empty:
-                    # ðŸ”’ Mesmo sem dados, checar timeout de silÃªncio para flush do buffer
+                    # ðŸ”’ Mesmo sem dados, checar timeout de silÃªncio para
+                    # flush do buffer
                     if (
                         voice_detected_in_buffer
                         and (time.time() - last_voice_time) > silence_threshold
@@ -772,7 +782,8 @@ class EnhancedAudioSystem:
                         if voice_frame_count >= MIN_VOICE_FRAMES:
                             self._process_audio_buffer(audio_buffer)
                         else:
-                            pass  # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mÃ­n: {MIN_VOICE_FRAMES})")
+                            # logger.debug(f"Buffer silencioso descartado: apenas {voice_frame_count} frames com voz (mÃ­n: {MIN_VOICE_FRAMES})")
+                            pass
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
@@ -795,7 +806,8 @@ class EnhancedAudioSystem:
                         if self.wake_word_active and not self.is_awake:
                             # Se detectar voz clara e forte, acorda automaticamente
                             # Isso substitui "Hey Jarvis" por "Qualquer fala humana clara"
-                            # Para evitar disparos falsos, exigimos confianÃ§a alta do VAD
+                            # Para evitar disparos falsos, exigimos confianÃ§a
+                            # alta do VAD
 
                             logger.debug(
                                 "âš¡ VAD Trigger: Voz detectada, acordando sistema..."
@@ -806,13 +818,15 @@ class EnhancedAudioSystem:
                                 self.on_wake_word_detected()
 
                             # NÃ£o quebramos o loop, continuamos processando o buffer atual como comando
-                            # break  <-- REMOVIDO para capturar o comando "acordar" junto
+                            # break  <-- REMOVIDO para capturar o comando
+                            # "acordar" junto
 
                         if self.is_awake or not self.wake_word_active:
                             self.state = AudioState.LISTENING
 
                             # ðŸ”¥ FAST-PATH (Fase 5): Se a energia for muito alta e o buffer curto,
-                            # podemos antecipar o processamento se for um comando de interrupÃ§Ã£o
+                            # podemos antecipar o processamento se for um
+                            # comando de interrupÃ§Ã£o
                             if len(audio_buffer) < 15:  # ~300ms de Ã¡udio
                                 rms = np.sqrt(np.mean(audio.astype(np.float32) ** 2))
                                 if rms > 5000:  # Grito ou comando muito alto/claro
@@ -825,7 +839,8 @@ class EnhancedAudioSystem:
                                     voice_frame_count = 0
                                     continue
 
-                    # ðŸ”’ Processar quando silÃªncio REAL ultrapassar threshold
+                    # ðŸ”’ Processar quando silÃªncio REAL ultrapassar
+                    # threshold
                     elapsed_silence = time.time() - last_voice_time
                     if elapsed_silence > silence_threshold and len(audio_buffer) > 0:
                         if (
@@ -834,13 +849,16 @@ class EnhancedAudioSystem:
                         ):
                             self._process_audio_buffer(audio_buffer)
                         elif len(audio_buffer) > 0:
-                            # Silencioso descartado - log removido para evitar pollution (~300 linhas/min)
-                            pass  # logger.debug(f"ðŸ”‡ Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
+                            # Silencioso descartado - log removido para evitar
+                            # pollution (~300 linhas/min)
+                            # logger.debug(f"ðŸ”‡ Buffer silencioso descartado ({len(audio_buffer)} chunks, {voice_frame_count} voice frames)")
+                            pass
                         audio_buffer = []
                         voice_detected_in_buffer = False
                         voice_frame_count = 0
 
-                    # ðŸ”’ Limite mÃ¡ximo de buffer para evitar acÃºmulo infinito (30s)
+                    # ðŸ”’ Limite mÃ¡ximo de buffer para evitar acÃºmulo
+                    # infinito (30s)
                     max_buffer_chunks = int(
                         30 * self.sample_rate / 1024
                     )  # ~30 segundos
@@ -875,7 +893,8 @@ class EnhancedAudioSystem:
         self._update_activity()
 
         # If `torch` exists but appears incomplete/mocked (missing Tensor/from_numpy/etc.)
-        # disable neural VAD and fallback to the RMS energy gate to avoid crashes.
+        # disable neural VAD and fallback to the RMS energy gate to avoid
+        # crashes.
         if not _torch_usable():
             if not getattr(self, "_vad_error_logged", False):
                 logger.warning(
@@ -922,7 +941,8 @@ class EnhancedAudioSystem:
 
                     result = self.vad_model(audio_tensor, self.sample_rate)
 
-                    # Silero-VAD can return tuple (speech_prob, _) or just speech_prob
+                    # Silero-VAD can return tuple (speech_prob, _) or just
+                    # speech_prob
                     if isinstance(result, tuple):
                         speech_prob = result[0]
                     else:
@@ -1001,7 +1021,8 @@ class EnhancedAudioSystem:
                 # No speaker verification configured - allow transcription
                 speaker_verified = True
 
-            # Transcribe audio (allow if no speaker verification OR if speaker verified)
+            # Transcribe audio (allow if no speaker verification OR if speaker
+            # verified)
             if self.whisper_model and speaker_verified:
                 result = self._transcribe_audio(audio_float)
                 result.speaker_verified = speaker_verified
@@ -1150,9 +1171,7 @@ class EnhancedAudioSystem:
                 beam_size=5,
                 initial_prompt="Jarvis, James, William, Stark, Singularity, comandos do sistema, português do Brasil.",
                 vad_filter=True,
-                vad_parameters=dict(
-                    threshold=0.35, min_silence_duration_ms=400
-                ),
+                vad_parameters=dict(threshold=0.35, min_silence_duration_ms=400),
             )
 
             # Collect segments
@@ -1323,10 +1342,11 @@ class _AudioServiceProxy:
                 """Sync wrapper for forwarding events"""
                 if not callable(self.on_transcription):
                     return
-                    
+
                 try:
                     payload = event.data or {}
-                    # Build a lightweight object with .text to match existing callbacks
+                    # Build a lightweight object with .text to match existing
+                    # callbacks
                     from types import SimpleNamespace
 
                     obj = SimpleNamespace(
@@ -1338,7 +1358,7 @@ class _AudioServiceProxy:
                         processing_time=payload.get("processing_time", 0.0),
                         timestamp=payload.get("timestamp", None),
                     )
-                    
+
                     # Call the callback (which is likely the UI signal emitter)
                     self.on_transcription(obj)
                 except Exception as e:
@@ -1346,13 +1366,20 @@ class _AudioServiceProxy:
 
             if self.event_bus:
                 # Subscribe sync wrapper to the async event bus
-                # The event bus handles the async-to-sync bridge if needed, 
+                # The event bus handles the async-to-sync bridge if needed,
                 # or we just rely on the fact that we are in a thread.
                 self.event_bus.subscribe(EventType.AUDIO_TRANSCRIPTION, _forward_sync)
-                
+
                 # Also subscribe to WAKE_WORD
-                self.event_bus.subscribe(EventType.WAKE_WORD, lambda e: self.on_wake_word_detected() if callable(self.on_wake_word_detected) else None)
-                
+                self.event_bus.subscribe(
+                    EventType.WAKE_WORD,
+                    lambda e: (
+                        self.on_wake_word_detected()
+                        if callable(self.on_wake_word_detected)
+                        else None
+                    ),
+                )
+
         except Exception as e:
             logger.error(f"Failed to setup proxy subscriptions: {e}")
 
@@ -1362,7 +1389,8 @@ class _AudioServiceProxy:
         return True
 
     def stop_listening(self):
-        # Send a stop command to the child via IPC if necessary (not implemented)
+        # Send a stop command to the child via IPC if necessary (not
+        # implemented)
         try:
             if self._process and self._process.is_alive():
                 return True
@@ -1371,9 +1399,7 @@ class _AudioServiceProxy:
         return False
 
 
-def get_audio_system(
-    data_dir: Optional[Path] = None, event_bus=None
-):
+def get_audio_system(data_dir: Optional[Path] = None, event_bus=None):
     """Return the singleton EnhancedAudioSystem or a process-proxy when
     `system_manifest.audio.multiprocessing_enabled` is True.
     """
@@ -1381,7 +1407,8 @@ def get_audio_system(
 
     from src.core.config.system_manifest import system_manifest
 
-    # If multiprocessing for audio is enabled - spawn child service and return proxy
+    # If multiprocessing for audio is enabled - spawn child service and return
+    # proxy
     if getattr(system_manifest.audio, "multiprocessing_enabled", False):
         # If we already created a proxy, return it
         if _audio_system is not None and isinstance(_audio_system, _AudioServiceProxy):

@@ -1,3 +1,9 @@
+from src.core.intelligence.structured_output import (
+    ResponseParser,
+    AgentResponse,
+    get_actions_schema,
+    get_example_responses,
+)
 import sys
 import json
 import logging
@@ -20,12 +26,6 @@ if sys.platform != "win32":
     sys.modules["winreg"] = MagicMock()
 
 # Import the module under test
-from src.core.intelligence.structured_output import (
-    ResponseParser,
-    AgentResponse,
-    get_actions_schema,
-    get_example_responses,
-)
 
 
 class TestResponseParser:
@@ -87,14 +87,16 @@ class TestResponseParser:
         # Future improvement might use _fallback_text_parse
         response = ResponseParser.parse_llm_response(malformed_json)
 
-        # Accept either the current specific error message OR the generic fallback
+        # Accept either the current specific error message OR the generic
+        # fallback
         assert any(
             msg in response.thought
             for msg in ["Resposta não estruturada", "Fallback", "Resposta direta"]
         )
 
         # If the code changes to use _fallback_text_parse, response.final_answer will be the cleaned text
-        # If it uses the current JSONDecodeError block, it also uses cleaned text
+        # If it uses the current JSONDecodeError block, it also uses cleaned
+        # text
         assert "invalid" in response.final_answer
 
     def test_empty_response(self):
@@ -114,7 +116,8 @@ class TestResponseParser:
 
         # We expect the parser to be smart enough to fallback to regex
         # even if it failed JSON decoding.
-        # If this fails, it means the code needs to be improved to use _fallback_text_parse on JSON error.
+        # If this fails, it means the code needs to be improved to use
+        # _fallback_text_parse on JSON error.
         assert len(response.actions) == 1
         assert response.actions[0].action == "click_at"
         assert response.actions[0].x == 100
@@ -137,7 +140,8 @@ class TestResponseParser:
         """Test validation error when required fields are missing."""
         # Missing 'thought'
         json_missing = json.dumps({"actions": [], "final_answer": "Answer"})
-        # Pydantic validation error raises Exception -> catch in parser -> fallback to text
+        # Pydantic validation error raises Exception -> catch in parser ->
+        # fallback to text
         response = ResponseParser.parse_llm_response(json_missing)
 
         # The fallback logic for Exception uses _fallback_text_parse

@@ -9,6 +9,7 @@ USAGE: from src.core.multimodal_fusion import MultimodalFusion
 
 import sys
 from pathlib import Path
+
 try:
     import numpy as np
 
@@ -280,10 +281,14 @@ class MultimodalFusion:
         """
         # Context-specific weights
         context_weights = {
-            "search": {"text": 0.70, "image": 0.20, "audio": 0.10},  # Prioritize text
-            "conversation": {"text": 0.40, "image": 0.30, "audio": 0.30},  # Balanced
-            "document": {"text": 0.80, "image": 0.15, "audio": 0.05},  # Heavy text
-            "vision": {"text": 0.20, "image": 0.70, "audio": 0.10},  # Prioritize vision
+            # Prioritize text
+            "search": {"text": 0.70, "image": 0.20, "audio": 0.10},
+            # Balanced
+            "conversation": {"text": 0.40, "image": 0.30, "audio": 0.30},
+            # Heavy text
+            "document": {"text": 0.80, "image": 0.15, "audio": 0.05},
+            # Prioritize vision
+            "vision": {"text": 0.20, "image": 0.70, "audio": 0.10},
             "general": {"text": 0.50, "image": 0.35, "audio": 0.15},  # Default
         }
 

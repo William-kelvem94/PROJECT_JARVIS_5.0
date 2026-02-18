@@ -16,7 +16,8 @@ class TotalInstaller:
     """Instala TUDO que o JARVIS precisa com as correções críticas do usuário"""
 
     def __init__(self):
-        # Detecção dinâmica do ROOT (scripts/install/total_installer.py -> root)
+        # Detecção dinâmica do ROOT (scripts/install/total_installer.py ->
+        # root)
         self.project_root = Path(__file__).parent.parent.parent
         self.setup_logging()
         self.logger.info(f"[INFO] Projeto detectado em: {self.project_root}")
@@ -46,7 +47,7 @@ class TotalInstaller:
                 sys.stderr = io.TextIOWrapper(
                     sys.stderr.buffer, encoding="utf-8", errors="replace"
                 )
-            except:
+            except BaseException:
                 pass
 
     def _check_cuda(self):
@@ -54,7 +55,7 @@ class TotalInstaller:
         try:
             result = subprocess.run(["nvidia-smi"], capture_output=True, text=True)
             return result.returncode == 0
-        except:
+        except BaseException:
             return False
 
     def run_command(self, cmd, skip_capture=False):
@@ -64,7 +65,8 @@ class TotalInstaller:
 
             if skip_capture:
                 # Streaming mode: deixa o processo imprimir direto no terminal
-                # Isso evita buffering gigante em comandos como 'pip install torch'
+                # Isso evita buffering gigante em comandos como 'pip install
+                # torch'
                 subprocess.run(cmd, check=True)
                 return ""
 
@@ -79,7 +81,7 @@ class TotalInstaller:
                 except UnicodeDecodeError:
                     try:
                         stdout = result.stdout.decode("cp1252", errors="replace")
-                    except:
+                    except BaseException:
                         stdout = result.stdout.decode("utf-8", errors="replace")
 
             return stdout
@@ -117,7 +119,7 @@ class TotalInstaller:
                 capture_output=True,
                 text=False,
             )
-        except:
+        except BaseException:
             pass
 
         # Instala versão NOVA (CPU ou CUDA)
@@ -167,7 +169,8 @@ class TotalInstaller:
 
         temp_dir = tempfile.gettempdir()
 
-        # Se for 19.24.1 o nome muda levemente, mas vamos tentar manter o nome que o PIP espera ou o nome real do download
+        # Se for 19.24.1 o nome muda levemente, mas vamos tentar manter o nome
+        # que o PIP espera ou o nome real do download
         for url in wheel_urls:
             # Extrair nome real da URL se possível ou usar o padrão
             target_name = url.split("/")[-1]
@@ -210,7 +213,7 @@ class TotalInstaller:
                     [sys.executable, "-m", "pip", "install", "face-recognition-models"],
                     skip_capture=True,
                 )
-            except:
+            except BaseException:
                 pass
 
         # 2. Instala face_recognition
@@ -251,7 +254,7 @@ class TotalInstaller:
                 self.run_command(
                     [sys.executable, "-m", "pip", "install", dep], skip_capture=True
                 )
-            except:
+            except BaseException:
                 pass
 
         # Forçar NumPy 1.26.4 ANTES de instalar ultralytics/easyocr
@@ -267,7 +270,7 @@ class TotalInstaller:
                 ],
                 skip_capture=True,
             )
-        except:
+        except BaseException:
             pass
 
         # Instalar ultralytics após NumPy correto
@@ -276,7 +279,7 @@ class TotalInstaller:
                 [sys.executable, "-m", "pip", "install", "ultralytics"],
                 skip_capture=True,
             )
-        except:
+        except BaseException:
             pass
 
         # Instalar easyocr após NumPy correto
@@ -284,7 +287,7 @@ class TotalInstaller:
             self.run_command(
                 [sys.executable, "-m", "pip", "install", "easyocr"], skip_capture=True
             )
-        except:
+        except BaseException:
             pass
 
         # Forçar NumPy correto novamente após easyocr
@@ -300,7 +303,7 @@ class TotalInstaller:
                 ],
                 skip_capture=True,
             )
-        except:
+        except BaseException:
             pass
 
         # 4. dlib via wheel CORRETO
@@ -323,7 +326,7 @@ class TotalInstaller:
                     [sys.executable, "-m", "pip", "install", "dlib-bin"],
                     skip_capture=True,
                 )
-            except:
+            except BaseException:
                 pass
 
         # 5. face_recognition COMPLETO
@@ -337,7 +340,7 @@ class TotalInstaller:
                 self.run_command(
                     [sys.executable, "-m", "pip", "install", dep], skip_capture=True
                 )
-            except:
+            except BaseException:
                 pass
 
         # 6. Restante das dependencias
@@ -355,7 +358,7 @@ class TotalInstaller:
                     [sys.executable, "-m", "pip", "install", dep, "--no-deps"],
                     skip_capture=True,
                 )
-            except:
+            except BaseException:
                 pass
 
         # Install remaining packages normally
@@ -390,7 +393,7 @@ class TotalInstaller:
                 self.run_command(
                     [sys.executable, "-m", "pip", "install", dep], skip_capture=True
                 )
-            except:
+            except BaseException:
                 pass
 
         # 7. Final Fix for Transformers & NumPy (Enforce version < 2)
@@ -415,14 +418,14 @@ class TotalInstaller:
                 [sys.executable, "-m", "pip", "uninstall", "numpy", "-y"],
                 skip_capture=True,
             )
-        except:
+        except BaseException:
             pass
         try:
             self.run_command(
                 [sys.executable, "-m", "pip", "install", "numpy==1.26.4", "--no-deps"],
                 skip_capture=True,
             )
-        except:
+        except BaseException:
             pass
 
         self.logger.info("\n" + "=" * 50)

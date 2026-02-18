@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 # ============================================================================
 
+
 # RESPONSE CACHE
 # ============================================================================
 class ResponseCache:
@@ -119,7 +120,7 @@ class ResponseCache:
                 if datetime.now() - cached["timestamp"] >= self.ttl:
                     cache_file.unlink()
                     count += 1
-            except:
+            except BaseException:
                 pass
 
         if count > 0:
@@ -153,9 +154,11 @@ class PerformanceOptimizer:
         }
         self._lock = threading.Lock()
         self._running = True
-        
+
         # Telemetria para o Dashboard Web
-        self._telemetry_thread = threading.Thread(target=self._telemetry_loop, daemon=True)
+        self._telemetry_thread = threading.Thread(
+            target=self._telemetry_loop, daemon=True
+        )
         self._telemetry_thread.start()
 
         logger.info("âœ… Performance Optimizer online")
@@ -170,7 +173,6 @@ class PerformanceOptimizer:
                 time.sleep(2.0)
             except Exception:
                 time.sleep(10.0)
-
 
     def measure_time(self, func: Callable) -> Callable:
         """

@@ -5,8 +5,11 @@ Validação das correções aplicadas - Boot Test
 import sys
 import os
 
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 sys.path.insert(0, project_root)
+
 
 def run_legacy_validation():
     passed = 0
@@ -76,11 +79,13 @@ def run_legacy_validation():
 
         # Silence should return False (RMS ~ 0)
         silence = np.zeros(512, dtype=np.int16)
-        assert audio_sys._check_voice_activity(silence) == False, "Silence should be False"
+        assert (
+            audio_sys._check_voice_activity(silence) == False
+        ), "Silence should be False"
 
         # Loud signal should return True (RMS >> 500)
         loud = np.full(512, 10000, dtype=np.int16)
-        assert audio_sys._check_voice_activity(loud) == True, "Loud should be True"
+        assert audio_sys._check_voice_activity(loud), "Loud should be True"
 
         print("  PASS")
         passed += 1
@@ -108,9 +113,16 @@ def run_legacy_validation():
 
         hud_candidates = [
             os.path.join(project_root, "src", "interface", "modern_hud.py"),
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src", "interface", "modern_hud.py"),
+            os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "src",
+                "interface",
+                "modern_hud.py",
+            ),
         ]
-        hud_path = next((p for p in hud_candidates if os.path.exists(p)), hud_candidates[0])
+        hud_path = next(
+            (p for p in hud_candidates if os.path.exists(p)), hud_candidates[0]
+        )
         py_compile.compile(hud_path, doraise=True)
         print("  PASS (syntax valid)")
         passed += 1
@@ -122,7 +134,8 @@ def run_legacy_validation():
     print(f"RESULTS: {passed}/{passed+failed} passed")
     if failed:
         print(f"FAILURES: {failed}")
-        # For non-interactive/test runs raise an AssertionError instead of sys.exit
+        # For non-interactive/test runs raise an AssertionError instead of
+        # sys.exit
         raise AssertionError(f"{failed} legacy validation tests failed")
     else:
         print("ALL TESTS PASSED")

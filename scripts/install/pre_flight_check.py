@@ -41,7 +41,8 @@ def validate():
             print("   Execute: START_JARVIS.bat --repair-pytorch")
             return 4
         print(f"⚠️  PyTorch Warning: {e}")
-        # Not returning 4 if it's just a general error, we might still start in degraded mode
+        # Not returning 4 if it's just a general error, we might still start in
+        # degraded mode
 
     # 3. Directory Structure
     critical_dirs = [

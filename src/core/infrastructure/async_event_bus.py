@@ -96,7 +96,8 @@ class EventType(Enum):
     VISION_ANALYZE = "vision.analyze"
     VISION_SCREEN_CHANGE = "vision.screen_change"
     VISION_SCREEN_ANALYSIS = "vision.screen_analysis"
-    VISION_READY = "vision.ready"  # Published when camera / vision subsystem is available (or mock active)
+    # Published when camera / vision subsystem is available (or mock active)
+    VISION_READY = "vision.ready"
 
     # Audio events
     AUDIO_INPUT = "audio.input"
@@ -105,7 +106,9 @@ class EventType(Enum):
     AUDIO_VOICE_COMMAND = "audio.voice_command"
     AUDIO_TRANSCRIPTION = "audio.transcription"
     AUDIO_SPEAK = "audio.speak"  # NEW: Request TTS to speak provided text
-    AUDIO_READY = "audio.ready"  # Published when audio subsystem is available (child/worker)
+    # Published when audio subsystem is available (child/worker)
+    AUDIO_READY = "audio.ready"
+    WAKE_WORD = "audio.wake_word"  # Published when wake word is detected
 
     # Network events
     NETWORK_REQUEST = "network.request"
@@ -270,8 +273,8 @@ class EventPersistence:
             with sqlite3.connect(self.db_path) as conn:
                 conn.execute(
                     """
-                    INSERT INTO events 
-                    (id, type, priority, timestamp, source, target, correlation_id, 
+                    INSERT INTO events
+                    (id, type, priority, timestamp, source, target, correlation_id,
                      data_json, tags_json, ttl_seconds)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -368,7 +371,8 @@ class AsyncEventBus:
         self._subscriptions: Dict[str, Subscription] = {}
         self._running = False
         self._event_dispatcher_task: Optional[asyncio.Task] = None
-        # Watchdog heartbeat task (keeps watchdog informed about event bus liveness)
+        # Watchdog heartbeat task (keeps watchdog informed about event bus
+        # liveness)
         self._watchdog_heartbeat_task: Optional[asyncio.Task] = None
 
         # Preserve configured max queue size so queues can be (re)created in the
@@ -383,7 +387,8 @@ class AsyncEventBus:
         )
 
         # Rate limiting
-        self._rate_limits: Dict[str, Dict[str, Any]] = {}  # source -> rate limit info
+        # source -> rate limit info
+        self._rate_limits: Dict[str, Dict[str, Any]] = {}
 
         # Metrics
         self.total_events_published = 0
@@ -405,7 +410,9 @@ class AsyncEventBus:
                 logger.warning("Event bus already running")
                 return
             else:
-                logger.warning("Event bus marked running but dispatcher not active — restarting")
+                logger.warning(
+                    "Event bus marked running but dispatcher not active — restarting"
+                )
                 # reset running state and continue to start
                 self._running = False
 
@@ -473,7 +480,7 @@ class AsyncEventBus:
         ipc_metadata: Optional[Dict[str, Any]] = None,
     ) -> str:
         """
-        Publish an event
+        Publish an event (Thread-Safe)
 
         Returns:
             Event ID
@@ -493,7 +500,37 @@ class AsyncEventBus:
         return self.publish_event(event)
 
     def publish_event(self, event: Event) -> str:
-        """Publish a pre-constructed event"""
+        """Publish a pre-constructed event (Thread-Safe)"""
+        # Se estivermos em uma thread diferente da thread do loop principal,
+        # precisamos agendar a publicação de forma thread-safe.
+        try:
+            current_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            current_loop = None
+
+        # Se não houver loop rodando aqui, ou se o loop rodando não for o loop onde
+        # as filas foram criadas (assumindo que self._event_dispatcher_task captura o loop principal)
+        # Precisamos de uma referência ao loop principal.
+        
+        # Simples detecção: se temos um dispatcher rodando, temos um loop alvo.
+        target_loop = None
+        if self._event_dispatcher_task:
+            target_loop = self._event_dispatcher_task.get_loop()
+
+        if target_loop and target_loop != current_loop:
+            # Estamos em outra thread -> usar call_soon_threadsafe
+            if target_loop.is_running():
+                target_loop.call_soon_threadsafe(self._unsafe_publish_event, event)
+                return event.id
+            else:
+                logger.warning("EventBus loop is closed, cannot publish thread-safe")
+                return event.id
+        
+        # Estamos no loop correto ou sem loop definido -> publicar direto
+        return self._unsafe_publish_event(event)
+
+    def _unsafe_publish_event(self, event: Event) -> str:
+        """Internal unsafe publish (must run on event loop thread)"""
         try:
             # Check rate limiting
             if not self._check_rate_limit(event.source):
@@ -502,24 +539,27 @@ class AsyncEventBus:
 
             # Add to appropriate priority queue
             if not self._event_queues:
-                logger.warning("EventBus not fully started yet - persisting/dropping event")
-                # Persist the event if persistence is enabled so it is not lost.
+                logger.warning(
+                    "EventBus not fully started yet - persisting/dropping event"
+                )
                 if self._persistence:
                     try:
                         self._persistence.store_event(event)
                     except Exception:
-                        logger.debug("Failed to persist event while bus not started")
+                        pass
                 return event.id
 
             try:
                 queue = self._event_queues[event.priority]
             except KeyError:
-                logger.warning("EventBus queue for priority not available - persisting/dropping event")
+                logger.warning(
+                    "EventBus queue for priority not available - persisting/dropping event"
+                )
                 if self._persistence:
                     try:
                         self._persistence.store_event(event)
                     except Exception:
-                        logger.debug("Failed to persist event")
+                        pass
                 return event.id
 
             # Non-blocking put (drop if queue is full)
@@ -679,7 +719,8 @@ class AsyncEventBus:
                     queue = self._event_queues[priority]
 
                     try:
-                        # Get event with short timeout to check other priorities
+                        # Get event with short timeout to check other
+                        # priorities
                         event = await asyncio.wait_for(queue.get(), timeout=0.1)
                         await self._dispatch_event(event)
                         event_processed = True
@@ -715,6 +756,7 @@ class AsyncEventBus:
                         watchdog_system as _ws,
                         ComponentStatus as _cs,
                     )
+
                     watchdog_system = _ws
                     ComponentStatus = _cs
                     logger.debug("EventBus: connected to Watchdog for heartbeats")
@@ -833,13 +875,15 @@ class AsyncEventBus:
                         # Sync callback - run in thread pool to avoid blocking
                         loop = asyncio.get_running_loop()
                         if callback and asyncio.iscoroutinefunction(callback):
-                            # Double check if it gained async properties (unlikely but safe)
+                            # Double check if it gained async properties
+                            # (unlikely but safe)
                             await callback(event)
                         elif callback:
                             # It's a sync callable
                             # Special-case: if the callable is a bound method of a Qt QObject,
                             # run it in the current event loop thread (Qt objects must be
-                            # touched from the main thread). Otherwise run in executor.
+                            # touched from the main thread). Otherwise run in
+                            # executor.
                             run_in_executor = True
                             try:
                                 from PyQt6.QtCore import QObject as _QtQObject
@@ -849,20 +893,23 @@ class AsyncEventBus:
                                 ):
                                     run_in_executor = False
                             except Exception:
-                                # PyQt not available in this environment — keep default
+                                # PyQt not available in this environment — keep
+                                # default
                                 run_in_executor = True
 
                             if run_in_executor:
                                 await loop.run_in_executor(None, callback, event)
                             else:
-                                # Call directly on the loop thread (must be quick)
+                                # Call directly on the loop thread (must be
+                                # quick)
                                 callback(event)
 
                     subscription.total_events_processed += 1
                     self.total_events_delivered += 1
 
                 except TypeError as e:
-                    # SPECIFIC TRAP FOR THE "object str can't be used in 'await' expression"
+                    # SPECIFIC TRAP FOR THE "object str can't be used in
+                    # 'await' expression"
                     if "object str can't be used in 'await' expression" in str(e):
                         logger.critical(
                             f"🚨 CRITICAL TYPE ERROR in Subscription {subscription.id[:8]}!\n"
@@ -871,7 +918,7 @@ class AsyncEventBus:
                         )
                     else:
                         logger.error(
-                             f"Callback TypeError for subscription {subscription.id[:8]}: {e}\n{traceback.format_exc()}"
+                            f"Callback TypeError for subscription {subscription.id[:8]}: {e}\n{traceback.format_exc()}"
                         )
                     subscription.error_count += 1
                     subscription.last_error = str(e)

@@ -105,10 +105,11 @@ class DecisionEngine:
         self.local_brain = local_brain if LOCAL_BRAIN_AVAILABLE else None
 
         # Configurações
-        if CONFIG_AVAILABLE and config is not None and hasattr(config, "get_ai_config"):
+        if CONFIG_AVAILABLE and config is not None and hasattr(
+                config, "get_ai_config"):
             self.ollama_url = config.get_ai_config(
-                "brain_router.ollama_url", "http://localhost:11434/api/generate"
-            )
+                "brain_router.ollama_url",
+                "http://localhost:11434/api/generate")
         else:
             self.ollama_url = "http://localhost:11434/api/generate"
 
@@ -162,8 +163,7 @@ class DecisionEngine:
             "VocÃª Ã© o Jarvis, o assistente virtual de elite do William. "
             "Para executar aÃ§Ãµes fÃ­sicas, VOCÃŠ DEVE usar o formato: [ACTION: nome_funcao(argumentos)]. "
             "AÃ§Ãµes: click_at(x, y), type_text('texto'), press_key('tecla'), hotkey('ctrl', 'c'), "
-            "open_program('nome'), read_file('path'), write_file('path', 'content'), list_dir('path')."
-        )
+            "open_program('nome'), read_file('path'), write_file('path', 'content'), list_dir('path').")
 
         # Use JSON se disponÃ­vel
         self.use_structured_output = STRUCTURED_OUTPUT_AVAILABLE
@@ -201,7 +201,8 @@ class DecisionEngine:
         logger.info(f"ðŸ¤” DecisionEngine processing: {user_command[:50]}...")
 
         # FASE 1: Brain routing (escolher modelo)
-        primary_provider = self._route_task(user_command, privacy_level, latency_req)
+        primary_provider = self._route_task(
+            user_command, privacy_level, latency_req)
 
         # FASE 2: Construir prompt enriquecido
         enriched_prompt = self._build_prompt(user_command, context)
@@ -227,7 +228,8 @@ class DecisionEngine:
             }
         else:
             # Fallback legado: Retorna resposta crua
-            logger.warning("âš ï¸ Usando fallback legado (sem parser estruturado)")
+            logger.warning(
+                "âš ï¸ Usando fallback legado (sem parser estruturado)")
             final_answer = raw_response
             result = {
                 "thought": "",
@@ -237,9 +239,14 @@ class DecisionEngine:
                 "raw_response": raw_response,
             }
 
-        # Publish AUDIO_SPEAK event so the audio subsystem (TTS) can speak the reply
+        # Publish AUDIO_SPEAK event so the audio subsystem (TTS) can speak the
+        # reply
         try:
-            from src.core.infrastructure.async_event_bus import get_event_bus, EventType, EventPriority
+            from src.core.infrastructure.async_event_bus import (
+                get_event_bus,
+                EventType,
+                EventPriority,
+            )
 
             bus = get_event_bus()
             if bus and final_answer:
@@ -265,8 +272,7 @@ class DecisionEngine:
             # Convert strings to enums
             privacy_enum = PrivacyLevel[privacy] if privacy else PrivacyLevel.LOW
             latency_enum = (
-                LatencyRequirement[latency] if latency else LatencyRequirement.FLEXIBLE
-            )
+                LatencyRequirement[latency] if latency else LatencyRequirement.FLEXIBLE)
 
             brain_info = self.brain_router.choose_brain(
                 task_complexity=0.7,
@@ -303,8 +309,10 @@ class DecisionEngine:
             )
 
         # Adicionar contexto emocional
-        if context.get("user_emotion") and context["user_emotion"] != "neutral":
-            prompt_parts.append(f"[EMOÃ‡ÃƒO] UsuÃ¡rio estÃ¡: {context['user_emotion']}")
+        if context.get(
+                "user_emotion") and context["user_emotion"] != "neutral":
+            prompt_parts.append(
+                f"[EMOÃ‡ÃƒO] UsuÃ¡rio estÃ¡: {context['user_emotion']}")
 
         # Adicionar contexto de memÃ³ria (RAG)
         if context.get("memory_context"):
@@ -328,7 +336,8 @@ class DecisionEngine:
             # Usa o modelo selecionado pelo roteador ou o padrão
             model = getattr(self, "current_model", "gemma3:4b")
 
-            # Garantir servidor/modelo/keep-alive via OllamaManager (se disponível)
+            # Garantir servidor/modelo/keep-alive via OllamaManager (se
+            # disponível)
             try:
                 from src.core.intelligence.ollama_manager import ollama_manager
 
@@ -348,7 +357,8 @@ class DecisionEngine:
                 except Exception:
                     pass
             except Exception:
-                # Silencioso: continuar mesmo que o manager não esteja disponível
+                # Silencioso: continuar mesmo que o manager não esteja
+                # disponível
                 pass
 
             return await self._call_ollama_async(prompt, image_path, model=model)
@@ -407,7 +417,8 @@ class DecisionEngine:
                     if response.status == 200:
                         data = await response.json()
                         response_text = data.get("response", "")
-                        logger.info(f"âœ… Ollama response: {len(response_text)} chars")
+                        logger.info(
+                            f"âœ… Ollama response: {len(response_text)} chars")
                         return response_text
                     else:
                         logger.error(f"âŒ Ollama error: {response.status}")

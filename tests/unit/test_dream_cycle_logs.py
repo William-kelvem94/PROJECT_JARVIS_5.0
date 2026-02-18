@@ -48,8 +48,12 @@ def test_generate_synthetic_data_queues_task(tmp_path):
     async def fake_ollama(*args, **kwargs):
         return '{"chosen": "Good answer", "rejected": "Bad answer"}'
 
-    with patch("src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_ollama):
-        dc._generate_synthetic_data("unit_topic", context="docs", teacher_model="gemma2:2b")
+    with patch(
+        "src.core.intelligence.ai_agent.ai_agent._call_ollama_async", new=fake_ollama
+    ):
+        dc._generate_synthetic_data(
+            "unit_topic", context="docs", teacher_model="gemma2:2b"
+        )
 
     # After generation, a dataset file should exist and a training task queued
     ds_dir = data_dir / "training_datasets" / "autonomous"

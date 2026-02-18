@@ -3,6 +3,7 @@ Gerenciador de Hardware do Jarvis 5.0
 Detecta e otimiza o uso de CPU/GPU para todos os módulos de IA.
 """
 
+import threading
 import logging
 import platform
 import os
@@ -61,8 +62,6 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-import threading
-
 
 class HardwareManager:
     """Singleton para gerenciar recursos de hardware"""
@@ -116,19 +115,22 @@ class HardwareManager:
                 self.accelerator = "cuda"
                 self.gpu_name = torch.cuda.get_device_name(0)
             elif OPENVINO_AVAILABLE:
-                # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com OpenVINO
+                # Detectar se há uma GPU Intel (Iris Xe / Arc) compatível com
+                # OpenVINO
                 try:
                     core = ov.Core()
                     devices = core.available_devices
                     if "GPU" in devices:
-                        self.device = "cpu"  # Torch device string (cpu/cuda). OpenVINO acts as a compiler/accelerator on top of CPU.
+                        # Torch device string (cpu/cuda). OpenVINO acts as a
+                        # compiler/accelerator on top of CPU.
+                        self.device = "cpu"
                         self.accelerator = "openvino"
                         self.gpu_name = "Intel Iris Xe / Arc (OpenVINO Accelerator)"
                     else:
                         self.device = "cpu"
                         self.accelerator = None
                         self.gpu_name = "None"
-                except:
+                except BaseException:
                     self.device = "cpu"
                     self.accelerator = None
                     self.gpu_name = "None"
@@ -149,7 +151,7 @@ class HardwareManager:
                     logical_cores = psutil.cpu_count(logical=True)
                     if not isinstance(logical_cores, int):
                         logical_cores = 4
-                except:
+                except BaseException:
                     logical_cores = 4
 
                 if logical_cores >= 12:
@@ -165,7 +167,8 @@ class HardwareManager:
                     f"👑 JARVIS [ULTRA]: Rodando em GPU NVIDIA (CUDA): {self.gpu_name}"
                 )
             elif hasattr(self, "accelerator") and self.accelerator == "openvino":
-                # For OpenVINO, we might be using the GPU even if torch device is 'cpu'
+                # For OpenVINO, we might be using the GPU even if torch device
+                # is 'cpu'
                 logger.info(
                     f"👑 JARVIS [{self.tier}]: Rodando em GPU Intel ({self.gpu_name} via OpenVINO)."
                 )
@@ -174,7 +177,7 @@ class HardwareManager:
 
                 try:
                     logical_cores = psutil.cpu_count(logical=True) or 4
-                except:
+                except BaseException:
                     logical_cores = 4
 
                 # ADAPTIVE THREADING: Unlock full potential while preserving GUI responsiveness
@@ -184,14 +187,19 @@ class HardwareManager:
                 if self.tier == "FAST":
                     threads = logical_cores
                 elif self.tier == "BALANCED":
-                    threads = max(1, logical_cores - 2)  # Leave 2 threads for GUI/OS
+                    # Leave 2 threads for GUI/OS
+                    threads = max(1, logical_cores - 2)
                 else:
-                    threads = max(1, logical_cores // 2)  # LITE mode still conservative
+                    # LITE mode still conservative
+                    threads = max(1, logical_cores // 2)
 
                 # Apply ai_config.yaml override if present
                 try:
                     from src.utils.config import config as global_config
-                    cfg_threads = global_config.get_ai_config("resources.torch_threads", None)
+
+                    cfg_threads = global_config.get_ai_config(
+                        "resources.torch_threads", None
+                    )
                     if cfg_threads:
                         cfg_val = int(cfg_threads)
                         if cfg_val > 0:
@@ -217,11 +225,15 @@ class HardwareManager:
                 )
 
             # During test runs we avoid starting background threads that use native
-            # extensions (psutil, tqdm monitors, etc.) to reduce flakiness and crashes.
+            # extensions (psutil, tqdm monitors, etc.) to reduce flakiness and
+            # crashes.
             is_pytest = ("PYTEST_CURRENT_TEST" in os.environ) or (
                 os.environ.get("PYTEST_ADDOPTS") is not None
             )
-            if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on") or is_pytest:
+            if (
+                os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on")
+                or is_pytest
+            ):
                 logger.info(
                     "Test mode detected: skipping hardware monitoring thread startup"
                 )
@@ -235,7 +247,10 @@ class HardwareManager:
         is_pytest = ("PYTEST_CURRENT_TEST" in os.environ) or (
             os.environ.get("PYTEST_ADDOPTS") is not None
         )
-        if os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on") or is_pytest:
+        if (
+            os.environ.get("JARVIS_TEST_MODE") in ("1", "true", "True", "yes", "on")
+            or is_pytest
+        ):
             logger.debug(
                 "Test mode active: not starting HardwareProactiveMonitor thread"
             )
@@ -261,13 +276,13 @@ class HardwareManager:
             try:
                 cpu = psutil.cpu_percent(interval=10)  # Verifica a cada 10s
 
-                if cpu > 95:
+                if cpu > 99:
                     now = time.time()
-                    if now - last_alert > 60:  # Evitar spam (1 alerta por minuto max)
+                    if now - last_alert > 120:  # Evitar spam (1 alerta por 2 min)
                         msg = (
-                            f"ALERTA DE SISTEMA: Sobrecarga Crítica detectada ({cpu}%)"
+                            f"ALERTA DE SISTEMA: Alta carga de CPU detectada ({cpu}%)"
                         )
-                        logger.warning(msg)
+                        logger.info(msg)
 
                         # 1. Dashboard Web
                         emit_log_sync(msg, level="WARNING")
@@ -283,7 +298,7 @@ class HardwareManager:
                                 wm = get_window_manager()
                                 if wm and wm.get_hud():
                                     wm.get_hud().log_event(msg)
-                        except:
+                        except BaseException:
                             pass
 
                         last_alert = now
@@ -302,7 +317,7 @@ class HardwareManager:
             try:
                 if getattr(auto_recovery_system, "is_emergency_mode", False):
                     return True
-            except:
+            except BaseException:
                 pass
 
             import psutil
@@ -314,7 +329,7 @@ class HardwareManager:
             if throttled:
                 logger.warning(f"⚠️ THROTTLING ACTIVE: CPU={cpu}%, RAM={ram:.1f}GB")
             return throttled
-        except:
+        except BaseException:
             return False
 
     def get_tier(self) -> str:
@@ -353,7 +368,8 @@ class HardwareManager:
         # mas bfloat16 pode ser usado se disponÃ­vel no torch.
         if TORCH_AVAILABLE and torch:
             # HeurÃ­stica: se for CPU mas tier for FAST, talvez valha bfloat16
-            # mas por seguranÃ§a contra 0xC0000005, mantemos float32 como fallback
+            # mas por seguranÃ§a contra 0xC0000005, mantemos float32 como
+            # fallback
             pass
 
         return "float32"
@@ -384,7 +400,7 @@ class HardwareManager:
         try:
             ram = psutil.virtual_memory()
             free_ram_gb = ram.available / (1024**3)
-        except:
+        except BaseException:
             free_ram_gb = 0.0
 
         free_vram_gb = 0.0
@@ -394,7 +410,7 @@ class HardwareManager:
                 # torch.cuda.mem_get_info() retorna (free, total) em bytes
                 free, total = torch.cuda.mem_get_info()
                 free_vram_gb = free / (1024**3)
-            except:
+            except BaseException:
                 pass
 
         return {
@@ -493,7 +509,7 @@ class HardwareManager:
 
         try:
             cpu_usage = psutil.cpu_percent()
-        except:
+        except BaseException:
             cpu_usage = 0
 
         if cpu_usage > 85:
@@ -512,7 +528,7 @@ class HardwareManager:
             cpu = psutil.cpu_percent()
             ram = psutil.virtual_memory()
             ram_percent = ram.percent
-        except:
+        except BaseException:
             cpu = 0
             ram_percent = 0
 

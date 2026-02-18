@@ -174,7 +174,8 @@ class EnvironmentManager:
         for env_var, config_key in self.ENV_MAPPING.items():
             env_value = os.getenv(env_var)
             if env_value is not None:
-                config_dict[config_key] = self._parse_env_value(env_value, config_key)
+                config_dict[config_key] = self._parse_env_value(
+                    env_value, config_key)
                 logger.debug(
                     f"Configurado {config_key} = {config_dict[config_key]} (via {env_var})"
                 )
@@ -194,7 +195,11 @@ class EnvironmentManager:
     def _parse_env_value(self, value: str, key: str) -> Any:
         """Parse valor de string da environment para tipo correto."""
         # Booleans
-        if key in ["enable_security", "enable_cache", "debug_mode", "enable_metrics"]:
+        if key in [
+            "enable_security",
+            "enable_cache",
+            "debug_mode",
+                "enable_metrics"]:
             return value.lower() in ("true", "1", "yes", "on")
 
         # Integers
@@ -202,7 +207,8 @@ class EnvironmentManager:
             try:
                 return int(value)
             except ValueError:
-                logger.warning(f"Valor inválido para {key}: {value}, usando padrão")
+                logger.warning(
+                    f"Valor inválido para {key}: {value}, usando padrão")
                 return self.DEFAULTS.get(key, 0)
 
         # Floats
@@ -210,7 +216,8 @@ class EnvironmentManager:
             try:
                 return float(value)
             except ValueError:
-                logger.warning(f"Valor inválido para {key}: {value}, usando padrão")
+                logger.warning(
+                    f"Valor inválido para {key}: {value}, usando padrão")
                 return self.DEFAULTS.get(key, 0.0)
 
         # Lists (JSON)
@@ -219,7 +226,8 @@ class EnvironmentManager:
                 return json.loads(value)
             except (json.JSONDecodeError, TypeError):
                 # Se não for JSON, tratar como lista separada por vírgula
-                return [item.strip() for item in value.split(",") if item.strip()]
+                return [item.strip()
+                        for item in value.split(",") if item.strip()]
 
         # Strings (default)
         return value
@@ -255,7 +263,8 @@ class EnvironmentManager:
         for url_key in ["ollama_url", "ha_url"]:
             url = getattr(self.config, url_key, "")
             if url and not url_pattern.match(url):
-                logger.warning(f"URL potencialmente inválida para {url_key}: {url}")
+                logger.warning(
+                    f"URL potencialmente inválida para {url_key}: {url}")
 
         # Validar portas
         if (
@@ -263,7 +272,8 @@ class EnvironmentManager:
             and hasattr(self.config, "web_port")
             and not (1 <= self.config.web_port <= 65535)
         ):
-            logger.warning(f"Porta inválida: {self.config.web_port}, usando 5000")
+            logger.warning(
+                f"Porta inválida: {self.config.web_port}, usando 5000")
             self.config.web_port = 5000
 
         # Validar tiers de modelo
@@ -282,7 +292,8 @@ class EnvironmentManager:
         """Retorna modelo apropriado para o tier."""
         # Carregar do ai_config.yaml se disponível
         try:
-            if self.config and hasattr(self.config, "config_dir") and YAML_AVAILABLE:
+            if self.config and hasattr(
+                    self.config, "config_dir") and YAML_AVAILABLE:
                 config_file = self.config.config_dir / "ai_config.yaml"
                 if config_file.exists():
                     with open(config_file, "r", encoding="utf-8") as f:
@@ -294,7 +305,8 @@ class EnvironmentManager:
                         .get(f"tier_{tier}", [])
                     )
                     if tier_models:
-                        return tier_models[0]  # Retorna o primeiro modelo do tier
+                        # Retorna o primeiro modelo do tier
+                        return tier_models[0]
         except Exception as e:
             logger.debug(f"Erro ao carregar modelos do tier: {e}")
 

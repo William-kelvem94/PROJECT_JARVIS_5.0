@@ -31,11 +31,14 @@ def test_process_command_skips_screenshot_until_vision_ready():
             _ = (_args, _kwargs)
             return "OK"
 
-        # Dummy screen capture que falha se chamada (não deve ser chamada enquanto agent.vision_ready == False)
+        # Dummy screen capture que falha se chamada (não deve ser chamada
+        # enquanto agent.vision_ready == False)
         class DummyCaptureShouldNotCall:
             def capture_fullscreen(self, *args, **kwargs):
                 _ = (args, kwargs)
-                raise AssertionError("capture_fullscreen must NOT be called when vision is not ready")
+                raise AssertionError(
+                    "capture_fullscreen must NOT be called when vision is not ready"
+                )
 
         with patch.object(agent, "_call_ollama_async", fake_ollama):
             with patch.object(agent, "screen_capture", DummyCaptureShouldNotCall()):

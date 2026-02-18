@@ -1,3 +1,9 @@
+from src.core.infrastructure.watchdog import watchdog_system
+from src.core.infrastructure.priority_scheduler import (
+    priority_scheduler,
+    TaskPriority,
+    TaskType,
+)
 import asyncio
 import sys
 import os
@@ -6,10 +12,13 @@ from pathlib import Path
 from datetime import datetime
 
 # Garantir output UTF-8 para emojis no Windows
-if sys.stdout.encoding.lower() != 'utf-8':
+if sys.stdout.encoding.lower() != "utf-8":
     try:
         import io
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
     except Exception:
         pass
 
@@ -17,8 +26,6 @@ if sys.stdout.encoding.lower() != 'utf-8':
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.core.infrastructure.priority_scheduler import priority_scheduler, TaskPriority, TaskType
-from src.core.infrastructure.watchdog import watchdog_system
 
 async def test_priority_scheduler():
     print("\n\U0001f3bc JARVIS 5.0 - PHASE 1: SCHEDULER DIAGNOSTIC")
@@ -27,7 +34,7 @@ async def test_priority_scheduler():
     # 1. Start Scheduler
     print("\u25b6\ufe0f Starting Priority Scheduler...")
     await priority_scheduler.start()
-    
+
     # 2. Register with Watchdog (Simulate boot manager)
     print("\ud83d\udc36 Registering with Watchdog...")
     watchdog_system.register_component("priority_scheduler", heartbeat_interval=2.0)
@@ -41,9 +48,7 @@ async def test_priority_scheduler():
 
     print("\u23f3 Scheduling BACKGROUND task...")
     priority_scheduler.schedule_task(
-        "file_indexing", 
-        index_files, 
-        priority=TaskPriority.LOW
+        "file_indexing", index_files, priority=TaskPriority.LOW
     )
 
     # 4. Wait for background task to start
@@ -51,8 +56,8 @@ async def test_priority_scheduler():
 
     # 5. Schedule CRITICAL Task (Voice processing) to trigger PREEMPTION
     # We will temporarily lower max_concurrent_tasks to force preemption
-    priority_scheduler.max_concurrent_tasks = 1 
-    
+    priority_scheduler.max_concurrent_tasks = 1
+
     async def process_voice():
         print("[\ud83d\udd25] CRITICAL: Processing user voice (URGENT!)")
         await asyncio.sleep(2)
@@ -60,9 +65,7 @@ async def test_priority_scheduler():
 
     print("\ud83d\udea8 Scheduling CRITICAL task (should trigger preemption)...")
     priority_scheduler.schedule_task(
-        "voice_processing",
-        process_voice,
-        priority=TaskPriority.CRITICAL
+        "voice_processing", process_voice, priority=TaskPriority.CRITICAL
     )
 
     # 6. Monitor
@@ -72,12 +75,12 @@ async def test_priority_scheduler():
         running = metrics["scheduler"]["running_tasks"]
         load = metrics["system_load"]["overall_load"]
         print(f"   Scheduler Status: Running={running} | Load={load:.2f}")
-        
+
         # Check if watchdog is seeing heartbeats
         with watchdog_system._lock:
             status = watchdog_system._components.get("priority_scheduler").status.value
             print(f"   Watchdog Status: {status}")
-            
+
         await asyncio.sleep(2)
 
     # 7. Stop everything
@@ -85,6 +88,7 @@ async def test_priority_scheduler():
     await priority_scheduler.stop()
     watchdog_system.stop()
     print("\u2705 Diagnostic completed")
+
 
 if __name__ == "__main__":
     asyncio.run(test_priority_scheduler())

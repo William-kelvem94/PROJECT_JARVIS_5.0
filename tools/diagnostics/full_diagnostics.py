@@ -12,6 +12,10 @@ Script completo de diagnóstico que verifica:
 - Gera relatório HTML detalhado
 """
 
+import logging
+from datetime import datetime
+import json
+import platform
 import sys
 from pathlib import Path
 
@@ -19,10 +23,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import platform
-import json
-from datetime import datetime
-import logging
 
 # Configurar logging mínimo
 logging.basicConfig(level=logging.WARNING)
@@ -464,7 +464,7 @@ class DiagnosticRunner:
 <body>
     <h1>🔬 JARVIS 5.0 - Relatório de Diagnóstico Completo</h1>
     <p><strong>Gerado em:</strong> {self.results['timestamp']}</p>
-    
+
     <div class="section">
         <h2>📊 Resumo</h2>
         <ul>
@@ -473,7 +473,7 @@ class DiagnosticRunner:
             <li><span class="status-error">❌ Erros: {len(self.errors)}</span></li>
         </ul>
     </div>
-    
+
     <div class="section">
         <h2>🖥️ Informações do Sistema</h2>
         <table>
@@ -481,16 +481,16 @@ class DiagnosticRunner:
             {''.join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in self.results['system_info'].items())}
         </table>
     </div>
-    
+
     <div class="section">
         <h2>📦 Dependências Críticas</h2>
         <table>
             <tr><th>Pacote</th><th>Status</th><th>Versão</th></tr>
-            {''.join(f"<tr><td>{k}</td><td class='status-{v['status']}'>{v['status']}</td><td>{v.get('version', v.get('error', 'N/A'))}</td></tr>" 
+            {''.join(f"<tr><td>{k}</td><td class='status-{v['status']}'>{v['status']}</td><td>{v.get('version', v.get('error', 'N/A'))}</td></tr>"
                      for k, v in self.results['dependencies'].items())}
         </table>
     </div>
-    
+
     <div class="section">
         <h2>🧠 Stack de Machine Learning</h2>
         <pre>{json.dumps(self.results['ml_stack'], indent=2)}</pre>

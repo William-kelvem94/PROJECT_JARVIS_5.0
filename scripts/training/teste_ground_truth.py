@@ -4,6 +4,10 @@ TESTE DE VALIDAÇÃO COM GROUND TRUTH
 JARVIS 5.0 - Teste da Integração Truth Validator + Auto-Correção
 """
 
+from datetime import datetime
+from pathlib import Path
+import logging
+import json
 import sys
 import io
 
@@ -11,15 +15,11 @@ import io
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-import json
-import logging
-from pathlib import Path
-from datetime import datetime
 
 # Configurar logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("TESTE-GROUND-TRUTH")
 
 # Adicionar diretório raiz
@@ -42,7 +42,8 @@ def test_truth_validator_standalone():
 
         print(f"\n✅ Resultado da validação para '{query1}':")
         print(f"   Confiança: {result1.get('confidence_score', 0):.2f}")
-        print(f"   Resultados encontrados: {len(result1.get('search_results', []))}")
+        print(
+            f"   Resultados encontrados: {len(result1.get('search_results', []))}")
         print(
             f"   Verdade consolidada: {result1.get('consolidated_truth', '')[:200]}..."
         )
@@ -171,9 +172,11 @@ def test_full_auto_correction_cycle():
         critique = analyzer.perform_ultra_auto_critique(dissonant_sequence)
         print(f"\n📝 Auto-crítica gerada:\n{critique[:300]}...")
 
-        # Executar síntese neural com validação (simulado - sem realmente treinar)
+        # Executar síntese neural com validação (simulado - sem realmente
+        # treinar)
         logger.info("🔍 Executando validação externa e síntese neural...")
-        # Nota: Em produção isso faria fine-tuning real, aqui apenas testamos a integração
+        # Nota: Em produção isso faria fine-tuning real, aqui apenas testamos a
+        # integração
 
         print("\n✅ Ciclo de auto-correção testado com sucesso")
         print(f"   Auto-crítica: {len(critique)} caracteres")

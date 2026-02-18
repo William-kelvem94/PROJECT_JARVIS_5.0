@@ -128,7 +128,7 @@ def install_dependencies():
                 stderr=subprocess.DEVNULL,
             )
             return True
-        except:
+        except BaseException:
             return False
 
     def install_requirements_file(filename):
@@ -143,7 +143,7 @@ def install_dependencies():
                 )
                 print_success(f"Installed packages from {filename}")
                 return True
-            except:
+            except BaseException:
                 print_warning(f"Failed to install some packages from {filename}")
                 return False
         else:

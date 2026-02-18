@@ -67,6 +67,7 @@ class UnifiedVectorStore:
         # Unified vector store path
         try:
             from src.core.config.system_manifest import system_manifest
+
             self.db_path = Path(system_manifest.paths["vector_store"])
         except (ImportError, KeyError, AttributeError):
             # Fallback path discover
@@ -119,9 +120,7 @@ class UnifiedVectorStore:
                     self._create_standard_collections()
                     return
                 except Exception as e2:
-                    logger.error(
-                        "Fallback to in-memory Chroma client failed: %s", e2
-                    )
+                    logger.error("Fallback to in-memory Chroma client failed: %s", e2)
 
             logger.error(f"❌ Vector Store initialization failed: {e}")
             self._available = False

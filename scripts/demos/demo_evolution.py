@@ -12,6 +12,7 @@ This script shows how to:
 4. Stop the system gracefully
 """
 
+from src.evolution import evolution_manager
 import asyncio
 import sys
 import logging
@@ -20,7 +21,6 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.evolution import evolution_manager
 
 # Setup logging
 logging.basicConfig(
@@ -42,7 +42,8 @@ async def demo_evolution_layer():
         # 1. Initialize and start the evolution layer
         print("📋 Step 1: Initializing Evolution Layer...")
         print("-" * 70)
-        # Note: Using 60 seconds for demo (faster than production default of 300s)
+        # Note: Using 60 seconds for demo (faster than production default of
+        # 300s)
         await evolution_manager.start(
             observer_interval=60,  # Check every 60 seconds (demo mode)
             auto_heal=True,  # Enable auto-healing
@@ -140,16 +141,16 @@ from src.evolution import evolution_manager
 
 async def main():
     # ... your existing initialization code ...
-    
+
     # Start the evolution layer
     await evolution_manager.start(
         observer_interval=300,  # 5 minutes
         auto_heal=True,
         initial_scan=True
     )
-    
+
     # ... rest of your main loop ...
-    
+
     try:
         # Your main application loop
         while True:

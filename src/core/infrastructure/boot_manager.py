@@ -123,6 +123,7 @@ class BootManager:
 
         # Internal state
         self._boot_thread = None
+        self._boot_complete = False
         self._shutdown_event = threading.Event()
 
         self._setup_core_modules()
@@ -205,7 +206,7 @@ class BootManager:
             self._init_window_manager,
             BootPriority.HIGH,
             dependencies=["qt_application", "ui_signals"],
-            required=True,
+            required=False,  # Nao bloqueia boot em modo headless
             timeout_seconds=15,
         )
 
@@ -215,7 +216,7 @@ class BootManager:
             self._init_system_integrator,
             BootPriority.MEDIUM,
             dependencies=["ui_signals"],
-            required=True,
+            required=False,  # Nao bloqueia boot se falhar
             timeout_seconds=20,
         )
 
@@ -225,7 +226,7 @@ class BootManager:
             BootPriority.MEDIUM,
             dependencies=["system_integrator"],
             required=True,
-            timeout_seconds=30,
+            timeout_seconds=90,  # ai_agent demora ~25s para carregar todos os modulos
         )
 
         # Heavy systems (can be initialized in background)
@@ -257,14 +258,14 @@ class BootManager:
             timeout_seconds=30,
         )
 
-        self.register_module(
-            "watchdog_supervisor",
-            self._init_watchdog_supervisor,
-            BootPriority.BACKGROUND,
-            dependencies=["system_manifest", "priority_scheduler"],
-            required=False,
-            timeout_seconds=10,
-        )
+        # self.register_module(
+        #     "watchdog_supervisor",
+        #     self._init_watchdog_supervisor,
+        #     BootPriority.BACKGROUND,
+        #     dependencies=["system_manifest", "priority_scheduler"],
+        #     required=False,
+        #     timeout_seconds=10,
+        # )
 
     def register_module(
         self,
@@ -299,6 +300,10 @@ class BootManager:
 
     def start_boot(self, blocking: bool = True) -> bool:
         """Start the boot process"""
+        if self._boot_complete:
+            logger.warning("Boot sequence already completed - skipping redundant start")
+            return True
+
         if self._boot_thread and self._boot_thread.is_alive():
             logger.warning("Boot process already running")
             return False
@@ -348,7 +353,8 @@ class BootManager:
                     # Store instance
                     self.instances[module.name] = module.instance
 
-                    # Auto-connect EventBus to modules that implement connect_event_bus
+                    # Auto-connect EventBus to modules that implement
+                    # connect_event_bus
                     try:
                         event_bus = self.instances.get("async_event_bus")
                         if event_bus and hasattr(module.instance, "connect_event_bus"):
@@ -356,7 +362,9 @@ class BootManager:
                                 module.instance.connect_event_bus(event_bus)
                                 logger.debug(f"🔌 Connected event bus to {module.name}")
                             except Exception as e:
-                                logger.warning(f"Failed to connect event bus to {module.name}: {e}")
+                                logger.warning(
+                                    f"Failed to connect event bus to {module.name}: {e}"
+                                )
                     except Exception:
                         pass
 
@@ -386,6 +394,7 @@ class BootManager:
             logger.info(
                 f"🎉 JARVIS 5.0 boot completed successfully in {boot_time:.2f}s"
             )
+            self._boot_complete = True
 
             # Notify callbacks
             self._notify_progress()
@@ -675,6 +684,7 @@ class BootManager:
                 if loop.is_running():
                     asyncio.create_task(bus.start())
                 else:
+
                     def _bg_start():
                         try:
                             import asyncio as _asyncio
@@ -695,15 +705,18 @@ class BootManager:
     def _init_priority_scheduler(self) -> Any:
         """Initialize priority scheduler (The Maestro)"""
         try:
-            from src.core.infrastructure.priority_scheduler import get_priority_scheduler
+            from src.core.infrastructure.priority_scheduler import (
+                get_priority_scheduler,
+            )
 
             scheduler = get_priority_scheduler()
             # Start scheduler immediately
             import asyncio
+
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 asyncio.create_task(scheduler.start())
-            
+
             return scheduler
         except ImportError as e:
             logger.error(f"Failed to import priority scheduler: {e}")
@@ -715,14 +728,16 @@ class BootManager:
             from src.core.infrastructure.watchdog import watchdog_system
 
             # Register core components
-            watchdog_system.register_component("priority_scheduler", heartbeat_interval=2.0)
+            watchdog_system.register_component(
+                "priority_scheduler", heartbeat_interval=2.0
+            )
             # Give the EventBus a larger heartbeat window to tolerate heavy-load
             # spikes during startup and long-running DreamCycle activity.
             watchdog_system.register_component("event_bus", heartbeat_interval=10.0)
-            
+
             # Start monitoring thread
             watchdog_system.start()
-            
+
             return watchdog_system
         except ImportError as e:
             logger.error(f"Failed to import watchdog system: {e}")

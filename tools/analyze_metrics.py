@@ -29,7 +29,7 @@ def analyze_complexity(root_dir):
                                     results.append(
                                         f"CLASS|{path}|{node.name}|{line_count}"
                                     )
-                except:
+                except BaseException:
                     pass
     return results
 

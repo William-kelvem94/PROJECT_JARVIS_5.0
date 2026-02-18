@@ -49,7 +49,8 @@ def get_active_window_context() -> dict:
             try:
                 process = psutil.Process(pid)
                 context["executable"] = process.name()
-                context["process_name"] = process.name()  # Alias para compatibilidade
+                # Alias para compatibilidade
+                context["process_name"] = process.name()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 context["executable"] = "System/Protected"
 
@@ -100,7 +101,8 @@ def analyze_process_health(process_name: str) -> dict:
                 if process_name.lower() in proc.info["name"].lower():
                     count += 1
                     total_cpu += proc.info["cpu_percent"] or 0.0
-                    total_mem += proc.info["memory_info"].rss / 1024 / 1024  # MB
+                    # MB
+                    total_mem += proc.info["memory_info"].rss / 1024 / 1024
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
 

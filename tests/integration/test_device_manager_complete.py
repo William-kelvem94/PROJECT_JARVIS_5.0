@@ -6,6 +6,7 @@ JARVIS 5.0 - Testes Completos do Device Manager Avançado
 Valida todas as funcionalidades de controle de sistema
 """
 
+from src.core.management.device_manager import device_manager, PowerPlan
 import os
 import sys
 import time
@@ -17,7 +18,7 @@ if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
-    except:
+    except BaseException:
         pass
 
 # Setup paths
@@ -27,8 +28,6 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("DEVICE-MANAGER-TEST")
-
-from src.core.management.device_manager import device_manager, PowerPlan
 
 
 class DeviceManagerTester:

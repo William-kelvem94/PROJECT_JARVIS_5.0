@@ -168,7 +168,8 @@ class AtomicVoiceFilter:
                     logger.warning(
                         f"ðŸ”‡ Filtro AtÃ´mico acionado: Termo tÃ©cnico '{blocked}'"
                     )
-                    # Tenta apenas remover a frase tÃ©cnica se possÃ­vel, ou fallback total
+                    # Tenta apenas remover a frase tÃ©cnica se possÃ­vel, ou
+                    # fallback total
                     return cls._generate_safe_fallback()
 
         # 2. VerificaÃ§Ã£o de padrÃµes regex

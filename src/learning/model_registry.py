@@ -118,7 +118,10 @@ class ModelRegistry:
         self.deployments_dir = self.registry_path / "deployments"
 
         # Create directories
-        for dir_path in [self.models_dir, self.metadata_dir, self.deployments_dir]:
+        for dir_path in [
+                self.models_dir,
+                self.metadata_dir,
+                self.deployments_dir]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
         # Load existing models
@@ -161,7 +164,8 @@ class ModelRegistry:
                     sha256_hash.update(chunk)
             return sha256_hash.hexdigest()
         except Exception as e:
-            logger.warning(f"Failed to calculate checksum for {file_path}: {e}")
+            logger.warning(
+                f"Failed to calculate checksum for {file_path}: {e}")
             return ""
 
     def register_model(
@@ -200,14 +204,20 @@ class ModelRegistry:
                 # Single file
                 dest_path = model_dir / model_path.name
                 shutil.copy2(model_path, dest_path)
-                model_file_path = str(dest_path.relative_to(self.registry_path))
+                model_file_path = str(
+                    dest_path.relative_to(
+                        self.registry_path))
 
                 # Calculate checksum
-                checksums = {model_path.name: self._calculate_checksum(dest_path)}
+                checksums = {
+                    model_path.name: self._calculate_checksum(dest_path)}
 
             elif model_path.is_dir():
                 # Directory with multiple files
-                shutil.copytree(model_path, model_dir / "model", dirs_exist_ok=True)
+                shutil.copytree(
+                    model_path,
+                    model_dir / "model",
+                    dirs_exist_ok=True)
                 model_file_path = str(
                     (model_dir / "model").relative_to(self.registry_path)
                 )
@@ -217,7 +227,8 @@ class ModelRegistry:
                 for file_path in (model_dir / "model").rglob("*"):
                     if file_path.is_file():
                         rel_path = file_path.relative_to(model_dir / "model")
-                        checksums[str(rel_path)] = self._calculate_checksum(file_path)
+                        checksums[str(rel_path)] = self._calculate_checksum(
+                            file_path)
             else:
                 raise ValueError(f"Invalid model path: {model_path}")
 
@@ -229,10 +240,10 @@ class ModelRegistry:
                 config_files = list(model_path.glob("*config*.json"))
                 if config_files:
                     config_path = str(
-                        (model_dir / "model" / config_files[0].name).relative_to(
-                            self.registry_path
-                        )
-                    )
+                        (model_dir /
+                         "model" /
+                         config_files[0].name).relative_to(
+                            self.registry_path))
 
                 tokenizer_files = list(model_path.glob("tokenizer*"))
                 if tokenizer_files:
@@ -323,10 +334,13 @@ class ModelRegistry:
             metadata_file = self.metadata_dir / f"{model_id}.json"
             with open(metadata_file, "w", encoding="utf-8") as f:
                 json.dump(
-                    self._models[model_id].to_dict(), f, indent=2, ensure_ascii=False
-                )
+                    self._models[model_id].to_dict(),
+                    f,
+                    indent=2,
+                    ensure_ascii=False)
 
-            logger.info(f"âœ… Updated model {model_id} status to {status.value}")
+            logger.info(
+                f"âœ… Updated model {model_id} status to {status.value}")
             return True
 
         except Exception as e:
@@ -355,7 +369,8 @@ class ModelRegistry:
             )
 
             # Save deployment config
-            deploy_file = self.deployments_dir / f"{model_id}_{environment}.json"
+            deploy_file = self.deployments_dir / \
+                f"{model_id}_{environment}.json"
             with open(deploy_file, "w", encoding="utf-8") as f:
                 json.dump(asdict(deployment), f, indent=2, ensure_ascii=False)
 
@@ -389,11 +404,11 @@ class ModelRegistry:
         try:
             # Find current deployment
             current_deployments = [
-                d for d in self._deployments.values() if d.environment == environment
-            ]
+                d for d in self._deployments.values() if d.environment == environment]
 
             if not current_deployments:
-                logger.error(f"No deployments found for environment {environment}")
+                logger.error(
+                    f"No deployments found for environment {environment}")
                 return False
 
             current_deployment = current_deployments[
@@ -402,7 +417,8 @@ class ModelRegistry:
             current_model = self._models.get(current_deployment.model_id)
 
             if not current_model:
-                logger.error(f"Current model {current_deployment.model_id} not found")
+                logger.error(
+                    f"Current model {current_deployment.model_id} not found")
                 return False
 
             # Find target model
@@ -415,7 +431,8 @@ class ModelRegistry:
                 # Find previous version of same model
                 versions = self.get_model_versions(current_model.name)
                 if len(versions) < 2:
-                    logger.error(f"No previous version found for {current_model.name}")
+                    logger.error(
+                        f"No previous version found for {current_model.name}")
                     return False
 
                 # Get the version before current
@@ -442,7 +459,8 @@ class ModelRegistry:
 
             if success:
                 # Mark current model as deprecated
-                self.update_model_status(current_model.model_id, ModelStatus.DEPRECATED)
+                self.update_model_status(
+                    current_model.model_id, ModelStatus.DEPRECATED)
                 logger.info(
                     f"ðŸ”„ Rolled back {environment} from {current_model.model_id} to {target_model.model_id}"
                 )
@@ -495,7 +513,8 @@ class ModelRegistry:
                 )
 
                 # Create A/B test metadata
-                ab_test_file = self.deployments_dir / f"ab_test_{environment}.json"
+                ab_test_file = self.deployments_dir / \
+                    f"ab_test_{environment}.json"
                 ab_test_data = {
                     "model_a": model_a_id,
                     "model_b": model_b_id,
@@ -519,8 +538,7 @@ class ModelRegistry:
     ) -> Optional[ModelMetadata]:
         """Get currently deployed production model."""
         production_models = [
-            m for m in self._models.values() if m.status == ModelStatus.PRODUCTION
-        ]
+            m for m in self._models.values() if m.status == ModelStatus.PRODUCTION]
 
         if model_type:
             production_models = [
@@ -613,7 +631,8 @@ class ModelRegistry:
                                 shutil.rmtree(model_dir.parent)
 
                         # Remove metadata
-                        metadata_file = self.metadata_dir / f"{model.model_id}.json"
+                        metadata_file = self.metadata_dir / \
+                            f"{model.model_id}.json"
                         if metadata_file.exists():
                             metadata_file.unlink()
 
@@ -621,10 +640,12 @@ class ModelRegistry:
                         del self._models[model.model_id]
                         cleaned_count += 1
 
-                        logger.info(f"ðŸ—‘ï¸ Cleaned up old model: {model.model_id}")
+                        logger.info(
+                            f"ðŸ—‘ï¸ Cleaned up old model: {model.model_id}")
 
                     except Exception as e:
-                        logger.error(f"Failed to cleanup model {model.model_id}: {e}")
+                        logger.error(
+                            f"Failed to cleanup model {model.model_id}: {e}")
 
             return cleaned_count
 

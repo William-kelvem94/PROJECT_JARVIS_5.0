@@ -95,7 +95,7 @@ class WindowManager(QObject):
         ui_signals.update_listening_state.connect(self._on_listening_received)
         ui_signals.show_notification.connect(self._on_notification_received)
         ui_signals.update_learning_status.connect(self._on_learning_status)
-        
+
         # Connect Internal Status Handler
         self.status_update.connect(self._handle_status_update)
 
@@ -126,7 +126,10 @@ class WindowManager(QObject):
 
         # Initialize components via Safe Loader
         from PyQt6.QtCore import QMetaObject, Q_ARG
-        QMetaObject.invokeMethod(self, "_safe_ui_init", Qt.ConnectionType.QueuedConnection)
+
+        QMetaObject.invokeMethod(
+            self, "_safe_ui_init", Qt.ConnectionType.QueuedConnection
+        )
 
         logger.info("✅ Window Manager initialized (UI deferred)")
 
@@ -148,7 +151,8 @@ class WindowManager(QObject):
             if icon_path.exists():
                 icon = QIcon(str(icon_path))
             else:
-                # Use a better looking fallback or create a tiny colored bitbmap
+                # Use a better looking fallback or create a tiny colored
+                # bitbmap
                 from PyQt6.QtGui import QPixmap, QPainter, QColor
 
                 pixmap = QPixmap(64, 64)
@@ -389,7 +393,8 @@ class WindowManager(QObject):
         if self.current_mode == InterfaceMode.HUD_OVERLAY:
             if not self._hud:
                 self._initialize_hud()
-            # VerificaÃ§Ã£o de seguranÃ§a: _initialize_hud pode falhar e usar fallback
+            # VerificaÃ§Ã£o de seguranÃ§a: _initialize_hud pode falhar e usar
+            # fallback
             if self._hud:
                 self._restore_window_position(self._hud, "hud")
                 self._hud.show()
@@ -547,7 +552,8 @@ class WindowManager(QObject):
                 and window_type in self._saved_positions
             ):
                 pos_data = self._saved_positions[window_type]
-                # Verificar se a posição está dentro de algum monitor disponível
+                # Verificar se a posição está dentro de algum monitor
+                # disponível
                 screens = self.app.screens()
                 valid_position = False
 
@@ -628,7 +634,8 @@ class WindowManager(QObject):
             status_type: Type of status update
             message: Status message
         """
-        # Emit signal which will be handled by _handle_status_update on the main thread
+        # Emit signal which will be handled by _handle_status_update on the
+        # main thread
         self.status_update.emit(status_type, message)
 
     @pyqtSlot(str, str)

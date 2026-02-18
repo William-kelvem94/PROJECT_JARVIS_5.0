@@ -135,7 +135,7 @@ class SystemEvolutionManager:
                         ui_signals.update_status.emit(
                             f"🧬 DNA Recodificado: {file.stem} atualizado."
                         )
-                except:
+                except BaseException:
                     pass
         except Exception as e:
             logger.debug(f"Erro ao checar arquivo {file}: {e}")

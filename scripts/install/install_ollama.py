@@ -28,7 +28,7 @@ def check_ollama_running():
     try:
         requests.get("http://localhost:11434", timeout=1)
         return True
-    except:
+    except BaseException:
         return False
 
 
@@ -106,8 +106,10 @@ def main():
     print("\n📦 Checking Neural Models...")
     try:
         response = requests.get("http://localhost:11434/api/tags").json()
-        installed_models = [m["name"].split(":")[0] for m in response.get("models", [])]
-    except:
+        installed_models = [
+            m["name"].split(":")[0] for m in response.get(
+                "models", [])]
+    except BaseException:
         installed_models = []
 
     model_installed = False
@@ -122,9 +124,13 @@ def main():
                 model_installed = True
 
     if model_installed:
-        print_colored("\n✨ BRAIN SETUP COMPLETE. JARVIS IS READY TO THINK.", "32")
+        print_colored(
+            "\n✨ BRAIN SETUP COMPLETE. JARVIS IS READY TO THINK.",
+            "32")
     else:
-        print_colored("\n⚠️  No models installed. JARVIS will be brainless.", "31")
+        print_colored(
+            "\n⚠️  No models installed. JARVIS will be brainless.",
+            "31")
 
 
 if __name__ == "__main__":

@@ -130,7 +130,16 @@ class SelfLearningEngine:
 
         analysis_start = time.time()
 
-        # Analisar código fonte
+        # 🚀 DISPARAR AUTO-EVOLUÇÃO (Correção Real de Código)
+        try:
+            from src.core.intelligence.ai_agent import ai_agent
+            if ai_agent:
+                logger.info("🦾 JARVIS tentando se auto-corrigir via IA...")
+                ai_agent.analyze_codebase(str(self.project_root))
+        except Exception as e:
+            logger.debug(f"Falha ao disparar auto-evolução: {e}")
+
+        # Analisar código fonte (Estatísticas)
         self._analyze_source_code()
 
         # Analisar logs

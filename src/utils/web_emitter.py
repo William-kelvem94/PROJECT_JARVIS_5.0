@@ -12,7 +12,8 @@ except ImportError:
     broadcast_message = None
     WEB_SERVER_AVAILABLE = False
 
-# ReferÃªncia global para o servidor web (opcional, se precisarmos de acesso direto)
+# ReferÃªncia global para o servidor web (opcional, se precisarmos de
+# acesso direto)
 _web_server_ref = None
 
 

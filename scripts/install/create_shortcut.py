@@ -19,7 +19,8 @@ def create_shortcut(prefer_minimal: bool = False):
         )
         default_script = project_root / "start_jarvis.bat"
 
-        # Decide target script: prefer minimal if asked and exists, else ask user if both exist
+        # Decide target script: prefer minimal if asked and exists, else ask
+        # user if both exist
         if prefer_minimal and minimal_script.exists():
             target_script = minimal_script
         else:
