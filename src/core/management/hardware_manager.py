@@ -333,7 +333,7 @@ class HardwareManager:
             return False
 
     def get_tier(self) -> str:
-        """Retorna o nÃ­vel de processamento (ULTRA, FAST, BALANCED, LITE)"""
+        """Retorna o nível de processamento (ULTRA, FAST, BALANCED, LITE)"""
         self._ensure_hardware_initialized()
         return self.tier
 
@@ -355,7 +355,7 @@ class HardwareManager:
         return None
 
     def get_compute_type(self) -> str:
-        """Retorna tipo de float mais rÃ¡pido para o hardware (bfloat16/float16/float32)"""
+        """Retorna tipo de float mais rápido para o hardware (bfloat16/float16/float32)"""
         self._ensure_hardware_initialized()
         if self.device == "cuda":
             # Verificar suporte a bfloat16 (GPUs Ampere+)
@@ -364,18 +364,18 @@ class HardwareManager:
             return "float16"
 
         # CPUs modernas frequentemente suportam bfloat16 (AVX-512 BF16)
-        # Em CPU, float32 ainda Ã© o mais estÃ¡vel para Transformers pura,
-        # mas bfloat16 pode ser usado se disponÃ­vel no torch.
+        # Em CPU, float32 ainda é o mais estável para Transformers pura,
+        # mas bfloat16 pode ser usado se disponível no torch.
         if TORCH_AVAILABLE and torch:
-            # HeurÃ­stica: se for CPU mas tier for FAST, talvez valha bfloat16
-            # mas por seguranÃ§a contra 0xC0000005, mantemos float32 como
+            # Heurística: se for CPU mas tier for FAST, talvez valha bfloat16
+            # mas por segurança contra 0xC0000005, mantemos float32 como
             # fallback
             pass
 
         return "float32"
 
     def clear_gpu_cache(self):
-        """Limpa cache de memÃ³ria da GPU e aciona GC"""
+        """Limpa cache de memória da GPU e aciona GC"""
         self._ensure_hardware_initialized()
         import gc
 
@@ -462,18 +462,36 @@ class HardwareManager:
 
         try:
             p = psutil.Process(pid)
+            # Use getattr with default to avoid crashes on non-Windows systems where these constants are missing
             levels = {
-                "IDLE": psutil.IDLE_PRIORITY_CLASS,
-                "BELOW_NORMAL": psutil.BELOW_NORMAL_PRIORITY_CLASS,
-                "NORMAL": psutil.NORMAL_PRIORITY_CLASS,
-                "ABOVE_NORMAL": psutil.ABOVE_NORMAL_PRIORITY_CLASS,
-                "HIGH": psutil.HIGH_PRIORITY_CLASS,
-                "REALTIME": psutil.REALTIME_PRIORITY_CLASS,
+                "IDLE": getattr(psutil, "IDLE_PRIORITY_CLASS", 0),
+                "BELOW_NORMAL": getattr(psutil, "BELOW_NORMAL_PRIORITY_CLASS", 0),
+                "NORMAL": getattr(psutil, "NORMAL_PRIORITY_CLASS", 0),
+                "ABOVE_NORMAL": getattr(psutil, "ABOVE_NORMAL_PRIORITY_CLASS", 0),
+                "HIGH": getattr(psutil, "HIGH_PRIORITY_CLASS", 0),
+                "REALTIME": getattr(psutil, "REALTIME_PRIORITY_CLASS", 0),
             }
-            if level in levels:
-                p.nice(levels[level])
-                logger.info(f"ðŸš€ Prioridade do processo {pid} alterada para {level}")
+
+            if self.system != "Windows" and level not in ["NORMAL", "IDLE"]:
+                # Map Windows priorities to nice values for Linux/Mac
+                if level == "HIGH" or level == "REALTIME":
+                    p.nice(-10) # Higher priority
+                elif level == "ABOVE_NORMAL":
+                     p.nice(-5)
+                elif level == "BELOW_NORMAL":
+                     p.nice(5)
+                elif level == "IDLE":
+                     p.nice(19) # Lowest priority
+                else:
+                     p.nice(0)
+                logger.info(f"🚀 Prioridade do processo {pid} alterada (Nice value)")
                 return True
+
+            if level in levels and self.system == "Windows":
+                p.nice(levels[level])
+                logger.info(f"🚀 Prioridade do processo {pid} alterada para {level}")
+                return True
+
         except Exception as e:
             logger.error(f"Erro ao alterar prioridade: {e}")
         return False
@@ -485,7 +503,7 @@ class HardwareManager:
 
         import subprocess
 
-        # GUIDs padrÃ£o do Windows
+        # GUIDs padrão do Windows
         plans = {
             "GAMER": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",  # High Performance
             "BALANCED": "381b4222-f694-41f0-9685-ff5bb260df2e",
@@ -496,14 +514,14 @@ class HardwareManager:
             guid = plans.get(mode.upper())
             if guid:
                 subprocess.run(["powercfg", "/setactive", guid], check=True)
-                logger.info(f"ðŸ”‹ Plano de energia alterado para: {mode}")
+                logger.info(f"🔋 Plano de energia alterado para: {mode}")
                 return True
         except Exception as e:
             logger.error(f"Erro ao alterar plano de energia: {e}")
         return False
 
     def suggest_optimizations(self) -> str:
-        """Analisa o contexto e sugere otimizaÃ§Ãµes soberanas"""
+        """Analisa o contexto e sugere otimizações soberanas"""
         status = self.get_status()
         import psutil
 
@@ -552,17 +570,17 @@ class HardwareManager:
         }
 
 
-# InstÃ¢ncia global (Singleton) - Lazy initialization
+# Instância global (Singleton) - Lazy initialization
 _hardware_manager_instance = None
 
 
 def get_hardware_manager():
-    """Retorna a instÃ¢ncia singleton do hardware manager (lazy)"""
+    """Retorna a instância singleton do hardware manager (lazy)"""
     global _hardware_manager_instance
     if _hardware_manager_instance is None:
         _hardware_manager_instance = HardwareManager()
     return _hardware_manager_instance
 
 
-# InstÃ¢ncia global
+# Instância global
 hardware_manager = get_hardware_manager()

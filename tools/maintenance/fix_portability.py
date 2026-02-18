@@ -14,8 +14,8 @@ from typing import Dict, List
 class PortabilityFixer:
     def __init__(self, project_root: Path):
         self.project_root = project_root
-        self.fixed_files = []
-        self.issues_found = []
+        self.fixed_files: List[str] = []
+        self.issues_found: List[str] = []
 
     def scan_for_hardcoded_paths(self) -> Dict[str, List[str]]:
         """Escaneia arquivos por caminhos hardcoded"""

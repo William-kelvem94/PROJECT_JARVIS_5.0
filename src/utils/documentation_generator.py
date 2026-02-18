@@ -23,7 +23,7 @@ class CodeEntity:
     line_number: int
     docstring: Optional[str] = None
     signature: Optional[str] = None
-    dependencies: List[str] = None
+    dependencies: Optional[List[str]] = None
     complexity: Optional[int] = None
     test_coverage: Optional[float] = None
 
@@ -39,7 +39,7 @@ class DocumentationSection:
     title: str
     content: str
     level: int = 1  # Nível do cabeçalho (1-6)
-    subsections: List["DocumentationSection"] = None
+    subsections: Optional[List["DocumentationSection"]] = None
 
     def __post_init__(self):
         if self.subsections is None:
@@ -51,12 +51,12 @@ class DocumentationGenerator:
     Gerador automático de documentação técnica e READMEs.
     """
 
-    def __init__(self, project_root: Path = None):
+    def __init__(self, project_root: Optional[Path] = None):
         self.project_root = project_root or Path.cwd()
         self.docs_dir = self.project_root / "docs"
         self.docs_dir.mkdir(exist_ok=True)
 
-    def generate_api_documentation(self, source_dir: Path = None) -> str:
+    def generate_api_documentation(self, source_dir: Optional[Path] = None) -> str:
         """
         Gera documentação da API analisando código fonte.
 

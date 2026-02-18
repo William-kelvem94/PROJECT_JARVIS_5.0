@@ -71,8 +71,9 @@ try:
 except BaseException:
     # Se houver erro de leitura, tenta com encoding diferente
     import codecs
+    import io
 
-    sys.stdin = codecs.getreader("utf-8")(sys.stdin.buffer, errors="replace")
+    sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8", errors="replace")
     commit_msg = sys.stdin.read().strip()
 
 # Se houver tradução, aplica

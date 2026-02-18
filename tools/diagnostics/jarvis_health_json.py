@@ -3,12 +3,13 @@ import os
 import json
 import importlib
 from pathlib import Path
+from typing import Dict, Any
 
 # Configuração de paths
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-results = {"dependencies": {}, "core_modules": {}, "hardware": {}, "env": {}}
+results: Dict[str, Dict[str, Any]] = {"dependencies": {}, "core_modules": {}, "hardware": {}, "env": {}}
 
 
 def check_import(module_name):

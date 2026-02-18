@@ -28,8 +28,20 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 from dataclasses import dataclass, field
 import sys
+import os
 
 logger = logging.getLogger(__name__)
+
+
+class MockSignal:
+    """Mock signal for headless mode"""
+    def emit(self, *args, **kwargs): pass
+    def connect(self, *args, **kwargs): pass
+
+class MockUISignals:
+    """Mock UI signals for headless mode"""
+    def __getattr__(self, name):
+        return MockSignal()
 
 
 class BootStage(Enum):
@@ -145,6 +157,7 @@ class BootManager:
 
     def _setup_core_modules(self):
         """Setup core modules for initialization"""
+        is_headless = os.environ.get("JARVIS_HEADLESS") == "1"
 
         # Critical modules (must initialize first)
         self.register_module(
@@ -183,32 +196,34 @@ class BootManager:
         )
 
         # GUI and signals (high priority)
-        self.register_module(
-            "qt_application",
-            self._init_qt_application,
-            BootPriority.HIGH,
-            dependencies=["system_manifest"],
-            required=True,
-            timeout_seconds=15,
-        )
+        if not is_headless:
+            self.register_module(
+                "qt_application",
+                self._init_qt_application,
+                BootPriority.HIGH,
+                dependencies=["system_manifest"],
+                required=True,
+                timeout_seconds=15,
+            )
 
         self.register_module(
             "ui_signals",
             self._init_ui_signals,
             BootPriority.HIGH,
-            dependencies=["qt_application"],
+            dependencies=["qt_application"] if not is_headless else [],
             required=True,
             timeout_seconds=5,
         )
 
-        self.register_module(
-            "window_manager",
-            self._init_window_manager,
-            BootPriority.HIGH,
-            dependencies=["qt_application", "ui_signals"],
-            required=False,  # Nao bloqueia boot em modo headless
-            timeout_seconds=15,
-        )
+        if not is_headless:
+            self.register_module(
+                "window_manager",
+                self._init_window_manager,
+                BootPriority.HIGH,
+                dependencies=["qt_application", "ui_signals"],
+                required=False,  # Nao bloqueia boot em modo headless
+                timeout_seconds=15,
+            )
 
         # Core systems (medium priority)
         self.register_module(
@@ -574,6 +589,9 @@ class BootManager:
             logger.info("✅ ui_signals initialized successfully")
             return ui_signals
         except ImportError as e:
+            if os.environ.get("JARVIS_HEADLESS") == "1":
+                logger.info("⚠️ Headless mode: using MockUISignals")
+                return MockUISignals()
             logger.error(f"❌ Failed to initialize ui_signals: {e}")
             raise
 

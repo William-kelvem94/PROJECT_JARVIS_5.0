@@ -42,6 +42,7 @@ except ImportError:
     DemocraticCore = None
 from src.core.identity.microsoft_device_identifier import MicrosoftDeviceIdentifier
 from src.core.identity.enhanced_biometric_verifier import EnhancedBiometricVerifier
+from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +56,11 @@ class DemocraticControlInterface:
     - Configuração automática de Google Drive
     - Controle da rede democrática
     - Verificação biométrica avançada
-    - Treinamento distribuÃ­do
+    - Treinamento distribuído
     - Monitoramento em tempo real
-    - ConfiguraÃ§Ã£o de webhooks e integraÃ§Ãµes
-    """
+    - Configuração de webhooks e integrações
 
-    def __init__(self, *args, **kwargs):
-        # Interface desativada
-        logger.info(
-            "Democratic Control Interface está desativada por configuração.")
-        return
-
-    âœ¨ LIBERDADE TOTAL - SEM PRÃ‰- CONFIGURAÃ‡Ã•ES
+    ✨ LIBERDADE TOTAL - SEM PRÉ-CONFIGURAÇÕES
     """
 
     def __init__(self, jarvis_core):
@@ -83,20 +77,20 @@ class DemocraticControlInterface:
         self.monitoring_active = False
         self.auto_training_active = False
 
-        # ConfiguraÃ§Ãµes do usuÃ¡rio
+        # Configurações do usuário
         self.user_preferences = self._load_user_preferences()
 
-        print("ðŸ”¥ Democratic Control Interface inicializada")
-        print("ðŸ’ª PODER TOTAL HABILITADO")
+        print("🔥 Democratic Control Interface inicializada")
+        print("💪 PODER TOTAL HABILITADO")
 
     def launch_interface(self):
-        """ðŸš€ LANÃ‡A INTERFACE PRINCIPAL DE CONTROLE"""
+        """🚀 LANÇA INTERFACE PRINCIPAL DE CONTROLE"""
 
         if self.root is not None:
             return
 
         self.root = tk.Tk()
-        self.root.title("JARVIS SINGULARITY - CONTROLE DEMOCRÃTICO")
+        self.root.title("JARVIS SINGULARITY - CONTROLE DEMOCRÁTICO")
         self.root.geometry("1400x900")
         self.root.configure(bg="#1a1a1a")
 
@@ -113,7 +107,7 @@ class DemocraticControlInterface:
         self.root.mainloop()
 
     def _setup_dark_theme(self):
-        """ðŸŽ¨ TEMA ESCURO PROFISSIONAL"""
+        """🎨 TEMA ESCURO PROFISSIONAL"""
 
         style = ttk.Style()
         style.theme_use("clam")
@@ -150,7 +144,7 @@ class DemocraticControlInterface:
         style.configure("Control.TButton", font=("Arial", 10, "bold"))
 
     def _create_main_interface(self):
-        """ðŸ—ï¸ CONSTRÃ“I INTERFACE PRINCIPAL"""
+        """🏗️ CONSTRÓI INTERFACE PRINCIPAL"""
 
         # ===== HEADER =====
         header_frame = tk.Frame(self.root, bg="#1a1a1a", height=80)
@@ -159,14 +153,14 @@ class DemocraticControlInterface:
 
         title_label = ttk.Label(
             header_frame,
-            text="ðŸ”¥ JARVIS DEMOCRÃTICO - CONTROLE TOTAL",
+            text="🔥 JARVIS DEMOCRÁTICO - CONTROLE TOTAL",
             style="Title.TLabel",
         )
         title_label.pack(side="left", padx=10, pady=20)
 
         # Status geral
         self.status_label = ttk.Label(
-            header_frame, text="âš¡ SISTEMA DEMOCRÃTICO ATIVO", style="Success.TLabel"
+            header_frame, text="⚡ SISTEMA DEMOCRÁTICO ATIVO", style="Success.TLabel"
         )
         self.status_label.pack(side="right", padx=10, pady=20)
 
@@ -183,14 +177,14 @@ class DemocraticControlInterface:
         self._create_monitoring_tab()
         self._create_power_tools_tab()
 
-        # ===== FOOTER DE CONTROLE RÃPIDO =====
+        # ===== FOOTER DE CONTROLE RÁPIDO =====
         self._create_control_footer()
 
     def _create_identity_tab(self):
-        """ðŸ†” ABA DE GESTÃƒO DE IDENTIDADE"""
+        """🆔 ABA DE GESTÃO DE IDENTIDADE"""
 
         identity_frame = ttk.Frame(self.notebook)
-        self.notebook.add(identity_frame, text="ðŸ†” Identidade")
+        self.notebook.add(identity_frame, text="🆔 Identidade")
 
         # ===== MICROSOFT ACCOUNT =====
         ms_frame = ttk.LabelFrame(
@@ -200,7 +194,7 @@ class DemocraticControlInterface:
 
         # Status da conta
         self.ms_status_label = ttk.Label(
-            ms_frame, text="ðŸ” Detectando...", style="Status.TLabel"
+            ms_frame, text="🔍 Detectando...", style="Status.TLabel"
         )
         self.ms_status_label.pack(anchor="w")
 
@@ -210,19 +204,19 @@ class DemocraticControlInterface:
 
         ttk.Button(
             ms_controls,
-            text="ðŸ”„ Re-detectar Conta",
+            text="🔄 Re-detectar Conta",
             command=self._redetect_microsoft_account,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             ms_controls,
-            text="âš™ï¸ Configurar Manualmente",
+            text="⚙️ Configurar Manualmente",
             command=self._manual_microsoft_config,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             ms_controls,
-            text="ðŸ“‹ Ver Detalhes Completos",
+            text="📋 Ver Detalhes Completos",
             command=self._show_microsoft_details,
         ).pack(side="left", padx=5)
 
@@ -234,7 +228,7 @@ class DemocraticControlInterface:
 
         # Status do Drive
         self.drive_status_label = ttk.Label(
-            drive_frame, text="ðŸ“‚ Analisando...", style="Status.TLabel"
+            drive_frame, text="📂 Analisando...", style="Status.TLabel"
         )
         self.drive_status_label.pack(anchor="w")
 
@@ -244,59 +238,59 @@ class DemocraticControlInterface:
 
         ttk.Button(
             drive_controls,
-            text="ðŸ”— Conectar Google Drive",
+            text="🔗 Conectar Google Drive",
             command=self._connect_google_drive,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             drive_controls,
-            text="ðŸ“ Configurar Estrutura",
+            text="📍 Configurar Estrutura",
             command=self._setup_drive_structure,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             drive_controls,
-            text="â˜ï¸ Sincronizar Agora",
+            text="☁️ Sincronizar Agora",
             command=self._sync_google_drive,
         ).pack(side="left", padx=5)
 
-        # ===== VERIFICAÃ‡ÃƒO BIOMÃ‰TRICA =====
+        # ===== VERIFICAÇÃO BIOMÉTRICA =====
         bio_frame = ttk.LabelFrame(
             identity_frame, text="Biometric Verification", padding=10
         )
         bio_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # Status biomÃ©trico
+        # Status biométrico
         self.bio_status_label = ttk.Label(
-            bio_frame, text="ðŸ” NÃ£o configurado", style="Status.TLabel"
+            bio_frame, text="🔍 Não configurado", style="Status.TLabel"
         )
         self.bio_status_label.pack(anchor="w")
 
-        # Controles biomÃ©tricos
+        # Controles biométricos
         bio_controls = tk.Frame(bio_frame, bg="#1a1a1a")
         bio_controls.pack(fill="x", pady=5)
 
         ttk.Button(
             bio_controls,
-            text="ðŸ‘¤ Configurar Perfil",
+            text="👤 Configurar Perfil",
             command=self._setup_biometric_profile,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            bio_controls, text="ðŸ” Verificar Agora", command=self._verify_identity_now
+            bio_controls, text="🔍 Verificar Agora", command=self._verify_identity_now
         ).pack(side="left", padx=5)
 
         ttk.Button(
             bio_controls,
-            text="ðŸ‘ï¸ Monitoramento ContÃ­nuo",
+            text="👁️ Monitoramento Contínuo",
             command=self._toggle_biometric_monitoring,
         ).pack(side="left", padx=5)
 
     def _create_devices_tab(self):
-        """ðŸ“± ABA DE GESTÃƒO DE DISPOSITIVOS"""
+        """📱 ABA DE GESTÃO DE DISPOSITIVOS"""
 
         devices_frame = ttk.Frame(self.notebook)
-        self.notebook.add(devices_frame, text="ðŸ“± Dispositivos")
+        self.notebook.add(devices_frame, text="📱 Dispositivos")
 
         # ===== DESCOBERTA DE DISPOSITIVOS =====
         discovery_frame = ttk.LabelFrame(
@@ -310,25 +304,25 @@ class DemocraticControlInterface:
 
         ttk.Button(
             discovery_controls,
-            text="ðŸ” Escanear Rede",
+            text="🔍 Escanear Rede",
             command=self._scan_network_devices,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             discovery_controls,
-            text="ðŸ†” Detectar JARVIS",
+            text="🆔 Detectar JARVIS",
             command=self._detect_jarvis_instances,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             discovery_controls,
-            text="ðŸ¤ Conectar Dispositivo",
+            text="🤝 Conectar Dispositivo",
             command=self._connect_device_manual,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             discovery_controls,
-            text="âš¡ ForÃ§a DemocrÃ¡tica",
+            text="⚡ Força Democrática",
             command=self._force_democratic_election,
         ).pack(side="left", padx=5)
 
@@ -362,25 +356,25 @@ class DemocraticControlInterface:
 
         ttk.Button(
             device_controls,
-            text="ðŸ“Š Status Detalhado",
+            text="📊 Status Detalhado",
             command=self._show_device_details,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            device_controls, text="ðŸ”„ Sincronizar", command=self._sync_selected_device
+            device_controls, text="🔄 Sincronizar", command=self._sync_selected_device
         ).pack(side="left", padx=5)
 
         ttk.Button(
             device_controls,
-            text="âŒ Desconectar",
+            text="❌ Desconectar",
             command=self._disconnect_selected_device,
         ).pack(side="left", padx=5)
 
     def _create_network_tab(self):
-        """ðŸŒ ABA DA REDE DEMOCRÃTICA"""
+        """🌐 ABA DA REDE DEMOCRÁTICA"""
 
         network_frame = ttk.Frame(self.notebook)
-        self.notebook.add(network_frame, text="ðŸŒ Rede DemocrÃ¡tica")
+        self.notebook.add(network_frame, text="🌐 Rede Democrática")
 
         # ===== STATUS DA REDE =====
         network_status_frame = ttk.LabelFrame(
@@ -395,10 +389,10 @@ class DemocraticControlInterface:
         # Status labels
         self.network_labels = {}
         status_items = [
-            ("Leader", "ðŸ‘‘ Status do LÃ­der"),
-            ("Devices", "ðŸ“± Dispositivos Conectados"),
-            ("Sync", "ðŸ”„ SincronizaÃ§Ã£o"),
-            ("Training", "ðŸ§  Treinamento Ativo"),
+            ("Leader", "👑 Status do Líder"),
+            ("Devices", "📱 Dispositivos Conectados"),
+            ("Sync", "🔄 Sincronização"),
+            ("Training", "🧠 Treinamento Ativo"),
         ]
 
         for i, (key, label) in enumerate(status_items):
@@ -414,14 +408,14 @@ class DemocraticControlInterface:
     style="Status.TLabel").pack(
         anchor="w")
             self.network_labels[key] = ttk.Label(
-                frame, text="ðŸ” Detectando...", style="Status.TLabel"
+                frame, text="🔍 Detectando...", style="Status.TLabel"
             )
             self.network_labels[key].pack(anchor="w")
 
         status_grid.columnconfigure(0, weight=1)
         status_grid.columnconfigure(1, weight=1)
 
-        # ===== CONTROLES DEMOCRÃTICOS =====
+        # ===== CONTROLES DEMOCRÁTICOS =====
         democratic_controls_frame = ttk.LabelFrame(
             network_frame, text="Democratic Controls", padding=10
         )
@@ -435,15 +429,15 @@ class DemocraticControlInterface:
         row1.pack(fill="x", pady=2)
 
         ttk.Button(
-            row1, text="ðŸ—³ï¸ ForÃ§ar EleiÃ§Ã£o", command=self._force_election
+            row1, text="🗳️ Forçar Eleição", command=self._force_election
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            row1, text="ðŸ‘‘ Candidatar-se a LÃ­der", command=self._run_for_leader
+            row1, text="👑 Candidatar-se a Líder", command=self._run_for_leader
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            row1, text="ðŸ”„ SincronizaÃ§Ã£o Total", command=self._full_network_sync
+            row1, text="🔄 Sincronização Total", command=self._full_network_sync
         ).pack(side="left", padx=5)
 
         # Linha 2
@@ -451,26 +445,26 @@ class DemocraticControlInterface:
         row2.pack(fill="x", pady=2)
 
         ttk.Button(
-            row2, text="ðŸ“Š AnÃ¡lise de Rede", command=self._analyze_network
+            row2, text="📊 Análise de Rede", command=self._analyze_network
         ).pack(side="left", padx=5)
 
         ttk.Button(
             row2,
-            text="âš¡ OtimizaÃ§Ã£o AutomÃ¡tica",
+            text="⚡ Otimização Automática",
             command=self._auto_optimize_network,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             row2,
-            text="ðŸ›¡ï¸ SeguranÃ§a AvanÃ§ada",
+            text="🛡️ Segurança Avançada",
             command=self._advanced_security_config,
         ).pack(side="left", padx=5)
 
     def _create_training_tab(self):
-        """ðŸ§  ABA DE TREINAMENTO DISTRIBUÃDO"""
+        """🧠 ABA DE TREINAMENTO DISTRIBUÍDO"""
 
         training_frame = ttk.Frame(self.notebook)
-        self.notebook.add(training_frame, text="ðŸ§  Treinamento")
+        self.notebook.add(training_frame, text="🧠 Treinamento")
 
         # ===== CONTROLE DE TREINAMENTO =====
         training_control_frame = ttk.LabelFrame(
@@ -481,7 +475,7 @@ class DemocraticControlInterface:
         # Status do treinamento
         self.training_status_label = ttk.Label(
             training_control_frame,
-            text="ðŸ’¤ Treinamento Inativo",
+            text="💤 Treinamento Inativo",
             style="Status.TLabel",
         )
         self.training_status_label.pack(anchor="w", pady=5)
@@ -492,31 +486,31 @@ class DemocraticControlInterface:
 
         ttk.Button(
             training_controls,
-            text="ðŸš€ Iniciar Treinamento",
+            text="🚀 Iniciar Treinamento",
             command=self._start_distributed_training,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            training_controls, text="â¸ï¸ Pausar", command=self._pause_training
+            training_controls, text="⏸️ Pausar", command=self._pause_training
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            training_controls, text="â¹ï¸ Parar", command=self._stop_training
+            training_controls, text="⏹️ Parar", command=self._stop_training
         ).pack(side="left", padx=5)
 
         ttk.Button(
             training_controls,
-            text="ðŸ“ˆ MÃ©tricas",
+            text="📈 Métricas",
             command=self._show_training_metrics,
         ).pack(side="left", padx=5)
 
-        # ===== CONFIGURAÃ‡ÃƒO DE MODELOS =====
+        # ===== CONFIGURAÇÃO DE MODELOS =====
         models_frame = ttk.LabelFrame(
             training_frame, text="Model Configuration", padding=10
         )
         models_frame.pack(fill="x", padx=10, pady=5)
 
-        # SeleÃ§Ã£o de modelo
+        # Seleção de modelo
         model_selection = tk.Frame(models_frame, bg="#1a1a1a")
         model_selection.pack(fill="x", pady=5)
 
@@ -533,7 +527,7 @@ class DemocraticControlInterface:
         model_combo.pack(side="left", padx=5)
 
         ttk.Button(
-            model_selection, text="âš™ï¸ Configurar", command=self._configure_model
+            model_selection, text="⚙️ Configurar", command=self._configure_model
         ).pack(side="left", padx=5)
 
         # Dataset selection
@@ -546,12 +540,12 @@ class DemocraticControlInterface:
 
         ttk.Button(
             dataset_selection,
-            text="ðŸ“ Selecionar Dataset",
+            text="📁 Selecionar Dataset",
             command=self._select_dataset,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            dataset_selection, text="ðŸ”„ Gerar Dataset", command=self._generate_dataset
+            dataset_selection, text="🔄 Gerar Dataset", command=self._generate_dataset
         ).pack(side="left", padx=5)
 
         # ===== CONSOLE DE TREINAMENTO =====
@@ -577,10 +571,10 @@ class DemocraticControlInterface:
         console_scrollbar.pack(side="right", fill="y")
 
     def _create_integrations_tab(self):
-        """ðŸ”— ABA DE INTEGRAÃ‡Ã•ES"""
+        """🔗 ABA DE INTEGRAÇÕES"""
 
         integrations_frame = ttk.Frame(self.notebook)
-        self.notebook.add(integrations_frame, text="ðŸ”— IntegraÃ§Ãµes")
+        self.notebook.add(integrations_frame, text="🔗 Integrações")
 
         # ===== GOOGLE SERVICES =====
         google_frame = ttk.LabelFrame(
@@ -593,19 +587,19 @@ class DemocraticControlInterface:
 
         ttk.Button(
             google_controls,
-            text="ðŸ“§ Gmail Integration",
+            text="📧 Gmail Integration",
             command=self._setup_gmail_integration,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             google_controls,
-            text="ðŸ“… Calendar Sync",
+            text="📅 Calendar Sync",
             command=self._setup_calendar_sync,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             google_controls,
-            text="â˜ï¸ Cloud Functions",
+            text="☁️ Cloud Functions",
             command=self._setup_cloud_functions,
         ).pack(side="left", padx=5)
 
@@ -620,16 +614,16 @@ class DemocraticControlInterface:
 
         ttk.Button(
             ms_controls,
-            text="ðŸ“§ Outlook Integration",
+            text="📧 Outlook Integration",
             command=self._setup_outlook_integration,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            ms_controls, text="â˜ï¸ OneDrive Sync", command=self._setup_onedrive_sync
+            ms_controls, text="☁️ OneDrive Sync", command=self._setup_onedrive_sync
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            ms_controls, text="ðŸ’¼ Office 365", command=self._setup_office365
+            ms_controls, text="💼 Office 365", command=self._setup_office365
         ).pack(side="left", padx=5)
 
         # ===== WEBHOOKS & APIS =====
@@ -655,26 +649,26 @@ class DemocraticControlInterface:
         webhook_controls.pack(fill="x", padx=10, pady=5)
 
         ttk.Button(
-            webhook_controls, text="âž• Novo Webhook", command=self._create_webhook
+            webhook_controls, text="➕ Novo Webhook", command=self._create_webhook
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            webhook_controls, text="âœï¸ Editar", command=self._edit_webhook
+            webhook_controls, text="✏️ Editar", command=self._edit_webhook
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            webhook_controls, text="ðŸ§ª Testar", command=self._test_webhook
+            webhook_controls, text="🧪 Testar", command=self._test_webhook
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            webhook_controls, text="âŒ Remover", command=self._remove_webhook
+            webhook_controls, text="❌ Remover", command=self._remove_webhook
         ).pack(side="left", padx=5)
 
     def _create_monitoring_tab(self):
-        """ðŸ“Š ABA DE MONITORAMENTO"""
+        """📊 ABA DE MONITORAMENTO"""
 
         monitoring_frame = ttk.Frame(self.notebook)
-        self.notebook.add(monitoring_frame, text="ðŸ“Š Monitoramento")
+        self.notebook.add(monitoring_frame, text="📊 Monitoramento")
 
         # ===== MÉTRICAS EM TEMPO REAL =====
         metrics_frame = ttk.LabelFrame(
@@ -682,7 +676,7 @@ class DemocraticControlInterface:
         )
         metrics_frame.pack(fill="x", padx=10, pady=5)
 
-        # Grid de mÃ©tricas 2x2
+        # Grid de métricas 2x2
         metrics_grid = tk.Frame(metrics_frame, bg="#1a1a1a")
         metrics_grid.pack(fill="x")
 
@@ -736,15 +730,15 @@ class DemocraticControlInterface:
         log_controls = tk.Frame(monitoring_frame, bg="#1a1a1a")
         log_controls.pack(fill="x", padx=10, pady=5)
 
-        ttk.Button(log_controls, text="ðŸ”„ Refresh", command=self._refresh_logs).pack(
+        ttk.Button(log_controls, text="🔄 Refresh", command=self._refresh_logs).pack(
             side="left", padx=5
         )
 
-        ttk.Button(log_controls, text="ðŸ’¾ Salvar Logs", command=self._save_logs).pack(
+        ttk.Button(log_controls, text="💾 Salvar Logs", command=self._save_logs).pack(
             side="left", padx=5
         )
 
-        ttk.Button(log_controls, text="ðŸ—‘ï¸ Limpar", command=self._clear_logs).pack(
+        ttk.Button(log_controls, text="🗑️ Limpar", command=self._clear_logs).pack(
             side="left", padx=5
         )
 
@@ -762,12 +756,12 @@ class DemocraticControlInterface:
         log_filter.bind("<KeyRelease>", self._filter_logs)
 
     def _create_power_tools_tab(self):
-        """ðŸ”¥ ABA DE FERRAMENTAS DE PODER"""
+        """🔥 ABA DE FERRAMENTAS DE PODER"""
 
         power_frame = ttk.Frame(self.notebook)
-        self.notebook.add(power_frame, text="ðŸ”¥ Power Tools")
+        self.notebook.add(power_frame, text="🔥 Power Tools")
 
-        # ===== EXECUÃ‡ÃƒO REMOTA =====
+        # ===== EXECUÇÃO REMOTA =====
         remote_frame = ttk.LabelFrame(
     power_frame, text="Remote Execution", padding=10)
         remote_frame.pack(fill="x", padx=10, pady=5)
@@ -788,11 +782,11 @@ class DemocraticControlInterface:
 
         ttk.Button(
             remote_console_frame,
-            text="â–¶ï¸ Executar",
+            text="▶️ Executar",
             command=self._execute_remote_command,
         ).pack(side="left", padx=5)
 
-        # SeleÃ§Ã£o de alvo
+        # Seleção de alvo
         target_frame = tk.Frame(remote_frame, bg="#1a1a1a")
         target_frame.pack(fill="x", pady=5)
 
@@ -806,12 +800,12 @@ class DemocraticControlInterface:
             textvariable=self.target_device_var,
             values=[
     "Todos os Dispositivos",
-    "LÃ­der Atual",
-     "Dispositivo EspecÃ­fico"],
+    "Líder Atual",
+     "Dispositivo Específico"],
         )
         target_combo.pack(side="left", padx=5)
 
-        # ===== AUTOMAÃ‡ÃƒO AVANÃ‡ADA =====
+        # ===== AUTOMAÇÃO AVANÇADA =====
         automation_frame = ttk.LabelFrame(
             power_frame, text="Advanced Automation", padding=10
         )
@@ -822,24 +816,24 @@ class DemocraticControlInterface:
 
         ttk.Button(
             automation_controls,
-            text="ðŸ¤– Auto-Setup Total",
+            text="🤖 Auto-Setup Total",
             command=self._complete_auto_setup,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             automation_controls,
-            text="ðŸ”® PrevisÃ£o Inteligente",
+            text="🔮 Previsão Inteligente",
             command=self._intelligent_prediction,
         ).pack(side="left", padx=5)
 
         ttk.Button(
             automation_controls,
-            text="ðŸ› ï¸ Auto-CorreÃ§Ã£o",
+            text="🛠️ Auto-Correção",
             command=self._auto_correction,
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            automation_controls, text="âš¡ Modo Deus", command=self._god_mode
+            automation_controls, text="⚡ Modo Deus", command=self._god_mode
         ).pack(side="left", padx=5)
 
         # ===== SCRIPT EXECUTOR =====
@@ -870,40 +864,40 @@ class DemocraticControlInterface:
         script_controls.pack(fill="x", padx=10, pady=5)
 
         ttk.Button(
-            script_controls, text="ðŸ“ Carregar Script", command=self._load_script
+            script_controls, text="📁 Carregar Script", command=self._load_script
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            script_controls, text="ðŸ’¾ Salvar Script", command=self._save_script
+            script_controls, text="💾 Salvar Script", command=self._save_script
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            script_controls, text="â–¶ï¸ Executar", command=self._execute_script
+            script_controls, text="▶️ Executar", command=self._execute_script
         ).pack(side="left", padx=5)
 
         ttk.Button(
             script_controls,
-            text="ðŸ”¥ ExecuÃ§Ã£o DistribuÃ­da",
+            text="🔥 Execução Distribuída",
             command=self._execute_script_distributed,
         ).pack(side="left", padx=5)
 
     def _create_control_footer(self):
-        """ðŸŽ›ï¸ FOOTER DE CONTROLE RÃPIDO"""
+        """🎮 FOOTER DE CONTROLE RÁPIDO"""
 
         footer_frame = tk.Frame(self.root, bg="#2a2a2a", height=60)
         footer_frame.pack(fill="x", padx=10, pady=5)
         footer_frame.pack_propagate(False)
 
-        # Controles de emergÃªncia
+        # Controles de emergência
         emergency_frame = tk.Frame(footer_frame, bg="#2a2a2a")
         emergency_frame.pack(side="left", padx=10, pady=10)
 
         ttk.Button(
-            emergency_frame, text="ðŸš¨ STOP ALL", command=self._emergency_stop
+            emergency_frame, text="🚨 STOP ALL", command=self._emergency_stop
         ).pack(side="left", padx=5)
 
         ttk.Button(
-            emergency_frame, text="ðŸ”„ RESTART", command=self._emergency_restart
+            emergency_frame, text="🔄 RESTART", command=self._emergency_restart
         ).pack(side="left", padx=5)
 
         # Status global
@@ -911,15 +905,15 @@ class DemocraticControlInterface:
         status_frame.pack(side="right", padx=10, pady=10)
 
         self.global_status_label = ttk.Label(
-            status_frame, text="ðŸ”¥ SISTEMA DEMOCRÃTICO ATIVO", style="Success.TLabel"
+            status_frame, text="🔥 SISTEMA DEMOCRÁTICO ATIVO", style="Success.TLabel"
         )
         self.global_status_label.pack(side="right", padx=5)
 
     def _initialize_systems(self):
-        """âš¡ INICIALIZA TODOS OS SISTEMAS"""
+        """⚡ INICIALIZA TODOS OS SISTEMAS"""
 
         try:
-            # Thread separada para nÃ£o bloquear interface
+            # Thread separada para não bloquear interface
             init_thread = threading.Thread(
                 target=self._init_systems_background, daemon=True
             )
@@ -929,14 +923,14 @@ class DemocraticControlInterface:
             self._start_status_refresh()
 
         except Exception as e:
-            self._log(f"âŒ Erro inicializando sistemas: {e}")
+            self._log(f"❌ Erro inicializando sistemas: {e}")
 
     def _init_systems_background(self):
-        """ðŸ”„ INICIALIZAÃ‡ÃƒO EM BACKGROUND"""
+        """🔄 INICIALIZAÇÃO EM BACKGROUND"""
 
         try:
             # 1. Microsoft Device Identifier
-            self._log("ðŸ” Inicializando identificaÃ§Ã£o Microsoft...")
+            self._log("🔍 Inicializando identificação Microsoft...")
             data_path = Path(
     self.jarvis_core.config["system"]["base_path"]) / "data"
             self.microsoft_identifier = MicrosoftDeviceIdentifier(
@@ -944,29 +938,29 @@ class DemocraticControlInterface:
             self.microsoft_identifier.initialize()
 
             # 2. Biometric Verifier
-            self._log("ðŸ” Inicializando verificaÃ§Ã£o biomÃ©trica...")
+            self._log("🔍 Inicializando verificação biométrica...")
             self.biometric_verifier = EnhancedBiometricVerifier(
                 self.jarvis_core, self.microsoft_identifier
             )
 
             # 3. Democratic Core
-            self._log("ðŸ—³ï¸ Inicializando nÃºcleo democrÃ¡tico...")
+            self._log("🗳️ Inicializando núcleo democrático...")
             if DemocraticCore:
                 self.democratic_core = DemocraticCore(self.jarvis_core)
             else:
-                self._log("âš ï¸ DemocraticCore nÃ£o disponÃ­vel (ImportError)")
+                self._log("⚠️ DemocraticCore não disponível (ImportError)")
 
-            self._log("âœ… Todos os sistemas inicializados com sucesso!")
+            self._log("✅ Todos os sistemas inicializados com sucesso!")
 
             # Atualizar interface
             if self.root:
                 self.root.after(0, self._update_initial_status)
 
         except Exception as e:
-            self._log(f"âŒ Erro na inicializaÃ§Ã£o: {e}")
+            self._log(f"❌ Erro na inicialização: {e}")
 
     def _update_initial_status(self):
-        """ðŸ“Š ATUALIZA STATUS INICIAL DA INTERFACE"""
+        """📊 ATUALIZA STATUS INICIAL DA INTERFACE"""
 
         try:
             # Microsoft Account Status
@@ -981,9 +975,9 @@ class DemocraticControlInterface:
                     "unknown",
                 )
                 self.ms_status_label.config(
-    text=f"âœ… Conectado: {account_email}")
+    text=f"✅ Conectado: {account_email}")
             else:
-                self.ms_status_label.config(text="âŒ Conta nÃ£o detectada")
+                self.ms_status_label.config(text="❌ Conta não detectada")
 
             # Google Drive Status
             if (
@@ -992,27 +986,27 @@ class DemocraticControlInterface:
                 and getattr(self.microsoft_identifier, "google_drive_detected", False)
             ):
                 self.drive_status_label.config(
-                    text="âœ… Google Drive detectado")
+                    text="✅ Google Drive detectado")
             else:
                 self.drive_status_label.config(
-    text="âŒ Google Drive nÃ£o encontrado")
+    text="❌ Google Drive não encontrado")
 
             # Biometric Status
             if self.biometric_verifier:
                 status = self.biometric_verifier.get_verification_status()
                 if status["status"] == "configured":
                     self.bio_status_label.config(
-                        text=f"âœ… Configurado - {status['face_samples']} faces, {status['voice_samples']} voice"
+                        text=f"✅ Configurado - {status['face_samples']} faces, {status['voice_samples']} voice"
                     )
                 else:
                     self.bio_status_label.config(
-                        text="âš™ï¸ NÃ£o configurado")
+                        text="⚙️ Não configurado")
 
         except Exception as e:
-            self._log(f"âŒ Erro atualizando status: {e}")
+            self._log(f"❌ Erro atualizando status: {e}")
 
     def _start_status_refresh(self):
-        """ðŸ”„ INICIA REFRESH AUTOMÃTICO DE STATUS"""
+        """🔄 INICIA REFRESH AUTOMÁTICO DE STATUS"""
 
         def refresh_loop():
             try:
@@ -1022,7 +1016,7 @@ class DemocraticControlInterface:
             except Exception as e:
                 self._log(f"Erro no refresh: {e}")
             finally:
-                # Agendar prÃ³ximo refresh
+                # Agendar próximo refresh
                 if self.root is not None:
                     self.root.after(5000, refresh_loop)  # A cada 5 segundos
 
@@ -1031,12 +1025,12 @@ class DemocraticControlInterface:
             # Primeiro refresh em 1 segundo
             self.root.after(1000, refresh_loop)
 
-    # ===== MÃ‰TODOS DE CALLBACK =====
+    # ===== MÉTODOS DE CALLBACK =====
 
     def _redetect_microsoft_account(self):
-        """ðŸ” RE - DETECTA CONTA MICROSOFT"""
+        """🔍 RE-DETECTA CONTA MICROSOFT"""
 
-        self._log("ðŸ”„ Re-detectando conta Microsoft...")
+        self._log("🔄 Re-detectando conta Microsoft...")
 
         def redetect():
             try:
@@ -1045,28 +1039,28 @@ class DemocraticControlInterface:
                         self.microsoft_identifier.initialize()
                     if self.root is not None:
                         self.root.after(0, self._update_initial_status)
-                    self._log("âœ… Re-detecÃ§Ã£o concluÃ­da")
+                    self._log("✅ Re-detecção concluída")
                 else:
                     self._log(
-                        "âŒ Sistema de identificaÃ§Ã£o nÃ£o inicializado")
+                        "❌ Sistema de identificação não inicializado")
             except Exception as e:
-                self._log(f"âŒ Erro na re-detecÃ§Ã£o: {e}")
+                self._log(f"❌ Erro na re-detecção: {e}")
 
         threading.Thread(target=redetect, daemon=True).start()
 
     def _manual_microsoft_config(self):
-        """âš™ï¸ CONFIGURAÃ‡ÃƒO MANUAL DA CONTA MICROSOFT"""
+        """⚙️ CONFIGURAÇÃO MANUAL DA CONTA MICROSOFT"""
 
-        # Criar janela de configuraÃ§Ã£o manual
+        # Criar janela de configuração manual
         config_window = tk.Toplevel(self.root)
-        config_window.title("ConfiguraÃ§Ã£o Manual - Microsoft Account")
+        config_window.title("Configuração Manual - Microsoft Account")
         config_window.geometry("500x300")
         config_window.configure(bg="#1a1a1a")
 
         # Campos de entrada
         ttk.Label(
             config_window,
-            text="ConfiguraÃ§Ã£o Manual da Conta Microsoft",
+            text="Configuração Manual da Conta Microsoft",
             style="Title.TLabel",
         ).pack(pady=10)
 
@@ -1080,7 +1074,6 @@ class DemocraticControlInterface:
     style="Status.TLabel").pack(
         side="left")
 
-        from src.utils.config import config
 
         target_email = config.get_setting("portability.target_user_email", "")
 
@@ -1107,36 +1100,36 @@ class DemocraticControlInterface:
     width=40).pack(
         side="right")
 
-        # BotÃµes
+        # Botões
         button_frame = tk.Frame(config_window, bg="#1a1a1a")
         button_frame.pack(fill="x", padx=20, pady=20)
 
         def save_manual_config():
             if self.microsoft_identifier:
-                # ConfiguraÃ§Ã£o manual (implementar mÃ©todo no identifier)
+                # Configuração manual (implementar método no identifier)
                 self._log(
-                    f"ðŸ’¾ ConfiguraÃ§Ã£o manual salva: {email_var.get()}")
+                    f"💾 Configuração manual salva: {email_var.get()}")
                 config_window.destroy()
                 self._update_initial_status()
             else:
                 messagebox.showerror(
-                    "Erro", "Sistema de identificaÃ§Ã£o nÃ£o inicializado"
+                    "Erro", "Sistema de identificação não inicializado"
                 )
 
-        ttk.Button(button_frame, text="ðŸ’¾ Salvar", command=save_manual_config).pack(
+        ttk.Button(button_frame, text="💾 Salvar", command=save_manual_config).pack(
             side="left", padx=5
         )
 
         ttk.Button(
-            button_frame, text="âŒ Cancelar", command=config_window.destroy
+            button_frame, text="❌ Cancelar", command=config_window.destroy
         ).pack(side="left", padx=5)
 
     def _show_microsoft_details(self):
-        """ðŸ“‹ MOSTRA DETALHES COMPLETOS DA CONTA MICROSOFT"""
+        """📋 MOSTRA DETALHES COMPLETOS DA CONTA MICROSOFT"""
 
         if not self.microsoft_identifier:
             messagebox.showwarning(
-                "Aviso", "Sistema de identificaÃ§Ã£o nÃ£o inicializado"
+                "Aviso", "Sistema de identificação não inicializado"
             )
             return
 
@@ -1171,7 +1164,7 @@ class DemocraticControlInterface:
         # Obter e exibir detalhes
         def load_details():
             try:
-                details_info = "ðŸ†” DETALHES COMPLETOS DA IDENTIFICAÃ‡ÃƒO MICROSOFT\n"
+                details_info = "🆔 DETALHES COMPLETOS DA IDENTIFICAÇÃO MICROSOFT\n"
                 details_info += "=" * 60 + "\n\n"
 
                 if (
@@ -1181,16 +1174,16 @@ class DemocraticControlInterface:
                 ):
                     account = self.microsoft_identifier.microsoft_account
                     details_info += (
-                        f"ðŸ“§ Email: {getattr(account, 'account_email', 'unknown')}\n"
+                        f"📧 Email: {getattr(account, 'account_email', 'unknown')}\n"
                     )
                     details_info += (
-                        f"ðŸ‘¤ Nome: {getattr(account, 'display_name', 'unknown')}\n"
+                        f"👤 Nome: {getattr(account, 'display_name', 'unknown')}\n"
                     )
-                    # details_info += f"ðŸ†” User ID: {getattr(account, 'user_id', 'unknown')}\n"
-                    # details_info += f"ðŸ  Microsoft ID: {getattr(account,
+                    # details_info += f"🆔 User ID: {getattr(account, 'user_id', 'unknown')}\n"
+                    # details_info += f"🏠 Microsoft ID: {getattr(account,
                     # 'microsoft_id', 'unknown')}\n\n"
                 else:
-                    details_info += "âŒ Conta Microsoft nÃ£o detectada\n\n"
+                    details_info += "❌ Conta Microsoft não detectada\n\n"
 
                 if (
                     self.microsoft_identifier
@@ -1198,52 +1191,52 @@ class DemocraticControlInterface:
                     and self.microsoft_identifier.device_fingerprint
                 ):
                     fingerprint = self.microsoft_identifier.device_fingerprint
-                    details_info += "ðŸ–¥ï¸ DEVICE FINGERPRINT:\n"
-                    details_info += f"ðŸ†” Device ID: {getattr(fingerprint, 'device_id', 'unknown')}\n"
-                    details_info += f"ðŸ’» Computer Name: {getattr(fingerprint, 'computer_name', 'unknown')}\n"
-                    # details_info += f"ðŸ”§ CPU ID: {getattr(fingerprint,
+                    details_info += "🖥️ DEVICE FINGERPRINT:\n"
+                    details_info += f"🆔 Device ID: {getattr(fingerprint, 'device_id', 'unknown')}\n"
+                    details_info += f"💻 Computer Name: {getattr(fingerprint, 'computer_name', 'unknown')}\n"
+                    # details_info += f"🔧 CPU ID: {getattr(fingerprint,
                     # 'cpu_id', 'unknown')}\n"
-                    details_info += f"ðŸ  Motherboard: {getattr(fingerprint, 'motherboard_serial', 'unknown')}\n"
-                    details_info += f"âš¡ BIOS: {getattr(fingerprint, 'bios_serial', 'unknown')}\n\n"
+                    details_info += f"🏠 Motherboard: {getattr(fingerprint, 'motherboard_serial', 'unknown')}\n"
+                    details_info += f"⚡ BIOS: {getattr(fingerprint, 'bios_serial', 'unknown')}\n\n"
                 else:
-                    details_info += "âŒ Device fingerprint nÃ£o criado\n\n"
+                    details_info += "❌ Device fingerprint não criado\n\n"
 
                 # Google Drive status
-                details_info += "â˜ï¸ GOOGLE DRIVE:\n"
+                details_info += "☁️ GOOGLE DRIVE:\n"
                 if (
                     self.microsoft_identifier
                     and hasattr(self.microsoft_identifier, "google_drive_auth")
                     and self.microsoft_identifier.google_drive_auth
                 ):
-                    details_info += "âœ… Status: Detectado\n"
+                    details_info += "✅ Status: Detectado\n"
                     drive_path = getattr(
                         self.microsoft_identifier.google_drive_auth,
                         "drive_path",
                         "unknown",
                     )
-                    details_info += f"ðŸ“ Path: {drive_path}\n"
+                    details_info += f"📍 Path: {drive_path}\n"
                 else:
-                    details_info += "âŒ Status: NÃ£o detectado\n"
+                    details_info += "❌ Status: Não detectado\n"
 
                 details_text.insert(tk.END, details_info)
 
             except Exception as e:
                 details_text.insert(
-    tk.END, f"âŒ Erro carregando detalhes: {e}")
+    tk.END, f"❌ Erro carregando detalhes: {e}")
 
         threading.Thread(target=load_details, daemon=True).start()
 
-    # ===== MÃ‰TODOS UTILITÃRIOS =====
+    # ===== MÉTODOS UTILITÁRIOS =====
 
     def _log(self, message: str):
-        """ðŸ“ LOG PARA CONSOLE E INTERFACE"""
+        """📝 LOG PARA CONSOLE E INTERFACE"""
 
         timestamp = datetime.now().strftime("%H:%M:%S")
         log_message = f"[{timestamp}] {message}\n"
 
         print(log_message.strip())  # Console
 
-        # Interface (se disponÃ­vel)
+        # Interface (se disponível)
         try:
             if hasattr(self, "log_text"):
                 self.log_text.insert(tk.END, log_message)
@@ -1256,7 +1249,7 @@ class DemocraticControlInterface:
             pass
 
     def _load_user_preferences(self) -> Dict[str, Any]:
-        """ðŸ“ CARREGA PREFERÃŠNCIAS DO USUÃRIO"""
+        """📝 CARREGA PREFERÊNCIAS DO USUÁRIO"""
 
         try:
             prefs_path = (
@@ -1269,7 +1262,7 @@ class DemocraticControlInterface:
                 with open(prefs_path, "r", encoding="utf-8") as f:
                     return json.load(f)
             else:
-                # PreferÃªncias padrÃ£o
+                # Preferências padrão
                 return {
                     "theme": "dark",
                     "auto_monitoring": True,
@@ -1279,11 +1272,11 @@ class DemocraticControlInterface:
                     "biometric_verification_required": True,
                 }
         except Exception as e:
-            print(f"âŒ Erro carregando preferÃªncias: {e}")
+            print(f"❌ Erro carregando preferências: {e}")
             return {}
 
     def _save_user_preferences(self):
-        """ðŸ’¾ SALVA PREFERÃŠNCIAS DO USUÃRIO"""
+        """💾 SALVA PREFERÊNCIAS DO USUÁRIO"""
 
         try:
             prefs_path = (
@@ -1301,18 +1294,18 @@ class DemocraticControlInterface:
      ensure_ascii=False)
 
         except Exception as e:
-            print(f"âŒ Erro salvando preferÃªncias: {e}")
+            print(f"❌ Erro salvando preferências: {e}")
 
-    # ===== MÃ‰TODOS PLACEHOLDER (IMPLEMENTAR CONFORME NECESSÃRIO) =====
+    # ===== MÉTODOS PLACEHOLDER (IMPLEMENTAR CONFORME NECESSÁRIO) =====
 
     def _connect_google_drive(self):
-        self._log("ðŸ”— Conectando Google Drive...")
+        self._log("🔗 Conectando Google Drive...")
 
     def _setup_drive_structure(self):
-        self._log("ðŸ“ Configurando estrutura do Drive...")
+        self._log("📍 Configurando estrutura do Drive...")
 
     def _sync_google_drive(self):
-        self._log("â˜ï¸ Sincronizando Google Drive...")
+        self._log("☁️ Sincronizando Google Drive...")
 
     def _setup_biometric_profile(self):
         if self.biometric_verifier:
@@ -1320,109 +1313,109 @@ class DemocraticControlInterface:
                 target=self.biometric_verifier.setup_user_profile, daemon=True
             ).start()
         else:
-            self._log("âŒ Sistema biomÃ©trico nÃ£o inicializado")
+            self._log("❌ Sistema biométrico não inicializado")
 
     def _verify_identity_now(self):
-        self._log("ðŸ” Verificando identidade...")
+        self._log("🔍 Verificando identidade...")
 
     def _toggle_biometric_monitoring(self):
-        self._log("ðŸ‘ï¸ Alternando monitoramento biomÃ©trico...")
+        self._log("👁️ Alternando monitoramento biométrico...")
 
     def _scan_network_devices(self):
-        self._log("ðŸ” Escaneando dispositivos na rede...")
+        self._log("🔍 Escaneando dispositivos na rede...")
 
     def _detect_jarvis_instances(self):
-        self._log("ðŸ†” Detectando instÃ¢ncias JARVIS...")
+        self._log("🆔 Detectando instâncias JARVIS...")
 
     def _connect_device_manual(self):
-        self._log("ðŸ¤ Conectando dispositivo manualmente...")
+        self._log("🤝 Conectando dispositivo manualmente...")
 
     def _force_democratic_election(self):
-        self._log("âš¡ ForÃ§ando eleiÃ§Ã£o democrÃ¡tica...")
+        self._log("⚡ Forçando eleição democrática...")
 
     def _show_device_details(self):
-        self._log("ðŸ“Š Mostrando detalhes do dispositivo...")
+        self._log("📊 Mostrando detalhes do dispositivo...")
 
     def _sync_selected_device(self):
-        self._log("ðŸ”„ Sincronizando dispositivo selecionado...")
+        self._log("🔄 Sincronizando dispositivo selecionado...")
 
     def _disconnect_selected_device(self):
-        self._log("âŒ Desconectando dispositivo...")
+        self._log("❌ Desconectando dispositivo...")
 
     def _force_election(self):
-        self._log("ðŸ—³ï¸ ForÃ§ando eleiÃ§Ã£o...")
+        self._log("🗳️ Forçando eleição...")
 
     def _run_for_leader(self):
-        self._log("ðŸ‘‘ Candidatando-se a lÃ­der...")
+        self._log("👑 Candidatando-se a líder...")
 
     def _full_network_sync(self):
-        self._log("ðŸ”„ SincronizaÃ§Ã£o total da rede...")
+        self._log("🔄 Sincronização total da rede...")
 
     def _analyze_network(self):
-        self._log("ðŸ“Š Analisando rede...")
+        self._log("📊 Analisando rede...")
 
     def _auto_optimize_network(self):
-        self._log("âš¡ OtimizaÃ§Ã£o automÃ¡tica da rede...")
+        self._log("⚡ Otimização automática da rede...")
 
     def _advanced_security_config(self):
-        self._log("ðŸ›¡ï¸ ConfiguraÃ§Ã£o avanÃ§ada de seguranÃ§a...")
+        self._log("🛡️ Configuração avançada de segurança...")
 
     def _start_distributed_training(self):
-        self._log("ðŸš€ Iniciando treinamento distribuÃ­do...")
+        self._log("🚀 Iniciando treinamento distribuído...")
 
     def _pause_training(self):
-        self._log("â¸ï¸ Pausando treinamento...")
+        self._log("⏸️ Pausando treinamento...")
 
     def _stop_training(self):
-        self._log("â¹ï¸ Parando treinamento...")
+        self._log("⏹️ Parando treinamento...")
 
     def _show_training_metrics(self):
-        self._log("ðŸ“ˆ Mostrando mÃ©tricas de treinamento...")
+        self._log("📈 Mostrando métricas de treinamento...")
 
     def _configure_model(self):
-        self._log("âš™ï¸ Configurando modelo...")
+        self._log("⚙️ Configurando modelo...")
 
     def _select_dataset(self):
-        self._log("ðŸ“ Selecionando dataset...")
+        self._log("📁 Selecionando dataset...")
 
     def _generate_dataset(self):
-        self._log("ðŸ”„ Gerando dataset...")
+        self._log("🔄 Gerando dataset...")
 
     def _setup_gmail_integration(self):
-        self._log("ðŸ“§ Configurando integraÃ§Ã£o Gmail...")
+        self._log("📧 Configurando integração Gmail...")
 
     def _setup_calendar_sync(self):
-        self._log("ðŸ“… Configurando sincronizaÃ§Ã£o de calendÃ¡rio...")
+        self._log("📅 Configurando sincronização de calendário...")
 
     def _setup_cloud_functions(self):
-        self._log("â˜ï¸ Configurando Cloud Functions...")
+        self._log("☁️ Configurando Cloud Functions...")
 
     def _setup_outlook_integration(self):
-        self._log("ðŸ“§ Configurando integraÃ§Ã£o Outlook...")
+        self._log("📧 Configurando integração Outlook...")
 
     def _setup_onedrive_sync(self):
-        self._log("â˜ï¸ Configurando sincronizaÃ§Ã£o OneDrive...")
+        self._log("☁️ Configurando sincronização OneDrive...")
 
     def _setup_office365(self):
-        self._log("ðŸ’¼ Configurando Office 365...")
+        self._log("💼 Configurando Office 365...")
 
     def _create_webhook(self):
-        self._log("âž• Criando webhook...")
+        self._log("➕ Criando webhook...")
 
     def _edit_webhook(self):
-        self._log("âœï¸ Editando webhook...")
+        self._log("✏️ Editando webhook...")
 
     def _test_webhook(self):
-        self._log("ðŸ§ª Testando webhook...")
+        self._log("🧪 Testando webhook...")
 
     def _remove_webhook(self):
-        self._log("âŒ Removendo webhook...")
+        self._log("❌ Removendo webhook...")
 
     def _refresh_logs(self):
-        self._log("ðŸ”„ Atualizando logs...")
+        self._log("🔄 Atualizando logs...")
 
     def _save_logs(self):
-        self._log("ðŸ’¾ Salvando logs...")
+        self._log("💾 Salvando logs...")
 
     def _clear_logs(self):
         if hasattr(self, "log_text"):
@@ -1432,40 +1425,40 @@ class DemocraticControlInterface:
         pass  # Implementar filtro de logs
 
     def _execute_remote_command(self):
-        self._log("â–¶ï¸ Executando comando remoto...")
+        self._log("▶️ Executando comando remoto...")
 
     def _complete_auto_setup(self):
-        self._log("ðŸ¤– Executando auto-setup total...")
+        self._log("🤖 Executando auto-setup total...")
 
     def _intelligent_prediction(self):
-        self._log("ðŸ”® Executando previsÃ£o inteligente...")
+        self._log("🔮 Executando previsão inteligente...")
 
     def _auto_correction(self):
-        self._log("ðŸ› ï¸ Executando auto-correÃ§Ã£o...")
+        self._log("🛠️ Executando auto-correção...")
 
     def _god_mode(self):
-        self._log("âš¡ MODO DEUS ATIVADO...")
+        self._log("⚡ MODO DEUS ATIVADO...")
 
     def _load_script(self):
-        self._log("ðŸ“ Carregando script...")
+        self._log("📁 Carregando script...")
 
     def _save_script(self):
-        self._log("ðŸ’¾ Salvando script...")
+        self._log("💾 Salvando script...")
 
     def _execute_script(self):
-        self._log("â–¶ï¸ Executando script...")
+        self._log("▶️ Executando script...")
 
     def _execute_script_distributed(self):
-        self._log("ðŸ”¥ Executando script distribuÃ­do...")
+        self._log("🔥 Executando script distribuído...")
 
     def _emergency_stop(self):
-        self._log("ðŸš¨ PARADA DE EMERGÃŠNCIA!")
+        self._log("🚨 PARADA DE EMERGÊNCIA!")
 
     def _emergency_restart(self):
-        self._log("ðŸ”„ REINÃCIO DE EMERGÃŠNCIA!")
+        self._log("🔄 REINÍCIO DE EMERGÊNCIA!")
 
     def _refresh_metrics(self):
-        """ðŸ“Š ATUALIZA MÃ‰TRICAS EM TEMPO REAL"""
+        """📊 ATUALIZA MÉTRICAS EM TEMPO REAL"""
         try:
             # CPU Usage
             cpu_percent = psutil.cpu_percent(interval=0.1)
@@ -1548,12 +1541,12 @@ class DemocraticControlInterface:
         pass  # Implementar refresh de status da rede
 
     def _check_devices(self):
-        pass  # Implementar verificaÃ§Ã£o de dispositivos
+        pass  # Implementar verificação de dispositivos
 
 
-# FunÃ§Ã£o principal de lanÃ§amento
+# Função principal de lançamento
 def launch_democratic_interface(jarvis_core):
-    """ðŸš€ LANÃ‡A INTERFACE DEMOCRÃTICA"""
+    """🚀 LANÇA INTERFACE DEMOCRÁTICA"""
 
     interface = DemocraticControlInterface(jarvis_core)
     interface.launch_interface()
@@ -1562,5 +1555,5 @@ def launch_democratic_interface(jarvis_core):
 
 if __name__ == "__main__":
     # Para testes
-    print("ðŸ”¥ Democratic Control Interface - Teste")
-    print("âž¡ï¸  Use launch_democratic_interface(jarvis_core) para executar")
+    print("🔥 Democratic Control Interface - Teste")
+    print("➡️  Use launch_democratic_interface(jarvis_core) para executar")

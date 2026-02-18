@@ -21,13 +21,13 @@ print("-" * 50)
 
 numpy = check_lib("numpy")
 torch = check_lib("torch")
-chromadb = check_lib("chromadb")
+chromadb_lib = check_lib("chromadb")
 onnxruntime = check_lib("onnxruntime")
 sqlite3 = check_lib("sqlite3")
 
-if chromadb:
+if chromadb_lib:
     try:
-        import chromadb.api
+        import chromadb.api  # type: ignore
 
         print("✅ chromadb.api: OK")
     except Exception as e:

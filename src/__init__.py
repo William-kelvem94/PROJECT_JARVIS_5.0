@@ -1,6 +1,6 @@
 """Jarvis 5.0 - Pacote Principal"""
 
-# ðŸ›¡ï¸ GLOBAL MONKEY PATCH: OpenVINO compatibility
+# 🛡️ GLOBAL MONKEY PATCH: OpenVINO compatibility
 # NOTE: importing OpenVINO at package import time can be heavy and causes
 # multiprocessing child-spawn to hang on Windows (import side-effects).
 # Apply the compatibility shim lazily and only within the main process.

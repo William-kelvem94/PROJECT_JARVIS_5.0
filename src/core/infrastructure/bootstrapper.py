@@ -87,11 +87,15 @@ class SystemBootstrapper:
             )
 
         # System Integrator (Actions)
+        deps = ["ui_signals"]
+        if self.app:
+            deps.append("window_manager")
+
         self.boot_manager.register_module(
             "system_integrator",
             self._init_system_integrator,
             BootPriority.MEDIUM,
-            ["window_manager"] if self.app else [],
+            deps,
         )
 
         # Audio System (optional - não bloqueia o boot)

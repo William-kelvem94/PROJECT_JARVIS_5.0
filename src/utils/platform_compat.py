@@ -10,6 +10,8 @@ Author: JARVIS 5.0 Core Team
 
 import platform
 import logging
+from types import ModuleType
+from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,15 @@ IS_MAC = platform.system() == "Darwin"
 # ============================================================================
 # Windows-specific imports
 # ============================================================================
+
+winreg: Optional[ModuleType]
+win32api: Optional[ModuleType]
+win32con: Optional[ModuleType]
+win32gui: Optional[ModuleType]
+win32process: Optional[ModuleType]
+win32security: Optional[ModuleType]
+wmi: Optional[ModuleType]
+ctypes: Optional[ModuleType]
 
 # winreg
 try:

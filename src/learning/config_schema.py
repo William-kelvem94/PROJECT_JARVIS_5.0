@@ -78,8 +78,8 @@ class LearningConfig:
         """Reconstrói a configuração a partir de um dicionário (YAML)."""
         if not data:
             return cls()
-            
-        def _get_sub_config(section: str, SubCls: Any, sub_sections: Dict = None):
+
+        def _get_sub_config(section: str, SubCls: Any, sub_sections: Optional[Dict] = None):
             section_data = data.get(section, {})
             # Map sub-sections if needed (e.g. idle_conditions inside dream_cycle)
             if sub_sections:

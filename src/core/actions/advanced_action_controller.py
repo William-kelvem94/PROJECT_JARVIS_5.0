@@ -1,6 +1,6 @@
 """
 Advanced Action Controller - Controle Total do PC
-Gerencia automaÃ§Ã£o de interface, controle de aplicaÃ§Ãµes e sistema de arquivos
+Gerencia automação de interface, controle de aplicações e sistema de arquivos
 """
 
 import os
@@ -8,32 +8,47 @@ import sys
 import logging
 import subprocess
 import psutil
-import pyautogui
-import pygetwindow as gw
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 import time
 
+# PyAutoGUI guard
+try:
+    import pyautogui
+    PYAUTOGUI_AVAILABLE = True
+except ImportError:
+    pyautogui = None
+    PYAUTOGUI_AVAILABLE = False
+
+# PyGetWindow guard
+try:
+    import pygetwindow as gw
+    PYGETWINDOW_AVAILABLE = True
+except ImportError:
+    gw = None
+    PYGETWINDOW_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
-# Configurar PyAutoGUI para seguranÃ§a
-pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 0.1
+# Configurar PyAutoGUI para segurança
+if pyautogui:
+    pyautogui.FAILSAFE = True
+    pyautogui.PAUSE = 0.1
 
 
 class AdvancedActionController:
-    """Controlador avanÃ§ado de aÃ§Ãµes do sistema"""
+    """Controlador avançado de ações do sistema"""
 
     def __init__(self):
         self.known_apps = self._discover_applications()
         self.macros = {}
 
     def _discover_applications(self) -> Dict[str, str]:
-        """Descobre aplicaÃ§Ãµes instaladas no sistema"""
+        """Descobre aplicações instaladas no sistema"""
         apps = {}
 
         if sys.platform == "win32":
-            # Locais comuns de instalaÃ§Ã£o no Windows
+            # Locais comuns de instalação no Windows
             search_paths = [
                 Path(os.environ.get("ProgramFiles", "C:/Program Files")),
                 Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)")),
@@ -60,11 +75,11 @@ class AdvancedActionController:
                     if app_name in apps:
                         break
 
-        logger.info(f"Descobertas {len(apps)} aplicaÃ§Ãµes")
+        logger.info(f"Descobertas {len(apps)} aplicações")
         return apps
 
     def open_application(self, app_name: str) -> bool:
-        """Abre uma aplicaÃ§Ã£o pelo nome"""
+        """Abre uma aplicação pelo nome"""
         try:
             # Validação básica de segurança
             if not app_name or not app_name.strip():
@@ -90,15 +105,15 @@ class AdvancedActionController:
 
             # Tentar abrir diretamente (pode estar no PATH)
             subprocess.Popen([app_name], shell=False)
-            logger.info(f"âœ… AplicaÃ§Ã£o aberta: {app_name}")
+            logger.info(f"✅ Aplicação aberta: {app_name}")
             return True
 
         except Exception as e:
-            logger.error(f"âŒ Erro ao abrir {app_name}: {e}")
+            logger.error(f"❌ Erro ao abrir {app_name}: {e}")
             return False
 
     def close_application(self, app_name: str) -> bool:
-        """Fecha uma aplicaÃ§Ã£o pelo nome"""
+        """Fecha uma aplicação pelo nome"""
         try:
             target_name = app_name.lower()
             for proc in psutil.process_iter(["name", "exe"]):
@@ -124,41 +139,44 @@ class AdvancedActionController:
                 ):
                     continue
 
-            logger.warning(f"âš ï¸ AplicaÃ§Ã£o nÃ£o encontrada: {app_name}")
+            logger.warning(f"⚠️ Aplicação não encontrada: {app_name}")
             return False
 
         except Exception as e:
-            logger.error(f"âŒ Erro ao fechar {app_name}: {e}")
+            logger.error(f"❌ Erro ao fechar {app_name}: {e}")
             return False
 
     def type_text(self, text: str, interval: float = 0.05):
-        """Digita texto na posiÃ§Ã£o atual do cursor"""
+        """Digita texto na posição atual do cursor"""
+        if not pyautogui: return False
         try:
             pyautogui.write(text, interval=interval)
-            logger.info(f"âœ… Texto digitado: {text[:50]}...")
+            logger.info(f"✅ Texto digitado: {text[:50]}...")
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao digitar: {e}")
+            logger.error(f"❌ Erro ao digitar: {e}")
             return False
 
     def press_key(self, key: str, presses: int = 1):
         """Pressiona uma tecla"""
+        if not pyautogui: return False
         try:
             pyautogui.press(key, presses=presses)
-            logger.info(f"âœ… Tecla pressionada: {key}")
+            logger.info(f"✅ Tecla pressionada: {key}")
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao pressionar tecla: {e}")
+            logger.error(f"❌ Erro ao pressionar tecla: {e}")
             return False
 
     def hotkey(self, *keys):
-        """Executa combinaÃ§Ã£o de teclas"""
+        """Executa combinação de teclas"""
+        if not pyautogui: return False
         try:
             pyautogui.hotkey(*keys)
-            logger.info(f"âœ… Atalho executado: {'+'.join(keys)}")
+            logger.info(f"✅ Atalho executado: {'+'.join(keys)}")
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao executar atalho: {e}")
+            logger.error(f"❌ Erro ao executar atalho: {e}")
             return False
 
     def click(
@@ -168,48 +186,53 @@ class AdvancedActionController:
         button: str = "left",
         clicks: int = 1,
     ):
-        """Clica em uma posiÃ§Ã£o ou na posiÃ§Ã£o atual"""
+        """Clica em uma posição ou na posição atual"""
+        if not pyautogui: return False
         try:
             if x is not None and y is not None:
                 pyautogui.click(x, y, button=button, clicks=clicks)
             else:
                 pyautogui.click(button=button, clicks=clicks)
-            logger.info(f"âœ… Clique executado: ({x}, {y})")
+            logger.info(f"✅ Clique executado: ({x}, {y})")
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao clicar: {e}")
+            logger.error(f"❌ Erro ao clicar: {e}")
             return False
 
     def move_mouse(self, x: int, y: int, duration: float = 0.5):
-        """Move o mouse para uma posiÃ§Ã£o"""
+        """Move o mouse para uma posição"""
+        if not pyautogui: return False
         try:
             pyautogui.moveTo(x, y, duration=duration)
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao mover mouse: {e}")
+            logger.error(f"❌ Erro ao mover mouse: {e}")
             return False
 
     def get_mouse_position(self) -> Tuple[int, int]:
-        """Retorna posiÃ§Ã£o atual do mouse"""
+        """Retorna posição atual do mouse"""
+        if not pyautogui: return (0, 0)
         return pyautogui.position()
 
     def screenshot_region(
         self, x: int, y: int, width: int, height: int, filename: Optional[str] = None
     ):
-        """Captura uma regiÃ£o especÃ­fica da tela"""
+        """Captura uma região específica da tela"""
+        if not pyautogui: return None
         try:
             screenshot = pyautogui.screenshot(region=(x, y, width, height))
             if filename:
                 screenshot.save(filename)
             return screenshot
         except Exception as e:
-            logger.error(f"âŒ Erro ao capturar regiÃ£o: {e}")
+            logger.error(f"❌ Erro ao capturar região: {e}")
             return None
 
     def find_on_screen(
         self, image_path: str, confidence: float = 0.8
     ) -> Optional[Tuple[int, int]]:
-        """Encontra uma imagem na tela e retorna sua posiÃ§Ã£o"""
+        """Encontra uma imagem na tela e retorna sua posição"""
+        if not pyautogui: return None
         try:
             location = pyautogui.locateOnScreen(image_path, confidence=confidence)
             if location:
@@ -217,18 +240,18 @@ class AdvancedActionController:
                 return (center.x, center.y)
             return None
         except Exception as e:
-            logger.error(f"âŒ Erro ao localizar imagem: {e}")
+            logger.error(f"❌ Erro ao localizar imagem: {e}")
             return None
 
     def record_macro(self, name: str, actions: List[Dict[str, Any]]):
-        """Grava uma macro (sequÃªncia de aÃ§Ãµes)"""
+        """Grava uma macro (sequência de ações)"""
         self.macros[name] = actions
-        logger.info(f"âœ… Macro gravada: {name} ({len(actions)} aÃ§Ãµes)")
+        logger.info(f"✅ Macro gravada: {name} ({len(actions)} ações)")
 
     def play_macro(self, name: str) -> bool:
         """Executa uma macro gravada"""
         if name not in self.macros:
-            logger.error(f"âŒ Macro nÃ£o encontrada: {name}")
+            logger.error(f"❌ Macro não encontrada: {name}")
             return False
 
         try:
@@ -292,17 +315,21 @@ class AdvancedActionController:
                     )
                     continue
 
-            logger.info(f"âœ… Macro executada: {name}")
+            logger.info(f"✅ Macro executada: {name}")
             return True
 
         except Exception as e:
-            logger.error(f"âŒ Erro ao executar macro: {e}")
+            logger.error(f"❌ Erro ao executar macro: {e}")
             return False
 
     def window_manage(
         self, window_title: Optional[str] = None, operation: str = "focus", **kwargs
     ):
         """Gerencia janelas do sistema"""
+        if not gw:
+            logger.warning("⚠️ pygetwindow not available")
+            return False
+
         try:
             # Se título não fornecido, usar janela ativa
             if not window_title:
@@ -334,22 +361,28 @@ class AdvancedActionController:
                 y = kwargs.get("y", window.top)
                 window.moveTo(x, y)
 
-            logger.info(f"âœ… OperaÃ§Ã£o '{operation}' na janela: {window.title}")
+            logger.info(f"✅ Operação '{operation}' na janela: {window.title}")
             return True
         except Exception as e:
-            logger.error(f"âŒ Erro ao gerenciar janela: {e}")
+            logger.error(f"❌ Erro ao gerenciar janela: {e}")
             return False
 
     def get_system_info(self) -> Dict[str, Any]:
-        """Retorna informaÃ§Ãµes do sistema"""
-        return {
+        """Retorna informações do sistema"""
+        info = {
             "cpu_percent": psutil.cpu_percent(interval=1),
             "memory_percent": psutil.virtual_memory().percent,
             "disk_usage": psutil.disk_usage(os.path.abspath(os.sep)).percent,
             "running_processes": len(psutil.pids()),
-            "screen_size": pyautogui.size(),
         }
 
+        if pyautogui:
+            info["screen_size"] = pyautogui.size()
+        else:
+            info["screen_size"] = "Unknown"
 
-# InstÃ¢ncia global
+        return info
+
+
+# Instância global
 advanced_action_controller = AdvancedActionController()

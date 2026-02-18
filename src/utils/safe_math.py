@@ -23,8 +23,8 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
         SyntaxError: If the expression is invalid syntax.
     """
 
-    # Allowed operators mapping
-    operators = {
+    # Allowed binary operators mapping
+    binary_operators = {
         ast.Add: operator.add,
         ast.Sub: operator.sub,
         ast.Mult: operator.mul,
@@ -33,6 +33,10 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
         ast.Pow: operator.pow,
         ast.Mod: operator.mod,
         ast.BitXor: operator.xor,
+    }
+
+    # Allowed unary operators mapping
+    unary_operators = {
         ast.USub: operator.neg,
         ast.UAdd: operator.pos,
     }
@@ -92,9 +96,9 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
             right = _eval(node.right)
             # Handle operator lookup
             op_type = type(node.op)
-            if op_type in operators:
+            if op_type in binary_operators:
                 try:
-                    return operators[op_type](left, right)
+                    return binary_operators[op_type](left, right)
                 except ZeroDivisionError:
                     raise ValueError("Division by zero")
                 except OverflowError:
@@ -104,8 +108,8 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
         elif isinstance(node, ast.UnaryOp):
             operand = _eval(node.operand)
             op_type = type(node.op)
-            if op_type in operators:
-                return operators[op_type](operand)
+            if op_type in unary_operators:
+                return unary_operators[op_type](operand)
             raise ValueError(f"Operator {op_type.__name__} not allowed")
 
         elif isinstance(node, ast.Call):
@@ -126,6 +130,9 @@ def safe_eval(expression: str) -> Union[int, float, List, Tuple]:
 
         else:
             raise ValueError(f"Node type {type(node).__name__} not allowed")
+
+    if not expression:
+         return 0
 
     # Limit expression length to prevent DoS via extremely long strings
     if len(expression) > 1000:

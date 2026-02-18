@@ -20,9 +20,10 @@ from src.core.security.security_manager import SecurityManager
 
 logger = logging.getLogger(__name__)
 
-# ConfiguraÃ§Ãµes de seguranÃ§a do PyAutoGUI
-pyautogui.PAUSE = 0.5
-pyautogui.FAILSAFE = True
+# Configurações de segurança do PyAutoGUI
+if pyautogui:
+    pyautogui.PAUSE = 0.5
+    pyautogui.FAILSAFE = True
 
 
 class ActionController:

@@ -370,6 +370,9 @@ def main():
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
+    if args.headless:
+        os.environ["JARVIS_HEADLESS"] = "1"
+
     if args.debug:
         logger.setLevel(logging.DEBUG)
 
