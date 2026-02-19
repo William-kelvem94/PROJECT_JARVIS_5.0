@@ -62,25 +62,11 @@ class VisionService:
         self._running = True
 
 
-        global event_bus
-        event_bus = AsyncEventBus()
+        # Start the event bus on the current loop
+        await self.event_bus.start()
+        logger.info("[CHILD] Event bus started")
 
-        def run_bus_loop():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(event_bus.start())
-                logger.info("[CHILD] Event bus start() completado")
-                loop.run_forever()
-            except Exception as e:
-                logger.error(f"[CHILD] Erro no loop do event_bus: {e}")
-
-        event_thread = threading.Thread(target=run_bus_loop, daemon=True, name="EventBusLoop")
-        event_thread.start()
-        time.sleep(1.0)  # Dá tempo pro loop iniciar e start() completar
-
-        logger.info("[CHILD] Event bus único criado e loop rodando em thread")
-
+        # Define handler for ECHO test
         def handler(event):
             logger.info("[CHILD] *** HANDLER EXECUTANDO *** Recebido VISION_ANALYZE: %s", event.data)
             payload = event.data.get("payload", "unknown")
@@ -91,20 +77,18 @@ class VisionService:
                 "mock": True
             }
             logger.info("[CHILD] Enviando echo: %s", response)
-            event_bus.publish(EventType.VISION_SCREEN_ANALYSIS, response)
+            self.event_bus.publish(EventType.VISION_SCREEN_ANALYSIS, response)
             logger.info("[CHILD] Echo enviado com sucesso")
 
-        event_bus.subscribe([EventType.VISION_ANALYZE], handler)
+        self.event_bus.subscribe([EventType.VISION_ANALYZE], handler)
         logger.info("[CHILD] Handler registrado no event_bus principal")
 
-        # Passe o MESMO event_bus pro bridge e VisionSystem
-        self.bridge = IPCEventBridge(self.inbox, self.outbox, event_bus=event_bus)
+        # 1. Inicia a Ponte IPC
+        self.bridge = IPCEventBridge(self.inbox, self.outbox, event_bus=self.event_bus)
         self.bridge.start()
-        self.vision_system = VisionSystem(event_bus=event_bus, use_multiprocessing=False)
 
-        # 2. Inicia a Ponte IPC
-        self.bridge = IPCEventBridge(self.inbox, self.outbox)
-        self.bridge.start()
+        # 2. Inicia o Vision System (dentro deste processo)
+        self.vision_system = VisionSystem(event_bus=self.event_bus, use_multiprocessing=False)
 
         # Immediate env-driven probe for CI/test runs (helps parent detect readiness)
         try:
@@ -125,17 +109,6 @@ class VisionService:
         except Exception:
             pass
 
-        # 3. Inicia o Vision System (dentro deste processo) usando o MESMO event_bus
-        # já inicializado acima
-
-
-
-        # O VisionSystem original inicia threads (_monitor_loop).
-        # Como estamos em um processo exclusivo, isso é perfeito.
-        # Start monitoring and background loading in a separate thread to
-        # prevent any blocking camera initialization (cv2.VideoCapture can
-        # block the process on some drivers). This ensures IPC/event loop
-        # stays responsive immediately.
         import threading
 
         def _deferred_start():

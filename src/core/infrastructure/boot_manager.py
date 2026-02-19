@@ -336,6 +336,13 @@ class BootManager:
             self._boot_thread.start()
             return True
 
+    def _log_debug(self, msg):
+        try:
+            with open("data/logs/boot_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"{datetime.now().isoformat()} - {msg}\n")
+        except:
+            pass
+
     def _execute_boot(self) -> bool:
         """Execute boot sequence"""
         try:
@@ -360,7 +367,9 @@ class BootManager:
                 self._notify_progress()
 
                 # Initialize module
+                self._log_debug(f"Initializing {module.name}...")
                 success = self._initialize_module(module)
+                self._log_debug(f"Initialized {module.name}: {'SUCCESS' if success else 'FAILED'}")
 
                 if success:
                     self.progress.completed_modules.append(module.name)
@@ -418,6 +427,9 @@ class BootManager:
             return True
 
         except Exception as e:
+            self._log_debug(f"CRITICAL BOOT FAILURE: {e}")
+            import traceback
+            self._log_debug(traceback.format_exc())
             logger.critical(f"💥 Boot process failed critically: {e}")
             self.progress.stage = BootStage.FAILED
             self._notify_progress()

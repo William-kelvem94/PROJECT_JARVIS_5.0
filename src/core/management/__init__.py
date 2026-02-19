@@ -54,7 +54,7 @@ def get_auto_recovery_system():
 
 
 # Global Instances
-auto_recovery_system = get_universal_recovery_manager()
+auto_recovery_system = None
 
 __all__ = [
     "DeviceManager",

@@ -377,4 +377,11 @@ def cached(ttl_minutes: int = 60):
 # SINGLETON INSTANCE
 # ============================================================================
 # InstÃ¢ncia global
-performance_optimizer = PerformanceOptimizer()
+# Instância global
+performance_optimizer = None
+
+def get_performance_optimizer() -> PerformanceOptimizer:
+    global performance_optimizer
+    if performance_optimizer is None:
+        performance_optimizer = PerformanceOptimizer()
+    return performance_optimizer

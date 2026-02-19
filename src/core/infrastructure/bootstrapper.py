@@ -37,19 +37,28 @@ class SystemBootstrapper:
         Raises:
             RuntimeError: If critical components fail to load.
         """
+        print("DEBUG: Entering bootstrap()")
         logger.info("🚀 Starting JARVIS System Bootstrap...")
 
         # 0. Initialize DNA (System Manifest & Blackbox Logger)
+        print("DEBUG: Calling _init_foundation()")
         self._init_foundation()
+        print("DEBUG: _init_foundation() done")
 
         # 1. Initialize Event Bus (Critical Infrastructure)
+        print("DEBUG: Calling _init_event_bus()")
         await self._init_event_bus()
+        print("DEBUG: _init_event_bus() done")
 
         # 2. Register Core Components
+        print("DEBUG: Calling _register_components()")
         self._register_components()
+        print("DEBUG: _register_components() done")
 
         # 3. Execute Boot Sequence
+        print("DEBUG: Calling boot_manager.start_boot()")
         success = self.boot_manager.start_boot()
+        print(f"DEBUG: start_boot() returned {success}")
 
         if not success:
             logger.critical("❌ Boot Sequence FAILED")
@@ -125,7 +134,7 @@ class SystemBootstrapper:
             BootPriority.MEDIUM,
             ["system_integrator"],  # Só depende do integrador, não de áudio/visão
             required=True,
-            timeout_seconds=60,  # Aumentado para 60s pois carrega muitos módulos
+            timeout_seconds=120,  # Aumentado para 120s para heavy loading
         )
 
     # --- Factory Methods (Lazy Loading) ---

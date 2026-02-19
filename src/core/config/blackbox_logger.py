@@ -91,7 +91,8 @@ class BlackboxLogger:
         return cls._instance
 
     def __init__(self, db_path: Optional[str] = None):
-        if self._initialized:
+        # Check if already initialized (singleton safety)
+        if getattr(self, "_initialized", False) and self._initialized:
             return
 
         # Determine database path
@@ -119,16 +120,29 @@ class BlackboxLogger:
         self.pool_lock = threading.Lock()
         self.session_id = self._generate_session_id()
 
-        # Initialize database schema
-        self._initialize_database()
-
-        # Start background maintenance
-        self._start_maintenance_thread()
-
+        self._db_ready = False
         self._initialized = True
+        
+    def _ensure_initialized(self):
+        """Lazy initialization of DB and threads"""
+        if self._db_ready:
+            return
+            
+        with self._lock:
+            if self._db_ready:
+                return
+                
+            # Initialize database schema
+            self._initialize_database()
 
-        # Log system initialization
-        self.info("🔥 Blackbox Logger initialized", component="blackbox_logger")
+            # Start background maintenance
+            self._start_maintenance_thread()
+            
+            self._db_ready = True
+
+            # Log system initialization
+            self.info("🔥 Blackbox Logger initialized", component="blackbox_logger")
+
 
     def _generate_session_id(self) -> str:
         """Generate unique session ID"""
@@ -300,6 +314,7 @@ class BlackboxLogger:
         include_stack: bool = False,
         no_standard_log: bool = False,
     ):
+        self._ensure_initialized()
         """
         Core logging method
 
@@ -404,6 +419,7 @@ class BlackboxLogger:
         success: bool = True,
         duration_ms: Optional[float] = None,
     ):
+        self._ensure_initialized()
         """
         Log system events with structured data
 
@@ -450,6 +466,7 @@ class BlackboxLogger:
         component: str = "system",
         metadata: Optional[Dict[str, Any]] = None,
     ):
+        self._ensure_initialized()
         """
         Log performance metrics
 
@@ -495,6 +512,7 @@ class BlackboxLogger:
         hours: Optional[int] = None,
         limit: int = 1000,
     ) -> List[Dict[str, Any]]:
+        self._ensure_initialized()
         """
         Query logs with filters
 
