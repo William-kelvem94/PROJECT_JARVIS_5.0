@@ -1,0 +1,30 @@
+### Analisar projeto inteiro
+POST http://localhost:5678/webhook-test/debug-projeto
+Content-Type: application/json
+
+{
+    "acao": "analisar",
+    "caminho": "C:\\Users\\willi\\Documents\\GitHub\\PROJECT_JARVIS_5.0"
+}
+
+### Debug específico
+POST http://localhost:5678/webhook-test/debug-projeto
+Content-Type: application/json
+
+{
+    "acao": "debug",
+    "caminho": "C:\\Users\\willi\\Documents\\GitHub\\PROJECT_JARVIS_5.0",
+    "arquivos": ["main.py", "utils.py"],
+    "erro": "ImportError: No module named 'requests'"
+}
+
+### Corrigir automaticamente
+POST http://localhost:5678/webhook-test/debug-projeto
+Content-Type: application/json
+
+{
+    "acao": "corrigir",
+    "caminho": "C:\\Users\\willi\\Documents\\GitHub\\PROJECT_JARVIS_5.0",
+    "arquivos": ["config.py"],
+    "erro": "SyntaxError: invalid syntax"
+}
