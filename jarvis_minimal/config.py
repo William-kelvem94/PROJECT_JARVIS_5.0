@@ -19,6 +19,9 @@ SYSTEM_PROMPT = (
     "Mantenha o contexto das últimas interações quando apropriado."
 )
 
+# Enable local neural brain? If False, sempre usará apenas Ollama.
+USE_LOCAL_BRAIN = True
+
 # Idioma do dispositivo (se None, será detectado automaticamente)
 DEVICE_LANGUAGE = None
 LANGUAGE_VALIDATION = True  # validar idioma das entradas contra o idioma do dispositivo (nativo)

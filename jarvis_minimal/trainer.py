@@ -25,6 +25,12 @@ os.makedirs(AUTOFIX_DIR, exist_ok=True)
 class SelfTrainer:
     def __init__(self, model: str = "llama"):
         self.model = model
+        # load local brain if available for fine-tuning
+        try:
+            from .local_brain import LocalBrain
+            self.brain = LocalBrain()
+        except Exception:
+            self.brain = None
 
     def run_tests(self) -> str:
         '''Run pytest (if available) and return stdout/stderr.'''
@@ -53,13 +59,21 @@ class SelfTrainer:
         if not AUTO_TRAIN:
             return
         print("[trainer] iniciando rotina noturna de auto‑treino...")
+        # 1. run unit tests and collect suggestions
         out = self.run_tests()
         if "FAILED" not in out and "error" not in out.lower():
-            print("[trainer] sem falhas detectadas.")
-            return
-        suggestion = self.request_fix(out)
-        saved = self.save_suggestion(suggestion)
-        print(f"[trainer] sugestão salva em {saved}")
+            print("[trainer] sem falhas detectadas nos testes.")
+        else:
+            suggestion = self.request_fix(out)
+            saved = self.save_suggestion(suggestion)
+            print(f"[trainer] sugestão salva em {saved}")
+        # 2. fine-tune local brain on interactions (if available)
+        if self.brain is not None:
+            try:
+                print("[trainer] treinando cérebro local com interações...")
+                self.brain.train_from_file()
+            except Exception as e:
+                print("[trainer] erro ao treinar cérebro local:", e)
 
 
 if __name__ == "__main__":
