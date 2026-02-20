@@ -78,11 +78,15 @@ class JarvisAgent:
             print("[agent] self-test falhou:", e)
 
     def self_test(self):
-        """Run some quick checks and print outcomes to console."""
+        """Run some quick checks and print outcomes to console.
+
+        The TTS portion now uses a friendly, context-aware greeting instead of a
+        hard-coded "teste" string.  This makes startup feel less mechanical.
+        """
         print("[self_test] iniciando diagnóstico completo...")
-        # TTS test (pause listener while speaking)
+        # TTS test with smarter greeting
         try:
-            self._speak("Olá, este é um teste de TTS.")
+            self._speak(self._startup_greeting())
         except Exception as e:
             print("[self_test] erro TTS:", e)
         # STT test
@@ -111,6 +115,29 @@ class JarvisAgent:
             self.tts.speak(text)
         finally:
             listener.set_pause_listening(False)
+
+    def _startup_greeting(self) -> str:
+        """Generate a friendly greeting for startup.
+
+        Chooses a salutation based on local time and device language.
+        """
+        import datetime
+        hour = datetime.datetime.now().hour
+        if hour < 12:
+            part = "Bom dia"
+        elif hour < 18:
+            part = "Boa tarde"
+        else:
+            part = "Boa noite"
+        # If device language isn't Portuguese, fall back to generic English
+        if self.device_lang and not self.device_lang.startswith("pt"):
+            if hour < 12:
+                part = "Good morning"
+            elif hour < 18:
+                part = "Good afternoon"
+            else:
+                part = "Good evening"
+        return f"{part}! Eu sou o Jarvis, seu assistente pessoal. Como posso ajudar?"
 
     def handle_command(self, text: str) -> None:
         print("[agent] user:", text)
