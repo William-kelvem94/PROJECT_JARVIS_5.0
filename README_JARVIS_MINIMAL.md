@@ -23,7 +23,12 @@ Como usar
 
 3. Execute:
    ```
+   # modo padrão por voz
    python run_jarvis.py
+   # apenas texto (ou qualquer modo curto abaixo)
+   python run_jarvis.py --mode text   # ou --text
+   # voz e texto em paralelo:
+   python run_jarvis.py --mode both   # ou --both
    ```
 
 Arquitetura mínima
