@@ -125,8 +125,26 @@ class LocalBrain:
             train_dataset=tokenized["train"],
             data_collator=data_collator,
         )
-        trainer.train()
+        history = trainer.train()
         trainer.save_model(MODEL_DIR)
         self.model = model
         self.tokenizer = tokenizer
         logger.info("LocalBrain: treinamento concluído e modelo salvo em %s", MODEL_DIR)
+        # save loss history to file for later inspection
+        try:
+            logs = []
+            for entry in trainer.state.log_history:
+                # only keep loss/epoch info
+                rec = {}
+                for k in ("loss", "epoch", "step"): 
+                    if k in entry:
+                        rec[k] = entry[k]
+                if rec:
+                    logs.append(rec)
+            if logs:
+                import json
+                with open(os.path.join(MODEL_DIR, "training_log.json"), "w", encoding="utf-8") as f:
+                    json.dump(logs, f, indent=2)
+        except Exception:
+            pass
+        return {"examples": len(examples), "log_history": logs if 'logs' in locals() else []}

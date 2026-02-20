@@ -71,11 +71,44 @@ class SelfTrainer:
         if self.brain is not None:
             try:
                 print("[trainer] treinando cérebro local com interações...")
-                self.brain.train_from_file()
+                report = self.brain.train_from_file()
+                if isinstance(report, dict):
+                    ex = report.get("examples")
+                    if ex is not None:
+                        print(f"[trainer] fine-tuned on {ex} exemplos de interação.")
+                    logs = report.get("log_history")
+                    if logs:
+                        print(f"[trainer] histórico de perda coletado ({len(logs)} registros).")
             except Exception as e:
                 print("[trainer] erro ao treinar cérebro local:", e)
 
-
 if __name__ == "__main__":
+    import argparse, sys
+    parser = argparse.ArgumentParser(description="Self‑trainer utility")
+    parser.add_argument("--plot", action="store_true", help="mostrar gráfico do histórico de perda do cérebro local")
+    args = parser.parse_args()
+    if args.plot:
+        try:
+            import json
+            import os
+            import matplotlib.pyplot as plt
+            path = os.path.join(os.path.dirname(__file__), "models", "local_brain", "training_log.json")
+            with open(path, encoding="utf-8") as f:
+                logs = json.load(f)
+            epochs = [l.get("epoch") for l in logs if "epoch" in l]
+            losses = [l.get("loss") for l in logs if "loss" in l]
+            if epochs and losses:
+                plt.plot(epochs, losses, marker="o")
+                plt.xlabel("epoch")
+                plt.ylabel("loss")
+                plt.title("LocalBrain training loss")
+                plt.show()
+            else:
+                print("Nenhum dado de perda disponível para plotagem.")
+        except ImportError:
+            print("matplotlib não está instalado; instale para visualizar gráficos.")
+        except Exception as e:
+            print("falha ao gerar gráfico:", e)
+        sys.exit(0)
     t = SelfTrainer()
     t.nightly_job()
