@@ -64,6 +64,9 @@ class JarvisAgent:
         self.stt = STT()
         self.memory = ConversationMemory(path=INTERACTIONS_LOG, window=CONTEXT_WINDOW)
         os.makedirs(os.path.dirname(INTERACTIONS_LOG), exist_ok=True)
+        self.debug = False
+        self._interactions_since_train = 0
+        self._auto_train_interval = 50  # fine-tune after this many interactions
 
         # local brain (pode ser None se falhar)
         from .config import USE_LOCAL_BRAIN
@@ -141,6 +144,9 @@ class JarvisAgent:
 
     def handle_command(self, text: str) -> None:
         print("[agent] user:", text)
+        if self.debug:
+            print("[agent-debug] device_lang=", self.device_lang)
+        # language validation: detect language of input and compare with device language
 
         # language validation: detect language of input and compare with device language
         try:
@@ -225,6 +231,16 @@ class JarvisAgent:
         print("[agent] jarvis:", resp)
         self._log_interaction(text, resp)
         self._speak(resp)
+        if self.debug:
+            self._interactions_since_train += 1
+            if self._interactions_since_train >= self._auto_train_interval:
+                print("[agent-debug] auto-treinando cérebro...")
+                if self.local_brain:
+                    try:
+                        self.local_brain.train_from_file()
+                    except Exception as e:
+                        print("[agent-debug] erro auto-treinamento:", e)
+                self._interactions_since_train = 0
 
     def run(self):
         print("Jarvis minimal iniciado — aguardando hotword para conversar.")
