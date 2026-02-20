@@ -25,20 +25,25 @@ def run_all():
     print("--- Startup report ---")
     print(json.dumps(report, indent=2, ensure_ascii=False))
 
+    print("\n--- Instantiate agent (aplica configuração) ---")
+    from .agent import JarvisAgent
+    agent = JarvisAgent()
+    print("Agent model:", agent.model)
+    print("Startup report accessible via agent.startup_report")
+
     print("\n--- TTS tests ---")
-    tts = TTS()
+    tts = agent.tts
     voices = tts.list_voices()
     print("Local voices found:", voices)
     print("TTS speak (teste curto)...")
     tts.speak("Teste de fala do Jarvis. Se você ouvir isso, a TTS está funcionando.")
 
-    print("\n--- Audio input test ---")
+    print("\n--- Audio input test (via agent.stt) ---")
     try:
         data = record_chunk(seconds=2)
         print("Gravado bytes:", len(data))
-        stt = STT()
-        text = stt.transcribe_bytes(data)
-        print("Transcrição (fallback):", repr(text))
+        text = agent.stt.transcribe_bytes(data)
+        print("Transcrição (via agent.stt):", repr(text))
     except Exception as e:
         print("Falha no teste de áudio:", e)
 
