@@ -46,6 +46,7 @@ Próximos passos sugeridos
 - Habilitar um backend STT local (Whisper/VOSK) se quiser operar sem internet. O sistema tenta detectar e habilitar automaticamente Whisper se estiver instalado, e busca por modelos VOSK em pastas do projeto.  
   - **Agora o Jarvis pode baixar automaticamente um modelo VOSK pt‑BR leve (~50 MB)** se detectar que o pacote `vosk` está presente e nenhum modelo foi encontrado. Basta ter Internet na primeira execução.  
   - Caso o reconhecimento retorne texto vazio, verifique volume/microfone ou insira manualmente outro modelo VOSK (defina `VOSK_MODEL_PATH` ou coloque o diretório em `jarvis_minimal/models`).
+  - O listener grava em blocos de alguns segundos; o driver de áudio é aberto/fechado a cada trecho, o que pode gerar a impressão de que o microfone está "reiniciando". A partir da versão atual, o fluxo tenta manter a entrada aberta em segundo plano para evitar esse comportamento (abo com `sd.InputStream`). Se você ainda observar pausas, reduza `chunk_seconds` no `listen_for_hotword` ou use modo `--text`.
 - Treinar detector de hotword (opcional): coloque exemplos em `jarvis_minimal/wake_data/pos` e `.../neg` e rode `python -m jarvis_minimal.wakeword_trainer`.
 - Conversação natural: o agente mantém contexto das últimas interações e inclui esse histórico nos prompts enviados ao modelo local (Ollama). Para limpar o contexto diga por voz "clear memory" ou "limpar memória".
 - **Comandos de treinamento:** você pode falar ou digitar:
