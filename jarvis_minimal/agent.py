@@ -45,8 +45,15 @@ class JarvisAgent:
             # adapt Ollama model if configured one is missing
             models = report.get("ollama_models") or []
             if models and (_cfg.OLLAMA_MODEL not in models):
-                _cfg.OLLAMA_MODEL = models[0]
-                self.model = models[0]
+                # prefer a non-cloud model (no ':cloud' suffix) if possible
+                local_models = [m for m in models if ":cloud" not in m]
+                choice = local_models[0] if local_models else models[0]
+                _cfg.OLLAMA_MODEL = choice
+                self.model = choice
+            # if whisper package is available, enable its use for STT
+            heavy = report.get("heavy_packages", {})
+            if heavy.get("whisper"):
+                _cfg.USE_WHISPER = True
         except Exception:
             pass
 
@@ -58,6 +65,27 @@ class JarvisAgent:
 
         # expose startup report for debugging/inspection
         self.startup_report = report
+        # perform a lightweight self-test after initialization
+        try:
+            self.self_test()
+        except Exception as e:
+            print("[agent] self-test falhou:", e)
+
+    def self_test(self):
+        """Run some quick checks and print outcomes to console."""
+        print("[self_test] iniciando diagnóstico completo...")
+        # TTS test
+        try:
+            self.tts.speak("Olá, este é um teste de TTS.")
+        except Exception as e:
+            print("[self_test] erro TTS:", e)
+        # STT test
+        try:
+            data = record_chunk(seconds=1)
+            txt = self.stt.transcribe_bytes(data)
+            print("[self_test] transcrição STT:", repr(txt))
+        except Exception as e:
+            print("[self_test] erro STT:", e)
 
     def _log_interaction(self, user_text: str, assistant_text: str):
         entry = {"ts": time.time(), "user": user_text, "assistant": assistant_text}
