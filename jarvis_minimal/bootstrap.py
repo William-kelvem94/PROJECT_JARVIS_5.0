@@ -106,6 +106,20 @@ def run_startup_checks(autoinstall: bool = True) -> Dict[str, object]:
     report["internet"] = has_internet()
     report["ollama_cli"] = is_command_available("ollama")
 
+    # list ollama models if CLI available
+    ollama_models: List[str] = []
+    if report["ollama_cli"]:
+        try:
+            proc = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
+            lines = (proc.stdout or "").splitlines()
+            for line in lines[1:]:
+                parts = line.strip().split()
+                if parts:
+                    ollama_models.append(parts[0])
+        except Exception:
+            pass
+    report["ollama_models"] = ollama_models
+
     # packages
     pkgs_status: Dict[str, bool] = {}
     for pkg in CORE_PACKAGES:

@@ -42,6 +42,11 @@ class JarvisAgent:
             pref = report.get("recommended_tts_pref")
             if pref:
                 _cfg.TTS_BACKEND_PREFERENCE = pref
+            # adapt Ollama model if configured one is missing
+            models = report.get("ollama_models") or []
+            if models and (_cfg.OLLAMA_MODEL not in models):
+                _cfg.OLLAMA_MODEL = models[0]
+                self.model = models[0]
         except Exception:
             pass
 
