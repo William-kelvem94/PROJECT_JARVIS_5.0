@@ -22,9 +22,13 @@ def get_device_language() -> str:
 def detect_language(text: str) -> str:
     """Detect language of `text`. Returns ISO 639-1 code (e.g. 'pt', 'en') or 'unknown'.
 
-    Prefers `langdetect` if installed, otherwise returns 'unknown'.
+    - Uses `langdetect` if available.
+    - For very short inputs (< 3 words) returns 'unknown' to avoid misclassification.
     """
     if not text:
+        return "unknown"
+    # avoid false positives on very short strings
+    if len(text.split()) < 3:
         return "unknown"
     try:
         from langdetect import detect
