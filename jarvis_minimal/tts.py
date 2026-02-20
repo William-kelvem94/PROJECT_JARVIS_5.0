@@ -79,7 +79,6 @@ class TTS:
         try:
             import edge_tts
             import asyncio
-            from playsound import playsound
             import tempfile
             import os
 
