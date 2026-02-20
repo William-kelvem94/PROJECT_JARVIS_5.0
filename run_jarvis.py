@@ -19,7 +19,17 @@ def main():
     parser = argparse.ArgumentParser(description="Runner for Jarvis minimal")
     parser.add_argument("--mode", choices=["voice", "text", "both"], default="voice",
                         help="Modo de entrada: voz, texto ou ambos")
+    # convenience flags matching README wording; they override --mode if provided
+    parser.add_argument("--text", action="store_true",
+                        help="mesmo que --mode text (modo só texto)")
+    parser.add_argument("--both", action="store_true",
+                        help="mesmo que --mode both (voz + texto)")
     args = parser.parse_args()
+    # normalize backwards-compatible flags
+    if args.text:
+        args.mode = "text"
+    elif args.both:
+        args.mode = "both"
 
     agent = JarvisAgent()
 
