@@ -25,10 +25,14 @@ def detect_language(text: str) -> str:
     - Uses `langdetect` if available.
     - For very short inputs (< 3 words) returns 'unknown' to avoid misclassification.
     """
-    if not text:
-        return "unknown"
+    # manual override for common short Portuguese sentences
+    lower = text.lower()
+    portuguese_keys = ["preciso", "estudar", "treinar", "olá", "vamos", "falar", "portugues", "estude"]
+    if any(k in lower for k in portuguese_keys):
+        return "pt"
+
     # avoid false positives on very short strings (require >=4 words)
-    if len(text.split()) < 4:
+    if len(text.split()) < 3:
         return "unknown"
     try:
         from langdetect import detect

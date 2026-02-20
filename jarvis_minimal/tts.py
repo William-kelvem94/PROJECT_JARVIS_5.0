@@ -75,52 +75,71 @@ class TTS:
             return []
 
     def _speak_edge(self, text: str):
-        """Use edge-tts (online) to synthesize and play audio (requires `playsound`)."""
+        """Use edge-tts (online) to synthesize and play audio."""
         try:
             import edge_tts
             import asyncio
             import tempfile
             import os
+            import subprocess
 
-            fname = tempfile.mktemp(suffix=".mp3")
+            from .config_manager import config
+            # Use a slightly more robust temp file handling
+            fd, fname = tempfile.mkstemp(suffix=".mp3")
+            os.close(fd) 
+            
             voice = self.edge_voice
+            pitch = config.get("TTS_PITCH", "+0Hz")
 
             async def _save():
-                communicate = edge_tts.Communicate(text, voice=voice)
+                communicate = edge_tts.Communicate(text, voice=voice, pitch=pitch)
                 await communicate.save(fname)
 
-            asyncio.run(_save())
+            # 1. Sintetiza (Online)
             try:
-                # Prefer Windows native player if available to avoid extra deps
-                if hasattr(os, "startfile"):
-                    os.startfile(fname)
+                asyncio.run(_save())
+            except Exception as e:
+                print(f"[TTS] Falha na síntese Edge: {e}")
+                if os.path.exists(fname): os.remove(fname)
+                return False
+
+            # 2. Reproduz (Local)
+            try:
+                if os.name == 'nt':
+                    # Reduzindo o overhead do PowerShell e adicionando timeout de segurança
+                    ps_cmd = f"$m = New-Object -ComObject WMPlayer.OCX; $m.url = '{fname}'; $m.controls.play(); $start = Get-Date; while($m.playState -ne 1 -and (Get-Date) -lt $start.AddSeconds(15)){{Start-Sleep -m 100}}"
+                    subprocess.run(["powershell", "-WindowStyle", "Hidden", "-Command", ps_cmd], 
+                                   capture_output=True, timeout=20)
                 else:
-                    # try playsound if installed
                     try:
                         from playsound import playsound
-
                         playsound(fname)
                     except Exception:
-                        # last resort: print filename and let user play it
-                        print(f"[TTS] arquivo de áudio gerado em: {fname}")
+                        subprocess.run(["ffplay", "-nodisp", "-autoexit", fname], capture_output=True, timeout=20)
+            except subprocess.TimeoutExpired:
+                print("[TTS] Timeout na reprodução de áudio.")
+            except Exception as e:
+                print(f"[TTS] Erro na reprodução: {e}")
             finally:
-                # do not remove immediately to allow playback; schedule removal if possible
-                pass
+                if os.path.exists(fname):
+                    try: os.remove(fname)
+                    except: pass
             return True
         except Exception as e:
-            # edge tts failed; fallthrough to other backends
-            print("[TTS] edge-tts failed:", e)
+            print("[TTS] Erro crítico no motor Edge:", e)
             return False
 
     def speak(self, text: str):
         import time
-        from .config import TTS_BACKEND_PREFERENCE
+        from .config_manager import config
 
         if not text:
             return
 
+        pref = config.get("TTS_BACKEND_PREFERENCE")
+
         # Try backends in preference order
-        for backend in (self.pref or TTS_BACKEND_PREFERENCE):
+        for backend in pref:
             if backend == "edge-tts":
                 if self._edge_available:
                     ok = self._speak_edge(text)

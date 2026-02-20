@@ -24,12 +24,20 @@ Como usar
 3. Execute:
    ```
    # modo padrão por voz
-   python run_jarvis.py
+   python run_jarvis.py          # por padrão fala+interface de texto aberta
    # apenas texto (ou qualquer modo curto abaixo)
    python run_jarvis.py --mode text   # ou --text
-   # voz e texto em paralelo:
+   # voz e texto em paralelo (mesmo que text esteja aberto):
    python run_jarvis.py --mode both   # ou --both
+   # desativar interface de texto se você só quiser falar:
+   python run_jarvis.py --no-text
+   # habilitar logs detalhados e auto‑treinamento com debug
+   python run_jarvis.py --debug
+   # carregar variáveis de configuração de um arquivo JSON ou YAML
+   python run_jarvis.py --config mysettings.yaml
    ```
+
+   Logs de inicialização são escritos em `startup.log` no diretório atual. Eles incluem mensagens de dependências, relatório de bootstrap e erros de arranque.
 
 Arquitetura mínima
 ------------------

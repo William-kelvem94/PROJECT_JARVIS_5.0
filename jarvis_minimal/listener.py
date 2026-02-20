@@ -151,23 +151,40 @@ def _get_stream(samplerate: int) -> sd.InputStream:
 
 
 def record_chunk(seconds: int = 4, samplerate: int = 16000) -> bytes:
-    """Record a short chunk from default input and return WAV bytes.
-
-    This version keeps the input stream open between calls, reducing the
-    "opening/closing" behaviour you observe on Windows.  The old implementation
-    used :pyfunc:`sd.rec` which opened a new stream each time; that can trigger
-    the OS to mute/disable the device after a few seconds.  If the stream
-    cannot be created or read, an empty byte string is returned.
-    """
+    """Record a short chunk with visual feedback and watchdog."""
     try:
         stream = _get_stream(samplerate)
-        frames, overflowed = stream.read(int(seconds * samplerate))
+        num_frames = int(seconds * samplerate)
+        
+        # Incremental read for VU meter feedback
+        chunk_size = 1024
+        frames_list = []
+        for _ in range(0, num_frames, chunk_size):
+            if is_paused():
+                break
+            data, overflowed = stream.read(chunk_size)
+            frames_list.append(data)
+            
+            # Simple VU meter
+            rms = np.sqrt(np.mean(data**2))
+            level = int(rms / 100) # scale factor
+            meter = "[" + "#" * min(level, 20) + "-" * (20 - min(level, 20)) + "]"
+            # Use carriage return to overwrite line
+            sys.stdout.write(f"\r{meter} ouvindo..." if level > 2 else f"\r{meter}           ")
+            sys.stdout.flush()
+
+        if not frames_list:
+            return b""
+            
+        frames = np.concatenate(frames_list)
         audio = frames.flatten().tobytes()
-        if overflowed:
-            # some samples were lost; log for debugging
-            print("[listener] warning: audio overflowed", overflowed)
+        
     except Exception as e:
-        print("[listener] erro ao gravar audio:", e, file=sys.stderr)
+        from .errors import errors
+        errors.report("listener", e)
+        # Attempt to restart stream
+        global _stream
+        _stream = None
         return b""
 
     # write WAV header

@@ -65,16 +65,19 @@ class LocalBrain:
             outputs = self.model.generate(**prompt_enc, max_new_tokens=150,
                                           pad_token_id=self.tokenizer.eos_token_id)
             text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-            # cut off prompt portion
-            if prompt in text:
-                text = text.split(prompt, 1)[1].strip()
+            # cut off prompt portion robustly
+            if "Jarvis:" in text:
+                text = text.split("Jarvis:")[-1].strip()
+            # fallback if split failed or model echoed system prompt
+            if "Você é Jarvis" in text:
+                text = text.split(user_text)[-1].strip() if user_text in text else text
             return text
         except Exception as e:
             logger.error("LocalBrain.reply error: %s", e)
             return None
 
-    def train_from_file(self, path: str = "data/interactions.jsonl", epochs: int = 1):
-        """Fine-tune the local model on recorded interactions (simple causal setup)."""
+    def train_from_file(self, path: str = "data/interactions.jsonl", epochs: int = 1, learning_rate: float = 5e-5, batch_size: int = 1):
+        """Fine-tune the local model with advanced parameters."""
         try:
             from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling, AutoTokenizer, AutoModelForCausalLM
             from datasets import load_dataset
@@ -111,19 +114,33 @@ class LocalBrain:
 
         tokenized = ds.map(tokenize_function, batched=True, remove_columns=["text"])
         data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
+        from transformers import TrainerCallback
+        class DashboardCallback(TrainerCallback):
+            def on_log(self, args, state, control, logs=None, **kwargs):
+                if logs and "loss" in logs:
+                    from .dashboard_server import log_task
+                    loss = logs["loss"]
+                    epoch = logs.get("epoch", 0)
+                    step = state.global_step
+                    log_task(f"📉 Treino: Passo {step} | Época {epoch:.2f} | Loss: {loss:.4f}")
+
         training_args = TrainingArguments(
             output_dir=MODEL_DIR,
             overwrite_output_dir=True,
             num_train_epochs=epochs,
-            per_device_train_batch_size=2,
-            save_steps=500,
-            save_total_limit=2,
+            per_device_train_batch_size=batch_size,
+            learning_rate=learning_rate,
+            weight_decay=0.01,
+            save_steps=1000,
+            save_total_limit=1,
+            logging_steps=1, 
         )
         trainer = Trainer(
             model=model,
             args=training_args,
             train_dataset=tokenized["train"],
             data_collator=data_collator,
+            callbacks=[DashboardCallback()]
         )
         history = trainer.train()
         trainer.save_model(MODEL_DIR)

@@ -15,15 +15,16 @@ USE_WHISPER = False
 # Conversation/context settings
 CONTEXT_WINDOW = 6           # number of previous exchanges to include in prompt
 SYSTEM_PROMPT = (
-    "Você é Jarvis — assistente pessoal que responde de forma útil, sucinta e segura. "
-    "Mantenha o contexto das últimas interações quando apropriado."
+    "Você é Jarvis, um assistente pessoal de elite. "
+    "Responda SEMPRE em Português do Brasil de forma extremamente útil e precisa. "
+    "Mantenha o contexto das últimas interações."
 )
 
 # Enable local neural brain? If False, sempre usará apenas Ollama.
 USE_LOCAL_BRAIN = True
 
-# Idioma do dispositivo (se None, será detectado automaticamente)
-DEVICE_LANGUAGE = None
+# Idioma do dispositivo
+DEVICE_LANGUAGE = "pt-br"
 LANGUAGE_VALIDATION = True  # validar idioma das entradas contra o idioma do dispositivo (nativo)
 
 # TTS backends e preferências

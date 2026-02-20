@@ -1,18 +1,13 @@
-# Minimal dependencies for Jarvis MVP (install in a virtualenv)
+# Minimal dependencies for Jarvis MVP
 pyttsx3
 sounddevice
 numpy
 requests
 speechrecognition
-# Optional/better STT backends (install if you want local STT without internet):
-# whisper      # pip install -U openai-whisper  (requires PyTorch)
-# vosk         # pip install vosk
-
-# Optional (training / wakeword detector):
-# torch        # pip install torch torchvision torchaudio  (see pytorch.org for correct command)
-# librosa      # pip install librosa
-# soundfile    # pip install soundfile (used by wakeword fallback)
-# langdetect   # pip install langdetect  (recomendado: detecta idioma das entradas)
-# vosk         # pip install vosk (STT offline gratuito)
-# edge-tts     # pip install edge-tts (vozes neurais online, gratuitas para uso pessoal)
-# playsound    # pip install playsound (reproduzir mp3 gerado por edge-tts)
+vosk
+soundfile
+langdetect
+edge-tts
+playsound
+sentence-transformers
+# Optional: faiss-cpu (for even faster RAG, but numpy is already used as fallback)

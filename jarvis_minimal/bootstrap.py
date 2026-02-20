@@ -30,6 +30,7 @@ CORE_PACKAGES = [
     "vosk",
     "soundfile",
     "edge-tts",
+    "sentence-transformers",
 ]
 
 AUTO_INSTALL = set([
@@ -41,7 +42,7 @@ AUTO_INSTALL = set([
     "langdetect",
     "soundfile",
     "edge-tts",
-    # don't auto-install 'vosk' models here (models are large)
+    "sentence-transformers",
 ])
 
 HEAVY_PACKAGES = set(["torch", "whisper"])  # won't be auto-installed
