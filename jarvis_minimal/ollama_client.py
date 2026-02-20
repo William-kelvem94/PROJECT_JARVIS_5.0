@@ -5,7 +5,8 @@ from typing import Optional
 
 
 def _try_cmd(cmd: list, timeout: int = 60) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    # use bytes mode and decode ourselves to avoid Windows codepage issues
+    return subprocess.run(cmd, capture_output=True, timeout=timeout)
 
 
 def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
@@ -37,18 +38,21 @@ def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
         except subprocess.TimeoutExpired:
             raise RuntimeError("Ollama request timed out")
 
+        # normalize output (decode bytes safely)
+        out = proc.stdout.decode("utf-8", errors="replace") if isinstance(proc.stdout, bytes) else proc.stdout or ""
+        err = proc.stderr.decode("utf-8", errors="replace") if isinstance(proc.stderr, bytes) else proc.stderr or ""
         # success
-        if proc.returncode == 0 and proc.stdout:
-            return proc.stdout.strip()
+        if proc.returncode == 0 and out:
+            return out.strip()
 
-        stderr = (proc.stderr or "").lower()
+        stderr = err.lower()
         # try next if CLI reports unknown command or unknown flag
         if "unknown command" in stderr or "unrecognized command" in stderr or "unknown flag" in stderr:
             continue
 
-        # return stderr if it contains useful info
-        if proc.stderr:
-            return proc.stderr.strip()
+        # return error text if present
+        if err:
+            return err.strip()
 
     raise RuntimeError("Could not invoke Ollama CLI with known commands. Run `ollama --help` to inspect your installation.")
 
