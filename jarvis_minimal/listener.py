@@ -11,6 +11,7 @@ import wave
 import sys
 import json
 from typing import Optional
+from .config import LISTEN_TIMEOUT
 
 import sounddevice as sd
 import numpy as np
