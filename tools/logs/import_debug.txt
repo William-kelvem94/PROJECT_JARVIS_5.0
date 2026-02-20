@@ -1,4 +1,0 @@
-MediaPipe Version: 0.10.32
-Has solutions: False
-Import Error: No module named 'mediapipe.solutions'
-Import mediapipe.python Error: No module named 'mediapipe.python'
