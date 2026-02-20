@@ -54,10 +54,11 @@ Próximos passos sugeridos
   - O listener grava em blocos de alguns segundos; o driver de áudio é aberto/fechado a cada trecho, o que pode gerar a impressão de que o microfone está "reiniciando". A partir da versão atual, o fluxo tenta manter a entrada aberta em segundo plano para evitar esse comportamento (abo com `sd.InputStream`). Se você ainda observar pausas, reduza `chunk_seconds` no `listen_for_hotword` ou use modo `--text`.
 - Treinar detector de hotword (opcional): coloque exemplos em `jarvis_minimal/wake_data/pos` e `.../neg` e rode `python -m jarvis_minimal.wakeword_trainer`.
 - Conversação natural: o agente mantém contexto das últimas interações e inclui esse histórico nos prompts enviados ao modelo local (Ollama). Para limpar o contexto diga por voz "clear memory" ou "limpar memória".
-- **Comandos de treinamento:** você pode falar ou digitar:
+- **Comandos de treinamento e pesquisa:** você pode falar ou digitar:
   - "treinar hotword" — executa o script de treino de disparo (usa arquivos em `jarvis_minimal/wake_data`).
   - "treinar cérebro" — faz fine-tuning do modelo local com o histórico de interações (`data/interactions.jsonl`).
-  Esses comandos também funcionam na interface de texto (`--text` ou `--both`).
+  - "pesquisar <termo>" ou "buscar <termo>" — o Jarvis faz uma consulta online (DuckDuckGo + HuggingFace) e devolve um resumo; o resultado também é armazenado como nova interação.
+  Esses comandos funcionam na interface de texto (`--text` ou `--both`).
 - **Entrada por texto**: você pode iniciar Jarvis em modo `--text` ou `--both` para digitar comandos no console em vez de usar apenas voz. Isso facilita desenvolvimento e fallback em máquinas sem microfone.
 - Idioma nativo: o Jarvis detecta o idioma do seu sistema (por padrão no seu notebook: Português) e valida as entradas do usuário. Se você falar em outro idioma, o Jarvis perguntará se deseja continuar nesse idioma ou se prefere que ele responda no idioma do dispositivo.
 - Para melhorar a detecção de idioma, instale `langdetect` (opcional e gratuito): `pip install langdetect`. Se `langdetect` não estiver instalado, o validador é silencioso e assume o idioma do dispositivo.
