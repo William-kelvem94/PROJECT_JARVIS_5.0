@@ -180,9 +180,24 @@ class ControlDashboard(QMainWindow):
     config_changed = pyqtSignal(dict)  # Configuration updated
 
     def __init__(self):
-        # Interface desativada
-        logger.info("Control Dashboard está desativado por configuração.")
-        return
+        super().__init__()
+
+        self.setWindowTitle("JARVIS Singularity - Control Dashboard")
+        self.setGeometry(100, 100, 1200, 800)
+
+        # Aplicar tema unificado
+        JarvisTheme.apply_theme(self)
+
+        # Load configuration
+        self.config = self._load_config()
+
+        # Setup UI
+        self._setup_ui()
+
+        # Start monitoring
+        self._start_monitoring()
+
+        logger.info("âœ… Control Dashboard initialized")
 
     def _load_config(self) -> Dict:
         """Load configuration from file with project root awareness"""

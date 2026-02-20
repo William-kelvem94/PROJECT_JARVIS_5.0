@@ -1,4 +1,6 @@
 from src.core.management.shutdown_manager import ShutdownManager
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QTimer
+from PyQt5.QtWidgets import QApplication
 from src.core.infrastructure.priority_scheduler import PriorityScheduler
 from src.core.infrastructure.bootstrapper import SystemBootstrapper
 import importlib
@@ -62,11 +64,11 @@ def apply_patches():
 
     for module_name, patch_func in patches:
         try:
-            module = importlib.import_module(module_name)
-            try:
+            if module_name in sys.modules:
+                module = sys.modules[module_name]
                 patch_func(module)
-            except Exception as e:
-                logger.debug(f"Patch for {module_name} failed: {e}")
+            else:
+                logger.debug(f"{module_name} not loaded - skipping patch")
         except ImportError:
             logger.debug(f"{module_name} not available - skipping patch")
         except Exception as e:
@@ -77,26 +79,9 @@ def apply_patches():
 
 # Import Core Components
 
-# QT_AVAILABLE block commented out for debug
-QT_AVAILABLE = False
-QtCore = None
-QtWidgets = None
-QObject = object
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QApplication
 
-# try:
-#     QtCore = importlib.import_module("PyQt6.QtCore")
-#     QtWidgets = importlib.import_module("PyQt6.QtWidgets")
-#     QObject = getattr(QtCore, "QObject")
-#     pyqtSignal = getattr(QtCore, "pyqtSignal")
-#     pyqtSlot = getattr(QtCore, "pyqtSlot")
-#     QTimer = getattr(QtCore, "QTimer")
-#     QApplication = getattr(QtWidgets, "QApplication")
-#     QT_AVAILABLE = True
-# except Exception:
-#     QT_AVAILABLE = False
-#
-#     class QObject:
-#         pass
 
 
 # ============================================================================
@@ -108,9 +93,8 @@ class JarvisSingularity(QObject):
     Orchestrates interaction between the GUI, AI Agent, and Perception Systems.
     """
 
-    if QT_AVAILABLE:
-        transcription_received = pyqtSignal(object)
-        hud_update_requested = pyqtSignal(str, str)
+    transcription_received = pyqtSignal(object)
+    hud_update_requested = pyqtSignal(str, str)
 
     def __init__(self, app, instances):
         super().__init__()
@@ -132,10 +116,9 @@ class JarvisSingularity(QObject):
         self.shutdown_manager = ShutdownManager(self)
 
         # Connect Signals
-        if QT_AVAILABLE:
-            self.transcription_received.connect(self._on_transcription)
-            self.hud_update_requested.connect(self._on_hud_update)
-            self._setup_signals()
+        self.transcription_received.connect(self._on_transcription)
+        self.hud_update_requested.connect(self._on_hud_update)
+        self._setup_signals()
 
         logger.info("✨ Singularity Core Initialized")
 
@@ -166,19 +149,7 @@ class JarvisSingularity(QObject):
         # Start Audio Listening
         if self.audio_system:
             if self.audio_system.start_listening():
-                # Em modo headless (sem Qt), usar callback direto em vez de sinal Qt
-                if QT_AVAILABLE and self.app:
-                    self.audio_system.on_transcription = self.transcription_received.emit
-                else:
-                    # Headless: processar transcrição diretamente via thread
-                    def _headless_transcription_callback(result):
-                        if result and getattr(result, "text", ""):
-                            threading.Thread(
-                                target=self._process_command,
-                                args=(result.text,),
-                                daemon=True,
-                            ).start()
-                    self.audio_system.on_transcription = _headless_transcription_callback
+                self.audio_system.on_transcription = self.transcription_received.emit
                 logger.info("🎙️ Audio System Listening")
 
         # Start Vision
@@ -197,10 +168,9 @@ class JarvisSingularity(QObject):
 
         # ✅ ACIONAR PROTOCOLO DE FINALIZAÇÃO DE BOOT (Correção Definitiva)
         # Usa QTimer para garantir que rode na thread principal do Qt após breve delay
-        if QT_AVAILABLE and self.app:
+        if self.app:
             QTimer.singleShot(BOOT_FINALIZE_DELAY, self._finalize_boot_sequence)
         else:
-            # Em modo headless, roda direto
             threading.Thread(target=self._finalize_boot_sequence_headless, daemon=True).start()
 
     def _finalize_boot_sequence(self):
@@ -233,7 +203,7 @@ class JarvisSingularity(QObject):
                 logger.error(f"❌ Error finalizing boot: {e}")
 
         # Garantir execução na main thread
-        if QT_AVAILABLE and self.app:
+        if self.app:
             QTimer.singleShot(0, _do_finalize)
         else:
             _do_finalize()
@@ -275,39 +245,34 @@ class JarvisSingularity(QObject):
     def shutdown(self):
         logger.info("🛑 Shutting down...")
         self.is_running = False
-        if self.app and QT_AVAILABLE:
+        if self.app:
             self.app.quit()
         sys.exit(0)
 
     # --- Signal Handlers ---
 
-    if QT_AVAILABLE:
+    @pyqtSlot(object)
+    def _on_transcription(self, result):
+        if not result or not result.text:
+            return
+        threading.Thread(
+            target=self._process_command, args=(result.text,), daemon=True
+        ).start()
 
-        @pyqtSlot(object)
-        def _on_transcription(self, result):
-            if not result or not result.text:
-                return
-            # Simple logic for now - process everything
-            threading.Thread(
-                target=self._process_command, args=(result.text,), daemon=True
-            ).start()
-
-        @pyqtSlot(str, str)
-        def _on_hud_update(self, state, text):
-            if self.window_manager:
-                hud = self.window_manager.get_hud()
-                if hud:
-                    hud.update_state(state)
-                    if text:
-                        hud.show_response(text)
+    @pyqtSlot(str, str)
+    def _on_hud_update(self, state, text):
+        if self.window_manager:
+            hud = self.window_manager.get_hud()
+            if hud:
+                hud.update_state(state)
+                if text:
+                    hud.show_response(text)
 
     def _process_command(self, text):
         if not self.ai_agent:
             return
         try:
-            # Emitir sinal de status apenas se Qt estiver disponível
-            if QT_AVAILABLE and self.app:
-                self.hud_update_requested.emit("thinking", "")
+            self.hud_update_requested.emit("thinking", "")
 
             # Sync wrapper for async agent processing
             loop = asyncio.new_event_loop()
@@ -315,8 +280,7 @@ class JarvisSingularity(QObject):
             response = loop.run_until_complete(self.ai_agent.process_command(text))
             loop.close()
 
-            if QT_AVAILABLE and self.app:
-                self.hud_update_requested.emit("speaking", str(response))
+            self.hud_update_requested.emit("speaking", str(response))
 
             # Speak response
             from src.core.audio.voice_controller import get_voice_controller
@@ -325,13 +289,11 @@ class JarvisSingularity(QObject):
             if vc:
                 vc.speak(str(response))
 
-            if QT_AVAILABLE and self.app:
-                self.hud_update_requested.emit("idle", "")
+            self.hud_update_requested.emit("idle", "")
 
         except Exception as e:
             logger.error(f"Error processing command: {e}")
-            if QT_AVAILABLE and self.app:
-                self.hud_update_requested.emit("error", "Erro ao processar")
+            self.hud_update_requested.emit("error", "Erro ao processar")
 
 
 # ============================================================================
@@ -378,11 +340,8 @@ def main():
     # Prepare GUI only if requested and available
     app = None
     print("DEBUG: Checking GUI availability")
-    if not args.headless and QT_AVAILABLE:
+    if not args.headless:
         app = QApplication(sys.argv)
-    elif not args.headless and not QT_AVAILABLE:
-        logger.warning("PyQt6 not available — switching to headless mode")
-        args.headless = True
 
     # Create bootstrapper (delegates heavy lifting to BootManager)
     print("DEBUG: Instantiating SystemBootstrapper")
@@ -419,7 +378,7 @@ def main():
                 jarvis = JarvisSingularity(app, boot_result["instances"])
                 jarvis.start()
                 # Manter referência para evitar garbage collection
-                app._jarvis = jarvis
+                app.setProperty('_jarvis', jarvis)
             elif boot_result["status"] == "failed":
                 timer.stop()
                 logger.critical("Boot failed — exiting GUI")
