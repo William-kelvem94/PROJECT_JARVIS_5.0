@@ -26,7 +26,11 @@ def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
 
     for cmd in cmds_to_try:
         try:
-            proc = _try_cmd(cmd, timeout=timeout)
+            # special case: for `ollama run` we send the prompt via stdin
+            if cmd[1] == "run":
+                proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout)
+            else:
+                proc = _try_cmd(cmd, timeout=timeout)
         except FileNotFoundError:
             raise RuntimeError("`ollama` CLI not found. Ensure Ollama is installed and on PATH.")
         except subprocess.TimeoutExpired:
@@ -36,12 +40,12 @@ def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
         if proc.returncode == 0 and proc.stdout:
             return proc.stdout.strip()
 
-        # specific 'unknown command' errors -> try next
         stderr = (proc.stderr or "").lower()
-        if "unknown command" in stderr or "unrecognized command" in stderr:
+        # try next if CLI reports unknown command or unknown flag
+        if "unknown command" in stderr or "unrecognized command" in stderr or "unknown flag" in stderr:
             continue
 
-        # if command executed but returned non-zero with stderr, return stderr
+        # return stderr if it contains useful info
         if proc.stderr:
             return proc.stderr.strip()
 

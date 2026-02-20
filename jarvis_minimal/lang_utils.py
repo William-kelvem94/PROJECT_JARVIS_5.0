@@ -27,8 +27,8 @@ def detect_language(text: str) -> str:
     """
     if not text:
         return "unknown"
-    # avoid false positives on very short strings
-    if len(text.split()) < 3:
+    # avoid false positives on very short strings (require >=4 words)
+    if len(text.split()) < 4:
         return "unknown"
     try:
         from langdetect import detect
