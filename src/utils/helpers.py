@@ -14,28 +14,32 @@ from PIL import Image
 
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except (ImportError, OSError) as e:
     NUMPY_AVAILABLE = False
+
     # Fallback for type hints
     class MockNumpy:
-        ndarray = type('ndarray', (), {})
+        ndarray = type("ndarray", (), {})
+
     np = MockNumpy()
     logging.warning(f"âš ï¸ numpy not available in helpers: {e}")
 
 try:
     import cv2
+
     CV2_AVAILABLE = True
 except (ImportError, OSError) as e:
     CV2_AVAILABLE = False
     cv2 = None
     logging.warning(f"âš ï¸ cv2 not available in helpers: {e}")
 
-from src.utils.config import config
 
 # Additional controlled imports to avoid imports inside functions
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
@@ -43,6 +47,7 @@ except ImportError:
 
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
@@ -50,6 +55,7 @@ except ImportError:
 
 try:
     from PIL import ImageEnhance
+
     PIL_ENHANCE_AVAILABLE = True
 except ImportError:
     PIL_ENHANCE_AVAILABLE = False
@@ -58,12 +64,14 @@ except ImportError:
 # Platform-specific imports
 try:
     import platform
+
     PLATFORM_MODULE = True
 except ImportError:
     PLATFORM_MODULE = False
 
 try:
     import subprocess
+
     SUBPROCESS_AVAILABLE = True
 except ImportError:
     SUBPROCESS_AVAILABLE = False
@@ -73,14 +81,16 @@ except ImportError:
 if platform.system() == "Windows":
     try:
         import ctypes
+
         CTYPES_AVAILABLE = True
     except ImportError:
         CTYPES_AVAILABLE = False
         ctypes = None
-    
+
     try:
         import winshell
         from win32com.client import Dispatch
+
         WINSHELL_AVAILABLE = True
     except ImportError:
         WINSHELL_AVAILABLE = False
@@ -95,6 +105,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
+
 class FileHelper:
     """UtilitÃ¡rios para manipulaÃ§Ã£o de arquivos"""
 
@@ -102,7 +113,7 @@ class FileHelper:
     def get_file_hash(file_path: Union[str, Path]) -> str:
         """Calcula hash SHA256 de um arquivo"""
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 return hashlib.sha256(f.read()).hexdigest()
         except Exception as e:
             logger.error(f"Erro ao calcular hash do arquivo {file_path}: {e}")
@@ -122,10 +133,12 @@ class FileHelper:
         Path(path).mkdir(parents=True, exist_ok=True)
 
     @staticmethod
-    def get_unique_filename(directory: Union[str, Path], filename: str, extension: str = "") -> str:
+    def get_unique_filename(
+        directory: Union[str, Path], filename: str, extension: str = ""
+    ) -> str:
         """Gera nome de arquivo Ãºnico"""
         base_name = Path(filename).stem
-        if extension and not extension.startswith('.'):
+        if extension and not extension.startswith("."):
             extension = f".{extension}"
 
         counter = 1
@@ -141,17 +154,22 @@ class FileHelper:
     def cleanup_old_files(directory: Union[str, Path], max_age_days: int = 30):
         """Remove arquivos antigos de um diretÃ³rio"""
         try:
-            cutoff_date = datetime.datetime.now() - datetime.timedelta(days=max_age_days)
+            cutoff_date = datetime.datetime.now() - datetime.timedelta(
+                days=max_age_days
+            )
             directory = Path(directory)
 
             for file_path in directory.glob("*"):
                 if file_path.is_file():
-                    file_age = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    file_age = datetime.datetime.fromtimestamp(
+                        file_path.stat().st_mtime
+                    )
                     if file_age < cutoff_date:
                         file_path.unlink()
                         logger.info(f"Arquivo antigo removido: {file_path}")
         except Exception as e:
             logger.error(f"Erro ao limpar arquivos antigos: {e}")
+
 
 class ImageHelper:
     """UtilitÃ¡rios para processamento de imagens"""
@@ -161,8 +179,8 @@ class ImageHelper:
         """PrÃ©-processa imagem para melhorar OCR"""
         try:
             # Converter para escala de cinza
-            if image.mode != 'L':
-                image = image.convert('L')
+            if image.mode != "L":
+                image = image.convert("L")
 
             # Aumentar contraste
             image = ImageHelper._enhance_contrast(image)
@@ -216,7 +234,9 @@ class ImageHelper:
             _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             # Encontrar contornos
-            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours, _ = cv2.findContours(
+                thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+            )
 
             text_regions = []
             for contour in contours:
@@ -230,6 +250,7 @@ class ImageHelper:
             logger.error(f"Erro na detecÃ§Ã£o de regiÃµes de texto: {e}")
             return []
 
+
 class TextHelper:
     """UtilitÃ¡rios para processamento de texto"""
 
@@ -240,13 +261,17 @@ class TextHelper:
             return ""
 
         # Remover mÃºltiplos espaÃ§os
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
 
         # Remover caracteres especiais indesejados
-        text = re.sub(r'[^\w\s.,;:!?()[\]{}@#$%&*+-=<>|/\\\'"Ã¢Ã Ã¡ÃªÃ¨Ã©Ã®Ã¬Ã­Ã´Ã²Ã³Ã»Ã¹ÃºÃ§Ã±Ã‚Ã€ÃÃŠÃˆÃ‰ÃŽÃŒÃÃ”Ã’Ã“Ã›Ã™ÃšÃ‡Ã‘]', '', text)
+        text = re.sub(
+            r'[^\w\s.,;:!?()[\]{}@#$%&*+-=<>|/\\\'"Ã¢Ã Ã¡ÃªÃ¨Ã©Ã®ÃÃ­Ã´Ã²Ã³Ã»Ã¹ÃºÃ§Ã±Ã‚Ã€ÃÃŠÃˆÃ‰ÃŽÃŒÃÃ”Ã’Ã“Ã›Ã™ÃšÃ‡Ã‘]',
+            "",
+            text,
+        )
 
         # Corrigir quebras de linha inconsistentes
-        text = re.sub(r'\n\s*\n', '\n\n', text)
+        text = re.sub(r"\n\s*\n", "\n\n", text)
 
         return text.strip()
 
@@ -278,7 +303,7 @@ class TextHelper:
         text = TextHelper._remove_accents(text)
 
         # Remover pontuaÃ§Ã£o desnecessÃ¡ria
-        text = re.sub(r'[^\w\s]', ' ', text)
+        text = re.sub(r"[^\w\s]", " ", text)
 
         return text.strip()
 
@@ -286,12 +311,30 @@ class TextHelper:
     def _remove_accents(text: str) -> str:
         """Remove acentos do texto"""
         accents = {
-            'Ã¡': 'a', 'Ã ': 'a', 'Ã¢': 'a', 'Ã£': 'a', 'Ã¤': 'a',
-            'Ã©': 'e', 'Ã¨': 'e', 'Ãª': 'e', 'Ã«': 'e',
-            'Ã­': 'i', 'Ã¬': 'i', 'Ã®': 'i', 'Ã¯': 'i',
-            'Ã³': 'o', 'Ã²': 'o', 'Ã´': 'o', 'Ãµ': 'o', 'Ã¶': 'o',
-            'Ãº': 'u', 'Ã¹': 'u', 'Ã»': 'u', 'Ã¼': 'u',
-            'Ã§': 'c', 'Ã±': 'n'
+            "Ã¡": "a",
+            "Ã ": "a",
+            "Ã¢": "a",
+            "Ã£": "a",
+            "Ã¤": "a",
+            "Ã©": "e",
+            "Ã¨": "e",
+            "Ãª": "e",
+            "Ã«": "e",
+            "Ã­": "i",
+            "Ã": "i",
+            "Ã®": "i",
+            "Ã¯": "i",
+            "Ã³": "o",
+            "Ã²": "o",
+            "Ã´": "o",
+            "Ãµ": "o",
+            "Ã¶": "o",
+            "Ãº": "u",
+            "Ã¹": "u",
+            "Ã»": "u",
+            "Ã¼": "u",
+            "Ã§": "c",
+            "Ã±": "n",
         }
 
         for accented, normal in accents.items():
@@ -316,19 +359,23 @@ class TextHelper:
 
         return intersection / union if union > 0 else 0.0
 
+
 class DataHelper:
     """UtilitÃ¡rios para manipulaÃ§Ã£o de dados"""
 
     @staticmethod
     def validate_cpf(cpf: str) -> bool:
         """Valida CPF brasileiro"""
-        cpf = re.sub(r'[^\d]', '', cpf)
+        cpf = re.sub(r"[^\d]", "", cpf)
 
         if len(cpf) != 11 or cpf == cpf[0] * 11:
             return False
 
         def calculate_digit(cpf_slice: str, multiplier: int) -> int:
-            total = sum(int(digit) * weight for digit, weight in zip(cpf_slice, range(multiplier, 1, -1)))
+            total = sum(
+                int(digit) * weight
+                for digit, weight in zip(cpf_slice, range(multiplier, 1, -1))
+            )
             remainder = total % 11
             return 0 if remainder < 2 else 11 - remainder
 
@@ -340,13 +387,15 @@ class DataHelper:
     @staticmethod
     def validate_cnpj(cnpj: str) -> bool:
         """Valida CNPJ brasileiro"""
-        cnpj = re.sub(r'[^\d]', '', cnpj)
+        cnpj = re.sub(r"[^\d]", "", cnpj)
 
         if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
             return False
 
         def calculate_digit(cnpj_slice: str, weights: List[int]) -> int:
-            total = sum(int(digit) * weight for digit, weight in zip(cnpj_slice, weights))
+            total = sum(
+                int(digit) * weight for digit, weight in zip(cnpj_slice, weights)
+            )
             remainder = total % 11
             return 0 if remainder < 2 else 11 - remainder
 
@@ -364,9 +413,11 @@ class DataHelper:
         try:
             if isinstance(value, str):
                 # Remover sÃ­mbolos e converter
-                value = float(re.sub(r'[^\d.,]', '', value).replace(',', '.'))
+                value = float(re.sub(r"[^\d.,]", "", value).replace(",", "."))
 
-            return f"R$ {value:,.2f}".replace(',', '_').replace('.', ',').replace('_', '.')
+            return (
+                f"R$ {value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+            )
         except (ValueError, TypeError):
             return str(value)
 
@@ -374,8 +425,14 @@ class DataHelper:
     def parse_date(date_str: str) -> Optional[datetime.datetime]:
         """Parseia data em vÃ¡rios formatos"""
         date_formats = [
-            '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%Y/%m/%d',
-            '%d/%m/%y', '%d-%m-%y', '%m/%d/%Y', '%m-%d-%Y'
+            "%d/%m/%Y",
+            "%d-%m-%Y",
+            "%Y-%m-%d",
+            "%Y/%m/%d",
+            "%d/%m/%y",
+            "%d-%m-%y",
+            "%m/%d/%Y",
+            "%m-%d-%Y",
         ]
 
         for fmt in date_formats:
@@ -385,6 +442,7 @@ class DataHelper:
                 continue
 
         return None
+
 
 class SystemHelper:
     """UtilitÃ¡rios do sistema"""
@@ -402,9 +460,9 @@ class SystemHelper:
                 "os_version": platform.version(),
                 "python_version": platform.python_version(),
                 "cpu_count": psutil.cpu_count(),
-                "disk_total": psutil.disk_usage('/').total / (1024**3),  # GB
-                "disk_free": psutil.disk_usage('/').free / (1024**3),  # GB
-                "gpu": SystemHelper.get_gpu_info()
+                "disk_total": psutil.disk_usage("/").total / (1024**3),  # GB
+                "disk_free": psutil.disk_usage("/").free / (1024**3),  # GB
+                "gpu": SystemHelper.get_gpu_info(),
             }
         except Exception as e:
             logger.error(f"Erro ao obter informações do sistema: {e}")
@@ -414,7 +472,7 @@ class SystemHelper:
     def get_gpu_info() -> Dict[str, Any]:
         """Detecta disponibilidade de GPU (NVIDIA/CUDA)"""
         info = {"available": False, "name": "None", "driver": "None"}
-        
+
         # Tentar via torch se disponível (mais confiável para IA)
         if TORCH_AVAILABLE and torch is not None:
             try:
@@ -429,8 +487,11 @@ class SystemHelper:
         # Tentar via linha de comando (nvidia-smi)
         if SUBPROCESS_AVAILABLE and subprocess is not None:
             try:
-                output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], 
-                                              stderr=subprocess.DEVNULL, universal_newlines=True)
+                output = subprocess.check_output(
+                    ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                    stderr=subprocess.DEVNULL,
+                    universal_newlines=True,
+                )
                 if output:
                     info["available"] = True
                     info["name"] = output.strip()
@@ -448,7 +509,7 @@ class SystemHelper:
             return False
         try:
             return ctypes.windll.shell32.IsUserAnAdmin()
-        except:
+        except BaseException:
             return False
 
     @staticmethod
@@ -458,7 +519,7 @@ class SystemHelper:
             logger.warning("Windows shell libraries not available")
             return False
         try:
-            shell = Dispatch('WScript.Shell')
+            shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(shortcut_path)
             shortcut.Targetpath = target_path
             shortcut.WorkingDirectory = str(Path(target_path).parent)
@@ -472,6 +533,7 @@ class SystemHelper:
             shortcut.save()
         except Exception as e:
             logger.error(f"Erro ao criar atalho: {e}")
+
 
 # InstÃ¢ncias globais para conveniÃªncia
 file_helper = FileHelper()

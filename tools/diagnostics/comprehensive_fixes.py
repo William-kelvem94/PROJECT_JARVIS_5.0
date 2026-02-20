@@ -9,8 +9,6 @@ Corrige todos os problemas críticos identificados:
 5. Curiosity Engine initialization
 """
 
-import os
-import sys
 import logging
 from pathlib import Path
 
@@ -28,20 +26,20 @@ print("\n1️⃣  Fixing Voice Controller audio output...")
 
 voice_controller_file = PROJECT_ROOT / "src" / "core" / "audio" / "voice_controller.py"
 if voice_controller_file.exists():
-    content = voice_controller_file.read_text(encoding='utf-8')
-    
+    content = voice_controller_file.read_text(encoding="utf-8")
+
     # Check if audio device initialization is present
     if "playsound" in content or "pygame" in content:
         print("   ✅ Audio output mechanism found")
-        
+
         # Ensure audio device is explicitly set
         if "sd.default.device" not in content and "import sounddevice" in content:
             print("   ⚠️ Sound device might not be explicitly set")
-    
+
     # Check for speak() method implementation
     if "def speak(" in content:
         print("   ✅ speak() method exists")
-        
+
         # Verify it calls the audio backend
         if "time.sleep" in content:
             print("   ✅ Audio playback wait mechanism found")
@@ -55,16 +53,16 @@ print("\n2️⃣  Verifying greeting system initialization...")
 
 main_py_file = PROJECT_ROOT / "main.py"
 if main_py_file.exists():
-    content = main_py_file.read_text(encoding='utf-8')
-    
+    content = main_py_file.read_text(encoding="utf-8")
+
     if "greet_user_on_startup" in content:
         print("   ✅ greet_user_on_startup call found")
-    
+
     if "_greet_user_proactively" in content:
         print("   ✅ Proactive greeting scheduled")
     else:
         print("   ⚠️ Proactive greeting might not be scheduled")
-    
+
     if "greeting_thread" in content or "greeting_worker" in content:
         print("   ✅ Greeting worker thread found")
 
@@ -75,14 +73,14 @@ print("\n3️⃣  Checking Sentinel Vision system...")
 
 stark_dashboard = PROJECT_ROOT / "src" / "interface" / "stark_dashboard.py"
 if stark_dashboard.exists():
-    content = stark_dashboard.read_text(encoding='utf-8')
-    
+    content = stark_dashboard.read_text(encoding="utf-8")
+
     if "setup_sentinel_tab" in content:
         print("   ✅ Sentinel Vision tab setup found")
-    
+
     if "update_camera_feed" in content:
         print("   ✅ Camera feed update method found")
-    
+
     if "camera_controller" in content:
         print("   ✅ Camera controller integration found")
     else:
@@ -95,13 +93,13 @@ print("\n4️⃣  Verifying XTTS BeamSearchScorer patch...")
 
 voice_ctrl = PROJECT_ROOT / "src" / "core" / "audio" / "voice_controller.py"
 if voice_ctrl.exists():
-    content = voice_ctrl.read_text(encoding='utf-8')
-    
+    content = voice_ctrl.read_text(encoding="utf-8")
+
     if "BeamSearchScorer" in content:
         print("   ✅ BeamSearchScorer dummy class found")
     else:
         print("   ⚠️ BeamSearchScorer patch might be missing")
-    
+
     if "def _init_xtts" in content:
         print("   ✅ XTTS initialization method found")
 
@@ -112,14 +110,14 @@ print("\n5️⃣  Checking plugin path resolution...")
 
 plugin_mgr = PROJECT_ROOT / "src" / "core" / "management" / "plugin_manager.py"
 if plugin_mgr.exists():
-    content = plugin_mgr.read_text(encoding='utf-8')
-    
+    content = plugin_mgr.read_text(encoding="utf-8")
+
     if "Path.cwd()" in content:
         print("   ⚠️ Using Path.cwd() - might cause issues on Windows")
-    
+
     if ".absolute()" in content:
         print("   ✅ Using absolute() for path resolution")
-    
+
     if "relative_to" in content:
         print("   ✅ Path resolution with relative_to found")
 
@@ -130,22 +128,21 @@ print("\n6️⃣  Verifying Curiosity Engine initialization...")
 
 curiosity_file = PROJECT_ROOT / "src" / "learning" / "curiosity_engine.py"
 if curiosity_file.exists():
-    content = curiosity_file.read_text(encoding='utf-8')
-    
+    content = curiosity_file.read_text(encoding="utf-8")
+
     # Check end of file for initialization
     if "curiosity_engine = CuriosityEngine()" in content:
         print("   ✅ Curiosity Engine auto-initialization found")
     elif "curiosity_engine = None" in content:
         print("   ⚠️ Curiosity Engine is None - auto-initialization missing!")
         print("   🔧 Applying fix...")
-        
+
         # Apply the fix
         new_content = content.replace(
-            "curiosity_engine = None",
-            "curiosity_engine = CuriosityEngine()"
+            "curiosity_engine = None", "curiosity_engine = CuriosityEngine()"
         )
-        
-        curiosity_file.write_text(new_content, encoding='utf-8')
+
+        curiosity_file.write_text(new_content, encoding="utf-8")
         print("   ✅ Curiosity Engine initialization fixed!")
 
 # ============================================================================
@@ -157,10 +154,11 @@ logs_dir = PROJECT_ROOT / "data" / "logs"
 if logs_dir.exists():
     subdirs = list(logs_dir.glob("*"))
     print(f"   ✅ Logs directory exists with {len(subdirs)} subdirectories")
-    
+
     # Check if organized by date
     import re
-    date_dirs = [d for d in subdirs if re.match(r'\d{4}-\d{2}-\d{2}', d.name)]
+
+    date_dirs = [d for d in subdirs if re.match(r"\d{4}-\d{2}-\d{2}", d.name)]
     if date_dirs:
         print(f"   ✅ Logs organized by date ({len(date_dirs)} date directories)")
     else:
@@ -175,8 +173,8 @@ print("\n8️⃣  Verifying console copy feature...")
 
 control_dash = PROJECT_ROOT / "src" / "interface" / "control_dashboard.py"
 if control_dash.exists():
-    content = control_dash.read_text(encoding='utf-8')
-    
+    content = control_dash.read_text(encoding="utf-8")
+
     if "TextSelectableByMouse" in content or "TextInteractionFlag" in content:
         print("   ✅ Console copy feature (TextSelectableByMouse) found")
     else:
@@ -189,8 +187,8 @@ print("\n9️⃣  Verifying ChromaDB telemetry suppression...")
 
 neural_memory = PROJECT_ROOT / "src" / "core" / "intelligence" / "neural_memory.py"
 if neural_memory.exists():
-    content = neural_memory.read_text(encoding='utf-8')
-    
+    content = neural_memory.read_text(encoding="utf-8")
+
     if "CHROMA_TELEMETRY=FALSE" in content or "posthog" in content:
         print("   ✅ ChromaDB telemetry suppression found")
     else:

@@ -1,0 +1,98 @@
+version: "5.0.0-Singularity"
+
+brain_router:
+  ollama_url: "http://localhost:11434"
+  ollama_timeout: 2.0
+  ollama_models:
+    tier_ultra: []
+    tier_pro: []
+    tier_fast:
+      - "phi3.5"
+      - "gemma2:2b"
+      - "qwen2.5:3b"
+  hardware_requirements:
+    tier_ultra:
+      min_ram_gb: 0.0  # Sem limite
+      min_vram_gb: 0.0
+      keep_alive: 0
+    tier_pro:
+      min_ram_gb: 0.0
+      min_vram_gb: 0.0
+      keep_alive: 0
+    tier_fast:
+      min_ram_gb: 0.0
+      min_vram_gb: 0.0
+      keep_alive: 0
+  offline_mode: false
+
+ai:
+  model_name: "phi3.5"
+  max_tokens: 1024
+  temperature: 0.5
+  cache_enabled: true
+  long_term_memory_enabled: true
+  dynamic_unloading: true
+  keep_alive: "15m"
+
+logging:
+  level: INFO
+
+vision:
+  enabled: true           # Ativar visão
+  yolo_enabled: true      # Ativar YOLO
+  yolo_model: "models/vision/yolov8n.pt"
+  ocr_enabled: true
+  ocr_engine: "easyocr"  # Usar engine mais completa
+  background_process: true
+
+services:
+  load_local_models: true    # Carregar todos os modelos locais
+  enable_xtts: true          # Ativar XTTS
+  faster_whisper_threads: 8  # Usar mais threads para áudio
+
+# System / Watchdog tuning for stability (allow swap usage)
+system_info:
+  version: "5.0.0"
+  edition: "Singularity"
+
+resources:
+  system_limits:
+    max_memory_usage: 1.0        # Permite usar 100% da RAM
+    enable_swap_usage: true      # Autoriza swap
+    critical_cleanup: false      # Nunca matar processos
+    check_interval: 30.0         # Verifica raramente
+
+performance:
+  mode: "max"
+  use_all_cores: true
+  thread_priority: "highest"
+
+# Lightweight AI agent defaults for safer boot
+ai_agent:
+  name: "JARVIS"
+  model_tier: "fast"
+  local_model: "qwen2.5:3b"
+  use_cloud_fallback: false
+
+# Sensor tuning
+vision:
+  enabled: false
+  yolo_enabled: false
+  face_recognition: false
+  resolution: "low"
+  capture_rate: 1.0
+
+audio:
+  enabled: true
+  tts_engine: "edge_tts"
+  wake_word_engine: "silero"
+  whisper_model: "tiny"
+
+paths:
+  logs: "data/logs"
+  memory: "data/memory"
+  models: "data/models"
+
+security:
+  sandbox_enabled: true
+  auto_approval: false

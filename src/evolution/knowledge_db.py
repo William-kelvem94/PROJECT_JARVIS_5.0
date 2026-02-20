@@ -18,15 +18,16 @@ Author: JARVIS 5.0 Evolution Layer
 import sqlite3
 import logging
 import json
-from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
 
 # Default database path
-DEFAULT_DB_PATH = Path(__file__).parent.parent.parent / "data" / "learning" / "knowledge.db"
+DEFAULT_DB_PATH = (
+    Path(__file__).parent.parent.parent / "data" / "learning" / "knowledge.db"
+)
 
 
 class KnowledgeDatabase:
@@ -114,31 +115,31 @@ class KnowledgeDatabase:
 
             # Índices para otimização
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_problems_hash 
+                CREATE INDEX IF NOT EXISTS idx_problems_hash
                 ON problems(hash)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_problems_module 
+                CREATE INDEX IF NOT EXISTS idx_problems_module
                 ON problems(module)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_solutions_problem_hash 
+                CREATE INDEX IF NOT EXISTS idx_solutions_problem_hash
                 ON solutions(problem_hash)
             """)
             cursor.execute("""
-                CREATE INDEX IF NOT EXISTS idx_solutions_success 
+                CREATE INDEX IF NOT EXISTS idx_solutions_success
                 ON solutions(success)
             """)
 
             logger.info("✅ Knowledge database schema initialized")
 
     def record_problem(
-        self, 
-        hash_value: str, 
-        module: str, 
-        description: str, 
+        self,
+        hash_value: str,
+        module: str,
+        description: str,
         severity: str = "medium",
-        problem_data: Optional[Dict] = None
+        problem_data: Optional[Dict] = None,
     ) -> int:
         """
         Registra um novo problema ou atualiza a contagem se já existir.
@@ -158,27 +159,32 @@ class KnowledgeDatabase:
 
             # Verificar se o problema já existe
             cursor.execute(
-                "SELECT id, occurrences FROM problems WHERE hash = ?",
-                (hash_value,)
+                "SELECT id, occurrences FROM problems WHERE hash = ?", (hash_value,)
             )
             existing = cursor.fetchone()
 
             if existing:
                 # Atualizar contagem e última ocorrência
-                cursor.execute("""
-                    UPDATE problems 
+                cursor.execute(
+                    """
+                    UPDATE problems
                     SET occurrences = occurrences + 1,
                         last_seen = CURRENT_TIMESTAMP
                     WHERE hash = ?
-                """, (hash_value,))
-                return existing['id']
+                """,
+                    (hash_value,),
+                )
+                return existing["id"]
             else:
                 # Inserir novo problema
                 problem_data_json = json.dumps(problem_data) if problem_data else None
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO problems (hash, module, description, severity, problem_data)
                     VALUES (?, ?, ?, ?, ?)
-                """, (hash_value, module, description, severity, problem_data_json))
+                """,
+                    (hash_value, module, description, severity, problem_data_json),
+                )
                 return cursor.lastrowid
 
     def record_solution(
@@ -191,7 +197,7 @@ class KnowledgeDatabase:
         code_diff: Optional[str] = None,
         impact_score: float = 0.0,
         execution_time_ms: Optional[int] = None,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> int:
         """
         Registra uma tentativa de solução.
@@ -215,25 +221,32 @@ class KnowledgeDatabase:
 
             files_json = json.dumps(files_modified) if files_modified else None
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO solutions (
                     problem_hash, action_type, description, success,
                     files_modified, code_diff, impact_score,
                     execution_time_ms, error_message
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                problem_hash, action_type, description, success,
-                files_json, code_diff, impact_score,
-                execution_time_ms, error_message
-            ))
+            """,
+                (
+                    problem_hash,
+                    action_type,
+                    description,
+                    success,
+                    files_json,
+                    code_diff,
+                    impact_score,
+                    execution_time_ms,
+                    error_message,
+                ),
+            )
 
             return cursor.lastrowid
 
     def get_successful_solutions(
-        self, 
-        problem_hash: str, 
-        limit: int = 5
+        self, problem_hash: str, limit: int = 5
     ) -> List[Dict[str, Any]]:
         """
         Busca soluções bem-sucedidas para um problema específico.
@@ -247,12 +260,15 @@ class KnowledgeDatabase:
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT * FROM solutions
                 WHERE problem_hash = ? AND success = 1
                 ORDER BY impact_score DESC, applied_at DESC
                 LIMIT ?
-            """, (problem_hash, limit))
+            """,
+                (problem_hash, limit),
+            )
 
             return [dict(row) for row in cursor.fetchall()]
 
@@ -273,10 +289,7 @@ class KnowledgeDatabase:
             return dict(row) if row else None
 
     def add_human_feedback(
-        self,
-        solution_id: int,
-        feedback: str,
-        comment: Optional[str] = None
+        self, solution_id: int, feedback: str, comment: Optional[str] = None
     ) -> int:
         """
         Adiciona feedback humano sobre uma solução.
@@ -289,15 +302,18 @@ class KnowledgeDatabase:
         Returns:
             ID do feedback registrado
         """
-        if feedback not in ('positive', 'negative', 'ignore'):
+        if feedback not in ("positive", "negative", "ignore"):
             raise ValueError(f"Invalid feedback type: {feedback}")
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO human_feedback (solution_id, feedback, comment)
                 VALUES (?, ?, ?)
-            """, (solution_id, feedback, comment))
+            """,
+                (solution_id, feedback, comment),
+            )
             return cursor.lastrowid
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -312,21 +328,23 @@ class KnowledgeDatabase:
 
             # Total de problemas
             cursor.execute("SELECT COUNT(*) as count FROM problems")
-            total_problems = cursor.fetchone()['count']
+            total_problems = cursor.fetchone()["count"]
 
             # Total de soluções
             cursor.execute("SELECT COUNT(*) as count FROM solutions")
-            total_solutions = cursor.fetchone()['count']
+            total_solutions = cursor.fetchone()["count"]
 
             # Taxa de sucesso
             cursor.execute("""
-                SELECT 
+                SELECT
                     COUNT(*) as total,
                     SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successful
                 FROM solutions
             """)
             row = cursor.fetchone()
-            success_rate = (row['successful'] / row['total'] * 100) if row['total'] > 0 else 0
+            success_rate = (
+                (row["successful"] / row["total"] * 100) if row["total"] > 0 else 0
+            )
 
             # Problemas mais frequentes
             cursor.execute("""
@@ -342,7 +360,7 @@ class KnowledgeDatabase:
                 "total_problems": total_problems,
                 "total_solutions": total_solutions,
                 "success_rate": round(success_rate, 2),
-                "top_affected_modules": top_modules
+                "top_affected_modules": top_modules,
             }
 
     def cleanup_old_records(self, days: int = 90):
@@ -355,16 +373,20 @@ class KnowledgeDatabase:
         with self._get_connection() as conn:
             cursor = conn.cursor()
 
-            # Remove problemas não vistos há mais de X dias sem soluções bem-sucedidas
-            cursor.execute("""
+            # Remove problemas não vistos há mais de X dias sem soluções
+            # bem-sucedidas
+            cursor.execute(
+                """
                 DELETE FROM problems
                 WHERE last_seen < datetime('now', '-' || ? || ' days')
                 AND hash NOT IN (
-                    SELECT DISTINCT problem_hash 
-                    FROM solutions 
+                    SELECT DISTINCT problem_hash
+                    FROM solutions
                     WHERE success = 1
                 )
-            """, (days,))
+            """,
+                (days,),
+            )
 
             deleted_count = cursor.rowcount
             logger.info(f"🧹 Cleaned up {deleted_count} old problem records")

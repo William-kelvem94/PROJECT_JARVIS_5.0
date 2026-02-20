@@ -22,7 +22,10 @@ Exemplo de uso:
     decision = DecisionEngine()
 """
 
-from .ai_agent import AIAgent
+# NOTE: Do NOT import or instantiate AIAgent at package import time —
+# importing `ai_agent` here caused circular imports and side-effects (the
+# `AIAgent` instance must be created explicitly by consumers via
+# `from src.core.intelligence.ai_agent import ai_agent`).
 from .decision_engine import DecisionEngine
 from .memory import UnifiedMemoryManager as MemoryManager, memory_manager
 from .context_sanitizer import ContextSanitizer
@@ -31,12 +34,11 @@ from .perception_engine import PerceptionEngine
 from .knowledge_graph import KnowledgeGraph
 
 __all__ = [
-    'AIAgent',
-    'DecisionEngine',
-    'MemoryManager',
-    'memory_manager',
-    'ContextSanitizer',
-    'NeuralSystemsLoader',
-    'PerceptionEngine',
-    'KnowledgeGraph'
+    "DecisionEngine",
+    "MemoryManager",
+    "memory_manager",
+    "ContextSanitizer",
+    "NeuralSystemsLoader",
+    "PerceptionEngine",
+    "KnowledgeGraph",
 ]

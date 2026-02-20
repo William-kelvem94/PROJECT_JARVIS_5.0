@@ -7,18 +7,16 @@ inicialização. A importação acontece de forma preguiçosa quando o detector 
 instanciado e ativado via configuração.
 """
 
+from src.utils.config import config
 import os
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-import cv2
-import numpy as np
-
-# Indicador de disponibilidade do Ultralytics (definido durante a inicialização preguiçosa)
+# Indicador de disponibilidade do Ultralytics (definido durante a
+# inicialização preguiçosa)
 ULTRALYTICS_AVAILABLE = False
 
-from src.utils.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +29,11 @@ class UIDetector:
     """
 
     def __init__(self, model_path: Optional[str] = None):
-        self.enabled = config.get_setting('vision.yolo_enabled', True)
+        self.enabled = config.get_setting("vision.yolo_enabled", True)
         self.model = None
-        self.model_path = model_path or config.get_setting('vision.yolo_model', 'models/vision/yolov8n.pt')
+        self.model_path = model_path or config.get_setting(
+            "vision.yolo_model", "models/vision/yolov8n.pt"
+        )
         self._ultralytics_imported = False
 
         if not self.enabled:
@@ -62,11 +62,13 @@ class UIDetector:
                     path = str(Path(__file__).parent.parent.parent.parent / path)
 
                 self.model = YOLO(path)
-                globals()['ULTRALYTICS_AVAILABLE'] = True
+                globals()["ULTRALYTICS_AVAILABLE"] = True
                 self._ultralytics_imported = True
                 logger.info(f"Modelo YOLO carregado: {path}")
             except Exception as e:
-                logger.warning(f"Ultralytics/YOLO indisponível ou falha ao carregar o modelo: {e}")
+                logger.warning(
+                    f"Ultralytics/YOLO indisponível ou falha ao carregar o modelo: {e}"
+                )
                 self.enabled = False
                 return []
 
@@ -78,7 +80,7 @@ class UIDetector:
             detections: List[Dict[str, Any]] = []
 
             for r in results:
-                boxes = getattr(r, 'boxes', [])
+                boxes = getattr(r, "boxes", [])
                 for box in boxes:
                     # Coordenadas (xyxy)
                     coords = box.xyxy[0].tolist()
@@ -88,20 +90,32 @@ class UIDetector:
                     w = x2 - x1
                     h = y2 - y1
 
-                    label_id = int(box.cls[0]) if hasattr(box, 'cls') and len(box.cls) > 0 else 0
-                    label = getattr(self.model, 'names', {}).get(label_id, str(label_id))
-                    confidence = float(box.conf[0]) if hasattr(box, 'conf') and len(box.conf) > 0 else 0.0
+                    label_id = (
+                        int(box.cls[0])
+                        if hasattr(box, "cls") and len(box.cls) > 0
+                        else 0
+                    )
+                    label = getattr(self.model, "names", {}).get(
+                        label_id, str(label_id)
+                    )
+                    confidence = (
+                        float(box.conf[0])
+                        if hasattr(box, "conf") and len(box.conf) > 0
+                        else 0.0
+                    )
 
-                    if confidence >= config.get_setting('vision.yolo_confidence', 0.25):
-                        detections.append({
-                            'label': label,
-                            'confidence': confidence,
-                            'x': int(x1),
-                            'y': int(y1),
-                            'width': int(w),
-                            'height': int(h),
-                            'center': (int(x1 + w / 2), int(y1 + h / 2))
-                        })
+                    if confidence >= config.get_setting("vision.yolo_confidence", 0.25):
+                        detections.append(
+                            {
+                                "label": label,
+                                "confidence": confidence,
+                                "x": int(x1),
+                                "y": int(y1),
+                                "width": int(w),
+                                "height": int(h),
+                                "center": (int(x1 + w / 2), int(y1 + h / 2)),
+                            }
+                        )
 
             logger.info(f"YOLO detectou {len(detections)} elementos em {image_path}")
             return detections
@@ -116,7 +130,7 @@ class UIDetector:
             return "Nenhum elemento visual identificado além de texto."
 
         summary_parts: List[str] = []
-        labels = [d['label'] for d in detections]
+        labels = [d["label"] for d in detections]
         unique_labels = set(labels)
 
         for label in unique_labels:
@@ -129,12 +143,14 @@ class UIDetector:
 # Lazy global instance - will be created only when first accessed
 _ui_detector_instance = None
 
+
 def get_ui_detector():
     """Get the global UI detector instance (lazy loading)"""
     global _ui_detector_instance
     if _ui_detector_instance is None:
         _ui_detector_instance = UIDetector()
     return _ui_detector_instance
+
 
 # For backward compatibility, create a lazy property
 class LazyUIDetector:
@@ -143,6 +159,7 @@ class LazyUIDetector:
 
     def __call__(self, *args, **kwargs):
         return get_ui_detector()(*args, **kwargs)
+
 
 # Global instance with lazy loading
 ui_detector = LazyUIDetector()

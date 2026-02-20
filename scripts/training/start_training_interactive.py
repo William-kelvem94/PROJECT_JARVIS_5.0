@@ -3,26 +3,32 @@
 Script Interativo para Iniciar Treinamento JARVIS 5.0
 Pergunta ao usuário o que treinar e inicia automaticamente com dashboard
 """
+
 import sys
 import os
 import threading
-import subprocess
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def start_web_server():
     """Inicia o web server em background para monitoramento em tempo real"""
     try:
-        from web.web_server import start_server
         import asyncio
         import uvicorn
+
         async def run_server():
-            config = uvicorn.Config('web.web_server:app', host='localhost', port=5000, log_level='warning')
+            config = uvicorn.Config(
+                "web.web_server:app", host="localhost", port=5000, log_level="warning"
+            )
             server = uvicorn.Server(config)
             await server.serve()
+
         asyncio.run(run_server())
     except Exception as e:
         print(f"⚠️  Erro ao iniciar web server: {e}")
         print("📊 Dashboard pode não estar disponível")
+
 
 def get_training_topic():
     """Pergunta ao usuário o que ele quer treinar"""
@@ -43,6 +49,7 @@ def get_training_topic():
         if topic:
             return topic
         print("Por favor, digite um topico valido.")
+
 
 def get_training_component():
     """Pergunta qual componente treinar"""
@@ -68,10 +75,11 @@ def get_training_component():
         else:
             print("Escolha invalida. Tente novamente.")
 
+
 def main():
     """Função principal"""
     # Limpar tela
-    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system("cls" if os.name == "nt" else "clear")
 
     # Iniciar web server em background
     print("Iniciando dashboard web...")
@@ -86,7 +94,7 @@ def main():
     topic = get_training_topic()
     component = get_training_component()
 
-    print(f"\nIniciando treinamento...")
+    print("\nIniciando treinamento...")
     print(f"Topico: {topic}")
     print(f"Componente: {component}")
     print("=" * 60)
@@ -106,6 +114,7 @@ def main():
 
     print("\nDica: Mantenha o navegador aberto em http://localhost:5000")
     print("   para ver logs detalhados e metricas em tempo real!")
+
 
 if __name__ == "__main__":
     main()

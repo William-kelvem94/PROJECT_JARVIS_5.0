@@ -5,8 +5,8 @@ import os
 print("🔧 CORREÇÃO DE EMERGÊNCIA JARVIS 5.0")
 
 # 1. Forçar UTF-8
-os.environ['PYTHONUTF8'] = '1'
-os.environ['PYTHONIOENCODING'] = 'utf-8'
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "utf-8"
 
 # 2. Instalar pacotes críticos sem dlib
 packages = [
@@ -16,7 +16,7 @@ packages = [
     "PyQt6",
     "faster-whisper",
     "torchaudio",
-    "resemblyzer"
+    "resemblyzer",
 ]
 
 for pkg in packages:
@@ -26,15 +26,16 @@ for pkg in packages:
 # 3. Verificar se torchaudio está instalado corretamente
 try:
     import torch
+
     torch_version = torch.__version__
     print(f"✅ PyTorch {torch_version} detectado")
-    
+
     # Instalar torchaudio compatível
     if "2.1" in torch_version:
         subprocess.run([sys.executable, "-m", "pip", "install", "torchaudio==2.1.0"])
     else:
         subprocess.run([sys.executable, "-m", "pip", "install", "torchaudio"])
-except:
+except BaseException:
     print("⚠️ PyTorch não encontrado")
 
 print("✅ Correção de emergência aplicada!")

@@ -10,16 +10,17 @@ import time
 import unittest
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Awaitable
-from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional
 import psutil
 import coverage
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class TestResult:
     """Resultado de um teste individual."""
+
     test_name: str
     test_class: str
     status: str  # 'passed', 'failed', 'error', 'skipped'
@@ -29,9 +30,11 @@ class TestResult:
     assertions: int = 0
     coverage_percent: Optional[float] = None
 
+
 @dataclass
 class TestSuiteResult:
     """Resultado de uma suíte de testes."""
+
     suite_name: str
     total_tests: int
     passed: int
@@ -45,6 +48,7 @@ class TestSuiteResult:
     def __post_init__(self):
         if self.results is None:
             self.results = []
+
 
 class JarvisTestSuite(unittest.TestCase):
     """
@@ -79,6 +83,7 @@ class JarvisTestSuite(unittest.TestCase):
             second = asyncio.run(second)
         self.assertEqual(first, second, msg)
 
+
 class SecurityTestSuite(JarvisTestSuite):
     """Testes de segurança."""
 
@@ -89,11 +94,7 @@ class SecurityTestSuite(JarvisTestSuite):
         security = SecurityManager()
 
         # Testa comandos seguros
-        safe_commands = [
-            "echo hello",
-            "ls -la",
-            "python --version"
-        ]
+        safe_commands = ["echo hello", "ls -la", "python --version"]
 
         for cmd in safe_commands:
             with self.subTest(command=cmd):
@@ -105,7 +106,7 @@ class SecurityTestSuite(JarvisTestSuite):
             "rm -rf /",
             "echo hello; rm -rf /",
             "cat /etc/passwd",
-            "$(malicious_command)"
+            "$(malicious_command)",
         ]
 
         for cmd in dangerous_commands:
@@ -120,11 +121,7 @@ class SecurityTestSuite(JarvisTestSuite):
         security = SecurityManager()
 
         # Testa caminhos seguros
-        safe_paths = [
-            "data/logs/app.log",
-            "config/settings.yaml",
-            "src/core/main.py"
-        ]
+        safe_paths = ["data/logs/app.log", "config/settings.yaml", "src/core/main.py"]
 
         for path in safe_paths:
             with self.subTest(path=path):
@@ -136,13 +133,14 @@ class SecurityTestSuite(JarvisTestSuite):
             "../../../etc/passwd",
             "..\\..\\..\\windows\\system32",
             "/etc/shadow",
-            "C:\\Windows\\System32\\config\\SAM"
+            "C:\\Windows\\System32\\config\\SAM",
         ]
 
         for path in dangerous_paths:
             with self.subTest(path=path):
                 result = security.validate_path(path)
                 self.assertFalse(result, f"Path should be blocked: {path}")
+
 
 class PerformanceTestSuite(JarvisTestSuite):
     """Testes de performance."""
@@ -160,7 +158,9 @@ class PerformanceTestSuite(JarvisTestSuite):
         memory_increase = final_memory - initial_memory
 
         # Memória não deve aumentar mais que 50MB
-        self.assertLess(memory_increase, 50, f"Memory increase too high: {memory_increase}MB")
+        self.assertLess(
+            memory_increase, 50, f"Memory increase too high: {memory_increase}MB"
+        )
 
     def test_cpu_usage_baseline(self):
         """Testa uso de CPU em condições normais."""
@@ -196,6 +196,7 @@ class PerformanceTestSuite(JarvisTestSuite):
         # Deve completar em menos de 2 segundos (concorrente)
         self.assertLess(duration, 2.0, f"Async operations too slow: {duration}s")
 
+
 class IntegrationTestSuite(JarvisTestSuite):
     """Testes de integração."""
 
@@ -206,12 +207,7 @@ class IntegrationTestSuite(JarvisTestSuite):
         config = ConfigManager()
 
         # Testa carregamento de configurações
-        test_config = {
-            "test_key": "test_value",
-            "nested": {
-                "key": "nested_value"
-            }
-        }
+        test_config = {"test_key": "test_value", "nested": {"key": "nested_value"}}
 
         config.set("test", test_config)
         result = config.get("test")
@@ -259,13 +255,15 @@ class IntegrationTestSuite(JarvisTestSuite):
         module2 = loader.load_module(module_name)
         self.assertIs(module, module2)
 
+
 class SystemTestSuite(JarvisTestSuite):
     """Testes de sistema completo."""
 
     def test_full_system_startup(self):
         """Testa inicialização completa do sistema."""
         # Este teste seria mais complexo em um ambiente real
-        # Por enquanto, apenas verifica se os módulos principais podem ser importados
+        # Por enquanto, apenas verifica se os módulos principais podem ser
+        # importados
 
         try:
             import src.core.main
@@ -287,6 +285,7 @@ class SystemTestSuite(JarvisTestSuite):
         with self.assertRaises(SecurityError):
             raise SecurityError("Test security error")
 
+
 class TestRunner:
     """
     Executor personalizado de testes com métricas avançadas.
@@ -296,8 +295,9 @@ class TestRunner:
         self.output_dir = output_dir or Path("tests/results")
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def run_tests(self, test_suites: List[unittest.TestSuite],
-                  with_coverage: bool = True) -> TestSuiteResult:
+    def run_tests(
+        self, test_suites: List[unittest.TestSuite], with_coverage: bool = True
+    ) -> TestSuiteResult:
         """
         Executa suítes de testes com cobertura opcional.
 
@@ -314,14 +314,15 @@ class TestRunner:
         cov = None
         if with_coverage:
             cov = coverage.Coverage(
-                source=["src"],
-                omit=["*/tests/*", "*/venv/*", "*/__pycache__/*"]
+                source=["src"], omit=["*/tests/*", "*/venv/*", "*/__pycache__/*"]
             )
             cov.start()
 
         # Executa testes
         loader = unittest.TestLoader()
-        runner = unittest.TextTestRunner(verbosity=2, stream=open(self.output_dir / "test_output.txt", "w"))
+        runner = unittest.TextTestRunner(
+            verbosity=2, stream=open(self.output_dir / "test_output.txt", "w")
+        )
 
         all_results = []
         total_tests = 0
@@ -334,35 +335,48 @@ class TestRunner:
             result = runner.run(suite)
 
             suite_result = TestSuiteResult(
-                suite_name=suite.__class__.__name__ if hasattr(suite, '__class__') else str(suite),
+                suite_name=(
+                    suite.__class__.__name__
+                    if hasattr(suite, "__class__")
+                    else str(suite)
+                ),
                 total_tests=result.testsRun,
-                passed=result.testsRun - len(result.failures) - len(result.errors) - len(result.skipped),
+                passed=result.testsRun
+                - len(result.failures)
+                - len(result.errors)
+                - len(result.skipped),
                 failed=len(result.failures),
                 errors=len(result.errors),
                 skipped=len(result.skipped),
                 duration=time.time() - start_time,
-                results=[]
+                results=[],
             )
 
             # Coleta resultados individuais
             for test, traceback in result.failures + result.errors:
-                status = "failed" if test in [t[0] for t in result.failures] else "error"
-                suite_result.results.append(TestResult(
-                    test_name=test._testMethodName,
-                    test_class=test.__class__.__name__,
-                    status=status,
-                    duration=0,  # Não temos duração individual
-                    traceback=traceback
-                ))
+                status = (
+                    "failed" if test in [t[0] for t in result.failures] else "error"
+                )
+                suite_result.results.append(
+                    TestResult(
+                        test_name=test._testMethodName,
+                        test_class=test.__class__.__name__,
+                        status=status,
+                        duration=0,  # Não temos duração individual
+                        traceback=traceback,
+                    )
+                )
 
             for test, reason in result.skipped:
-                suite_result.results.append(TestResult(
-                    test_name=test._testMethodName,
-                    test_class=test.__class__.__name__,
-                    status="skipped",
-                    duration=0,
-                    error_message=reason
-                ))
+                suite_result.results.append(
+                    TestResult(
+                        test_name=test._testMethodName,
+                        test_class=test.__class__.__name__,
+                        status="skipped",
+                        duration=0,
+                        error_message=reason,
+                    )
+                )
 
             all_results.append(suite_result)
             total_tests += suite_result.total_tests
@@ -376,7 +390,9 @@ class TestRunner:
         if cov:
             cov.stop()
             cov.save()
-            coverage_percent = cov.report(file=open(self.output_dir / "coverage_report.txt", "w"))
+            coverage_percent = cov.report(
+                file=open(self.output_dir / "coverage_report.txt", "w")
+            )
 
         total_duration = time.time() - start_time
 
@@ -390,7 +406,7 @@ class TestRunner:
             skipped=total_skipped,
             duration=total_duration,
             coverage_percent=coverage_percent,
-            results=all_results
+            results=all_results,
         )
 
         # Salva resultados
@@ -411,9 +427,13 @@ class TestRunner:
                 "failed": result.failed,
                 "errors": result.errors,
                 "skipped": result.skipped,
-                "success_rate": (result.passed / result.total_tests * 100) if result.total_tests > 0 else 0,
+                "success_rate": (
+                    (result.passed / result.total_tests * 100)
+                    if result.total_tests > 0
+                    else 0
+                ),
                 "duration": result.duration,
-                "coverage_percent": result.coverage_percent
+                "coverage_percent": result.coverage_percent,
             },
             "detailed_results": [
                 {
@@ -423,15 +443,17 @@ class TestRunner:
                     "failed": r.failed,
                     "errors": r.errors,
                     "skipped": r.skipped,
-                    "duration": r.duration
-                } for r in result.results
-            ]
+                    "duration": r.duration,
+                }
+                for r in result.results
+            ],
         }
 
-        with open(result_file, 'w', encoding='utf-8') as f:
+        with open(result_file, "w", encoding="utf-8") as f:
             json.dump(result_data, f, indent=2, default=str)
 
         logger.info(f"Test results saved to {result_file}")
+
 
 def create_comprehensive_test_suite() -> unittest.TestSuite:
     """
@@ -450,8 +472,11 @@ def create_comprehensive_test_suite() -> unittest.TestSuite:
 
     return suite
 
+
 # Função de conveniência para executar todos os testes
-def run_all_tests(with_coverage: bool = True, output_dir: Path = None) -> TestSuiteResult:
+def run_all_tests(
+    with_coverage: bool = True, output_dir: Path = None
+) -> TestSuiteResult:
     """
     Executa todos os testes da suíte.
 
@@ -466,10 +491,11 @@ def run_all_tests(with_coverage: bool = True, output_dir: Path = None) -> TestSu
     runner = TestRunner(output_dir)
     return runner.run_tests([test_suite], with_coverage)
 
+
 if __name__ == "__main__":
     # Executa testes quando chamado diretamente
     result = run_all_tests()
-    print(f"\nTest Results:")
+    print("\nTest Results:")
     print(f"Total: {result.total_tests}")
     print(f"Passed: {result.passed}")
     print(f"Failed: {result.failed}")

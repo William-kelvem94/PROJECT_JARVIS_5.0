@@ -1,8 +1,8 @@
 #!/bin/bash
 # JARVIS 5.0 Startup Script
 
-# Ensure we are in the project root
-cd "$(dirname "$0")"
+# Ensure we are in the project root (script centralized under scripts/launchers)
+cd "$(dirname "$0")/../.."
 
 echo "Starting JARVIS 5.0..."
 

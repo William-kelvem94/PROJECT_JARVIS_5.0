@@ -4,7 +4,7 @@ import sys
 import io
 
 # Força UTF-8 para stdout
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 # Dicionário completo de traduções (mensagem original -> tradução)
 translations = {
@@ -68,22 +68,23 @@ translations = {
 # Lê a mensagem do commit da entrada padrão
 try:
     commit_msg = sys.stdin.read().strip()
-except:
+except BaseException:
     # Se houver erro de leitura, tenta com encoding diferente
     import codecs
-    sys.stdin = codecs.getreader('utf-8')(sys.stdin.buffer, errors='replace')
+
+    sys.stdin = codecs.getreader("utf-8")(sys.stdin.buffer, errors="replace")
     commit_msg = sys.stdin.read().strip()
 
 # Se houver tradução, aplica
 if commit_msg in translations:
     try:
         print(translations[commit_msg])
-    except:
+    except BaseException:
         # Se falhar ao imprimir, tenta sem emojis ou com replace
         print(commit_msg)
 else:
     try:
         print(commit_msg)
-    except:
+    except BaseException:
         # Substitui caracteres problemáticos
-        print(commit_msg.encode('utf-8', errors='replace').decode('utf-8'))
+        print(commit_msg.encode("utf-8", errors="replace").decode("utf-8"))

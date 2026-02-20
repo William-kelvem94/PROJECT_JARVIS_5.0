@@ -1,5 +1,4 @@
 import sys
-import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
@@ -10,6 +9,7 @@ print(f"Path: {sys.path}")
 
 try:
     import face_recognition
+
     print("✅ face_recognition IMPORTED SUCCESSFULY")
     print(f"Version: {face_recognition.__version__}")
 except Exception as e:
@@ -17,6 +17,7 @@ except Exception as e:
 
 try:
     import dlib
+
     print("✅ dlib IMPORTED SUCCESSFULY")
     print(f"DLIB_USE_CUDA: {dlib.DLIB_USE_CUDA}")
 except Exception as e:
@@ -24,6 +25,7 @@ except Exception as e:
 
 try:
     import cv2
+
     print("✅ cv2 IMPORTED SUCCESSFULY")
     print(f"Version: {cv2.__version__}")
 except Exception as e:

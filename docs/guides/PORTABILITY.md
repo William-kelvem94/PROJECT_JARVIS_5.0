@@ -65,7 +65,7 @@ python scripts/validate_portability.py
 ## 🔍 Problemas Conhecidos e Soluções
 
 ### Email Hardcoded
-**Problema**: Alguns arquivos têm `williamkelvem64@gmail.com` hardcoded
+**Problema**: Alguns arquivos podem ter emails hardcoded
 **Solução**: Use variável de ambiente `JARVIS_USER_EMAIL` ou configure em `portability.json`
 
 ### Google Drive não Detectado

@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
+
 class PortabilityFixer:
     def __init__(self, project_root: Path):
         self.project_root = project_root
@@ -19,9 +20,9 @@ class PortabilityFixer:
     def scan_for_hardcoded_paths(self) -> Dict[str, List[str]]:
         """Escaneia arquivos por caminhos hardcoded"""
         hardcoded_patterns = {
-            'user_paths': [r'C:\\Users\\willi', r'/home/willi'],
-            'emails': [r'williamkelvem64@gmail\.com'],
-            'absolute_paths': [r'C:\\[^\\]+\\[^\\]+', r'/home/[^/]+/[^/]+']
+            "user_paths": [r"C:\\Users\\willi", r"/home/willi"],
+            "emails": [r"williamkelvem64@gmail\.com"],
+            "absolute_paths": [r"C:\\[^\\]+\\[^\\]+", r"/home/[^/]+/[^/]+"],
         }
 
         issues = {}
@@ -30,10 +31,12 @@ class PortabilityFixer:
             for pattern in patterns:
                 try:
                     # Usar grep através do sistema
-                    result = os.popen(f'grep -r "{pattern}" {self.project_root} --include="*.py" --include="*.md" --include="*.txt" 2>/dev/null').read()
+                    result = os.popen(
+                        f'grep -r "{pattern}" {self.project_root} --include="*.py" --include="*.md" --include="*.txt" 2>/dev/null'
+                    ).read()
                     if result.strip():
-                        issues[pattern_name].extend(result.strip().split('\n'))
-                except:
+                        issues[pattern_name].extend(result.strip().split("\n"))
+                except BaseException:
                     pass
 
         return issues
@@ -42,15 +45,17 @@ class PortabilityFixer:
         """Cria arquivo de configuração de portabilidade"""
         config = {
             "portability": {
-                "target_user_email": "williamkelvem64@gmail.com",  # Email do desenvolvedor
+                "target_user_email": os.getenv(
+                    "JARVIS_USER_EMAIL", ""
+                ),  # Email do desenvolvedor
                 "allow_dynamic_user_detection": True,
                 "auto_detect_google_drive": True,
                 "auto_detect_microsoft_account": True,
                 "fallback_paths": {
                     "google_drive": ["%USERPROFILE%/Google Drive", "C:/GoogleDrive"],
                     "downloads": "%USERPROFILE%/Downloads",
-                    "documents": "%USERPROFILE%/Documents"
-                }
+                    "documents": "%USERPROFILE%/Documents",
+                },
             },
             "system_compatibility": {
                 "min_python_version": "3.11",
@@ -61,18 +66,18 @@ class PortabilityFixer:
                     "torch",
                     "transformers",
                     "pyaudio",
-                    "pygame"
+                    "pygame",
                 ],
                 "optional_dependencies": [
                     "face_recognition",
                     "google-api-python-client",
-                    "pywin32"
-                ]
-            }
+                    "pywin32",
+                ],
+            },
         }
 
         config_path = self.project_root / "config" / "portability.json"
-        with open(config_path, 'w', encoding='utf-8') as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2, ensure_ascii=False)
 
         print(f"✅ Criado: {config_path}")
@@ -88,33 +93,34 @@ class PortabilityFixer:
             "src/core/network_mesh/democratic_intelligence.py",
             "src/core/democratic_core.py",
             "src/core/interface/democratic_control_interface.py",
-            "scripts/validate_democratic_system.py"
+            "scripts/validate_democratic_system.py",
         ]
 
         for file_path in files_to_fix:
             full_path = self.project_root / file_path
             if full_path.exists():
                 try:
-                    with open(full_path, 'r', encoding='utf-8') as f:
+                    with open(full_path, "r", encoding="utf-8") as f:
                         content = f.read()
 
                     # Substituir email hardcoded por configuração
                     original_content = content
                     content = re.sub(
-                        r'williamkelvem64@gmail\.com',
-                        '" + self.config.get("target_user_email", "williamkelvem64@gmail.com") + "',
-                        content
+                        r"williamkelvem64@gmail\.com",
+                        'config.get_setting("portability.target_user_email", "")',
+                        content,
                     )
 
-                    # Para casos onde não há self.config, usar variável de ambiente
+                    # Para casos onde não há self.config, usar variável de
+                    # ambiente
                     content = re.sub(
                         r'"williamkelvem64@gmail\.com"',
-                        'os.getenv("JARVIS_USER_EMAIL", "williamkelvem64@gmail.com")',
-                        content
+                        'os.getenv("JARVIS_USER_EMAIL", "")',
+                        content,
                     )
 
                     if content != original_content:
-                        with open(full_path, 'w', encoding='utf-8') as f:
+                        with open(full_path, "w", encoding="utf-8") as f:
                             f.write(content)
                         self.fixed_files.append(str(full_path))
                         print(f"✅ Corrigido: {file_path}")
@@ -191,7 +197,7 @@ python scripts/validate_portability.py
 ## 🔍 Problemas Conhecidos e Soluções
 
 ### Email Hardcoded
-**Problema**: Alguns arquivos têm `williamkelvem64@gmail.com` hardcoded
+**Problema**: Alguns arquivos podem ter emails hardcoded
 **Solução**: Use variável de ambiente `JARVIS_USER_EMAIL` ou configure em `portability.json`
 
 ### Google Drive não Detectado
@@ -205,7 +211,7 @@ python scripts/validate_portability.py
 """
 
         readme_path = self.project_root / "PORTABILITY.md"
-        with open(readme_path, 'w', encoding='utf-8') as f:
+        with open(readme_path, "w", encoding="utf-8") as f:
             f.write(readme_content)
 
         print(f"✅ Criado: {readme_path}")
@@ -237,7 +243,7 @@ def validate_portability():
     hardcoded_patterns = [
         r'C:\\\\Users\\\\willi',
         r'/home/willi',
-        r'williamkelvem64@gmail\.com'
+        r'williamkelvem64@gmail\\.com'
     ]
 
     for pattern in hardcoded_patterns:
@@ -293,7 +299,7 @@ if __name__ == "__main__":
 '''
 
         validator_path = self.project_root / "scripts" / "validate_portability.py"
-        with open(validator_path, 'w', encoding='utf-8') as f:
+        with open(validator_path, "w", encoding="utf-8") as f:
             f.write(validator_content)
 
         print(f"✅ Criado: {validator_path}")
@@ -330,10 +336,12 @@ if __name__ == "__main__":
         print("\n🎉 CORREÇÕES CONCLUÍDAS!")
         print("O JARVIS 5.0 agora é TOTALMENTE PORTÁVEL!")
 
+
 def main():
     project_root = Path(__file__).parent.parent
     fixer = PortabilityFixer(project_root)
     fixer.run_fixes()
+
 
 if __name__ == "__main__":
     main()
