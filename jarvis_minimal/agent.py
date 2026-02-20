@@ -23,15 +23,36 @@ from .lang_utils import get_device_language, detect_language, code_to_name
 
 
 class JarvisAgent:
-    def __init__(self, model: str = OLLAMA_MODEL):
+    def __init__(self, model: str = OLLAMA_MODEL, auto_setup: bool = True):
         self.model = model
         # detect device language (fallback to config DEVICE_LANGUAGE if provided)
         self.device_lang = DEVICE_LANGUAGE or get_device_language()
         self.lang_validate = LANGUAGE_VALIDATION
+
+        # Run adaptive startup checks / auto-setup
+        from . import bootstrap
+        try:
+            report = bootstrap.run_startup_checks(autoinstall=auto_setup)
+        except Exception as e:
+            report = {"error": str(e)}
+
+        # apply recommended TTS preference at runtime
+        try:
+            from . import config as _cfg
+            pref = report.get("recommended_tts_pref")
+            if pref:
+                _cfg.TTS_BACKEND_PREFERENCE = pref
+        except Exception:
+            pass
+
+        # create runtime components
         self.tts = TTS(lang=self.device_lang)
         self.stt = STT()
         self.memory = ConversationMemory(path=INTERACTIONS_LOG, window=CONTEXT_WINDOW)
         os.makedirs(os.path.dirname(INTERACTIONS_LOG), exist_ok=True)
+
+        # expose startup report for debugging/inspection
+        self.startup_report = report
 
     def _log_interaction(self, user_text: str, assistant_text: str):
         entry = {"ts": time.time(), "user": user_text, "assistant": assistant_text}
