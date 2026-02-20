@@ -52,6 +52,13 @@ Próximos passos sugeridos
   - O Jarvis agora tenta usar `edge-tts` (vozes neurais on‑line) se estiver instalado e disponível — recomendado para voz natural em PT‑BR.
   - Caso prefira manter tudo local, o Jarvis ajusta automaticamente a melhor `pyttsx3` instalada; você pode listar vozes e escolher uma alterando `jarvis_minimal/config.py` (`TTS_PYTTSX3_VOICE`).
 
+**Startup adaptativo e auto-instalação**
+- No momento em que o Jarvis é iniciado, ele executa uma série de verificações (internet, CLI Ollama, dispositivos de áudio, pacotes Python).  
+- Dependências essenciais ausentes são instaladas automaticamente, desde que haja conexão à Internet.  
+- O Jarvis escolhe dinamicamente o backend TTS e STT mais apropriado (voz neural online vs local, VOSK vs SpeechRecognition) e registra um relatório de inicialização.  
+- Um autodiagnóstico é realizado (`self_test`) para validar microfone, alto‑falante e reconhecimento de fala; resultados são exibidos no console.
+- Essa lógica garante que, sempre que você iniciar o Jarvis, ele se configure e se ajuste ao ambiente sem intervenção manual.
+
 Como testar / trocar voz
 1. Instalar `edge-tts` e `playsound` (opcional, para voz neural online):
    pip install edge-tts playsound
