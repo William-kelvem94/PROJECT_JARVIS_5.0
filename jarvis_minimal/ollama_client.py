@@ -20,14 +20,15 @@ def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
     """
     cmds_to_try = [
         ["ollama", "chat", model, "--prompt", prompt],
-        ["ollama", "run", model, "--prompt", prompt],
+        ["ollama", "run", model, prompt],
+        ["ollama", "run", model],
         ["ollama", "generate", model, "--prompt", prompt],
     ]
 
     for cmd in cmds_to_try:
         try:
-            # special case: for `ollama run` we send the prompt via stdin
-            if cmd[1] == "run":
+            # special-case: if `ollama run MODEL` without inline prompt, send prompt via stdin
+            if cmd[1] == "run" and len(cmd) == 3:
                 proc = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=timeout)
             else:
                 proc = _try_cmd(cmd, timeout=timeout)
