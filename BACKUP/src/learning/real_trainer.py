@@ -63,8 +63,8 @@ class RealTrainer:
                         "pad_token": "[PAD]",
                         "eos_token": "</s>",
                         # Mock encoding
-                        "encode": lambda self, text: [1, 2, 3, 4, 5],
-                        "decode": lambda self, tokens: "Mock decoded text",
+                        "encode": lambda text: [1, 2, 3, 4, 5],
+                        "decode": lambda tokens: "Mock decoded text",
                     },
                 )()
                 self.model = type(
@@ -135,7 +135,7 @@ class RealTrainer:
         self,
         training_data: List[Dict[str, str]],
         topic: str,
-        strategy: Optional[Dict[str, Any]] = None,
+        # strategy: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Fine-tuning incremental leve usando LoRA"""
         if not self.model or not self.tokenizer:
@@ -480,8 +480,6 @@ def train_with_real_learning(
             f"ðŸ”¢ ParÃ¢metros treinados: {result.get('trainable_params', 'N/A')}"
         )
         logger.info(f"ðŸ“” EstratÃ©gia utilizada: {learning_strategy['type']}")
-
-        return result
 
         return result
 
