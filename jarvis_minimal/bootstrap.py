@@ -96,6 +96,37 @@ def _check_audio_devices() -> Dict[str, bool]:
         return res
 
 
+def _ensure_vosk_model(download_if_missing: bool) -> str:
+    """Return path to a VOSK model directory, downloading a small pt‑BR model if needed.
+
+    If `download_if_missing` is False or download fails, returns empty string.
+    """
+    import glob, zipfile, urllib.request
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    candidates = glob.glob(os.path.join(repo_root, "**", "vosk-model*"), recursive=True)
+    if candidates:
+        return candidates[0]
+    if not download_if_missing:
+        return ""
+    # download small Portuguese model (~50MB)
+    url = "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip"
+    target_dir = os.path.join(repo_root, "jarvis_minimal", "models")
+    os.makedirs(target_dir, exist_ok=True)
+    zip_path = os.path.join(target_dir, "vosk-model-small-pt-0.3.zip")
+    try:
+        print("[bootstrap] baixando modelo VOSK pt‑BR...")
+        urllib.request.urlretrieve(url, zip_path)
+        with zipfile.ZipFile(zip_path, "r") as z:
+            z.extractall(target_dir)
+        os.remove(zip_path)
+        # return first extracted folder
+        extr = glob.glob(os.path.join(target_dir, "vosk-model-small-pt-0.3"))
+        return extr[0] if extr else ""
+    except Exception as e:
+        print("[bootstrap] falha ao baixar/descompactar modelo VOSK:", e)
+        return ""
+
+
 def run_startup_checks(autoinstall: bool = True) -> Dict[str, object]:
     """Run a full startup validation and optionally install missing core packages.
 
@@ -157,6 +188,9 @@ def run_startup_checks(autoinstall: bool = True) -> Dict[str, object]:
     if pkgs_status.get("speechrecognition"):
         stt_backends.append("speechrecognition")
     report["stt_backends"] = stt_backends
+
+    # try to ensure a VOSK model is present if we have internet and vosk is installed
+    report["vosk_model"] = _ensure_vosk_model(report["internet"] and stt_backends and "vosk" in stt_backends)
 
     # heavy packages presence
     heavy_status = {p: is_package_installed(p) for p in HEAVY_PACKAGES}

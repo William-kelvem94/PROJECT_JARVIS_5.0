@@ -43,9 +43,12 @@ Próximos passos sugeridos
 ------------------------
 - Testar o fluxo de voz localmente e confirmar o modelo Ollama a ser usado. Um script de auto‑teste (`jarvis_minimal/system_test.py`) faz validações completas e até instala pacotes faltantes.
 - O Jarvis valida dependências na inicialização e tenta instalar componentes core automaticamente se houver conexão com a internet. Ele também escolhe dinamicamente o backend de TTS/STT mais apropriado: edge-tts ou pyttsx3 para fala, Whisper/VOSK/Google para reconhecimento.
-- Habilitar um backend STT local (Whisper/VOSK) se quiser operar sem internet. O sistema tenta detectar e habilitar automaticamente Whisper se estiver instalado, e busca por modelos VOSK em pastas do projeto. Caso o reconhecimento retorne texto vazio, verifique volume/microfone ou instale um modelo VOSK PT‑BR (coloque em `jarvis_minimal/models` ou defina `VOSK_MODEL_PATH`).
+- Habilitar um backend STT local (Whisper/VOSK) se quiser operar sem internet. O sistema tenta detectar e habilitar automaticamente Whisper se estiver instalado, e busca por modelos VOSK em pastas do projeto.  
+  - **Agora o Jarvis pode baixar automaticamente um modelo VOSK pt‑BR leve (~50 MB)** se detectar que o pacote `vosk` está presente e nenhum modelo foi encontrado. Basta ter Internet na primeira execução.  
+  - Caso o reconhecimento retorne texto vazio, verifique volume/microfone ou insira manualmente outro modelo VOSK (defina `VOSK_MODEL_PATH` ou coloque o diretório em `jarvis_minimal/models`).
 - Treinar detector de hotword (opcional): coloque exemplos em `jarvis_minimal/wake_data/pos` e `.../neg` e rode `python -m jarvis_minimal.wakeword_trainer`.
 - Conversação natural: o agente mantém contexto das últimas interações e inclui esse histórico nos prompts enviados ao modelo local (Ollama). Para limpar o contexto diga por voz "clear memory" ou "limpar memória".
+- **Entrada por texto**: você pode iniciar Jarvis em modo `--text` ou `--both` para digitar comandos no console em vez de usar apenas voz. Isso facilita desenvolvimento e fallback em máquinas sem microfone.
 - Idioma nativo: o Jarvis detecta o idioma do seu sistema (por padrão no seu notebook: Português) e valida as entradas do usuário. Se você falar em outro idioma, o Jarvis perguntará se deseja continuar nesse idioma ou se prefere que ele responda no idioma do dispositivo.
 - Para melhorar a detecção de idioma, instale `langdetect` (opcional e gratuito): `pip install langdetect`. Se `langdetect` não estiver instalado, o validador é silencioso e assume o idioma do dispositivo.
 - Melhora do TTS (voz mais natural):

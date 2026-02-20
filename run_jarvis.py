@@ -1,16 +1,49 @@
 """Entry point for the minimal Jarvis MVP.
 
-Usage:
-  python run_jarvis.py
+Usage examples:
+  python run_jarvis.py                # voz somente
+  python run_jarvis.py --text         # apenas texto (linha de comando)
+  python run_jarvis.py --both         # voz e texto em paralelo
 
-This will run the always‑listening loop (hotword) using local STT + Ollama for responses.
+Na modalidade `both` você pode digitar comandos enquanto o Jarvis também
+escuta o microfone.
 """
+import argparse
+import threading
+import sys
+
 from jarvis_minimal import JarvisAgent
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Runner for Jarvis minimal")
+    parser.add_argument("--mode", choices=["voice", "text", "both"], default="voice",
+                        help="Modo de entrada: voz, texto ou ambos")
+    args = parser.parse_args()
+
     agent = JarvisAgent()
-    agent.run()
+
+    def text_loop():
+        print("[text] digite suas mensagens abaixo (CTRL+C para sair)")
+        try:
+            while True:
+                line = input("> ").strip()
+                if not line:
+                    continue
+                agent.handle_command(line)
+        except (EOFError, KeyboardInterrupt):
+            print("\n[text] encerrando interface de texto")
+            sys.exit(0)
+
+    if args.mode in ("text", "both"):
+        t = threading.Thread(target=text_loop, daemon=True)
+        t.start()
+
+    if args.mode in ("voice", "both"):
+        agent.run()
+    else:
+        # text-only mode; just wait on text thread
+        t.join()
 
 
 if __name__ == "__main__":
