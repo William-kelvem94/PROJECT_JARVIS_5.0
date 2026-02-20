@@ -20,6 +20,7 @@ from .ollama_client import query_ollama
 from .tts import TTS
 from .conversation import ConversationMemory
 from .lang_utils import get_device_language, detect_language, code_to_name
+from . import web_utils
 from .local_brain import LocalBrain
 
 
@@ -169,6 +170,20 @@ class JarvisAgent:
 
         # built-in voice/text commands
         cmd_l = (text or "").strip().lower()
+        # online search shortcuts
+        if cmd_l.startswith("pesquisar ") or cmd_l.startswith("buscar ") or cmd_l.startswith("procure "):
+            # extract query after the verb
+            parts = text.split(" ",1)
+            query = parts[1] if len(parts) > 1 else ""
+            resp = web_utils.search_online(query)
+            print("[agent] jarvis (search):", resp)
+            self._log_interaction(text, resp)
+            self._speak(resp)
+            # optionally, treat search result as new material for training
+            if self.local_brain and resp:
+                # append a pseudo-interaction with search text to the log
+                self._log_interaction(f"[web]: {query}", resp)
+            return
         if cmd_l in ("limpar memória", "clear memory", "reset context", "reiniciar contexto"):
             self.memory.clear()
             resp = "Contexto limpo. Memória reiniciada."
