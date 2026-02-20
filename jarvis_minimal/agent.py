@@ -151,23 +151,25 @@ class JarvisAgent:
         # language validation: detect language of input and compare with device language
 
         # language validation: detect language of input and compare with device language
-        try:
-            detected = detect_language(text)
-        except Exception:
-            detected = "unknown"
+        # but skip for our built-in control commands so they execute regardless
+        low = (text or "").strip().lower()
+        if not any(low.startswith(k) for k in ("treinar", "pesquisar", "buscar", "mostrar", "ver", "limpar", "clear", "reset")):
+            try:
+                detected = detect_language(text)
+            except Exception:
+                detected = "unknown"
 
-        if self.lang_validate and detected not in ("unknown", self.device_lang):
-            # ask for confirmation to continue in a different language
-            device_name = code_to_name(self.device_lang)
-            detected_name = code_to_name(detected)
-            resp = (
-                f"Detectei que você está falando em {detected_name}. "
-                f"Meu idioma nativo do dispositivo é {device_name}. Deseja continuar em {detected_name} ou prefere que eu responda em {device_name}?"
-            )
-            print("[agent] jarvis (lang validate):", resp)
-            self._log_interaction(text, resp)
-            self._speak(resp)
-            return
+            if self.lang_validate and detected not in ("unknown", self.device_lang):
+                device_name = code_to_name(self.device_lang)
+                detected_name = code_to_name(detected)
+                resp = (
+                    f"Detectei que você está falando em {detected_name}. "
+                    f"Meu idioma nativo do dispositivo é {device_name}. Deseja continuar em {detected_name} ou prefere que eu responda em {device_name}?"
+                )
+                print("[agent] jarvis (lang validate):", resp)
+                self._log_interaction(text, resp)
+                self._speak(resp)
+                return
 
         # built-in voice/text commands
         cmd_l = (text or "").strip().lower()
