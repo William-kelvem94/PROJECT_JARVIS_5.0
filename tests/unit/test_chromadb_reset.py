@@ -1,4 +1,6 @@
 """Teste pós-reset do ChromaDB"""
+
+from src.core.intelligence.memory_manager import memory_manager
 import sys
 from pathlib import Path
 
@@ -8,9 +10,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 print("🔄 TESTE PÓS-RESET DO CHROMADB")
 print("=" * 60)
 
-from src.core.intelligence.memory_manager import memory_manager
 
-print(f"\n✅ Memory Manager importado")
+print("\n✅ Memory Manager importado")
 print(f"   ChromaDB disponível: {memory_manager.collection is not None}")
 
 if memory_manager.collection:

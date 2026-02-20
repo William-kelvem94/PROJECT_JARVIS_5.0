@@ -11,24 +11,27 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import psutil
 import statistics
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class PerformanceMetric:
     """Métrica de performance individual."""
+
     name: str
     value: float
     unit: str
     timestamp: float
     metadata: Dict[str, Any] = None
 
+
 @dataclass
 class PerformanceTestResult:
     """Resultado de um teste de performance."""
+
     test_name: str
     duration: float
     metrics: List[PerformanceMetric]
@@ -41,6 +44,7 @@ class PerformanceTestResult:
     memory_peak: Optional[float] = None  # MB
     cpu_peak: Optional[float] = None  # %
 
+
 class PerformanceTestSuite:
     """
     Suite abrangente de testes de performance para JARVIS 5.0.
@@ -51,8 +55,13 @@ class PerformanceTestSuite:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.process = psutil.Process()
 
-    def run_load_test(self, name: str, operation: Callable, concurrent_users: int = 10,
-                     duration_seconds: int = 60) -> PerformanceTestResult:
+    def run_load_test(
+        self,
+        name: str,
+        operation: Callable,
+        concurrent_users: int = 10,
+        duration_seconds: int = 60,
+    ) -> PerformanceTestResult:
         """
         Executa teste de carga com múltiplos usuários concorrentes.
 
@@ -121,29 +130,55 @@ class PerformanceTestSuite:
             throughput = total_operations / total_duration if total_duration > 0 else 0
 
             latency_p50 = statistics.median(latencies) if latencies else None
-            latency_p95 = statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else None
-            latency_p99 = statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else None
+            latency_p95 = (
+                statistics.quantiles(latencies, n=20)[18]
+                if len(latencies) >= 20
+                else None
+            )
+            latency_p99 = (
+                statistics.quantiles(latencies, n=100)[98]
+                if len(latencies) >= 100
+                else None
+            )
 
             memory_peak = max(memory_samples) if memory_samples else None
             cpu_peak = max(cpu_samples) if cpu_samples else None
 
             # Coleta métricas detalhadas
-            metrics.extend([
-                PerformanceMetric("total_operations", total_operations, "ops", start_time),
-                PerformanceMetric("throughput", throughput, "ops/sec", start_time),
-                PerformanceMetric("concurrent_users", concurrent_users, "users", start_time),
-                PerformanceMetric("test_duration", total_duration, "seconds", start_time),
-                PerformanceMetric("errors_count", len(errors), "errors", start_time),
-            ])
+            metrics.extend(
+                [
+                    PerformanceMetric(
+                        "total_operations", total_operations, "ops", start_time
+                    ),
+                    PerformanceMetric("throughput", throughput, "ops/sec", start_time),
+                    PerformanceMetric(
+                        "concurrent_users", concurrent_users, "users", start_time
+                    ),
+                    PerformanceMetric(
+                        "test_duration", total_duration, "seconds", start_time
+                    ),
+                    PerformanceMetric(
+                        "errors_count", len(errors), "errors", start_time
+                    ),
+                ]
+            )
 
             if latency_p50:
-                metrics.append(PerformanceMetric("latency_p50", latency_p50, "ms", start_time))
+                metrics.append(
+                    PerformanceMetric("latency_p50", latency_p50, "ms", start_time)
+                )
             if latency_p95:
-                metrics.append(PerformanceMetric("latency_p95", latency_p95, "ms", start_time))
+                metrics.append(
+                    PerformanceMetric("latency_p95", latency_p95, "ms", start_time)
+                )
             if latency_p99:
-                metrics.append(PerformanceMetric("latency_p99", latency_p99, "ms", start_time))
+                metrics.append(
+                    PerformanceMetric("latency_p99", latency_p99, "ms", start_time)
+                )
             if memory_peak:
-                metrics.append(PerformanceMetric("memory_peak", memory_peak, "MB", start_time))
+                metrics.append(
+                    PerformanceMetric("memory_peak", memory_peak, "MB", start_time)
+                )
             if cpu_peak:
                 metrics.append(PerformanceMetric("cpu_peak", cpu_peak, "%", start_time))
 
@@ -166,14 +201,19 @@ class PerformanceTestSuite:
             latency_p95=latency_p95,
             latency_p99=latency_p99,
             memory_peak=memory_peak,
-            cpu_peak=cpu_peak
+            cpu_peak=cpu_peak,
         )
 
         self._save_result(result)
         return result
 
-    def run_stress_test(self, name: str, operation: Callable, max_concurrent: int = 100,
-                       increment: int = 10) -> List[PerformanceTestResult]:
+    def run_stress_test(
+        self,
+        name: str,
+        operation: Callable,
+        max_concurrent: int = 100,
+        increment: int = 10,
+    ) -> List[PerformanceTestResult]:
         """
         Executa teste de stress aumentando gradualmente a carga.
 
@@ -195,7 +235,7 @@ class PerformanceTestSuite:
                 f"{name}_stress_{concurrent_users}",
                 operation,
                 concurrent_users,
-                duration_seconds=30  # Teste mais curto para stress
+                duration_seconds=30,  # Teste mais curto para stress
             )
 
             results.append(result)
@@ -210,8 +250,13 @@ class PerformanceTestSuite:
 
         return results
 
-    def run_endurance_test(self, name: str, operation: Callable, duration_hours: int = 1,
-                          concurrent_users: int = 5) -> PerformanceTestResult:
+    def run_endurance_test(
+        self,
+        name: str,
+        operation: Callable,
+        duration_hours: int = 1,
+        concurrent_users: int = 5,
+    ) -> PerformanceTestResult:
         """
         Executa teste de endurance por período prolongado.
 
@@ -229,15 +274,14 @@ class PerformanceTestSuite:
         logger.info(f"Starting endurance test for {duration_hours} hours")
 
         result = self.run_load_test(
-            f"{name}_endurance",
-            operation,
-            concurrent_users,
-            duration_seconds
+            f"{name}_endurance", operation, concurrent_users, duration_seconds
         )
 
         return result
 
-    def run_memory_leak_test(self, name: str, operation: Callable, iterations: int = 1000) -> PerformanceTestResult:
+    def run_memory_leak_test(
+        self, name: str, operation: Callable, iterations: int = 1000
+    ) -> PerformanceTestResult:
         """
         Testa vazamentos de memória executando operação múltiplas vezes.
 
@@ -262,11 +306,15 @@ class PerformanceTestSuite:
 
                 # Coleta amostra de memória a cada 10 iterações
                 if i % 10 == 0:
-                    memory_samples.append(self.process.memory_info().rss / (1024 * 1024))
+                    memory_samples.append(
+                        self.process.memory_info().rss / (1024 * 1024)
+                    )
 
                 # Progress report
                 if i % 100 == 0:
-                    logger.info(f"Memory leak test: {i}/{iterations} iterations completed")
+                    logger.info(
+                        f"Memory leak test: {i}/{iterations} iterations completed"
+                    )
 
             success = True
             error_message = None
@@ -278,12 +326,25 @@ class PerformanceTestSuite:
                 memory_growth = final_memory - initial_memory
                 growth_rate = memory_growth / len(memory_samples)
 
-                metrics.extend([
-                    PerformanceMetric("initial_memory", initial_memory, "MB", start_time),
-                    PerformanceMetric("final_memory", final_memory, "MB", start_time),
-                    PerformanceMetric("memory_growth", memory_growth, "MB", start_time),
-                    PerformanceMetric("memory_growth_rate", growth_rate, "MB/iteration", start_time),
-                ])
+                metrics.extend(
+                    [
+                        PerformanceMetric(
+                            "initial_memory", initial_memory, "MB", start_time
+                        ),
+                        PerformanceMetric(
+                            "final_memory", final_memory, "MB", start_time
+                        ),
+                        PerformanceMetric(
+                            "memory_growth", memory_growth, "MB", start_time
+                        ),
+                        PerformanceMetric(
+                            "memory_growth_rate",
+                            growth_rate,
+                            "MB/iteration",
+                            start_time,
+                        ),
+                    ]
+                )
 
                 # Flag se crescimento excessivo
                 if growth_rate > 0.1:  # Mais de 0.1MB por iteração
@@ -299,13 +360,15 @@ class PerformanceTestSuite:
             duration=time.time() - start_time,
             metrics=metrics,
             success=success,
-            error_message=error_message
+            error_message=error_message,
         )
 
         self._save_result(result)
         return result
 
-    def benchmark_operation(self, name: str, operation: Callable, iterations: int = 100) -> PerformanceTestResult:
+    def benchmark_operation(
+        self, name: str, operation: Callable, iterations: int = 100
+    ) -> PerformanceTestResult:
         """
         Benchmark de uma operação específica.
 
@@ -340,8 +403,16 @@ class PerformanceTestSuite:
             # Calcula estatísticas
             avg_latency = statistics.mean(latencies)
             median_latency = statistics.median(latencies)
-            p95_latency = statistics.quantiles(latencies, n=20)[18] if len(latencies) >= 20 else None
-            p99_latency = statistics.quantiles(latencies, n=100)[98] if len(latencies) >= 100 else None
+            p95_latency = (
+                statistics.quantiles(latencies, n=20)[18]
+                if len(latencies) >= 20
+                else None
+            )
+            p99_latency = (
+                statistics.quantiles(latencies, n=100)[98]
+                if len(latencies) >= 100
+                else None
+            )
 
             throughput = iterations / (time.time() - start_time)
             avg_memory = statistics.mean(memory_samples)
@@ -357,9 +428,13 @@ class PerformanceTestSuite:
             ]
 
             if p95_latency:
-                metrics.append(PerformanceMetric("p95_latency", p95_latency, "ms", start_time))
+                metrics.append(
+                    PerformanceMetric("p95_latency", p95_latency, "ms", start_time)
+                )
             if p99_latency:
-                metrics.append(PerformanceMetric("p99_latency", p99_latency, "ms", start_time))
+                metrics.append(
+                    PerformanceMetric("p99_latency", p99_latency, "ms", start_time)
+                )
 
             success = True
             error_message = None
@@ -375,12 +450,12 @@ class PerformanceTestSuite:
             metrics=metrics,
             success=success,
             error_message=error_message,
-            throughput=throughput if 'throughput' in locals() else None,
-            latency_p50=median_latency if 'median_latency' in locals() else None,
-            latency_p95=p95_latency if 'p95_latency' in locals() else None,
-            latency_p99=p99_latency if 'p99_latency' in locals() else None,
+            throughput=throughput if "throughput" in locals() else None,
+            latency_p50=median_latency if "median_latency" in locals() else None,
+            latency_p95=p95_latency if "p95_latency" in locals() else None,
+            latency_p99=p99_latency if "p99_latency" in locals() else None,
             memory_peak=max(memory_samples) if memory_samples else None,
-            cpu_peak=max(cpu_samples) if cpu_samples else None
+            cpu_peak=max(cpu_samples) if cpu_samples else None,
         )
 
         self._save_result(result)
@@ -388,7 +463,9 @@ class PerformanceTestSuite:
 
     def _save_result(self, result: PerformanceTestResult):
         """Salva resultado em arquivo JSON."""
-        result_file = self.output_dir / f"perf_{result.test_name}_{int(time.time())}.json"
+        result_file = (
+            self.output_dir / f"perf_{result.test_name}_{int(time.time())}.json"
+        )
 
         result_data = {
             "test_name": result.test_name,
@@ -408,12 +485,13 @@ class PerformanceTestSuite:
                     "value": m.value,
                     "unit": m.unit,
                     "timestamp": m.timestamp,
-                    "metadata": m.metadata
-                } for m in result.metrics
-            ]
+                    "metadata": m.metadata,
+                }
+                for m in result.metrics
+            ],
         }
 
-        with open(result_file, 'w', encoding='utf-8') as f:
+        with open(result_file, "w", encoding="utf-8") as f:
             json.dump(result_data, f, indent=2, default=str)
 
         logger.info(f"Performance test result saved to {result_file}")
@@ -433,11 +511,13 @@ class PerformanceTestSuite:
                 "total_tests": len(results),
                 "successful_tests": len([r for r in results if r.success]),
                 "failed_tests": len([r for r in results if not r.success]),
-                "avg_duration": statistics.mean([r.duration for r in results]) if results else 0,
-                "total_duration": sum(r.duration for r in results)
+                "avg_duration": (
+                    statistics.mean([r.duration for r in results]) if results else 0
+                ),
+                "total_duration": sum(r.duration for r in results),
             },
             "performance_metrics": {},
-            "recommendations": []
+            "recommendations": [],
         }
 
         # Agrega métricas
@@ -450,44 +530,51 @@ class PerformanceTestSuite:
             report["performance_metrics"]["throughput"] = {
                 "avg": statistics.mean(all_throughput),
                 "max": max(all_throughput),
-                "min": min(all_throughput)
+                "min": min(all_throughput),
             }
 
         if all_latencies_p95:
             report["performance_metrics"]["latency_p95"] = {
                 "avg": statistics.mean(all_latencies_p95),
-                "max": max(all_latencies_p95)
+                "max": max(all_latencies_p95),
             }
 
         if all_memory_peaks:
             report["performance_metrics"]["memory_peak"] = {
                 "avg": statistics.mean(all_memory_peaks),
-                "max": max(all_memory_peaks)
+                "max": max(all_memory_peaks),
             }
 
         if all_cpu_peaks:
             report["performance_metrics"]["cpu_peak"] = {
                 "avg": statistics.mean(all_cpu_peaks),
-                "max": max(all_cpu_peaks)
+                "max": max(all_cpu_peaks),
             }
 
         # Gera recomendações
         if all_latencies_p95 and statistics.mean(all_latencies_p95) > 1000:
-            report["recommendations"].append("High latency detected. Consider optimizing slow operations.")
+            report["recommendations"].append(
+                "High latency detected. Consider optimizing slow operations."
+            )
 
         if all_cpu_peaks and statistics.mean(all_cpu_peaks) > 80:
-            report["recommendations"].append("High CPU usage detected. Consider load balancing or optimization.")
+            report["recommendations"].append(
+                "High CPU usage detected. Consider load balancing or optimization."
+            )
 
         if all_memory_peaks and statistics.mean(all_memory_peaks) > 1000:
-            report["recommendations"].append("High memory usage detected. Check for memory leaks.")
+            report["recommendations"].append(
+                "High memory usage detected. Check for memory leaks."
+            )
 
         # Salva relatório
         report_file = self.output_dir / f"performance_report_{int(time.time())}.json"
-        with open(report_file, 'w', encoding='utf-8') as f:
+        with open(report_file, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, default=str)
 
         logger.info(f"Performance report saved to {report_file}")
         return report
+
 
 # Funções de exemplo para teste
 async def sample_async_operation():
@@ -495,10 +582,12 @@ async def sample_async_operation():
     await asyncio.sleep(0.01)  # Simula I/O
     return sum(range(100))  # Simula processamento
 
+
 def sample_sync_operation():
     """Operação síncrona de exemplo."""
     time.sleep(0.01)  # Simula I/O
     return sum(range(100))  # Simula processamento
+
 
 if __name__ == "__main__":
     # Exemplo de uso
@@ -506,9 +595,7 @@ if __name__ == "__main__":
 
     # Benchmark simples
     benchmark_result = suite.benchmark_operation(
-        "sample_operation_benchmark",
-        sample_sync_operation,
-        iterations=100
+        "sample_operation_benchmark", sample_sync_operation, iterations=100
     )
 
     print(f"Benchmark completed: {benchmark_result.success}")
@@ -520,7 +607,7 @@ if __name__ == "__main__":
         "sample_load_test",
         sample_async_operation,
         concurrent_users=5,
-        duration_seconds=10
+        duration_seconds=10,
     )
 
     print(f"Load test completed: {load_result.success}")

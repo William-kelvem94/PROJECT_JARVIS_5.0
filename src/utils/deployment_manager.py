@@ -6,22 +6,22 @@ Gerencia builds, releases, containers e orquestração.
 import asyncio
 import json
 import logging
-import os
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Any
 from datetime import datetime
 import docker
 import yaml
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class DeploymentConfig:
     """Configuração de deployment."""
+
     environment: str  # 'development', 'staging', 'production'
     version: str
     docker_image: str
@@ -31,9 +31,11 @@ class DeploymentConfig:
     health_checks: Dict[str, Any]
     scaling: Dict[str, Any]
 
+
 @dataclass
 class DeploymentResult:
     """Resultado de um deployment."""
+
     success: bool
     deployment_id: str
     environment: str
@@ -42,6 +44,7 @@ class DeploymentResult:
     logs: List[str]
     errors: List[str]
     rollback_available: bool = False
+
 
 class DeploymentManager:
     """
@@ -78,14 +81,10 @@ class DeploymentManager:
                 environment_variables={
                     "ENV": "development",
                     "LOG_LEVEL": "DEBUG",
-                    "DEBUG": "true"
+                    "DEBUG": "true",
                 },
-                health_checks={
-                    "interval": 30,
-                    "timeout": 10,
-                    "retries": 3
-                },
-                scaling={"replicas": 1}
+                health_checks={"interval": 30, "timeout": 10, "retries": 3},
+                scaling={"replicas": 1},
             ),
             "staging": DeploymentConfig(
                 environment="staging",
@@ -93,16 +92,9 @@ class DeploymentManager:
                 docker_image="jarvis-staging:latest",
                 ports={"web": 8082, "api": 8083},
                 volumes=["./data/staging:/app/data", "./config/staging:/app/config"],
-                environment_variables={
-                    "ENV": "staging",
-                    "LOG_LEVEL": "INFO"
-                },
-                health_checks={
-                    "interval": 60,
-                    "timeout": 15,
-                    "retries": 5
-                },
-                scaling={"replicas": 2}
+                environment_variables={"ENV": "staging", "LOG_LEVEL": "INFO"},
+                health_checks={"interval": 60, "timeout": 15, "retries": 5},
+                scaling={"replicas": 2},
             ),
             "production": DeploymentConfig(
                 environment="production",
@@ -110,24 +102,17 @@ class DeploymentManager:
                 docker_image="jarvis-prod:latest",
                 ports={"web": 80, "api": 443},
                 volumes=["/data/jarvis:/app/data", "/config/jarvis:/app/config"],
-                environment_variables={
-                    "ENV": "production",
-                    "LOG_LEVEL": "WARNING"
-                },
-                health_checks={
-                    "interval": 30,
-                    "timeout": 10,
-                    "retries": 3
-                },
-                scaling={"replicas": 3}
-            )
+                environment_variables={"ENV": "production", "LOG_LEVEL": "WARNING"},
+                health_checks={"interval": 30, "timeout": 10, "retries": 3},
+                scaling={"replicas": 3},
+            ),
         }
 
         # Carrega configurações customizadas se existirem
         config_file = self.project_root / "config" / "deployment.yaml"
         if config_file.exists():
             try:
-                with open(config_file, 'r', encoding='utf-8') as f:
+                with open(config_file, "r", encoding="utf-8") as f:
                     custom_configs = yaml.safe_load(f)
 
                 for env_name, config_data in custom_configs.items():
@@ -136,13 +121,19 @@ class DeploymentManager:
                         default = default_configs[env_name]
                         merged = DeploymentConfig(
                             environment=env_name,
-                            version=config_data.get('version', default.version),
-                            docker_image=config_data.get('docker_image', default.docker_image),
-                            ports=config_data.get('ports', default.ports),
-                            volumes=config_data.get('volumes', default.volumes),
-                            environment_variables=config_data.get('environment_variables', default.environment_variables),
-                            health_checks=config_data.get('health_checks', default.health_checks),
-                            scaling=config_data.get('scaling', default.scaling)
+                            version=config_data.get("version", default.version),
+                            docker_image=config_data.get(
+                                "docker_image", default.docker_image
+                            ),
+                            ports=config_data.get("ports", default.ports),
+                            volumes=config_data.get("volumes", default.volumes),
+                            environment_variables=config_data.get(
+                                "environment_variables", default.environment_variables
+                            ),
+                            health_checks=config_data.get(
+                                "health_checks", default.health_checks
+                            ),
+                            scaling=config_data.get("scaling", default.scaling),
                         )
                         environments[env_name] = merged
                     else:
@@ -157,7 +148,9 @@ class DeploymentManager:
 
         return environments
 
-    async def deploy_to_docker(self, environment: str, version: str = None) -> DeploymentResult:
+    async def deploy_to_docker(
+        self, environment: str, version: str = None
+    ) -> DeploymentResult:
         """
         Faz deployment usando Docker.
 
@@ -176,7 +169,7 @@ class DeploymentManager:
                 version=version or "unknown",
                 timestamp=datetime.now(),
                 logs=[],
-                errors=["Docker client not available"]
+                errors=["Docker client not available"],
             )
 
         config = self.environments.get(environment)
@@ -188,7 +181,7 @@ class DeploymentManager:
                 version=version or "unknown",
                 timestamp=datetime.now(),
                 logs=[],
-                errors=[f"Environment '{environment}' not configured"]
+                errors=[f"Environment '{environment}' not configured"],
             )
 
         deployment_id = f"docker_{environment}_{int(datetime.now().timestamp())}"
@@ -213,7 +206,7 @@ class DeploymentManager:
                     version=version or config.version,
                     timestamp=datetime.now(),
                     logs=logs,
-                    errors=errors
+                    errors=errors,
                 )
 
             # Para containers existentes
@@ -237,7 +230,7 @@ class DeploymentManager:
                 timestamp=datetime.now(),
                 logs=logs,
                 errors=errors,
-                rollback_available=True
+                rollback_available=True,
             )
 
         except Exception as e:
@@ -250,7 +243,7 @@ class DeploymentManager:
                 version=version or config.version,
                 timestamp=datetime.now(),
                 logs=logs,
-                errors=errors
+                errors=errors,
             )
 
     async def deploy_to_systemd(self, environment: str) -> DeploymentResult:
@@ -272,7 +265,7 @@ class DeploymentManager:
                 version="unknown",
                 timestamp=datetime.now(),
                 logs=[],
-                errors=[f"Environment '{environment}' not configured"]
+                errors=[f"Environment '{environment}' not configured"],
             )
 
         deployment_id = f"systemd_{environment}_{int(datetime.now().timestamp())}"
@@ -287,33 +280,44 @@ class DeploymentManager:
             logs.append(f"Creating systemd service at {service_path}...")
 
             # Escreve arquivo de serviço (requer sudo)
-            write_result = await self._write_systemd_service(service_content, service_path)
+            write_result = await self._write_systemd_service(
+                service_content, service_path
+            )
             logs.extend(write_result["logs"])
             if write_result["errors"]:
                 errors.extend(write_result["errors"])
 
             # Recarrega systemd
             logs.append("Reloading systemd...")
-            reload_result = await self._run_command(["sudo", "systemctl", "daemon-reload"])
+            reload_result = await self._run_command(
+                ["sudo", "systemctl", "daemon-reload"]
+            )
             logs.extend(reload_result["logs"])
             if reload_result["errors"]:
                 errors.extend(reload_result["errors"])
 
             # Para serviço existente
             logs.append("Stopping existing service...")
-            stop_result = await self._run_command(["sudo", "systemctl", "stop", f"jarvis-{environment}"])
-            logs.extend(stop_result["logs"])  # Não trata como erro se já estava parado
+            stop_result = await self._run_command(
+                ["sudo", "systemctl", "stop", f"jarvis-{environment}"]
+            )
+            # Não trata como erro se já estava parado
+            logs.extend(stop_result["logs"])
 
             # Inicia novo serviço
             logs.append("Starting service...")
-            start_result = await self._run_command(["sudo", "systemctl", "start", f"jarvis-{environment}"])
+            start_result = await self._run_command(
+                ["sudo", "systemctl", "start", f"jarvis-{environment}"]
+            )
             logs.extend(start_result["logs"])
             if start_result["errors"]:
                 errors.extend(start_result["errors"])
 
             # Habilita serviço
             logs.append("Enabling service...")
-            enable_result = await self._run_command(["sudo", "systemctl", "enable", f"jarvis-{environment}"])
+            enable_result = await self._run_command(
+                ["sudo", "systemctl", "enable", f"jarvis-{environment}"]
+            )
             logs.extend(enable_result["logs"])
             if enable_result["errors"]:
                 errors.extend(enable_result["errors"])
@@ -328,7 +332,7 @@ class DeploymentManager:
                 timestamp=datetime.now(),
                 logs=logs,
                 errors=errors,
-                rollback_available=True
+                rollback_available=True,
             )
 
         except Exception as e:
@@ -341,10 +345,12 @@ class DeploymentManager:
                 version=config.version,
                 timestamp=datetime.now(),
                 logs=logs,
-                errors=errors
+                errors=errors,
             )
 
-    async def create_release(self, version: str, changelog: str = None) -> Dict[str, Any]:
+    async def create_release(
+        self, version: str, changelog: str = None
+    ) -> Dict[str, Any]:
         """
         Cria uma release do projeto.
 
@@ -371,7 +377,7 @@ class DeploymentManager:
             "config/**/*.yaml",
             "docs/**/*",
             "README.md",
-            "LICENSE"
+            "LICENSE",
         ]
 
         # Cria arquivo da release
@@ -380,7 +386,7 @@ class DeploymentManager:
             "timestamp": datetime.now().isoformat(),
             "changelog": changelog,
             "files": [],
-            "checksums": {}
+            "checksums": {},
         }
 
         try:
@@ -397,21 +403,22 @@ class DeploymentManager:
 
             # Calcula checksums
             import hashlib
+
             for file_path in release_dir.rglob("*"):
                 if file_path.is_file():
-                    with open(file_path, 'rb') as f:
+                    with open(file_path, "rb") as f:
                         checksum = hashlib.sha256(f.read()).hexdigest()
                     relative_path = file_path.relative_to(release_dir)
                     release_info["checksums"][str(relative_path)] = checksum
 
             # Salva informações da release
             info_file = release_dir / "release.json"
-            with open(info_file, 'w', encoding='utf-8') as f:
+            with open(info_file, "w", encoding="utf-8") as f:
                 json.dump(release_info, f, indent=2)
 
             # Cria arquivo tar.gz
             tar_path = self.deployments_dir / f"jarvis-{version}.tar.gz"
-            shutil.make_archive(str(tar_path.with_suffix('')), 'gztar', release_dir)
+            shutil.make_archive(str(tar_path.with_suffix("")), "gztar", release_dir)
 
             logger.info(f"Release {version} created successfully")
 
@@ -420,16 +427,12 @@ class DeploymentManager:
                 "version": version,
                 "release_dir": str(release_dir),
                 "archive_path": str(tar_path),
-                "info": release_info
+                "info": release_info,
             }
 
         except Exception as e:
             logger.error(f"Failed to create release: {e}")
-            return {
-                "success": False,
-                "version": version,
-                "error": str(e)
-            }
+            return {"success": False, "version": version, "error": str(e)}
 
     async def rollback_deployment(self, deployment_id: str) -> bool:
         """
@@ -448,7 +451,7 @@ class DeploymentManager:
             return False
 
         try:
-            with open(deployment_file, 'r', encoding='utf-8') as f:
+            with open(deployment_file, "r", encoding="utf-8") as f:
                 deployment_info = json.load(f)
 
             # Estratégia de rollback baseada no tipo
@@ -481,10 +484,13 @@ class DeploymentManager:
 
             # Build usando subprocess para melhor controle
             cmd = [
-                "docker", "build",
-                "-t", image_tag,
-                "-f", str(dockerfile_path),
-                str(self.project_root)
+                "docker",
+                "build",
+                "-t",
+                image_tag,
+                "-f",
+                str(dockerfile_path),
+                str(self.project_root),
             ]
 
             result = await self._run_command(cmd)
@@ -499,7 +505,9 @@ class DeploymentManager:
             errors.append(str(e))
             return {"success": False, "logs": logs, "errors": errors}
 
-    async def _start_container(self, config: DeploymentConfig, image_tag: str) -> Dict[str, Any]:
+    async def _start_container(
+        self, config: DeploymentConfig, image_tag: str
+    ) -> Dict[str, Any]:
         """Inicia container Docker."""
         logs = []
         errors = []
@@ -509,10 +517,13 @@ class DeploymentManager:
 
             # Monta comando docker run
             cmd = [
-                "docker", "run",
+                "docker",
+                "run",
                 "-d",
-                "--name", container_name,
-                "--restart", "unless-stopped"
+                "--name",
+                container_name,
+                "--restart",
+                "unless-stopped",
             ]
 
             # Adiciona portas
@@ -591,7 +602,7 @@ CMD ["python", "main.py"]
 """
 
         dockerfile_path = self.project_root / "Dockerfile"
-        with open(dockerfile_path, 'w', encoding='utf-8') as f:
+        with open(dockerfile_path, "w", encoding="utf-8") as f:
             f.write(dockerfile_content)
 
         logger.info("Created basic Dockerfile")
@@ -675,7 +686,9 @@ WantedBy=multi-user.target
 Generated automatically on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
 
-    async def _run_command(self, cmd: List[str], input_data: str = None) -> Dict[str, Any]:
+    async def _run_command(
+        self, cmd: List[str], input_data: str = None
+    ) -> Dict[str, Any]:
         """Executa comando do sistema."""
         logs = []
         errors = []
@@ -686,7 +699,7 @@ Generated automatically on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 stdin=asyncio.subprocess.PIPE if input_data else None,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=self.project_root
+                cwd=self.project_root,
             )
 
             stdout, stderr = await process.communicate(
@@ -694,9 +707,9 @@ Generated automatically on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             )
 
             if stdout:
-                logs.extend(stdout.decode().strip().split('\n'))
+                logs.extend(stdout.decode().strip().split("\n"))
             if stderr:
-                errors.extend(stderr.decode().strip().split('\n'))
+                errors.extend(stderr.decode().strip().split("\n"))
 
             if process.returncode != 0:
                 errors.append(f"Command failed with return code {process.returncode}")
@@ -728,8 +741,11 @@ Generated automatically on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             logger.error(f"Systemd rollback failed: {e}")
             return False
 
+
 # Funções de conveniência
-async def deploy_to_environment(environment: str, strategy: str = "docker") -> DeploymentResult:
+async def deploy_to_environment(
+    environment: str, strategy: str = "docker"
+) -> DeploymentResult:
     """
     Faz deployment para um ambiente específico.
 
@@ -754,8 +770,9 @@ async def deploy_to_environment(environment: str, strategy: str = "docker") -> D
             version="unknown",
             timestamp=datetime.now(),
             logs=[],
-            errors=[f"Unknown deployment strategy: {strategy}"]
+            errors=[f"Unknown deployment strategy: {strategy}"],
         )
+
 
 def create_release(version: str, changelog: str = None) -> Dict[str, Any]:
     """
@@ -771,6 +788,7 @@ def create_release(version: str, changelog: str = None) -> Dict[str, Any]:
     manager = DeploymentManager()
     return asyncio.run(manager.create_release(version, changelog))
 
+
 if __name__ == "__main__":
     # Exemplo de uso
     import argparse
@@ -778,7 +796,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="JARVIS Deployment Manager")
     parser.add_argument("action", choices=["deploy", "release", "rollback"])
     parser.add_argument("--environment", "-e", default="development")
-    parser.add_argument("--strategy", "-s", choices=["docker", "systemd"], default="docker")
+    parser.add_argument(
+        "--strategy", "-s", choices=["docker", "systemd"], default="docker"
+    )
     parser.add_argument("--version", "-v")
 
     args = parser.parse_args()

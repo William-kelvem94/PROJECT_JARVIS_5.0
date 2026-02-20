@@ -4,21 +4,19 @@ Gera documentação técnica, READMEs e guias automaticamente.
 """
 
 import ast
-import inspect
-import json
 import logging
-import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Type
+from typing import Dict, List, Optional, Any
 from datetime import datetime
-import importlib.util
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class CodeEntity:
     """Entidade de código (classe, função, método)."""
+
     name: str
     type: str  # 'class', 'function', 'method', 'module'
     file_path: Path
@@ -33,17 +31,20 @@ class CodeEntity:
         if self.dependencies is None:
             self.dependencies = []
 
+
 @dataclass
 class DocumentationSection:
     """Seção de documentação."""
+
     title: str
     content: str
     level: int = 1  # Nível do cabeçalho (1-6)
-    subsections: List['DocumentationSection'] = None
+    subsections: List["DocumentationSection"] = None
 
     def __post_init__(self):
         if self.subsections is None:
             self.subsections = []
+
 
 class DocumentationGenerator:
     """
@@ -78,20 +79,23 @@ class DocumentationGenerator:
             modules[module_name].append(entity)
 
         # Gera documentação
-        doc = ["# API Documentation\n", f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
+        doc = [
+            "# API Documentation\n",
+            f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
+        ]
 
         for module_name, module_entities in sorted(modules.items()):
             doc.append(f"## Module: {module_name}\n")
 
             # Classes
-            classes = [e for e in module_entities if e.type == 'class']
+            classes = [e for e in module_entities if e.type == "class"]
             if classes:
                 doc.append("### Classes\n")
                 for cls in classes:
                     doc.append(self._format_entity_documentation(cls))
 
             # Functions
-            functions = [e for e in module_entities if e.type == 'function']
+            functions = [e for e in module_entities if e.type == "function"]
             if functions:
                 doc.append("### Functions\n")
                 for func in functions:
@@ -112,12 +116,15 @@ class DocumentationGenerator:
         project_info = project_info or {}
 
         # Análise básica do projeto
-        project_name = project_info.get('name', 'JARVIS 5.0')
-        description = project_info.get('description', 'Advanced AI Assistant System')
+        project_name = project_info.get("name", "JARVIS 5.0")
+        description = project_info.get(
+            "description", "Advanced AI Assistant System")
 
         # Estrutura de seções
         sections = [
-            DocumentationSection("Project Title", f"# {project_name}\n\n{description}\n"),
+            DocumentationSection(
+                "Project Title", f"# {project_name}\n\n{description}\n"
+            ),
             self._generate_features_section(),
             self._generate_installation_section(),
             self._generate_usage_section(),
@@ -126,7 +133,7 @@ class DocumentationGenerator:
             self._generate_testing_section(),
             self._generate_deployment_section(),
             self._generate_contributing_section(),
-            self._generate_license_section()
+            self._generate_license_section(),
         ]
 
         # Gera README
@@ -143,7 +150,10 @@ class DocumentationGenerator:
         Returns:
             Documentação da arquitetura
         """
-        doc = ["# System Architecture\n", f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
+        doc = [
+            "# System Architecture\n",
+            f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
+        ]
 
         # Componentes principais
         components = {
@@ -151,26 +161,26 @@ class DocumentationGenerator:
                 "SecurityManager - Gerenciamento de segurança e validação",
                 "ConfigManager - Configurações hierárquicas",
                 "GlobalEventBus - Comunicação entre componentes",
-                "ActionController - Controle de ações do sistema"
+                "ActionController - Controle de ações do sistema",
             ],
             "Evolution Layer": [
                 "SelfObserver - Auto-observação e métricas",
                 "AdvancedMetricsCollector - Coleta avançada de métricas",
                 "TraceManager - Rastreamento distribuído",
                 "AlertManager - Sistema de alertas inteligentes",
-                "AutoHealer - Auto-correção de problemas"
+                "AutoHealer - Auto-correção de problemas",
             ],
             "Utilities": [
                 "LazyLoader - Carregamento lazy de módulos",
                 "MemoryManager - Gerenciamento de memória",
                 "AsyncRunner - Executor assíncrono",
-                "BaseHUD - Interface unificada"
+                "BaseHUD - Interface unificada",
             ],
             "Testing & Quality": [
                 "JarvisTestSuite - Suite completa de testes",
                 "PerformanceTestSuite - Testes de performance",
-                "DocumentationGenerator - Geração automática de docs"
-            ]
+                "DocumentationGenerator - Geração automática de docs",
+            ],
         }
 
         for component_group, component_list in components.items():
@@ -210,81 +220,77 @@ class DocumentationGenerator:
         Returns:
             Guia de deployment
         """
-        guide = ["# Deployment Guide\n", f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
+        guide = [
+            "# Deployment Guide\n",
+            f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n",
+        ]
 
-        guide.extend([
-            "## Prerequisites\n",
-            "- Python 3.8+\n",
-            "- pip\n",
-            "- Virtual environment (recommended)\n",
-            "- Git\n\n",
-
-            "## Local Development Setup\n",
-            "```bash\n",
-            "# Clone the repository\n",
-            "git clone <repository-url>\n",
-            "cd PROJECT_JARVIS_5.0\n\n",
-            "# Create virtual environment\n",
-            "python -m venv venv\n",
-            "source venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n",
-            "# Install dependencies\n",
-            "pip install -r requirements.txt\n\n",
-            "# Run tests\n",
-            "python -m pytest tests/\n\n",
-            "# Start the system\n",
-            "python main.py\n",
-            "```\n\n",
-
-            "## Production Deployment\n",
-            "### Option 1: Docker Deployment\n",
-            "```bash\n",
-            "# Build Docker image\n",
-            "docker build -t jarvis-5.0 .\n\n",
-            "# Run container\n",
-            "docker run -d --name jarvis jarvis-5.0\n",
-            "```\n\n",
-
-            "### Option 2: Systemd Service\n",
-            "```bash\n",
-            "# Create systemd service file\n",
-            "sudo nano /etc/systemd/system/jarvis.service\n\n",
-            "# Service content:\n",
-            "[Unit]\n",
-            "Description=JARVIS 5.0 AI Assistant\n",
-            "After=network.target\n\n",
-            "[Service]\n",
-            "Type=simple\n",
-            "User=jarvis\n",
-            "WorkingDirectory=/opt/jarvis\n",
-            "ExecStart=/opt/jarvis/venv/bin/python main.py\n",
-            "Restart=always\n\n",
-            "[Install]\n",
-            "WantedBy=multi-user.target\n\n",
-            "# Enable and start service\n",
-            "sudo systemctl enable jarvis\n",
-            "sudo systemctl start jarvis\n",
-            "```\n\n",
-
-            "## Configuration\n",
-            "Copy and modify configuration files:\n",
-            "```bash\n",
-            "cp config/*.yaml config/production/\n",
-            "nano config/production/*.yaml  # Edit for production\n",
-            "```\n\n",
-
-            "## Monitoring\n",
-            "- Check logs: `tail -f data/logs/*.txt`\n",
-            "- Monitor processes: `ps aux | grep python`\n",
-            "- System resources: `htop` or `top`\n\n",
-
-            "## Backup\n",
-            "```bash\n",
-            "# Backup data directory\n",
-            "tar -czf backup_$(date +%Y%m%d).tar.gz data/\n\n",
-            "# Backup configuration\n",
-            "cp -r config/ config_backup/\n",
-            "```\n\n"
-        ])
+        guide.extend(["## Prerequisites\n",
+                      "- Python 3.8+\n",
+                      "- pip\n",
+                      "- Virtual environment (recommended)\n",
+                      "- Git\n\n",
+                      "## Local Development Setup\n",
+                      "```bash\n",
+                      "# Clone the repository\n",
+                      "git clone <repository-url>\n",
+                      "cd PROJECT_JARVIS_5.0\n\n",
+                      "# Create virtual environment\n",
+                      "python -m venv venv\n",
+                      "source venv/bin/activate  # On Windows: venv\\Scripts\\activate\n\n",
+                      "# Install dependencies\n",
+                      "pip install -r requirements.txt\n\n",
+                      "# Run tests\n",
+                      "python -m pytest tests/\n\n",
+                      "# Start the system\n",
+                      "python main.py\n",
+                      "```\n\n",
+                      "## Production Deployment\n",
+                      "### Option 1: Docker Deployment\n",
+                      "```bash\n",
+                      "# Build Docker image\n",
+                      "docker build -t jarvis-5.0 .\n\n",
+                      "# Run container\n",
+                      "docker run -d --name jarvis jarvis-5.0\n",
+                      "```\n\n",
+                      "### Option 2: Systemd Service\n",
+                      "```bash\n",
+                      "# Create systemd service file\n",
+                      "sudo nano /etc/systemd/system/jarvis.service\n\n",
+                      "# Service content:\n",
+                      "[Unit]\n",
+                      "Description=JARVIS 5.0 AI Assistant\n",
+                      "After=network.target\n\n",
+                      "[Service]\n",
+                      "Type=simple\n",
+                      "User=jarvis\n",
+                      "WorkingDirectory=/opt/jarvis\n",
+                      "ExecStart=/opt/jarvis/venv/bin/python main.py\n",
+                      "Restart=always\n\n",
+                      "[Install]\n",
+                      "WantedBy=multi-user.target\n\n",
+                      "# Enable and start service\n",
+                      "sudo systemctl enable jarvis\n",
+                      "sudo systemctl start jarvis\n",
+                      "```\n\n",
+                      "## Configuration\n",
+                      "Copy and modify configuration files:\n",
+                      "```bash\n",
+                      "cp config/*.yaml config/production/\n",
+                      "nano config/production/*.yaml  # Edit for production\n",
+                      "```\n\n",
+                      "## Monitoring\n",
+                      "- Check logs: `tail -f data/logs/*.txt`\n",
+                      "- Monitor processes: `ps aux | grep python`\n",
+                      "- System resources: `htop` or `top`\n\n",
+                      "## Backup\n",
+                      "```bash\n",
+                      "# Backup data directory\n",
+                      "tar -czf backup_$(date +%Y%m%d).tar.gz data/\n\n",
+                      "# Backup configuration\n",
+                      "cp -r config/ config_backup/\n",
+                      "```\n\n",
+                      ])
 
         return "\n".join(guide)
 
@@ -305,25 +311,38 @@ class DocumentationGenerator:
                 continue
 
             try:
-                with open(py_file, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(py_file, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
 
                 tree = ast.parse(content)
 
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ClassDef):
-                        entities.append(self._extract_class_entity(node, py_file))
-                    elif isinstance(node, ast.FunctionDef) and not isinstance(node, ast.AsyncFunctionDef):
-                        entities.append(self._extract_function_entity(node, py_file, 'function'))
+                        entities.append(
+                            self._extract_class_entity(
+                                node, py_file))
+                    elif isinstance(node, ast.FunctionDef) and not isinstance(
+                        node, ast.AsyncFunctionDef
+                    ):
+                        entities.append(
+                            self._extract_function_entity(
+                                node, py_file, "function"))
                     elif isinstance(node, ast.AsyncFunctionDef):
-                        entities.append(self._extract_function_entity(node, py_file, 'async_function'))
+                        entities.append(
+                            self._extract_function_entity(
+                                node, py_file, "async_function"
+                            )
+                        )
 
             except Exception as e:
                 logger.warning(f"Failed to analyze {py_file}: {e}")
 
         return entities
 
-    def _extract_class_entity(self, node: ast.ClassDef, file_path: Path) -> CodeEntity:
+    def _extract_class_entity(
+            self,
+            node: ast.ClassDef,
+            file_path: Path) -> CodeEntity:
         """Extrai entidade de classe."""
         docstring = ast.get_docstring(node)
         signature = f"class {node.name}"
@@ -334,14 +353,16 @@ class DocumentationGenerator:
 
         return CodeEntity(
             name=node.name,
-            type='class',
+            type="class",
             file_path=file_path,
             line_number=node.lineno,
             docstring=docstring,
-            signature=signature
+            signature=signature,
         )
 
-    def _extract_function_entity(self, node: ast.FunctionDef, file_path: Path, func_type: str) -> CodeEntity:
+    def _extract_function_entity(
+        self, node: ast.FunctionDef, file_path: Path, func_type: str
+    ) -> CodeEntity:
         """Extrai entidade de função."""
         docstring = ast.get_docstring(node)
         signature = f"def {node.name}({self._format_args(node.args)})"
@@ -352,7 +373,7 @@ class DocumentationGenerator:
             file_path=file_path,
             line_number=node.lineno,
             docstring=docstring,
-            signature=signature
+            signature=signature,
         )
 
     def _format_args(self, args: ast.arguments) -> str:
@@ -368,7 +389,9 @@ class DocumentationGenerator:
             start_idx = len(args.args) - len(args.defaults)
             for i, default in enumerate(args.defaults):
                 arg_name = args.args[start_idx + i].arg
-                arg_list[start_idx + i] = f"{arg_name}={self._get_default_value(default)}"
+                arg_list[start_idx + i] = (
+                    f"{arg_name}={self._get_default_value(default)}"
+                )
 
         # *args
         if args.vararg:
@@ -408,8 +431,14 @@ class DocumentationGenerator:
         """Obtém nome do módulo a partir do caminho."""
         try:
             relative = file_path.relative_to(self.project_root / "src")
-            return str(relative).replace("/", ".").replace("\\", ".").replace(".py", "")
-        except:
+            return str(relative).replace(
+                "/",
+                ".").replace(
+                "\\",
+                ".").replace(
+                ".py",
+                "")
+        except BaseException:
             return file_path.stem
 
     def _format_entity_documentation(self, entity: CodeEntity) -> str:
@@ -424,7 +453,8 @@ class DocumentationGenerator:
             formatted_doc = self._format_docstring(entity.docstring)
             doc.append(f"{formatted_doc}\n")
 
-        doc.append(f"**File:** {entity.file_path.name}:{entity.line_number}\n\n")
+        doc.append(
+            f"**File:** {entity.file_path.name}:{entity.line_number}\n\n")
 
         return "".join(doc)
 
@@ -433,20 +463,24 @@ class DocumentationGenerator:
         if not docstring:
             return ""
 
-        lines = docstring.split('\n')
+        lines = docstring.split("\n")
         formatted_lines = []
 
         for line in lines:
             line = line.strip()
-            if line.startswith('Args:') or line.startswith('Returns:') or line.startswith('Raises:'):
+            if (
+                line.startswith("Args:")
+                or line.startswith("Returns:")
+                or line.startswith("Raises:")
+            ):
                 formatted_lines.append(f"**{line}**")
-            elif line.startswith('    ') or line.startswith('\t'):
+            elif line.startswith("    ") or line.startswith("\t"):
                 # Indentação para listas
                 formatted_lines.append(f"- {line.strip()}")
             else:
                 formatted_lines.append(line)
 
-        return '\n'.join(formatted_lines)
+        return "\n".join(formatted_lines)
 
     def _generate_features_section(self) -> DocumentationSection:
         """Gera seção de features."""
@@ -458,10 +492,14 @@ class DocumentationGenerator:
             "🔄 Auto-healing and predictive maintenance",
             "🧪 Extensive testing suite with performance benchmarks",
             "📚 Automatic documentation generation",
-            "🚀 Flexible deployment options (Docker, systemd, standalone)"
+            "🚀 Flexible deployment options (Docker, systemd, standalone)",
         ]
 
-        content = "## Features\n\n" + "\n".join(f"- {feature}" for feature in features) + "\n\n"
+        content = (
+            "## Features\n\n"
+            + "\n".join(f"- {feature}" for feature in features)
+            + "\n\n"
+        )
         return DocumentationSection("Features", content)
 
     def _generate_installation_section(self) -> DocumentationSection:
@@ -708,10 +746,11 @@ For support and questions:
             filename: Nome do arquivo
         """
         file_path = self.docs_dir / filename
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         logger.info(f"Documentation saved to {file_path}")
+
 
 # Função de conveniência
 def generate_full_documentation(project_root: Path = None):
@@ -728,7 +767,7 @@ def generate_full_documentation(project_root: Path = None):
         "README.md": generator.generate_readme(),
         "api.md": generator.generate_api_documentation(),
         "architecture.md": generator.generate_architecture_documentation(),
-        "deployment.md": generator.generate_deployment_guide()
+        "deployment.md": generator.generate_deployment_guide(),
     }
 
     for filename, content in docs.items():
@@ -736,6 +775,7 @@ def generate_full_documentation(project_root: Path = None):
 
     print("Documentation generated successfully!")
     print(f"Files saved in: {generator.docs_dir}")
+
 
 if __name__ == "__main__":
     # Gera documentação quando executado diretamente

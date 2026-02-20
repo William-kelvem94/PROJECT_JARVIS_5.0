@@ -1,33 +1,39 @@
-
 import os
 import sys
 import subprocess
 import time
 import requests
 import webbrowser
-from pathlib import Path
+
 
 def print_colored(text, color_code):
     if sys.platform == "win32":
-        os.system('color')
+        os.system("color")
     print(f"\033[{color_code}m{text}\033[0m")
+
 
 def check_ollama_installed():
     try:
-        subprocess.run(["ollama", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["ollama", "--version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         return True
     except FileNotFoundError:
         return False
+
 
 def check_ollama_running():
     try:
         requests.get("http://localhost:11434", timeout=1)
         return True
-    except:
+    except BaseException:
         return False
 
+
 def install_model(model_name):
-    print_colored(f"⬇️  Pulling Model: {model_name}...", "36") # Cyan
+    print_colored(f"⬇️  Pulling Model: {model_name}...", "36")  # Cyan
     try:
         # Stream the output
         process = subprocess.Popen(
@@ -35,18 +41,18 @@ def install_model(model_name):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            encoding='utf-8' # Force utf-8 for emojis
+            encoding="utf-8",  # Force utf-8 for emojis
         )
-        
+
         while True:
             output = process.stdout.readline()
-            if output == '' and process.poll() is not None:
+            if output == "" and process.poll() is not None:
                 break
             if output:
                 print(output.strip())
-                
+
         if process.returncode == 0:
-            print_colored(f"✅ Model {model_name} installed!", "32") # Green
+            print_colored(f"✅ Model {model_name} installed!", "32")  # Green
             return True
         else:
             print_colored(f"❌ Failed to download {model_name}", "31")
@@ -55,9 +61,10 @@ def install_model(model_name):
         print_colored(f"❌ Error pulling model: {e}", "31")
         return False
 
+
 def main():
     print_colored("\n🧠 JARVIS BRAIN SETUP (OLLAMA)", "1m")
-    
+
     # 1. Check Installation
     if not check_ollama_installed():
         print_colored("❌ Ollama not found in PATH.", "31")
@@ -94,13 +101,15 @@ def main():
         print_colored("✅ Ollama service is active.", "32")
 
     # 3. Install Models
-    REQUIRED_MODELS = ["llama3", "mistral"] # Compact and smart
-    
+    REQUIRED_MODELS = ["llama3", "mistral"]  # Compact and smart
+
     print("\n📦 Checking Neural Models...")
     try:
         response = requests.get("http://localhost:11434/api/tags").json()
-        installed_models = [m['name'].split(':')[0] for m in response.get('models', [])]
-    except:
+        installed_models = [
+            m["name"].split(":")[0] for m in response.get(
+                "models", [])]
+    except BaseException:
         installed_models = []
 
     model_installed = False
@@ -115,9 +124,14 @@ def main():
                 model_installed = True
 
     if model_installed:
-        print_colored("\n✨ BRAIN SETUP COMPLETE. JARVIS IS READY TO THINK.", "32")
+        print_colored(
+            "\n✨ BRAIN SETUP COMPLETE. JARVIS IS READY TO THINK.",
+            "32")
     else:
-        print_colored("\n⚠️  No models installed. JARVIS will be brainless.", "31")
+        print_colored(
+            "\n⚠️  No models installed. JARVIS will be brainless.",
+            "31")
+
 
 if __name__ == "__main__":
     main()

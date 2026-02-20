@@ -21,7 +21,6 @@ ARQUITETURA:
 import logging
 import asyncio
 from typing import Dict, Any, Optional, List
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 try:
     from src.core.vision.screen_capture import screen_capture
+
     SCREEN_CAPTURE_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"âš ï¸ screen_capture nÃ£o disponÃ­vel: {e}")
@@ -38,6 +38,7 @@ except ImportError as e:
 
 try:
     from src.core.vision.camera_controller import camera_controller
+
     CAMERA_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"âš ï¸ camera_controller nÃ£o disponÃ­vel: {e}")
@@ -46,6 +47,7 @@ except ImportError as e:
 
 try:
     from src.core.intelligence.neural_memory import neural_memory
+
     NEURAL_MEMORY_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"âš ï¸ neural_memory nÃ£o disponÃ­vel: {e}")
@@ -54,6 +56,7 @@ except ImportError as e:
 
 try:
     from src.core.vision.ui_detector import ui_detector
+
     UI_DETECTOR_AVAILABLE = True
 except (ImportError, Exception) as e:
     logger.warning(f"âš ï¸ ui_detector nÃ£o disponÃ­vel: {e}")
@@ -62,6 +65,7 @@ except (ImportError, Exception) as e:
 
 try:
     from src.core.intelligence.emotion_detector import emotion_detector
+
     EMOTION_DETECTOR_AVAILABLE = True
 except (ImportError, Exception) as e:
     logger.warning(f"âš ï¸ emotion_detector nÃ£o disponÃ­vel: {e}")
@@ -70,6 +74,7 @@ except (ImportError, Exception) as e:
 
 try:
     from src.database.models import db_manager, OCRResult
+
     DATABASE_AVAILABLE = True
 except (ImportError, Exception) as e:
     logger.warning(f"âš ï¸ database nÃ£o disponÃ­vel: {e}")
@@ -81,13 +86,13 @@ except (ImportError, Exception) as e:
 class PerceptionEngine:
     """
     Motor de PercepÃ§Ã£o - Gerencia todas as entradas sensoriais do JARVIS
-    
+
     CAPABILITIES:
       1. VisÃ£o: Screenshot + OCR + UI Detection
       2. CÃ¢mera: Face detection + Emotion recognition
       3. MemÃ³ria: RAG search em neural memory
       4. Contexto: AgregaÃ§Ã£o de todos os dados perceptuais
-    
+
     USAGE:
       perception = PerceptionEngine()
       context = await perception.gather_context("abrir notepad")
@@ -99,7 +104,7 @@ class PerceptionEngine:
       #     "ui_elements": [...]
       # }
     """
-    
+
     def __init__(self):
         """Inicializa engine com verificaÃ§Ã£o de dependÃªncias"""
         self.screen_capture = screen_capture if SCREEN_CAPTURE_AVAILABLE else None
@@ -108,12 +113,12 @@ class PerceptionEngine:
         self.ui_detector = ui_detector if UI_DETECTOR_AVAILABLE else None
         self.emotion_detector = emotion_detector if EMOTION_DETECTOR_AVAILABLE else None
         self.db_manager = db_manager if DATABASE_AVAILABLE else None
-        
+
         # Estado interno
         self.last_screenshot_path: Optional[str] = None
         self.last_user_detected: Optional[str] = None
         self.last_emotion: str = "neutral"
-        
+
         logger.info("âœ… PerceptionEngine inicializado")
         if not SCREEN_CAPTURE_AVAILABLE:
             logger.warning("âš ï¸ Modo degradado: VisÃ£o desativada")
@@ -121,16 +126,17 @@ class PerceptionEngine:
             logger.warning("âš ï¸ Modo degradado: CÃ¢mera desativada")
         if not NEURAL_MEMORY_AVAILABLE:
             logger.warning("âš ï¸ Modo degradado: MemÃ³ria desativada")
-    
-    
-    async def gather_context(self, user_command: str, enable_vision: bool = True) -> Dict[str, Any]:
+
+    async def gather_context(
+        self, user_command: str, enable_vision: bool = True
+    ) -> Dict[str, Any]:
         """
         Coleta TODO contexto perceptual de forma paralela
-        
+
         Args:
             user_command: Comando do usuÃ¡rio (para busca em memÃ³ria)
             enable_vision: Se True, captura screenshot (default: True)
-        
+
         Returns:
             DicionÃ¡rio com todos os dados perceptuais:
             {
@@ -144,30 +150,30 @@ class PerceptionEngine:
             }
         """
         logger.info("ðŸ” Gathering perceptual context...")
-        
+
         # FASE 1: LanÃ§ar tasks em paralelo
         tasks = []
-        
+
         if enable_vision and self.screen_capture:
             tasks.append(self._capture_screen())
         else:
             tasks.append(asyncio.create_task(asyncio.sleep(0)))  # No-op task
-        
+
         if self.camera:
             tasks.append(self._detect_user())
         else:
             tasks.append(asyncio.create_task(asyncio.sleep(0)))
-        
+
         if self.neural_memory:
             tasks.append(self._search_memory(user_command))
         else:
             tasks.append(asyncio.create_task(asyncio.sleep(0)))
-        
+
         # FASE 2: Aguardar todas as tasks (paralelas) com timeout
         try:
             results = await asyncio.wait_for(
                 asyncio.gather(*tasks, return_exceptions=True),
-                timeout=10.0  # Timeout global de 10s
+                timeout=10.0,  # Timeout global de 10s
             )
         except asyncio.TimeoutError:
             logger.error("âŒ Timeout em gather_context (10s)")
@@ -175,27 +181,29 @@ class PerceptionEngine:
         except Exception as e:
             logger.error(f"âŒ Erro em gather_context: {e}")
             results = [None, None, None]
-        
-        screenshot_path = results[0] if isinstance(results[0], (str, type(None))) else None
+
+        screenshot_path = (
+            results[0] if isinstance(results[0], (str, type(None))) else None
+        )
         user_face = results[1] if isinstance(results[1], str) else "Unknown"
         memory_context = results[2] if isinstance(results[2], str) else ""
-        
+
         # FASE 3: Processamento sequencial (depende de screenshot)
         ui_elements = []
         ocr_text = ""
-        
+
         if screenshot_path and self.ui_detector:
             ui_elements = await self._detect_ui_elements(screenshot_path)
-        
+
         if screenshot_path and self.db_manager:
             ocr_text = await self._extract_ocr(screenshot_path)
-        
+
         # FASE 4: Detectar emoÃ§Ã£o
         user_emotion = self.last_emotion
-        if self.camera and hasattr(self.camera, 'current_emotion'):
+        if self.camera and hasattr(self.camera, "current_emotion"):
             user_emotion = self.camera.current_emotion
             self.last_emotion = user_emotion
-        
+
         # FASE 5: Construir contexto final
         context = {
             "screenshot_path": screenshot_path,
@@ -204,18 +212,19 @@ class PerceptionEngine:
             "memory_context": memory_context,
             "ui_elements": ui_elements,
             "ocr_text": ocr_text,
-            "timestamp": asyncio.get_event_loop().time()
+            "timestamp": asyncio.get_event_loop().time(),
         }
-        
-        logger.info(f"âœ… Context gathered: vision={bool(screenshot_path)}, user={user_face}, emotion={user_emotion}")
+
+        logger.info(
+            f"âœ… Context gathered: vision={bool(screenshot_path)}, user={user_face}, emotion={user_emotion}"
+        )
         return context
-    
-    
+
     async def _capture_screen(self) -> Optional[str]:
         """Captura screenshot de forma assÃ­ncrona com timeout"""
         if not self.screen_capture:
             return None
-        
+
         try:
             # Rodar captura sÃ­ncrona em thread separada com timeout de 5s
             loop = asyncio.get_event_loop()
@@ -223,9 +232,9 @@ class PerceptionEngine:
                 loop.run_in_executor(
                     None,
                     self.screen_capture.capture_fullscreen,
-                    'agent'  # capture_type
+                    "agent",  # capture_type
                 ),
-                timeout=5.0
+                timeout=5.0,
             )
             self.last_screenshot_path = screenshot_path
             logger.debug(f"ðŸ“¸ Screenshot: {screenshot_path}")
@@ -236,44 +245,41 @@ class PerceptionEngine:
         except Exception as e:
             logger.error(f"âŒ Erro ao capturar tela: {e}")
             return None
-    
-    
+
     async def _detect_user(self) -> str:
         """Detecta usuÃ¡rio pela cÃ¢mera"""
         if not self.camera:
             return "Unknown"
-        
+
         try:
             # Se camera_controller tem detecÃ§Ã£o async, usar
-            if hasattr(self.camera, 'detect_faces_async'):
+            if hasattr(self.camera, "detect_faces_async"):
                 user = await self.camera.detect_faces_async()
             else:
                 # Fallback: rodar sÃ­ncrono em thread
                 loop = asyncio.get_event_loop()
-                user = await loop.run_in_executor(None, lambda: self.camera.last_seen_user)
-            
+                user = await loop.run_in_executor(
+                    None, lambda: self.camera.last_seen_user
+                )
+
             self.last_user_detected = user if user else "Unknown"
             return self.last_user_detected
         except Exception as e:
             logger.error(f"âŒ Erro ao detectar usuÃ¡rio: {e}")
             return "Unknown"
-    
-    
+
     async def _search_memory(self, query: str, top_k: int = 3) -> str:
         """Busca contexto relevante em neural memory"""
         if not self.neural_memory or not query:
             return ""
-        
+
         try:
             # RAG search
             loop = asyncio.get_event_loop()
             results = await loop.run_in_executor(
-                None,
-                self.neural_memory.search,
-                query,
-                top_k
+                None, self.neural_memory.search, query, top_k
             )
-            
+
             if results:
                 memory_text = "\n".join([f"- {r['text']}" for r in results[:top_k]])
                 logger.debug(f"ðŸ§  Memory: {len(results)} resultados")
@@ -282,59 +288,56 @@ class PerceptionEngine:
         except Exception as e:
             logger.error(f"âŒ Erro ao buscar memÃ³ria: {e}")
             return ""
-    
-    
+
     async def _detect_ui_elements(self, screenshot_path: str) -> List[Dict[str, Any]]:
         """Detecta elementos de UI na screenshot"""
         if not self.ui_detector:
             return []
-        
+
         try:
             loop = asyncio.get_event_loop()
             elements = await loop.run_in_executor(
-                None,
-                self.ui_detector.detect,
-                screenshot_path
+                None, self.ui_detector.detect, screenshot_path
             )
             logger.debug(f"ðŸŽ¯ UI: {len(elements)} elementos detectados")
             return elements or []
         except Exception as e:
             logger.error(f"âŒ Erro ao detectar UI: {e}")
             return []
-    
-    
+
     async def _extract_ocr(self, screenshot_path: str) -> str:
         """Extrai texto via OCR"""
         if not self.db_manager:
             return ""
-        
+
         try:
             # Buscar OCR do banco de dados
             loop = asyncio.get_event_loop()
-            
+
             def _get_ocr():
                 if OCRResult:
-                    latest_ocr = self.db_manager.session.query(OCRResult).order_by(
-                        OCRResult.timestamp.desc()
-                    ).first()
+                    latest_ocr = (
+                        self.db_manager.session.query(OCRResult)
+                        .order_by(OCRResult.timestamp.desc())
+                        .first()
+                    )
                     return latest_ocr.text if latest_ocr else ""
                 return ""
-            
+
             ocr_text = await loop.run_in_executor(None, _get_ocr)
-            
+
             if ocr_text:
                 logger.debug(f"ðŸ“ OCR: {len(ocr_text)} caracteres")
             return ocr_text
         except Exception as e:
             logger.error(f"âŒ Erro ao extrair OCR: {e}")
             return ""
-    
-    
+
     def get_emotional_modifier(self) -> Dict[str, Any]:
         """Retorna modificador de personalidade baseado em emoÃ§Ã£o"""
         if not self.emotion_detector:
             return {"prefix": "", "tone": "neutral"}
-        
+
         try:
             modifier = self.emotion_detector.get_personality_modifier(self.last_emotion)
             return modifier
@@ -347,6 +350,7 @@ class PerceptionEngine:
 # SINGLETON GETTER
 # ============================================================================
 _perception_engine_instance = None
+
 
 def get_perception_engine() -> PerceptionEngine:
     """Retorna instÃ¢ncia singleton do PerceptionEngine"""

@@ -4,28 +4,28 @@ Centraliza todos os estilos visuais para consistência
 """
 
 from PyQt6.QtGui import QColor, QPalette, QFont
-from PyQt6.QtCore import Qt
+
 
 class JarvisTheme:
     """Tema unificado para todas as interfaces JARVIS"""
 
     # Cores Base
-    PRIMARY_CYAN = QColor(0, 255, 255)        # Neon Principal
-    SECONDARY_ORANGE = QColor(255, 140, 0)    # Modo Escuta
-    ACCENT_GOLD = QColor(255, 215, 0)         # Destaques
-    SUCCESS_GREEN = QColor(0, 255, 0)         # Sucesso
-    WARNING_YELLOW = QColor(255, 255, 0)      # Aviso
-    ERROR_RED = QColor(255, 0, 0)             # Erro
+    PRIMARY_CYAN = QColor(0, 255, 255)  # Neon Principal
+    SECONDARY_ORANGE = QColor(255, 140, 0)  # Modo Escuta
+    ACCENT_GOLD = QColor(255, 215, 0)  # Destaques
+    SUCCESS_GREEN = QColor(0, 255, 0)  # Sucesso
+    WARNING_YELLOW = QColor(255, 255, 0)  # Aviso
+    ERROR_RED = QColor(255, 0, 0)  # Erro
 
     # Backgrounds
-    BG_DARK = QColor(20, 20, 20)              # Fundo escuro
-    BG_MEDIUM = QColor(35, 35, 35)            # Painéis
-    BG_LIGHT = QColor(50, 50, 50)             # Hover states
+    BG_DARK = QColor(20, 20, 20)  # Fundo escuro
+    BG_MEDIUM = QColor(35, 35, 35)  # Painéis
+    BG_LIGHT = QColor(50, 50, 50)  # Hover states
 
     # Text Colors
-    TEXT_PRIMARY = QColor(255, 255, 255)      # Texto principal
-    TEXT_SECONDARY = QColor(200, 200, 200)    # Texto secundário
-    TEXT_MUTED = QColor(150, 150, 150)        # Texto muted
+    TEXT_PRIMARY = QColor(255, 255, 255)  # Texto principal
+    TEXT_SECONDARY = QColor(200, 200, 200)  # Texto secundário
+    TEXT_MUTED = QColor(150, 150, 150)  # Texto muted
 
     # Transparency Levels
     ALPHA_FULL = 255
@@ -73,7 +73,7 @@ class JarvisTheme:
         """Aplica tema unificado ao widget ou aplicação"""
         # Aplicar paleta
         widget.setPalette(cls.get_dark_palette())
-        
+
         # Estilos globais via stylesheet
         widget.setStyleSheet(f"""
             QWidget {{

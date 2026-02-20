@@ -3,22 +3,26 @@
 Script de teste para validar o sistema de auto-reparo expandido
 """
 
+import numpy as np
+import subprocess
+from src.core.management.maintenance_manager import maintenance_manager
 import sys
 from pathlib import Path
 
 # Adicionar src ao path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.core.management.maintenance_manager import maintenance_manager
 
 print("=" * 60)
 print("   TESTE DE AUTO-REPARO TOTAL - JARVIS 5.0")
 print("=" * 60)
 print()
 
+
 # Callback para mostrar progresso
 def show_progress(message):
     print(f"[PROGRESSO] {message}")
+
 
 maintenance_manager.on_progress = show_progress
 
@@ -38,14 +42,16 @@ print("Validando instalações:")
 print()
 
 # 1. Verificar CMake
-import subprocess
+
 try:
-    result = subprocess.run(["cmake", "--version"], capture_output=True, text=True, timeout=5)
+    result = subprocess.run(
+        ["cmake", "--version"], capture_output=True, text=True, timeout=5
+    )
     if result.returncode == 0:
         print("✅ CMake:", result.stdout.split()[2])
     else:
         print("❌ CMake não encontrado")
-except:
+except BaseException:
     print("❌ CMake não encontrado")
 
 # 2. Verificar Vosk
@@ -58,19 +64,21 @@ else:
 # 3. Verificar face_recognition
 try:
     import face_recognition
+
     print("✅ face_recognition disponível")
 except ImportError:
     print("❌ face_recognition não disponível")
 
 # 4. Verificar NumPy
-import numpy as np
+
 print(f"✅ NumPy: {np.__version__}")
 
 # 5. Verificar Protobuf
 try:
     import google.protobuf
+
     print(f"✅ Protobuf: {google.protobuf.__version__}")
-except:
+except BaseException:
     print("❌ Protobuf não disponível")
 
 print()

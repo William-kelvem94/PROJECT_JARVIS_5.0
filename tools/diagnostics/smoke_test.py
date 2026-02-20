@@ -3,95 +3,107 @@ import os
 import logging
 from pathlib import Path
 
-# Suprime logs excessivos
+# Garantir output UTF-8 para emojis no Windows
+if sys.stdout.encoding.lower() != "utf-8":
+    try:
+        import io
+
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
+    except Exception:
+        pass
+
+# Suprime logs excessivos para o teste de fumaça
 logging.basicConfig(level=logging.ERROR)
 
 # Adiciona diretórios ao path
-PROJECT_ROOT = Path(__file__).parent.parent
+# tools/diagnostics/smoke_test.py -> parent x3 = root
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
 
 def smoke_test():
-    print("\n🚀 JARVIS SMOKE TEST - COMPONENTES REAIS")
+    print("\n🚀 JARVIS SMOKE TEST - FASE 0: FUNDAÇÃO (SINGULARITY)")
     print("=" * 60)
-    
+
     results = {}
 
-    # 1. Hardware Manager
+    # 1. System Manifest (A Constituição)
+    try:
+        from src.core.config.system_manifest import system_manifest
+
+        print(f"✅ System Manifest: OK (v{system_manifest.version})")
+        print(f"   Modo Debug: {system_manifest.debug_mode}")
+        results["SystemManifest"] = True
+    except Exception as e:
+        print(f"❌ System Manifest falhou: {e}")
+        results["SystemManifest"] = False
+
+    # 2. Hardware Manager
     try:
         from src.core.management.hardware_manager import hardware_manager
-        print(f"✅ Hardware Manager: {hardware_manager.device} / {hardware_manager.gpu_name}")
-        results['HardwareManager'] = True
+
+        print(
+            f"✅ Hardware Manager: OK ({hardware_manager.device} / {hardware_manager.gpu_name})"
+        )
+        results["HardwareManager"] = True
     except Exception as e:
         print(f"❌ Hardware Manager falhou: {e}")
-        results['HardwareManager'] = False
+        results["HardwareManager"] = False
 
-    # 2. Config
+    # 3. Blackbox Logger (Persistência)
     try:
-        from src.utils.config import config
-        print(f"✅ Config: Carregado")
-        results['Config'] = True
+        from src.core.config.blackbox_logger import blackbox_logger
+
+        print(f"✅ Blackbox Logger: OK (DB Path: {blackbox_logger.db_path})")
+        results["BlackboxLogger"] = True
     except Exception as e:
-        print(f"❌ Config falhou: {e}")
-        results['Config'] = False
+        print(f"❌ Blackbox Logger falhou: {e}")
+        results["BlackboxLogger"] = False
 
-    # 3. Audio System (Somente inicialização básica)
+    # 4. Vision System (Otimizado Zero-Disk)
     try:
-        from src.core.audio.enhanced_audio import EnhancedAudioSystem
-        audio = EnhancedAudioSystem()
-        print(f"✅ Audio System: Base OK")
-        results['AudioSystem'] = True
-    except Exception as e:
-        print(f"❌ Audio System falhou: {e}")
-        results['AudioSystem'] = False
+        from src.core.vision.vision_system import get_vision_system
 
-    # 4. Vision System
-    try:
-        from src.core.vision.vision_system import VisionSystem
-        vision = VisionSystem()
-        print("✅ Vision System: Base OK")
-        results['VisionSystem'] = True
+        vision = get_vision_system()
+        print(f"✅ Vision System: OK (Zero-Disk Mode: {vision.zero_disk_mode})")
+        results["VisionSystem"] = True
     except Exception as e:
         print(f"❌ Vision System falhou: {e}")
-        results['VisionSystem'] = False
+        results["VisionSystem"] = False
 
-    # 5. AI Agent
+    # 5. Global Event Bus
     try:
-        from src.core.intelligence.ai_agent import ai_agent
-        print(f"✅ AI Agent: Pronto (Instância Global)")
-        results['AIAgent'] = True
-    except Exception as e:
-        print(f"❌ AI Agent falhou: {e}")
-        results['AIAgent'] = False
+        from src.core.infrastructure.async_event_bus import get_instance
 
-    # 6. Learning Engine
-    try:
-        from src.learning.learning_engine import LearningEngine
-        engine = LearningEngine(PROJECT_ROOT)
-        print("✅ Learning Engine: Instanciado")
-        results['LearningEngine'] = True
+        bus = get_instance()
+        print("✅ Async Event Bus: OK")
+        results["EventBus"] = True
     except Exception as e:
-        print(f"❌ Learning Engine falhou: {e}")
-        results['LearningEngine'] = False
+        print(f"❌ Event Bus falhou: {e}")
+        results["EventBus"] = False
 
-    # 7. Orchestrator
+    # 6. Memory Store (Unified)
     try:
-        from src.core.orchestrator import StarkOrchestrator
-        orchestrator = StarkOrchestrator(None) # Passando None para Jarvis core por enquanto
-        print("✅ Orchestrator: Criado")
-        results['Orchestrator'] = True
+        from src.core.intelligence.vector_store import UnifiedVectorStore
+
+        store = UnifiedVectorStore()
+        print(f"✅ Vector Store: OK (Path: {store.db_path})")
+        results["VectorStore"] = True
     except Exception as e:
-        print(f"❌ Orchestrator falhou: {e}")
-        results['Orchestrator'] = False
+        print(f"❌ Vector Store falhou: {e}")
+        results["VectorStore"] = False
 
     print("\n" + "=" * 60)
     summary = all(results.values())
     if summary:
-        print("🎉 TODOS OS COMPONENTES BÁSICOS ESTÃO FUNCIONANDO!")
+        print("🎉 FASE 0 CONCLUÍDA! TODOS OS COMPONENTES BÁSICOS ESTÃO ESTÁVEIS.")
     else:
-        print("⚠️ ALGUNS COMPONENTES FALHARAM NA INICIALIZAÇÃO.")
-    
+        print("⚠️ ALGUNS COMPONENTES FALHARAM. VERIFIQUE OS LOGS EM data/logs/")
+
     return summary
+
 
 if __name__ == "__main__":
     success = smoke_test()

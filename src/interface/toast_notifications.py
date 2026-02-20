@@ -3,15 +3,18 @@ JARVIS 5.0 - Toast Notification System
 Sistema moderno de notificações flutuantes para feedback visual
 """
 
-from PyQt6.QtWidgets import QLabel, QFrame, QVBoxLayout, QWidget
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QPoint, QEasingCurve
+from PyQt6.QtWidgets import QLabel, QFrame, QVBoxLayout
+from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QFont
 from src.interface.theme import JarvisTheme
+
 
 class ToastNotification(QFrame):
     """Modern toast notification with animations"""
 
-    def __init__(self, title: str, message: str, notification_type: str = "info", parent=None):
+    def __init__(
+        self, title: str, message: str, notification_type: str = "info", parent=None
+    ):
         super().__init__(parent)
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -86,7 +89,7 @@ class ToastNotification(QFrame):
             screen_geometry = screen.availableGeometry()
             self.move(
                 screen_geometry.right() - self.width() - 20,
-                screen_geometry.bottom() - self.height() - 50
+                screen_geometry.bottom() - self.height() - 50,
             )
 
     def showEvent(self, event):
@@ -113,6 +116,7 @@ class ToastNotification(QFrame):
         super().leaveEvent(event)
         self.hide_timer.start(2000)  # Restart with 2 seconds
 
+
 class ToastManager:
     """Manager for toast notifications"""
 
@@ -138,27 +142,37 @@ class ToastManager:
             screen_geometry = screen.availableGeometry()
             toast.move(
                 screen_geometry.right() - toast.width() - 20,
-                screen_geometry.bottom() - toast.height() - 50 - offset
+                screen_geometry.bottom() - toast.height() - 50 - offset,
             )
 
         toast.show()
         self.active_toasts.append(toast)
 
         # Remove from list when destroyed
-        toast.destroyed.connect(lambda: self.active_toasts.remove(toast) if toast in self.active_toasts else None)
+        toast.destroyed.connect(
+            lambda: (
+                self.active_toasts.remove(toast)
+                if toast in self.active_toasts
+                else None
+            )
+        )
+
 
 # Convenience functions
 def show_success_toast(title: str, message: str):
     """Show success notification"""
     ToastManager.get_instance().show_toast(title, message, "success")
 
+
 def show_warning_toast(title: str, message: str):
     """Show warning notification"""
     ToastManager.get_instance().show_toast(title, message, "warning")
 
+
 def show_error_toast(title: str, message: str):
     """Show error notification"""
     ToastManager.get_instance().show_toast(title, message, "error")
+
 
 def show_info_toast(title: str, message: str):
     """Show info notification"""

@@ -3,6 +3,7 @@
 Diagnóstico Completo do JARVIS 5.0
 Verifica status do web server, dados de treinamento e conectividade
 """
+
 import sys
 import os
 import socket
@@ -10,14 +11,16 @@ import requests
 import json
 import asyncio
 import webbrowser
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
+
 
 def verificar_web_server():
     """Verifica se o web server está funcionando"""
     print("🌐 VERIFICANDO WEB SERVER...")
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('127.0.0.1', 5000))
+        result = sock.connect_ex(("127.0.0.1", 5000))
         sock.close()
 
         if result == 0:
@@ -25,7 +28,7 @@ def verificar_web_server():
 
             # Testar resposta HTTP
             try:
-                response = requests.get('http://localhost:5000', timeout=5)
+                response = requests.get("http://localhost:5000", timeout=5)
                 if response.status_code == 200:
                     print("✅ Dashboard responde corretamente (HTTP 200)")
                     if "JARVIS" in response.text:
@@ -47,16 +50,17 @@ def verificar_web_server():
 
     return True
 
+
 def verificar_dados_treinamento():
     """Verifica dados de treinamento gerados"""
     print("\n📚 VERIFICANDO DADOS DE TREINAMENTO...")
-    training_dir = 'data/learning/training_data'
+    training_dir = "data/learning/training_data"
 
     if not os.path.exists(training_dir):
         print("❌ Diretório de treinamento não existe")
         return False
 
-    files = [f for f in os.listdir(training_dir) if f.endswith('.json')]
+    files = [f for f in os.listdir(training_dir) if f.endswith(".json")]
     print(f"📁 Total de arquivos de treinamento: {len(files)}")
 
     if files:
@@ -65,18 +69,21 @@ def verificar_dados_treinamento():
             print(f"  • {f}")
 
         # Verificar último arquivo
-        latest_file = max([os.path.join(training_dir, f) for f in files],
-                         key=os.path.getmtime)
+        latest_file = max([os.path.join(training_dir, f)
+                           for f in files], key=os.path.getmtime)
 
         try:
-            with open(latest_file, 'r', encoding='utf-8') as f:
+            with open(latest_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
             print(f"✅ Último arquivo válido: {os.path.basename(latest_file)}")
-            print(f"   📊 Exemplos: {data.get('metadata', {}).get('total_examples', 'N/A')}")
+            print(
+                f"   📊 Exemplos: {data.get('metadata', {}).get('total_examples', 'N/A')}"
+            )
         except Exception as e:
             print(f"❌ Erro no último arquivo: {e}")
 
     return len(files) > 0
+
 
 def testar_websocket():
     """Testa conectividade WebSocket"""
@@ -87,7 +94,7 @@ def testar_websocket():
 
         async def test_ws():
             try:
-                async with websockets.connect('ws://localhost:5000/ws') as websocket:
+                async with websockets.connect("ws://localhost:5000/ws") as websocket:
                     print("✅ WebSocket conectado com sucesso")
                     await websocket.send(json.dumps({"test": "connection"}))
                     response = await websocket.recv()
@@ -104,26 +111,31 @@ def testar_websocket():
         print("   WebSocket pode estar funcionando mesmo assim")
         return None
 
+
 def abrir_dashboard():
     """Abre o dashboard no navegador"""
     print("\n🌐 ABRINDO DASHBOARD...")
     try:
-        webbrowser.open('http://localhost:5000')
+        webbrowser.open("http://localhost:5000")
         print("✅ Navegador aberto automaticamente")
     except Exception as e:
         print(f"❌ Erro ao abrir navegador: {e}")
         print("   Acesse manualmente: http://localhost:5000")
 
+
 def iniciar_web_server():
     """Inicia o web server se não estiver rodando"""
     print("\n🚀 TENTANDO INICIAR WEB SERVER...")
     try:
-        from web.web_server import start_server
         import uvicorn
         import threading
 
         def run_server():
-            config = uvicorn.Config('web.web_server:app', host='localhost', port=5000, log_level='warning')
+            config = uvicorn.Config(
+                "web.web_server:app",
+                host="localhost",
+                port=5000,
+                log_level="warning")
             server = uvicorn.Server(config)
             asyncio.run(server.serve())
 
@@ -135,6 +147,7 @@ def iniciar_web_server():
     except Exception as e:
         print(f"❌ Erro ao iniciar web server: {e}")
         return False
+
 
 def main():
     """Função principal de diagnóstico"""
@@ -179,6 +192,7 @@ def main():
 
     print("\n⏸️  Pressione Enter para continuar...")
     input()
+
 
 if __name__ == "__main__":
     main()

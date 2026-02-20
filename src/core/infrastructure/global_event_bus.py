@@ -11,16 +11,17 @@ from .async_event_bus import AsyncEventBus, EventPriority
 
 logger = logging.getLogger(__name__)
 
+
 class GlobalEventBus:
     """
     Event Bus global singleton para comunicação entre todos os módulos JARVIS.
     Wrapper sobre AsyncEventBus com interface simplificada.
     """
 
-    _instance: Optional['GlobalEventBus'] = None
+    _instance: Optional["GlobalEventBus"] = None
     _bus: Optional[AsyncEventBus] = None
 
-    def __new__(cls) -> 'GlobalEventBus':
+    def __new__(cls) -> "GlobalEventBus":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialize()
@@ -35,7 +36,12 @@ class GlobalEventBus:
             logger.error(f"Failed to initialize Global Event Bus: {e}")
             self._bus = None
 
-    async def publish(self, event: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL) -> bool:
+    async def publish(
+        self,
+        event: str,
+        data: Any = None,
+        priority: EventPriority = EventPriority.NORMAL,
+    ) -> bool:
         """
         Publica um evento no bus global.
 
@@ -52,14 +58,20 @@ class GlobalEventBus:
             return False
 
         try:
-            await self._bus.publish_event({'event': event, 'data': data, 'priority': priority})
+            await self._bus.publish_event(
+                {"event": event, "data": data, "priority": priority}
+            )
             return True
         except Exception as e:
             logger.error(f"Failed to publish event {event}: {e}")
             return False
 
-    async def subscribe(self, event: str, callback: Callable[[Any], Coroutine[Any, Any, None]],
-                       priority: EventPriority = EventPriority.NORMAL) -> bool:
+    async def subscribe(
+        self,
+        event: str,
+        callback: Callable[[Any], Coroutine[Any, Any, None]],
+        priority: EventPriority = EventPriority.NORMAL,
+    ) -> bool:
         """
         Inscreve callback para um evento.
 
@@ -126,8 +138,10 @@ class GlobalEventBus:
             self._bus = None
             logger.info("Global Event Bus shut down")
 
+
 # Convenience functions for global access
 _global_bus = None
+
 
 def get_global_event_bus() -> GlobalEventBus:
     """Retorna instância global do event bus"""
@@ -136,7 +150,10 @@ def get_global_event_bus() -> GlobalEventBus:
         _global_bus = GlobalEventBus()
     return _global_bus
 
-async def publish_event(event: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL) -> bool:
+
+async def publish_event(
+    event: str, data: Any = None, priority: EventPriority = EventPriority.NORMAL
+) -> bool:
     """
     Função de conveniência para publicar eventos globalmente.
 
@@ -151,8 +168,12 @@ async def publish_event(event: str, data: Any = None, priority: EventPriority = 
     bus = get_global_event_bus()
     return await bus.publish(event, data, priority)
 
-async def subscribe_event(event: str, callback: Callable[[Any], Coroutine[Any, Any, None]],
-                         priority: EventPriority = EventPriority.NORMAL) -> bool:
+
+async def subscribe_event(
+    event: str,
+    callback: Callable[[Any], Coroutine[Any, Any, None]],
+    priority: EventPriority = EventPriority.NORMAL,
+) -> bool:
     """
     Função de conveniência para inscrever em eventos globalmente.
 
@@ -166,6 +187,7 @@ async def subscribe_event(event: str, callback: Callable[[Any], Coroutine[Any, A
     """
     bus = get_global_event_bus()
     return await bus.subscribe(event, callback, priority)
+
 
 # Initialize on import
 try:

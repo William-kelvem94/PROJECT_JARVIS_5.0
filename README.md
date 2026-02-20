@@ -456,6 +456,16 @@ PROXY_PORT=
 - **Simulações**: Scripts de simulação para testes de carga
 - **Benchmarks**: Ferramentas de medição de performance
 
+#### Test doubles / CI helpers
+- `JARVIS_VISION_MOCK=1` — habilita uma `MockVideoCapture` (black frame / noise) para todos os componentes de visão. Use em CI ou quando não houver webcam disponível.
+- Evento `vision.ready` — publicado pelo subsistema de visão quando a câmera (ou mock) estiver disponível. Payload: `{ camera_index, mock: bool, available: bool }`.
+
+Exemplo (PowerShell):
+```powershell
+$env:JARVIS_VISION_MOCK = "1"
+python -m pytest tests/unit/test_vision_mock_nonblocking.py
+```
+
 ## 🔒🛡️ Segurança e Resiliência
 ### 🛡️ Camadas de Proteção
 

@@ -1,8 +1,8 @@
 @echo off
 REM Atalho para rodar o modelo Ollama minimax-m2.5:cloud e enviar arquivos para análise
 
-REM Caminho do projeto
-cd /d %~dp0
+REM Caminho do projeto (ajustado — script centralizado em scripts/launchers)
+cd /d "%~dp0\..\..\"
 
 REM Instrução para rodar o modelo
 ollama run minimax-m2.5:cloud
