@@ -24,6 +24,8 @@ def main():
                         help="mesmo que --mode text (modo só texto)")
     parser.add_argument("--both", action="store_true",
                         help="mesmo que --mode both (voz + texto)")
+    parser.add_argument("--debug", action="store_true",
+                        help="habilita logs detalhados e auto-treinamento periódico")
     args = parser.parse_args()
     # normalize backwards-compatible flags
     if args.text:
@@ -32,6 +34,12 @@ def main():
         args.mode = "both"
 
     agent = JarvisAgent()
+    if args.debug:
+        try:
+            agent.debug = True
+            print("[debug] modo debug ativado")
+        except Exception:
+            pass
 
     def text_loop():
         print("[text] digite suas mensagens abaixo (CTRL+C para sair)")
