@@ -17,6 +17,7 @@ import subprocess
 import sys
 import shutil
 import socket
+import os
 from typing import Dict, List, Tuple
 
 CORE_PACKAGES = [
