@@ -19,6 +19,7 @@ from .ollama_client import query_ollama
 from .tts import TTS
 from .conversation import ConversationMemory
 from .lang_utils import get_device_language, detect_language, code_to_name
+from .local_brain import LocalBrain
 
 
 
@@ -62,6 +63,10 @@ class JarvisAgent:
         self.stt = STT()
         self.memory = ConversationMemory(path=INTERACTIONS_LOG, window=CONTEXT_WINDOW)
         os.makedirs(os.path.dirname(INTERACTIONS_LOG), exist_ok=True)
+
+        # local brain (pode ser None se falhar)
+        from .config import USE_LOCAL_BRAIN
+        self.local_brain = LocalBrain() if USE_LOCAL_BRAIN else None
 
         # expose startup report for debugging/inspection
         self.startup_report = report
@@ -119,7 +124,7 @@ class JarvisAgent:
             self.tts.speak(resp)
             return
 
-        # built-in voice commands
+        # built-in voice/text commands
         cmd_l = (text or "").strip().lower()
         if cmd_l in ("limpar memória", "clear memory", "reset context", "reiniciar contexto"):
             self.memory.clear()
@@ -127,6 +132,35 @@ class JarvisAgent:
             print("[agent] jarvis:", resp)
             self._log_interaction(text, resp)
             self.tts.speak(resp)
+            return
+        if cmd_l.startswith("treinar hotword"):
+            # to handle hotword training, expect files under wake_data already present
+            resp = "Iniciando treinamento do hotword, aguarde."
+            print("[agent] jarvis:", resp)
+            self.tts.speak(resp)
+            try:
+                import subprocess
+                subprocess.run([sys.executable, "-m", "jarvis_minimal.wakeword_trainer"], check=True)
+                resp2 = "Treinamento do hotword concluído."
+            except Exception as e:
+                resp2 = f"Falha no treinamento do hotword: {e}"
+            self._log_interaction(text, resp2)
+            self.tts.speak(resp2)
+            return
+        if cmd_l.startswith("treinar cerebro") or cmd_l.startswith("treinar cérebro"):
+            resp = "Treinando cérebro local com interações..."
+            print("[agent] jarvis:", resp)
+            self.tts.speak(resp)
+            try:
+                if self.local_brain:
+                    self.local_brain.train_from_file()
+                    resp2 = "Treinamento do cérebro local finalizado."
+                else:
+                    resp2 = "Cérebro local não disponível. Instale transformers/datasets."
+            except Exception as e:
+                resp2 = f"Falha ao treinar cérebro: {e}"
+            self._log_interaction(text, resp2)
+            self.tts.speak(resp2)
             return
 
         # compose a conversational prompt using system prompt + recent history
@@ -137,10 +171,19 @@ class JarvisAgent:
         )
         prompt = prompt_body + lang_directive
 
-        try:
-            resp = query_ollama(self.model, prompt)
-        except Exception as e:
-            resp = f"Erro ao contatar o modelo: {e}"
+        resp = None
+        # try local brain first
+        if self.local_brain is not None:
+            try:
+                resp = self.local_brain.reply(text, history_prompt)
+            except Exception as e:
+                print("[agent] LocalBrain error:", e)
+                resp = None
+        if not resp:
+            try:
+                resp = query_ollama(self.model, prompt)
+            except Exception as e:
+                resp = f"Erro ao contatar o modelo: {e}"
 
         print("[agent] jarvis:", resp)
         self._log_interaction(text, resp)
