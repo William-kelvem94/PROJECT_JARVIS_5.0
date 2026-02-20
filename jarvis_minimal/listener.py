@@ -52,6 +52,45 @@ class STT:
                 # fall-through to other backends
                 pass
 
+        # try VOSK (offline) if installed and a model exists
+        try:
+            from vosk import Model, KaldiRecognizer
+            import glob
+            # search common model locations in repo
+            repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            candidates = []
+            env_path = os.environ.get("VOSK_MODEL_PATH")
+            if env_path:
+                candidates.append(env_path)
+            candidates += glob.glob(os.path.join(repo_root, "**", "vosk-model*"), recursive=True)
+            candidates += glob.glob(os.path.join(repo_root, "models", "vosk-model*"))
+            model_path = None
+            for p in candidates:
+                if os.path.isdir(p):
+                    model_path = p
+                    break
+            if model_path:
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                    f.write(data)
+                    fname = f.name
+                wf = wave.open(fname, "rb")
+                model = Model(model_path)
+                rec = KaldiRecognizer(model, wf.getframerate())
+                results = []
+                while True:
+                    chunk = wf.readframes(4000)
+                    if len(chunk) == 0:
+                        break
+                    if rec.AcceptWaveform(chunk):
+                        results.append(rec.Result())
+                results.append(rec.FinalResult())
+                wf.close()
+                os.remove(fname)
+                text = " ".join([json.loads(r).get("text", "") for r in results if r])
+                return text.strip()
+        except Exception:
+            pass
+
         # Fallback to SpeechRecognition (requires internet)
         try:
             import speech_recognition as sr
