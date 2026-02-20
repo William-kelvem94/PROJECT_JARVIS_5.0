@@ -79,9 +79,9 @@ class JarvisAgent:
     def self_test(self):
         """Run some quick checks and print outcomes to console."""
         print("[self_test] iniciando diagnóstico completo...")
-        # TTS test
+        # TTS test (pause listener while speaking)
         try:
-            self.tts.speak("Olá, este é um teste de TTS.")
+            self._speak("Olá, este é um teste de TTS.")
         except Exception as e:
             print("[self_test] erro TTS:", e)
         # STT test
@@ -102,6 +102,15 @@ class JarvisAgent:
         except Exception:
             pass
 
+    def _speak(self, text: str):
+        """Speak through TTS while pausing the listener to avoid feedback loops."""
+        from . import listener
+        try:
+            listener.set_pause_listening(True)
+            self.tts.speak(text)
+        finally:
+            listener.set_pause_listening(False)
+
     def handle_command(self, text: str) -> None:
         print("[agent] user:", text)
 
@@ -121,7 +130,7 @@ class JarvisAgent:
             )
             print("[agent] jarvis (lang validate):", resp)
             self._log_interaction(text, resp)
-            self.tts.speak(resp)
+            self._speak(resp)
             return
 
         # built-in voice/text commands
@@ -131,13 +140,13 @@ class JarvisAgent:
             resp = "Contexto limpo. Memória reiniciada."
             print("[agent] jarvis:", resp)
             self._log_interaction(text, resp)
-            self.tts.speak(resp)
+            self._speak(resp)
             return
         if cmd_l.startswith("treinar hotword"):
             # to handle hotword training, expect files under wake_data already present
             resp = "Iniciando treinamento do hotword, aguarde."
             print("[agent] jarvis:", resp)
-            self.tts.speak(resp)
+            self._speak(resp)
             try:
                 import subprocess
                 subprocess.run([sys.executable, "-m", "jarvis_minimal.wakeword_trainer"], check=True)
@@ -145,12 +154,12 @@ class JarvisAgent:
             except Exception as e:
                 resp2 = f"Falha no treinamento do hotword: {e}"
             self._log_interaction(text, resp2)
-            self.tts.speak(resp2)
+            self._speak(resp2)
             return
         if cmd_l.startswith("treinar cerebro") or cmd_l.startswith("treinar cérebro"):
             resp = "Treinando cérebro local com interações..."
             print("[agent] jarvis:", resp)
-            self.tts.speak(resp)
+            self._speak(resp)
             try:
                 if self.local_brain:
                     self.local_brain.train_from_file()
@@ -160,7 +169,7 @@ class JarvisAgent:
             except Exception as e:
                 resp2 = f"Falha ao treinar cérebro: {e}"
             self._log_interaction(text, resp2)
-            self.tts.speak(resp2)
+            self._speak(resp2)
             return
 
         # compose a conversational prompt using system prompt + recent history
@@ -187,7 +196,7 @@ class JarvisAgent:
 
         print("[agent] jarvis:", resp)
         self._log_interaction(text, resp)
-        self.tts.speak(resp)
+        self._speak(resp)
 
     def run(self):
         print("Jarvis minimal iniciado — aguardando hotword para conversar.")

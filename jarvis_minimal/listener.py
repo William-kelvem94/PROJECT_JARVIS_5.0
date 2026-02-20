@@ -10,11 +10,24 @@ import tempfile
 import wave
 import sys
 import json
+import time
 from typing import Optional
 from .config import LISTEN_TIMEOUT
 
 import sounddevice as sd
 import numpy as np
+
+# Global flag used to temporarily suspend listening (e.g. when Jarvis is speaking)
+_pause_listening = False
+
+def set_pause_listening(value: bool):
+    """Enable or disable the listening pause flag."""
+    global _pause_listening
+    _pause_listening = bool(value)
+
+
+def is_paused() -> bool:
+    return _pause_listening
 
 
 # helper to locate vosk model path (shared with STT)
@@ -184,6 +197,10 @@ def listen_for_hotword(hotword: str, chunk_seconds: int = 4, sample_rate: int = 
     hot = hotword.lower()
     print(f"[listener] aguardando hotword '{hotword}'...")
     while True:
+        if is_paused():
+            # Jarvis is speaking; wait before trying to listen again
+            time.sleep(0.1)
+            continue
         try:
             data = record_chunk(seconds=chunk_seconds, samplerate=sample_rate)
             if not data:
