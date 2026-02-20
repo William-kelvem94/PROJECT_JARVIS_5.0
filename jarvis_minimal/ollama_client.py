@@ -4,29 +4,51 @@ import json
 from typing import Optional
 
 
-def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
-    """Minimal wrapper that calls the local `ollama` CLI.
+def _try_cmd(cmd: list, timeout: int = 60) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
-    Falls back to an informative error if the CLI isn't available.
+
+def query_ollama(model: str, prompt: str, timeout: int = 60) -> str:
+    """Robust wrapper for local `ollama` CLI.
+
+    Tries several CLI variants to support different Ollama versions:
+      - `ollama chat <model> --prompt "..."`
+      - `ollama run <model> --prompt "..."`
+      - `ollama generate <model> --prompt "..."`
+
+    Returns the CLI output or raises a RuntimeError with a helpful message.
     """
-    try:
-        # Use `ollama chat <model> --prompt "..."` if available
-        cmd = ["ollama", "chat", model, "--prompt", prompt]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    cmds_to_try = [
+        ["ollama", "chat", model, "--prompt", prompt],
+        ["ollama", "run", model, "--prompt", prompt],
+        ["ollama", "generate", model, "--prompt", prompt],
+    ]
+
+    for cmd in cmds_to_try:
+        try:
+            proc = _try_cmd(cmd, timeout=timeout)
+        except FileNotFoundError:
+            raise RuntimeError("`ollama` CLI not found. Ensure Ollama is installed and on PATH.")
+        except subprocess.TimeoutExpired:
+            raise RuntimeError("Ollama request timed out")
+
+        # success
         if proc.returncode == 0 and proc.stdout:
             return proc.stdout.strip()
-        # sometimes ollama prints to stderr
+
+        # specific 'unknown command' errors -> try next
+        stderr = (proc.stderr or "").lower()
+        if "unknown command" in stderr or "unrecognized command" in stderr:
+            continue
+
+        # if command executed but returned non-zero with stderr, return stderr
         if proc.stderr:
             return proc.stderr.strip()
-        raise RuntimeError("'ollama' returned empty output")
-    except FileNotFoundError as e:
-        raise RuntimeError("`ollama` CLI not found. Ensure Ollama is installed and on PATH.") from e
-    except subprocess.TimeoutExpired as e:
-        raise RuntimeError("Ollama request timed out") from e
+
+    raise RuntimeError("Could not invoke Ollama CLI with known commands. Run `ollama --help` to inspect your installation.")
 
 
 if __name__ == "__main__":
-    # quick sanity check (manual run)
     try:
         out = query_ollama("llama", "Say hello from Ollama")
         print(out)

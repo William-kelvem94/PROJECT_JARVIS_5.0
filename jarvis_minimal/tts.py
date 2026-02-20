@@ -92,12 +92,21 @@ class TTS:
 
             asyncio.run(_save())
             try:
-                playsound(fname)
+                # Prefer Windows native player if available to avoid extra deps
+                if hasattr(os, "startfile"):
+                    os.startfile(fname)
+                else:
+                    # try playsound if installed
+                    try:
+                        from playsound import playsound
+
+                        playsound(fname)
+                    except Exception:
+                        # last resort: print filename and let user play it
+                        print(f"[TTS] arquivo de áudio gerado em: {fname}")
             finally:
-                try:
-                    os.remove(fname)
-                except Exception:
-                    pass
+                # do not remove immediately to allow playback; schedule removal if possible
+                pass
             return True
         except Exception as e:
             # edge tts failed; fallthrough to other backends
