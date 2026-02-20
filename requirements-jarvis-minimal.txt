@@ -14,3 +14,5 @@ speechrecognition
 # soundfile    # pip install soundfile (used by wakeword fallback)
 # langdetect   # pip install langdetect  (recomendado: detecta idioma das entradas)
 # vosk         # pip install vosk (STT offline gratuito)
+# edge-tts     # pip install edge-tts (vozes neurais online, gratuitas para uso pessoal)
+# playsound    # pip install playsound (reproduzir mp3 gerado por edge-tts)
