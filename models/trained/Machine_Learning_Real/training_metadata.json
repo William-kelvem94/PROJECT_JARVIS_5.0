@@ -1,8 +1,0 @@
-{
-  "topic": "Machine Learning Real",
-  "trained_at": "2026-02-13T09:37:24.137325",
-  "base_model": "microsoft/DialoGPT-small",
-  "training_samples": 1,
-  "final_loss": 15.14262580871582,
-  "method": "lora_fine_tuning"
-}

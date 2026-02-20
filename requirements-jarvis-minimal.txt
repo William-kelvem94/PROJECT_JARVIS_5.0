@@ -1,0 +1,16 @@
+# Minimal dependencies for Jarvis MVP (install in a virtualenv)
+pyttsx3
+sounddevice
+numpy
+requests
+speechrecognition
+# Optional/better STT backends (install if you want local STT without internet):
+# whisper      # pip install -U openai-whisper  (requires PyTorch)
+# vosk         # pip install vosk
+
+# Optional (training / wakeword detector):
+# torch        # pip install torch torchvision torchaudio  (see pytorch.org for correct command)
+# librosa      # pip install librosa
+# soundfile    # pip install soundfile (used by wakeword fallback)
+# langdetect   # pip install langdetect  (recomendado: detecta idioma das entradas)
+# vosk         # pip install vosk (STT offline gratuito)
