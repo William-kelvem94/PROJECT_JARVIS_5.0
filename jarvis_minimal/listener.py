@@ -17,6 +17,22 @@ import sounddevice as sd
 import numpy as np
 
 
+# helper to locate vosk model path (shared with STT)
+def _find_vosk_model() -> Optional[str]:
+    import glob
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    candidates = []
+    env_path = os.environ.get("VOSK_MODEL_PATH")
+    if env_path:
+        candidates.append(env_path)
+    candidates += glob.glob(os.path.join(repo_root, "**", "vosk-model*"), recursive=True)
+    candidates += glob.glob(os.path.join(repo_root, "models", "vosk-model*"))
+    for p in candidates:
+        if os.path.isdir(p):
+            return p
+    return None
+
+
 class STT:
     """Speech-to-text wrapper.
 
@@ -106,11 +122,41 @@ class STT:
             return ""
 
 
+# keep a persistent stream so the microphone device isn't opened/closed on every chunk.
+_stream = None
+
+def _get_stream(samplerate: int) -> sd.InputStream:
+    global _stream
+    if _stream is None:
+        try:
+            _stream = sd.InputStream(samplerate=samplerate, channels=1, dtype="int16")
+            _stream.start()
+        except Exception as e:
+            print("[listener] erro ao abrir stream de audio:", e, file=sys.stderr)
+            raise
+    return _stream
+
+
 def record_chunk(seconds: int = 4, samplerate: int = 16000) -> bytes:
-    """Record a short chunk from default input and return WAV bytes."""
-    frames = sd.rec(int(seconds * samplerate), samplerate=samplerate, channels=1, dtype="int16")
-    sd.wait()
-    audio = frames.flatten().tobytes()
+    """Record a short chunk from default input and return WAV bytes.
+
+    This version keeps the input stream open between calls, reducing the
+    "opening/closing" behaviour you observe on Windows.  The old implementation
+    used :pyfunc:`sd.rec` which opened a new stream each time; that can trigger
+    the OS to mute/disable the device after a few seconds.  If the stream
+    cannot be created or read, an empty byte string is returned.
+    """
+    try:
+        stream = _get_stream(samplerate)
+        frames, overflowed = stream.read(int(seconds * samplerate))
+        audio = frames.flatten().tobytes()
+        if overflowed:
+            # some samples were lost; log for debugging
+            print("[listener] warning: audio overflowed", overflowed)
+    except Exception as e:
+        print("[listener] erro ao gravar audio:", e, file=sys.stderr)
+        return b""
+
     # write WAV header
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
         wf = wave.open(f.name, "wb")
@@ -140,21 +186,41 @@ def listen_for_hotword(hotword: str, chunk_seconds: int = 4, sample_rate: int = 
     while True:
         try:
             data = record_chunk(seconds=chunk_seconds, samplerate=sample_rate)
+            if not data:
+                # recording failed; wait a bit then retry
+                continue
 
-            # 1) try wakeword neural detector (fast) if available
+            # 1) VOSK keyword detection (grammar) if available
+            hotchain = hotword.lower()
+            try:
+                from vosk import Model, KaldiRecognizer
+                model_path = _find_vosk_model()
+                if model_path:
+                    rec = KaldiRecognizer(Model(model_path), sample_rate, f"[\"{hotchain}\"]")
+                    if rec.AcceptWaveform(data):
+                        res = rec.Result()
+                        j = json.loads(res)
+                        if j.get("text", "").strip() == hotchain:
+                            print("[listener] vosk grammar detectou hotword")
+                            # capture follow-up command
+                            follow = record_chunk(seconds=LISTEN_TIMEOUT, samplerate=sample_rate)
+                            text = stt.transcribe_bytes(follow, sample_rate)
+                            return (text or "").strip() or None
+            except Exception:
+                pass
+
+            # 2) try wakeword neural detector (fast) if available
             try:
                 from . import wakeword
                 if wakeword.detect(data):
-                    # heard wakeword — capture the following short command
                     print("[listener] wakeword detector fired — ouvindo comando...")
                     follow = record_chunk(seconds=LISTEN_TIMEOUT, samplerate=sample_rate)
                     text = stt.transcribe_bytes(follow, sample_rate)
                     return (text or "").strip() or None
             except Exception:
-                # detector not available or failed — continue to STT fallback
                 pass
 
-            # 2) fallback: transcribe current chunk and look for hotword in text
+            # 3) fallback: transcribe current chunk and look for hotword in text
             txt = stt.transcribe_bytes(data, sample_rate)
             txt_l = (txt or "").lower()
             if not txt_l:
@@ -167,5 +233,5 @@ def listen_for_hotword(hotword: str, chunk_seconds: int = 4, sample_rate: int = 
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            print("[listener] erro:", e, file=sys.stderr)
+            print("[listener] erro (loop):", e, file=sys.stderr)
             continue
