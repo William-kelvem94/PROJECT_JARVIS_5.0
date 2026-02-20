@@ -23,4 +23,12 @@ SYSTEM_PROMPT = (
 DEVICE_LANGUAGE = None
 LANGUAGE_VALIDATION = True  # validar idioma das entradas contra o idioma do dispositivo (nativo)
 
+# TTS backends e preferências
+# backends: 'edge-tts' (online, neural), 'pyttsx3' (local, SAPI)
+TTS_BACKEND_PREFERENCE = ["edge-tts", "pyttsx3"]  # ordem de preferência, 'auto' behavior
+TTS_PYTTSX3_VOICE = None       # nome/exact id da voice pyttsx3 (None = auto)
+TTS_EDGE_VOICE = "pt-BR-AntonioNeural"  # voz neural padrão para edge-tts
+TTS_VOLUME = 1.0
+TTS_RATE = 150
+
 
