@@ -1,0 +1,16 @@
+[
+    {
+        "ts": 1771647886.555493,
+        "module": "listener",
+        "error": "cannot convert float NaN to integer",
+        "type": "ValueError",
+        "context": {}
+    },
+    {
+        "ts": 1771647886.7205565,
+        "module": "listener",
+        "error": "cannot convert float NaN to integer",
+        "type": "ValueError",
+        "context": {}
+    }
+]

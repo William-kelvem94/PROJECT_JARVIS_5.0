@@ -1,4 +1,4 @@
-from jarvis_minimal.commands import command
+from jarvis.commands import command
 
 def setup(agent):
     """Setup function called by PluginManager."""
