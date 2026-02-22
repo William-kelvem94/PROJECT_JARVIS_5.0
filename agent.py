@@ -29,6 +29,20 @@ try:
 except ImportError:
     ollama = None
     logging.getLogger("jarvis-agent").warning("biblioteca 'ollama' não encontrada; funcionalidades locais de IA estarão limitadas.")
+# função auxiliar para verificar se o daemon Ollama está acessível
+
+def _ollama_running() -> bool:
+    if ollama is None:
+        return False
+    try:
+        # list models força uma conexão
+        ollama.models()
+        return True
+    except Exception as ex:
+        logging.getLogger("jarvis-agent").warning(f"Ollama não atingível: {ex}")
+        return False
+# armazena estado inicial em variável de ambiente para uso posterior
+os.environ.setdefault("OLLAMA_RUNNING", str(_ollama_running()))
 from prompts import AGENT_INSTRUCTION, SESSION_INSTRUCTION
 from brain import brain, requires_permission, PermissionErrorResolver
 
@@ -166,6 +180,15 @@ class JarvisTools:
 
         # default list based on deteções automatizadas
         if ollama is not None:
+            # ensure Ollama daemon is running; if not, try to start
+            if not os.environ.get("OLLAMA_RUNNING", "False").lower().startswith("t"):
+                try:
+                    subprocess.Popen([os.environ.get('OLLAMA_PATH','ollama'), 'serve'],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    time.sleep(2)
+                    logger.info("Tentativa de iniciar serviço Ollama automaticamente.")
+                except Exception as e:
+                    logger.error(f"Falha ao iniciar Ollama: {e}")
             self.available_engines.append('ollama')
         if vllm_engine is not None:
             self.available_engines.append('vllm')
@@ -467,8 +490,22 @@ class JarvisTools:
             try:
                 if engine == 'ollama' and ollama is not None:
                     logger.info(f"Consultando Ollama ({model}): {prompt[:50]}...")
-                    response = ollama.generate(model=model, prompt=prompt)
-                    return f"Resposta do Cérebro Local (Protocolo Stark-Local):\n{response['response']}"
+                    try:
+                        response = ollama.generate(model=model, prompt=prompt)
+                        return f"Resposta do Cérebro Local (Protocolo Stark-Local):\n{response['response']}"
+                    except Exception as oll_e:
+                        logger.error(f"erro ao falar com Ollama: {oll_e}")
+                        # tentativa automática de iniciar serviço se não estiver rodando
+                        if "Failed to connect" in str(oll_e):
+                            logger.warning("Ollama aparenta estar offline; tentando levantar daemon local...")
+                            try:
+                                subprocess.Popen([os.environ.get('OLLAMA_PATH','ollama'), 'serve'],
+                                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                time.sleep(3)
+                                logger.info("daemon Ollama iniciado; próximo engine será tentado")
+                            except Exception as start_e:
+                                logger.error(f"falha ao iniciar o daemon Ollama: {start_e}")
+                        raise  # deixa o mecanismo de falhas marcar-o e continuar
                 elif engine == 'huggingface' and self._hf_pipeline is not None:
                     logger.info(f"Consultando HuggingFace local: {prompt[:50]}...")
                     out = self._hf_pipeline(prompt, max_length=200, do_sample=True)
@@ -531,6 +568,20 @@ class JarvisTools:
         # reset failures para não prender entries removidas
         self.engine_failures = {}
         return f"Motores reconfigurados: {', '.join(self.available_engines)}"
+
+    @llm.function_tool
+    async def start_ollama_service(self) -> str:
+        """Tentativa de iniciar o daemon Ollama local se estiver instalado."""
+        if ollama is None:
+            return "Biblioteca Ollama não está instalada; não posso iniciar o serviço."
+        try:
+            subprocess.Popen([os.environ.get('OLLAMA_PATH','ollama'), 'serve'],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(2)
+            os.environ['OLLAMA_RUNNING'] = 'True'
+            return "Ollama serve iniciado em background. Será acessível em breve."
+        except Exception as e:
+            return f"Falha ao iniciar Ollama: {e}"
 
     @llm.function_tool
     async def train_huggingface_model(self, 
