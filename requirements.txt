@@ -9,3 +9,10 @@ python-dotenv
 psutil
 mem0ai
 ollama
+
+# extras for extended engine support and utilities
+transformers
+datasets
+vllm
+llama-cpp-python
+duckduckgo-search
