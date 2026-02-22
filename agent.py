@@ -441,33 +441,6 @@ class JarvisTools:
             return f"Dados encontrados para o Senhor William: {', '.join(memories)}"
         return "Nenhuma memória específica encontrada sobre isso para o William."
 
-    @llm.function_tool
-    async def search_web(self, query: Annotated[str, "O termo de pesquisa na internet."]) -> str:
-        """Realiza uma busca geral na internet para obter informações atualizadas."""
-        try:
-            from duckduckgo_search import DDGS
-            with DDGS() as ddgs:
-                results = [r for r in ddgs.text(query, max_results=5)]
-                if not results:
-                    return "Não encontrei resultados relevantes na web, Senhor."
-                
-                formatted = "\n".join([f"- {r['title']}: {r['body']} ({r['href']})" for r in results])
-                return f"Resultados da busca para '{query}':\n{formatted}"
-        except Exception as e:
-            return f"Erro na busca web: {str(e)}"
-
-    @llm.function_tool
-    async def search_specialized(self, 
-                                 query: Annotated[str, "O termo de pesquisa."], 
-                                 platform: Annotated[str, "Plataforma: 'huggingface', 'academic', 'google'."]) -> str:
-        """Busca em plataformas específicas como Hugging Face, Google Acadêmico ou Google Search."""
-        site_filter = ""
-        if platform == 'huggingface':
-            site_filter = "site:huggingface.co "
-        elif platform == 'academic':
-            site_filter = "site:scholar.google.com "
-        
-        return await self.search_web(f"{site_filter}{query}")
 
     @llm.function_tool
     async def consult_local_intelligence(self, 

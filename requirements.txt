@@ -15,4 +15,4 @@ transformers
 datasets
 vllm
 llama-cpp-python
-duckduckgo-search
+# duckduckgo-search removed per user request (web search tool eliminated)
