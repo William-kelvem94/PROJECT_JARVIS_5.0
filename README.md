@@ -29,6 +29,13 @@ ou em qualquer outro modo), ele tentará instalar automaticamente todas as
 dependências Python necessárias. Isso inclui não apenas os pacotes essenciais,
 mas também extras opcionais como motores locais.
 
+- Se a instalação de algum motor falhar (por exemplo, `vllm` requer uma versão
+do `torch` não disponível no Windows), o agente registra o erro e marca o motor
+como indisponível. Essa marcação evita tentativas futuras e mantém o processo
+funcionando normalmente.
+- Você pode forçar a omissão de `vllm` definindo `SKIP_VLLM=1` antes de iniciar
+o agente; ou deixar que ele detecte automaticamente após uma falha de instalação.
+
 1. **Instalar Node.js** (https://nodejs.org/pt-br). Verifique com `node -v`.
 2. **Instalar pnpm**: `npm install -g pnpm` ou usar `npx pnpm` se não estiver globalmente instalado.
    - Verifique com `pnpm -v` ou `npx pnpm -v`.

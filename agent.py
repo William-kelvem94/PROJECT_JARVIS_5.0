@@ -12,13 +12,22 @@ from dotenv import load_dotenv
 # -----------------------------------------------------------------------------
 # helper: ensure required Python packages are installed at runtime
 # -----------------------------------------------------------------------------
-def _ensure_package(pkg: str):
+def _ensure_package(pkg: str) -> bool:
+    """Try import; if missing attempt pip install.
+    Returns True if the package is available after the call.
+    """
     try:
         __import__(pkg)
+        return True
     except ImportError:
         logger = logging.getLogger("jarvis-agent")
         logger.warning(f"Pacote '{pkg}' não encontrado; instalando...")
-        subprocess.run([sys.executable, "-m", "pip", "install", pkg], check=False)
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", pkg], check=True)
+            return True
+        except Exception as exc:
+            logger.error(f"Falha ao instalar '{pkg}': {exc}")
+            return False
 
 
 def ensure_all_dependencies():
@@ -26,6 +35,8 @@ def ensure_all_dependencies():
 
     Chamado ao iniciar o agente. A lista contém não somente dependências
     principais, mas também os extras opcionais usados pelos motores locais.
+    Pacotes que falharem não interrompem a inicialização; motores não
+    instalados serão ignorados posteriormente.
     """
     pkgs = [
         "livekit-agents",
@@ -42,11 +53,18 @@ def ensure_all_dependencies():
         # extras
         "transformers",
         "datasets",
-        "vllm",
         "llama-cpp-python",
     ]
+    # vllm is problematic on Windows (torch 2.6) – skip automatically
+    if os.name != 'nt' and os.environ.get('SKIP_VLLM') != '1':
+        pkgs.append('vllm')
+    else:
+        logging.getLogger("jarvis-agent").info("Pulando instalação de vllm (Windows ou SKIP_VLLM).")
+
     for pkg in pkgs:
-        _ensure_package(pkg)
+        ok = _ensure_package(pkg)
+        if not ok and pkg == 'vllm':
+            os.environ['NO_VLLM'] = '1'
 
 # execute early so imports later succeed
 ensure_all_dependencies()
@@ -232,7 +250,7 @@ class JarvisTools:
                 except Exception as e:
                     logger.error(f"Falha ao iniciar Ollama: {e}")
             self.available_engines.append('ollama')
-        if vllm_engine is not None:
+        if vllm_engine is not None and os.environ.get('NO_VLLM') != '1':
             self.available_engines.append('vllm')
         if llama_engine is not None:
             self.available_engines.append('llama')
@@ -713,6 +731,12 @@ class JarvisTools:
             return f"Erro no treinamento: {str(e)}"
 
 async def entrypoint(ctx: agents.JobContext):
+    # workaround for watchfiles bug: avoid huge WATCHFILES_CHANGES
+    try:
+        os.environ['WATCHFILES_CHANGES'] = ''
+    except Exception:
+        pass
+
     logger.info(f"Conectando à sala: {ctx.room.name}")
     # report engines presentes na inicialização e estado de Ollama
     try:
