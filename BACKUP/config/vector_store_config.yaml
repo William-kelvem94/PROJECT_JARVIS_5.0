@@ -1,0 +1,69 @@
+# JARVIS 5.0 - Vector Store Configuration
+# =======================================
+# Configuração unificada para armazenamento vetorial (ChromaDB)
+
+vector_store:
+  # Configurações gerais
+  enabled: true
+  path: &vector_store_path "data/memory/vector_store"
+  backend: "chromadb"  # chromadb | faiss | pinecone
+  
+  # Configurações do ChromaDB
+  chromadb:
+    persist_directory: *vector_store_path
+    collection_name: "jarvis_memory"
+    distance_metric: "cosine"  # cosine | l2 | ip
+    
+    # Configurações de performance
+    max_batch_size: 5000
+    normalize_embeddings: true
+    allow_reset: true
+    anonymized_telemetry: false
+    
+    # Configurações de índice HNSW (Hierarchical Navigable Small World)
+    # Estes parâmetros controlam o trade-off entre velocidade de busca e precisão
+    index_params:
+      ef_search: 128        # Tamanho da lista de candidatos durante busca (maior = mais preciso, mais lento)
+      ef_construction: 200  # Tamanho da lista durante construção do índice (maior = melhor qualidade, mais lento)
+      M: 16                 # Número máximo de conexões por nó (maior = melhor conectividade, mais memória)
+      
+  # Configurações de embedding
+  embedding:
+    model: "sentence-transformers/all-MiniLM-L6-v2"
+    dimension: 384
+    batch_size: 32
+    normalize: true
+    
+  # Configurações de memória
+  memory:
+    # Tipos de memória armazenadas
+    types:
+      - "interactions"      # Conversas com o usuário
+      - "knowledge"         # Conhecimento adquirido
+      - "experiences"       # Experiências de aprendizado
+      - "context"          # Contexto de situações
+      
+    # Configurações de retenção
+    retention:
+      max_memories: 100000
+      cleanup_threshold: 90000
+      importance_threshold: 0.1
+      
+    # Configurações de similaridade
+    similarity:
+      min_similarity: 0.7
+      max_results: 10
+      reranking_enabled: true
+      
+# Configurações de backup
+backup:
+  enabled: true
+  interval_hours: 24
+  max_backups: 7
+  backup_path: "data/backups/vector_store"
+  
+# Configurações de desenvolvimento
+development:
+  debug_mode: false
+  query_logging: false
+  performance_metrics: false

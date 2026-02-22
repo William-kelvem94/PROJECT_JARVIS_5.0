@@ -1,0 +1,22 @@
+# config/network_mesh_config.yaml
+# Configuração da Rede Neural Distribuída (JARVIS 5.0)
+
+network:
+  enabled: true
+  discovery_port: 5000
+  device_name: "JARVIS-PRIMARY"
+  group_id: "STARK-CLUSTER-01"
+  
+security:
+  encryption_enabled: true
+  auth_token: "${MESH_AUTH_TOKEN}" # Lê do .env
+  
+sync:
+  interval_seconds: 60
+  sync_memory: true
+  sync_learning: true
+
+nodes:
+  - id: "desktop-master"
+    role: "master"
+    address: "127.0.0.1"

@@ -1,0 +1,68 @@
+# JARVIS 5.0 Training Configuration
+# Configuração de treinamento para componentes do JARVIS
+
+# Configurações gerais
+general:
+  project_root: "."
+  output_dir: "data/learning/training_data"
+  log_level: "INFO"
+  enable_web_logs: true
+  simulate_training: true  # Usar simulação para desenvolvimento rápido
+
+# Configurações de treinamento para LLM
+llm:
+  model_name: "distilgpt2"  # Modelo pequeno para desenvolvimento
+  training_args:
+    num_train_epochs: 3
+    per_device_train_batch_size: 4
+    per_device_eval_batch_size: 4
+    warmup_steps: 500
+    weight_decay: 0.01
+    logging_dir: "logs/training"
+    logging_steps: 10
+    save_steps: 500
+    eval_steps: 500
+    save_total_limit: 2
+    load_best_model_at_end: true
+    metric_for_best_model: "eval_loss"
+
+# Configurações para estudo baseado em tópicos
+study:
+  topics_dir: "data/learning/training_data/topics"
+  max_examples_per_topic: 1000
+  generation_model: "gpt-3.5-turbo"  # ou outro modelo disponível
+  prompt_templates:
+    - "Explique o conceito de {topic} em detalhes técnicos"
+    - "Quais são as aplicações práticas de {topic}?"
+    - "Compare {topic} com tecnologias similares"
+    - "Quais são os desafios atuais em {topic}?"
+
+# Configurações para visão computacional
+vision:
+  dataset_path: "data/learning/training_data/vision"
+  model_name: "google/vit-base-patch16-224"
+  training_args:
+    num_train_epochs: 5
+    per_device_train_batch_size: 8
+    learning_rate: 5e-5
+    warmup_steps: 500
+    weight_decay: 0.01
+
+# Configurações para treinamento distribuído
+distributed:
+  num_workers: 4
+  master_addr: "localhost"
+  master_port: "12355"
+  backend: "gloo"  # ou "nccl" para GPU
+
+# Configurações de feedback loop
+feedback:
+  reward_model: "distilbert-base-uncased"
+  max_feedback_iterations: 10
+  feedback_batch_size: 16
+
+# Configurações do ciclo de sonho
+dream:
+  dream_duration_hours: 8
+  dream_interval_minutes: 60
+  creativity_boost: 1.5
