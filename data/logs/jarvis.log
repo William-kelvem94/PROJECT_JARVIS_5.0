@@ -1436,3 +1436,93 @@ google.genai.errors.APIError: 1008 None. Operation is not implemented, or suppor
 2026-02-22 09:55:35,206 [INFO] jarvis-agent: Tentando engine: brain
 2026-02-22 09:55:35,208 [INFO] jarvis-agent: Usando motor interno do cérebro para consulta.
 2026-02-22 09:55:35,212 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 09:56:56,445 [DEBUG] asyncio: Using proactor: IocpProactor
+2026-02-22 09:56:56,474 [INFO] livekit.agents: starting worker
+2026-02-22 09:56:56,478 [INFO] livekit.agents: HTTP server listening on :60951
+2026-02-22 09:56:56,734 [INFO] livekit.agents: registered worker
+2026-02-22 09:56:56,785 [INFO] livekit.agents: received job request
+2026-02-22 09:56:56,834 [DEBUG] livekit.agents: received assignment
+2026-02-22 09:56:56,843 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-02-22 09:56:56,850 [INFO] livekit.agents: initializing job runner
+2026-02-22 09:56:56,854 [INFO] livekit.agents: job runner initialized
+2026-02-22 09:56:56,854 [DEBUG] asyncio: Using proactor: IocpProactor
+2026-02-22 09:56:56,866 [INFO] jarvis-agent: Conectando à sala: playground-NHLH-3FJk
+2026-02-22 09:56:57,645 [INFO] jarvis-agent: Iniciando JARVIS 5.0 para WilliamPereira...
+2026-02-22 09:56:57,647 [DEBUG] livekit.agents: configuring session recording
+2026-02-22 09:56:57,653 [WARNING] livekit.agents: RoomInputOptions and RoomOutputOptions are deprecated, use RoomOptions instead
+2026-02-22 09:56:57,657 [DEBUG] livekit.agents: input stream attached
+2026-02-22 09:57:00,248 [DEBUG] livekit.plugins.google: connecting to Gemini Realtime API...
+2026-02-22 09:57:00,256 [DEBUG] livekit.agents: using audio io: `RoomIO` -> `AgentSession` -> `TranscriptSynchronizer` -> `RoomIO`
+2026-02-22 09:57:00,259 [DEBUG] livekit.agents: using transcript io: `AgentSession` -> `TranscriptSynchronizer` -> `RoomIO`
+2026-02-22 09:57:00,526 [DEBUG] livekit.agents: start reading stream
+2026-02-22 09:57:10,655 [DEBUG] livekit.agents: executing tool
+2026-02-22 09:57:10,667 [INFO] jarvis-agent: Motores candidatos: ['gemini', 'brain', 'ollama']
+2026-02-22 09:57:10,673 [INFO] jarvis-agent: Tentando engine: gemini
+2026-02-22 09:57:12,900 [ERROR] jarvis-agent: Falha no engine gemini: 'Client' object has no attribute 'chat'
+2026-02-22 09:57:12,907 [INFO] jarvis-agent: Tentando engine: brain
+2026-02-22 09:57:12,912 [INFO] jarvis-agent: Usando motor interno do cérebro para consulta.
+2026-02-22 09:57:12,938 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 09:57:40,023 [DEBUG] livekit.agents: executing tool
+2026-02-22 09:57:40,130 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 09:57:44,645 [WARNING] livekit.plugins.google: server cancelled tool calls
+2026-02-22 09:58:04,269 [DEBUG] livekit.agents: stream closed
+2026-02-22 09:58:04,276 [INFO] livekit.agents: closing agent session due to participant disconnect (disable via `RoomInputOptions.close_on_disconnect=False`)
+2026-02-22 09:58:04,290 [DEBUG] livekit.agents: input stream detached
+2026-02-22 09:58:04,294 [DEBUG] livekit.plugins.google: send task finished.
+2026-02-22 09:58:04,501 [DEBUG] livekit.agents: session closed
+2026-02-22 09:58:05,955 [INFO] livekit.agents: shutting down worker
+2026-02-22 09:58:05,960 [DEBUG] livekit.agents: shutting down job task
+2026-02-22 09:58:05,964 [DEBUG] livekit.agents: job exiting
+2026-02-22 09:58:06,016 [DEBUG] livekit.agents: http_session(): closing the httpclient ctx
+2026-02-22 09:58:05,994 [ERROR] asyncio: Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Users\willi\AppData\Local\Programs\Python\Python314\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\willi\AppData\Local\Programs\Python\Python314\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+2026-02-22 09:58:06,018 [DEBUG] livekit.agents: http_session(): creating a new httpclient ctx
+2026-02-22 09:59:06,697 [DEBUG] asyncio: Using proactor: IocpProactor
+2026-02-22 09:59:06,702 [INFO] livekit.agents: starting worker
+2026-02-22 09:59:06,708 [INFO] livekit.agents: HTTP server listening on :64486
+2026-02-22 09:59:06,711 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-02-22 09:59:06,739 [INFO] livekit.agents: initializing job runner
+2026-02-22 09:59:06,746 [DEBUG] asyncio: Using proactor: IocpProactor
+2026-02-22 09:59:06,746 [INFO] livekit.agents: job runner initialized
+2026-02-22 09:59:07,076 [INFO] jarvis-agent: Conectando à sala: console
+2026-02-22 09:59:07,090 [INFO] jarvis-agent: Iniciando JARVIS 5.0 para WilliamPereira...
+2026-02-22 09:59:07,095 [DEBUG] livekit.agents: configuring session recording
+2026-02-22 09:59:14,035 [DEBUG] livekit.plugins.google: connecting to Gemini Realtime API...
+2026-02-22 09:59:14,045 [DEBUG] livekit.agents: using audio io: `Console` -> `AgentSession` -> `TranscriptSynchronizer` -> `Console`
+2026-02-22 09:59:14,049 [DEBUG] livekit.agents: using transcript io: `AgentSession` -> `TranscriptSynchronizer`
+2026-02-22 09:59:22,570 [DEBUG] livekit.agents: executing tool
+2026-02-22 09:59:22,676 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 10:01:03,991 [DEBUG] livekit.agents: executing tool
+2026-02-22 10:01:03,995 [WARNING] jarvis-agent: EXECUTANDO COMANDO: microsoft-edge "https://www.youtube.com/results?search_query=The+Weeknd"
+2026-02-22 10:01:04,027 [ERROR] jarvis-agent: Falha no comando 'microsoft-edge "https://www.youtube.com/results?search_query=The+Weeknd"': 'microsoft-edge' nÆo ‚ reconhecido como um comando interno
+ou externo, um programa oper vel ou um arquivo em lotes.
+
+2026-02-22 10:01:04,032 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 10:05:17,960 [DEBUG] livekit.agents: executing tool
+2026-02-22 10:05:17,964 [WARNING] jarvis-agent: INICIANDO PROTOCOLO DE TREINAMENTO (modular) PARA: Python
+2026-02-22 10:05:17,967 [INFO] jarvis-brain: Plano de treinamento gerado: {'Python': {'epochs': 3, 'priority': 'normal'}}
+2026-02-22 10:05:17,969 [INFO] jarvis-agent: Engine de treino selecionado: ollama
+2026-02-22 10:05:17,972 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 10:08:19,087 [WARNING] livekit.plugins.google: Gemini server indicates disconnection soon. Time left: 50s
+2026-02-22 10:08:19,094 [DEBUG] livekit.plugins.google: send task finished.
+2026-02-22 10:08:19,331 [DEBUG] livekit.plugins.google: connecting to Gemini Realtime API...
+2026-02-22 10:13:12,608 [DEBUG] livekit.agents: executing tool
+2026-02-22 10:13:12,713 [DEBUG] livekit.agents: tools execution completed
+2026-02-22 10:17:20,714 [WARNING] livekit.plugins.google: Gemini server indicates disconnection soon. Time left: 50s
+2026-02-22 10:17:20,717 [DEBUG] livekit.plugins.google: send task finished.
+2026-02-22 10:17:20,924 [DEBUG] livekit.plugins.google: connecting to Gemini Realtime API...
+2026-02-22 10:19:25,099 [INFO] livekit.agents: shutting down worker
+2026-02-22 10:19:25,108 [DEBUG] livekit.plugins.google: send task finished.
+2026-02-22 10:19:25,291 [DEBUG] livekit.agents: session closed
+2026-02-22 10:19:25,302 [DEBUG] livekit.agents: shutting down job task
+2026-02-22 10:19:25,309 [DEBUG] livekit.agents: job exiting
+2026-02-22 10:19:25,316 [DEBUG] livekit.agents: http_session(): closing the httpclient ctx
+2026-02-22 10:19:25,318 [DEBUG] livekit.agents: http_session(): creating a new httpclient ctx

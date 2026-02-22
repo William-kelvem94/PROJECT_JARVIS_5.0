@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+build/
+dist/
+*.egg-info/
+
+# virtualenv
+python-env/
+
+# logs
+data/logs/
+
+# Node / frontend
+dashboard/node_modules/
+dashboard/.next/
+
+# dotenv
+.env
+.env.*
+
+# IDE
+.vscode/

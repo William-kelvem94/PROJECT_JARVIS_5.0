@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-agent",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dashboard:install": "cd dashboard && pnpm install",
+    "dashboard:dev": "cd dashboard && pnpm dev",
+    "dashboard:build": "cd dashboard && pnpm build",
+    "dashboard:lint": "cd dashboard && pnpm lint"
+  }
+}

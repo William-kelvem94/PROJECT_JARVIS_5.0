@@ -30,7 +30,7 @@ except ImportError:
     ollama = None
     logging.getLogger("jarvis-agent").warning("biblioteca 'ollama' não encontrada; funcionalidades locais de IA estarão limitadas.")
 from prompts import AGENT_INSTRUCTION, SESSION_INSTRUCTION
-from brain import brain, requires_permission
+from brain import brain, requires_permission, PermissionErrorResolver
 
 load_dotenv()
 
@@ -134,15 +134,43 @@ class JarvisTools:
         except Exception as e:
             hf_pipeline = None
 
-        # mecanismo de seleção de motor (ollama, gemini, huggingface, cérebro próprio)
+        # detectar VLLM local
+        vllm_engine = None
+        try:
+            import vllm
+            # instantiate a default model (user can override via ENV)
+            vllm_model = os.environ.get('VLLM_MODEL', 'gpt2')
+            vllm_engine = vllm.LLM(model=vllm_model)
+            logger.info(f"VLLM engine inicializado ({vllm_model})")
+        except Exception as e:
+            vllm_engine = None
+
+        # detectar llama.cpp local
+        llama_engine = None
+        try:
+            from llama_cpp import Llama
+            llama_path = os.environ.get('LLAMA_MODEL_PATH')
+            if llama_path:
+                llama_engine = Llama(model_path=llama_path)
+                logger.info(f"llama.cpp engine inicializado ({llama_path})")
+        except Exception as e:
+            llama_engine = None
+
+        # mecanismo de seleção de motor (ollama, gemini, huggingface, vllm, llama, cérebro próprio)
         self.engine_index = 0
         self.available_engines = []
         # engine failure tracking (name -> last failure timestamp)
         self.engine_failures: dict[str, float] = {}
         # how long to wait before retrying a failed engine
         self.failure_cooldown = 60.0
+
+        # default list based on deteções automatizadas
         if ollama is not None:
             self.available_engines.append('ollama')
+        if vllm_engine is not None:
+            self.available_engines.append('vllm')
+        if llama_engine is not None:
+            self.available_engines.append('llama')
         if hf_pipeline is not None:
             self.available_engines.append('huggingface')
         # add Gemini if Google API key present (plugin available)
@@ -151,8 +179,18 @@ class JarvisTools:
         # always add brain como fallback
         self.available_engines.append('brain')
 
-        # store hf pipeline for consultations
+        # allow override via variável de ambiente ENGINE_LIST (vírgula-separada)
+        env_list = os.environ.get('ENGINE_LIST')
+        if env_list:
+            custom = [e.strip() for e in env_list.split(',') if e.strip()]
+            if custom:
+                logger.info(f"Substituindo lista de motores por ENGINE_LIST: {custom}")
+                self.available_engines = custom
+
+        # store various engine handles for use in consult_local_intelligence
         self._hf_pipeline = hf_pipeline
+        self._vllm_engine = vllm_engine
+        self._llama_engine = llama_engine
 
     def pick_engine(self) -> str:
         """Retorna o próximo engine saudável, pulando temporariamente os que falharam."""
@@ -456,6 +494,83 @@ class JarvisTools:
         # todos falharam
         logger.error("Todos os motores de IA falharam; retornando erro genérico.")
         return "Erro: nenhum motor de IA disponível no momento."
+
+    # ------------------------------------------------------------------
+    # ferramentas de configuração e status de motores
+    # ------------------------------------------------------------------
+    @llm.function_tool
+    async def list_engines(self) -> str:
+        """Retorna a lista atual de motores disponíveis (inclui aqueles em cooldown)."""
+        return f"Motores configurados: {', '.join(self.available_engines)}"
+
+    @llm.function_tool
+    async def get_engine_stats(self) -> str:
+        """Fornece estatísticas simples sobre falhas e cooldown de cada motor."""
+        lines = []
+        now = time.time()
+        for e in self.available_engines:
+            last = self.engine_failures.get(e)
+            if last:
+                age = now - last
+                lines.append(f"{e}: última falha há {age:.1f}s")
+            else:
+                lines.append(f"{e}: sem falhas recentes")
+        return "\n".join(lines)
+
+    @llm.function_tool
+    async def configure_engines(self, engines: Annotated[str, "Lista de nomes de motores separada por vírgula."]) -> str:
+        """Reconfigura dinamicamente a lista de motores que o agente deve tentar.
+
+        O parâmetro é uma string com nomes separados por vírgulas, por exemplo
+        "ollama,huggingface,brain". Você pode excluir ou reordenar conforme desejar.
+        """
+        new_list = [e.strip() for e in engines.split(',') if e.strip()]
+        if not new_list:
+            return "Lista vazia não é permitida. Mantenha pelo menos um motor."
+        self.available_engines = new_list
+        # reset failures para não prender entries removidas
+        self.engine_failures = {}
+        return f"Motores reconfigurados: {', '.join(self.available_engines)}"
+
+    @llm.function_tool
+    async def train_huggingface_model(self, 
+                                      model_name: Annotated[str, "ID ou caminho do modelo a treinar."],
+                                      dataset: Annotated[str, "Caminho ou ID do dataset HuggingFace."],
+                                      epochs: Annotated[int, "Número de épocas (padrão 1)."] = 1) -> str:
+        """Inicia um fine-tuning local de um modelo HuggingFace utilizando Trainer.
+
+        Para simplificar, aceita o nome do modelo e um dataset que exista no Hub.
+        O treinamento ocorre no hardware local e retorna quando o processo termina.
+        """
+        try:
+            from transformers import (
+                AutoModelForCausalLM, AutoTokenizer,
+                Trainer, TrainingArguments
+            )
+            from datasets import load_dataset
+            tok = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForCausalLM.from_pretrained(model_name)
+            data = load_dataset(dataset)
+            # assumimos dataset de texto simples ou com coluna "text"
+            def tokenize(batch):
+                return tok(batch.get('text', batch), truncation=True, padding='max_length')
+            data = data.map(tokenize, batched=True)
+            args = TrainingArguments(
+                output_dir=f"./hf_train_{model_name.replace('/', '_')}",
+                num_train_epochs=epochs,
+                per_device_train_batch_size=1,
+                logging_dir='./hf_logs',
+                logging_steps=10,
+            )
+            trainer = Trainer(
+                model=model, args=args, train_dataset=data['train']
+            )
+            trainer.train()
+            return f"Treinamento concluído para {model_name}."        
+        except Exception as e:
+            logger.error(f"Erro no treinamento HuggingFace: {e}")
+            return f"Falha ao treinar: {e}"
+
     @llm.function_tool
     async def brain_state(self) -> str:
         """Retorna um resumo do estado atual do cérebro neurosimbólico."""

@@ -4,3 +4,6 @@ Sugestões de Melhoria para JARVIS 5.0 (Singularity Edition):
 2. Otimização de Telemetria: Garantir a estabilidade e confiabilidade na coleta e processamento de dados de sistema (ex: CPU, RAM), superando erros internos.
 3. Tratamento de Erros Internos: Refinar mecanismos de auto-diagnóstico e correção automática para manter a máxima eficiência.
 4. Análise Preditiva de Produtividade: Desenvolver a capacidade de antecipar necessidades do Mestre e otimizar o Ecossistema Cognitivo proativamente.
+5. Integração de motores locais adicionais (vllm, llama.cpp) com monitoramento de estatísticas e seleção automática de melhor motor.
+6. Ferramenta de treinamento HuggingFace local via Trainer e UI que permite disparar pipelines de fine-tuning.
+7. Dashboard unificado que exibe status, permite reconfigurar a lista de engines e centraliza a interface em um único repositório.
