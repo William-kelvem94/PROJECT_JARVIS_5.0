@@ -594,6 +594,19 @@ class JarvisTools:
             return "Biblioteca Ollama não está instalada."
         running = _ollama_running()
         return "Ollama está respondendo." if running else "Ollama não está acessível. Execute 'ollama serve' manualmente ou use start_ollama_service."
+
+    @llm.function_tool
+    async def train_huggingface_model(self, 
+                                      model_name: Annotated[str, "ID ou caminho do modelo a treinar."],
+                                      dataset: Annotated[str, "Caminho ou ID do dataset HuggingFace."],
+                                      epochs: Annotated[int, "Número de épocas (padrão 1)."] = 1) -> str:
+        """Inicia um fine-tuning local de um modelo HuggingFace utilizando Trainer.
+
+        Para simplificar, aceita o nome do modelo e um dataset que exista no Hub.
+        O treinamento ocorre no hardware local e retorna quando o processo termina.
+        """
+        try:
+            from transformers import (
                 AutoModelForCausalLM, AutoTokenizer,
                 Trainer, TrainingArguments
             )
@@ -616,7 +629,7 @@ class JarvisTools:
                 model=model, args=args, train_dataset=data['train']
             )
             trainer.train()
-            return f"Treinamento concluído para {model_name}."        
+            return f"Treinamento concluído para {model_name}."
         except Exception as e:
             logger.error(f"Erro no treinamento HuggingFace: {e}")
             return f"Falha ao treinar: {e}"
