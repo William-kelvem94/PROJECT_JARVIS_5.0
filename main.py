@@ -1,149 +1,172 @@
-"""Entry point for the Jarvis 5.0 Production System.
-
-Usage examples:
-  python main.py                # voz somente
-  python main.py --text         # apenas texto (linha de comando)
-  python main.py --both         # voz e texto em paralelo
-"""
-import argparse
-import threading
 import sys
-import os
-import json
+import threading
 import logging
+import argparse
+import time
+from pathlib import Path
 
-from jarvis import JarvisAgent
+# Fix for standard output encoding
+if sys.platform == 'win32':
+    import ctypes
+    kernel32 = ctypes.windll.kernel32
+    kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
 
+# Configuration and Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+)
+logger = logging.getLogger("JARVIS-CORE")
 
-
-# --- startup helpers --------------------------------------------------------
-
-def configure_logging(debug: bool = False):
-    """Configure root logger with console and file handlers."""
-    root = logging.getLogger()
-    # avoid configuring twice
-    if root.handlers:
-        return
-    level = logging.DEBUG if debug else logging.INFO
-    root.setLevel(level)
-    fmt = logging.Formatter("[%(levelname)s] %(name)s:%(lineno)d: %(message)s")
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(level)
-    ch.setFormatter(fmt)
-    root.addHandler(ch)
-
-    logfile = os.path.join(os.getcwd(), "startup.log")
-    fh = logging.FileHandler(logfile, encoding="utf-8")
-    fh.setLevel(logging.DEBUG)
-    fh.setFormatter(fmt)
-    root.addHandler(fh)
-    logging.info("logs sendo enviados para %s", logfile)
-
-
-def load_config(path: str):
-    """Load custom configuration file if provided."""
-    if not path:
-        return
-    if not os.path.exists(path):
-        logging.warning("arquivo de configuração %s não existe", path)
-        return
-    try:
-        if path.lower().endswith(".json"):
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-        else:
-            import yaml
-
-            with open(path, encoding="utf-8") as f:
-                data = yaml.safe_load(f)
-        logging.info("configuração carregada de %s", path)
-        # merge into os.environ or config module as needed
-        for k, v in data.items():
-            os.environ[k] = str(v)
-    except Exception as e:
-        logging.error("falha ao carregar config %s: %s", path, e)
-
-
-def check_prerequisites():
-    """Simple dependency check before starting the agent."""
-    missing = []
-    try:
-        import torch  # noqa: F401
-    except ImportError:
-        missing.append("torch")
-    if missing:
-        logging.warning("módulos faltando: %s, a inicialização pode falhar", missing)
-    else:
-        logging.debug("verificação de dependências concluída")
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Runner for Jarvis minimal")
-    parser.add_argument("--mode", choices=["voice", "text", "both"], default="voice",
-                        help="Modo de entrada: voz, texto ou ambos")
-    parser.add_argument("--text", action="store_true",
-                        help="mesmo que --mode text (modo só texto)")
-    parser.add_argument("--both", action="store_true",
-                        help="mesmo que --mode both (voz + texto)")
-    parser.add_argument("--no-text", action="store_true",
-                        help="desativa interface de texto (útil se quiser apenas voz)")
-    parser.add_argument("--debug", action="store_true",
-                        help="habilita logs detalhados e auto-treinamento periódico")
-    parser.add_argument("--config", help="arquivo JSON/YAML com variáveis de configuração")
-
-    args = parser.parse_args()
-    if args.text:
-        args.mode = "text"
-    elif args.both:
-        args.mode = "both"
-    # if user asked to suppress text, override modes
-    if args.no_text:
-        # even in "both" we'll pretend it's pure voice
-        args.mode = "voice"
-
-    configure_logging(args.debug)
-    check_prerequisites()
-    load_config(args.config)
-
-    logging.info("iniciando Jarvis (modo=%s, debug=%s)", args.mode, args.debug)
-    try:
-        agent = JarvisAgent()
-    except Exception as e:
-        logging.error("falha ao criar agente: %s", e, exc_info=True)
-        sys.exit(1)
-
-    if args.debug:
-        agent.debug = True
-        logging.info("modo debug ativado no agente")
-
-    logging.debug("startup report: %s", getattr(agent, "startup_report", {}))
-
-    def text_loop():
-        print("[text] digite suas mensagens abaixo (CTRL+C para sair)")
+class JarvisSingularity:
+    """
+    JARVIS 5.0 - Unified Singularity Core
+    The ultimate entry point for the Stark 'Completão' Vision.
+    """
+    
+    def __init__(self):
+        self.parser = argparse.ArgumentParser(description="JARVIS 5.0 - Singularity Core")
+        self.parser.add_argument("--headless", action="store_true", help="Start without GUI")
+        self.parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+        self.parser.add_argument("--safe", action="store_true", help="Start in safe mode")
+        self.args = self.parser.parse_args()
+        
+        if self.args.debug:
+            logging.getLogger().setLevel(logging.DEBUG)
+            
+        self.is_running = True
+        self.boot_manager = None
+        self.ui_mode = not self.args.headless
+        
+    def bootstrap(self):
+        """Orchestrates the complete system boot sequence."""
+        print("\n" + "="*60)
+        print("  🧬 JARVIS 5.0 - SINGULARITY CORE INITIALIZER")
+        print("  Vision: Stark 'Completão' | Version: 5.0.1")
+        print("="*60 + "\n")
+        
         try:
-            while True:
-                line = input("> ").strip()
-                if not line:
-                    continue
-                agent.handle_command(line)
-        except (EOFError, KeyboardInterrupt):
-            print("\n[text] encerrando interface de texto")
-            sys.exit(0)
+            # 1. Initialize professional BootManager
+            from src.core.infrastructure.boot_manager import boot_manager
+            self.boot_manager = boot_manager
+            
+            # Setup GUI requirement in boot manifest
+            if not self.ui_mode:
+                # Disable GUI-related modules if headless
+                if "window_manager" in self.boot_manager.modules:
+                    self.boot_manager.modules["window_manager"].required = False
+            
+            # 2. Execute Boot Sequence
+            logger.info("🚀 Starting Neural Boot Sequence...")
+            success = self.boot_manager.start_boot(blocking=True)
+            
+            if not success:
+                logger.critical("❌ Critical failure during Singularity Boot.")
+                sys.exit(1)
+                
+            # 3. Post-Boot Integration
+            self._integrate_systems()
+            
+            # 4. Proactive Briefing
+            self._start_briefing()
+            
+            # 5. Launch Interfaces
+            self._launch_interfaces()
+            
+        except Exception as e:
+            logger.critical(f"💥 Fatal Crash during bootstrap: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
 
-    # always offer text interface unless explicitly disabled
-    t = None
-    if not args.no_text:
-        t = threading.Thread(target=text_loop, daemon=True)
-        t.start()
+    def _integrate_systems(self):
+        """Connects instances from BootManager to local references."""
+        self.ai_agent = self.boot_manager.get_instance("ai_agent")
+        self.speaker = self.boot_manager.get_instance("audio_system")
+        self.window_manager = self.boot_manager.get_instance("window_manager")
+        self.app = self.boot_manager.get_instance("qt_application")
+        
+        logger.info("✅ Systems integrated into Singularity Core.")
 
-    if args.mode in ("voice", "both"):
-        agent.run()
-    else:
-        # if voice-only mode but text thread exists, keep program running
-        if t:
-            t.join()
+    def _start_briefing(self):
+        """Generates and speaks the Stark 'Completão' Briefing."""
+        try:
+            from src.core.briefing_manager import briefing_manager
+            briefing = briefing_manager.generate_startup_briefing()
+            print(f"\n[JARVIS]: {briefing}")
+            if self.speaker:
+                # Run speech in thread to not block UI
+                threading.Thread(target=self.speaker.speak, args=(briefing,), daemon=True).start()
+        except Exception as e:
+            logger.warning(f"Briefing failed: {e}")
 
+    def _launch_interfaces(self):
+        """Starts Voice, Text and GUI event loops."""
+        # A. Voice Loop Thread
+        threading.Thread(target=self._voice_loop, daemon=True, name="VoiceLoop").start()
+        
+        # B. Text Loop Thread
+        threading.Thread(target=self._text_loop, daemon=True, name="TextLoop").start()
+        
+        # C. GUI Main Loop (Must be in Main Thread)
+        if self.ui_mode and self.app:
+            logger.info("✨ Launching Visual HUD & Dashboard...")
+            sys.exit(self.app.exec())
+        else:
+            logger.info("🔌 Headless mode active. Running core in terminal.")
+            while self.is_running:
+                time.sleep(1)
+
+    def _text_loop(self):
+        """Interactive Terminal for JARVIS."""
+        print("\n--- STARK CONSOLE ACCESS GRANTED ---")
+        while self.is_running:
+            try:
+                user_input = input("\n[USER]: ").strip()
+                if not user_input: continue
+                
+                if user_input.lower() in ["exit", "sair", "shutdown"]:
+                    self.shutdown()
+                    break
+                
+                response = self.ai_agent.process(user_input) if self.ai_agent else "Core offline."
+                print(f"\n[JARVIS]: {response}")
+                if self.speaker:
+                    self.speaker.speak(response)
+                    
+            except EOFError:
+                break
+            except Exception as e:
+                logger.error(f"Console error: {e}")
+
+    def _voice_loop(self):
+        """Background listener for vocal commands."""
+        # Using the listener fromperception if available
+        try:
+            from src.perception.listener import listener
+            while self.is_running:
+                voice_text = listener.listen()
+                if voice_text:
+                    logger.info(f"🎤 Voice Heard: {voice_text}")
+                    response = self.ai_agent.process(voice_text)
+                    print(f"\n[JARVIS]: {response}")
+                    if self.speaker:
+                        self.speaker.speak(response)
+        except Exception as e:
+            logger.error(f"Voice loop failed: {e}")
+
+    def shutdown(self):
+        """Graceful system termination."""
+        print("\n🛑 Initiating Shutdown Protocol...")
+        self.is_running = False
+        if self.speaker:
+            self.speaker.speak("Desativando protocolos. Até logo, senhor.")
+        time.sleep(1)
+        if self.app:
+            self.app.quit()
+        sys.exit(0)
 
 if __name__ == "__main__":
-    main()
+    jarvis = JarvisSingularity()
+    jarvis.bootstrap()
+
