@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class JarvisMemory:
-    def __init__(self, user_name="PedroLucas"):
+    def __init__(self, user_name="WilliamPereira"):
         self.user_name = user_name
         # O MemoryClient busca a MEM0_API_KEY automaticamente do seu .env
         self.client = MemoryClient()
@@ -51,18 +51,25 @@ class JarvisMemory:
         
         return memories_list
 
+import time
+
 # --- EXECUÇÃO ---
 if __name__ == "__main__":
-    brain = JarvisMemory("PedroLucas")
+    brain = JarvisMemory("WilliamPereira")
 
-    # 1. Primeiro enviamos a informação (Comente essa linha se já enviou uma vez e quer só testar a busca)
+    # 1. Primeiro enviamos a informação
     brain.salvar_conversa()
+
+    # Aguardamos o processamento da IA do Mem0 (Extração de fatos)
+    print("⏳ Aguardando indexação da memória (5 segundos)...")
+    time.sleep(5)
 
     # 2. Depois buscamos o que foi aprendido
     historico = brain.buscar_memorias()
 
     # Exibição organizada
     if historico:
+        print("\n✨ Resultados Encontrados:")
         print(json.dumps(historico, indent=2, ensure_ascii=False))
     else:
-        print("❌ Nenhuma memória encontrada para este usuário.")
+        print("❌ Nenhuma memória encontrada ainda. Tente rodar novamente em instantes.")
