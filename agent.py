@@ -495,17 +495,21 @@ class JarvisTools:
                         return f"Resposta do Cérebro Local (Protocolo Stark-Local):\n{response['response']}"
                     except Exception as oll_e:
                         logger.error(f"erro ao falar com Ollama: {oll_e}")
-                        # tentativa automática de iniciar serviço se não estiver rodando
-                        if "Failed to connect" in str(oll_e):
+                        # se a causa for falha de conexão, tentar iniciar/reativar daemon e reexecutar
+                        if "Failed to connect" in str(oll_e) or "connection" in str(oll_e).lower():
                             logger.warning("Ollama aparenta estar offline; tentando levantar daemon local...")
                             try:
                                 subprocess.Popen([os.environ.get('OLLAMA_PATH','ollama'), 'serve'],
                                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                                 time.sleep(3)
-                                logger.info("daemon Ollama iniciado; próximo engine será tentado")
-                            except Exception as start_e:
-                                logger.error(f"falha ao iniciar o daemon Ollama: {start_e}")
-                        raise  # deixa o mecanismo de falhas marcar-o e continuar
+                                os.environ['OLLAMA_RUNNING'] = 'True'
+                                # tentar novamente uma vez
+                                response = ollama.generate(model=model, prompt=prompt)
+                                return f"Resposta do Cérebro Local (Protocolo Stark-Local):\n{response['response']}"
+                            except Exception as retry_e:
+                                logger.error(f"re-tentativa com Ollama também falhou: {retry_e}")
+                        # se ainda falhar, permita que a falha seja marcada para cooldown
+                        raise
                 elif engine == 'huggingface' and self._hf_pipeline is not None:
                     logger.info(f"Consultando HuggingFace local: {prompt[:50]}...")
                     out = self._hf_pipeline(prompt, max_length=200, do_sample=True)
@@ -584,17 +588,12 @@ class JarvisTools:
             return f"Falha ao iniciar Ollama: {e}"
 
     @llm.function_tool
-    async def train_huggingface_model(self, 
-                                      model_name: Annotated[str, "ID ou caminho do modelo a treinar."],
-                                      dataset: Annotated[str, "Caminho ou ID do dataset HuggingFace."],
-                                      epochs: Annotated[int, "Número de épocas (padrão 1)."] = 1) -> str:
-        """Inicia um fine-tuning local de um modelo HuggingFace utilizando Trainer.
-
-        Para simplificar, aceita o nome do modelo e um dataset que exista no Hub.
-        O treinamento ocorre no hardware local e retorna quando o processo termina.
-        """
-        try:
-            from transformers import (
+    async def check_ollama_status(self) -> str:
+        """Verifica se o daemon Ollama está rodando e acessível."""
+        if ollama is None:
+            return "Biblioteca Ollama não está instalada."
+        running = _ollama_running()
+        return "Ollama está respondendo." if running else "Ollama não está acessível. Execute 'ollama serve' manualmente ou use start_ollama_service."
                 AutoModelForCausalLM, AutoTokenizer,
                 Trainer, TrainingArguments
             )
@@ -687,6 +686,14 @@ class JarvisTools:
 
 async def entrypoint(ctx: agents.JobContext):
     logger.info(f"Conectando à sala: {ctx.room.name}")
+    # report engines presentes na inicialização e estado de Ollama
+    try:
+        engines = JarvisTools().available_engines
+        logger.info(f"Motores configurados na inicialização: {engines}")
+        if 'ollama' in engines and not _ollama_running():
+            logger.warning("Ollama configurado mas não está rodando. Use 'ollama serve' ou a ferramenta start_ollama_service.")
+    except Exception:
+        pass
     # checa privilégios de administrador/root e avisa
     try:
         if os.name == 'nt':

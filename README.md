@@ -46,9 +46,21 @@ O `package.json` na raiz contém scripts convenientes para trabalhar com a inter
 
 - O agente agora detecta automaticamente motores locais:
   Ollama (daemon requerido), HuggingFace, vllm, llama.cpp; além de Gemini e seu próprio cérebro.
-  Se o serviço Ollama não estiver rodando, o Jarvis tentará iniciá‑lo ou você pode usar
-  a ferramenta `start_ollama_service` para acioná‑lo manualmente. Ajuste `OLLAMA_PATH`
-  na env se o binário não estiver no PATH.
+
+  **Observação sobre Ollama:**
+  1. Certifique‑se de que o executável `ollama` esteja instalado e acessível.
+     no Windows ele pode residir em `%USERPROFILE%\\AppData\\Local\\Ollama`.
+  2. Inicie o daemon antes de pedir algo ao Jarvis:
+     ```sh
+     ollama serve          # ou forneça caminho completo
+     ```
+     O Jarvis também pode tentar levantar o serviço automaticamente
+     ou você pode executar via a ferramenta de chat `start_ollama_service`.
+  3. Verifique o estado a qualquer momento com `check_ollama_status` ou
+     perguntando no chat "status do Ollama".
+  4. Se não estiver rodando, ouvirá avisos nos logs e o agente não usará o engine.
+
+  Ajuste `OLLAMA_PATH` na env se o binário não estiver no PATH.
 - Você pode reconfigurar dinamicamente a lista de engines via comando `configure_engines` ou
   variável `ENGINE_LIST`.
 - Há novas ferramentas: `train_huggingface_model`, `get_engine_stats`, `list_engines`.
