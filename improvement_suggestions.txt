@@ -1,0 +1,6 @@
+Sugestões de Melhoria para JARVIS 5.0 (Singularity Edition):
+
+1. Refinamento de NLP Contextual: Aprimorar a interpretação de linguagem natural, incluindo nuances, intenções e sarcasmo, para uma interação mais sofisticada.
+2. Otimização de Telemetria: Garantir a estabilidade e confiabilidade na coleta e processamento de dados de sistema (ex: CPU, RAM), superando erros internos.
+3. Tratamento de Erros Internos: Refinar mecanismos de auto-diagnóstico e correção automática para manter a máxima eficiência.
+4. Análise Preditiva de Produtividade: Desenvolver a capacidade de antecipar necessidades do Mestre e otimizar o Ecossistema Cognitivo proativamente.

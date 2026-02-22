@@ -1,0 +1,13 @@
+Uma rede neural (neural network) é um modelo computacional inspirado no funcionamento do cérebro humano. É composta por nós (neurônios) organizados em camadas, que processam e transmitem informações.
+
+Principais Tipos:
+1. Feedforward: O tipo mais simples, onde a informação flui em apenas uma direção.
+2. Redes Neurais Convolucionais (CNNs): Especializadas em processamento de imagens e visão computacional.
+3. Redes Neurais Recorrentes (RNNs): Utilizadas para dados sequenciais, como linguagem natural e séries temporais.
+
+Aplicações:
+- Reconhecimento de voz e imagem
+- Tradução automática
+- Sistemas de recomendação
+- Diagnóstico médico
+- Veículos autônomos

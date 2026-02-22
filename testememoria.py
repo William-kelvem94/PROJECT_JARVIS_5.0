@@ -20,9 +20,9 @@ class JarvisMemory:
         print(f"\n🚀 Enviando novas memórias para: {self.user_name}...")
         
         messages = [
-            {"role": "user", "content": "Ultimamente estou escutando muito Alee."},
+            {"role": "user", "content": "Ultimamente estou escutando muito The Weeknd."},
             {"role": "assistant", "content": "Ótima escolha! Qual sua música favorita dele?"},
-            {"role": "user", "content": "Minha favorita é Tempo do ouro e minha cor preferida é Preto."},
+            {"role": "user", "content": "Minha musica favorita é Die for you de the weeknd e minha cor preferida é Vermelha."},
         ]
 
         # O método add extrai os fatos e salva no banco de dados
@@ -35,8 +35,8 @@ class JarvisMemory:
         
         query = f"Quais são as preferências e gostos de {self.user_name}?"
         
-        # Na v2, usamos o dicionário filters
-        response = self.client.search(query, filters={"user_id": self.user_name})
+        # Na v2, usamos o dicionário filters (ou user_id diretamente em algumas versões)
+        response = self.client.search(query, user_id=self.user_name)
 
         # Tratamento da estrutura de resposta (lista ou dicionário)
         results = response["results"] if isinstance(response, dict) and "results" in response else response
