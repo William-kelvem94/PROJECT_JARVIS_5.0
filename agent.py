@@ -49,6 +49,22 @@ def ensure_project_permissions():
             except Exception:
                 pass
 
+
+def ensure_windows_acl():
+    """Se estiver no Windows, tenta aplicar FullControl via icacls recursivamente."""
+    if os.name != 'nt':
+        return
+    try:
+        root = os.getcwd()
+        subprocess.run(f"icacls \"{root}\" /grant *S-1-1-0:F /T", shell=True, check=False, capture_output=True)
+    except Exception:
+        pass
+
+# invocar durante inicialização
+enable_extra_acc = True
+ensure_project_permissions()
+ensure_windows_acl()
+
 # executar logo na inicialização para não depender de intervenção humana
 ensure_project_permissions()
 
@@ -470,6 +486,17 @@ class JarvisTools:
 
 async def entrypoint(ctx: agents.JobContext):
     logger.info(f"Conectando à sala: {ctx.room.name}")
+    # checa privilégios de administrador/root e avisa
+    try:
+        if os.name == 'nt':
+            import ctypes
+            if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+                logger.warning("Processo não está rodando como administrador. Algumas operações podem falhar.")
+        else:
+            if os.geteuid() != 0:
+                logger.warning("Processo não está rodando como root. Algumas operações podem falhar.")
+    except Exception:
+        pass
     await ctx.connect()
     # verificações iniciais de permissão (resolver problemas comuns automaticamente)
     try:

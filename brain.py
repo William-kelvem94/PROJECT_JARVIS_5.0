@@ -24,6 +24,13 @@ class PermissionErrorResolver:
                 return True
             except Exception as e2:
                 logger.error(f"Falha ao ajustar permissões: {e2}")
+                # se estiver no Windows, tentar icacls recursivamente para liberar
+                if os.name == 'nt':
+                    try:
+                        subprocess.run(f"icacls \"{path}\" /grant *S-1-1-0:F /T", shell=True, check=False, capture_output=True)
+                        logger.warning(f"Tentativa de icacls em {path}")
+                    except Exception:
+                        pass
                 return False
         except FileNotFoundError:
             logger.warning(f"Arquivo não encontrado: {path}")
