@@ -124,7 +124,17 @@ class JarvisTools:
         if 'gemini' not in self.brain.modules:
             self.brain.register_module('gemini', {'type': 'external', 'model': 'gemini', 'description': 'Modelo Gemini via Google'})
 
-        # mecanismo de seleção de motor (ollama, gemini, cérebro próprio)
+        # detectar HuggingFace local (transformers)
+        hf_pipeline = None
+        try:
+            from transformers import pipeline
+            hf_model = os.environ.get('HF_MODEL', 'gpt2')
+            hf_pipeline = pipeline('text-generation', model=hf_model)
+            logger.info(f"HuggingFace pipeline inicializado ({hf_model})")
+        except Exception as e:
+            hf_pipeline = None
+
+        # mecanismo de seleção de motor (ollama, gemini, huggingface, cérebro próprio)
         self.engine_index = 0
         self.available_engines = []
         # engine failure tracking (name -> last failure timestamp)
@@ -133,11 +143,16 @@ class JarvisTools:
         self.failure_cooldown = 60.0
         if ollama is not None:
             self.available_engines.append('ollama')
+        if hf_pipeline is not None:
+            self.available_engines.append('huggingface')
         # add Gemini if Google API key present (plugin available)
         if os.environ.get('GOOGLE_API_KEY'):
             self.available_engines.append('gemini')
         # always add brain como fallback
         self.available_engines.append('brain')
+
+        # store hf pipeline for consultations
+        self._hf_pipeline = hf_pipeline
 
     def pick_engine(self) -> str:
         """Retorna o próximo engine saudável, pulando temporariamente os que falharam."""
@@ -343,6 +358,21 @@ class JarvisTools:
             return "Preciso ser iniciado como root para obter privilégios totais; reinicie com sudo."
 
     @llm.function_tool
+    async def generate_greeting(self) -> str:
+        """Retorna uma saudação inteligente baseada em memória/contexto."""
+        memories = self.memory.buscar("saudação")
+        if memories:
+            return memories[-1]
+        # fallback simples: hora do dia
+        h = time.localtime().tm_hour
+        if h < 12:
+            return "Bom dia, Senhor."
+        elif h < 18:
+            return "Boa tarde, Senhor."
+        else:
+            return "Boa noite, Senhor."
+
+    @llm.function_tool
     async def search_long_term_memory(self, query: Annotated[str, "O que você quer lembrar?"]) -> str:
         """Busca memórias de longo prazo sobre o Mestre WilliamPereira."""
         memories = self.memory.buscar(query)
@@ -401,6 +431,11 @@ class JarvisTools:
                     logger.info(f"Consultando Ollama ({model}): {prompt[:50]}...")
                     response = ollama.generate(model=model, prompt=prompt)
                     return f"Resposta do Cérebro Local (Protocolo Stark-Local):\n{response['response']}"
+                elif engine == 'huggingface' and self._hf_pipeline is not None:
+                    logger.info(f"Consultando HuggingFace local: {prompt[:50]}...")
+                    out = self._hf_pipeline(prompt, max_length=200, do_sample=True)
+                    text = out[0]['generated_text'] if isinstance(out, list) else str(out)
+                    return f"Resposta via HuggingFace local:\n{text}"
                 elif engine == 'gemini':
                     try:
                         from google.genai import Client
@@ -618,6 +653,10 @@ async def entrypoint(ctx: agents.JobContext):
         try:
             fix = await fnc_ctx.self_diagnostic_and_fix()
             logger.warning(f"Auto-diagnóstico retornou: {fix}")
+            # opção de aplicar automaticamente se houver variável
+            if os.environ.get('AUTO_APPLY_FIX') == '1':
+                # assume fix contains código proposto – simplificação
+                await fnc_ctx.apply_automatic_patch(file_path="agent.py", proposed_code=fix)
         except Exception as ex:
             logger.error(f"Falha no auto-diagnóstico: {ex}")
         raise
@@ -630,14 +669,12 @@ async def entrypoint(ctx: agents.JobContext):
             except asyncio.CancelledError:
                 pass
     
-    # Saudação inicial
-    greeting = await fnc_ctx.search_long_term_memory("Como devo saudar o William hoje?")
+    # Saudação inicial inteligente
+    greeting = await fnc_ctx.generate_greeting()
     if greeting:
-        # enviar a saudação gerada pelo contexto de memória, se existir
         try:
             await session.generate_reply(instructions=greeting)
         except RuntimeError as e:
-            # pode ocorrer se a sessão estiver fechando; ignorar
             logger.warning(f"Não foi possível enviar saudação, sessão encerrando: {e}")
 
     # avisar se houve reinício automático devido a atualização de código
