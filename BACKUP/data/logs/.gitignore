@@ -1,5 +1,0 @@
-# Ignorar todos os arquivos de log
-*.log
-
-# Exceto o arquivo de exemplo (se houver)
-!.gitkeep
