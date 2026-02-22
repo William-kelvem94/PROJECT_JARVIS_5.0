@@ -1,0 +1,24 @@
+# JARVIS 5.0 - Professional .gitignore
+
+# Environment
+venv/
+env/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+data/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Project Specific
+JARVIS/venv/
