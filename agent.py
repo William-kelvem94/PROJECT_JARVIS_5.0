@@ -9,6 +9,48 @@ import random
 from typing import Annotated
 from dotenv import load_dotenv
 
+# -----------------------------------------------------------------------------
+# helper: ensure required Python packages are installed at runtime
+# -----------------------------------------------------------------------------
+def _ensure_package(pkg: str):
+    try:
+        __import__(pkg)
+    except ImportError:
+        logger = logging.getLogger("jarvis-agent")
+        logger.warning(f"Pacote '{pkg}' não encontrado; instalando...")
+        subprocess.run([sys.executable, "-m", "pip", "install", pkg], check=False)
+
+
+def ensure_all_dependencies():
+    """Verifica e instala automaticamente bibliotecas Python necessárias.
+
+    Chamado ao iniciar o agente. A lista contém não somente dependências
+    principais, mas também os extras opcionais usados pelos motores locais.
+    """
+    pkgs = [
+        "livekit-agents",
+        "livekit-plugins-openai",
+        "livekit-plugins-google",
+        "livekit-plugins-deepgram",
+        "livekit-plugins-silero",
+        "livekit-plugins-noise-cancellation",
+        "requests",
+        "python-dotenv",
+        "psutil",
+        "mem0ai",
+        "ollama",
+        # extras
+        "transformers",
+        "datasets",
+        "vllm",
+        "llama-cpp-python",
+    ]
+    for pkg in pkgs:
+        _ensure_package(pkg)
+
+# execute early so imports later succeed
+ensure_all_dependencies()
+
 # uncaught exceptions should be logged for telemetry
 
 def _handle_uncaught(exc_type, exc_value, exc_traceback):
@@ -856,6 +898,12 @@ async def entrypoint(ctx: agents.JobContext):
 
 # bloco de execução principal -- inicia agente via CLI
 if __name__ == "__main__":
+    # garantir dependências caso o usuário inicie pelo console ou playground
+    try:
+        ensure_all_dependencies()
+    except Exception:
+        pass
+
     # modo desenvolvimento: mostrar plano cerebral no log
     if 'dev' in sys.argv:
         try:

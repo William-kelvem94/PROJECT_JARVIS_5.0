@@ -24,6 +24,11 @@ O `package.json` na raiz contém scripts convenientes para trabalhar com a inter
 
 ## Configuração inicial (conforme vídeo do tutorial)
 
+Ao executar o agente pela primeira vez (seja `python agent.py`, `python agent.py dev`,
+ou em qualquer outro modo), ele tentará instalar automaticamente todas as
+dependências Python necessárias. Isso inclui não apenas os pacotes essenciais,
+mas também extras opcionais como motores locais.
+
 1. **Instalar Node.js** (https://nodejs.org/pt-br). Verifique com `node -v`.
 2. **Instalar pnpm**: `npm install -g pnpm` ou usar `npx pnpm` se não estiver globalmente instalado.
    - Verifique com `pnpm -v` ou `npx pnpm -v`.
