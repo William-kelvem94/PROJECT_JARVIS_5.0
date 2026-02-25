@@ -1,0 +1,1 @@
+Global configuration files for linting, formatting, and tooling. Extend or reference from frontend/backend as needed.
