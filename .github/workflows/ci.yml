@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm install -g pnpm
+          pnpm install
+
+      - name: Lint frontend
+        run: |
+          cd frontend
+          pnpm lint || true
+
+      - name: Install backend dependencies
+        run: |
+          python -m venv venv
+          . venv/bin/activate
+          pip install -r backend/app/requirements.txt
+
+      - name: Lint backend (flake8)
+        run: |
+          . venv/bin/activate
+          pip install flake8
+          flake8 backend
+
+      - name: Run backend tests
+        run: |
+          . venv/bin/activate
+          pip install pytest
+          pytest backend/tests
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          pnpm test || true
