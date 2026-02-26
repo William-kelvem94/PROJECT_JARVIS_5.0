@@ -27,6 +27,9 @@ export interface AppConfig {
   // LiveKit Cloud Sandbox configuration
   sandboxId?: string;
 
+  // optional toggle for vanta background (setting false will disable)
+  enableVanta?: boolean;
+  debug?: boolean;
   // allow arbitrary extra fields (used by audio visualizer settings)
   [key: string]: any;
 }
@@ -59,4 +62,6 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
 
   // LiveKit Cloud Sandbox configuration
   sandboxId: undefined,
+  enableVanta: process.env.NEXT_PUBLIC_ENABLE_VANTA !== 'false',
+  debug: process.env.NEXT_PUBLIC_LIVEKIT_DEBUG === 'true',
 };

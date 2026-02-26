@@ -21,6 +21,17 @@ Veja `integration-plan.md` para detalhes completos.
 ## Scripts
 Veja `scripts/` para helpers (`run-backend.sh`, `run-frontend.sh`, `run-all.sh`).
 
+### Monitoramento automático
+Para evitar lentidão e travamentos, rode o script de monitoramento:
+
+```powershell
+cd scripts
+./monitor-heartbeat.ps1
+```
+Esse script reinicia backend/frontend se travarem.
+
+O backend expõe `/health` para checagem.
+
 ## Deploy
 Use Dockerfiles em `docker/` e `docker/docker-compose.yml`.
 

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 # simple in-memory client stub used during development/tests
-import logging
+from loguru import logger
 import json
 import os
 
@@ -24,8 +24,6 @@ class MemoryClient:
 
 # Configuração básica
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # async wrapper around MemoryClient so agent code can await
 class AsyncMemoryClient:
@@ -50,7 +48,7 @@ class JarvisMemory:
 
     def salvar_conversa(self):
         """Simula o envio de mensagens para a memória do Mem0"""
-        print(f"\n🚀 Enviando novas memórias para: {self.user_name}...")
+        logger.info(f"\n🚀 Enviando novas memórias para: {self.user_name}...")
         
         messages = [
             {"role": "user", "content": "Ultimamente estou escutando muito Alee."},
@@ -60,11 +58,11 @@ class JarvisMemory:
 
         # O método add extrai os fatos e salva no banco de dados
         self.client.add(messages, user_id=self.user_name)
-        print("✅ Informações processadas e salvas com sucesso!")
+        logger.success("✅ Informações processadas e salvas com sucesso!")
 
     def buscar_memorias(self):
         """Recupera as informações que o Jarvis aprendeu"""
-        print(f"\n🧠 Jarvis, o que você lembra sobre {self.user_name}?")
+        logger.info(f"\n🧠 Jarvis, o que você lembra sobre {self.user_name}?")
         
         query = f"Quais são as preferências e gostos de {self.user_name}?"
         
@@ -96,6 +94,6 @@ if __name__ == "__main__":
 
     # Exibição organizada
     if historico:
-        print(json.dumps(historico, indent=2, ensure_ascii=False))
+        logger.debug(json.dumps(historico, indent=2, ensure_ascii=False))
     else:
-        print("❌ Nenhuma memória encontrada para este usuário.")
+        logger.warning("❌ Nenhuma memória encontrada para este usuário.")
