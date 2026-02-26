@@ -1,3 +1,14 @@
+## 6. Otimização e Monitoramento
+
+Adicione scripts de monitoramento para evitar travamentos:
+
+```powershell
+cd scripts
+./monitor-heartbeat.ps1
+```
+Este script reinicia backend/frontend se travarem.
+
+O backend expõe `/health` para checagem.
 # Instruções de Instalação e Execução
 
 Este guia leva você do zero até um Jarvis funcional em sua máquina Windows.

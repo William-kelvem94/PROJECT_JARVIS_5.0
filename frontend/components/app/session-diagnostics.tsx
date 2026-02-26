@@ -1,22 +1,53 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/shadcn/utils';
+import { log } from '@/lib/logger';
 
 interface SessionDiagnosticsProps {
   errors: string[];
   onClear: () => void;
 }
 
-export function SessionDiagnostics({ errors, onClear }: SessionDiagnosticsProps) {
-  if (errors.length === 0) {
+const MAX_ERRORS = 50;
+const ERROR_THROTTLE_MS = 1000;
+
+function limitErrors(errors: string[]) {
+  if (errors.length <= MAX_ERRORS) return errors;
+  return errors.slice(-MAX_ERRORS);
+}
+
+// ...existing code...
+export const SessionDiagnostics = React.memo(function SessionDiagnostics({ errors, onClear }: SessionDiagnosticsProps) {
+  const limited = limitErrors(errors);
+  const lastErrorRef = React.useRef<string | null>(null);
+  const lastLogTimeRef = React.useRef<number>(0);
+  React.useEffect(() => {
+    if (limited.length > 0) {
+      const now = Date.now();
+      if (lastErrorRef.current !== limited[limited.length - 1] || now - lastLogTimeRef.current > ERROR_THROTTLE_MS) {
+        log.error(limited[limited.length - 1]);
+        lastErrorRef.current = limited[limited.length - 1];
+        lastLogTimeRef.current = now;
+      }
+    }
+  }, [limited]);
+  if (limited.length === 0) {
     return null;
   }
 
-  const copyToClipboard = () => {
-    const text = errors.join('\n');
-    navigator.clipboard.writeText(text).catch(() => {
-      // ignore
-    });
+  const copyToClipboard = async () => {
+    const text = limited.join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // fallback to textarea hack when clipboard API fails
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
   };
 
   return (
@@ -30,8 +61,8 @@ export function SessionDiagnostics({ errors, onClear }: SessionDiagnosticsProps)
         <h2 className="text-xl font-bold">Session diagnostics</h2>
         <div className="text-left max-h-40 overflow-auto rounded bg-gray-900/50 p-2">
           <ul className="list-inside list-disc">
-            {errors.map((err, idx) => (
-              <li key={idx} className="break-words">
+            {limited.map((err, idx) => (
+              <li key={idx} className="wrap-break-word">
                 {err}
               </li>
             ))}
@@ -55,4 +86,4 @@ export function SessionDiagnostics({ errors, onClear }: SessionDiagnosticsProps)
       </div>
     </div>
   );
-}
+});

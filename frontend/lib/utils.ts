@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { TokenSource } from 'livekit-client';
 import { APP_CONFIG_DEFAULTS } from '@/app-config';
+import { log } from './logger';
 import type { AppConfig } from '@/app-config';
 
 export const CONFIG_ENDPOINT = process.env.NEXT_PUBLIC_APP_CONFIG_ENDPOINT;
@@ -57,12 +58,12 @@ export const getAppConfig = cache(async (headers: Headers): Promise<AppConfig> =
 
         return config;
       } else {
-        console.error(
+        log.error(
           `ERROR: querying config endpoint failed with status ${response.status}: ${response.statusText}`
         );
       }
     } catch (error) {
-      console.error('ERROR: getAppConfig() - lib/utils.ts', error);
+      log.error('ERROR: getAppConfig() - lib/utils.ts', error);
     }
   }
 
@@ -117,7 +118,7 @@ export function getSandboxTokenSource(appConfig: AppConfig) {
       });
       return await res.json();
     } catch (error) {
-      console.error('Error fetching connection details:', error);
+      log.error('Error fetching connection details:', error);
       throw new Error('Error fetching connection details!');
     }
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { log } from '@/lib/logger';
 import { Track } from 'livekit-client';
 import { Loader, MessageSquareTextIcon, Pin, SendHorizontal } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -79,7 +80,7 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
       await onSend(message);
       setMessage('');
     } catch (error) {
-      console.error(error);
+      log.error(error);
     } finally {
       setIsSending(false);
     }
@@ -292,7 +293,7 @@ export function AgentControlBar({
   const isEmpty = Object.values(visibleControls).every((value) => !value);
 
   if (isEmpty) {
-    console.warn('AgentControlBar: `visibleControls` contains only false values.');
+    log.warn('AgentControlBar: `visibleControls` contains only false values.');
     return null;
   }
 

@@ -5,7 +5,8 @@ import { useRoomContext } from '@livekit/components-react';
 export const useDebugMode = (options: { logLevel?: LogLevel; enabled?: boolean } = {}) => {
   const room = useRoomContext();
   const logLevel = options.logLevel ?? 'debug';
-  const enabled = options.enabled ?? true;
+  // default to false unless explicitly requested
+  const enabled = options.enabled ?? false;
 
   React.useEffect(() => {
     if (!enabled) {

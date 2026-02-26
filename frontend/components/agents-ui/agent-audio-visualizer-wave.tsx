@@ -1,6 +1,7 @@
 'use client';
 
 import { type ComponentProps, useMemo } from 'react';
+import { log } from '@/lib/logger';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { LocalAudioTrack, RemoteAudioTrack } from 'livekit-client';
 import { type AgentState, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
@@ -21,7 +22,7 @@ function hexToRgb(hexColor: string) {
       return color;
     }
   } catch (error) {
-    console.error(
+    log.error(
       `Invalid hex color '${hexColor}'.\nFalling back to default color '${DEFAULT_COLOR}'.`
     );
   }
@@ -192,10 +193,10 @@ function WaveShader({
           uColor: { type: '3fv', value: rgbColor },
         }}
         onError={(error) => {
-          console.error('Shader error:', error);
+          log.error('Shader error:', error);
         }}
         onWarning={(warning) => {
-          console.warn('Shader warning:', warning);
+          log.warn('Shader warning:', warning);
         }}
         style={{ width: '100%', height: '100%' }}
       />

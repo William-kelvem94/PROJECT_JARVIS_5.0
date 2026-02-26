@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { RoomEvent } from 'livekit-client';
+import { log } from '@/lib/logger';
 
 export function useAutoReconnect(session: any) {
     const { room, connect } = session;
@@ -9,25 +10,25 @@ export function useAutoReconnect(session: any) {
         if (!room) return;
 
         const handleDisconnected = async () => {
-            console.log('🔌 Conexão perdida. Tentando reconectar em 2s...');
+            log.info('🔌 Conexão perdida. Tentando reconectar em 2s...');
 
             if (timerRef.current) clearTimeout(timerRef.current);
 
             timerRef.current = setTimeout(async () => {
                 try {
-                    console.log('🔄 Iniciando reconexão automática...');
+                    log.info('🔄 Iniciando reconexão automática...');
                     // @ts-ignore: connect fn might not be in type def but exists in runtime
                     if (typeof connect === 'function') {
                         await connect();
-                        console.log('✅ Reconectado com sucesso!');
+                        log.info('✅ Reconectado com sucesso!');
                     } else {
-                        console.warn('⚠️ Função connect não encontrada na sessão.');
+                        log.warn('⚠️ Função connect não encontrada na sessão.');
                         location.reload(); // Fallback bravo: reload na página
                     }
                 } catch (error) {
-                    console.error('❌ Falha ao reconectar:', error);
+                    log.error('❌ Falha ao reconectar:', error);
                     // Se falhar, o evento de disconnect pode não disparar de novo se já estiver desconectado.
-                    // Em um sistema robusto, poderíamos ter um loop de retry aqui, 
+                    // Em um sistema robusto, poderíamos ter um loop de retry aqui,
                     // mas o useSession muitas vezes reseta o estado.
                     // Por enquanto, uma tentativa simples resolve resets do backend.
                 }
