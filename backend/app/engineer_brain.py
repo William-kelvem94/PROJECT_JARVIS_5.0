@@ -9,7 +9,7 @@ class EngineerBrain:
     Usa OpenRouter para tarefas complexas de codificação e arquitetura.
     """
     
-    def __init__(self, model="google/gemini-2.0-flash-exp:free"):
+    def __init__(self, model="openrouter/free"):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
         self.model = model

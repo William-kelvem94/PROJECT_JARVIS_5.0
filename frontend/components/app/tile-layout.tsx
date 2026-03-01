@@ -10,7 +10,10 @@ import {
   useTracks,
   useVoiceAssistant,
 } from '@livekit/components-react';
+import type { AppConfig } from '@/app-config';
 import { cn } from '@/lib/shadcn/utils';
+import { ScreenshotGallery } from './screenshot-gallery';
+import { VisionPiP } from './vision-pip';
 
 const MotionContainer = motion.create('div');
 
@@ -72,9 +75,10 @@ export function useLocalTrackRef(source: Track.Source) {
 
 interface TileLayoutProps {
   chatOpen: boolean;
+  appConfig?: AppConfig;
 }
 
-export function TileLayout({ chatOpen }: TileLayoutProps) {
+export function TileLayout({ chatOpen, appConfig }: TileLayoutProps) {
   const {
     state: agentState,
     audioTrack: agentAudioTrack,
@@ -95,6 +99,11 @@ export function TileLayout({ chatOpen }: TileLayoutProps) {
   return (
     <div className="pointer-events-none fixed inset-x-0 top-8 bottom-32 z-50 md:top-12 md:bottom-40">
       <div className="relative mx-auto h-full max-w-2xl px-4 md:px-0">
+        <ScreenshotGallery
+          apiUrl={appConfig?.jarvisApiUrl}
+          className="absolute -right-32 top-0 hidden xl:block"
+        />
+        <VisionPiP apiUrl={appConfig?.jarvisApiUrl} />
         <div className={cn(classNames.grid)}>
           {/* Agent */}
           <div

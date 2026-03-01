@@ -53,10 +53,10 @@ export const VantaOrb = ({ isConnected, color, vantaRef }: { isConnected: boolea
                             minWidth: 200.0,
                             scale: 1.0,
                             scaleMobile: 1.0,
-                            color: color,
+                            color: 0x1fd5f9, // Jarvis Cyan
                             backgroundColor: 0x000000,
-                            spacing: 0.0,
-                            chaos: 3.0,
+                            spacing: 1.5, // Fios mais densos e luxuosos
+                            chaos: 4.0, // Mais movimento inicial
                         });
                         vantaRef.current = vantaEffect;
                     }
@@ -75,7 +75,6 @@ export const VantaOrb = ({ isConnected, color, vantaRef }: { isConnected: boolea
             setup();
         }
 
-        // Cleanup para evitar Memory Leaks (Ghost processes WebGL)
         return () => {
             if (initTimer) clearTimeout(initTimer);
             if (vantaEffect && typeof vantaEffect.destroy === 'function') {
@@ -94,9 +93,9 @@ export const VantaOrb = ({ isConnected, color, vantaRef }: { isConnected: boolea
     return (
         <div
             ref={localRef}
-            className="w-[1000px] h-[1000px]"
+            className="w-[800px] h-[800px]" // Aumentado para 800px para mais detalhe
             style={{
-                transform: 'scale(0.5) translateY(-15%)',
+                transform: 'scale(1.0) translateY(-5%)',
                 transformOrigin: 'center center',
             }}
         />
@@ -117,13 +116,21 @@ export const VantaController = ({ vantaRef, isConnected }: { vantaRef: React.Mut
         let frame = 0;
 
         const updateChaos = (timestamp: number) => {
-            // Updates throttled to 20Hz (50ms)
-            if (timestamp - lastUpdate >= 50) {
+            // Se a página não estiver visível, não gastar recursos
+            if (document.hidden) {
+                frame = requestAnimationFrame(updateChaos);
+                return;
+            }
+
+            // Updates ultra-throttled to 10Hz (100ms) - Ultra leve
+            if (timestamp - lastUpdate >= 100) {
                 lastUpdate = timestamp;
                 const baseChaos = 3.0;
-                const voiceChaos = (volume || 0) * 7.0;
+                const voiceChaos = (volume || 0) * 4.0; // Reduzi para 4 para ser mais estável
                 const finalChaos = baseChaos + voiceChaos;
-                if (Math.abs(effect.options.chaos - finalChaos) > 0.05) {
+
+                // Só atualiza se for uma mudança realmente perceptível (> 0.4)
+                if (Math.abs(effect.options.chaos - finalChaos) > 0.4) {
                     effect.setOptions({ chaos: finalChaos });
                 }
             }

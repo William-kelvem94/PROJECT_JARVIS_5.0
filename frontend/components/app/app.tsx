@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TokenSource } from 'livekit-client';
 import { useSession } from '@livekit/components-react';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
@@ -14,6 +14,7 @@ import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { useDebugMode } from '@/hooks/useDebug';
 import { getSandboxTokenSource } from '@/lib/utils';
 import { useAutoReconnect } from '@/hooks/useAutoReconnect';
+import { log } from '@/lib/logger';
 
 const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
 // allow enabling livekit debug via env variable (true/1)
@@ -31,11 +32,46 @@ interface AppProps {
 }
 
 export function App({ appConfig }: AppProps) {
+  const [participantName, setParticipantName] = useState<string>('user');
+
   const tokenSource = useMemo(() => {
-    return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
-      ? getSandboxTokenSource(appConfig)
-      : TokenSource.endpoint('/api/connection-details');
-  }, [appConfig]);
+    if (typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string') {
+      return getSandboxTokenSource(appConfig);
+    }
+
+    return TokenSource.custom(async () => {
+      const url = new URL('/api/connection-details', window.location.origin);
+      const roomConfig = appConfig.agentName
+        ? {
+          agents: [{ agent_name: appConfig.agentName }],
+        }
+        : undefined;
+
+      try {
+        const res = await fetch(url.toString(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            room_config: roomConfig,
+            participant_name: participantName,
+          }),
+        });
+
+        const text = await res.text();
+        try {
+          return JSON.parse(text);
+        } catch (parseError) {
+          console.error('[TOKEN_FETCH] Failed to parse JSON. Raw response:', text);
+          throw new Error('Formato de resposta inválido da API de conexão.');
+        }
+      } catch (error: any) {
+        log.error('Error fetching connection details:', error);
+        throw error;
+      }
+    });
+  }, [appConfig, participantName]);
 
   const session = useSession(
     tokenSource,
@@ -49,7 +85,7 @@ export function App({ appConfig }: AppProps) {
     <AgentSessionProvider session={session}>
       <AppSetup />
       <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} />
+        <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
       </main>
       <StartAudioButton label="Start Audio" />
       <Toaster

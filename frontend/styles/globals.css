@@ -8,6 +8,8 @@
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  --jarvis-cyan: #1da3b9;
+  --jarvis-glow: rgba(29, 163, 185, 0.5);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -71,6 +73,8 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.439 0 0);
+  --jarvis-cyan: #1da3b9;
+  --jarvis-glow: rgba(29, 163, 185, 0.4);
 }
 
 @theme inline {
@@ -118,7 +122,41 @@
   * {
     @apply border-foreground/20 outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-hidden;
+    position: relative;
+  }
+
+  /* Efeito de Scanlines Futuristas Otimizado */
+  body::before {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
+    z-index: 1000;
+    background-size: 100% 4px;
+    pointer-events: none;
+    opacity: 0.2;
+  }
+
+  /* Painel Glassmorphism Cyber Otimizado */
+  .cyber-glass {
+    @apply backdrop-blur-sm bg-black/50 border-white/10 border shadow-md;
+    box-shadow: 0 0 10px rgba(29, 163, 185, 0.03);
+  }
+
+  .jarvis-cyan-text {
+    color: var(--jarvis-cyan);
+    text-shadow: 0 0 10px var(--jarvis-glow);
+  }
+
+  .jarvis-border-glow {
+    border-color: var(--jarvis-cyan);
+    box-shadow: 0 0 15px var(--jarvis-glow);
   }
 }

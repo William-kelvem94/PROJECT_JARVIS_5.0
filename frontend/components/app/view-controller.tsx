@@ -30,9 +30,10 @@ const VIEW_MOTION_PROPS = {
 
 interface ViewControllerProps {
   appConfig: AppConfig;
+  onParticipantNameChange?: (name: string) => void;
 }
 
-export function ViewController({ appConfig }: ViewControllerProps) {
+export function ViewController({ appConfig, onParticipantNameChange }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   const [isActive, setIsActive] = useState(false);
 
@@ -42,6 +43,17 @@ export function ViewController({ appConfig }: ViewControllerProps) {
   }, [isConnected]);
 
   const handleStart = async (opts?: any) => {
+    // Extract user_name from metadata if provided
+    if (opts?.metadata && onParticipantNameChange) {
+      try {
+        const metadata = JSON.parse(opts.metadata);
+        if (metadata.user_name) {
+          onParticipantNameChange(metadata.user_name);
+        }
+      } catch (e) {
+        console.error('Erro ao processar metadata:', e);
+      }
+    }
     setIsActive(true);
     await start(opts);
   };
