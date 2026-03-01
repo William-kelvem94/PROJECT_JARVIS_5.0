@@ -13,7 +13,3 @@ env/
 
 # IDE
 .vscode/
-
-# Project Data
-backend/data/
-frontend/.env.local
