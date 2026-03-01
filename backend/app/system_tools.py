@@ -1,132 +1,179 @@
-import subprocess
 import os
+import subprocess
 import psutil
-import platform
-from livekit.agents import llm
+import json
 from loguru import logger
-from .engineer_brain import brain
-from duckduckgo_search import DDGS
+from livekit import agents
+from typing import Optional
+import datetime
 
-class SystemTools(llm.FunctionSet):
+class SystemTools:
     """
-    Ferramentas de sistema para o JARVIS controlar o hardware e o ambiente do usuário.
+    Ferramentas de Sistema para o JARVIS.
+    Permite ao agente interagir com o computador, ler arquivos e executar comandos.
     """
 
-    @llm.ai_callable(description="Executa um comando no terminal (PowerShell) do sistema.")
-    def run_terminal_command(self, command: str):
-        logger.info(f"JARVIS executando comando: {command}")
-        try:
-            result = subprocess.run(["powershell", "-Command", command], capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                return f"Comando executado com sucesso:\n{result.stdout}"
-            else:
-                return f"Erro ao executar comando:\n{result.stderr}"
-        except Exception as e:
-            return f"Falha catastrófica ao rodar o comando: {str(e)}"
+    def __init__(self, room: Optional[agents.Room] = None):
+        self._room = room
+        from .utils.log_manager import log_manager
+        from .utils.workflow_engine import workflow_engine
+        self._log_manager = log_manager
+        self._workflow_engine = workflow_engine
 
-    @llm.ai_callable(description="Retorna o status atual do hardware (CPU, RAM, Bateria).")
-    def get_system_stats(self):
-        logger.info("JARVIS coletando estatísticas do sistema.")
-        cpu_pct = psutil.cpu_percent(interval=1)
-        ram = psutil.virtual_memory()
-        battery = psutil.sensors_battery()
+    async def _log_activity(self, title: str, detail: str, log_type: str = "info", status: str = "success"):
+        """Envia o log para o frontend via LiveKit e salva no disco."""
+        entry = {
+            "type": "activity_log",
+            "title": title,
+            "detail": detail,
+            "log_type": log_type,
+            "status": status,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
         
-        info = (
-            f"Status do Sistema:\n"
-            f"- CPU: {cpu_pct}%\n"
-            f"- RAM: {ram.percent}% ({ram.used // (1024**2)}MB usados de {ram.total // (1024**2)}MB)\n"
-        )
-        if battery:
-            info += f"- Bateria: {battery.percent}% ({'Carregando' if battery.power_plugged else 'Descarregando'})\n"
+        # 1. Salva no disco (Persistência)
+        self._log_manager.save_log(entry)
         
-        info += f"- SO: {platform.system()} {platform.release()}"
-        return info
+        # 2. Envia para o frontend (Real-time)
+        if self._room and self._room.connection_state == "connected":
+            try:
+                await self._room.local_participant.publish_data(
+                    json.dumps(entry),
+                    topic="activity"
+                )
+            except Exception as e:
+                logger.error(f"Falha ao publicar log de atividade: {e}")
 
-    @llm.ai_callable(description="Lista os arquivos em uma pasta específica.")
-    def list_files(self, path: str = "."):
-        logger.info(f"JARVIS listando arquivos em: {path}")
+    @agents.llm.function_tool(description="Lista a estrutura de arquivos do projeto ou de um diretório específico.")
+    def project_structure(self, path: str = "."):
         try:
-            files = os.listdir(path)
-            return f"Arquivos em {path}:\n" + "\n".join(files)
+            items = os.listdir(path)
+            structure = []
+            for item in items:
+                full_path = os.path.join(path, item)
+                if os.path.isdir(full_path):
+                    structure.append(f"📁 {item}/")
+                else:
+                    structure.append(f"📄 {item}")
+            structure_str = "\n".join(structure)
+            asyncio.create_task(self._log_activity("Listar Projeto", f"Caminho: {path}", "info"))
+            return structure_str
         except Exception as e:
-            return f"Não consegui ler a pasta: {str(e)}"
+            logger.error(f"Erro ao listar diretório: {e}")
+            return f"Erro: {str(e)}"
 
-    @llm.ai_callable(description="Lê o conteúdo de um arquivo de texto.")
-    def read_file_content(self, file_path: str):
-        logger.info(f"JARVIS lendo arquivo: {file_path}")
+    @agents.llm.function_tool(description="Lê o conteúdo de um arquivo específico.")
+    def read_file(self, file_path: str):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read(2000) # Aumentado para 2000 para dar mais contexto ao engenheiro
-                return f"Conteúdo de {file_path}:\n{content}"
+                content = f.read()
+                asyncio.create_task(self._log_activity("Ler Arquivo", f"Arquivo: {file_path}", "edit"))
+                return content
         except Exception as e:
+            logger.error(f"Erro ao ler arquivo {file_path}: {e}")
             return f"Erro ao ler arquivo: {str(e)}"
 
-    @llm.ai_callable(description="Aplica uma alteração de código ou escreve um arquivo novo.")
-    def apply_code_change(self, file_path: str, content: str, mode: str = "w"):
-        """
-        mode 'w' para sobrescrever, 'a' para anexar.
-        """
-        logger.info(f"JARVIS alterando arquivo: {file_path} (Modo: {mode})")
+    @agents.llm.function_tool(description="Escreve ou modifica o conteúdo de um arquivo.")
+    def write_file(self, file_path: str, content: str):
         try:
-            # Garantir que o diretório existe
-            os.makedirs(os.path.dirname(file_path), exist_ok=True) if os.path.dirname(file_path) else None
-            with open(file_path, mode, encoding="utf-8") as f:
+            # Garantir que o diretório pai existe
+            os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            return f"Arquivo {file_path} atualizado com sucesso."
+            logger.success(f"Arquivo {file_path} escrito com sucesso.")
+            asyncio.create_task(self._log_activity("Escrever Arquivo", f"Arquivo: {file_path}", "edit"))
+            return f"Arquivo {file_path} atualizado."
         except Exception as e:
-            return f"Falha ao escrever no arquivo: {str(e)}"
+            logger.error(f"Erro ao escrever no arquivo {file_path}: {e}")
+            return f"Erro ao escrever: {str(e)}"
 
-    @llm.ai_callable(description="Executa operações Git (status, add, commit, push).")
-    def git_operation(self, operation: str, message: str = ""):
-        logger.info(f"JARVIS operando Git: {operation}")
-        cmd = f"git {operation}"
-        if operation == "commit" and message:
-            cmd = f'git commit -m "{message}"'
-        
+    @agents.llm.function_tool(description="Executa um comando no terminal do sistema OPERACIONAL WINDOWS.")
+    def execute_command(self, command: str):
         try:
-            result = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True)
-            return f"Git Output:\n{result.stdout}\n{result.stderr}"
+            logger.info(f"Executando comando: {command}")
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+            output = result.stdout if result.stdout else result.stderr
+            asyncio.create_task(self._log_activity("Terminal", f"Comando: {command}", "cmd", "success" if result.returncode == 0 else "error"))
+            return f"Saída do comando:\n{output}"
+        except subprocess.TimeoutExpired:
+            return "Erro: O comando demorou muito para responder (Timeout)."
         except Exception as e:
-            return f"Erro no Git: {str(e)}"
+            logger.error(f"Erro ao executar comando: {e}")
+            return f"Erro: {str(e)}"
 
-    @llm.ai_callable(description="Consulta o Núcleo de Engenharia (OpenRouter) para resolver problemas complexos de código.")
-    async def think_with_engineer_brain(self, task: str, file_context: str = ""):
-        logger.info(f"JARVIS acionando raciocínio profundo para: {task}")
-        # Se não houver contexto, tentamos ler os arquivos principais
-        if not file_context:
-            file_context = "Estrutura do projeto:\n" + self.list_files(".")
-            
-        reply = await brain.reason(task, file_context)
-        return f"💡 Resposta do Núcleo de Engenharia:\n{reply}"
-
-    @llm.ai_callable(description="Mapeia toda a estrutura de pastas do projeto JARVIS.")
-    def project_structure(self):
-        logger.info("JARVIS mapeando estrutura do projeto.")
-        structure = []
-        for root, dirs, files in os.walk("."):
-            # Ignorar pastas irrelevantes
-            if any(x in root for x in ["node_modules", ".git", "__pycache__", ".venv", "venv", ".next"]):
-                continue
-            level = root.replace(".", "").count(os.sep)
-            indent = " " * 4 * level
-            structure.append(f"{indent}{os.path.basename(root)}/")
-            sub_indent = " " * 4 * (level + 1)
-            for f in files:
-                structure.append(f"{sub_indent}{f}")
-        
-        return "Estrutura do Projeto:\n" + "\n".join(structure)
-
-    @llm.ai_callable(description="Pesquisa na internet usando DuckDuckGo para obter informações atualizadas.")
-    def web_search(self, query: str):
-        logger.info(f"JARVIS pesquisando na web: {query}")
+    @agents.llm.function_tool(description="Obtém estatísticas de hardware do sistema (CPU, RAM, Bateria).")
+    def get_system_stats(self):
         try:
-            results = []
-            with DDGS() as ddgs:
-                for r in ddgs.text(query, max_results=5):
-                    results.append(f"Título: {r['title']}\nLink: {r['href']}\nResumo: {r['body']}\n")
+            cpu = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory().percent
+            battery = psutil.sensors_battery()
+            batt_pct = battery.percent if battery else "N/A"
             
-            if not results:
-                return "Não encontrei resultados relevantes na internet."
-            return "\n---\n".join(results)
+            stats = {
+                "cpu_usage_percent": cpu,
+                "ram_usage_percent": ram,
+                "battery_percent": batt_pct,
+                "os": os.name
+            }
+            return json.dumps(stats, indent=2)
         except Exception as e:
-            return f"Erro ao pesquisar na web: {str(e)}"
+            logger.error(f"Erro ao obter estatísticas: {e}")
+            return f"Erro: {str(e)}"
+
+    @agents.llm.function_tool(description="Realiza operações básicas de Git (status, commit, push - use com cautela).")
+    def git_operation(self, action: str, message: str = ""):
+        if action == "status":
+            return self.execute_command("git status")
+        elif action == "commit":
+            if not message: return "Erro: Mensagem de commit necessária."
+            return self.execute_command(f'git add . && git commit -m "{message}"')
+        elif action == "push":
+            asyncio.create_task(self._log_activity("Git Push", "Enviando alterações...", "git"))
+            return self.execute_command("git push")
+        else:
+            return "Ação Git não suportada."
+
+    @agents.llm.function_tool(description="Registra uma nova macro (sequência de tarefas) para execução futura.")
+    def register_macro(self, name: str, description: str, steps: str):
+        """
+        Steps deve ser uma string JSON contendo uma lista de comandos ou ferramentas.
+        """
+        try:
+            steps_list = json.loads(steps)
+            if self._workflow_engine.register_macro(name, steps_list):
+                asyncio.create_task(self._log_activity("Macro Registrada", f"Nome: {name} - {description}", "info"))
+                return f"Macro '{name}' salva e pronta para o combate."
+            return "Erro ao salvar macro."
+        except Exception as e:
+            return f"Erro no formato das ferramentas: {str(e)}"
+
+    @agents.llm.function_tool(description="Executa uma macro previamente registrada pelo nome.")
+    async def run_macro(self, name: str):
+        macro = self._workflow_engine.get_macro(name)
+        if not macro:
+            return f"Erro: Macro '{name}' não encontrada."
+        
+        asyncio.create_task(self._log_activity("Executando Macro", f"Iniciando sequência: {name}", "info"))
+        
+        results = []
+        for step in macro:
+            # Por simplicidade inicial, as macros executam comandos de terminal
+            if isinstance(step, str):
+                res = self.execute_command(step)
+                results.append(f"Step: {step} -> {res[:50]}...")
+            elif isinstance(step, dict) and "cmd" in step:
+                res = self.execute_command(step["cmd"])
+                results.append(f"Step: {step['cmd']} -> {res[:50]}...")
+        
+
+    @agents.llm.function_tool(description="Configura um monitoramento (watchdog) para um arquivo ou condição específica.")
+    def set_watchdog(self, name: str, type: str, target: str):
+        """
+        type: 'file' (monitora alteração de data de modificação)
+        target: caminho do arquivo
+        """
+        if self._workflow_engine.add_watchdog(name, {"type": type, "target": target}):
+            asyncio.create_task(self._log_activity("Watchdog Ativado", f"Monitorando {type}: {target}", "info"))
+            return f"Watchdog '{name}' configurado. Vou te avisar se algo mudar."
+        return "Erro ao configurar watchdog."
+

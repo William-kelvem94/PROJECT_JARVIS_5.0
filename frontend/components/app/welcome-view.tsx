@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 function WelcomeImage() {
@@ -20,7 +21,7 @@ function WelcomeImage() {
 
 interface WelcomeViewProps {
   startButtonText: string;
-  onStartCall: () => void;
+  onStartCall: (opts?: any) => void;
 }
 
 export const WelcomeView = ({
@@ -28,36 +29,40 @@ export const WelcomeView = ({
   onStartCall,
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
+  const [name, setName] = useState('');
+
   return (
     <div ref={ref}>
       <section className="bg-background flex flex-col items-center justify-center text-center">
         <WelcomeImage />
 
         <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Chat live with your voice AI agent
+          Converse em tempo real com seu assistente Jarvis
         </p>
 
-        <Button
-          size="lg"
-          onClick={onStartCall}
-          className="mt-6 w-64 rounded-full font-mono text-xs font-bold tracking-wider uppercase"
-        >
-          {startButtonText}
-        </Button>
+        <div className="mt-8 flex flex-col gap-4 w-64">
+          <input
+            type="text"
+            placeholder="Seu nome (ex: Pedro)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1da3b9]/50 transition-colors text-center"
+          />
+
+          <Button
+            size="lg"
+            disabled={!name.trim()}
+            onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
+            className="w-full rounded-full font-mono text-xs font-bold tracking-wider uppercase bg-[#1da3b9] hover:bg-[#1da3b9]/80 shadow-[0_0_15px_rgba(29,163,185,0.3)] transition-all"
+          >
+            {startButtonText}
+          </Button>
+        </div>
       </section>
 
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
-        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Need help getting set up? Check out the{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents/start/voice-ai/"
-            className="underline"
-          >
-            Voice AI quickstart
-          </a>
-          .
+      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center pointer-events-none">
+        <p className="text-muted-foreground max-w-prose pt-1 text-[10px] uppercase tracking-widest font-normal opacity-30">
+          Jarvis OS v5.0 | Neural Link Ready
         </p>
       </div>
     </div>

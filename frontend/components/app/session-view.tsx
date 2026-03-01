@@ -12,7 +12,7 @@ import {
 } from '@livekit/components-react';
 import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { SessionDiagnostics } from './session-diagnostics';
-import { Track } from 'livekit-client';
+import { Track, RoomEvent } from 'livekit-client';
 import type { AppConfig } from '@/app-config';
 import {
   AgentControlBar,
@@ -22,6 +22,8 @@ import { TileLayout } from '@/components/app/tile-layout';
 import { cn } from '@/lib/shadcn/utils';
 import { Shimmer } from '../ai-elements/shimmer';
 import dynamic from 'next/dynamic';
+import { EngineeringHUD } from './engineering-hud';
+import { ActiveConsole } from './active-console';
 
 const VantaOrb = dynamic(() => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaOrb })), { ssr: false });
 const VantaController = dynamic(() => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaController })), { ssr: false });
@@ -110,6 +112,7 @@ export const SessionView = ({
   const { isConnected } = session;
   const { messages } = useSessionMessages(session);
   const [chatOpen, setChatOpen] = useState(false);
+  const [isReasoning, setIsReasoning] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const vantaEffectRef = useRef<any>(null);
 
@@ -125,8 +128,11 @@ export const SessionView = ({
   const PERSONA_COLORS = {
     alice: 0xff69b4,
     jarvis: 0x1da3b9,
+    reasoning: 0x8a2be2, // BlueViolet
   };
-  const currentColor = PERSONA_COLORS[agentPersona as keyof typeof PERSONA_COLORS] || PERSONA_COLORS.jarvis;
+  const currentColor = isReasoning
+    ? PERSONA_COLORS.reasoning
+    : (PERSONA_COLORS[agentPersona as keyof typeof PERSONA_COLORS] || PERSONA_COLORS.jarvis);
 
 
   const controls: AgentControlBarControls = {
@@ -136,6 +142,27 @@ export const SessionView = ({
     camera: appConfig.supportsVideoInput,
     screenShare: appConfig.supportsScreenShare,
   };
+
+  useEffect(() => {
+    if (!session.room) return;
+
+    const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
+      if (topic === 'reasoning') {
+        try {
+          const decoder = new TextDecoder();
+          const json = JSON.parse(decoder.decode(payload));
+          if (json.type === 'reasoning_state') {
+            setIsReasoning(json.active);
+          }
+        } catch (e) { console.error(e); }
+      }
+    };
+
+    session.room.on(RoomEvent.DataReceived, handleData);
+    return () => {
+      session.room?.off(RoomEvent.DataReceived, handleData);
+    };
+  }, [session.room]);
 
   useEffect(() => {
     const lastMessage = messages.at(-1);
@@ -158,8 +185,22 @@ export const SessionView = ({
     return (
       <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-black" {...props}>
         {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-zinc-800 text-xs italic">Modo Economia de Energia Ativo</div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 p-10 text-center">
+          <div className="size-20 rounded-full border-2 border-dashed border-[#1da3b9]/20 flex items-center justify-center animate-pulse">
+            <div className="size-3 rounded-full bg-[#1da3b9]/40" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-[#1da3b9] font-mono text-sm uppercase tracking-widest">Sincronização Pendente</h3>
+            <p className="text-white/40 text-[10px] max-w-xs mx-auto leading-relaxed">
+              O Agente Jarvis ainda não ingressou na sala de comando. Verifique se o worker do backend está ativo.
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-[#1da3b9]/10 border border-[#1da3b9]/40 rounded-full text-[#1da3b9] text-[10px] font-mono hover:bg-[#1da3b9]/20 transition-all hover:scale-105 active:scale-95"
+          >
+            RECONECTAR JARVIS
+          </button>
         </div>
         <div className="relative mx-auto max-w-2xl bg-transparent pb-3 md:pb-12">
           <AgentControlBar
@@ -204,11 +245,61 @@ export const SessionView = ({
           </AnimatePresence>
         </div>
 
+        {isReasoning && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            className="absolute z-20 top-[65%] flex flex-col items-center gap-4"
+          >
+            <div className="relative">
+              {/* Pulsing Aura */}
+              <div className="absolute inset-0 bg-violet-500/20 blur-2xl rounded-full animate-pulse" />
+
+              <div className="relative px-6 py-2 bg-black/40 border border-violet-500/50 rounded-full backdrop-blur-xl shadow-[0_0_20px_rgba(138,43,226,0.2)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ height: [4, 12, 4] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                        className="w-0.5 bg-violet-400 rounded-full"
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[11px] font-bold text-violet-100 tracking-[0.4em] uppercase">
+                    Neural Processing
+                  </span>
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        animate={{ height: [4, 12, 4] }}
+                        transition={{ duration: 1, repeat: Infinity, delay: (2 - i) * 0.2 }}
+                        className="w-0.5 bg-violet-400 rounded-full"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[9px] text-violet-400/60 font-mono tracking-widest uppercase animate-pulse">
+              Jarvis thinking deeper...
+            </div>
+          </motion.div>
+        )}
+
         {isConnected && (
           <div className="relative z-10">
-            <TileLayout chatOpen={chatOpen} />
+            <TileLayout chatOpen={chatOpen} appConfig={appConfig} />
           </div>
         )}
+
+        {/* Engineering HUD e Active Console aparecem assim que o worker conecta, independente da IA */}
+        <EngineeringHUD />
+        <ActiveConsole />
       </div>
 
       <div className="pointer-events-none flex-1" />

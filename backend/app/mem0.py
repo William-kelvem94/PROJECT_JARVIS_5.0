@@ -1,26 +1,56 @@
 from dotenv import load_dotenv
-# simple in-memory client stub used during development/tests
 from loguru import logger
 import json
 import os
 
-# stub MemoryClient that mimics interface of external mem0 package
+# simple in-memory client stub used during development/tests
+# simple in-memory client with file persistence
+
 class MemoryClient:
     def __init__(self):
-        self.store = {}
+        # Caminho para persistência de dados
+        self.data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "memories.json")
+        self.store = self._load()
+
+    def _load(self):
+        if os.path.exists(self.data_path):
+            try:
+                with open(self.data_path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.error(f"Erro ao carregar memórias: {e}")
+        return {}
+
+    def _save(self):
+        try:
+            os.makedirs(os.path.dirname(self.data_path), exist_ok=True)
+            with open(self.data_path, "w", encoding="utf-8") as f:
+                json.dump(self.store, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Erro ao salvar memórias: {e}")
 
     def add(self, messages, user_id=None):
         if user_id not in self.store:
             self.store[user_id] = []
-        self.store[user_id].extend(messages)
+        
+        # Converte mensagens para um formato simplificado de "fatos"
+        for msg in messages:
+            if isinstance(msg, dict) and "content" in msg:
+                import datetime
+                self.store[user_id].append({
+                    "memory": msg["content"],
+                    "updated_at": datetime.datetime.now().isoformat()
+                })
+        
+        self._save()
         return {"status": "ok"}
 
     def get_all(self, user_id=None):
         return self.store.get(user_id, [])
 
     def search(self, query, filters=None):
-        # naive search: return all memories
-        return {"results": self.store.get(filters.get("user_id"), [])}  if filters else []
+        user_id = filters.get("user_id") if filters else None
+        return {"results": self.store.get(user_id, [])} if user_id else []
 
 # Configuração básica
 load_dotenv()
@@ -41,9 +71,8 @@ class AsyncMemoryClient:
 
 
 class JarvisMemory:
-    def __init__(self, user_name="PedroLucas"):
+    def __init__(self, user_name="Chefe"):
         self.user_name = user_name
-        # O MemoryClient busca a MEM0_API_KEY automaticamente do seu .env
         self.client = MemoryClient()
 
     def salvar_conversa(self):
@@ -56,7 +85,6 @@ class JarvisMemory:
             {"role": "user", "content": "Minha favorita é Tempo do ouro e minha cor preferida é Preto."},
         ]
 
-        # O método add extrai os fatos e salva no banco de dados
         self.client.add(messages, user_id=self.user_name)
         logger.success("✅ Informações processadas e salvas com sucesso!")
 
@@ -65,11 +93,8 @@ class JarvisMemory:
         logger.info(f"\n🧠 Jarvis, o que você lembra sobre {self.user_name}?")
         
         query = f"Quais são as preferências e gostos de {self.user_name}?"
-        
-        # Na v2, usamos o dicionário filters
         response = self.client.search(query, filters={"user_id": self.user_name})
 
-        # Tratamento da estrutura de resposta (lista ou dicionário)
         results = response["results"] if isinstance(response, dict) and "results" in response else response
 
         memories_list = []
@@ -84,15 +109,9 @@ class JarvisMemory:
 
 # --- EXECUÇÃO ---
 if __name__ == "__main__":
-    brain = JarvisMemory("PedroLucas")
-
-    # 1. Primeiro enviamos a informação (Comente essa linha se já enviou uma vez e quer só testar a busca)
+    brain = JarvisMemory("Chefe")
     brain.salvar_conversa()
-
-    # 2. Depois buscamos o que foi aprendido
     historico = brain.buscar_memorias()
-
-    # Exibição organizada
     if historico:
         logger.debug(json.dumps(historico, indent=2, ensure_ascii=False))
     else:

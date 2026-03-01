@@ -14,52 +14,67 @@ const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
-// don't cache the results
-export const revalidate = 0;
+// Forçar execução dinâmica para evitar cache de erros HTML do Next.js 15
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    if (LIVEKIT_URL === undefined) {
-      throw new Error('LIVEKIT_URL is not defined');
-    }
-    if (API_KEY === undefined) {
-      throw new Error('LIVEKIT_API_KEY is not defined');
-    }
-    if (API_SECRET === undefined) {
-      throw new Error('LIVEKIT_API_SECRET is not defined');
+    // 1. Validate Environment
+    const missingKeys = [];
+    if (!LIVEKIT_URL) missingKeys.push('LIVEKIT_URL');
+    if (!API_KEY) missingKeys.push('LIVEKIT_API_KEY');
+    if (!API_SECRET) missingKeys.push('LIVEKIT_API_SECRET');
+
+    if (missingKeys.length > 0) {
+      console.error(`[API] Missing environment variables: ${missingKeys.join(', ')}`);
+      return NextResponse.json(
+        { error: `Configuração incompleta: ${missingKeys.join(', ')}` },
+        { status: 500 }
+      );
     }
 
-    // Parse agent configuration from request body
-    const body = await req.json();
+    // 2. Parse Body
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      body = {};
+    }
+
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const participantName: string = body?.participant_name || 'Chefe';
 
-    // Generate participant token
-    const participantName = 'user';
-    const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
+    // 3. Generate Token
+    const participantIdentity = `jarvis_user_${Date.now()}`;
+    const roomName = body?.room_name || `jarvis_room_${Math.floor(Math.random() * 1000)}`;
 
     const participantToken = await createParticipantToken(
-      { identity: participantIdentity, name: participantName },
+      {
+        identity: participantIdentity,
+        name: participantName,
+        metadata: JSON.stringify({ user_name: participantName })
+      },
       roomName,
       agentName
     );
 
-    // Return connection details
+    // 4. Return Data
     const data: ConnectionDetails = {
-      serverUrl: LIVEKIT_URL,
+      serverUrl: LIVEKIT_URL!,
       roomName,
       participantToken: participantToken,
       participantName,
     };
-    const headers = new Headers({
-      'Cache-Control': 'no-store',
+
+    return NextResponse.json(data, {
+      headers: { 'Cache-Control': 'no-store' }
     });
-    return NextResponse.json(data, { headers });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error);
-      return new NextResponse(error.message, { status: 500 });
-    }
+  } catch (error: any) {
+    console.error('[API] Connection Error:', error);
+    return NextResponse.json(
+      { error: 'Erro ao conectar com LiveKit.', details: error.message },
+      { status: 500 }
+    );
   }
 }
 

@@ -11,11 +11,18 @@ import os
 import json
 import asyncio
 
-load_dotenv()
+load_dotenv(override=True)
 
-# Map Gemini key to what the plugin expects if needed
-if os.getenv("GEMINI_API_KEY") and not os.getenv("GOOGLE_API_KEY"):
-    os.environ["GOOGLE_API_KEY"] = os.getenv("GEMINI_API_KEY")
+# Injeta a chave do projeto de forma limpa
+# O SDK google-genai prefere GOOGLE_API_KEY. Vamos unificar para evitar conflitos.
+gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+if gemini_key:
+    os.environ["GOOGLE_API_KEY"] = gemini_key
+    # Removemos GEMINI_API_KEY do ambiente do processo para evitar o warning do SDK
+    os.environ.pop("GEMINI_API_KEY", None)
+    logger.info("Sistema de Preferências: GOOGLE_API_KEY configurada e GEMINI_API_KEY isolada.")
+else:
+    logger.critical("ERRO: Nenhuma chave de API (GEMINI ou GOOGLE) encontrada no .env!")
 
 logger.info(f"LiveKit URL: {os.getenv('LIVEKIT_URL')}")
 logger.info(f"Gemini API Key configurada: {'Sim' if os.getenv('GOOGLE_API_KEY') else 'Não'}")
@@ -27,11 +34,11 @@ class Assistant(Agent):
         super().__init__(
             instructions=AGENT_INSTRUCTION,
             llm=google.realtime.RealtimeModel(
+                model="gemini-2.0-flash", # Usando a versão estável GA para evitar erro 1008
                 voice="Charon",
                 temperature=0.6,
             ),
-            chat_ctx=chat_ctx,
-            tools=[SystemTools()] # Adicionando ferramentas de sistema
+            chat_ctx=chat_ctx
         )
 
 
@@ -56,31 +63,45 @@ async def entrypoint(ctx: agents.JobContext):
         logger.info(f"Mensagens formatadas para memória: {messages_formatted}")
         try:
             await asyncio.wait_for(
-                mem0.add(messages_formatted, user_id="PedroLucas"),
+                mem0.add(messages_formatted, user_id=user_id),
                 timeout=5.0,
             )
-            logger.info("Contexto do chat salvo na memória.")
+            logger.info(f"Contexto do chat salvo na memória para {user_id}.")
         except asyncio.TimeoutError:
             logger.warning("Timeout ao salvar memória, prosseguindo com cleanup.")
         except Exception as e:
             logger.error(f"Falha ao salvar contexto na memória: {e}")
 
-        # Desconectar sessões
+        # Desconectar sessões de forma segura
         try:
-            await session.disconnect()
-            logger.info("Sessão desconectada com sucesso.")
+            # AgentSession não tem disconnect(), usa-se end() para encerramento limpo
+            # Mas geralmente session.start() já gerencia o ciclo de vida.
+            pass
         except Exception as e:
-            logger.warning(f"Falha ao desconectar sessão: {e}")
+            logger.warning(f"Falha ao limpar sessão: {e}")
         try:
             await ctx.room.disconnect()
             logger.info("Room desconectada com sucesso.")
         except Exception as e:
             logger.warning(f"Falha ao desconectar room: {e}")
 
+    await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
+    
+    # Extração dinâmica de identidade do usuário
+    user_id = "Chefe" # Default genérico
+    for participant in ctx.room.remote_participants.values():
+        if participant.metadata:
+            try:
+                metadata = json.loads(participant.metadata)
+                if "user_name" in metadata:
+                    user_id = metadata["user_name"]
+                    logger.success(f"Identidade do usuário detectada: {user_id}")
+                    break
+            except:
+                pass
+    
     # Initialize Memory Client
     mem0 = AsyncMemoryClient()
-    user_id = "PedroLucas"
-
     # Load existing memories - try get_all first, fallback to search
     initial_ctx = ChatContext()
     memory_str = ''
@@ -119,25 +140,107 @@ async def entrypoint(ctx: agents.JobContext):
                 content=f"O nome do usuário é {user_id}. Aqui estão informações importantes sobre ele que você deve lembrar e usar nas conversas: {memory_str}."
             )
     else:
-        logger.info("No memories found for this user. Starting fresh conversation.")
-
-    await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
+        logger.info(f"Nenhuma memória encontrada para {user_id}. Iniciando conversa limpa.")
 
     # Na versão 1.4.3 do livekit-agents, o MultimodalAgent não está disponível 
     # como um módulo de alto nível em livekit.agents.multimodal.
     # Usamos o AgentSession + RealtimeModel que é o padrão estável.
 
+    async def telemetry_loop():
+        import psutil
+        logger.info("Iniciando loop de telemetria...")
+        counter = 0
+        while True:
+            try:
+                if ctx.room.connection_state == "connected":
+                    cpu = psutil.cpu_percent()
+                    ram = psutil.virtual_memory().percent
+                    battery = psutil.sensors_battery()
+                    batt_pct = battery.percent if battery else 100
+                    
+                    telemetry = {
+                        "type": "telemetry_update",
+                        "cpu": cpu,
+                        "ram": ram,
+                        "battery": batt_pct,
+                        "model": "Gemini 2.0 Flash",
+                        "persona": agent_persona
+                    }
+
+                    # Reduzimos a frequência do GPU stats para evitar picos de latência
+                    if counter % 10 == 0: # A cada 100s para telemetria rica
+                        try:
+                            import GPUtil
+                            gpus = GPUtil.getGPUs()
+                            if gpus:
+                                gpu = gpus[0]
+                                telemetry["gpu"] = gpu.load * 100
+                                telemetry["gpu_mem"] = gpu.memoryUtil * 100
+                                telemetry["gpu_name"] = gpu.name
+                                logger.info(f"[HARDWARE] Detectado: {gpu.name} | VRAM: {gpu.memoryTotal}MB")
+                        except: 
+                            pass
+                    
+                    counter += 1
+
+                    await ctx.room.local_participant.publish_data(
+                        json.dumps(telemetry),
+                        topic="telemetry"
+                    )
+                    # Heartbeat para monitoramento de saúde do processo
+                    logger.info(f"[HEARTBEAT] Jarvis Backend Ativo | CPU: {cpu}% | RAM: {ram}% | Load: {psutil.getloadavg()[0]}")
+                # Sleep aumentado para 10s (ADA Optimization)
+                await asyncio.sleep(10)
+            except Exception as e:
+                logger.error(f"Erro no loop de telemetria: {e}")
+                await asyncio.sleep(5)
+    async def watchdog_loop():
+        from .utils.workflow_engine import workflow_engine
+        logger.info("Iniciando loop de Watchdogs...")
+        while True:
+            try:
+                if ctx.room.connection_state == "connected":
+                    alerts = await workflow_engine.check_watchdogs()
+                    for alert in alerts:
+                        packet = {
+                            "type": "activity_log",
+                            "title": alert["title"],
+                            "detail": alert["detail"],
+                            "log_type": "info",
+                            "status": "success",
+                            "timestamp": datetime.datetime.now().isoformat()
+                        }
+                        await ctx.room.local_participant.publish_data(
+                            json.dumps(packet),
+                            topic="activity"
+                        )
+                        # Salva no log persistente também
+                        from .utils.log_manager import log_manager
+                        log_manager.save_log(packet)
+            except Exception as e:
+                logger.error(f"Erro no loop de watchdogs: {e}")
+            # Sleep aumentado para 20s (ADA Optimization)
+            await asyncio.sleep(20)
+
+    # Start loops
+    agent_persona = "jarvis" # Default
+    asyncio.create_task(telemetry_loop())
+    asyncio.create_task(watchdog_loop())
+
     agent = Assistant(chat_ctx=initial_ctx)
     
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
+            model="gemini-2.0-flash",
             voice="Charon",
             temperature=0.6,
         ),
         vad=silero.VAD.load(),
-        # Video sampler allows Gemini to "see" the screen/camera frames
-        video_sampler=VoiceActivityVideoSampler(speaking_fps=1.0, silent_fps=0.5),
-        tools=[SystemTools()], # Garante que as ferramentas estão disponíveis na sessão
+        video_sampler=VoiceActivityVideoSampler(speaking_fps=1.0, silent_fps=0.1), # Lazy Visuals (1 quadro a cada 10s quando em silêncio)
+        tools=[
+            *agents.llm.find_function_tools(SystemTools(room=ctx.room)),
+            google.tools.GoogleSearch()
+        ],
     )
 
     logger.info("Configurando a sessão do Agente com Gemini Realtime...")

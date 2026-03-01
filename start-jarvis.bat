@@ -10,6 +10,14 @@ echo ==========================================
 echo       JARVIS 5.0 - STARTUP SYSTEM
 echo ==========================================
 
+REM -- sanity checks --
+if not exist env\.env (
+    echo [ERROR] Arquivo env\.env nao encontrado! 
+    echo [ERROR] Crie o arquivo com suas chaves de API antes de continuar.
+    pause
+    exit /b 1
+)
+
 REM -- prepare backend environment if needed --
 if not exist backend\venv\Scripts\activate.bat (
     echo [INFO] Creating Python virtual environment...
@@ -18,8 +26,16 @@ if not exist backend\venv\Scripts\activate.bat (
     echo [INFO] Installing Python dependencies...
     pip install --upgrade pip
     pip install -r backend\app\requirements.txt
+    echo [INFO] Installing Playwright Browsers...
+    playwright install chromium
     deactivate
 )
+
+REM Ensure data directories exist for Jarvis powers
+echo [INFO] Verificando integridade das pastas de dados...
+if not exist backend\data\logs mkdir backend\data\logs
+if not exist backend\data\workflows mkdir backend\data\workflows
+if not exist backend\data\browser_data mkdir backend\data\browser_data
 
 REM Propagate global env file to respective directories for safe native parsing
 if exist env\.env (
@@ -64,47 +80,15 @@ if not exist frontend\node_modules (
 )
 
 echo.
-echo Escolha o modo de inicio:
-echo [1] Modo Desenvolvedor -- Pesado (Hot-reload ativado)
-echo [2] Modo Performance -- Leve e Estavel (Producao)
+echo [INFO] Iniciando Sistema JARVIS Unificado...
 echo.
-set "MODO=1"
-set /p "MODO=Selecione (1 ou 2): [1] "
 
-if "%MODO%"=="2" (
-    echo [INFO] Iniciando em Modo Performance...
-    echo [INFO] Verificando se o build e valido...
-    if not exist frontend\.next\BUILD_ID (
-        echo [INFO] Build nao encontrado ou incompleto. Gerando build...
-        pushd frontend
-        if "%FRONTEND_CMD%"=="pnpm" (
-            pnpm build
-        ) else if "%FRONTEND_CMD%"=="npx pnpm" (
-            npx pnpm build
-        ) else (
-            npm run build
-        )
-        popd
-        if errorlevel 1 (
-            echo [ERROR] Falha ao gerar o build da aplicacao.
-            pause
-            exit /b 1
-        )
-    )
-    
-    start "Jarvis Backend" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting backend API... && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-    start "Jarvis Agent" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting LiveKit Agent Worker... && python -m app.agents dev"
-    start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && echo Starting frontend (Production)... && if "%FRONTEND_CMD%"=="pnpm" ( pnpm start ) else if "%FRONTEND_CMD%"=="npx pnpm" ( npx pnpm start ) else ( npm run start )"
-) else (
-    echo [INFO] Iniciando em Modo Desenvolvedor...
-    start "Jarvis Backend" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting backend API... && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-    start "Jarvis Agent" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting LiveKit Agent Worker... && python -m app.agents dev"
-    start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && echo Starting frontend (Dev)... && if "%FRONTEND_CMD%"=="pnpm" ( pnpm dev ) else if "%FRONTEND_CMD%"=="npx pnpm" ( npx pnpm dev ) else ( npm run dev )"
-)
+start "Jarvis Backend" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting backend API... && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+start "Jarvis Agent" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting LiveKit Agent Worker... && python -m app.agents start"
+start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && echo Starting frontend... && if "%FRONTEND_CMD%"=="pnpm" ( pnpm dev ) else if "%FRONTEND_CMD%"=="npx pnpm" ( npx pnpm dev ) else ( npm run dev )"
 
 echo.
-echo [SUCCESS] Backend e Frontend iniciados!
-echo [TIP] Se o seu PC estiver lento, utilize o Modo Performance (2).
-echo [TIP] Desative o fundo animado definindo NEXT_PUBLIC_ENABLE_VANTA=false no seu .env
+echo [SUCCESS] Backend, Agente e Frontend iniciados!
+echo [INFO] O JARVIS agora opera de forma adaptativa.
 echo.
 pause

@@ -9,3 +9,8 @@ livekit-plugins-silero
 livekit-plugins-noise-cancellation
 requests
 python-dotenv
+psutil
+loguru
+aiohttp
+playwright
+GPUtil
