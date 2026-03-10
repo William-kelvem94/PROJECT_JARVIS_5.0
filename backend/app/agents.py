@@ -100,6 +100,13 @@ async def entrypoint(ctx: agents.JobContext):
             pass
         except Exception as e:
             logger.warning(f"Falha ao limpar sessão: {e}")
+        # Stop perception engines gracefully
+        try:
+            from .perception import perception_manager
+            perception_manager.stop()
+        except Exception:
+            pass
+
         try:
             await ctx.room.disconnect()
             logger.info("Room desconectada com sucesso.")
@@ -247,6 +254,26 @@ async def entrypoint(ctx: agents.JobContext):
     agent_persona = "jarvis" # Default
     asyncio.create_task(telemetry_loop())
     asyncio.create_task(watchdog_loop())
+
+    # Start perception engines (face + gesture + voice) — non-blocking, fail-safe
+    try:
+        from .perception import perception_manager
+
+        def _wake_word_handler():
+            """Called from voice engine thread when wake word fires."""
+            asyncio.run_coroutine_threadsafe(
+                session.generate_reply(
+                    user_input="(wake word detectado — o usuário quer atenção)"
+                ),
+                asyncio.get_event_loop(),
+            )
+
+        perception_manager.on_wake_word(_wake_word_handler)
+        perception_manager.start(room=ctx.room)
+        asyncio.create_task(perception_manager.publish_loop())
+        logger.success("[Perception] 🧠 Face + Gesture + Voice engines online")
+    except Exception as _perc_err:
+        logger.warning(f"[Perception] Engine not started (non-fatal): {_perc_err}")
 
     agent = Assistant(chat_ctx=initial_ctx)
     

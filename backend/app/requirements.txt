@@ -16,3 +16,27 @@ playwright
 GPUtil
 mss
 Pillow
+
+# ── Perception: Face (Level C — required)
+mediapipe
+opencv-python
+numpy
+
+# ── Perception: Face (Level B — optional, heavy)
+# deepface
+# tf-keras
+
+# ── Perception: Face (Level A — optional, very heavy, needs cmake+dlib)
+# face_recognition
+
+# ── Perception: Voice (Level A — free offline wake word)
+openwakeword
+
+# ── Perception: Voice (Level B — speaker identification)
+resemblyzer
+
+# ── Perception: Voice (Level C — offline transcription)
+faster-whisper
+
+# ── Perception: Audio input
+sounddevice

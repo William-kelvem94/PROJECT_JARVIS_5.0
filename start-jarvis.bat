@@ -31,11 +31,17 @@ if not exist backend\venv\Scripts\activate.bat (
     deactivate
 )
 
-REM Ensure data directories exist for Jarvis powers
-echo [INFO] Verificando integridade das pastas de dados...
-if not exist backend\data\logs mkdir backend\data\logs
-if not exist backend\data\workflows mkdir backend\data\workflows
-if not exist backend\data\browser_data mkdir backend\data\browser_data
+REM ── JARVIS Auto-Configuration (auto-installs deps, patches, validates) ─────────
+echo [INFO] Executando auto-configuração do JARVIS...
+call backend\venv\Scripts\activate.bat
+set PYTHONIOENCODING=utf-8
+python backend\setup.py
+if errorlevel 1 (
+    echo [ERROR] Auto-configuração falhou. Verifique os erros acima.
+    pause
+    exit /b 1
+)
+deactivate
 
 REM Propagate global env file to respective directories for safe native parsing
 if exist env\.env (
@@ -83,12 +89,30 @@ echo.
 echo [INFO] Iniciando Sistema JARVIS Unificado...
 echo.
 
+REM Lança os 3 serviços diretamente
 start "Jarvis Backend" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting backend API... && uvicorn app.main:app --host 0.0.0.0 --port 8000"
-start "Jarvis Agent" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting LiveKit Agent Worker... && python -m app.agents start"
-start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && echo Starting frontend... && if "%FRONTEND_CMD%"=="pnpm" ( pnpm dev ) else if "%FRONTEND_CMD%"=="npx pnpm" ( npx pnpm dev ) else ( npm run dev )"
+start "Jarvis Agent"   cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && echo Starting LiveKit Agent Worker... && python -m app.agents start"
+if "%FRONTEND_CMD%"=="pnpm" (
+    start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && pnpm dev"
+) else if "%FRONTEND_CMD%"=="npx pnpm" (
+    start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && npx pnpm dev"
+) else (
+    start "Jarvis Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
+)
+
+REM Aguarda 8 segundos para os serviços subirem antes de iniciar o monitor
+echo [INFO] Aguardando serviços iniciarem (8s)...
+timeout /t 8 /nobreak > nul
+
+REM Lança o monitor de processos em background (reinicia serviços se travarem)
+echo [INFO] Iniciando Monitor de Processos (auto-restart habilitado)...
+start "Jarvis Monitor" powershell -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\monitor-heartbeat.ps1" -Root "%~dp0"
 
 echo.
-echo [SUCCESS] Backend, Agente e Frontend iniciados!
-echo [INFO] O JARVIS agora opera de forma adaptativa.
+echo [SUCCESS] JARVIS iniciado com supervisao automatica!
+echo [INFO] - Backend:  http://localhost:8000
+echo [INFO] - Frontend: http://localhost:3000
+echo [INFO] - Monitor:  backend\data\logs\monitor.log
+echo [INFO] Feche esta janela quando quiser encerrar manualmente.
 echo.
 pause

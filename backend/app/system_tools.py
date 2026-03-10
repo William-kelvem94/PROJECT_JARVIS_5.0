@@ -153,19 +153,21 @@ class SystemTools:
         macro = self._workflow_engine.get_macro(name)
         if not macro:
             return f"Erro: Macro '{name}' não encontrada."
-        
+
         asyncio.create_task(self._log_activity("Executando Macro", f"Iniciando sequência: {name}", "info"))
-        
+
         results = []
         for step in macro:
-            # Por simplicidade inicial, as macros executam comandos de terminal
             if isinstance(step, str):
                 res = self.execute_command(step)
-                results.append(f"Step: {step} -> {res[:50]}...")
+                results.append(f"✔ {step[:40]} → {res[:60]}")
             elif isinstance(step, dict) and "cmd" in step:
                 res = self.execute_command(step["cmd"])
-                results.append(f"Step: {step['cmd']} -> {res[:50]}...")
-        
+                results.append(f"✔ {step['cmd'][:40]} → {res[:60]}")
+
+        summary = "\n".join(results) if results else "Nenhum passo executado."
+        return f"Macro '{name}' concluída:\n{summary}"
+
 
     @agents.llm.function_tool(description="Configura um monitoramento (watchdog) para um arquivo ou condição específica.")
     def set_watchdog(self, name: str, type: str, target: str):
@@ -394,4 +396,61 @@ class SystemTools:
             return result
         except Exception as e:
             return f"Falha ao consultar o cérebro engenheiro: {e}"
+
+    # ─── SENSORES: Percepção (Face, Gesto, Voz) ──────────────────────────────
+
+    @agents.llm.function_tool(description="Retorna o estado atual da percepção: emoção do usuário, gesto detectado, identidade facial, identidade de voz e direção do dedo apontando. Use para entender o contexto físico do usuário.")
+    def get_perception_status(self):
+        try:
+            from .perception import perception_manager
+            snap = perception_manager.get_snapshot()
+            lines = [
+                f"👁️  Face: {'presente' if snap['face_present'] else 'ausente'} ({snap['face_count']} pessoa(s))",
+                f"😐  Emoção: {snap['face_emotion']} ({snap['face_emotion_score']:.0%})",
+            ]
+            if snap["face_identity"]:
+                lines.append(f"🪪  Identidade facial: {snap['face_identity']} ({snap['face_identity_confidence']:.0%})")
+            if snap["hand_gesture"]:
+                lines.append(f"✋  Gesto: {snap['hand_gesture']} ({snap['hand_side']})")
+            if snap["head_gesture"]:
+                lines.append(f"🫡  Cabeça: {snap['head_gesture']}")
+            if snap["pointing_direction"]:
+                lines.append(f"👆  Apontando: {snap['pointing_direction']} {snap['pointing_xy'] or ''}")
+            if snap["speaker_identity"]:
+                lines.append(f"🎙️  Locutor: {snap['speaker_identity']}")
+            if snap["offline_transcript"]:
+                lines.append(f"📝  Transcrição offline: {snap['offline_transcript']}")
+            lines.append(f"⚙️   Níveis ativos: {snap['active_levels']}")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Percepção indisponível: {e}"
+
+    @agents.llm.function_tool(description="Cadastra o rosto do usuário para reconhecimento de identidade. Tira uma foto agora via câmera e associa ao nome fornecido.")
+    def enroll_face(self, name: str):
+        try:
+            from .perception import perception_manager
+            from .perception.face_engine import enroll_face as _enroll
+            frame = perception_manager.capture_frame()
+            if frame is None:
+                return "Câmera indisponível para cadastro de rosto."
+            result = _enroll(name, frame)
+            asyncio.create_task(self._log_activity("Rosto Cadastrado", f"Identidade: {name}", "info"))
+            return result
+        except Exception as e:
+            return f"Erro ao cadastrar rosto: {e}"
+
+    @agents.llm.function_tool(description="Cadastra a voz do usuário para reconhecimento de locutor. Grava 5 segundos de áudio agora e associa ao nome fornecido.")
+    def enroll_voice(self, name: str):
+        try:
+            from .perception import perception_manager
+            from .perception.voice_engine import enroll_voice as _enroll
+            audio = perception_manager.get_audio_sample(seconds=5.0)
+            if audio is None:
+                return "Microfone indisponível para cadastro de voz."
+            result = _enroll(name, audio)
+            asyncio.create_task(self._log_activity("Voz Cadastrada", f"Locutor: {name}", "info"))
+            return result
+        except Exception as e:
+            return f"Erro ao cadastrar voz: {e}"
+
 
