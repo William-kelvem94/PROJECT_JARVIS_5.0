@@ -1,18 +1,0 @@
-﻿🧰🔧 feat: ajustes de ambiente + supressão de avisos Pylance
-
-Resumo das alterações:
-
-🛠️ Config VS Code
-- Adicionado .vscode/settings.json apontando o python.defaultInterpreterPath para .venv e incluindo ackend/app em python.analysis.extraPaths para que o Pylance resolva corretamente imports locais.
-
-🧠 Percepção (imports opcionais)
-- Adicionados # type: ignore nos imports opcionais pesados (cv2, mediapipe, deepface, face_recognition, openwakeword, resemblyzer, faster_whisper) tanto nos blocos 	ry quanto nos imports lazy dentro de funções para eliminar falsos positivos do Pylance, mantendo o comportamento de fallback em runtime.
-
-📁 Novo módulo local de memória
-- ackend/app/local_memory.py criado (memória SQLite local) — continuará presente no commit.
-
-✅ Resultado esperado:
-- Pylance para de reportar eportMissingImports para módulos lazy/opcinais.
-- Nenhuma mudança de runtime: os 	ry/except e inicializações preguiçosas permanecem inalterados.
-
-Signed-off-by: Automação (commit gerado via assistant)
