@@ -55,6 +55,29 @@
    Copie `env/.env.example` para `env/.env` e preencha as chaves necessárias.
 
 3. **Backend Setup:**
+
+   > 🐧 **WSL (Windows Subsystem for Linux)**
+   >
+   > Se você estiver usando Windows, é possível rodar todo o projeto dentro de uma
+distro WSL instalada em qualquer unidade. Exemplos de comandos úteis:
+   >
+   > ```powershell
+   > # instalar Ubuntu na pasta desejada (por exemplo E:\WSL) e defini-lo como
+   > # padrão, caso ainda não exista
+   > wsl --import Ubuntu E:\WSL\Ubuntu E:\WSL\Ubuntu\ubuntu.tar --version 2
+   > wsl --set-default Ubuntu
+   >
+   > # entrar na distro e configurar ambiente
+   > wsl -d Ubuntu -- bash
+   > sudo apt update && sudo apt install -y python3-venv python3-pip nodejs npm git curl
+   > cd /mnt/e/Documents/GitHub/PROJECT_JARVIS_5.0
+   > ./scripts/setup-backend.sh
+   > ```
+   >
+   > Dentro do WSL você pode também executar `docker` e `docker-compose` nativamente,
+   > tornando fácil isolar ainda mais o ambiente.
+
+3. **Backend Setup:**
    ```bash
    cd backend
    python -m venv venv
