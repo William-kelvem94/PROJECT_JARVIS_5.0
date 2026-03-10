@@ -13,3 +13,10 @@ env/
 
 # IDE
 .vscode/
+
+# Runtime data — SQLite local DB e arquivos WAL
+backend/data/jarvis_local.db
+backend/data/jarvis_local.db-shm
+backend/data/jarvis_local.db-wal
+*.db-shm
+*.db-wal
