@@ -118,6 +118,53 @@ def install_perception():
             else:
                 warn(f"{pkg} install failed — perception level degraded")
 
+    # Download openwakeword models if not present
+    try:
+        import openwakeword, os as _os
+        models_dir = _os.path.join(_os.path.dirname(openwakeword.__file__), "resources", "models")
+        onnx_files = [f for f in _os.listdir(models_dir) if f.endswith(".onnx")] if _os.path.isdir(models_dir) else []
+        # Need more than just embedding/melspectrogram
+        ww_models = [f for f in onnx_files if "embedding" not in f and "melspectrogram" not in f]
+        if not ww_models:
+            info("Downloading openWakeWord models (first time)…")
+            openwakeword.utils.download_models()
+            ok("openWakeWord models downloaded")
+        else:
+            ok(f"openWakeWord models present ({len(ww_models)} wake word model(s))")
+    except Exception as e:
+        warn(f"openWakeWord model download failed: {e}")
+
+    # Download MediaPipe task model files for the new tasks API
+    try:
+        import urllib.request as _urlreq
+        mp_models_dir = ROOT / "data" / "models"
+        mp_models_dir.mkdir(parents=True, exist_ok=True)
+        mp_model_urls = {
+            "face_landmarker.task":      "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+            "gesture_recognizer.task":   "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task",
+            "pose_landmarker_lite.task": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+        }
+        missing = [n for n in mp_model_urls if not (mp_models_dir / n).exists()]
+        if missing:
+            info(f"Downloading {len(missing)} MediaPipe model file(s)…")
+            failed_mp = 0
+            for name, url in mp_model_urls.items():
+                dest = mp_models_dir / name
+                if dest.exists():
+                    continue
+                try:
+                    _urlreq.urlretrieve(url, dest)
+                    ok(f"  {name} ({dest.stat().st_size // 1024} KB)")
+                except Exception as e:
+                    warn(f"  {name} download failed: {e}")
+                    failed_mp += 1
+            if not failed_mp:
+                ok("MediaPipe model files ready")
+        else:
+            ok(f"MediaPipe model files present ({len(mp_model_urls)} files)")
+    except Exception as e:
+        warn(f"MediaPipe model download failed: {e}")
+
     # Heavy optional: only install if user opted in via env flag JARVIS_FULL_PERCEPTION=1
     if os.getenv("JARVIS_FULL_PERCEPTION", "0") == "1":
         print(bold("\n  [Optional] Full perception (JARVIS_FULL_PERCEPTION=1 detected)"))
@@ -171,6 +218,7 @@ def create_data_dirs():
         ROOT / "data" / "faces",    # Perception: enrolled face photos
         ROOT / "data" / "voices",   # Perception: enrolled voice embeddings (.npy)
         ROOT / "data" / "screenshots",
+        ROOT / "data" / "models",   # MediaPipe task model files
     ]
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)

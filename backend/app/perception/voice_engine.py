@@ -93,19 +93,48 @@ _voice_encoder = None
 _whisper_model = None
 
 
+def _oww_list_available() -> list:
+    """Return list of locally available .onnx wake word model paths."""
+    import os, openwakeword
+    pkg_dir = os.path.dirname(openwakeword.__file__)
+    models_dir = os.path.join(pkg_dir, "resources", "models")
+    if not os.path.isdir(models_dir):
+        return []
+    return [
+        os.path.join(models_dir, f)
+        for f in os.listdir(models_dir)
+        if f.endswith(".onnx") and "embedding" not in f and "melspectrogram" not in f
+    ]
+
+
 def _get_oww():
     global _oww_model
     if _oww_model is None and HAS_WAKE_WORD:
         try:
             from openwakeword.model import Model  # type: ignore
-            # Try "hey_jarvis" first (built-in in openwakeword ≥ 0.6)
+
+            # 1. Try the "hey_jarvis" model specifically
             try:
                 _oww_model = Model(wakeword_models=["hey_jarvis_v0.1"], inference_framework="onnx")
-                logger.success("[VoiceEngine] Wake word model 'hey_jarvis_v0.1' loaded")
+                logger.success("[VoiceEngine] ✅ Wake word 'hey_jarvis_v0.1' loaded")
+                return _oww_model
             except Exception:
-                # Fallback: load with default built-in models
-                _oww_model = Model(inference_framework="onnx")
-                logger.info("[VoiceEngine] openwakeword loaded with default models")
+                pass
+
+            # 2. Try any available .onnx wake word model found locally
+            available = _oww_list_available()
+            if available:
+                _oww_model = Model(wakeword_models=available, inference_framework="onnx")
+                names = [os.path.basename(p) for p in available]
+                logger.success(f"[VoiceEngine] ✅ Wake word models loaded: {names}")
+                return _oww_model
+
+            # 3. No models found — disable wake word gracefully
+            logger.warning(
+                "[VoiceEngine] No wake word models found locally. "
+                "Run: python -c \"import openwakeword; openwakeword.utils.download_models()\" "
+                "to download them. Wake word disabled."
+            )
         except Exception as e:
             logger.error(f"[VoiceEngine] openwakeword init failed: {e}")
     return _oww_model
@@ -285,7 +314,15 @@ def _audio_loop():
                     try:
                         pred = oww.predict(chunk)
                         for model_name, scores in pred.items():
-                            score = float(max(scores)) if isinstance(scores, list) else float(scores)
+                            try:
+                                if isinstance(scores, dict):
+                                    score = float(max(scores.values()))
+                                elif hasattr(scores, '__iter__'):
+                                    score = float(max(scores))
+                                else:
+                                    score = float(scores)
+                            except Exception:
+                                continue
                             if score > 0.5:
                                 logger.success(
                                     f"[VoiceEngine] 🎙️ Wake word '{model_name}' "

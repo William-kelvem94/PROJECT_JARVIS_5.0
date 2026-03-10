@@ -26,11 +26,10 @@ from typing import Optional, List
 
 from loguru import logger
 
-# ── Data directory ─────────────────────────────────────────────────────────────
-FACES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "data", "faces",
-)
+# ── Data directories ─────────────────────────────────────────────────────────
+_BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+FACES_DIR = os.path.join(_BASE_DIR, "data", "faces")
+MODELS_DIR = os.path.join(_BASE_DIR, "data", "models")
 
 
 # ── Result dataclass ───────────────────────────────────────────────────────────
@@ -83,27 +82,36 @@ except ImportError:
     logger.warning("[FaceEngine] Level A unavailable — install: pip install face_recognition (needs dlib/cmake)")
 
 
-# ── Lazy MediaPipe initialisation ──────────────────────────────────────────────
-_mp_detector = None
-_mp_mesh = None
+# ── Lazy MediaPipe initialisation (Tasks API — mediapipe ≥ 0.10.30) ─────────
+_mp_landmarker = None
 
 
 def _get_mp_models():
-    global _mp_detector, _mp_mesh
-    if _mp_detector is None and HAS_MEDIAPIPE:
-        try:
-            _mp_detector = mp.solutions.face_detection.FaceDetection(
-                model_selection=0, min_detection_confidence=0.5
-            )
-            _mp_mesh = mp.solutions.face_mesh.FaceMesh(
-                max_num_faces=4,
-                refine_landmarks=False,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.4,
-            )
-        except Exception as e:
-            logger.error(f"[FaceEngine] MediaPipe init failed: {e}")
-    return _mp_detector, _mp_mesh
+    """Return a FaceLandmarker (tasks API) or None if unavailable."""
+    global _mp_landmarker
+    if _mp_landmarker is not None:
+        return _mp_landmarker
+    if not HAS_MEDIAPIPE:
+        return None
+    model_path = os.path.join(MODELS_DIR, "face_landmarker.task")
+    if not os.path.exists(model_path):
+        logger.warning(f"[FaceEngine] face_landmarker.task not found — run setup.py to download")
+        return None
+    try:
+        from mediapipe.tasks import python as _mp_tasks
+        from mediapipe.tasks.python import vision as _mp_vision
+        base_opts = _mp_tasks.BaseOptions(model_asset_path=model_path)
+        opts = _mp_vision.FaceLandmarkerOptions(
+            base_options=base_opts,
+            num_faces=4,
+            min_face_detection_confidence=0.5,
+            min_tracking_confidence=0.4,
+        )
+        _mp_landmarker = _mp_vision.FaceLandmarker.create_from_options(opts)
+        logger.success("[FaceEngine] FaceLandmarker (tasks API) ready")
+    except Exception as e:
+        logger.error(f"[FaceEngine] MediaPipe init failed: {e}")
+    return _mp_landmarker
 
 
 # ── Landmark-based emotion estimation (Level B, no DeepFace) ──────────────────
@@ -143,7 +151,8 @@ def _estimate_emotion_from_landmarks(landmarks) -> tuple[str, float]:
     Rule-based emotion estimation from FaceMesh 468 landmarks.
     Returns (emotion_label, confidence 0..1).
     """
-    lm = landmarks.landmark
+    # In Tasks API, face_landmarks[0] is already a list[NormalizedLandmark]
+    lm = landmarks
 
     # Eye Aspect Ratio (EAR) — mean of left and right
     def ear(top_idx, bot_idx, l_idx, r_idx):
@@ -255,23 +264,24 @@ def analyze_frame(frame_bgr) -> FaceResult:
 
     now = time.monotonic()
 
-    # ── Level C: Presence (MediaPipe) ─────────────────────────────────────────
-    detector, mesh = _get_mp_models()
-    if not (HAS_MEDIAPIPE and detector is not None):
-        return result  # Nothing else works without knowing a face is there
+    # ── Level C: Presence (MediaPipe Tasks API) ──────────────────────────────
+    landmarker = _get_mp_models()
+    if landmarker is None:
+        return result
 
     frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-    detection = detector.process(frame_rgb)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
+    lm_result = landmarker.detect(mp_image)
 
-    if not (detection.detections):
+    if not lm_result.face_landmarks:
         return result  # No face found — skip B and A
 
     result.present = True
-    result.count = len(detection.detections)
+    result.count = len(lm_result.face_landmarks)
     result.active_levels.append("C")
 
     # ── Level B: Emotion ──────────────────────────────────────────────────────
-    # Try DeepFace (DNN accuracy) first; fall back to FaceMesh landmark rules.
+    # Try DeepFace (DNN accuracy) first; fall back to FaceLandmarker landmark rules.
     if (now - _emotion_ts) >= _EMOTION_RATE:
         try:
             if HAS_DEEPFACE:
@@ -289,14 +299,12 @@ def analyze_frame(frame_bgr) -> FaceResult:
                 result.emotion = dominant
                 result.emotion_score = round(score_raw / 100.0, 2) if score_raw > 1.0 else round(score_raw, 2)
                 result.active_levels.append("B")
-            elif HAS_MEDIAPIPE and mesh is not None:
-                # Landmark-based fallback (always available with MediaPipe)
-                mesh_result = mesh.process(frame_rgb)
-                if mesh_result.multi_face_landmarks:
-                    emotion, score = _estimate_emotion_from_landmarks(mesh_result.multi_face_landmarks[0])
-                    result.emotion = emotion
-                    result.emotion_score = score
-                    result.active_levels.append("B")
+            else:
+                # Landmark-based emotion (face_landmarks[0] is list[NormalizedLandmark])
+                emotion, score = _estimate_emotion_from_landmarks(lm_result.face_landmarks[0])
+                result.emotion = emotion
+                result.emotion_score = score
+                result.active_levels.append("B")
             _emotion_ts = now
         except Exception as ex:
             logger.debug(f"[FaceEngine] Emotion analysis skipped: {ex}")

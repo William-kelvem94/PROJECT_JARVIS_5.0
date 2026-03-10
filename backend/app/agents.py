@@ -17,10 +17,10 @@ load_dotenv(override=True)
 # O SDK google-genai prefere GOOGLE_API_KEY. Vamos unificar para evitar conflitos.
 gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if gemini_key:
+    # Define GOOGLE_API_KEY e remove GEMINI_API_KEY para evitar warning de chave duplicada do SDK
     os.environ["GOOGLE_API_KEY"] = gemini_key
-    # Removemos GEMINI_API_KEY do ambiente do processo para evitar o warning do SDK
     os.environ.pop("GEMINI_API_KEY", None)
-    logger.info("Sistema de Preferências: GOOGLE_API_KEY configurada e GEMINI_API_KEY isolada.")
+    logger.info("GOOGLE_API_KEY configurada.")
 else:
     logger.critical("ERRO: Nenhuma chave de API (GEMINI ou GOOGLE) encontrada no .env!")
 
@@ -29,12 +29,15 @@ logger.info(f"Gemini API Key configurada: {'Sim' if os.getenv('GOOGLE_API_KEY') 
 
 
 
+# Modelo gratuito com suporte a bidiGenerateContent (Gemini Live API)
+GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-latest"
+
 class Assistant(Agent):
     def __init__(self, chat_ctx: ChatContext = None):
         super().__init__(
             instructions=AGENT_INSTRUCTION,
             llm=google.realtime.RealtimeModel(
-                model="gemini-2.0-flash-live-001", # Modelo correto para bidiGenerateContent (Gemini Live API)
+                model=GEMINI_LIVE_MODEL,
                 voice="Charon",
                 temperature=0.6,
             ),
@@ -279,7 +282,7 @@ async def entrypoint(ctx: agents.JobContext):
     
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.0-flash-live-001",
+            model=GEMINI_LIVE_MODEL,
             voice="Charon",
             temperature=0.6,
         ),

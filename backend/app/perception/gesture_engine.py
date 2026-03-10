@@ -14,12 +14,19 @@ Level C — Pointing direction (builds on Level A when gesture == "point")
 Install: pip install mediapipe opencv-python
 """
 
+import os
 import time
 import collections
 from dataclasses import dataclass, field
 from typing import Optional, Tuple, List
 
 from loguru import logger
+
+
+# ── Paths ───────────────────────────────────────────────────────────────────────
+MODELS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "models"
+)
 
 
 # ── Result dataclass ───────────────────────────────────────────────────────────
@@ -43,34 +50,78 @@ try:
     import cv2  # type: ignore
     import mediapipe as mp  # type: ignore  # noqa: F401
     HAS_GESTURE = True
-    logger.info("[GestureEngine] ✅ MediaPipe Hands + Pose available")
+    logger.info("[GestureEngine] ✅ MediaPipe GestureRecognizer + PoseLandmarker available")
 except ImportError:
     logger.warning("[GestureEngine] Unavailable — install: pip install mediapipe opencv-python")
 
 
-# ── Lazy MediaPipe initialisation ──────────────────────────────────────────────
-_mp_hands = None
-_mp_pose = None
+# ── Gesture map: MediaPipe built-in names → our naming ────────────────────────
+_GESTURE_MAP = {
+    "Closed_Fist": "fist",
+    "Open_Palm": "open_palm",
+    "Pointing_Up": "point",
+    "Victory": "peace",
+    "Thumb_Up": "thumbs_up",
+    "Thumb_Down": "thumbs_down",
+    "ILoveYou": "open_palm",
+}
+
+
+# ── Lazy MediaPipe initialisation (Tasks API) ──────────────────────────────────
+_gesture_rec = None
+_pose_lm = None
 
 
 def _get_mp():
-    global _mp_hands, _mp_pose
-    if _mp_hands is None and HAS_GESTURE:
+    """Return (GestureRecognizer, PoseLandmarker) or (None, None) if unavailable."""
+    global _gesture_rec, _pose_lm
+    if _gesture_rec is not None:
+        return _gesture_rec, _pose_lm
+    if not HAS_GESTURE:
+        return None, None
+
+    gest_path = os.path.join(MODELS_DIR, "gesture_recognizer.task")
+    pose_path = os.path.join(MODELS_DIR, "pose_landmarker_lite.task")
+
+    if not os.path.exists(gest_path):
+        logger.warning("[GestureEngine] gesture_recognizer.task not found — run setup.py")
+        return None, None
+
+    try:
+        from mediapipe.tasks import python as _mp_tasks
+        from mediapipe.tasks.python import vision as _mp_vision
+
+        base_opts = _mp_tasks.BaseOptions(model_asset_path=gest_path)
+        opts = _mp_vision.GestureRecognizerOptions(
+            base_options=base_opts,
+            num_hands=2,
+            min_hand_detection_confidence=0.7,
+            min_tracking_confidence=0.5,
+        )
+        _gesture_rec = _mp_vision.GestureRecognizer.create_from_options(opts)
+        logger.success("[GestureEngine] GestureRecognizer (tasks API) ready")
+    except Exception as e:
+        logger.error(f"[GestureEngine] GestureRecognizer init failed: {e}")
+        return None, None
+
+    if os.path.exists(pose_path):
         try:
-            _mp_hands = mp.solutions.hands.Hands(
-                static_image_mode=False,
-                max_num_hands=2,
-                min_detection_confidence=0.7,
+            from mediapipe.tasks import python as _mp_tasks
+            from mediapipe.tasks.python import vision as _mp_vision
+            base_opts = _mp_tasks.BaseOptions(model_asset_path=pose_path)
+            opts = _mp_vision.PoseLandmarkerOptions(
+                base_options=base_opts,
+                min_pose_detection_confidence=0.5,
                 min_tracking_confidence=0.5,
             )
-            _mp_pose = mp.solutions.pose.Pose(
-                static_image_mode=False,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5,
-            )
+            _pose_lm = _mp_vision.PoseLandmarker.create_from_options(opts)
+            logger.success("[GestureEngine] PoseLandmarker (tasks API) ready")
         except Exception as e:
-            logger.error(f"[GestureEngine] MediaPipe init failed: {e}")
-    return _mp_hands, _mp_pose
+            logger.warning(f"[GestureEngine] PoseLandmarker init failed (head gestures disabled): {e}")
+    else:
+        logger.warning("[GestureEngine] pose_landmarker_lite.task not found — head gestures disabled")
+
+    return _gesture_rec, _pose_lm
 
 
 # ── Temporal buffers for head gesture detection (Level B) ─────────────────────
@@ -82,59 +133,17 @@ _HEAD_COOLDOWN = 2.0   # seconds between head gesture events
 
 
 # ── Hand gesture classifier ────────────────────────────────────────────────────
-def _classify_hand(landmarks) -> str:
-    """
-    Classify hand gesture from 21 MediaPipe hand landmarks.
-    Returns one of: fist, open_palm, point, peace, thumbs_up, thumbs_down, other.
-    """
-    lm = landmarks.landmark
-
-    # Reference points
-    wrist = lm[0]
-    index_mcp = lm[5]
-
-    # Determine handedness from geometry (right hand: wrist.x < index_mcp.x in mirror image)
-    is_right = wrist.x < index_mcp.x
-
-    # Thumb extended: tip further from centre than base, along hand axis
-    thumb_tip = lm[4]
-    thumb_ip = lm[3]
-    thumb_extended = (thumb_tip.x > thumb_ip.x) if is_right else (thumb_tip.x < thumb_ip.x)
-
-    # Non-thumb fingers: tip.y < pip.y means extended (image y increases downward)
-    idx_ext = lm[8].y < lm[6].y    # index
-    mid_ext = lm[12].y < lm[10].y  # middle
-    rng_ext = lm[16].y < lm[14].y  # ring
-    pnk_ext = lm[20].y < lm[18].y  # pinky
-
-    extended = [thumb_extended, idx_ext, mid_ext, rng_ext, pnk_ext]
-    count = sum(extended)
-
-    if count == 0:
-        return "fist"
-    if count == 5:
-        return "open_palm"
-    if idx_ext and not mid_ext and not rng_ext and not pnk_ext and not thumb_extended:
-        return "point"
-    if idx_ext and mid_ext and not rng_ext and not pnk_ext and not thumb_extended:
-        return "peace"
-    # Thumbs up: thumb extended, all others curled, thumb tip above wrist
-    if thumb_extended and not idx_ext and not mid_ext and not rng_ext and not pnk_ext:
-        if thumb_tip.y < wrist.y:
-            return "thumbs_up"
-        return "thumbs_down"
-
-    return "other"
+# Manual _classify_hand is no longer needed — GestureRecognizer handles this natively.
 
 
 # ── Pointing direction (Level C) ──────────────────────────────────────────────
-def _get_pointing(landmarks) -> Tuple[str, Tuple[float, float]]:
+def _get_pointing(hand_lm) -> Tuple[str, Tuple[float, float]]:
     """
     Derive pointing direction and fingertip position from index finger.
-    Returns (direction_str, (normalised_x, normalised_y)).
+    hand_lm is list[NormalizedLandmark] (tasks API — no .landmark attr needed).
     """
-    tip = landmarks.landmark[8]   # index fingertip
-    mcp = landmarks.landmark[5]   # index MCP (knuckle)
+    tip = hand_lm[8]   # index fingertip
+    mcp = hand_lm[5]   # index MCP (knuckle)
 
     dx = tip.x - mcp.x
     dy = tip.y - mcp.y
@@ -188,38 +197,38 @@ def analyze_frame(frame_bgr) -> GestureResult:
     if not HAS_GESTURE or frame_bgr is None:
         return result
 
-    hands, pose = _get_mp()
-    if hands is None:
+    gesture_rec, pose_lm = _get_mp()
+    if gesture_rec is None:
         return result
 
     frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame_rgb)
 
-    # ── Level A + C: Hand gestures ────────────────────────────────────────────
-    hands_result = hands.process(frame_rgb)
-    if hands_result.multi_hand_landmarks:
-        hand_lm = hands_result.multi_hand_landmarks[0]
-        handedness = "right"
-        if hands_result.multi_handedness:
-            label = hands_result.multi_handedness[0].classification[0].label
-            handedness = label.lower()
+    # ── Level A + C: Hand gestures via GestureRecognizer ─────────────────────
+    gest_result = gesture_rec.recognize(mp_image)
+    if gest_result.gestures:
+        top = gest_result.gestures[0][0]  # first hand, top-ranked gesture
+        mapped = _GESTURE_MAP.get(top.category_name)
+        if mapped:
+            result.hand_gesture = mapped
+            result.active_levels.append("A")
 
-        gesture = _classify_hand(hand_lm)
-        result.hand_gesture = gesture
-        result.hand_side = handedness
-        result.active_levels.append("A")
+            if gest_result.handedness:
+                result.hand_side = gest_result.handedness[0][0].category_name.lower()
 
-        # Level C: pointing direction
-        if gesture == "point":
-            direction, xy = _get_pointing(hand_lm)
-            result.pointing_direction = direction
-            result.pointing_xy = xy
-            result.active_levels.append("C")
+            # Level C: pointing direction
+            if mapped == "point" and gest_result.hand_landmarks:
+                direction, xy = _get_pointing(gest_result.hand_landmarks[0])
+                result.pointing_direction = direction
+                result.pointing_xy = xy
+                result.active_levels.append("C")
 
-    # ── Level B: Head/body gestures (Pose) ────────────────────────────────────
-    if pose is not None:
-        pose_result = pose.process(frame_rgb)
+    # ── Level B: Head/body gestures (PoseLandmarker) ──────────────────────────
+    if pose_lm is not None:
+        pose_result = pose_lm.detect(mp_image)
+        # pose_result.pose_landmarks = list[list[NormalizedLandmark]]; [0][0] = nose
         if pose_result.pose_landmarks:
-            nose = pose_result.pose_landmarks.landmark[0]
+            nose = pose_result.pose_landmarks[0][0]
             _nose_x_buf.append(nose.x)
             _nose_y_buf.append(nose.y)
 
