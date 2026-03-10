@@ -3,8 +3,8 @@ from loguru import logger
 import json
 import os
 
-# simple in-memory client stub used during development/tests
-# simple in-memory client with file persistence
+# Hybrid memory: fast local SQLite (always available) + cloud Mem0 (when online)
+# Local memory stores extracted conversation facts; cloud stores LLM-summarized memories.
 
 class MemoryClient:
     def __init__(self):
@@ -55,19 +55,54 @@ class MemoryClient:
 # Configuração básica
 load_dotenv()
 
-# async wrapper around MemoryClient so agent code can await
+# Hybrid async wrapper: merges local SQLite + cloud MemoryClient results
 class AsyncMemoryClient:
     def __init__(self):
-        self._client = MemoryClient()
+        self._cloud = MemoryClient()
+        from .local_memory import local_memory
+        self._local = local_memory
 
     async def get_all(self, user_id=None):
-        return self._client.get_all(user_id=user_id)
+        """Returns merged memories: cloud first, then local (deduplicated by content)."""
+        cloud_results = self._cloud.get_all(user_id=user_id)
+        local_results = self._local.get_all(user_id=user_id, limit=50)
+
+        # Merge: cloud results take priority, add local ones not already present
+        seen = {r.get("memory", "") for r in cloud_results}
+        for loc in local_results:
+            if loc["memory"] not in seen:
+                cloud_results.append(loc)
+                seen.add(loc["memory"])
+
+        return cloud_results
 
     async def search(self, query, filters=None):
-        return self._client.search(query, filters=filters)
+        """Search cloud + local and merge results."""
+        cloud_resp = self._cloud.search(query, filters=filters)
+        cloud_results = cloud_resp.get("results", []) if isinstance(cloud_resp, dict) else cloud_resp
+
+        user_id = (filters or {}).get("user_id")
+        local_results = self._local.search(user_id, query, limit=20) if user_id else []
+
+        seen = {r.get("memory", "") for r in cloud_results}
+        for loc in local_results:
+            if loc["memory"] not in seen:
+                cloud_results.append(loc)
+                seen.add(loc["memory"])
+
+        return {"results": cloud_results}
 
     async def add(self, messages, user_id=None):
-        return self._client.add(messages, user_id=user_id)
+        """Save to both cloud and local."""
+        # Cloud save
+        cloud_result = self._cloud.add(messages, user_id=user_id)
+        # Local save (smart: filters system prompts, deduplicates)
+        if user_id:
+            self._local.add_session(user_id, messages)
+        return cloud_result
+
+    def get_local_stats(self, user_id: str) -> dict:
+        return self._local.get_stats(user_id)
 
 
 class JarvisMemory:

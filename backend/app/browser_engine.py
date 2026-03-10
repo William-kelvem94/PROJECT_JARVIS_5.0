@@ -79,6 +79,27 @@ class BrowserEngine:
         
         return path
 
+    async def scroll(self, direction: str = "down", amount: int = 3):
+        if not self.page: await self.start()
+        delta = amount * 100
+        if direction == "down":
+            await self.page.mouse.wheel(0, delta)
+        elif direction == "up":
+            await self.page.mouse.wheel(0, -delta)
+        return f"Rolado {direction} por {amount} passos."
+
+    async def get_page_content(self):
+        if not self.page: await self.start()
+        try:
+            text = await self.page.inner_text("body")
+            return text[:8000]  # Limita para não explodir o contexto
+        except Exception as e:
+            return f"Erro ao extrair conteúdo da página: {e}"
+
+    async def get_current_url(self):
+        if not self.page: await self.start()
+        return self.page.url
+
     async def close(self):
         if self.context:
             await self.context.close()

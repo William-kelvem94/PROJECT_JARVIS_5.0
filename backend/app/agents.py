@@ -34,7 +34,7 @@ class Assistant(Agent):
         super().__init__(
             instructions=AGENT_INSTRUCTION,
             llm=google.realtime.RealtimeModel(
-                model="gemini-2.0-flash", # Usando a versão estável GA para evitar erro 1008
+                model="gemini-2.0-flash-live-001", # Modelo correto para bidiGenerateContent (Gemini Live API)
                 voice="Charon",
                 temperature=0.6,
             ),
@@ -44,6 +44,14 @@ class Assistant(Agent):
 
 async def entrypoint(ctx: agents.JobContext):
     
+    # Prefixes/substrings that identify system-injected messages (never save as memories)
+    _SYSTEM_MARKERS = [
+        SESSION_INSTRUCTION.strip()[:60],
+        "Apresente-se brevemente",
+        "#Tarefa",
+        "Forneça assistência usando as ferramentas",
+    ]
+
     async def shutdown_hook():
         logger.info("Shutdown iniciado: salvando contexto do chat na memória...")
         chat_ctx = session.history
@@ -53,20 +61,33 @@ async def entrypoint(ctx: agents.JobContext):
             if not hasattr(item, 'content') or item.content is None:
                 continue
             content_str = ''.join(item.content) if isinstance(item.content, list) else str(item.content)
+            content_stripped = content_str.strip()
+
+            # Filter out empty, system prompts and memory injections
+            if not content_stripped:
+                continue
             if memory_str and memory_str in content_str:
                 continue
+            if any(marker in content_stripped for marker in _SYSTEM_MARKERS):
+                continue
+            # Skip very short responses (greetings, acknowledgements)
+            if len(content_stripped) < 10:
+                continue
+
             if item.role in ['user', 'assistant']:
                 messages_formatted.append({
                     "role": item.role,
-                    "content": content_str.strip()
+                    "content": content_stripped
                 })
-        logger.info(f"Mensagens formatadas para memória: {messages_formatted}")
+
+        logger.info(f"Mensagens reais da sessão: {len(messages_formatted)} mensagens filtradas.")
         try:
             await asyncio.wait_for(
                 mem0.add(messages_formatted, user_id=user_id),
-                timeout=5.0,
+                timeout=8.0,
             )
-            logger.info(f"Contexto do chat salvo na memória para {user_id}.")
+            stats = mem0.get_local_stats(user_id)
+            logger.info(f"Memória salva para {user_id}. Stats locais: {stats}")
         except asyncio.TimeoutError:
             logger.warning("Timeout ao salvar memória, prosseguindo com cleanup.")
         except Exception as e:
@@ -231,7 +252,7 @@ async def entrypoint(ctx: agents.JobContext):
     
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
-            model="gemini-2.0-flash",
+            model="gemini-2.0-flash-live-001",
             voice="Charon",
             temperature=0.6,
         ),
