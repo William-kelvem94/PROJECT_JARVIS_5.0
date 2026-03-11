@@ -11,7 +11,7 @@ echo "Configuring WSL environment for Jarvis..."
 # ensure Python and node exist
 sudo apt update && sudo apt install -y python3 python3-venv python3-pip nodejs npm git curl
 
-# create backend virtualenv and install
+# create backend virtualenv and install (script expects python3)
 ./scripts/setup-backend.sh
 
 # frontend dependencies
