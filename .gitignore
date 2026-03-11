@@ -4,6 +4,7 @@ pnpm-lock.yaml
 
 # Python
 venv/
+backend/.venv/
 __pycache__/
 *.pyc
 
