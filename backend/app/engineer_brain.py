@@ -12,6 +12,7 @@ class EngineerBrain:
     def __init__(self, model="openrouter/free"):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.ollama_url = "http://localhost:11434/api/generate"
         self.model = model
 
     async def reason(self, prompt: str, context: str = ""):
@@ -69,6 +70,29 @@ class EngineerBrain:
         except Exception as e:
             logger.error(f"Falha na conexão com OpenRouter: {str(e)}")
             return f"Falha técnica ao consultar o cérebro engenheiro: {str(e)}"
+
+    async def reason_local(self, prompt: str, context: str = "", model: str = "llama3"):
+        """
+        Consulta o Ollama local para reflexão e processamento de fundo (Phases de Sonho).
+        """
+        logger.info(f"JARVIS refletindo localmente via Ollama ({model})...")
+        payload = {
+            "model": model,
+            "prompt": f"Contexto:\n{context}\n\nTarefa:\n{prompt}",
+            "stream": False
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.ollama_url, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data.get("response", "")
+                    else:
+                        logger.warning(f"Ollama local não respondeu (Status {response.status}). Certifique-se que o Ollama está rodando.")
+                        return None
+        except Exception as e:
+            logger.error(f"Erro ao conectar ao Ollama: {e}")
+            return None
 
 # Singleton para uso no sistema
 brain = EngineerBrain()

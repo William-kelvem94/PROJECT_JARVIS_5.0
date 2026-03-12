@@ -4,8 +4,17 @@ import psutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from . import routes
+from .utils.dream_processor import dream_processor
+import asyncio
+from loguru import logger
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup_event():
+    # Inicia o processamento de sonhos em background
+    asyncio.create_task(dream_processor.dream_loop())
+    logger.info("[Startup] Ciclo de Evolução (Ontogenia) iniciado.")
 
 # Allow CORS from frontend origin (adjust as needed)
 frontend_url = os.getenv("FRONTEND_URL", "*")

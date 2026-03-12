@@ -181,11 +181,14 @@ class PerceptionManager:
                 cam = self._find_camera(cv2)
                 if cam is None:
                     consecutive_failures += 1
-                    logger.warning(
-                        f"[Perception] Cannot open any camera "
-                        f"(attempt {consecutive_failures}/{MAX_FAILURES}), "
-                        f"retrying in {retry_delay}s..."
+                    msg = (
+                        f"[Perception] Câmera não encontrada ou ocupada "
+                        f"(tentativa {consecutive_failures}/{MAX_FAILURES}). "
                     )
+                    if os.name == 'nt':
+                        msg += "Dica: Verifique se outro app (como o navegador ou Teams) está usando a webcam."
+                    
+                    logger.warning(msg)
                     time.sleep(retry_delay)
                     continue
                 else:
@@ -233,8 +236,9 @@ class PerceptionManager:
             if gesture.head_gesture:
                 logger.info(f"[Perception] 🫡 Head: {gesture.head_gesture}")
 
-            # ~10 FPS for perception (0.1s sleep)
-            time.sleep(0.1)
+            # ~10 FPS se houver alguém, ~2 FPS se estiver vazio (Economia de CPU)
+            idle_sleep = 0.5 if not face.present else 0.1
+            time.sleep(idle_sleep)
 
         if cam:
             cam.release()
