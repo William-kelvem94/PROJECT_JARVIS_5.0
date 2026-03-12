@@ -100,7 +100,14 @@ def _get_mp_models():
     try:
         from mediapipe.tasks import python as _mp_tasks
         from mediapipe.tasks.python import vision as _mp_vision
-        base_opts = _mp_tasks.BaseOptions(model_asset_path=model_path)
+        
+        # Tenta usar GPU se possível
+        delegate = _mp_tasks.BaseOptions.Delegate.GPU if HAS_CV2 else _mp_tasks.BaseOptions.Delegate.CPU
+        
+        base_opts = _mp_tasks.BaseOptions(
+            model_asset_path=model_path,
+            delegate=delegate
+        )
         opts = _mp_vision.FaceLandmarkerOptions(
             base_options=base_opts,
             num_faces=4,
@@ -108,7 +115,7 @@ def _get_mp_models():
             min_tracking_confidence=0.4,
         )
         _mp_landmarker = _mp_vision.FaceLandmarker.create_from_options(opts)
-        logger.success("[FaceEngine] FaceLandmarker (tasks API) ready")
+        logger.success(f"[FaceEngine] FaceLandmarker ready (Delegate: {delegate.name})")
     except Exception as e:
         logger.error(f"[FaceEngine] MediaPipe init failed: {e}")
     return _mp_landmarker

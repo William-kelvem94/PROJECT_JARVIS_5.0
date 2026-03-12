@@ -143,18 +143,22 @@ export const SessionView = ({
     screenShare: appConfig.supportsScreenShare,
   };
 
+  const [perception, setPerception] = useState<any>(null);
+
   useEffect(() => {
     if (!session.room) return;
 
     const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
-      if (topic === 'reasoning') {
-        try {
-          const decoder = new TextDecoder();
-          const json = JSON.parse(decoder.decode(payload));
-          if (json.type === 'reasoning_state') {
-            setIsReasoning(json.active);
-          }
-        } catch (e) { console.error(e); }
+      const decoder = new TextDecoder();
+      try {
+        const json = JSON.parse(decoder.decode(payload));
+        if (topic === 'reasoning' && json.type === 'reasoning_state') {
+          setIsReasoning(json.active);
+        } else if (topic === 'perception' && json.type === 'perception_update') {
+          setPerception(json);
+        }
+      } catch (e) {
+        // console.error(e);
       }
     };
 
@@ -288,6 +292,44 @@ export const SessionView = ({
             <div className="text-[9px] text-violet-400/60 font-mono tracking-widest uppercase animate-pulse">
               Jarvis thinking deeper...
             </div>
+          </motion.div>
+        )}
+
+        {/* Perception HUD */}
+        {perception && perception.face_present && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="absolute z-30 top-12 left-1/2 -translate-x-1/2 flex gap-4"
+          >
+            <div className="px-4 py-2 bg-black/60 border border-[#1da3b9]/30 rounded-lg backdrop-blur-sm flex items-center gap-3">
+              <div className="size-2 rounded-full bg-green-500 animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[9px] text-[#1da3b9] uppercase font-bold tracking-tighter">Human Detected</span>
+                <span className="text-xs text-white/80 font-mono italic">
+                  {perception.face_identity || "Unknown Entity"}
+                </span>
+              </div>
+            </div>
+
+            <div className="px-4 py-2 bg-black/60 border border-[#1da3b9]/30 rounded-lg backdrop-blur-sm flex items-center gap-3">
+              <span className="text-lg">
+                {perception.face_emotion === 'happy' ? '😊' :
+                  perception.face_emotion === 'sad' ? '😢' :
+                    perception.face_emotion === 'angry' ? '😠' :
+                      perception.face_emotion === 'surprise' ? '😲' : '😐'}
+              </span>
+              <div className="flex flex-col">
+                <span className="text-[9px] text-[#1da3b9] uppercase font-bold tracking-tighter">Affective State</span>
+                <span className="text-xs text-white/80 font-mono uppercase">{perception.face_emotion || "neutral"}</span>
+              </div>
+            </div>
+
+            {perception.hand_gesture && (
+              <div className="px-4 py-2 bg-black/60 border border-yellow-500/30 rounded-lg backdrop-blur-sm flex items-center gap-3">
+                <span className="text-xs text-yellow-500 font-mono uppercase">Gesture: {perception.hand_gesture}</span>
+              </div>
+            )}
           </motion.div>
         )}
 

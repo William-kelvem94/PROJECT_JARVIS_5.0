@@ -157,8 +157,12 @@ def _get_whisper():
     if _whisper_model is None and HAS_WHISPER:
         try:
             from faster_whisper import WhisperModel  # type: ignore
-            _whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
-            logger.success("[VoiceEngine] faster-whisper tiny model loaded")
+            import torch
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            compute_type = "float16" if device == "cuda" else "int8"
+            
+            _whisper_model = WhisperModel("tiny", device=device, compute_type=compute_type)
+            logger.success(f"[VoiceEngine] faster-whisper tiny model loaded on {device.upper()}")
         except Exception as e:
             logger.error(f"[VoiceEngine] faster-whisper init failed: {e}")
     return _whisper_model

@@ -218,13 +218,13 @@ async def entrypoint(ctx: agents.JobContext):
                         json.dumps(telemetry),
                         topic="telemetry"
                     )
-                    # Heartbeat para monitoramento de saúde do processo
-                    logger.info(f"[HEARTBEAT] Jarvis Backend Ativo | CPU: {cpu}% | RAM: {ram}% | Load: {psutil.getloadavg()[0]}")
-                # Sleep aumentado para 10s (ADA Optimization)
-                await asyncio.sleep(10)
+                    # Debug log apenas (menos verboso)
+                    logger.debug(f"[PERF] CPU: {cpu}% | RAM: {ram}%")
+                # Sleep adaptativo: 15s de intervalo para telemetria
+                await asyncio.sleep(15)
             except Exception as e:
                 logger.error(f"Erro no loop de telemetria: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
     async def watchdog_loop():
         from .utils.workflow_engine import workflow_engine
         logger.info("Iniciando loop de Watchdogs...")
@@ -278,6 +278,22 @@ async def entrypoint(ctx: agents.JobContext):
     except Exception as _perc_err:
         logger.warning(f"[Perception] Engine not started (non-fatal): {_perc_err}")
 
+    # --- Dynamic System Instruction with Perception ---
+    async def get_dynamic_instruction():
+        try:
+            from .perception import perception_manager
+            snap = perception_manager.get_snapshot()
+            status = (
+                f"\n[SITUAÇÃO ATUAL]\n"
+                f"Usuário detectado: {'Sim' if snap['face_present'] else 'Não'}\n"
+                f"Identidade: {snap['face_identity'] or 'Desconhecido'}\n"
+                f"Emoção dominante: {snap['face_emotion']}\n"
+                f"Gesto detectado: {snap['hand_gesture'] or 'Nenhum'}\n"
+            )
+            return AGENT_INSTRUCTION + status
+        except:
+            return AGENT_INSTRUCTION
+
     agent = Assistant(chat_ctx=initial_ctx)
     
     session = AgentSession(
@@ -285,9 +301,10 @@ async def entrypoint(ctx: agents.JobContext):
             model=GEMINI_LIVE_MODEL,
             voice="Charon",
             temperature=0.6,
+            instructions=await get_dynamic_instruction()
         ),
         vad=silero.VAD.load(),
-        video_sampler=VoiceActivityVideoSampler(speaking_fps=1.0, silent_fps=0.1), # Lazy Visuals (1 quadro a cada 10s quando em silêncio)
+        video_sampler=VoiceActivityVideoSampler(speaking_fps=2.0, silent_fps=0.5), # Aumentado para melhor percepção visual
         tools=[
             *agents.llm.find_function_tools(SystemTools(room=ctx.room)),
             google.tools.GoogleSearch()
