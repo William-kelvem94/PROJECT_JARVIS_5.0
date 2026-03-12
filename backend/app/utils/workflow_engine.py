@@ -57,10 +57,48 @@ class WorkflowEngine:
         logger.info(f"Watchdog '{name}' ativado para {config['target']}")
         return True
 
-    def remove_watchdog(self, name: str):
-        if name in self.watchdogs:
-            del self.watchdogs[name]
-            return True
+    async def execute_step(self, step, tools_instance):
+        """Executa um passo individual do workflow."""
+        try:
+            if isinstance(step, str):
+                return tools_instance.execute_command(step)
+            elif isinstance(step, dict):
+                if "if" in step:
+                    # Lógica de decisão
+                    condition = step["if"]
+                    logger.info(f"[Workflow] Avaliando condição: {condition}")
+                    # Simples verificação por enquanto (expansível com eval/IA)
+                    if await self._check_condition(condition, tools_instance):
+                        return await self.execute_step(step.get("then"), tools_instance)
+                    else:
+                        return await self.execute_step(step.get("else"), tools_instance)
+                
+                cmd = step.get("cmd")
+                if cmd:
+                    return tools_instance.execute_command(cmd)
+                
+                tool_name = step.get("tool")
+                if tool_name:
+                    func = getattr(tools_instance, tool_name, None)
+                    if func:
+                        return await func(**step.get("args", {}))
+            return None
+        except Exception as e:
+            logger.error(f"Erro ao executar passo: {e}")
+            return f"Erro: {e}"
+
+    async def _check_condition(self, condition: str, tools_instance) -> bool:
+        """Avalia uma condição simples."""
+        # Se contiver 'perception', checa o snapshot
+        if "perception." in condition:
+            from ..perception.perception_manager import perception_manager
+            snap = perception_manager.get_snapshot()
+            key = condition.split(".")[1]
+            return bool(snap.get(key))
+        # Se contiver 'file_exists', checa o disco
+        if "file_exists:" in condition:
+            path = condition.split(":")[1].strip()
+            return os.path.exists(path)
         return False
 
     async def check_watchdogs(self):
