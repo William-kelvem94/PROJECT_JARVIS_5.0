@@ -4,6 +4,8 @@ pnpm-lock.yaml
 
 # Python
 venv/
+.venv/
+env/
 __pycache__/
 *.pyc
 
@@ -14,9 +16,13 @@ env/
 # IDE
 .vscode/
 
-# Runtime data — SQLite local DB e arquivos WAL
-backend/data/jarvis_local.db
-backend/data/jarvis_local.db-shm
-backend/data/jarvis_local.db-wal
+# Runtime data & Logs — SQLite e arquivos temporários
+backend/data/
+logs/
+KMS/logs/
+*.db
 *.db-shm
 *.db-wal
+*.png
+*.jpg
+*.log
