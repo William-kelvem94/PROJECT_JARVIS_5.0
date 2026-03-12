@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
+pydantic-settings
 
 livekit-agents
 livekit-plugins-openai
