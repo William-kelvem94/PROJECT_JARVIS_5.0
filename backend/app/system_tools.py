@@ -453,4 +453,73 @@ class SystemTools:
         except Exception as e:
             return f"Erro ao cadastrar voz: {e}"
 
+    @agents.llm.function_tool(description="Pesquisa no banco de conhecimento de código local (RAG). Use para entender como funções, classes ou módulos específicos do projeto funcionam, mesmo que os arquivos não estejam abertos.")
+    def search_codebase(self, query: str):
+        from .utils.code_indexer import code_miner
+        asyncio.create_task(self._log_activity("RAG de Código", f"Consultando: {query}", "info"))
+        try:
+            result = code_miner.query(query)
+            return f"Resultado da análise do repositório:\n{result}"
+        except Exception as e:
+            return f"Erro ao consultar a base de conhecimento: {e}"
 
+    @agents.llm.function_tool(description="Executa uma indexação completa do repositório de código para atualizar o banco de conhecimento (RAG).")
+    def refresh_code_index(self):
+        from .utils.code_indexer import code_miner
+        asyncio.create_task(self._log_activity("Indexação", "Atualizando base vetorial...", "info"))
+        try:
+            # Indexa a partir do diretório pai (raiz do projeto)
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            code_miner.index_codebase(root_dir)
+            return "Índice de código atualizado com sucesso."
+        except Exception as e:
+            return f"Erro na indexação: {e}"
+
+    @agents.llm.function_tool(description="Executa um comando de teste/build e tenta AUTO-CORRIGIR o código se houver erro. O Jarvis entrará em um loop de pensamento->ação->verificação até o erro sumir (limite de 3 tentativas).")
+    async def run_and_fix(self, command: str, target_file: str):
+        """Modo de Auto-Cura: Executa um comando e tenta corrigir o arquivo se falhar."""
+        attempt = 1
+        max_attempts = 3
+        last_error = ""
+
+        while attempt <= max_attempts:
+            asyncio.create_task(self._log_activity("God Mode", f"Tentativa {attempt}: {command}", "cmd"))
+            # Executa com timeout longo para builds
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
+            
+            if result.returncode == 0:
+                asyncio.create_task(self._log_activity("Sucesso!", f"O código em {target_file} está funcionando.", "info", "success"))
+                return f"Sucesso na tentativa {attempt}! Comando executado sem erros no arquivo {target_file}."
+            
+            # Se houver erro, captura e tenta corrigir
+            last_error = (result.stdout or "") + "\n" + (result.stderr or "")
+            logger.warning(f"[GodMode] Erro detectado na tentativa {attempt}: {last_error[:100]}...")
+            
+            # Consulta o cérebro engenheiro para uma correção
+            from .engineer_brain import brain
+            correction_task = (
+                f"O comando '{command}' falhou com o seguinte erro:\n{last_error}\n"
+                f"No arquivo: {target_file}.\n"
+                f"Por favor, analise o erro e forneça APENAS o código corrigido completo para substituir este arquivo agora."
+            )
+            
+            asyncio.create_task(self._log_activity("Auto-Correção", "Analisando erro e gerando reparo com IA...", "brain"))
+            correction_code = await brain.reason(correction_task, "Você é um Engenheiro Sênior em modo de Auto-Reparo (God Mode).")
+            
+            # Extrai código do markdown se necessário
+            if "```" in correction_code:
+                parts = correction_code.split("```")
+                # Pega a parte entre as crases (assume a maior se houver várias, ou a segunda parte do split)
+                correction_code = parts[1].split("\n", 1)[1] if "\n" in parts[1] else parts[1]
+                # Limpa rastro de fencas
+                if correction_code.endswith("```"):
+                    correction_code = correction_code[:-3]
+            
+            # Aplica a correção salvando o arquivo inteiro
+            with open(target_file, "w", encoding="utf-8") as f:
+                f.write(correction_code.strip())
+            
+            logger.info(f"[GodMode] Correção aplicada para a tentativa {attempt}. Testando novamente...")
+            attempt += 1
+        
+        return f"Falha após {max_attempts} tentativas de auto-correção. Último erro detectado:\n{last_error}"

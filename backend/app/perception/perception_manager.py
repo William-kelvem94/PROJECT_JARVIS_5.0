@@ -66,6 +66,8 @@ class PerceptionManager:
         self._camera_thread: Optional[threading.Thread] = None
         self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         self._wake_callbacks: List[Callable] = []
+        self._gesture_callbacks: List[Callable] = []
+        self._last_gesture = None
 
     # ── Configuration ──────────────────────────────────────────────────────────
 
@@ -75,6 +77,10 @@ class PerceptionManager:
     def on_wake_word(self, callback: Callable):
         """Register a (zero-arg) callable invoked when the wake word fires."""
         self._wake_callbacks.append(callback)
+
+    def on_gesture(self, callback: Callable):
+        """Register a (gesture_name, side) callable invoked when a gesture is detected."""
+        self._gesture_callbacks.append(callback)
 
     # ── State access (thread-safe) ─────────────────────────────────────────────
 
@@ -222,6 +228,17 @@ class PerceptionManager:
                 pointing_xy=gesture.pointing_xy,
                 active_levels=all_levels,
             )
+
+            # ── Proactive Gesture Trigger ────────────────────────────────────
+            if gesture.hand_gesture and gesture.hand_gesture != self._last_gesture:
+                if gesture.hand_gesture not in ("other", None):
+                    logger.info(f"[Perception] ⚡ Proactive Gesture Trigger: {gesture.hand_gesture}")
+                    for cb in self._gesture_callbacks:
+                        try:
+                            cb(gesture.hand_gesture, gesture.hand_side)
+                        except Exception as e:
+                            logger.warning(f"[Perception] Gesture callback error: {e}")
+                self._last_gesture = gesture.hand_gesture
 
             # Log interesting events
             if face.identity:

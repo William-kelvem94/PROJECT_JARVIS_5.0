@@ -272,6 +272,19 @@ async def entrypoint(ctx: agents.JobContext):
             )
 
         perception_manager.on_wake_word(_wake_word_handler)
+
+        def _gesture_handler(gesture, side):
+            """Invoked when a proactive gesture is detected."""
+            logger.info(f"[Proactive] Reagindo ao gesto {gesture} ({side})...")
+            # Injeta uma instrução silenciosa no Gemini para ele decidir o que fazer
+            asyncio.run_coroutine_threadsafe(
+                session.generate_reply(
+                    user_input=f"(O usuário fez o gesto {gesture}. Execute a ação apropriada ou pergunte se ele precisa de algo.)"
+                ),
+                asyncio.get_event_loop(),
+            )
+
+        perception_manager.on_gesture(_gesture_handler)
         perception_manager.start(room=ctx.room)
         asyncio.create_task(perception_manager.publish_loop())
         logger.success("[Perception] 🧠 Face + Gesture + Voice engines online")
