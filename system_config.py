@@ -1,17 +1,26 @@
 # system_config.py
 # Configuration file for JARVIS 5.0 Ecosystem
-
 import os
+import sys
 
-# Define recognized command aliases for opening notepad/text editor
-# This patch ensures multiple common commands are recognized
-COMMAND_ALIASES = {
-    "notepad": ["gedit", "xed", "nano", "vi", "code"],
-    "list_files": ["ls", "dir"],
-    "create_file": ["touch"]
-}
+# Detect OS
+is_windows = os.name == 'nt'
 
-# Environment patch to ensure command execution paths are respected
-os.environ["PATH"] += ":/usr/bin:/bin"
+# Define recognized command aliases based on OS
+if is_windows:
+    COMMAND_ALIASES = {
+        "notepad": ["notepad", "write", "code"],
+        "list_files": ["dir", "ls"],
+        "create_file": ["type nul >", "echo. >"]
+    }
+    # Windows path separator
+    os.environ["PATH"] += f";{os.getcwd()}"
+else:
+    COMMAND_ALIASES = {
+        "notepad": ["nano", "vi", "vim", "gedit"],
+        "list_files": ["ls", "dir"],
+        "create_file": ["touch"]
+    }
+    os.environ["PATH"] += ":/usr/bin:/bin"
 
-print("System configuration patched for command execution.")
+print(f"System configuration patched for {os.name} command execution.")

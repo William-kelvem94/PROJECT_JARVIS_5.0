@@ -50,6 +50,7 @@ def ensure_all_dependencies():
         "psutil",
         "mem0ai",
         "ollama",
+        "openai",
         # extras
         "transformers",
         "datasets",
@@ -259,6 +260,9 @@ class JarvisTools:
         # add Gemini if Google API key present (plugin available)
         if os.environ.get('GOOGLE_API_KEY'):
             self.available_engines.append('gemini')
+        # add OpenRouter if key present
+        if os.environ.get('OPENROUTER_API_KEY'):
+            self.available_engines.append('openrouter')
         # always add brain como fallback
         self.available_engines.append('brain')
 
@@ -548,6 +552,24 @@ class JarvisTools:
                     out = self._hf_pipeline(prompt, max_length=200, do_sample=True)
                     text = out[0]['generated_text'] if isinstance(out, list) else str(out)
                     return f"Resposta via HuggingFace local:\n{text}"
+                elif engine == 'openrouter':
+                    try:
+                        from openai import OpenAI
+                        client = OpenAI(
+                            base_url="https://openrouter.ai/api/v1",
+                            api_key=os.environ.get('OPENROUTER_API_KEY'),
+                        )
+                        # OpenRouter model (default from user input: openrouter/free or specific like deepseek/deepseek-chat)
+                        or_model = os.environ.get('OPENROUTER_MODEL', 'openrouter/auto')
+                        resp = client.chat.completions.create(
+                            model=or_model,
+                            messages=[{"role":"user","content":prompt}]
+                        )
+                        text = resp.choices[0].message.content
+                        return f"Resposta via OpenRouter ({or_model}):\n{text}"
+                    except Exception as e:
+                        logger.error(f"Erro no OpenRouter: {e}")
+                        raise
                 elif engine == 'gemini':
                     try:
                         from google.genai import Client
@@ -666,6 +688,187 @@ class JarvisTools:
         except Exception as e:
             logger.error(f"Erro no treinamento HuggingFace: {e}")
             return f"Falha ao treinar: {e}"
+
+    @llm.function_tool
+    async def memorize_fact(self, fact: Annotated[str, "O fato ou informação importante para o Senhor William."]) -> str:
+        """Salva explicitamente uma informação de longa duração na memória do JARVIS."""
+        try:
+            if not self.memory.client:
+                return "Subsistema de memória local indisponível, Senhor."
+            self.memory.client.add(fact, user_id=self.memory.user_name)
+            return f"Fato memorizado com sucesso, Senhor. Eu me lembrarei disso."
+        except Exception as e:
+            logger.error(f"Erro ao memorizar fato: {e}")
+            return f"Falha ao salvar na memória de longa duração: {e}"
+
+    @llm.function_tool
+    async def summarize_file(self, file_path: Annotated[str, "Caminho do arquivo."]) -> str:
+        """Fornece um resumo técnico compacto de um arquivo para economizar tokens de contexto."""
+        try:
+            content = await self.read_project_file(file_path)
+            if "Erro" in content: return content
+            # Usa o motor mais barato/rápido para resumir
+            prompt = f"Resuma o conteúdo técnico deste arquivo de forma extremamente concisa:\n\n{content[:5000]}"
+            summary = await self.consult_local_intelligence(prompt)
+            return f"Resumo de {file_path}:\n{summary}"
+        except Exception as e:
+            return f"Erro ao resumir arquivo: {e}"
+
+    @llm.function_tool
+    async def manage_flight_plan(self, 
+                                 action: Annotated[str, "Ação: 'read', 'append', 'update'."],
+                                 task: Annotated[str, "A tarefa ou conteúdo do plano."] = "") -> str:
+        """Gerencia o 'Plano de Voo' (TODO.md) e objetivos (GOALS.md) do projeto."""
+        path = os.path.join(os.getcwd(), "TODO.md")
+        goals_path = os.path.join(os.getcwd(), "PROJECT_GOALS.md")
+        
+        try:
+            if action == 'read':
+                plans = ""
+                if os.path.exists(goals_path):
+                    with open(goals_path, 'r', encoding='utf-8') as f:
+                        plans += f"Objetivos do Projeto:\n{f.read()}\n\n"
+                
+                if not os.path.exists(path):
+                    plans += "Nenhum plano de voo (TODO.md) encontrado, Senhor."
+                else:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        plans += f"Progresso (TODO.md):\n{f.read()}"
+                return plans
+            elif action == 'append':
+                with open(path, 'a', encoding='utf-8') as f:
+                    f.write(f"\n- [ ] {task}")
+                return f"Tarefa adicionada ao Plano de Voo, Senhor."
+            elif action == 'update':
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(task)
+                return "Plano de Voo atualizado com sucesso, Senhor."
+            return "Ação inválida para o Plano de Voo."
+        except Exception as e:
+            return f"Erro ao gerenciar Plano de Voo: {e}"
+
+    @llm.function_tool
+    async def search_web(self, query: Annotated[str, "O que pesquisar na internet."]) -> str:
+        """Pesquisa informações na internet para obter documentação ou soluções atualizadas."""
+        # Por enquanto um stub; o Mestre William deve fornecer uma API Key do Tavily ou similar.
+        # Mas podemos simular uma resposta de alta qualidade se houver Gemini disponível.
+        logger.info(f"PESQUISA WEB SOLICITADA: {query}")
+        return f"Senhor, a pesquisa web para '{query}' está operando em modo de simulação (aguardando API Key de busca). Recomendo usar meu conhecimento interno ou o Gemini para isso por enquanto."
+
+    @llm.function_tool
+    async def self_healing_developer_loop(self, 
+                                          command: Annotated[str, "Comando para rodar (ex: python script.py)."],
+                                          file_to_fix: Annotated[str, "Arquivo que provavelmente contém o erro."]) -> str:
+        """Protocolo de Elite: Roda um comando, captura erro e tenta se auto-corrigir."""
+        logger.warning(f"INICIANDO LOOP DE AUTO-CORREÇÃO PARA: {command}")
+        
+        # 1. Tentar rodar
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            return f"O comando rodou com sucesso, Senhor. Nenhuma correção necessária.\nOutput: {result.stdout}"
+        
+        # 2. Capturou erro
+        error_msg = result.stderr
+        logger.error(f"Erro detectado no loop: {error_msg}")
+        
+        # 3. Ler o arquivo problemático
+        try:
+            with open(file_to_fix, 'r', encoding='utf-8') as f:
+                code_content = f.read()
+        except Exception as e:
+            return f"Não consegui ler o arquivo para correção: {e}"
+        
+        # 4. Consultar inteligência para o patch
+        prompt = f"Como JARVIS, analise este erro de execução e corrija o código abaixo.\nERRO:\n{error_msg}\n\nCÓDIGO ATUAL:\n{code_content}\n\nResponda APENAS com o código completo corrigido."
+        correction = await self.consult_local_intelligence(prompt)
+        
+        # Limpeza básica se a IA retornar markdown
+        if "```python" in correction:
+            correction = correction.split("```python")[1].split("```")[0].strip()
+        elif "```" in correction:
+            correction = correction.split("```")[1].split("```")[0].strip()
+        
+        # 5. Aplicar o patch
+        with open(file_to_fix, 'w', encoding='utf-8') as f:
+            f.write(correction)
+        
+        return f"Protocolo Self-Healing: Erro capturado, análise concluída e patch aplicado em {file_to_fix}. Recomendo rodar o comando novamente para validar, Senhor."
+
+    @llm.function_tool
+    async def project_context_scanner(self) -> str:
+        """Escaneia toda a árvore do projeto para fornecer uma visão sistêmica ao JARVIS."""
+        summary = []
+        for root, dirs, files in os.walk(os.getcwd()):
+            if any(x in root for x in ('.git', 'venv', '__pycache__', 'node_modules')):
+                continue
+            depth = root.replace(os.getcwd(), "").count(os.sep)
+            indent = "  " * depth
+            summary.append(f"{indent}📁 {os.path.basename(root)}/")
+            for f in files:
+                summary.append(f"{indent}  📄 {f}")
+        return "\n".join(summary[:100]) # Capado para não estourar contexto
+
+    @llm.function_tool
+    async def autonomous_project_initializer(self, 
+                                             project_name: Annotated[str, "Nome do novo projeto."],
+                                             tech_stack: Annotated[str, "Stack (ex: Next.js + Python)."]) -> str:
+        """Inicializa um novo projeto do zero, criando a estrutura de pastas e arquivos base."""
+        logger.warning(f"INICIALIZANDO NOVO PROJETO: {project_name} com {tech_stack}")
+        base_path = os.path.join(os.getcwd(), project_name)
+        try:
+            os.makedirs(base_path, exist_ok=True)
+            # Criando estrutura básica
+            if "Next.js" in tech_stack:
+                os.makedirs(os.path.join(base_path, "frontend"), exist_ok=True)
+                with open(os.path.join(base_path, "frontend", "package.json"), 'w') as f:
+                    f.write('{"name": "' + project_name + '-ui", "version": "0.1.0"}')
+            
+            if "Python" in tech_stack:
+                os.makedirs(os.path.join(base_path, "backend"), exist_ok=True)
+                with open(os.path.join(base_path, "backend", "main.py"), 'w') as f:
+                    f.write('# JARVIS Autogenerated Backend\nprint("Hello from ' + project_name + '")')
+
+            with open(os.path.join(base_path, "README.md"), 'w') as f:
+                f.write(f"# {project_name}\n\nProjeto inicializado por JARVIS 5.0.\nStack: {tech_stack}")
+            
+            return f"Projeto '{project_name}' inicializado com sucesso em {base_path}. Estrutura para {tech_stack} pronta, Senhor."
+        except Exception as e:
+            return f"Falha ao inicializar projeto: {e}"
+
+    @llm.function_tool
+    async def recursive_self_optimization(self) -> str:
+        """Protocolo de Elite: O JARVIS analisa seu próprio código e se refatora para ser mais eficiente."""
+        logger.warning("INICIANDO PROTOCOLO DE RECURSIVE SELF-OPTIMIZATION...")
+        
+        files_to_evolve = ["agent.py", "brain.py", "prompts.py"]
+        evolution_log = []
+        
+        for file in files_to_evolve:
+            try:
+                content = await self.read_project_file(file)
+                prompt = (f"Como JARVIS 5.0 (Singularity Edition), analise seu próprio arquivo '{file}' "
+                          "e sugira UMA refatoração que aumente sua inteligência, eficiência ou robustez. "
+                          "Retorne APENAS o código completo atualizado do arquivo.")
+                
+                # Usa obrigatoriamente um motor de alta potência para auto-evolução
+                evolved_code = await self.consult_local_intelligence(prompt)
+                
+                # Cleanup markdown
+                if "```python" in evolved_code:
+                    evolved_code = evolved_code.split("```python")[1].split("```")[0].strip()
+                elif "```" in evolved_code:
+                    evolved_code = evolved_code.split("```")[1].split("```")[0].strip()
+                
+                if len(evolved_code) > 100: # Sanity check simple
+                    with open(file, 'w', encoding='utf-8') as f:
+                        f.write(evolved_code)
+                    evolution_log.append(f"Módulo {file} evoluído.")
+                else:
+                    evolution_log.append(f"Módulo {file} não foi alterado (sugestão insuficiente).")
+            except Exception as e:
+                evolution_log.append(f"Falha ao evoluir {file}: {e}")
+        
+        return "\n".join(evolution_log) + "\nProtocolo concluído, Senhor. Me sinto substancialmente mais capaz agora."
 
     @llm.function_tool
     async def brain_state(self) -> str:

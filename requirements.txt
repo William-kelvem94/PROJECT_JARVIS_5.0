@@ -13,6 +13,8 @@ ollama
 # extras for extended engine support and utilities
 transformers
 datasets
+openai
 vllm
 llama-cpp-python
 # duckduckgo-search removed per user request (web search tool eliminated)
+tavily-python # Added for future robust search
