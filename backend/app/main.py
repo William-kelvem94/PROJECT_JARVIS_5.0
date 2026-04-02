@@ -3,10 +3,17 @@ import datetime
 import psutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 from . import routes
 from .utils.dream_processor import dream_processor
 import asyncio
 from loguru import logger
+
+# Carrega variáveis de ambiente de arquivos .env, incluindo caminho absoluto para garantir consistência de cwd
+from pathlib import Path
+base_dir = Path(__file__).resolve().parents[2]  # PROJECT_JARVIS_5.0
+load_dotenv(base_dir / '.env')
+load_dotenv(base_dir / 'env' / '.env', override=False)
 
 app = FastAPI()
 
@@ -62,6 +69,14 @@ def status_check():
     return {
         "status": "ok",
         "checks": checks,
+        "env": {
+            "LIVEKIT_URL": os.getenv("LIVEKIT_URL"),
+            "LIVEKIT_API_KEY": bool(os.getenv("LIVEKIT_API_KEY")),
+            "LIVEKIT_API_SECRET": bool(os.getenv("LIVEKIT_API_SECRET")),
+            "GOOGLE_API_KEY": bool(os.getenv("GOOGLE_API_KEY")),
+            "GEMINI_API_KEY": bool(os.getenv("GEMINI_API_KEY")),
+            "OPENROUTER_API_KEY": bool(os.getenv("OPENROUTER_API_KEY")),
+        },
         "timestamp": datetime.datetime.now().isoformat(),
     }
 
