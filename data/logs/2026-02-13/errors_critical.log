@@ -1,0 +1,112 @@
+2026-02-13 17:58:50,757 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 17:58:51,151 - JARVIS-CORE - ERROR - ❌ Background Boot Failed: operator torchvision::nms does not exist
+2026-02-13 18:14:09,535 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 18:15:12,980 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 18:15:56,451 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:15:56,789 - JARVIS-CORE - ERROR - ❌ Background Boot Failed: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
+2026-02-13 18:37:55,669 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 18:39:27,319 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:39:27,699 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:39:27,699 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:39:27,699 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:39:31,636 - JARVIS-CORE - ERROR - ❌ Background Boot Failed: cannot access free variable 'PROJECT_ROOT' where it is not associated with a value in enclosing scope
+2026-02-13 18:44:05,562 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 18:44:58,356 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:44:58,824 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:44:58,824 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:44:58,824 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:44:59,801 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar EasyOCR: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
+2026-02-13 18:44:59,815 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar YOLO: cannot import name 'YOLO' from 'ultralytics' (C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\venv\Lib\site-packages\ultralytics\__init__.py)
+2026-02-13 18:56:21,418 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:56:21,775 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:56:21,776 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:56:21,776 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:56:22,322 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:56:22,433 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar EasyOCR: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
+2026-02-13 18:56:22,446 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar YOLO: cannot import name 'YOLO' from 'ultralytics' (C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\venv\Lib\site-packages\ultralytics\__init__.py)
+2026-02-13 18:56:22,548 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:56:22,548 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:56:22,548 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:56:22,848 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar EasyOCR: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
+2026-02-13 18:56:22,856 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar YOLO: cannot import name 'YOLO' from 'ultralytics' (C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\venv\Lib\site-packages\ultralytics\__init__.py)
+2026-02-13 18:57:44,416 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:57:46,257 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:57:46,258 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:57:46,258 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:57:48,067 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar EasyOCR: partially initialized module 'torchvision' has no attribute 'extension' (most likely due to a circular import)
+2026-02-13 18:57:48,077 - src.core.vision.vision_system - ERROR - âŒ Vision: Erro ao carregar YOLO: cannot import name 'YOLO' from 'ultralytics' (C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\venv\Lib\site-packages\ultralytics\__init__.py)
+2026-02-13 18:59:13,504 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 18:59:51,386 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 18:59:51,389 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 18:59:51,392 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 18:59:51,394 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:00,918 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:00:02,021 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:02,194 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:04,897 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:00:04,897 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:00:04,897 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:00:05,868 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 19:00:45,412 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:45,414 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:45,417 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:45,420 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:55,314 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:00:55,341 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:55,344 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:00:56,580 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:00:56,580 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:00:56,580 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:00:58,292 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 19:02:00,402 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:00,403 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:00,406 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:00,407 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:06,504 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:02:06,521 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:06,522 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:07,434 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:02:07,435 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:02:07,435 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:02:12,716 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:02:55,094 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:55,095 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:55,098 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:02:55,098 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:03:00,455 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:03:00,470 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:03:00,472 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:03:01,441 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:03:01,441 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:03:01,442 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:03:01,870 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:03:02,875 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 19:04:38,669 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:04:38,671 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:04:38,673 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:04:38,674 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:05:02,299 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:05:02,302 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:05:21,248 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:05:21,254 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:05:21,258 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:08:20,615 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:20,617 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:20,618 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:20,620 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:31,865 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:31,867 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:08:39,120 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:08:39,123 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:08:39,124 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:08:40,611 - src.core.management.auto_recovery_system - ERROR - âŒ Could not save historical data: sys.meta_path is None, Python is likely shutting down
+2026-02-13 19:09:17,189 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:17,191 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:17,192 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:17,193 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:25,073 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:25,075 - chromadb.telemetry.product.posthog - ERROR - Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-02-13 19:09:28,052 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:09:28,053 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:09:28,053 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:10:46,500 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: O arquivo de paginação é muito pequeno para que esta operação seja concluída. (os error 1455)
