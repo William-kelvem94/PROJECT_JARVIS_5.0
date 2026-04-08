@@ -1,0 +1,3 @@
+@echo off
+echo Starting JARVIS 5.0 Complete Stack...
+start "Backend" cmd /k "cd backend && .\venv\Scripts\activate.bat && uvicorn app.main:app --reload --host 0.0
