@@ -4,6 +4,7 @@ import psutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from ...config.settings import settings
 from . import routes
 from .utils.dream_processor import dream_processor
 import asyncio
