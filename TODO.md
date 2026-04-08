@@ -1,25 +1,27 @@
-# TODO.md - Plano de Correções JARVIS 5.0 (PT-BR)
+# TODO - Organização BATs para JARVIS 5.0
 
-## 📋 Phase 1: Tornar Funcional AGORA (Workers + Scripts)
-- [ ] 1. ✅ Criado este TODO.md
-- [x] 2. ✅ Corrigir `backend/agents_worker.py` → CLI LiveKit completo
-- [x] 3. ✅ Remover `backend/agents_worker_fixed.py` (truncado)\n- [x] 4. ✅ Fix `start-jarvis.bat` → chamar `python agents_worker.py`
+## Passos do Plano Aprovado (DEVOPS branch)
 
-- [ ] 6. Criar `.env.example` com chaves (LIVEKIT/GEMINI)
-- [ ] 7. `python backend/setup.py` → validar deps
-- [ ] 8. `start-jarvis.bat` → Backend 8000 + Frontend 3000 + Worker UP
-- [ ] 9. Teste: localhost:3000 → Conectar agente voz/video
+### 1. [x] Criar start-jarvis.bat unificado completo
+   - Verificações: .env, venv, playwright, models
+   - Iniciar 4 janelas paralelas:
+     * Backend API (uvicorn)
+     * Agents Worker (livekit agents)
+     * LiveKit Worker (agents CLI)
+     * Frontend (npm dev)
 
-## 🔧 Phase 2: Otimizações
-- [ ] Screenshot gallery: 30s poll + cache
-- [ ] agents.py: Fix imports menores (datetime/GPUtil)
-- [ ] Testes: pytest backend/tests/
-- [ ] Docker: compose up
-- [ ] Monitoring: scripts/monitor-heartbeat.ps1
+### 2. [x] Renomear arquivos antigos para .bak
+   - start-all.bat -> start-all.bat.bak
+   - run-agent-worker.bat -> run-agent-worker.bat.bak  
+   - run-livekit-worker.bat -> run-livekit-worker.bat.bak
 
-## 📊 Status
-- **Atual**: Phase 1 iniciada
-- **Próximo**: Aguardar confere edits → marcar [x]
+### 3. [] Testar start-jarvis.bat novo
+   - Executar e verificar serviços (8000, 7880 workers?, 3000 frontend)
 
-**Comando para testar após edits**: `start-jarvis.bat`
+### 4. [x] Commit e push
+   - Mensagem PTBR: "Launcher único BAT completo + organização arquivos"
+
+### 5. [ ] Atualizar README.md com instruções novas
+
+Progresso: Iniciando passo 1...
 
