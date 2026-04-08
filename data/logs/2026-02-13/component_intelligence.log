@@ -1,0 +1,483 @@
+2026-02-13 17:58:10 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 17:58:14 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 17:58:14 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 17:58:14 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 17:58:39 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 17:58:40 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 17:58:50 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 17:58:50 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:15:37 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:15:41 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:15:41 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:15:41 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:15:50 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:15:50 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:15:56 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:15:56 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:15:56 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:15:56 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:15:56 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:15:56 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:15:56 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:15:56 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:39:08 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:39:12 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:39:12 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:39:12 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:39:23 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:39:23 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:39:27 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:39:27 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:39:27 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:39:27 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:39:27 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:44:42 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:44:47 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:44:47 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:44:47 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:44:52 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:44:52 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:44:58 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:44:58 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:44:58 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:44:58 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:44:58 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:45:14 - src.core.intelligence.proactive_monitor - INFO - âš™ï¸ Monitor Proativo Otimizado: Intervalo=300.0s, Threshold=0.25, Cooldown=600.0s
+2026-02-13 18:45:14 - src.core.intelligence.proactive_monitor - INFO - Monitor Proativo iniciado (Intervalo: 300.0s)
+2026-02-13 18:56:06 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:56:10 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:56:10 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:56:10 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:56:10 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:56:14 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:56:14 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:56:14 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:56:16 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:56:16 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:56:19 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:56:19 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:56:21 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:56:21 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:56:21 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:56:21 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:56:21 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:56:22 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:56:22 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:56:22 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:56:22 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:56:22 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:56:37 - src.core.intelligence.proactive_monitor - INFO - âš™ï¸ Monitor Proativo Otimizado: Intervalo=300.0s, Threshold=0.25, Cooldown=600.0s
+2026-02-13 18:56:37 - src.core.intelligence.proactive_monitor - INFO - Monitor Proativo iniciado (Intervalo: 300.0s)
+2026-02-13 18:57:30 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:57:34 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:57:34 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:57:34 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:57:39 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:57:39 - src.core.intelligence.neural_memory - WARNING - Bibliotecas neurais (chromadb) nÃ£o instaladas. MemÃ³ria desativada.
+2026-02-13 18:57:44 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 18:57:44 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 18:57:45 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 18:57:45 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 18:57:45 - src.core.intelligence.memory_manager - WARNING - ChromaDB nÃ£o disponÃ­vel. MemÃ³ria em modo fallback (RAM).
+2026-02-13 18:57:45 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 18:57:45 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 18:57:46 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 18:58:03 - src.core.intelligence.proactive_monitor - INFO - âš™ï¸ Monitor Proativo Otimizado: Intervalo=300.0s, Threshold=0.25, Cooldown=600.0s
+2026-02-13 18:58:03 - src.core.intelligence.proactive_monitor - INFO - Monitor Proativo iniciado (Intervalo: 300.0s)
+2026-02-13 18:59:08 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:59:12 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:59:12 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:59:12 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 18:59:44 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 18:59:48 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 18:59:48 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 18:59:48 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:00:00 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:00:00 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:00:00 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:00:00 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:00:02 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:00:02 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:00:02 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:00:02 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:00:02 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:00:04 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:00:40 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:00:44 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:00:44 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:00:44 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:00:55 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:00:55 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:00:55 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:00:55 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:00:55 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:00:55 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:00:55 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:00:56 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:01:55 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:01:59 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:01:59 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:01:59 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:02:06 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:02:06 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:02:06 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:02:06 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:02:06 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:02:06 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:02:06 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:02:07 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:02:12 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:02:12 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:02:50 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:02:54 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:02:54 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:02:54 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:03:00 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:03:00 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:03:00 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:03:00 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:03:00 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:03:00 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:03:00 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - â„¹ï¸ Local Brain em modo de espera (Lazy Load ou Cloud-Only)
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:03:01 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:03:01 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:03:01 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: name 'AutoTokenizer' is not defined
+2026-02-13 19:04:33 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:04:37 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:04:37 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:04:37 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:05:01 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:05:02 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:05:02 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:05:02 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:05:02 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:05:02 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:05:08 - src.core.intelligence.local_brain - INFO - ðŸ  Usando motor PyTorch Nativo (CPU)...
+2026-02-13 19:05:20 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - â³ Local Brain estÃ¡ inicializando em background...
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:05:21 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:08:15 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:08:19 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:08:19 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:08:19 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:08:31 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:08:31 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:08:31 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:08:31 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:08:31 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:08:31 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:08:35 - src.core.intelligence.local_brain - INFO - ðŸ  Usando motor PyTorch Nativo (CPU)...
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - â³ Local Brain estÃ¡ inicializando em background...
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:08:39 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:09:12 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: ConfiguraÃ§Ãµes carregadas de ai_config.yaml
+2026-02-13 19:09:16 - src.core.intelligence.brain_router - WARNING - âš ï¸ Ollama nÃ£o estÃ¡ acessÃ­vel - serÃ¡ detectado posteriormente
+2026-02-13 19:09:16 - src.core.intelligence.brain_router - INFO - âœ… BrainRouter: Cloud integration initialized (Available: False)
+2026-02-13 19:09:16 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router carregado (Decision Engine)
+2026-02-13 19:09:24 - src.core.intelligence.local_brain - INFO - ðŸ§  [LOCAL BRAIN] Iniciando motor neural: Qwen/Qwen2.5-1.5B-Instruct
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… System Controller carregado (God Mode)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Code Generator carregado (Auto-Programming)
+2026-02-13 19:09:25 - src.core.intelligence.memory_manager - INFO - âœ… ChromaDB inicializado: 0 memÃ³rias
+2026-02-13 19:09:25 - src.core.intelligence.memory_manager - DEBUG - ChromaDB Schema mismatch detected. Using manual cleanup fallback.
+2026-02-13 19:09:25 - src.core.intelligence.memory_manager - INFO - ðŸ§¹ Thread de manutenÃ§Ã£o de memÃ³ria iniciada (TTL: 30 dias)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Memory Manager carregado (Auto-Learning)
+2026-02-13 19:09:25 - src.core.intelligence.memory_manager - DEBUG - Nenhuma memoria antiga encontrada para limpeza manual.
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Learning Engine carregado (Continual Evolution)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Vision Enhancer carregado (YOLO + OCR)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Performance Optimizer carregado (Cache + Metrics)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output nÃ£o disponÃ­vel: No module named 'aiofiles'
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… MÃ³dulos Stark Phase 2/4 carregados (Contexto + Nexus + Device + Dreaming + Curiosity)
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… FASE 3: Jaula de Vidro (OS Monitor + Action Validator) ativa
+2026-02-13 19:09:25 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:09:26 - src.core.intelligence.local_brain - INFO - ðŸ  Usando motor PyTorch Nativo (CPU)...
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Advanced Security Manager nÃ£o disponÃ­vel
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - ðŸ”§ AI Agent auto-recovery integration established
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - CRITICAL - âŒ DEPENDÃŠNCIAS CRÃTICAS FALTANDO: ['voice_controller']
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - CRITICAL - ðŸ”’ INICIANDO EM MODO SEGURO - Funcionalidade limitada
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - CRITICAL - ðŸ’¡ Execute: pip install -r requirements.txt
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - WARNING - âš ï¸ MÃ³dulos degradados: ['structured_output', 'voice_controller']
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - WARNING - âš ï¸ Structured Output indisponÃ­vel â†’ fallback para regex (menos confiÃ¡vel)
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - â³ Local Brain estÃ¡ inicializando em background...
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… ConfiguraÃ§Ãµes de IA carregadas
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Brain Router inicializado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Action Controller carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Vision Pipeline carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Advanced Speech Processor carregado
+2026-02-13 19:09:28 - src.core.intelligence.ai_agent - INFO - âœ… Workflow Engine carregado
+2026-02-13 19:09:59 - src.core.intelligence.proactive_monitor - INFO - âš™ï¸ Monitor Proativo Otimizado: Intervalo=300.0s, Threshold=0.25, Cooldown=600.0s
+2026-02-13 19:09:59 - src.core.intelligence.proactive_monitor - INFO - Monitor Proativo iniciado (Intervalo: 300.0s)
+2026-02-13 19:10:46 - src.core.intelligence.local_brain - ERROR - âš ï¸ Falha catastrÃ³fica no LocalBrain: O arquivo de paginação é muito pequeno para que esta operação seja concluída. (os error 1455)
