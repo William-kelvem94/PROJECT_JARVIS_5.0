@@ -31,7 +31,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
 
     useEffect(() => {
         fetchScreenshots();
-        const interval = setInterval(fetchScreenshots, 12000); // Polling cada 12s para performance
+const interval = setInterval(fetchScreenshots, 30000); // Polling cada 30s para performance
         return () => clearInterval(interval);
     }, [apiUrl]);
 
