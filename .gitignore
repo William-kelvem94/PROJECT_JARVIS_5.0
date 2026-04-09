@@ -24,4 +24,4 @@ backend/data/jarvis_local.db-wal
 *.db-wal
 
 # Tasks
-todo.md
+TODO.md
