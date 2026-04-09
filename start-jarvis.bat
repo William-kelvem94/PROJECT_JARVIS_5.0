@@ -102,13 +102,9 @@ timeout /t 2 /nobreak >nul
 REM Backend API FastAPI 8000
 start "JARVIS Backend API 8000" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [API] JARVIS Backend && color A && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-REM Agent Worker 1 - CORRETO agents_worker.py
+REM Agent Worker - LiveKit agents_worker.py (porta HTTP interna 8081)
 timeout /t 4 >nul
-start "JARVIS Agent Worker 1" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker1] Agents && color C && python agents_worker.py start"
-
-REM Agent Worker 2 - Duplicado para estabilidade
-timeout /t 4 >nul
-start "JARVIS Agent Worker 2" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker2] LiveKit && color D && python agents_worker.py start"
+start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker] JARVIS Agents && color C && python agents_worker.py start"
 
 REM Frontend 3000
 timeout /t 4 >nul
@@ -124,7 +120,7 @@ echo   🚀 JARVIS 5.0 FULLSTACK RODANDO ^| SENIOR EDITION
 echo  ========================================================
 echo  API:    http://localhost:8000/docs  ^<-- Teste primeiro! 
 echo  FRONT:  http://localhost:3000
-echo  Workers: 2x LiveKit agents_worker.py (logs nas janelas)
+echo  Worker: LiveKit agents_worker.py (porta HTTP 8081)
 echo  ========================================================
 echo  Janelas minimizadas. Feche individualmente para parar.
 echo  Launcher aberto para monitoramento.
