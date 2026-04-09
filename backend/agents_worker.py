@@ -5,14 +5,19 @@ Execute: python backend/agents_worker.py
 """
 
 import sys
-import os
-sys.path.insert(0, os.path.dirname(__file__))
+from pathlib import Path
+
+base_dir = Path(__file__).resolve().parents[1]  # backend
+project_root = base_dir.parent
+sys.path.insert(0, str(project_root))
+sys.path.insert(0, str(base_dir))
 
 from dotenv import load_dotenv
 from livekit.agents import cli, WorkerOptions
-from app.agents import entrypoint
+from src.core.agents import entrypoint
 
-load_dotenv(override=True)
+load_dotenv(project_root / '.env', override=False)
+load_dotenv(project_root / 'env' / '.env', override=True)
 
 if __name__ == "__main__":
     cli.run_app(

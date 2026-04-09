@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
 # Chain load: root .env → env/.env (override)
-base_dir = Path(__file__).resolve().parents[3]  # PROJECT_JARVIS_5.0 root
+base_dir = Path(__file__).resolve().parents[1]  # PROJECT_JARVIS_5.0 root
 load_dotenv(base_dir / '.env')
 load_dotenv(base_dir / 'env' / '.env', override=True)
 
