@@ -14,10 +14,15 @@ async def load_kb():
     vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
 
     if not kb_path and vault_root:
-        fallback_candidate = os.path.join(vault_root, "Projetos", "Privados", "PROJECT_JARVIS_5.0-KnowledgeBase")
-        if os.path.isdir(fallback_candidate):
-            kb_path = fallback_candidate
-            logger.info(f"[KB] Usando fallback de vault root: {kb_path}")
+        # Tenta o segundo cérebro consolidado (nova estrutura)
+        fallback_jarvis = os.path.join(vault_root, "JARVIS")
+        fallback_old_kb = os.path.join(vault_root, "Projetos", "Privados", "PROJECT_JARVIS_5.0-KnowledgeBase")
+        if os.path.isdir(fallback_jarvis):
+            kb_path = fallback_jarvis
+            logger.info(f"[KB] Usando segundo cérebro JARVIS/: {kb_path}")
+        elif os.path.isdir(fallback_old_kb):
+            kb_path = fallback_old_kb
+            logger.info(f"[KB] Usando fallback KB antiga: {kb_path}")
 
     if not kb_path or not os.path.exists(kb_path):
         logger.warning(f"[KB] Caminho inválido: {kb_path}. Pulando.")

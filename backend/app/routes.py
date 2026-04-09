@@ -99,3 +99,31 @@ async def get_logs(date: str):
     logs = log_manager.get_logs_by_date(date)
     return {"logs": logs}
 
+@router.get("/vault-stats")
+def vault_stats():
+    """Retorna estatísticas do vault Obsidian (segundo cérebro do Jarvis)."""
+    from .vault_memory import get_vault_stats
+    return get_vault_stats()
+
+class VaultMemoryRequest(BaseModel):
+    title: str
+    content: str
+    project: str = ""
+    keywords: list[str] = []
+    importance: str = "MEDIA"
+
+@router.post("/vault-memory")
+def save_vault_memory(req: VaultMemoryRequest):
+    """Salva uma memória episódica no vault Obsidian."""
+    from .vault_memory import save_episodic, is_vault_available
+    if not is_vault_available():
+        raise HTTPException(status_code=503, detail="Vault Obsidian não disponível.")
+    path = save_episodic(
+        title=req.title,
+        content=req.content,
+        project=req.project,
+        keywords=req.keywords,
+        importance=req.importance,
+    )
+    return {"saved": True, "path": path}
+

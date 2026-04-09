@@ -24,6 +24,15 @@ async def startup_event():
     from .kb_loader import load_kb
     kb_count = await load_kb()
     
+    # Verifica e registra disponibilidade do vault Obsidian
+    from .vault_memory import is_vault_available, get_vault_stats
+    vault_ok = is_vault_available()
+    if vault_ok:
+        stats = get_vault_stats()
+        logger.success(f"[Startup] Vault Obsidian disponível: {stats}")
+    else:
+        logger.warning("[Startup] Vault Obsidian não encontrado. Memórias só serão salvas no SQLite.")
+    
     # Inicia o processamento de sonhos em background
     asyncio.create_task(dream_processor.dream_loop())
     logger.info(f"[Startup] KB carregada ({kb_count} fatos). Ciclo de Evolução iniciado.")

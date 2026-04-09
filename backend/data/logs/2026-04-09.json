@@ -1,0 +1,42 @@
+[
+  {
+    "type": "activity_log",
+    "title": "Memória Salva",
+    "detail": "Fato registrado: Usuário tem uma reunião importante e Ana irá buscá-lo às 11:",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T17:33:54.626069"
+  },
+  {
+    "type": "activity_log",
+    "title": "Memória Salva",
+    "detail": "Fato registrado: Usuário realizou um check-up médico recente.",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T17:35:46.776730"
+  },
+  {
+    "type": "activity_log",
+    "title": "Memória Salva",
+    "detail": "Fato registrado: Usuário se empolgou explicando algo para Ana, mesmo tendo es",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T17:36:26.705580"
+  },
+  {
+    "type": "activity_log",
+    "title": "Listar Projeto",
+    "detail": "Caminho: .",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T17:42:02.091103"
+  },
+  {
+    "type": "activity_log",
+    "title": "Desktop Capture",
+    "detail": "Screenshot: desktop_20260409_174444.png",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T17:44:45.122591"
+  }
+]

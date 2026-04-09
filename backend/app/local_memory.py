@@ -189,6 +189,19 @@ class LocalMemory:
 
         self._auto_cleanup(user_id)
         logger.info(f"[LocalMemory] Sessão salva para {user_id}: {summary}")
+
+        # Espelha resumo da sessão no vault Obsidian (segundo cérebro)
+        try:
+            from .vault_memory import append_diary, is_vault_available
+            if is_vault_available():
+                append_diary(
+                    summary=summary,
+                    project="",
+                    facts_saved=saved,
+                )
+        except Exception as e:
+            logger.debug(f"[LocalMemory] Vault diary write skipped: {e}")
+
         return summary
 
     def save_fact(self, user_id: str, fact: str) -> bool:
