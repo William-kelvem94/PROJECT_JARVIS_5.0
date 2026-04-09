@@ -109,9 +109,9 @@ timeout /t 2 /nobreak >nul
 REM Backend API FastAPI 8000
 start "JARVIS Backend API 8000" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [API] JARVIS Backend && color A && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-REM Agent Worker - LiveKit agents_worker.py (porta HTTP interna 8081)
+REM Agent Worker - LiveKit agents_worker.py (porta HTTP interna 8081) com reload automático
 timeout /t 4 >nul
-start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker] JARVIS Agents && color C && python agents_worker.py start"
+start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker] JARVIS Agents && color C && python dev_watch_worker.py"
 
 REM Frontend 3000 - Limpa cache .next para evitar artefatos stale (webpack vs turbopack)
 timeout /t 4 >nul
