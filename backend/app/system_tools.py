@@ -387,7 +387,107 @@ class SystemTools:
             f"  Tamanho do banco: {stats['db_size_kb']} KB"
         )
 
-    @agents.llm.function_tool(description="Consulta o Núcleo Engenheiro (OpenRouter) para problemas complexos de código, bugs difíceis ou arquitetura. Use quando precisar de uma segunda opinião técnica sênior.")
+    # ─── OBSIDIAN VAULT ──────────────────────────────────────────────────────
+
+    @agents.llm.function_tool(description="Lista as pastas e arquivos do vault Obsidian do usuário. Passe um subcaminho relativo (ex: 'Projetos' ou 'Diário/2026') para explorar dentro do vault. Deixe em branco para ver a raiz.")
+    def obsidian_list(self, subpath: str = ""):
+        from .config import settings
+        vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
+        if not vault_root or not os.path.isdir(vault_root):
+            return f"Vault Obsidian não encontrado. Configure JARVIS_VAULT_ROOT no .env (atual: '{vault_root}')"
+        target = os.path.join(vault_root, subpath) if subpath else vault_root
+        target = os.path.normpath(target)
+        # Segurança: não sair do vault
+        if not target.startswith(os.path.normpath(vault_root)):
+            return "Acesso negado: caminho fora do vault."
+        if not os.path.exists(target):
+            return f"Caminho não existe no vault: {subpath}"
+        items = []
+        try:
+            for entry in sorted(os.scandir(target), key=lambda e: (not e.is_dir(), e.name.lower())):
+                if entry.name.startswith('.'):
+                    continue
+                icon = "📁" if entry.is_dir() else "📄"
+                items.append(f"{icon} {entry.name}")
+            result = "\n".join(items) if items else "(vazio)"
+            asyncio.create_task(self._log_activity("Obsidian", f"Listando: {subpath or 'raiz'}", "info"))
+            return f"Vault: {target}\n\n{result}"
+        except Exception as e:
+            return f"Erro ao listar vault: {e}"
+
+    @agents.llm.function_tool(description="Lê o conteúdo de uma nota Obsidian pelo caminho relativo dentro do vault (ex: 'Diário/2026-04-09.md' ou 'Projetos/JARVIS.md').")
+    def obsidian_read(self, note_path: str):
+        from .config import settings
+        vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
+        if not vault_root or not os.path.isdir(vault_root):
+            return f"Vault Obsidian não encontrado. Configure JARVIS_VAULT_ROOT no .env."
+        full_path = os.path.normpath(os.path.join(vault_root, note_path))
+        if not full_path.startswith(os.path.normpath(vault_root)):
+            return "Acesso negado: caminho fora do vault."
+        if not os.path.isfile(full_path):
+            return f"Nota não encontrada: {note_path}"
+        try:
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            asyncio.create_task(self._log_activity("Obsidian", f"Lendo nota: {note_path}", "edit"))
+            return f"=== {note_path} ===\n\n{content}"
+        except Exception as e:
+            return f"Erro ao ler nota: {e}"
+
+    @agents.llm.function_tool(description="Pesquisa texto em todas as notas do vault Obsidian. Retorna arquivos e linhas que contêm o termo buscado.")
+    def obsidian_search(self, query: str, subpath: str = ""):
+        from .config import settings
+        vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
+        if not vault_root or not os.path.isdir(vault_root):
+            return f"Vault Obsidian não encontrado. Configure JARVIS_VAULT_ROOT no .env."
+        search_root = os.path.normpath(os.path.join(vault_root, subpath)) if subpath else vault_root
+        if not search_root.startswith(os.path.normpath(vault_root)):
+            return "Acesso negado: caminho fora do vault."
+        results = []
+        try:
+            for root, _, files in os.walk(search_root):
+                for fname in files:
+                    if not fname.endswith('.md'):
+                        continue
+                    fpath = os.path.join(root, fname)
+                    rel = os.path.relpath(fpath, vault_root)
+                    try:
+                        with open(fpath, 'r', encoding='utf-8') as f:
+                            for i, line in enumerate(f, 1):
+                                if query.lower() in line.lower():
+                                    results.append(f"{rel}:{i}: {line.strip()}")
+                                    if len(results) >= 40:
+                                        break
+                    except Exception:
+                        pass
+                if len(results) >= 40:
+                    break
+            if not results:
+                return f"Nenhuma ocorrência de '{query}' no vault."
+            asyncio.create_task(self._log_activity("Obsidian Search", f"'{query}' → {len(results)} resultado(s)", "info"))
+            return f"{len(results)} resultado(s) para '{query}':\n\n" + "\n".join(results)
+        except Exception as e:
+            return f"Erro na busca do vault: {e}"
+
+    @agents.llm.function_tool(description="Escreve ou atualiza uma nota no vault Obsidian. Passe o caminho relativo (ex: 'JARVIS/memórias.md') e o conteúdo markdown.")
+    def obsidian_write(self, note_path: str, content: str, append: bool = False):
+        from .config import settings
+        vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
+        if not vault_root or not os.path.isdir(vault_root):
+            return f"Vault Obsidian não encontrado. Configure JARVIS_VAULT_ROOT no .env."
+        full_path = os.path.normpath(os.path.join(vault_root, note_path))
+        if not full_path.startswith(os.path.normpath(vault_root)):
+            return "Acesso negado: caminho fora do vault."
+        try:
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+            mode = 'a' if append else 'w'
+            with open(full_path, mode, encoding='utf-8') as f:
+                f.write(content)
+            action = "Anexado a" if append else "Escrito em"
+            asyncio.create_task(self._log_activity("Obsidian", f"{action}: {note_path}", "edit"))
+            return f"Nota {'atualizada' if append else 'criada'} com sucesso: {note_path}"
+        except Exception as e:
+            return f"Erro ao escrever nota: {e}"
     async def think_with_engineer_brain(self, task: str, context: str = ""):
         from .engineer_brain import brain
         asyncio.create_task(self._log_activity("Cérebro Engenheiro", f"Consultando OpenRouter: {task[:60]}", "info"))
@@ -523,3 +623,92 @@ class SystemTools:
             attempt += 1
         
         return f"Falha após {max_attempts} tentativas de auto-correção. Último erro detectado:\n{last_error}"
+
+    # ── Vault Obsidian — Segundo Cérebro ─────────────────────────────────────
+
+    @agents.llm.function_tool(description="Salva uma memória importante no vault Obsidian (segundo cérebro do Jarvis). Use quando o usuário revelar informação relevante sobre si mesmo, seus projetos, preferências ou objetivos. Campos: title (título curto), content (conteúdo completo), project (projeto relacionado, opcional), keywords (palavras-chave, opcional), importance (BAIXA, MEDIA ou ALTA).")
+    def save_vault_memory(self, title: str, content: str, project: str = "", keywords: str = "", importance: str = "MEDIA"):
+        """Salva memória episódica no vault Obsidian."""
+        try:
+            from .vault_memory import save_episodic, is_vault_available
+            if not is_vault_available():
+                return "Vault Obsidian não está disponível no momento."
+            kw_list = [k.strip() for k in keywords.split(",") if k.strip()] if keywords else []
+            path = save_episodic(
+                title=title,
+                content=content,
+                project=project,
+                keywords=kw_list,
+                importance=importance,
+                initiated_by="JARVIS",
+            )
+            asyncio.create_task(self._log_activity("Memória Salva", f"{title}", "info"))
+            return f"Memória episódica salva no vault: {os.path.basename(path)}"
+        except Exception as e:
+            logger.error(f"[VaultTools] Erro ao salvar memória: {e}")
+            return f"Erro ao salvar no vault: {e}"
+
+    @agents.llm.function_tool(description="Registra uma decisão importante no vault Obsidian. Use quando o usuário ou Jarvis tomarem uma decisão arquitetural, de projeto ou de vida relevante.")
+    def save_vault_decision(self, title: str, decision: str, project: str = "", rationale: str = "", impact: str = ""):
+        """Registra decisão no JARVIS/Decisoes/INDEX.md"""
+        try:
+            from .vault_memory import save_decision, is_vault_available
+            if not is_vault_available():
+                return "Vault não disponível."
+            ok = save_decision(
+                title=title,
+                decision=decision,
+                project=project,
+                rationale=rationale,
+                impact=impact,
+            )
+            asyncio.create_task(self._log_activity("Decisão Registrada", title, "info"))
+            return f"Decisão registrada no vault: {title}" if ok else "Falha ao registrar decisão."
+        except Exception as e:
+            return f"Erro: {e}"
+
+    @agents.llm.function_tool(description="Atualiza o estado atual do Jarvis no vault (projeto em foco, o que foi feito, próxima ação). Ideal chamar ao fim de uma sessão de trabalho produtiva.")
+    def update_vault_state(self, project: str, done: str, next_action: str, notes: str = ""):
+        """Atualiza JARVIS/Contexto-Atual/Estado.md"""
+        try:
+            from .vault_memory import update_current_state, is_vault_available
+            if not is_vault_available():
+                return "Vault não disponível."
+            update_current_state(
+                project=project,
+                done=done,
+                next_action=next_action,
+                notes=notes,
+            )
+            asyncio.create_task(self._log_activity("Estado Atualizado", project, "info"))
+            return "Estado atual atualizado no vault."
+        except Exception as e:
+            return f"Erro: {e}"
+
+    @agents.llm.function_tool(description="Registra um aprendizado novo no vault Obsidian. Use quando Jarvis descobrir algo relevante sobre Will, os projetos ou padrões de comportamento. category: tecnico, pessoal, padrao ou erro.")
+    def save_vault_learning(self, fact: str, category: str = "tecnico"):
+        """Registra aprendizado em JARVIS/Aprendizado/INDEX.md"""
+        try:
+            from .vault_memory import save_learning, is_vault_available
+            if not is_vault_available():
+                return "Vault não disponível."
+            save_learning(fact=fact, category=category, source="agente")
+            return f"Aprendizado registrado: {fact[:60]}..."
+        except Exception as e:
+            return f"Erro: {e}"
+
+    @agents.llm.function_tool(description="Retorna estatísticas do vault Obsidian: quantas memórias, diários e aprendizados existem.")
+    def vault_stats(self):
+        """Retorna stats do segundo cérebro."""
+        try:
+            from .vault_memory import get_vault_stats
+            stats = get_vault_stats()
+            if not stats.get("available"):
+                return "Vault Obsidian não está acessível no momento."
+            lines = ["📦 Vault Obsidian — Estado do Segundo Cérebro:"]
+            for key, val in stats.items():
+                if key != "available":
+                    lines.append(f"  • {key}: {val} arquivos")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Erro ao verificar vault: {e}"

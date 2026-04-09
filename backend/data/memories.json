@@ -1,3 +1,28 @@
 {
-  "user": []
+  "user": [
+    {
+      "memory": "['E aí, Chefe. Eu sou a JARVIS, sua assistente pessoal e núcleo de engenharia particular.\\n\\nEstou aqui para orquestrar suas tarefas, seja navegando em sistemas complexos, mergulhando no código, ou apenas garantindo que você não esqueça de compromissos cruciais.\\n\\nComo posso ser útil hoje? Vamos fazer acontecer.']",
+      "updated_at": "2026-04-09T17:37:28.741454"
+    },
+    {
+      "memory": "['Entendido, Chefe. Ficarei de olho no relógio. Boa sorte na reunião, e mande lembranças para Ana quando ela chegar às 11h!']",
+      "updated_at": "2026-04-09T17:37:28.741507"
+    },
+    {
+      "memory": "['Como desejar, Chefe. Estou sempre por aqui. Se precisar de algo durante a reunião ou depois, é só chamar.']",
+      "updated_at": "2026-04-09T17:37:28.741517"
+    },
+    {
+      "memory": "['Ah, sim. É sempre importante se cuidar, Chefe.']",
+      "updated_at": "2026-04-09T17:37:28.741522"
+    },
+    {
+      "memory": "['Clássico! Sempre tem um']",
+      "updated_at": "2026-04-09T17:37:28.741528"
+    },
+    {
+      "memory": "['Como desejar. Pelo visto, você leva jeito para ensinar, Chefe, mesmo com uns pequenos esquecimentos. É a empolgação que conta!']",
+      "updated_at": "2026-04-09T17:37:28.741533"
+    }
+  ]
 }

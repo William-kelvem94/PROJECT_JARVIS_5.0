@@ -25,8 +25,13 @@ import dynamic from 'next/dynamic';
 import { EngineeringHUD } from './engineering-hud';
 import { ActiveConsole } from './active-console';
 
-const VantaOrb = dynamic(() => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaOrb })), { ssr: false });
-const VantaController = dynamic(() => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaController })), { ssr: false });
+// FIX 4: um único dynamic import para o módulo vanta-engine (evita chunk duplo)
+const VantaComponents = dynamic(
+  () => import('@/components/app/vanta-engine'),
+  { ssr: false, loading: () => null }
+);
+const VantaOrb = (props: React.ComponentProps<any>) => <VantaComponents.VantaOrb {...props} />;
+const VantaController = (props: React.ComponentProps<any>) => <VantaComponents.VantaController {...props} />;
 
 
 const MotionBottom = motion.create('div');

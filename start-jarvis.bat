@@ -113,8 +113,9 @@ REM Agent Worker - LiveKit agents_worker.py (porta HTTP interna 8081)
 timeout /t 4 >nul
 start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker] JARVIS Agents && color C && python agents_worker.py start"
 
-REM Frontend 3000
+REM Frontend 3000 - Limpa cache .next para evitar artefatos stale (webpack vs turbopack)
 timeout /t 4 >nul
+if exist "%~dp0frontend\.next" rmdir /s /q "%~dp0frontend\.next"
 start "JARVIS Frontend 3000" /d "%~dp0frontend" cmd /k "call npm run dev"
 
 REM ===== 5. STATUS FINAL =====
