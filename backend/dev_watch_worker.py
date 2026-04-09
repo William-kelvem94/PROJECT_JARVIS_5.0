@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -8,16 +7,19 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-if __name__ == '__main__':
-    os.chdir(str(BASE_DIR))
-    python_path = sys.executable.replace('\\', '/')
-    target = f'"{python_path}" "{BASE_DIR / "agents_worker.py"}" start'
 
-    print(f"[DevWorker] Watching backend files and restarting on change...")
+def start_worker() -> None:
+    import agents_worker
+    sys.argv = ['agents_worker.py', 'start']
+    agents_worker.cli.run_app(agents_worker.WorkerOptions(entrypoint_fnc=agents_worker.entrypoint))
+
+
+if __name__ == '__main__':
+    print("[DevWorker] Watching backend files and restarting on change...")
     run_process(
         '.',
-        target=target,
-        target_type='command',
+        target=start_worker,
+        target_type='function',
         watch_filter='python',
         ignore_permission_denied=True,
         recursive=True,
