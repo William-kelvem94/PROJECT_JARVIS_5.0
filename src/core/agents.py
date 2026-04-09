@@ -42,13 +42,10 @@ GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-latest"
 class Assistant(Agent):
     def __init__(self, chat_ctx: Optional[ChatContext] = None):
         ctx = chat_ctx or ChatContext()
+        # instructions are NOT set here to avoid injecting a 'system' role
+        # message into the chat history — Gemini Realtime does not support it.
+        # Instructions are passed via AgentSession's RealtimeModel.instructions.
         super().__init__(
-            instructions=AGENT_INSTRUCTION,
-            llm=google.realtime.RealtimeModel(
-                model=GEMINI_LIVE_MODEL,
-                voice="Charon",
-                temperature=0.6,
-            ),
             chat_ctx=ctx
         )
 

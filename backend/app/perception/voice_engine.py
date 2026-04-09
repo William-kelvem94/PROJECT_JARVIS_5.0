@@ -319,12 +319,22 @@ def _audio_loop():
                         pred = oww.predict(chunk)
                         for model_name, scores in pred.items():
                             try:
-                                if isinstance(scores, dict):
-                                    score = float(max(scores.values()))
-                                elif hasattr(scores, '__iter__'):
-                                    score = float(max(scores))
-                                else:
+                                if isinstance(scores, (int, float)):
                                     score = float(scores)
+                                elif isinstance(scores, dict):
+                                    nums = [float(v) for v in scores.values()
+                                            if isinstance(v, (int, float))]
+                                    score = max(nums) if nums else 0.0
+                                elif hasattr(scores, '__iter__'):
+                                    nums = []
+                                    for s in scores:
+                                        try:
+                                            nums.append(float(s))
+                                        except (TypeError, ValueError):
+                                            pass
+                                    score = max(nums) if nums else 0.0
+                                else:
+                                    score = 0.0
                             except Exception:
                                 continue
                             if score > 0.5:

@@ -84,18 +84,22 @@ except ImportError:
 
 # ── Lazy MediaPipe initialisation (Tasks API — mediapipe ≥ 0.10.30) ─────────
 _mp_landmarker = None
+_mp_init_failed = False  # flag: once failed, stop retrying every frame
 
 
 def _get_mp_models():
     """Return a FaceLandmarker (tasks API) or None if unavailable."""
-    global _mp_landmarker
+    global _mp_landmarker, _mp_init_failed
     if _mp_landmarker is not None:
         return _mp_landmarker
+    if _mp_init_failed:
+        return None
     if not HAS_MEDIAPIPE:
         return None
     model_path = os.path.join(MODELS_DIR, "face_landmarker.task")
     if not os.path.exists(model_path):
         logger.warning(f"[FaceEngine] face_landmarker.task not found — run setup.py to download")
+        _mp_init_failed = True
         return None
     try:
         from mediapipe.tasks import python as _mp_tasks
@@ -118,6 +122,7 @@ def _get_mp_models():
         logger.success(f"[FaceEngine] FaceLandmarker ready (Delegate: {delegate.name})")
     except Exception as e:
         logger.error(f"[FaceEngine] MediaPipe init failed: {e}")
+        _mp_init_failed = True  # don't retry on every frame
     return _mp_landmarker
 
 

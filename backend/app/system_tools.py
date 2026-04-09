@@ -390,7 +390,7 @@ class SystemTools:
     # ─── OBSIDIAN VAULT ──────────────────────────────────────────────────────
 
     @agents.llm.function_tool(description="Lista as pastas e arquivos do vault Obsidian do usuário. Passe um subcaminho relativo (ex: 'Projetos' ou 'Diário/2026') para explorar dentro do vault. Deixe em branco para ver a raiz.")
-    def obsidian_list(self, subpath: str = ""):
+    async def obsidian_list(self, subpath: str = ""):
         from .config import settings
         vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
         if not vault_root or not os.path.isdir(vault_root):
@@ -416,7 +416,7 @@ class SystemTools:
             return f"Erro ao listar vault: {e}"
 
     @agents.llm.function_tool(description="Lê o conteúdo de uma nota Obsidian pelo caminho relativo dentro do vault (ex: 'Diário/2026-04-09.md' ou 'Projetos/JARVIS.md').")
-    def obsidian_read(self, note_path: str):
+    async def obsidian_read(self, note_path: str):
         from .config import settings
         vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
         if not vault_root or not os.path.isdir(vault_root):
@@ -435,7 +435,7 @@ class SystemTools:
             return f"Erro ao ler nota: {e}"
 
     @agents.llm.function_tool(description="Pesquisa texto em todas as notas do vault Obsidian. Retorna arquivos e linhas que contêm o termo buscado.")
-    def obsidian_search(self, query: str, subpath: str = ""):
+    async def obsidian_search(self, query: str, subpath: str = ""):
         from .config import settings
         vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
         if not vault_root or not os.path.isdir(vault_root):
@@ -470,7 +470,7 @@ class SystemTools:
             return f"Erro na busca do vault: {e}"
 
     @agents.llm.function_tool(description="Escreve ou atualiza uma nota no vault Obsidian. Passe o caminho relativo (ex: 'JARVIS/memórias.md') e o conteúdo markdown.")
-    def obsidian_write(self, note_path: str, content: str, append: bool = False):
+    async def obsidian_write(self, note_path: str, content: str, append: bool = False):
         from .config import settings
         vault_root = getattr(settings, 'jarvis_vault_root', '').strip()
         if not vault_root or not os.path.isdir(vault_root):
@@ -627,7 +627,7 @@ class SystemTools:
     # ── Vault Obsidian — Segundo Cérebro ─────────────────────────────────────
 
     @agents.llm.function_tool(description="Salva uma memória importante no vault Obsidian (segundo cérebro do Jarvis). Use quando o usuário revelar informação relevante sobre si mesmo, seus projetos, preferências ou objetivos. Campos: title (título curto), content (conteúdo completo), project (projeto relacionado, opcional), keywords (palavras-chave, opcional), importance (BAIXA, MEDIA ou ALTA).")
-    def save_vault_memory(self, title: str, content: str, project: str = "", keywords: str = "", importance: str = "MEDIA"):
+    async def save_vault_memory(self, title: str, content: str, project: str = "", keywords: str = "", importance: str = "MEDIA"):
         """Salva memória episódica no vault Obsidian."""
         try:
             from .vault_memory import save_episodic, is_vault_available
@@ -649,7 +649,7 @@ class SystemTools:
             return f"Erro ao salvar no vault: {e}"
 
     @agents.llm.function_tool(description="Registra uma decisão importante no vault Obsidian. Use quando o usuário ou Jarvis tomarem uma decisão arquitetural, de projeto ou de vida relevante.")
-    def save_vault_decision(self, title: str, decision: str, project: str = "", rationale: str = "", impact: str = ""):
+    async def save_vault_decision(self, title: str, decision: str, project: str = "", rationale: str = "", impact: str = ""):
         """Registra decisão no JARVIS/Decisoes/INDEX.md"""
         try:
             from .vault_memory import save_decision, is_vault_available
@@ -668,7 +668,7 @@ class SystemTools:
             return f"Erro: {e}"
 
     @agents.llm.function_tool(description="Atualiza o estado atual do Jarvis no vault (projeto em foco, o que foi feito, próxima ação). Ideal chamar ao fim de uma sessão de trabalho produtiva.")
-    def update_vault_state(self, project: str, done: str, next_action: str, notes: str = ""):
+    async def update_vault_state(self, project: str, done: str, next_action: str, notes: str = ""):
         """Atualiza JARVIS/Contexto-Atual/Estado.md"""
         try:
             from .vault_memory import update_current_state, is_vault_available
@@ -686,7 +686,7 @@ class SystemTools:
             return f"Erro: {e}"
 
     @agents.llm.function_tool(description="Registra um aprendizado novo no vault Obsidian. Use quando Jarvis descobrir algo relevante sobre Will, os projetos ou padrões de comportamento. category: tecnico, pessoal, padrao ou erro.")
-    def save_vault_learning(self, fact: str, category: str = "tecnico"):
+    async def save_vault_learning(self, fact: str, category: str = "tecnico"):
         """Registra aprendizado em JARVIS/Aprendizado/INDEX.md"""
         try:
             from .vault_memory import save_learning, is_vault_available
@@ -698,7 +698,7 @@ class SystemTools:
             return f"Erro: {e}"
 
     @agents.llm.function_tool(description="Retorna estatísticas do vault Obsidian: quantas memórias, diários e aprendizados existem.")
-    def vault_stats(self):
+    async def vault_stats(self):
         """Retorna stats do segundo cérebro."""
         try:
             from .vault_memory import get_vault_stats
