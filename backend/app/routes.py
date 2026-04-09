@@ -9,9 +9,6 @@ logger = logging.getLogger("uvicorn")
 
 router = APIRouter()
 
-# import agent logic
-from src.core.agents import entrypoint
-
 class ChatRequest(BaseModel):
     message: str
     user_name: str = "Chefe"
