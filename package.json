@@ -6,6 +6,5 @@
     "frontend"
   ],
   "scripts": {
-    "postinstall": "cd frontend && pnpm install"
   }
 }

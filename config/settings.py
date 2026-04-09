@@ -11,7 +11,7 @@ load_dotenv(base_dir / 'env' / '.env', override=True)
 
 class Settings(BaseSettings):
     # API Keys
-    google_api_key: str = Field(alias="GOOGLE_API_KEY")
+    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
     livekit_url: str = Field(alias="LIVEKIT_URL")
     livekit_api_key: str = Field(alias="LIVEKIT_API_KEY")
     livekit_api_secret: str = Field(alias="LIVEKIT_API_SECRET")
@@ -35,6 +35,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @field_validator("google_api_key", mode="before")
+    @classmethod
+    def fallback_google_api_key(cls, v):
+        if v:
+            return v
+        return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or v
 
     @field_validator("google_api_key", "livekit_url", "livekit_api_key", "livekit_api_secret")
     @classmethod
