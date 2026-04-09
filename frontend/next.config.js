@@ -8,13 +8,7 @@ const nextConfig = {
     if (dev) {
       config.watchOptions = {
         ...config.watchOptions,
-        ignored: [
-          /node_modules/,
-          /C:[\\\/]DumpStack\.log\.tmp/,
-          /C:[\\\/]hiberfil\.sys/,
-          /C:[\\\/]pagefile\.sys/,
-          /C:[\\\/]swapfile\.sys/,
-        ],
+        ignored: /node_modules|DumpStack\.log\.tmp|hiberfil\.sys|pagefile\.sys|swapfile\.sys/,
       };
     }
     return config;

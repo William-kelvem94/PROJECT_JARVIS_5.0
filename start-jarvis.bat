@@ -95,8 +95,15 @@ if errorlevel 1 (
 echo  [OK] Frontend deps OK
 cd /d "%~dp0"
 
-REM ===== 4. LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
-echo  [4/5] Iniciando servicos...
+REM ===== 4. KILL PROCESSOS ANTIGOS NAS PORTAS =====
+echo  [4/5] Liberando portas (8000, 8081, 3000)...
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000 "') do taskkill /F /PID %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8081 "') do taskkill /F /PID %%a >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000 "') do taskkill /F /PID %%a >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+REM ===== LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
+echo  Iniciando servicos...
 timeout /t 2 /nobreak >nul
 
 REM Backend API FastAPI 8000
