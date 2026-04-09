@@ -36,27 +36,36 @@ export const WelcomeView = ({
       <section className="bg-background flex flex-col items-center justify-center text-center">
         <WelcomeImage />
 
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Converse em tempo real com seu assistente Jarvis
-        </p>
+        <div className="text-center max-w-md space-y-4 pt-4">
+          <div className="mx-auto w-20 h-20 rounded-2xl bg-linear-to-br from-[#1da3b9]/20 to-[#1da3b9]/10 border-2 border-[#1da3b9]/30 backdrop-blur-sm flex items-center justify-center animate-pulse shadow-2xl">
+            <svg className="w-12 h-12 text-[#1da3b9] drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10 -4.48 10 -10S17.52 2 12 2zM13 17h-2v-6h2v6zM13 9h-2H11v-2h2v-2h-2V7h2V5h-2V3h2v2h2v2h-2v2h2v2z"/>
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold bg-linear-to-r from-white to-gray-200 bg-clip-text text-transparent">
+            Jarvis
+          </h1>
+          <p className="text-white/60 text-sm leading-relaxed">
+            Assistente neural moderno
+          </p>
+          <div className="w-72 space-y-3">
+            <input
+              type="text"
+              placeholder="Digite seu nome..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3 text-sm placeholder-white/40 focus:border-[#1da3b9]/50 focus:ring-2 focus:ring-[#1da3b9]/20 transition-all text-center font-mono tracking-wide"
 
-        <div className="mt-8 flex flex-col gap-4 w-64">
-          <input
-            type="text"
-            placeholder="Seu nome (ex: Pedro)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1da3b9]/50 transition-colors text-center"
-          />
-
-          <Button
-            size="lg"
-            disabled={!name.trim()}
-            onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
-            className="w-full rounded-full font-mono text-xs font-bold tracking-wider uppercase bg-[#1da3b9] hover:bg-[#1da3b9]/80 shadow-[0_0_15px_rgba(29,163,185,0.3)] transition-all"
-          >
-            {startButtonText}
-          </Button>
+            />
+            <Button
+              size="lg"
+              disabled={!name.trim()}
+              onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
+              className="w-full h-14 rounded-2xl bg-linear-to-r from-[#1da3b9] to-[#0d9488] hover:from-[#1da3b9]/90 hover:to-[#0d9488]/90 shadow-[0_10px_30px_rgba(29,163,185,0.3)] hover:shadow-[0_15px_40px_rgba(29,163,185,0.4)] transform hover:-translate-y-1 transition-all duration-300 font-mono text-sm font-bold tracking-wide uppercase"
+            >
+              {startButtonText || 'Falar com Jarvis'}
+            </Button>
+          </div>
         </div>
       </section>
 

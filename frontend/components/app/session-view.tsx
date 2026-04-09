@@ -22,8 +22,8 @@ import { TileLayout } from '@/components/app/tile-layout';
 import { cn } from '@/lib/shadcn/utils';
 import { Shimmer } from '../ai-elements/shimmer';
 import dynamic from 'next/dynamic';
-import { EngineeringHUD } from './engineering-hud';
 import { ActiveConsole } from './active-console';
+
 
 const VantaOrb = dynamic(
   () => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaOrb })),
@@ -345,12 +345,11 @@ export const SessionView = ({
           </div>
         )}
 
-        {/* Engineering HUD e Active Console aparecem assim que o worker conecta, independente da IA */}
-        <EngineeringHUD />
         <ActiveConsole />
       </div>
 
       <div className="pointer-events-none flex-1" />
+
 
       <MotionBottom
         {...BOTTOM_VIEW_MOTION_PROPS}

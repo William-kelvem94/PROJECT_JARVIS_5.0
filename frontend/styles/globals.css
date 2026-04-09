@@ -128,20 +128,27 @@
     position: relative;
   }
 
-  /* Efeito de Scanlines Futuristas Otimizado */
+/* Orbe Animado Moderna Leve */
   body::before {
-    content: " ";
-    display: block;
+    content: "";
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%);
-    z-index: 1000;
-    background-size: 100% 4px;
+    top: 50%;
+    left: 50%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(29,163,185,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    animation: orbeFloat 20s ease-in-out infinite;
     pointer-events: none;
-    opacity: 0.2;
+    z-index: -1;
+    opacity: 0.3;
+  }
+
+  @keyframes orbeFloat {
+    0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    33% { transform: translate(-50%, -48%) scale(1.05) rotate(120deg); }
+    66% { transform: translate(-52%, -50%) scale(0.95) rotate(240deg); }
   }
 
   /* Painel Glassmorphism Cyber Otimizado */
