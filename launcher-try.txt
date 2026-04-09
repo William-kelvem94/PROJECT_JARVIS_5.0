@@ -1,0 +1,7 @@
+
+ ========================================================
+  JARVIS 5.0 - INICIO COMPLETO | v5.0 Senior Fullstack
+ ========================================================
+ [1/5] Verificando ambiente de variaveis...
+ [OK] Variaveis de ambiente detectadas em .env
+ [2/5] Backend FastAPI + Agents...
