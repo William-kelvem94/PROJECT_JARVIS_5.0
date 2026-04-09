@@ -1,18 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import sys
 import datetime
 import psutil
 from dotenv import load_dotenv
+from pathlib import Path
+
+base_dir = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(base_dir))
+
 from . import routes
 from .utils.dream_processor import dream_processor
 import asyncio
 from loguru import logger
-from pathlib import Path
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
-base_dir = Path(__file__).resolve().parents[2]
 load_dotenv(base_dir / '.env')
 load_dotenv(base_dir / 'env' / '.env', override=False)
 
