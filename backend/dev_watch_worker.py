@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 from watchfiles import run_process
+from watchfiles.filters import PythonFilter
 
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
@@ -20,7 +21,7 @@ if __name__ == '__main__':
         '.',
         target=start_worker,
         target_type='function',
-        watch_filter='python',
+        watch_filter=PythonFilter(),
         ignore_permission_denied=True,
         recursive=True,
         grace_period=0.5,
