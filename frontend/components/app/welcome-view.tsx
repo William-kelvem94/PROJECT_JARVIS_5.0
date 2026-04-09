@@ -1,23 +1,4 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-
-function WelcomeImage() {
-  return (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-fg0 mb-4 size-16"
-    >
-      <path
-        d="M15 24V40C15 40.7957 14.6839 41.5587 14.1213 42.1213C13.5587 42.6839 12.7956 43 12 43C11.2044 43 10.4413 42.6839 9.87868 42.1213C9.31607 41.5587 9 40.7957 9 40V24C9 23.2044 9.31607 22.4413 9.87868 21.8787C10.4413 21.3161 11.2044 21 12 21C12.7956 21 13.5587 21.3161 14.1213 21.8787C14.6839 22.4413 15 23.2044 15 24ZM22 5C21.2044 5 20.4413 5.31607 19.8787 5.87868C19.3161 6.44129 19 7.20435 19 8V56C19 56.7957 19.3161 57.5587 19.8787 58.1213C20.4413 58.6839 21.2044 59 22 59C22.7956 59 23.5587 58.6839 24.1213 58.1213C24.6839 57.5587 25 56.7957 25 56V8C25 7.20435 24.6839 6.44129 24.1213 5.87868C23.5587 5.31607 22.7956 5 22 5ZM32 13C31.2044 13 30.4413 13.3161 29.8787 13.8787C29.3161 14.4413 29 15.2044 29 16V48C29 48.7957 29.3161 49.5587 29.8787 50.1213C30.4413 50.6839 31.2044 51 32 51C32.7956 51 33.5587 50.6839 34.1213 50.1213C34.6839 49.5587 35 48.7957 35 48V16C35 15.2044 34.6839 14.4413 34.1213 13.8787C33.5587 13.3161 32.7956 13 32 13ZM42 21C41.2043 21 40.4413 21.3161 39.8787 21.8787C39.3161 22.4413 39 23.2044 39 24V40C39 40.7957 39.3161 41.5587 39.8787 42.1213C40.4413 42.6839 41.2043 43 42 43C42.7957 43 43.5587 42.6839 44.1213 42.1213C44.6839 41.5587 45 40.7957 45 40V24C45 23.2044 44.6839 22.4413 44.1213 21.8787C43.5587 21.3161 42.7957 21 42 21ZM52 17C51.2043 17 50.4413 17.3161 49.8787 17.8787C49.3161 18.4413 49 19.2044 49 20V44C49 44.7957 49.3161 45.5587 49.8787 46.1213C50.4413 46.6839 51.2043 47 52 47C52.7957 47 53.5587 46.6839 54.1213 46.1213C54.6839 45.5587 55 44.7957 55 44V20C55 19.2044 54.6839 18.4413 54.1213 17.8787C53.5587 17.3161 52.7957 17 52 17Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+import { useState, useEffect } from 'react';
 
 interface WelcomeViewProps {
   startButtonText: string;
@@ -30,50 +11,181 @@ export const WelcomeView = ({
   ref,
 }: React.ComponentProps<'div'> & WelcomeViewProps) => {
   const [name, setName] = useState('');
+  const [tick, setTick] = useState(0);
+
+  // Pulso lento para animar os anéis
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 50);
+    return () => clearInterval(id);
+  }, []);
 
   return (
-    <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
-        <WelcomeImage />
+    <div ref={ref} className="relative flex flex-col items-center justify-center select-none">
 
-        <div className="text-center max-w-md space-y-4 pt-4">
-          <div className="mx-auto w-20 h-20 rounded-2xl bg-linear-to-br from-[#1da3b9]/20 to-[#1da3b9]/10 border-2 border-[#1da3b9]/30 backdrop-blur-sm flex items-center justify-center animate-pulse shadow-2xl">
-            <svg className="w-12 h-12 text-[#1da3b9] drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10 -4.48 10 -10S17.52 2 12 2zM13 17h-2v-6h2v6zM13 9h-2H11v-2h2v-2h-2V7h2V5h-2V3h2v2h2v2h-2v2h2v2z"/>
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold bg-linear-to-r from-white to-gray-200 bg-clip-text text-transparent">
-            Jarvis
-          </h1>
-          <p className="text-white/60 text-sm leading-relaxed">
-            Assistente neural moderno
-          </p>
-          <div className="w-72 space-y-3">
-            <input
-              type="text"
-              placeholder="Digite seu nome..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3 text-sm placeholder-white/40 focus:border-[#1da3b9]/50 focus:ring-2 focus:ring-[#1da3b9]/20 transition-all text-center font-mono tracking-wide"
+      {/* ── Aura de fundo ──────────────────────────────────── */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div
+          style={{ width: 480, height: 480, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(29,163,185,0.12) 0%, transparent 70%)',
+            animation: 'jarvis-glow-pulse 4s ease-in-out infinite' }}
+        />
+      </div>
 
-            />
-            <Button
-              size="lg"
-              disabled={!name.trim()}
-              onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
-              className="w-full h-14 rounded-2xl bg-linear-to-r from-[#1da3b9] to-[#0d9488] hover:from-[#1da3b9]/90 hover:to-[#0d9488]/90 shadow-[0_10px_30px_rgba(29,163,185,0.3)] hover:shadow-[0_15px_40px_rgba(29,163,185,0.4)] transform hover:-translate-y-1 transition-all duration-300 font-mono text-sm font-bold tracking-wide uppercase"
-            >
-              {startButtonText || 'Falar com Jarvis'}
-            </Button>
-          </div>
+      {/* ── Anéis orbitais ─────────────────────────────────── */}
+      <div className="relative flex items-center justify-center" style={{ width: 280, height: 280 }}>
+
+        {/* Anel externo – gira devagar */}
+        <div style={{
+          position: 'absolute', width: 260, height: 260, borderRadius: '50%',
+          border: '1px solid rgba(29,163,185,0.25)',
+          animation: 'jarvis-spin-slow 18s linear infinite',
+        }}>
+          {/* marcador */}
+          <div style={{
+            position: 'absolute', top: -3, left: '50%', transform: 'translateX(-50%)',
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#1da3b9', boxShadow: '0 0 8px #1da3b9',
+          }} />
         </div>
-      </section>
 
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center pointer-events-none">
-        <p className="text-muted-foreground max-w-prose pt-1 text-[10px] uppercase tracking-widest font-normal opacity-30">
-          Jarvis OS v5.0 | Neural Link Ready
+        {/* Anel médio – gira no sentido oposto */}
+        <div style={{
+          position: 'absolute', width: 200, height: 200, borderRadius: '50%',
+          border: '1px solid rgba(29,163,185,0.18)',
+          animation: 'jarvis-spin-slow 12s linear infinite reverse',
+        }}>
+          <div style={{
+            position: 'absolute', bottom: -3, left: '50%', transform: 'translateX(-50%)',
+            width: 5, height: 5, borderRadius: '50%',
+            background: 'rgba(29,163,185,0.8)', boxShadow: '0 0 6px #1da3b9',
+          }} />
+        </div>
+
+        {/* Anel interno */}
+        <div style={{
+          position: 'absolute', width: 148, height: 148, borderRadius: '50%',
+          border: '1px solid rgba(29,163,185,0.30)',
+          animation: 'jarvis-spin-slow 8s linear infinite',
+        }} />
+
+        {/* ── Núcleo ─────────────────────────────────────────── */}
+        <div style={{
+          position: 'relative', width: 112, height: 112, borderRadius: '50%',
+          background: 'radial-gradient(circle at 36% 36%, rgba(29,163,185,0.22), rgba(13,148,136,0.10) 70%, transparent)',
+          border: '1.5px solid rgba(29,163,185,0.55)',
+          backdropFilter: 'blur(6px)',
+          boxShadow: '0 0 32px rgba(29,163,185,0.35), inset 0 0 20px rgba(29,163,185,0.10)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'jarvis-nucleus-pulse 3s ease-in-out infinite',
+        }}>
+          {/* Ícone J estilizado */}
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="23" stroke="rgba(29,163,185,0.35)" strokeWidth="1" />
+            <text x="50%" y="50%" dominantBaseline="central" textAnchor="middle"
+              fontFamily="'Courier New', monospace" fontSize="22" fontWeight="700"
+              fill="#1da3b9" style={{ filter: 'drop-shadow(0 0 6px #1da3b9)' }}>
+              J
+            </text>
+          </svg>
+        </div>
+      </div>
+
+      {/* ── Textos ─────────────────────────────────────────── */}
+      <div className="mt-6 flex flex-col items-center gap-1">
+        <h1 style={{
+          fontFamily: "'Courier New', monospace",
+          fontSize: '1.75rem',
+          fontWeight: 700,
+          letterSpacing: '0.35em',
+          textTransform: 'uppercase',
+          background: 'linear-gradient(135deg, #e0f7fa 0%, #1da3b9 50%, #80cbc4 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          filter: 'drop-shadow(0 0 10px rgba(29,163,185,0.5))',
+        }}>
+          JARVIS
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.36)', fontSize: '0.65rem', letterSpacing: '0.25em', textTransform: 'uppercase', fontFamily: 'monospace' }}>
+          Neural Intelligence System · v5.0
         </p>
       </div>
+
+      {/* ── Separador ──────────────────────────────────────── */}
+      <div style={{ margin: '24px 0 20px', width: 220, height: 1, background: 'linear-gradient(to right, transparent, rgba(29,163,185,0.5), transparent)' }} />
+
+      {/* ── Inputs ─────────────────────────────────────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 280 }}>
+        <input
+          type="text"
+          autoComplete="off"
+          placeholder="IDENTIFICAR USUÁRIO"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && name.trim() && onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
+          style={{
+            width: '100%',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(8px)',
+            border: `1px solid ${name.trim() ? 'rgba(29,163,185,0.6)' : 'rgba(255,255,255,0.12)'}`,
+            borderRadius: 12,
+            padding: '12px 16px',
+            fontSize: '0.78rem',
+            letterSpacing: '0.15em',
+            color: '#e0f7fa',
+            textAlign: 'center',
+            fontFamily: "'Courier New', monospace",
+            outline: 'none',
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+            boxShadow: name.trim() ? '0 0 12px rgba(29,163,185,0.2)' : 'none',
+          }}
+        />
+
+        <button
+          disabled={!name.trim()}
+          onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
+          style={{
+            width: '100%',
+            height: 52,
+            borderRadius: 12,
+            border: '1px solid rgba(29,163,185,0.6)',
+            background: name.trim()
+              ? 'linear-gradient(135deg, rgba(29,163,185,0.90) 0%, rgba(13,148,136,0.85) 100%)'
+              : 'rgba(29,163,185,0.10)',
+            color: name.trim() ? '#ffffff' : 'rgba(255,255,255,0.25)',
+            fontFamily: "'Courier New', monospace",
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            letterSpacing: '0.25em',
+            textTransform: 'uppercase',
+            cursor: name.trim() ? 'pointer' : 'not-allowed',
+            transition: 'all 0.25s',
+            boxShadow: name.trim() ? '0 8px 28px rgba(29,163,185,0.35)' : 'none',
+          }}
+          onMouseEnter={(e) => { if (name.trim()) (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 12px 36px rgba(29,163,185,0.55)'; }}
+          onMouseLeave={(e) => { if (name.trim()) (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 28px rgba(29,163,185,0.35)'; }}
+        >
+          {startButtonText || '▶  INICIAR SESSÃO'}
+        </button>
+      </div>
+
+      {/* ── Rodapé ─────────────────────────────────────────── */}
+      <p style={{
+        marginTop: 28,
+        color: 'rgba(255,255,255,0.18)',
+        fontSize: '0.6rem',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        fontFamily: 'monospace',
+      }}>
+        Neural Link · Awaiting Authorization
+      </p>
+
+      {/* ── Keyframes globais (injetados inline) ───────────── */}
+      <style>{`
+        @keyframes jarvis-spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes jarvis-glow-pulse { 0%,100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+        @keyframes jarvis-nucleus-pulse { 0%,100% { box-shadow: 0 0 32px rgba(29,163,185,0.35), inset 0 0 20px rgba(29,163,185,0.10); } 50% { box-shadow: 0 0 48px rgba(29,163,185,0.55), inset 0 0 28px rgba(29,163,185,0.18); } }
+      `}</style>
     </div>
   );
 };
