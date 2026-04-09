@@ -38,5 +38,21 @@
     "log_type": "info",
     "status": "success",
     "timestamp": "2026-04-09T17:44:45.122591"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: raiz",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T18:28:45.209175"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: raiz",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-09T18:29:12.018281"
   }
 ]
