@@ -5,7 +5,7 @@ REM Instala deps obrigatórios, workers com agents_worker.py correto, sem escape
 
 setlocal enabledelayedexpansion
 title "JARVIS 5.0 - Full Stack Running"
-color 2F
+color 2E
 
 echo.
 echo  ========================================================
@@ -14,39 +14,86 @@ echo  ========================================================
 
 cd /d "%~dp0"
 
-REM ===== 1. BACKEND SETUP ^| VENV + PIP REQ ^| SEMPRE ATUALIZA =====
-echo  [1/5] Backend FastAPI ^+ Agents...
-cd backend
-if not exist venv (
-    echo   + Criando venv...
-    python -m venv venv
-)
-call venv\Scripts\activate.bat
-pip install --upgrade pip
-pip install -r app\requirements.txt
-playwright install chromium --with-deps
-echo  [OK] Backend deps + Playwright OK
-cd ..
-
-REM ===== 2. FRONTEND NPM ^| UNIVERSAL NO NPM =====
-echo  [2/5] Frontend Next.js...
-cd frontend
-rmdir /s /q node_modules 2>nul
-del package-lock.json 2>nul
-npm install
-echo  [OK] Frontend deps OK
-cd ..
-
-REM ===== 3. PRE-FLIGHT CHECKS =====
-echo  [3/5] Verificando .env...
-if not exist ".env" (
-    echo   ERRO CRITICO: Copie .env.example ^> .env e preencha LIVEKIT_URL, API_KEYs
-    copy .env.example .env
-    notepad .env
+REM ===== 1. PRE-FLIGHT CHECKS =====
+echo  [1/5] Verificando ambiente de variaveis...
+set "ENV_PATH="
+if exist ".env" set "ENV_PATH=.env"
+if not defined ENV_PATH if exist "env\.env" set "ENV_PATH=env\.env"
+if not defined ENV_PATH (
+    echo   ERRO CRITICO: Nenhum arquivo .env encontrado.
+    if exist ".env.example" copy ".env.example" ".env"
+    if not exist ".env" if exist "env\.env.example" copy "env\.env.example" "env\.env"
+    echo   Copie o arquivo .env.example para .env ou env\.env e preencha LIVEKIT_URL e as chaves.
     pause
     exit /b 1
 )
-echo  [OK] .env OK
+echo  [OK] Variaveis de ambiente detectadas em %ENV_PATH%
+
+REM ===== 2. BACKEND SETUP ^| VENV + PIP REQ ^| SEMPRE ATUALIZA =====
+echo  [2/5] Backend FastAPI ^+ Agents...
+cd backend
+if not exist "venv\Scripts\activate.bat" (
+    echo   + Criando venv...
+    python -m venv venv
+    if errorlevel 1 (
+        echo   ERRO: falha ao criar o ambiente virtual.
+        pause
+        exit /b 1
+    )
+)
+call venv\Scripts\activate.bat
+if errorlevel 1 (
+    echo   ERRO: falha ao ativar o ambiente virtual.
+    pause
+    exit /b 1
+)
+
+pip install --upgrade pip
+if errorlevel 1 (
+    echo   ERRO: falha ao atualizar pip.
+    pause
+    exit /b 1
+)
+
+pip install -r app\requirements.txt
+if errorlevel 1 (
+    echo   ERRO: falha ao instalar as dependencias do backend.
+    pause
+    exit /b 1
+)
+
+python -m playwright install chromium --with-deps
+if errorlevel 1 (
+    echo   ERRO: falha ao instalar o navegador Chromium do Playwright.
+    pause
+    exit /b 1
+)
+
+echo  [OK] Backend deps + Playwright OK
+cd ..
+
+REM ===== 3. FRONTEND NPM ^| UNIVERSAL NO NPM =====
+echo  [3/5] Frontend Next.js...
+cd frontend
+if exist "node_modules" (
+    echo   + Node modules existentes encontrados.
+)
+where pnpm >nul 2>nul
+if errorlevel 1 (
+    echo   + pnpm nao encontrado. Usando npm install...
+    npm install
+) else (
+    echo   + pnpm detectado. Usando pnpm install...
+    pnpm install
+)
+if errorlevel 1 (
+    echo   ERRO: falha ao instalar as dependencias do frontend.
+    pause
+    exit /b 1
+)
+
+echo  [OK] Frontend deps OK
+cd ..
 
 REM ===== 4. LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
 echo  [4/5] Iniciando servicos...
