@@ -84,8 +84,10 @@ export function App({ appConfig }: AppProps) {
   return (
     <AgentSessionProvider session={session}>
       <AppSetup />
-      <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
+<main className="h-svh flex flex-col items-center justify-center p-8 overflow-hidden">
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8">
+          <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
+        </div>
       </main>
       <StartAudioButton label="Start Audio" />
       <Toaster
