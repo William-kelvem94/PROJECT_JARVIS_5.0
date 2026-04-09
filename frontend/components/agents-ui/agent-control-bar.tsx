@@ -305,8 +305,8 @@ export function AgentControlBar({
         opacity: isVisible || isChatOpen || isChatOpenUncontrolled || isLocked ? 1 : 0
       }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
-      className={cn(
-        "relative mx-auto w-fit min-w-[300px] z-50",
+className={cn(
+        "relative mx-auto w-fit min-w-75 z-50",
         !isVisible && !isChatOpen && !isChatOpenUncontrolled && !isLocked && "pointer-events-none transition-all"
       )}
       onMouseEnter={() => {
