@@ -74,16 +74,16 @@ cd ..
 
 REM ===== 3. FRONTEND NPM ^| UNIVERSAL NO NPM =====
 echo  [3/5] Frontend Next.js...
-cd frontend
+cd /d "%~dp0frontend"
 if exist "node_modules" (
     echo   + Node modules existentes encontrados.
 )
 where pnpm >nul 2>nul
 if errorlevel 1 (
-    echo   + pnpm nao encontrado. Usando npm install...
-    call npm install
+    echo   + pnpm nao encontrado. Usando npm install no frontend...
+    call npm install --prefix "%~dp0frontend"
 ) else (
-    echo   + pnpm detectado. Usando pnpm install...
+    echo   + pnpm detectado. Usando pnpm install no frontend...
     call pnpm install
 )
 if errorlevel 1 (
@@ -93,7 +93,7 @@ if errorlevel 1 (
 )
 
 echo  [OK] Frontend deps OK
-cd ..
+cd /d "%~dp0"
 
 REM ===== 4. LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
 echo  [4/5] Iniciando servicos...
@@ -104,11 +104,11 @@ start "JARVIS Backend API 8000" /d "%~dp0backend" cmd /k "call venv\Scripts\acti
 
 REM Agent Worker 1 - CORRETO agents_worker.py
 timeout /t 4 >nul
-start "JARVIS Agent Worker 1" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker1] Agents && color C && python agents_worker.py"
+start "JARVIS Agent Worker 1" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker1] Agents && color C && python agents_worker.py start"
 
 REM Agent Worker 2 - Duplicado para estabilidade
 timeout /t 4 >nul
-start "JARVIS Agent Worker 2" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker2] LiveKit && color D && python agents_worker.py"
+start "JARVIS Agent Worker 2" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker2] LiveKit && color D && python agents_worker.py start"
 
 REM Frontend 3000
 timeout /t 4 >nul

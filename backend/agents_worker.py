@@ -20,6 +20,9 @@ load_dotenv(project_root / '.env', override=False)
 load_dotenv(project_root / 'env' / '.env', override=True)
 
 if __name__ == "__main__":
+    if len(sys.argv) == 1:
+        sys.argv = [sys.argv[0], "start"]
+
     cli.run_app(
         WorkerOptions(
             entrypoint_fnc=entrypoint,
