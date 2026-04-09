@@ -4,6 +4,21 @@ const nextConfig = {
     // don't fail builds on lint errors; formatting can be fixed later
     ignoreDuringBuilds: true,
   },
+  webpack: (config, { dev, isServer }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          /node_modules/,
+          /C:[\\\/]DumpStack\.log\.tmp/,
+          /C:[\\\/]hiberfil\.sys/,
+          /C:[\\\/]pagefile\.sys/,
+          /C:[\\\/]swapfile\.sys/,
+        ],
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;
