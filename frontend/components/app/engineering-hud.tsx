@@ -148,14 +148,14 @@ export function EngineeringHUD() {
 function StatRow({ icon, label, value, color = "bg-[#1da3b9]" }: { icon: React.ReactNode, label: string, value: number, color?: string }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between items-center text-[10px]">
+<div className="flex justify-between items-center text-[10px]">
                 <div className="flex items-center gap-2 text-white/40">
-                    {React.cloneElement(icon as React.ReactElement, { className: 'size-3' })}
+{React.cloneElement(icon as React.ReactElement<any>, { className: 'size-3' })}
                     <span className="font-mono tracking-tighter">{label}</span>
                 </div>
                 <span className="text-white/80 font-mono font-bold">{value.toFixed(0)}%</span>
             </div>
-            <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
+            <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
                 <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${value}%` }}

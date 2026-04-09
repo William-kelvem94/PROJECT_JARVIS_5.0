@@ -92,30 +92,30 @@ Para facilitar o desenvolvimento, você pode usar os scripts integrados:
 - **Backend:** `cd backend && uvicorn app.main:app --reload`
 - **Frontend:** `cd frontend && pnpm dev`
 
-### Monitoramento Automático
-Para garantir estabilidade máxima em produção:
-```powershell
-cd scripts
-./monitor-heartbeat.ps1
-```
+### 🚀 Teste Senior (100% Funcional)
+
+1. `./start-jarvis.bat`
+2. **API**: http://localhost:8000/docs | /health | /status
+3. **Frontend**: http://localhost:3000 → Click "Start Audio" → "Jarvis, teste voz!"
+4. **Room**: "jarvis-room" (Gemini Live + visão/gestos)
+
+**Monitor heartbeat**: `cd scripts && ./monitor-heartbeat.ps1`
 
 ---
 
-## 📂 Estrutura do Projeto
+## 📂 Estrutura Fullstack Senior
 
 ```text
-├── 📂 backend         # API FastAPI e Agentes LiveKit
-├── 📂 frontend        # Interface Next.js (Tailwind/Shadcn)
-├── 📂 shared          # Tipagem e utilitários compartilhados
-├── 📂 docker          # Configurações de containerização
-├── 📂 scripts         # Utilitários de automação e monitoramento
-└── 📂 docs            # Documentação técnica detalhada
+├── backend/app/main.py     # FastAPI + LiveKit token
+├── frontend/app/App.tsx    # LiveKit UI + reconnect
+├── src/core/agents.py      # Gemini Realtime PRO
+└── start-jarvis.bat        # Launcher 100%
 ```
 
 ---
 
 ## 📄 Licença
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](file:///c:/Users/willi/Documents/GitHub/PROJECT_JARVIS_5.0/frontend/LICENSE) para mais detalhes.
+MIT - [LICENSE](frontend/LICENSE)
 
----
-<p align="center">Desenvolvido com ❤️ por William Kelvem</p>
+**Senior by William Kelvem + BLACKBOXAI**
+

@@ -1,97 +1,58 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import os
 import datetime
 import psutil
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from .config import settings
 from . import routes
 from .utils.dream_processor import dream_processor
 import asyncio
 from loguru import logger
-
-# Carrega variáveis de ambiente de arquivos .env, incluindo caminho absoluto para garantir consistência de cwd
 from pathlib import Path
-base_dir = Path(__file__).resolve().parents[2]  # PROJECT_JARVIS_5.0
+from typing import Dict, Any
+from contextlib import asynccontextmanager
+
+base_dir = Path(__file__).resolve().parents[2]
 load_dotenv(base_dir / '.env')
 load_dotenv(base_dir / 'env' / '.env', override=False)
 
-app = FastAPI()
+_start_time = datetime.datetime.now()
 
-@app.on_event("startup")
-async def startup_event():
-    # Carrega Knowledge Base no startup
-    from .kb_loader import load_kb
-    kb_count = await load_kb()
-    
-    # Verifica e registra disponibilidade do vault Obsidian
-    from .vault_memory import is_vault_available, get_vault_stats
-    vault_ok = is_vault_available()
-    if vault_ok:
-        stats = get_vault_stats()
-        logger.success(f"[Startup] Vault Obsidian disponível: {stats}")
-    else:
-        logger.warning("[Startup] Vault Obsidian não encontrado. Memórias só serão salvas no SQLite.")
-    
-    # Inicia o processamento de sonhos em background
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("[Startup] JARVIS 5.0 iniciando...")
     asyncio.create_task(dream_processor.dream_loop())
-    logger.info(f"[Startup] KB carregada ({kb_count} fatos). Ciclo de Evolução iniciado.")
+    yield
 
-# Allow CORS from frontend origin (adjust as needed)
-frontend_url = os.getenv("FRONTEND_URL", "*")
+app = FastAPI(lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_url] if frontend_url != "*" else ["*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# include API routes
 app.include_router(routes.router)
 
-@app.get("/health")
-def health_check():
-    """Lightweight health check used by the process monitor."""
+@app.get("/health") # type: ignore
+def health_check() -> Dict[str, Any]:
+    uptime = int((datetime.datetime.now() - _start_time).total_seconds())
     return {
         "status": "ok",
         "timestamp": datetime.datetime.now().isoformat(),
-        "uptime_seconds": int((datetime.datetime.now() - _start_time).total_seconds()),
-        "cpu_percent": psutil.cpu_percent(),
-        "ram_percent": psutil.virtual_memory().percent,
+        "uptime_seconds": uptime,
+        "cpu": psutil.cpu_percent(),
+        "ram": psutil.virtual_memory().percent
     }
 
-@app.get("/status")
-def status_check():
-    """Detailed status — checks connectivity to LiveKit and local memory."""
-    checks = {}
-
-    # Local memory
-    try:
-        from .local_memory import local_memory
-        stats = local_memory.get_stats("Chefe")
-        checks["local_memory"] = {"ok": True, "total_memories": stats.get("total_memories", 0)}
-    except Exception as e:
-        checks["local_memory"] = {"ok": False, "error": str(e)}
-
-    # LiveKit env vars present
-    checks["livekit_configured"] = bool(
-        os.getenv("LIVEKIT_URL") and os.getenv("LIVEKIT_API_KEY") and os.getenv("LIVEKIT_API_SECRET")
-    )
-    checks["gemini_configured"] = bool(os.getenv("GOOGLE_API_KEY"))
-
+@app.get("/status") # type: ignore
+def status_check() -> Dict[str, Any]:
     return {
         "status": "ok",
-        "checks": checks,
-        "env": {
-            "LIVEKIT_URL": os.getenv("LIVEKIT_URL"),
-            "LIVEKIT_API_KEY": bool(os.getenv("LIVEKIT_API_KEY")),
-            "LIVEKIT_API_SECRET": bool(os.getenv("LIVEKIT_API_SECRET")),
-            "GOOGLE_API_KEY": bool(os.getenv("GOOGLE_API_KEY")),
-            "GEMINI_API_KEY": bool(os.getenv("GEMINI_API_KEY")),
-            "OPENROUTER_API_KEY": bool(os.getenv("OPENROUTER_API_KEY")),
-        },
-        "timestamp": datetime.datetime.now().isoformat(),
+        "livekit": bool(os.getenv("LIVEKIT_URL") and os.getenv("LIVEKIT_API_KEY") and os.getenv("LIVEKIT_API_SECRET")),
+        "gemini": bool(os.getenv("GOOGLE_API_KEY")),
+        "timestamp": datetime.datetime.now().isoformat()
     }
 
-_start_time = datetime.datetime.now()
