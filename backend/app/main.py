@@ -4,7 +4,7 @@ import psutil
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from ...config.settings import settings
+from .config import settings
 from . import routes
 from .utils.dream_processor import dream_processor
 import asyncio
@@ -20,9 +20,13 @@ app = FastAPI()
 
 @app.on_event("startup")
 async def startup_event():
+    # Carrega Knowledge Base no startup
+    from .kb_loader import load_kb
+    kb_count = await load_kb()
+    
     # Inicia o processamento de sonhos em background
     asyncio.create_task(dream_processor.dream_loop())
-    logger.info("[Startup] Ciclo de Evolução (Ontogenia) iniciado.")
+    logger.info(f"[Startup] KB carregada ({kb_count} fatos). Ciclo de Evolução iniciado.")
 
 # Allow CORS from frontend origin (adjust as needed)
 frontend_url = os.getenv("FRONTEND_URL", "*")

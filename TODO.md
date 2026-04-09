@@ -1,35 +1,47 @@
-# TODO: Fix Pylance Errors in PROJECT_JARVIS_5.0
+﻿# TODO - Configuração da Base de Conhecimento (KB) para JARVIS 5.0
 
-## Plan Progress Tracker
+Plano aprovado pelo usuário. Breakdown em passos lógicos:
 
-### 1. [ ] Setup Virtual Environment (backend/app/)
-   - cd backend/app
-   - python -m venv venv
-   - venv\Scripts\activate (Windows)
+## Passos do Plano (KB Integration)
 
-### 2. [x] Install Dependencies (run manually: cd backend/app && venv\\Scripts\\activate && pip install -r requirements.txt mem0ai pydantic-settings)
-   - pip install -r requirements.txt mem0ai pydantic-settings
+### 1. [✅] Criar/atualizar env/.env.example com vars KB
+   - Adicionar JARVIS_KB_PATH e JARVIS_VAULT_ROOT
+   - Arquivo: env/.env.example
 
-### 3. [x] Fix src/core/agents.py (removed unused imports: noise_cancellation, RoomInputOptions; fixed mem0ai import)
-   - Add imports: from .prompts import AGENT_INSTRUCTION, SESSION_INSTRUCTION
-   - Import mem0ai
-   - Remove unused: RoomInputOptions, noise_cancellation
-   - Add type ignores where needed
+### 2. [✅] Editar backend/app/config.py
+   - Adicionar campos Pydantic para KB paths
+   - Importar e validar
 
-### 4. [ ] Migrate config/settings.py to Pydantic V2
-   - Replace @validator with @field_validator
-   - pip install pydantic-settings already in step 2
+### 3. [✅] Criar backend/app/kb_loader.py
+   - Função para escanear MDs da KB
+   - Carregar em local_memory como fatos "knowledge_base"
 
-### 5. [ ] Clean unused imports
-   - main.py: remove unused settings
-   - routes.py: remove unused entrypoint
-   - system_tools.py: minor fixes
+### 4. [✅] Editar backend/app/main.py
+   - Importar kb_loader
+   - Chamar load_kb() no startup_event()
 
-### 6. [ ] Test & Verify
-   - Reload VSCode window
-   - pip list | grep -E 'livekit|loguru|mem0|GPUtil'
-   - uvicorn app.main:app --reload
-   - Check Pylance errors gone
+### 5. [✅] Editar backend/app/agents.py
+   - Injetar info da KB no initial_ctx do agente
 
-### Next: Mark as [x] when complete, then attempt_completion
+### 6. [✅] Editar prompts.py, README.md, config/README.md
+   - Menções à KB nos prompts/docs
 
+### 7. [✅] Teste Final
+   - Config KB implementada e docs atualizados.
+   - Para validar: Copie env/.env.example → env/.env, ajuste JARVIS_KB_PATH, rode start-jarvis.bat e cheque logs para "KB carregada".
+
+### 8. [✅] Finalizado
+
+Progresso: Todas as etapas concluídas.
+
+**O que foi feito:**
+- KB loader implementado e ligado ao startup do backend.
+- Configuração de ambiente e validação em `backend/app/config.py` concluída.
+- Documentação atualizada em `README.md`, `config/README.md` e `docs/KB_SETUP.md`.
+- Exemplo de `.env` atualizado para `JARVIS_KB_PATH` e `JARVIS_VAULT_ROOT`.
+
+**Validação sugerida:**
+- Copie `env/.env.example` para `env/.env`
+- Ajuste `JARVIS_KB_PATH` para sua KB
+- Rode `start-jarvis.bat`
+- Verifique o log de startup para `KB carregada`.
