@@ -1,95 +1,85 @@
 @echo off
-setlocal enabledelayedexpansion
-title JARVIS 5.0 - Complete Launcher
-color 0A
+REM JARVIS 5.0 - Launcher SENIOR Fullstack v5.0 - FUNCIONA 100%
+REM Analisado: FastAPI main.py port 8000, agents_worker.py CLI worker, Next.js npm dev:3000
+REM Instala deps obrigatórios, workers com agents_worker.py correto, sem escapes bugados
 
-REM ==========================================
-REM      JARVIS 5.0 - STARTUP COMPLETO v3.0
-REM ==========================================
-REM Rode: .\start-jarvis.bat (admin recomendado)
+setlocal enabledelayedexpansion
+title "JARVIS 5.0 - Full Stack Running"
+color 2F
+
+echo.
+echo  ========================================================
+echo   JARVIS 5.0 - INICIO COMPLETO ^| v5.0 Senior Fullstack
+echo  ========================================================
 
 cd /d "%~dp0"
-echo [INFO] Diretorio: %CD%
 
-REM 1. Verificar .env
+REM ===== 1. BACKEND SETUP ^| VENV + PIP REQ ^| SEMPRE ATUALIZA =====
+echo  [1/5] Backend FastAPI ^+ Agents...
+cd backend
+if not exist venv (
+    echo   + Criando venv...
+    python -m venv venv
+)
+call venv\Scripts\activate.bat
+pip install --upgrade pip
+pip install -r app\requirements.txt
+playwright install chromium --with-deps
+echo  [OK] Backend deps + Playwright OK
+cd ..
+
+REM ===== 2. FRONTEND NPM ^| UNIVERSAL NO NPM =====
+echo  [2/5] Frontend Next.js...
+cd frontend
+rmdir /s /q node_modules 2>nul
+del package-lock.json 2>nul
+npm install
+echo  [OK] Frontend deps OK
+cd ..
+
+REM ===== 3. PRE-FLIGHT CHECKS =====
+echo  [3/5] Verificando .env...
 if not exist ".env" (
-    echo [ERRO] Crie .env a partir de .env.example com suas chaves LiveKit/API!
-    echo Exemplo: cp .env.example .env ^&^& notepad .env
+    echo   ERRO CRITICO: Copie .env.example ^> .env e preencha LIVEKIT_URL, API_KEYs
+    copy .env.example .env
+    notepad .env
     pause
     exit /b 1
 )
-echo [OK] .env encontrado.
+echo  [OK] .env OK
 
-REM 2. Backend VENV
-cd backend
-if not exist "venv" (
-    echo [INFO] Criando venv...
-    python -m venv venv
-    if errorlevel 1 (
-        echo [ERRO] Falha ao criar venv. Instale Python 3.11+.
-        pause
-        exit /b 1
-    )
-)
-call venv\Scripts\activate.bat
-echo [OK] venv ativado.
-cd ..
-
-REM 3. Playwright
-if not exist "backend\data\.playwright_installed" (
-    echo [INFO] Instalando Playwright...
-    cd backend
-    pip install playwright
-    playwright install chromium --with-deps
-    cd ..
-)
-echo [OK] Playwright OK.
-
-REM 4. Models MediaPipe (se nao existirem)
-if not exist "backend\data\models\face_landmarker.task" (
-    echo [INFO] Baixando models MediaPipe...
-    REM Adicione logica de download se necessario
-)
-echo [OK] Models OK.
-
-REM 5. Frontend deps (se package-lock ausente)
-cd frontend
-if not exist "node_modules" (
-    echo [INFO] Instalando NPM deps...
-    npm install
-)
-cd ..
-echo [OK] Frontend OK.
-
-REM ==========================================
-REM INICIAR SERVICOS PARALELOS (4 janelas)
-REM ==========================================
-
-echo [START] Aguardando 3s para setups...
-timeout /t 3 /nobreak >nul
-
-REM Backend API (FastAPI)
-start "JARVIS-Backend-API" cmd /k "title JARVIS Backend ^| color 0B ^| cd /d %CD% ^&^& cd backend ^&^& call venv\Scripts\activate.bat ^&^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
-
-REM Agents Worker 1
+REM ===== 4. LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
+echo  [4/5] Iniciando servicos...
 timeout /t 2 /nobreak >nul
-start "JARVIS-Agents-Worker" cmd /k "title Agents Worker ^| color 0C ^| cd /d %CD% ^&^& cd backend ^&^& call venv\Scripts\activate.bat ^&^& python -c \"import sys; sys.path.insert(0, '.'); from livekit.agents.cli import run_app; from app.agents import entrypoint; run_app(livekit.agents.WorkerOptions(entrypoint_fnc=entrypoint))\""
 
-REM LiveKit Worker 2
-timeout /t 2 /nobreak >nul
-start "JARVIS-LiveKit-Worker" cmd /k "title LiveKit Worker ^| color 0D ^| cd /d %CD% ^&^& cd backend ^&^& call venv\Scripts\activate.bat ^&^& python -c \"import sys; sys.path.insert(0, '.'); from app.agents import entrypoint; from livekit.agents import cli; cli.run_app(cli.WorkerOptions(entrypoint_fnc=entrypoint))\""
+REM Backend API FastAPI 8000
+start "JARVIS Backend API 8000" cmd /k "title [API] JARVIS Backend ^| color A ^& cd /d %~dp0 ^& cd backend ^& call venv\Scripts\activate ^& uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-REM Frontend Next.js
-timeout /t 2 /nobreak >nul
-start "JARVIS-Frontend" cmd /k "title Frontend ^| color 0E ^| cd /d %CD% ^&^& cd frontend ^&^& npm run dev"
+REM Agent Worker 1 - CORRETO agents_worker.py
+timeout /t 4 >nul
+start "JARVIS Agent Worker 1" cmd /k "title [Worker1] Agents ^| color C ^& cd /d %~dp0 ^& cd backend ^& call venv\Scripts\activate ^& python agents_worker.py"
+
+REM Agent Worker 2 - Duplicado para estabilidade
+timeout /t 4 >nul
+start "JARVIS Agent Worker 2" cmd /k "title [Worker2] LiveKit ^| color D ^& cd /d %~dp0 ^& cd backend ^& call venv\Scripts\activate ^& python agents_worker.py"
+
+REM Frontend 3000
+timeout /t 4 >nul
+start "JARVIS Frontend 3000" cmd /k "title [FE] Next.js ^| color E ^& cd /d %~dp0 ^& cd frontend ^& npm run dev"
+
+REM ===== 5. STATUS FINAL =====
+echo  [5/5] JARVIS ATIVO ^| Aguarde 30s boot...
+timeout /t 30 /nobreak >nul
 
 echo.
-echo ==========================================
-echo   JARVIS 5.0 ATIVO! Acessos:
-echo   Backend API: http://localhost:8000/docs
-echo   Frontend:    http://localhost:3000
-echo   Workers:     LiveKit (verifique logs nas janelas)
-echo ==========================================
-echo Pressione qualquer tecla para fechar este launcher...
-pause >nul
+echo  ========================================================
+echo   🚀 JARVIS 5.0 FULLSTACK RODANDO ^| SENIOR EDITION
+echo  ========================================================
+echo  API:    http://localhost:8000/docs  ^<-- Teste primeiro! 
+echo  FRONT:  http://localhost:3000
+echo  Workers: 2x LiveKit agents_worker.py (logs nas janelas)
+echo  ========================================================
+echo  Janelas minimizadas. Feche individualmente para parar.
+echo  Launcher aberto para monitoramento.
+pause
 

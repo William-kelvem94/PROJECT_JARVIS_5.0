@@ -5,7 +5,6 @@ import psutil
 import json
 from loguru import logger
 from livekit import agents
-from ...src.core.agents import entrypoint  # New core location
 from typing import Optional
 import datetime
 

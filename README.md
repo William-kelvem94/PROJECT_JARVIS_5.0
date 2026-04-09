@@ -53,6 +53,17 @@
 
 2. **Variáveis de Ambiente:**
    Copie `env/.env.example` para `env/.env` e preencha as chaves necessárias.
+   
+   **Nova (KB):** Configure os caminhos de Obsidian para o Jarvis:
+   ```
+   JARVIS_KB_PATH=D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase
+   JARVIS_VAULT_ROOT=D:\OBSIDIAN\Will
+   ```
+   - `JARVIS_KB_PATH` deve apontar para a pasta de notas do Jarvis que será ingerida como base de conhecimento.
+   - `JARVIS_VAULT_ROOT` é a raiz geral do seu vault Obsidian e pode ser usada para organização e futuras integrações.
+   
+   JARVIS carrega automaticamente os arquivos `.md` dessa KB durante o startup.
+   Veja `docs/KB_SETUP.md` para um guia completo de configuração, organização e boas práticas.
 
 3. **Backend Setup:**
    ```bash

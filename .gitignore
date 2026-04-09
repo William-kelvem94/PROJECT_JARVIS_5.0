@@ -20,3 +20,6 @@ backend/data/jarvis_local.db-shm
 backend/data/jarvis_local.db-wal
 *.db-shm
 *.db-wal
+
+# Tasks
+todo.md
