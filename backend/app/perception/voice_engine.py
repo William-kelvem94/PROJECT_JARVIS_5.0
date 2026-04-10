@@ -316,7 +316,9 @@ def _audio_loop():
                 # ── Level A: Wake word ─────────────────────────────────────
                 if oww is not None:
                     try:
-                        pred = oww.predict(chunk)
+                        # openwakeword expects float32 normalized to [-1.0, 1.0]
+                        chunk_float = chunk.astype(np.float32) / 32768.0
+                        pred = oww.predict(chunk_float)
                         for model_name, scores in pred.items():
                             try:
                                 if isinstance(scores, (int, float)):

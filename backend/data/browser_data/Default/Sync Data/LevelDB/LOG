@@ -1,2 +1,3 @@
-2026/02/27-18:21:18.077 70e4 Creating DB C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\browser_data\Default\Sync Data\LevelDB since it was missing.
-2026/02/27-18:21:18.104 70e4 Reusing MANIFEST C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\browser_data\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/04/10-17:46:41.774 bd28 Reusing MANIFEST C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\backend\data\browser_data\Default\Sync Data\LevelDB/MANIFEST-000001
+2026/04/10-17:46:41.790 bd28 Recovering log #3
+2026/04/10-17:46:41.791 bd28 Reusing old log C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\backend\data\browser_data\Default\Sync Data\LevelDB/000003.log 

@@ -1,2 +1,3 @@
-2026/02/27-18:21:18.420 9008 Creating DB C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\browser_data\Default\shared_proto_db\metadata since it was missing.
-2026/02/27-18:21:18.453 9008 Reusing MANIFEST C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\browser_data\Default\shared_proto_db\metadata/MANIFEST-000001
+2026/04/10-17:46:42.208 4514 Reusing MANIFEST C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\backend\data\browser_data\Default\shared_proto_db\metadata/MANIFEST-000001
+2026/04/10-17:46:42.213 4514 Recovering log #3
+2026/04/10-17:46:42.214 4514 Reusing old log C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\backend\data\browser_data\Default\shared_proto_db\metadata/000003.log 

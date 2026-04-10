@@ -46,7 +46,7 @@ class SystemTools:
                 logger.error(f"Falha ao publicar log de atividade: {e}")
 
     @agents.llm.function_tool(description="Lista a estrutura de arquivos do projeto ou de um diretório específico.")
-    def project_structure(self, path: str = "."):
+    async def project_structure(self, path: str = "."):
         try:
             items = os.listdir(path)
             structure = []
@@ -64,7 +64,7 @@ class SystemTools:
             return f"Erro: {str(e)}"
 
     @agents.llm.function_tool(description="Lê o conteúdo de um arquivo específico.")
-    def read_file(self, file_path: str):
+    async def read_file(self, file_path: str):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -75,7 +75,7 @@ class SystemTools:
             return f"Erro ao ler arquivo: {str(e)}"
 
     @agents.llm.function_tool(description="Escreve ou modifica o conteúdo de um arquivo.")
-    def write_file(self, file_path: str, content: str):
+    async def write_file(self, file_path: str, content: str):
         try:
             # Garantir que o diretório pai existe
             os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
@@ -89,7 +89,7 @@ class SystemTools:
             return f"Erro ao escrever: {str(e)}"
 
     @agents.llm.function_tool(description="Executa um comando no terminal do sistema OPERACIONAL WINDOWS.")
-    def execute_command(self, command: str):
+    async def execute_command(self, command: str):
         try:
             logger.info(f"Executando comando: {command}")
             result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
@@ -103,7 +103,7 @@ class SystemTools:
             return f"Erro: {str(e)}"
 
     @agents.llm.function_tool(description="Obtém estatísticas de hardware do sistema (CPU, RAM, Bateria).")
-    def get_system_stats(self):
+    async def get_system_stats(self):
         try:
             cpu = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory().percent
@@ -122,7 +122,7 @@ class SystemTools:
             return f"Erro: {str(e)}"
 
     @agents.llm.function_tool(description="Realiza operações básicas de Git (status, commit, push - use com cautela).")
-    def git_operation(self, action: str, message: str = ""):
+    async def git_operation(self, action: str, message: str = ""):
         if action == "status":
             return self.execute_command("git status")
         elif action == "commit":
@@ -135,7 +135,7 @@ class SystemTools:
             return "Ação Git não suportada."
 
     @agents.llm.function_tool(description="Registra uma nova macro (sequência de tarefas) para execução futura.")
-    def register_macro(self, name: str, description: str, steps: str):
+    async def register_macro(self, name: str, description: str, steps: str):
         """
         Steps deve ser uma string JSON contendo uma lista de comandos ou ferramentas.
         """
@@ -159,10 +159,10 @@ class SystemTools:
         results = []
         for step in macro:
             if isinstance(step, str):
-                res = self.execute_command(step)
+                res = await self.execute_command(step)
                 results.append(f"✔ {step[:40]} → {res[:60]}")
             elif isinstance(step, dict) and "cmd" in step:
-                res = self.execute_command(step["cmd"])
+                res = await self.execute_command(step["cmd"])
                 results.append(f"✔ {step['cmd'][:40]} → {res[:60]}")
 
         summary = "\n".join(results) if results else "Nenhum passo executado."
@@ -170,7 +170,7 @@ class SystemTools:
 
 
     @agents.llm.function_tool(description="Configura um monitoramento (watchdog) para um arquivo ou condição específica.")
-    def set_watchdog(self, name: str, type: str, target: str):
+    async def set_watchdog(self, name: str, type: str, target: str):
         """
         type: 'file' (monitora alteração de data de modificação)
         target: caminho do arquivo
@@ -297,7 +297,7 @@ class SystemTools:
             return f"Erro ao abrir '{app_name}': {e}"
 
     @agents.llm.function_tool(description="Lê o texto atual da área de transferência (clipboard).")
-    def get_clipboard(self):
+    async def get_clipboard(self):
         try:
             result = subprocess.run(
                 ["powershell", "-command", "Get-Clipboard"],
@@ -309,7 +309,7 @@ class SystemTools:
             return f"Erro ao ler clipboard: {e}"
 
     @agents.llm.function_tool(description="Define o texto da área de transferência (clipboard). Útil para preparar conteúdo para colar.")
-    def set_clipboard(self, text: str):
+    async def set_clipboard(self, text: str):
         try:
             subprocess.run(
                 ["powershell", "-command", f"Set-Clipboard -Value '{text}'"],
@@ -320,7 +320,7 @@ class SystemTools:
             return f"Erro ao definir clipboard: {e}"
 
     @agents.llm.function_tool(description="Aplica uma mudança cirúrgica em um arquivo de código: substitui um trecho específico por outro.")
-    def apply_code_change(self, file_path: str, old_code: str, new_code: str):
+    async def apply_code_change(self, file_path: str, old_code: str, new_code: str):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -335,7 +335,7 @@ class SystemTools:
             return f"Erro ao aplicar mudança: {e}"
 
     @agents.llm.function_tool(description="Pesquisa um texto em todos os arquivos de um diretório. Útil para encontrar onde algo está definido.")
-    def search_in_files(self, search_text: str, directory: str = ".", extension: str = ".py"):
+    async def search_in_files(self, search_text: str, directory: str = ".", extension: str = ".py"):
         try:
             results = []
             for root, _, files in os.walk(directory):
@@ -358,7 +358,7 @@ class SystemTools:
     # ─── CÉREBRO ENGENHEIRO: Raciocínio Avançado ────────────────────────────
 
     @agents.llm.function_tool(description="Salva um fato importante sobre o usuário na memória local permanente. Use quando o usuário revelar uma preferência, objetivo, contexto pessoal ou informação relevante que deve ser lembrada.")
-    def save_memory(self, fact: str, user_id: str = "Chefe"):
+    async def save_memory(self, fact: str, user_id: str = "Chefe"):
         from .local_memory import local_memory
         saved = local_memory.save_fact(user_id, fact)
         if saved:
@@ -367,7 +367,7 @@ class SystemTools:
         return f"Fato similar já estava na memória (ignorado para evitar duplicata)."
 
     @agents.llm.function_tool(description="Consulta a memória local do usuário por palavra-chave. Use para recuperar informações de sessões anteriores.")
-    def recall_memory(self, query: str, user_id: str = "Chefe"):
+    async def recall_memory(self, query: str, user_id: str = "Chefe"):
         from .local_memory import local_memory
         results = local_memory.search(user_id, query, limit=10)
         if not results:
@@ -376,7 +376,7 @@ class SystemTools:
         return "Memórias encontradas:\n" + "\n".join(lines)
 
     @agents.llm.function_tool(description="Mostra estatísticas da memória local: total de fatos, categorias e tamanho em KB.")
-    def memory_stats(self, user_id: str = "Chefe"):
+    async def memory_stats(self, user_id: str = "Chefe"):
         from .local_memory import local_memory
         stats = local_memory.get_stats(user_id)
         return (
@@ -500,7 +500,7 @@ class SystemTools:
     # ─── SENSORES: Percepção (Face, Gesto, Voz) ──────────────────────────────
 
     @agents.llm.function_tool(description="Retorna o estado atual da percepção: emoção do usuário, gesto detectado, identidade facial, identidade de voz e direção do dedo apontando. Use para entender o contexto físico do usuário.")
-    def get_perception_status(self):
+    async def get_perception_status(self):
         try:
             from .perception import perception_manager
             snap = perception_manager.get_snapshot()
@@ -526,7 +526,7 @@ class SystemTools:
             return f"Percepção indisponível: {e}"
 
     @agents.llm.function_tool(description="Cadastra o rosto do usuário para reconhecimento de identidade. Tira uma foto agora via câmera e associa ao nome fornecido.")
-    def enroll_face(self, name: str):
+    async def enroll_face(self, name: str):
         try:
             from .perception import perception_manager
             from .perception.face_engine import enroll_face as _enroll
@@ -540,7 +540,7 @@ class SystemTools:
             return f"Erro ao cadastrar rosto: {e}"
 
     @agents.llm.function_tool(description="Cadastra a voz do usuário para reconhecimento de locutor. Grava 5 segundos de áudio agora e associa ao nome fornecido.")
-    def enroll_voice(self, name: str):
+    async def enroll_voice(self, name: str):
         try:
             from .perception import perception_manager
             from .perception.voice_engine import enroll_voice as _enroll
@@ -554,7 +554,7 @@ class SystemTools:
             return f"Erro ao cadastrar voz: {e}"
 
     @agents.llm.function_tool(description="Pesquisa no banco de conhecimento de código local (RAG). Use para entender como funções, classes ou módulos específicos do projeto funcionam, mesmo que os arquivos não estejam abertos.")
-    def search_codebase(self, query: str):
+    async def search_codebase(self, query: str):
         from .utils.code_indexer import code_miner
         asyncio.create_task(self._log_activity("RAG de Código", f"Consultando: {query}", "info"))
         try:
@@ -564,7 +564,7 @@ class SystemTools:
             return f"Erro ao consultar a base de conhecimento: {e}"
 
     @agents.llm.function_tool(description="Executa uma indexação completa do repositório de código para atualizar o banco de conhecimento (RAG).")
-    def refresh_code_index(self):
+    async def refresh_code_index(self):
         from .utils.code_indexer import code_miner
         asyncio.create_task(self._log_activity("Indexação", "Atualizando base vetorial...", "info"))
         try:
