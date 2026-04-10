@@ -1,159 +1,161 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { log } from '@/lib/logger';
 import { useVoiceAssistant, useTrackVolume } from '@livekit/components-react';
 
-// FIX 1: carrega Three.js + p5.js em paralelo antes do Vanta
-const loadScript = (src: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-        if (typeof document === 'undefined') return resolve(false);
-        if (document.querySelector(`script[src="${src}"]`)) return resolve(true);
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-    });
-};
+// Converte cor hex-number (ex: 0x1da3b9) para string CSS rgb
+function hexNumToRgb(hex: number): [number, number, number] {
+    return [(hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff];
+}
 
-// Responsável por instanciar a esfera e carregar os scripts
-export const VantaOrb = ({ isConnected, color, vantaRef }: { isConnected: boolean, color: number, vantaRef: React.MutableRefObject<any> }) => {
-    const localRef = useRef<HTMLDivElement>(null);
+/**
+ * JarvisOrb — visualizador Canvas 2D puro.
+ * Zero WebGL, zero Three.js, zero p5.js.
+ * Anéis concêntricos que pulsam com o volume do agente.
+ */
+export const VantaOrb = ({
+    isConnected,
+    color,
+    vantaRef,
+}: {
+    isConnected: boolean;
+    color: number;
+    vantaRef: React.MutableRefObject<any>;
+}) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const stateRef = useRef({ volume: 0, active: false, frame: 0, color });
+
+    // Expõe setter de volume para VantaController (mesmo contrato que o Vanta)
+    useEffect(() => {
+        vantaRef.current = {
+            setVolume: (v: number) => { stateRef.current.volume = v; },
+            setColor: (c: number) => { stateRef.current.color = c; },
+        };
+        return () => { vantaRef.current = null; };
+    }, [vantaRef]);
+
+    // Atualiza cor quando a prop muda (persona switch)
+    useEffect(() => {
+        stateRef.current.color = color;
+    }, [color]);
 
     useEffect(() => {
-        let vantaEffect: any = null;
-        let attempts = 0;
-        let initTimer: NodeJS.Timeout;
+        if (!isConnected) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-        const setup = async () => {
-            // FIX 1: Three.js e p5.js carregam em PARALELO; só após ambos carrega o Vanta
-            await Promise.all([
-                loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js'),
-                loadScript('https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js'),
-            ]);
-            await loadScript('https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.trunk.min.js');
-            tryInitVanta();
-        };
+        const SIZE = 520;
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const cx = SIZE / 2;
+        const cy = SIZE / 2;
 
-        const tryInitVanta = () => {
-            const el = localRef.current;
-            const win = window as any;
-            const hasVanta = !!win.VANTA?.TRUNK;
-            const hasP5 = !!win.p5;
+        stateRef.current.active = true;
+        let t = 0;
 
-            if (el && hasVanta && hasP5) {
-                try {
-                    if (!vantaEffect) {
-                        vantaEffect = win.VANTA.TRUNK({
-                            el: el,
-                            p5: win.p5,
-                            mouseControls: false,
-                            touchControls: false,
-                            gyroControls: false,
-                            minHeight: 200.0,
-                            minWidth: 200.0,
-                            scale: 1.0,
-                            scaleMobile: 1.0,
-                            color: 0x1fd5f9,
-                            backgroundColor: 0x000000,
-                            // FIX 5: chaos inicial reduzido de 4.0 → 1.5 (menos raios = menos GPU)
-                            spacing: 2.5,
-                            chaos: 1.5,
-                        });
-                        vantaRef.current = vantaEffect;
-                    }
-                } catch (e) {
-                    log.error('Vanta Orb Init Error:', e);
-                    attempts++;
-                    if (attempts < 5) initTimer = setTimeout(tryInitVanta, 1000);
-                }
-            } else {
-                attempts++;
-                if (attempts < 20) initTimer = setTimeout(tryInitVanta, 500);
+        const draw = () => {
+            if (!stateRef.current.active) return;
+            if (document.hidden) {
+                stateRef.current.frame = requestAnimationFrame(draw);
+                return;
             }
+
+            t += 0.012;
+            const vol = stateRef.current.volume;           // 0–1
+            const [r, g, b] = hexNumToRgb(stateRef.current.color);
+
+            // Limpa com fade — cria efeito de rastro suave
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillRect(0, 0, SIZE, SIZE);
+
+            // Parâmetros reativos ao volume
+            const ringCount = 22;
+            const baseRadius = 52 + vol * 18;
+            const spacing = 9.5 + vol * 2.2;
+            const amp = 2.8 + vol * 14;       // distorção ondulatória
+            const freq = 6 + vol * 4;          // frequência da onda
+
+            for (let i = 0; i < ringCount; i++) {
+                const progress = i / ringCount;
+                const radius = baseRadius + i * spacing;
+                const alpha = (1 - progress * 0.75) * (0.35 + vol * 0.55);
+                const lineWidth = Math.max(0.5, 1.4 - progress * 0.9 + vol * 0.8);
+                const phaseOffset = t * (1 + progress * 0.6) + i * 0.28;
+
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+                ctx.lineWidth = lineWidth;
+
+                const steps = Math.max(80, Math.floor(radius * 1.4));
+                for (let s = 0; s <= steps; s++) {
+                    const angle = (s / steps) * Math.PI * 2;
+                    const wobble = amp * Math.sin(freq * angle + phaseOffset);
+                    const px = cx + (radius + wobble) * Math.cos(angle);
+                    const py = cy + (radius + wobble) * Math.sin(angle);
+                    s === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            // Núcleo — círculo sólido pequeno no centro
+            const coreR = 20 + vol * 10;
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+            grad.addColorStop(0, `rgba(${r},${g},${b},${0.55 + vol * 0.4})`);
+            grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            ctx.beginPath();
+            ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            stateRef.current.frame = requestAnimationFrame(draw);
         };
 
-        if (isConnected) {
-            setup();
-        }
+        stateRef.current.frame = requestAnimationFrame(draw);
 
         return () => {
-            if (initTimer) clearTimeout(initTimer);
-            if (vantaEffect && typeof vantaEffect.destroy === 'function') {
-                try {
-                    vantaEffect.destroy();
-                } catch (e) {
-                    log.error("Erro ao destruir Vanta effect", e);
-                }
-            }
-            if (vantaRef.current === vantaEffect) {
-                vantaRef.current = null;
-            }
+            stateRef.current.active = false;
+            cancelAnimationFrame(stateRef.current.frame);
+            ctx.clearRect(0, 0, SIZE, SIZE);
         };
-    }, [isConnected, color, vantaRef]);
+    }, [isConnected]);
+
+    if (!isConnected) return null;
 
     return (
-        // FIX 2: canvas reduzido de 800×800 → 400×400; CSS scale visual preservado
-        <div
-            ref={localRef}
+        <canvas
+            ref={canvasRef}
             style={{
-                width: '400px',
-                height: '400px',
-                transform: 'scale(2.0) translateY(-5%)',
-                transformOrigin: 'center center',
-                willChange: 'transform',
+                display: 'block',
+                width: '100vmin',
+                height: '100vmin',
+                maxWidth: '760px',
+                maxHeight: '760px',
+                imageRendering: 'auto',
             }}
         />
     );
 };
 
-// Responsável por monitorar o microfone e animar o Vanta (Throttled)
-export const VantaController = ({ vantaRef, isConnected }: { vantaRef: React.MutableRefObject<any>; isConnected?: boolean }) => {
+/**
+ * VantaController — passa o volume do agente para o JarvisOrb via ref
+ * (mantém a mesma interface do componente anterior)
+ */
+export const VantaController = ({
+    vantaRef,
+    isConnected,
+}: {
+    vantaRef: React.MutableRefObject<any>;
+    isConnected?: boolean;
+}) => {
     const { audioTrack } = useVoiceAssistant();
     const volume = useTrackVolume(audioTrack);
 
     useEffect(() => {
-        // FIX 3: sai imediatamente se desconectado — sem rAF ocioso
         if (!isConnected) return;
-        const effect = vantaRef.current;
-        if (!effect) return;
-
-        let lastUpdate = 0;
-        let frame = 0;
-        let active = true;
-
-        const updateChaos = (timestamp: number) => {
-            if (!active) return;
-
-            // FIX 3: para o loop se a aba estiver oculta ou se desconectou
-            if (document.hidden) {
-                frame = requestAnimationFrame(updateChaos);
-                return;
-            }
-
-            // Throttle a 10 Hz (100 ms)
-            if (timestamp - lastUpdate >= 100) {
-                lastUpdate = timestamp;
-                // FIX 5: baseChaos reduzido de 3.0 → 1.5
-                const baseChaos = 1.5;
-                const voiceChaos = (volume || 0) * 3.0;
-                const finalChaos = baseChaos + voiceChaos;
-
-                if (Math.abs((effect.options?.chaos ?? 0) - finalChaos) > 0.3) {
-                    effect.setOptions({ chaos: finalChaos });
-                }
-            }
-            frame = requestAnimationFrame(updateChaos);
-        };
-
-        frame = requestAnimationFrame(updateChaos);
-
-        return () => {
-            active = false;
-            cancelAnimationFrame(frame);
-        };
+        vantaRef.current?.setVolume(volume ?? 0);
     }, [volume, vantaRef, isConnected]);
 
     return null;

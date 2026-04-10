@@ -236,23 +236,12 @@ export const SessionView = ({
       )}
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={session.isConnected ? `vanta-${agentPersona}` : 'vanta-disconnected'}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.5, ease: 'easeInOut' }}
-              className="p5-canvas-container absolute inset-0 flex items-center justify-center"
-            >
-              <VantaOrb
-                isConnected={session.isConnected}
-                color={currentColor}
-                vantaRef={vantaEffectRef}
-              />
-            </motion.div>
-          </AnimatePresence>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <VantaOrb
+            isConnected={session.isConnected}
+            color={currentColor}
+            vantaRef={vantaEffectRef}
+          />
         </div>
 
         {isReasoning && (

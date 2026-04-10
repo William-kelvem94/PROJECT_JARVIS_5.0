@@ -1,21 +1,30 @@
 import { type MotionProps, motion } from 'motion/react';
 import { useVoiceAssistant } from '@livekit/components-react';
 import { AppConfig } from '@/app-config';
-import { AgentAudioVisualizerAura } from '@/components/agents-ui/agent-audio-visualizer-aura';
-import {
-  AgentAudioVisualizerBar,
-  AgentAudioVisualizerBarElementVariants,
-} from '@/components/agents-ui/agent-audio-visualizer-bar';
-import { AgentAudioVisualizerGrid } from '@/components/agents-ui/agent-audio-visualizer-grid';
-import { AgentAudioVisualizerRadial } from '@/components/agents-ui/agent-audio-visualizer-radial';
-import { AgentAudioVisualizerWave } from '@/components/agents-ui/agent-audio-visualizer-wave';
+import dynamic from 'next/dynamic';
 import { cn } from '@/lib/shadcn/utils';
 
-const MotionAgentAudioVisualizerAura = motion.create(AgentAudioVisualizerAura);
-const MotionAgentAudioVisualizerBar = motion.create(AgentAudioVisualizerBar);
-const MotionAgentAudioVisualizerGrid = motion.create(AgentAudioVisualizerGrid);
-const MotionAgentAudioVisualizerRadial = motion.create(AgentAudioVisualizerRadial);
-const MotionAgentAudioVisualizerWave = motion.create(AgentAudioVisualizerWave);
+// Lazy imports — cada visualizador só carrega se for o tipo configurado
+const AgentAudioVisualizerAura = dynamic(
+  () => import('@/components/agents-ui/agent-audio-visualizer-aura').then(m => ({ default: m.AgentAudioVisualizerAura })),
+  { ssr: false }
+);
+const AgentAudioVisualizerBar = dynamic(
+  () => import('@/components/agents-ui/agent-audio-visualizer-bar').then(m => ({ default: m.AgentAudioVisualizerBar })),
+  { ssr: false }
+);
+const AgentAudioVisualizerGrid = dynamic(
+  () => import('@/components/agents-ui/agent-audio-visualizer-grid').then(m => ({ default: m.AgentAudioVisualizerGrid })),
+  { ssr: false }
+);
+const AgentAudioVisualizerRadial = dynamic(
+  () => import('@/components/agents-ui/agent-audio-visualizer-radial').then(m => ({ default: m.AgentAudioVisualizerRadial })),
+  { ssr: false }
+);
+const AgentAudioVisualizerWave = dynamic(
+  () => import('@/components/agents-ui/agent-audio-visualizer-wave').then(m => ({ default: m.AgentAudioVisualizerWave })),
+  { ssr: false }
+);
 
 interface AudioVisualizerProps extends MotionProps {
   appConfig: AppConfig;
@@ -36,21 +45,22 @@ export function AudioVisualizer({
     case 'aura': {
       const { audioVisualizerColor, audioVisualizerAuraColorShift } = appConfig;
       return (
-        <MotionAgentAudioVisualizerAura
-          state={state}
-          audioTrack={audioTrack}
-          color={audioVisualizerColor}
-          colorShift={audioVisualizerAuraColorShift}
-          className={cn('size-[300px] md:size-[450px]', className)}
-          {...props}
-        />
+        <motion.div className={cn('size-[300px] md:size-[450px]', className)} {...props}>
+          <AgentAudioVisualizerAura
+            state={state}
+            audioTrack={audioTrack}
+            color={audioVisualizerColor}
+            colorShift={audioVisualizerAuraColorShift}
+            className="w-full h-full"
+          />
+        </motion.div>
       );
     }
     case 'wave': {
       const { audioVisualizerColor, audioVisualizerWaveLineWidth = 3 } = appConfig;
       return (
         <motion.div className={className} {...props}>
-          <MotionAgentAudioVisualizerWave
+          <AgentAudioVisualizerWave
             state={state}
             audioTrack={audioTrack}
             color={audioVisualizerColor}
@@ -74,25 +84,26 @@ export function AudioVisualizer({
       }
 
       return (
-        <MotionAgentAudioVisualizerGrid
-          size={size}
-          state={state}
-          audioTrack={audioTrack}
-          rowCount={audioVisualizerGridRowCount}
-          columnCount={audioVisualizerGridColumnCount}
-          radius={Math.round(
-            Math.min(audioVisualizerGridRowCount, audioVisualizerGridColumnCount) / 4
-          )}
-          className={cn('size-[350px] gap-0 p-8 md:size-[450px]', className)}
-          {...props}
-        />
+        <motion.div className={className} {...props}>
+          <AgentAudioVisualizerGrid
+            size={size}
+            state={state}
+            audioTrack={audioTrack}
+            rowCount={audioVisualizerGridRowCount}
+            columnCount={audioVisualizerGridColumnCount}
+            radius={Math.round(
+              Math.min(audioVisualizerGridRowCount, audioVisualizerGridColumnCount) / 4
+            )}
+            className={cn('size-[350px] gap-0 p-8 md:size-[450px]')}
+          />
+        </motion.div>
       );
     }
     case 'radial': {
       const { audioVisualizerRadialBarCount = 25, audioVisualizerRadialRadius = 12 } = appConfig;
       return (
         <motion.div className={className} {...props}>
-          <MotionAgentAudioVisualizerRadial
+          <AgentAudioVisualizerRadial
             size="xl"
             state={state}
             audioTrack={audioTrack}
@@ -119,13 +130,9 @@ export function AudioVisualizer({
       }
 
       return (
-        <MotionAgentAudioVisualizerBar
-          size={size}
-          state={state}
-          audioTrack={audioTrack}
-          barCount={audioVisualizerBarCount}
+        <motion.div
           className={cn(
-            size === 'xl' && 'size-[450px] gap-2',
+            size === 'xl' && 'size-[450px]',
             size === 'lg' && 'size-[450px]',
             size === 'md' && 'size-[350px] md:size-[450px]',
             size === 'sm' && 'size-[300px] md:size-[450px]',
@@ -134,8 +141,14 @@ export function AudioVisualizer({
           )}
           {...props}
         >
-          <span className={cn(AgentAudioVisualizerBarElementVariants({ size }))} />
-        </MotionAgentAudioVisualizerBar>
+          <AgentAudioVisualizerBar
+            size={size}
+            state={state}
+            audioTrack={audioTrack}
+            barCount={audioVisualizerBarCount}
+            className="w-full h-full gap-2"
+          />
+        </motion.div>
       );
     }
   }
