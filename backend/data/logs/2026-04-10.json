@@ -1,0 +1,122 @@
+[
+  {
+    "type": "activity_log",
+    "title": "Listar Projeto",
+    "detail": "Caminho: .",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:33:25.018154"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: raiz",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:33:42.220206"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: JARVIS",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:34:01.107346"
+  },
+  {
+    "type": "activity_log",
+    "title": "Listar Projeto",
+    "detail": "Caminho: .",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:34:39.735178"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: Projetos",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:35:02.333907"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Lendo nota: Projetos/GitHub-Completo.md",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T17:35:31.373361"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Listando: Projetos/Privados",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:35:57.729742"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian",
+    "detail": "Lendo nota: Projetos/Privados/gestor_aluguel_2.0.md",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T17:35:59.015300"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian Search",
+    "detail": "'skills' → 6 resultado(s)",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:36:59.036072"
+  },
+  {
+    "type": "activity_log",
+    "title": "Obsidian Search",
+    "detail": "'MCP' → 1 resultado(s)",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:36:59.603317"
+  },
+  {
+    "type": "activity_log",
+    "title": "Escrever Arquivo",
+    "detail": "Arquivo: Correcao_VoiceEngine.txt",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T17:41:46.515629"
+  },
+  {
+    "type": "activity_log",
+    "title": "Navegador",
+    "detail": "Acessando: https://www.youtube.com",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:46:46.569747"
+  },
+  {
+    "type": "activity_log",
+    "title": "Screenshot",
+    "detail": "Captura salva: C:\\Users\\willi\\Documents\\GitHub\\PROJECT_JARVIS_5.0\\backend\\data\\screenshot_20260410_174647.png",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T17:46:52.928435"
+  },
+  {
+    "type": "activity_log",
+    "title": "Terminal",
+    "detail": "Comando: start cmd",
+    "log_type": "cmd",
+    "status": "success",
+    "timestamp": "2026-04-10T17:49:47.330913"
+  },
+  {
+    "type": "activity_log",
+    "title": "Terminal",
+    "detail": "Comando: start cmd",
+    "log_type": "cmd",
+    "status": "success",
+    "timestamp": "2026-04-10T17:50:08.795519"
+  }
+]
