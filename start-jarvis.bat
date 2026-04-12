@@ -29,14 +29,50 @@ if not defined ENV_PATH (
 )
 echo  [OK] Variaveis de ambiente detectadas em %ENV_PATH%
 
-REM ===== 2. BACKEND SETUP ^| VENV + PIP REQ ^| SEMPRE ATUALIZA =====
-echo  [2/5] Backend FastAPI ^+ Agents...
+REM ===== 2. BACKEND SETUP | BUSCA INTELIGENTE DE PYTHON =====
+echo  [2/5] Buscando interpretador Python...
+
+set "PYTHON_EXE="
+
+REM 1. Tenta primeiro o caminho conhecido do UV (Mais robusto para seu PC)
+set "UV_PYTHON=%USERPROFILE%\AppData\Roaming\uv\python\cpython-3.14.3-windows-x86_64-none\python.exe"
+if exist "!UV_PYTHON!" (
+    set "PYTHON_EXE=!UV_PYTHON!"
+    echo   + Python encontrado via UV: !UV_PYTHON!
+)
+
+REM 2. Se nao achou UV, tenta o comando global, mas ignora o atalho da Microsoft Store
+if not defined PYTHON_EXE (
+    for /f "delims=" %%i in ('where python 2^>nul') do (
+        set "POTENTIAL=%%i"
+        echo !POTENTIAL! | findstr /i "WindowsApps" >nul
+        if errorlevel 1 (
+            set "PYTHON_EXE=!POTENTIAL!"
+            echo   + Python global encontrado: !PYTHON_EXE!
+            goto :PYTHON_FOUND
+        )
+    )
+)
+
+:PYTHON_FOUND
+if not defined PYTHON_EXE (
+    where py >nul 2>nul
+    if not errorlevel 1 (
+        set "PYTHON_EXE=py"
+        echo   + Usando 'py' launcher.
+    ) else (
+        echo   ERRO: Python real nao encontrado. Por favor, instale o Python 3.10+ do site python.org.
+        pause
+        exit /b 1
+    )
+)
+
 cd backend
 if not exist "venv\Scripts\activate.bat" (
-    echo   + Criando venv...
-    python -m venv venv
+    echo   + Criando venv usando: !PYTHON_EXE!
+    "!PYTHON_EXE!" -m venv venv
     if errorlevel 1 (
-        echo   ERRO: falha ao criar o ambiente virtual.
+        echo   ERRO: falha ao criar o ambiente virtual com !PYTHON_EXE!.
         pause
         exit /b 1
     )
@@ -48,14 +84,14 @@ if errorlevel 1 (
     exit /b 1
 )
 
-pip install --upgrade pip
+python -m pip install --upgrade pip
 if errorlevel 1 (
     echo   ERRO: falha ao atualizar pip.
     pause
     exit /b 1
 )
 
-pip install -r app\requirements.txt
+python -m pip install -r app\requirements.txt
 if errorlevel 1 (
     echo   ERRO: falha ao instalar as dependencias do backend.
     pause
@@ -78,14 +114,23 @@ cd /d "%~dp0frontend"
 if exist "node_modules" (
     echo   + Node modules existentes encontrados.
 )
+if defined JARVIS_INSTALLING (
+    echo   + Instalacao ja em curso. Pulando redundancia.
+    goto :SKIP_INSTALL
+)
+set JARVIS_INSTALLING=1
+
 where pnpm >nul 2>nul
 if errorlevel 1 (
     echo   + pnpm nao encontrado. Usando npm install no frontend...
     call npm install --prefix "%~dp0frontend"
 ) else (
-    echo   + pnpm detectado. Usando pnpm install no frontend...
+    echo   + pnpm detectado. Usando pnpm install...
     call pnpm install
 )
+
+set JARVIS_INSTALLING=
+:SKIP_INSTALL
 if errorlevel 1 (
     echo   ERRO: falha ao instalar as dependencias do frontend.
     pause
