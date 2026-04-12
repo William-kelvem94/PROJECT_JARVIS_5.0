@@ -5,6 +5,9 @@ import os
 import glob
 import logging
 
+from .chat_pipeline import chat_reply
+from .mem0 import AsyncMemoryClient
+
 logger = logging.getLogger("uvicorn")
 
 router = APIRouter()
@@ -18,26 +21,15 @@ class ChatResponse(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    from .mem0 import AsyncMemoryClient
-    memory = AsyncMemoryClient()
-    user_id = req.user_name
-    
-    # Busca memórias para contexto
-    memories = await memory.get_all(user_id=user_id)
-    context_str = " ".join([m.get("memory", "") for m in memories]) if memories else "Sem memórias prévias."
-    
-    logger.info(f"Processando chat API para {user_id} com contexto: {context_str[:50]}...")
-    
-    # Resposta simulada que demonstra conhecimento do contexto
-    reply = f"Entendido, {user_id}. Estou processando sua mensagem: '{req.message}'. "
-    if memories:
-        reply += "Com base no nosso histórico, estou pronto para prosseguir."
-    
+    reply = await chat_reply(user_id=req.user_name, user_message=req.message)
+    logger.info(f"Chat API processado para {req.user_name}.")
     return {"reply": reply}
 
 @router.get("/memory")
-def memory_endpoint():
-    return {"memories": []}
+async def memory_endpoint(user_name: str = "Chefe"):
+    memory = AsyncMemoryClient()
+    memories = await memory.get_all(user_id=user_name)
+    return {"memories": memories}
 
 @router.get("/livekit-token")
 def livekit_token():
