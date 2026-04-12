@@ -5,8 +5,12 @@ import psutil
 import json
 from loguru import logger
 from livekit import agents
-from typing import Optional
+from livekit.agents import llm
+from typing import Optional, TYPE_CHECKING
 import datetime
+
+if TYPE_CHECKING:
+    from livekit.rtc import Room
 
 class SystemTools:
     """
@@ -14,7 +18,7 @@ class SystemTools:
     Permite ao agente interagir com o computador, ler arquivos e executar comandos.
     """
 
-    def __init__(self, room: Optional[agents.Room] = None):
+    def __init__(self, room: Optional["Room"] = None):
         self._room = room
         from .utils.log_manager import log_manager
         from .utils.workflow_engine import workflow_engine

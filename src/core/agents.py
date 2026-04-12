@@ -1,4 +1,4 @@
-﻿from dotenv import load_dotenv
+from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import AgentSession, Agent, ChatContext, AutoSubscribe
 from livekit.agents.voice import VoiceActivityVideoSampler
@@ -389,20 +389,21 @@ async def entrypoint(ctx: agents.JobContext):
         logger.error(f"🚨 Erro na sessão: {ev.error}")
 
     try:
-        # Habilitamos explicitamente a captura de vídeo (screen share/camera)
-        room_options = agents.voice.room_io.RoomOptions(
-            video_input=True, # IMPORTANTE: permite ao agente ver vídeo
-            audio_input=True,
-            audio_output=True,
-            text_output=True
-        )
-        
-        # Iniciamos a sessão passando o agente, room e as opções de vídeo
-        await session.start(agent=agent, room=ctx.room, room_options=room_options)
-        logger.info("✔️ Sessão do Agente iniciada e conectada na Room com Visão Habilitada.")
+        # Tenta o caminho da v1.5.x (room_io separado)
+        try:
+            from livekit.agents.voice.room_io import RoomInputOptions
+            room_options = RoomInputOptions(
+                video_enabled=True,
+            )
+            await session.start(agent=agent, room=ctx.room, room_input_options=room_options)
+        except (ImportError, TypeError):
+            # Fallback: start simples sem opções de vídeo (compatível com qualquer versão)
+            await session.start(agent=agent, room=ctx.room)
+        logger.info("Sessao do Agente iniciada e conectada na Room.")
     except Exception as e:
         logger.error(f"Falha ao iniciar o Agente na sala: {e}")
         raise e
+
 
     # Use a shutdown callback to capture the context at the end
     ctx.add_shutdown_callback(lambda: asyncio.create_task(shutdown_hook()))
