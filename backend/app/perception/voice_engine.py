@@ -320,25 +320,24 @@ def _audio_loop():
                         chunk_float = chunk.astype(np.float32) / 32768.0
                         pred = oww.predict(chunk_float)
                         for model_name, scores in pred.items():
+                            score = 0.0
                             try:
                                 if isinstance(scores, (int, float)):
                                     score = float(scores)
-                                elif isinstance(scores, dict):
-                                    nums = [float(v) for v in scores.values()
-                                            if isinstance(v, (int, float))]
-                                    score = max(nums) if nums else 0.0
-                                elif hasattr(scores, '__iter__'):
-                                    nums = []
-                                    for s in scores:
-                                        try:
-                                            nums.append(float(s))
-                                        except (TypeError, ValueError):
-                                            pass
-                                    score = max(nums) if nums else 0.0
                                 else:
-                                    score = 0.0
-                            except Exception:
+                                    # Robustly handle dicts and iterables
+                                    values = []
+                                    if isinstance(scores, dict):
+                                        values = scores.values()
+                                    elif hasattr(scores, '__iter__'):
+                                        values = list(scores)
+                                    
+                                    nums = [float(v) for v in values if isinstance(v, (int, float))]
+                                    score = max(nums) if nums else 0.0
+                            except Exception as e:
+                                logger.debug(f"[VoiceEngine] Score parsing error: {e}")
                                 continue
+                            
                             if score > 0.5:
                                 logger.success(
                                     f"[VoiceEngine] 🎙️ Wake word '{model_name}' "

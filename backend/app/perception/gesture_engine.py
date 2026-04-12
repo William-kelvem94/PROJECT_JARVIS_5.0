@@ -91,7 +91,10 @@ def _get_mp():
         from mediapipe.tasks import python as _mp_tasks
         from mediapipe.tasks.python import vision as _mp_vision
 
-        base_opts = _mp_tasks.BaseOptions(model_asset_path=gest_path)
+        base_opts = _mp_tasks.BaseOptions(
+            model_asset_path=gest_path,
+            delegate=_mp_tasks.BaseOptions.Delegate.CPU
+        )
         opts = _mp_vision.GestureRecognizerOptions(
             base_options=base_opts,
             num_hands=2,
