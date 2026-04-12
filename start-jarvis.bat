@@ -178,24 +178,32 @@ REM Atualizar pip silenciosamente
 echo   + Atualizando pip...
 python -m pip install --upgrade pip --quiet --no-warn-script-location
 
-REM ── Instalar webrtcvad-wheels ANTES do requirements para evitar erro de compilacao C++
-echo   + Pre-instalando webrtcvad-wheels ^(evita erro de compilacao no Windows^)...
+REM ── PASSO 1: webrtcvad-wheels (substituto pre-compilado do webrtcvad no Windows)
+echo   + [1/3] Instalando webrtcvad-wheels...
 python -m pip install webrtcvad-wheels --quiet --no-warn-script-location
 if errorlevel 1 (
     echo   [AVISO] webrtcvad-wheels falhou. Resemblyzer pode ter problemas.
 )
 
-REM ── Instalar todas as dependencias do backend
-echo   + Instalando dependencias do backend ^(pode demorar na primeira vez^)...
+REM ── PASSO 2: resemblyzer com --no-deps (evita que o pip puxe 'webrtcvad' nativo e tente compilar)
+echo   + [2/3] Instalando resemblyzer ^(sem dependencias automaticas^)...
+python -m pip install resemblyzer --no-deps --quiet --no-warn-script-location
+if errorlevel 1 (
+    echo   [AVISO] Falha ao instalar resemblyzer. Identificacao de voz pode nao funcionar.
+)
+
+REM ── PASSO 3: demais dependencias do backend
+echo   + [3/3] Instalando dependencias do backend ^(pode demorar na primeira vez^)...
 python -m pip install -r app\requirements.txt --no-warn-script-location
 if errorlevel 1 (
     echo.
     echo  [ERRO] Falha ao instalar dependencias do backend.
     echo  Possiveis causas:
     echo    - Sem internet
-    echo    - webrtcvad precisa de: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+    echo    - Alguma lib precisa de compilador C++. Instale:
+    echo      https://visualstudio.microsoft.com/visual-cpp-build-tools/
     echo.
-    pause & exit /b 1
+    pause ^& exit /b 1
 )
 
 REM ── Instalar browsers do Playwright
