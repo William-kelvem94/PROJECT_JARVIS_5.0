@@ -101,6 +101,14 @@ Para facilitar o desenvolvimento, você pode usar os scripts integrados:
 
 **Monitor heartbeat**: `cd scripts && ./monitor-heartbeat.ps1`
 
+## 🧪 Scripts úteis
+- `pnpm dev` — inicia o frontend em modo dev.
+- `pnpm start` — inicia o frontend em modo normal.
+- `pnpm backend:dev` — inicia o backend FastAPI com reload.
+- `pnpm docker:up` — sobe backend e frontend em containers.
+- `pnpm docker:down` — derruba os containers.
+- `pnpm test` — executa os testes unitários do backend.
+
 ---
 
 ## 📂 Estrutura Fullstack Senior
@@ -111,6 +119,8 @@ Para facilitar o desenvolvimento, você pode usar os scripts integrados:
 ├── src/core/agents.py      # Gemini Realtime PRO
 └── start-jarvis.bat        # Launcher 100%
 ```
+
+Para entender o fluxo completo de voz, visão, memória e IA, consulte `docs/ARCHITECTURE.md`.
 
 ---
 
