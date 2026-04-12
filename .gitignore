@@ -23,5 +23,12 @@ backend/data/jarvis_local.db-wal
 *.db-shm
 *.db-wal
 
+# Browser and runtime cache
+backend/data/browser_data/
+backend/data/logs/
+backend/data/*.png
+
+dashboard/.env.local
+
 # Tasks
 TODO.md
