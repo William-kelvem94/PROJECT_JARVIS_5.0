@@ -21,6 +21,11 @@ if str(repo_root) not in sys.path:
 
 load_dotenv(override=True)
 
+# Explicitly set the path to avoid DLL loading issues
+ffi_path = repo_root / "backend" / "venv" / "Lib" / "site-packages" / "livekit" / "rtc" / "resources" / "livekit_ffi.dll"
+if ffi_path.exists():
+    os.environ["LIVEKIT_LIB_PATH"] = str(ffi_path)
+
 # Injeta a chave do projeto de forma limpa
 # O SDK google-genai prefere GOOGLE_API_KEY. Vamos unificar para evitar conflitos.
 gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
@@ -415,5 +420,5 @@ async def entrypoint(ctx: agents.JobContext):
 
 if __name__ == "__main__":
     agents.cli.run_app(
-        agents.WorkerOptions(entrypoint_fnc=entrypoint)
+        agents.WorkerOptions(entrypoint_fnc=entrypoint, load_threshold=0.95)
     )
