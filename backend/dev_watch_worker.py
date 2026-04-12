@@ -12,7 +12,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 def start_worker() -> None:
     import agents_worker
     sys.argv = ['agents_worker.py', 'start']
-    agents_worker.cli.run_app(agents_worker.WorkerOptions(entrypoint_fnc=agents_worker.entrypoint))
+    agents_worker.cli.run_app(agents_worker.WorkerOptions(entrypoint_fnc=agents_worker.entrypoint, load_threshold=0.95))
 
 
 if __name__ == '__main__':

@@ -35,6 +35,8 @@ if not defined ENV_FILE (
     )
 )
 echo  [OK] Ambiente: %ENV_FILE%
+echo   + Sincronizando .env com o frontend...
+copy "%ENV_FILE%" "frontend\.env" >nul 2>&1
 echo.
 
 REM ════════════════════════════════════════════════════

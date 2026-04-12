@@ -11,5 +11,5 @@ from src.core.agents import entrypoint
 if len(sys.argv) == 1:
     sys.argv = [sys.argv[0], "start"]
 
-cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, load_threshold=0.95))
 print("Worker rodando! Agent pronto para rooms.")
