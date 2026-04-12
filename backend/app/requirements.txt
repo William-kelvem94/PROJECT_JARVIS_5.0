@@ -1,6 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # JARVIS 5.0 - Backend Requirements
-# NOTA: webrtcvad-wheels DEVE vir antes de resemblyzer para evitar compilacao C++
+#
+# IMPORTANTE: 'resemblyzer' foi removido daqui intencionalmente.
+# Ele e instalado com --no-deps no start-jarvis.bat para evitar que o pip
+# tente compilar 'webrtcvad' do zero (requer C++ Build Tools no Windows).
+# O 'webrtcvad-wheels' e pre-instalado antes e satisfaz o import corretamente.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Core API
@@ -38,9 +42,9 @@ numpy
 openwakeword
 
 # ── Perception: Voice - Speaker ID
-# webrtcvad-wheels DEVE ser instalado antes do resemblyzer (substitui webrtcvad sem compilador C++)
+# resemblyzer e instalado via --no-deps no launcher (ver start-jarvis.bat)
+# webrtcvad-wheels e instalado antes como substituto ao webrtcvad nativo
 webrtcvad-wheels
-resemblyzer
 
 # ── Perception: Voice - Transcricao Offline
 faster-whisper
