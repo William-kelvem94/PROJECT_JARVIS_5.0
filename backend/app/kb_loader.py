@@ -39,17 +39,21 @@ async def load_kb():
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
 
-            # Remove frontmatter e títulos
+            # Remove frontmatter mas mantem títulos (importantes para contexto)
             content = re.sub(r'^---\n[\s\S]*?\n---\n?', '', content, flags=re.MULTILINE)
-            content = re.sub(r'^#{1,6} .*', '', content, flags=re.MULTILINE | re.I)
-            content = re.sub(r'\n\s*\n', '\n', content)  # Limpa linhas vazias
+            # content = re.sub(r'^#{1,6} .*', '', content, flags=re.MULTILINE | re.I) # REMOVIDO: Títulos são úteis
+            content = re.sub(r'\n\s*\n', '\n', content)  # Limpa linhas vazias excessivas
 
-            content = ' '.join(content.split())[:450]  # Trunca
+            # Aumentado de 450 para 10000 para dar contexto real à IA (RAG de verdade)
+            content_cleaned = ' '.join(content.split())[:10000] 
 
-            if len(content) > 50:
-                file_name = Path(file_path).stem[:30]
-                fact = f"[KB/{file_name}]: {content}"
-                if local_memory.save_fact("jarvis_kb", fact):
+            if len(content_cleaned) > 20: 
+                file_name = Path(file_path).stem[:50]
+                tag = "jarvis_kb"
+                if "Memorias" in file_path: tag = "jarvis_memory"
+                
+                fact = f"[KB/{file_name}]: {content_cleaned}"
+                if local_memory.save_fact(tag, fact):
                     loaded += 1
 
         except Exception as e:
