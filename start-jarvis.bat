@@ -1,181 +1,323 @@
 @echo off
-REM JARVIS 5.0 - Launcher SENIOR Fullstack v5.0 - FUNCIONA 100%
-REM Analisado: FastAPI main.py port 8000, agents_worker.py CLI worker, Next.js npm dev:3000
-REM Instala deps obrigatórios, workers com agents_worker.py correto, sem escapes bugados
-
+REM ═══════════════════════════════════════════════════════════════════════
+REM  JARVIS 5.0 - Launcher Auto-Suficiente v5.2
+REM  Instala: UV, Python 3.12, Node.js, pnpm, backend deps, playwright,
+REM           frontend deps — e entao inicia todos os servicos.
+REM ═══════════════════════════════════════════════════════════════════════
 setlocal enabledelayedexpansion
-title "JARVIS 5.0 - Full Stack Running"
-color 2E
+title JARVIS 5.0 - Inicializando...
+color 0B
 
 echo.
-echo  ========================================================
-echo   JARVIS 5.0 - INICIO COMPLETO ^| v5.0 Senior Fullstack
-echo  ========================================================
+echo  ================================================================
+echo   JARVIS 5.0  ^|  Launcher Auto-Suficiente v5.2
+echo  ================================================================
+echo.
 
 cd /d "%~dp0"
 
-REM ===== 1. PRE-FLIGHT CHECKS =====
-echo  [1/5] Verificando ambiente de variaveis...
-set "ENV_PATH="
-if exist ".env" set "ENV_PATH=.env"
-if not defined ENV_PATH if exist "env\.env" set "ENV_PATH=env\.env"
-if not defined ENV_PATH (
-    echo   ERRO CRITICO: Nenhum arquivo .env encontrado.
-    if exist ".env.example" copy ".env.example" ".env"
-    if not exist ".env" if exist "env\.env.example" copy "env\.env.example" "env\.env"
-    echo   Copie o arquivo .env.example para .env ou env\.env e preencha LIVEKIT_URL e as chaves.
-    pause
-    exit /b 1
-)
-echo  [OK] Variaveis de ambiente detectadas em %ENV_PATH%
-
-REM ===== 2. BACKEND SETUP | BUSCA INTELIGENTE DE PYTHON =====
-echo  [2/5] Buscando interpretador Python...
-
-set "PYTHON_EXE="
-
-REM 1. Tenta primeiro o caminho conhecido do UV (Mais robusto para seu PC)
-set "UV_PYTHON=%USERPROFILE%\AppData\Roaming\uv\python\cpython-3.14.3-windows-x86_64-none\python.exe"
-if exist "!UV_PYTHON!" (
-    set "PYTHON_EXE=!UV_PYTHON!"
-    echo   + Python encontrado via UV: !UV_PYTHON!
-)
-
-REM 2. Se nao achou UV, tenta o comando global, mas ignora o atalho da Microsoft Store
-if not defined PYTHON_EXE (
-    for /f "delims=" %%i in ('where python 2^>nul') do (
-        set "POTENTIAL=%%i"
-        echo !POTENTIAL! | findstr /i "WindowsApps" >nul
-        if errorlevel 1 (
-            set "PYTHON_EXE=!POTENTIAL!"
-            echo   + Python global encontrado: !PYTHON_EXE!
-            goto :PYTHON_FOUND
-        )
-    )
-)
-
-:PYTHON_FOUND
-if not defined PYTHON_EXE (
-    where py >nul 2>nul
-    if not errorlevel 1 (
-        set "PYTHON_EXE=py"
-        echo   + Usando 'py' launcher.
+REM ════════════════════════════════════════════════════
+REM  [1/7] VERIFICAR .env
+REM ════════════════════════════════════════════════════
+echo  [1/7] Verificando arquivo .env...
+set "ENV_FILE="
+if exist ".env" set "ENV_FILE=.env"
+if not defined ENV_FILE if exist "env\.env" set "ENV_FILE=env\.env"
+if not defined ENV_FILE (
+    if exist ".env.example" (
+        copy ".env.example" ".env" >nul 2>&1
+        set "ENV_FILE=.env"
+        echo   [AVISO] .env nao encontrado. Criado a partir de .env.example.
+        echo   [AVISO] Preencha as chaves de API no arquivo .env antes de usar o JARVIS.
     ) else (
-        echo   ERRO: Python real nao encontrado. Por favor, instale o Python 3.10+ do site python.org.
-        pause
-        exit /b 1
+        echo   [ERRO] Nenhum .env ou .env.example encontrado na raiz do projeto.
+        pause & exit /b 1
+    )
+)
+echo  [OK] Ambiente: %ENV_FILE%
+echo.
+
+REM ════════════════════════════════════════════════════
+REM  [2/7] INSTALAR / LOCALIZAR UV
+REM ════════════════════════════════════════════════════
+echo  [2/7] Verificando UV (gerenciador de Python)...
+
+set "UV="
+REM Verifica UV no PATH
+where uv >nul 2>nul
+if not errorlevel 1 (
+    set "UV=uv"
+    goto :UV_OK
+)
+REM Verifica instalacao local padrao (Windows)
+if exist "%LOCALAPPDATA%\uv\bin\uv.exe" (
+    set "UV=%LOCALAPPDATA%\uv\bin\uv.exe"
+    goto :UV_OK
+)
+if exist "%APPDATA%\uv\bin\uv.exe" (
+    set "UV=%APPDATA%\uv\bin\uv.exe"
+    goto :UV_OK
+)
+
+REM UV nao encontrado — instalar via PowerShell
+echo   + UV nao encontrado. Instalando via PowerShell...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm https://astral.sh/uv/install.ps1 | iex" >nul 2>&1
+if exist "%LOCALAPPDATA%\uv\bin\uv.exe" (
+    set "UV=%LOCALAPPDATA%\uv\bin\uv.exe"
+    goto :UV_OK
+)
+if exist "%APPDATA%\uv\bin\uv.exe" (
+    set "UV=%APPDATA%\uv\bin\uv.exe"
+    goto :UV_OK
+)
+
+echo   [AVISO] UV nao pode ser instalado automaticamente. Usando pip puro.
+set "UV="
+
+:UV_OK
+if defined UV (
+    echo  [OK] UV: !UV!
+) else (
+    echo  [OK] Modo: pip puro ^(sem UV^)
+)
+echo.
+
+REM ════════════════════════════════════════════════════
+REM  [3/7] LOCALIZAR / INSTALAR PYTHON 3.12
+REM ════════════════════════════════════════════════════
+echo  [3/7] Localizando Python 3.12...
+
+set "PYTHON="
+
+REM 3a. Tenta instalar Python 3.12 via UV e achar o caminho
+if defined UV (
+    "!UV!" python install 3.12 >nul 2>&1
+    for /f "usebackq delims=" %%i in (`"!UV!" python find 3.12 2^>nul`) do set "PYTHON=%%i"
+    if defined PYTHON (
+        echo  [OK] Python 3.12 via UV: !PYTHON!
+        goto :PYTHON_OK
     )
 )
 
-cd backend
-if not exist "venv\Scripts\activate.bat" (
-    echo   + Criando venv usando: !PYTHON_EXE!
-    "!PYTHON_EXE!" -m venv venv
-    if errorlevel 1 (
-        echo   ERRO: falha ao criar o ambiente virtual com !PYTHON_EXE!.
-        pause
-        exit /b 1
+REM 3b. Tenta encontrar cpython-3.12 no diretorio de instalacao do UV
+for /d %%d in ("%APPDATA%\uv\python\cpython-3.12*") do (
+    if exist "%%d\python.exe" (
+        set "PYTHON=%%d\python.exe"
+        echo  [OK] Python 3.12 em UV path: !PYTHON!
+        goto :PYTHON_OK
     )
 )
+for /d %%d in ("%LOCALAPPDATA%\uv\python\cpython-3.12*") do (
+    if exist "%%d\python.exe" (
+        set "PYTHON=%%d\python.exe"
+        echo  [OK] Python 3.12 em UV local path: !PYTHON!
+        goto :PYTHON_OK
+    )
+)
+
+REM 3c. Tenta python global (excluindo Microsoft Store stub)
+for /f "usebackq delims=" %%i in (`where python 2^>nul`) do (
+    set "_P=%%i"
+    echo "!_P!" | findstr /i "WindowsApps" >nul
+    if errorlevel 1 (
+        set "PYTHON=!_P!"
+        echo  [OK] Python global: !PYTHON!
+        goto :PYTHON_OK
+    )
+)
+
+REM 3d. Fallback para py launcher
+where py >nul 2>nul
+if not errorlevel 1 (
+    set "PYTHON=py"
+    echo  [OK] Usando py launcher.
+    goto :PYTHON_OK
+)
+
+echo  [ERRO] Python nao encontrado.
+echo  Instale Python 3.12 em https://python.org ou execute: uv python install 3.12
+pause & exit /b 1
+
+:PYTHON_OK
+echo.
+
+REM ════════════════════════════════════════════════════
+REM  [4/7] CONFIGURAR VENV DO BACKEND
+REM ════════════════════════════════════════════════════
+echo  [4/7] Configurando ambiente virtual do backend...
+
+cd /d "%~dp0backend"
+
+REM Detectar e recriar venv se for Python 3.14 (versao experimental incompativel)
+if exist "venv\Scripts\python.exe" (
+    venv\Scripts\python.exe --version 2>nul | findstr "3.14" >nul
+    if not errorlevel 1 (
+        echo   + Venv com Python 3.14 detectado. Recriando com Python 3.12...
+        rmdir /s /q venv >nul 2>&1
+    )
+)
+
+REM Criar venv se nao existir
+if not exist "venv\Scripts\activate.bat" (
+    echo   + Criando venv...
+    "!PYTHON!" -m venv venv
+    if errorlevel 1 (
+        echo  [ERRO] Falha ao criar ambiente virtual.
+        pause & exit /b 1
+    )
+)
+
+REM Ativar venv
 call venv\Scripts\activate.bat
 if errorlevel 1 (
-    echo   ERRO: falha ao ativar o ambiente virtual.
-    pause
-    exit /b 1
+    echo  [ERRO] Falha ao ativar ambiente virtual.
+    pause & exit /b 1
 )
 
-python -m pip install --upgrade pip
+REM Atualizar pip silenciosamente
+echo   + Atualizando pip...
+python -m pip install --upgrade pip --quiet --no-warn-script-location
+
+REM ── Instalar webrtcvad-wheels ANTES do requirements para evitar erro de compilacao C++
+echo   + Pre-instalando webrtcvad-wheels ^(evita erro de compilacao no Windows^)...
+python -m pip install webrtcvad-wheels --quiet --no-warn-script-location
 if errorlevel 1 (
-    echo   ERRO: falha ao atualizar pip.
-    pause
-    exit /b 1
+    echo   [AVISO] webrtcvad-wheels falhou. Resemblyzer pode ter problemas.
 )
 
-python -m pip install -r app\requirements.txt
+REM ── Instalar todas as dependencias do backend
+echo   + Instalando dependencias do backend ^(pode demorar na primeira vez^)...
+python -m pip install -r app\requirements.txt --no-warn-script-location
 if errorlevel 1 (
-    echo   ERRO: falha ao instalar as dependencias do backend.
-    pause
-    exit /b 1
+    echo.
+    echo  [ERRO] Falha ao instalar dependencias do backend.
+    echo  Possiveis causas:
+    echo    - Sem internet
+    echo    - webrtcvad precisa de: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+    echo.
+    pause & exit /b 1
 )
 
-python -m playwright install chromium --with-deps
+REM ── Instalar browsers do Playwright
+echo   + Instalando Playwright ^(Chromium^)...
+python -m playwright install chromium --with-deps >nul 2>&1
 if errorlevel 1 (
-    echo   ERRO: falha ao instalar o navegador Chromium do Playwright.
-    pause
-    exit /b 1
+    echo   [AVISO] Playwright/Chromium nao instalado. Funcoes de browser desativadas.
 )
 
-echo  [OK] Backend deps + Playwright OK
-cd ..
-
-REM ===== 3. FRONTEND NPM ^| UNIVERSAL NO NPM =====
-echo  [3/5] Frontend Next.js...
-cd /d "%~dp0frontend"
-if exist "node_modules" (
-    echo   + Node modules existentes encontrados.
-)
-if defined JARVIS_INSTALLING (
-    echo   + Instalacao ja em curso. Pulando redundancia.
-    goto :SKIP_INSTALL
-)
-set JARVIS_INSTALLING=1
-
-where pnpm >nul 2>nul
-if errorlevel 1 (
-    echo   + pnpm nao encontrado. Usando npm install no frontend...
-    call npm install --prefix "%~dp0frontend"
-) else (
-    echo   + pnpm detectado. Usando pnpm install...
-    call pnpm install
-)
-
-set JARVIS_INSTALLING=
-:SKIP_INSTALL
-if errorlevel 1 (
-    echo   ERRO: falha ao instalar as dependencias do frontend.
-    pause
-    exit /b 1
-)
-
-echo  [OK] Frontend deps OK
+echo  [OK] Backend pronto.
+echo.
 cd /d "%~dp0"
 
-REM ===== 4. KILL PROCESSOS ANTIGOS NAS PORTAS =====
-echo  [4/5] Liberando portas (8000, 8081, 3000)...
-for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000 "') do taskkill /F /PID %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8081 "') do taskkill /F /PID %%a >nul 2>&1
-for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000 "') do taskkill /F /PID %%a >nul 2>&1
+REM ════════════════════════════════════════════════════
+REM  [5/7] VERIFICAR NODE.JS E pnpm
+REM ════════════════════════════════════════════════════
+echo  [5/7] Verificando Node.js e pnpm...
+
+where node >nul 2>nul
+if errorlevel 1 (
+    echo  [ERRO] Node.js nao encontrado.
+    echo  Instale em https://nodejs.org ^(versao LTS recomendada^)
+    pause & exit /b 1
+)
+
+for /f "usebackq delims=" %%v in (`node --version 2^>nul`) do set "NODE_VER=%%v"
+echo  [OK] Node.js: !NODE_VER!
+
+REM Garantir pnpm instalado
+where pnpm >nul 2>nul
+if errorlevel 1 (
+    echo   + pnpm nao encontrado. Instalando via npm...
+    call npm install -g pnpm >nul 2>&1
+    if errorlevel 1 (
+        echo   [AVISO] Falha ao instalar pnpm. Usando npm como fallback.
+        set "PKG_MANAGER=npm"
+    ) else (
+        set "PKG_MANAGER=pnpm"
+    )
+) else (
+    set "PKG_MANAGER=pnpm"
+)
+echo  [OK] Gerenciador de pacotes: !PKG_MANAGER!
+echo.
+
+REM ════════════════════════════════════════════════════
+REM  [6/7] INSTALAR DEPENDENCIAS DO FRONTEND
+REM ════════════════════════════════════════════════════
+echo  [6/7] Instalando dependencias do frontend...
+
+cd /d "%~dp0frontend"
+
+if not exist "node_modules" (
+    echo   + Instalando pacotes ^(pode demorar na primeira vez^)...
+    if "!PKG_MANAGER!"=="pnpm" (
+        call pnpm install
+    ) else (
+        call npm install
+    )
+    if errorlevel 1 (
+        echo  [ERRO] Falha ao instalar dependencias do frontend.
+        pause & exit /b 1
+    )
+) else (
+    echo   + node_modules ja existe. Verificando atualizacoes...
+    if "!PKG_MANAGER!"=="pnpm" (
+        call pnpm install --silent
+    ) else (
+        call npm install --silent
+    )
+)
+
+echo  [OK] Frontend pronto.
+echo.
+cd /d "%~dp0"
+
+REM ════════════════════════════════════════════════════
+REM  [7/7] INICIAR SERVICOS
+REM ════════════════════════════════════════════════════
+echo  [7/7] Liberando portas e iniciando servicos...
+
+REM Liberar portas
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000 "') do (
+    if "%%a" NEQ "0" taskkill /F /PID %%a >nul 2>&1
+)
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8081 "') do (
+    if "%%a" NEQ "0" taskkill /F /PID %%a >nul 2>&1
+)
+for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":3000 "') do (
+    if "%%a" NEQ "0" taskkill /F /PID %%a >nul 2>&1
+)
 timeout /t 1 /nobreak >nul
 
-REM ===== LAUNCH PARALELO ^| JANELAS ROBUSTAS ^| LOGS PERSISTENTES =====
-echo  Iniciando servicos...
-timeout /t 2 /nobreak >nul
+REM ── Backend API (FastAPI porta 8000)
+start "JARVIS Backend :8000" /d "%~dp0backend" cmd /k ^
+    "color 0B && title [API] JARVIS Backend :8000 && call venv\Scripts\activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-REM Backend API FastAPI 8000
-start "JARVIS Backend API 8000" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [API] JARVIS Backend && color A && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+timeout /t 3 /nobreak >nul
 
-REM Agent Worker - LiveKit agents_worker.py (porta HTTP interna 8081) com reload automático
-timeout /t 4 >nul
-start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k "call venv\Scripts\activate && title [Worker] JARVIS Agents && color C && python dev_watch_worker.py"
+REM ── Agent Worker (LiveKit porta interna 8081)
+start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
+    "color 0D && title [Worker] JARVIS Agents && call venv\Scripts\activate && python dev_watch_worker.py"
 
-REM Frontend 3000 - Limpa cache .next para evitar artefatos stale (webpack vs turbopack)
-timeout /t 4 >nul
-if exist "%~dp0frontend\.next" rmdir /s /q "%~dp0frontend\.next"
-start "JARVIS Frontend 3000" /d "%~dp0frontend" cmd /k "call npm run dev"
+timeout /t 3 /nobreak >nul
 
-REM ===== 5. STATUS FINAL =====
-echo  [5/5] JARVIS ATIVO ^| Aguarde 30s boot...
-timeout /t 30 /nobreak >nul
+REM ── Frontend Next.js (porta 3000)
+if exist "%~dp0frontend\.next" rmdir /s /q "%~dp0frontend\.next" >nul 2>&1
+start "JARVIS Frontend :3000" /d "%~dp0frontend" cmd /k ^
+    "color 07 && title [UI] JARVIS Frontend :3000 && !PKG_MANAGER! run dev"
 
+REM ── Aguardar boot
+title JARVIS 5.0 - Running
 echo.
-echo  ========================================================
-echo   🚀 JARVIS 5.0 FULLSTACK RODANDO ^| SENIOR EDITION
-echo  ========================================================
-echo  API:    http://localhost:8000/docs  ^<-- Teste primeiro! 
-echo  FRONT:  http://localhost:3000
-echo  Worker: LiveKit agents_worker.py (porta HTTP 8081)
-echo  ========================================================
-echo  Janelas minimizadas. Feche individualmente para parar.
-echo  Launcher aberto para monitoramento.
+echo  ================================================================
+echo   JARVIS 5.0 INICIADO - Aguarde ~20s para boot completo
+echo  ================================================================
+echo   API    ^>  http://localhost:8000/docs
+echo   UI     ^>  http://localhost:3000
+echo   Worker ^>  porta interna 8081
+echo  ================================================================
+echo   Feche as janelas individuais para parar cada servico.
+echo   Feche ESTA janela somente apos todos os servicos estarem OK.
+echo  ================================================================
+echo.
 pause
-
