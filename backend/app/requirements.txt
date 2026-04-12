@@ -16,6 +16,8 @@ requests
 loguru
 aiohttp
 psutil
+torch
+torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # ── LiveKit AI Stack
 livekit-agents

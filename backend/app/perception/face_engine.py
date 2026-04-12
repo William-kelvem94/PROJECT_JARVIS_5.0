@@ -105,8 +105,9 @@ def _get_mp_models():
         from mediapipe.tasks import python as _mp_tasks
         from mediapipe.tasks.python import vision as _mp_vision
         
-        # Tenta usar GPU se possível
-        delegate = _mp_tasks.BaseOptions.Delegate.GPU if HAS_CV2 else _mp_tasks.BaseOptions.Delegate.CPU
+        # MediaPipe no Windows via pip frequentemente não tem suporte a GPU habilitado nos build flags.
+        # Forçamos CPU para garantir que funcione sem erros.
+        delegate = _mp_tasks.BaseOptions.Delegate.CPU
         
         base_opts = _mp_tasks.BaseOptions(
             model_asset_path=model_path,
