@@ -1,43 +1,49 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# JARVIS 5.0 - Backend Requirements
+# NOTA: webrtcvad-wheels DEVE vir antes de resemblyzer para evitar compilacao C++
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Core API
 fastapi
 uvicorn[standard]
 pydantic-settings
+python-dotenv
+requests
+loguru
+aiohttp
+psutil
 
+# ── LiveKit AI Stack
 livekit-agents
 livekit-plugins-openai
 livekit-plugins-google
 livekit-plugins-deepgram
 livekit-plugins-silero
 livekit-plugins-noise-cancellation
-requests
-python-dotenv
-psutil
-loguru
-aiohttp
+
+# ── Browser Automation
 playwright
+
+# ── Screen / GPU monitoring
 GPUtil
 mss
 Pillow
 
-# ── Perception: Face (Level C — required)
+# ── Perception: Face
 mediapipe
 opencv-python
 numpy
 
-# ── Perception: Face (Level B — optional, heavy)
-# deepface
-# tf-keras
-
-# ── Perception: Face (Level A — optional, very heavy, needs cmake+dlib)
-# face_recognition
-
-# ── Perception: Voice (Level A — free offline wake word)
+# ── Perception: Voice - Wake Word
 openwakeword
 
-# ── Perception: Voice (Level B — speaker identification)
+# ── Perception: Voice - Speaker ID
+# webrtcvad-wheels DEVE ser instalado antes do resemblyzer (substitui webrtcvad sem compilador C++)
+webrtcvad-wheels
 resemblyzer
 
-# ── Perception: Voice (Level C — offline transcription)
+# ── Perception: Voice - Transcricao Offline
 faster-whisper
 
-# ── Perception: Audio input
+# ── Perception: Audio Input
 sounddevice
