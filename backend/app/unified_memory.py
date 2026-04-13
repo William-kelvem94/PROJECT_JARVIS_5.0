@@ -180,7 +180,6 @@ class UnifiedMemory:
                 results.append(f"[{os.path.basename(f)}]: {clean}")
             except: continue
         return "\n".join(results)
-\n".join(results)
 
 # Singleton
 memory = UnifiedMemory()
