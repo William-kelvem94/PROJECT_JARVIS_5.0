@@ -6,7 +6,7 @@ from loguru import logger
 class EngineerBrain:
     """
     O 'Núcleo de Raciocínio Engenheiro' do JARVIS.
-    100% OFFLINE - Opera exclusivamente via LM Studio Local.
+    100% OFFLINE - Otimizado para hardware de alta performance com limite de RAM (Book2 360).
     """
     
     def __init__(self, model=None):
@@ -29,41 +29,42 @@ class EngineerBrain:
         return self.model
 
     async def reason(self, prompt: str, context: str = ""):
-        """Processa a tarefa usando estritamente o Cérebro Local (LM Studio)."""
-        logger.info(f"JARVIS [Núcleo Local] Analisando: {prompt[:50]}...")
+        """Processa a tarefa usando o Cérebro Local, com timeout estendido para troca de memória (swap)."""
+        logger.info(f"JARVIS [Núcleo High-Load] Analisando: {prompt[:50]}...")
 
         active_model = await self.get_active_lmstudio_model()
 
-        # Truncamento rigoroso para i3/1050Ti (Preserva memória de vídeo)
+        # Truncamento cirúrgico para preservar os últimos MBs de RAM física
         safe_context = context[:3500] if context else ""
         safe_prompt = prompt[:3500]
         
         messages = [
-            {"role": "system", "content": "Você é o JARVIS 5.0, um sistema 100% OFF-LINE. Responda de forma técnica e objetiva."},
+            {"role": "system", "content": "Você é o JARVIS 5.0. Responda de forma técnica, direta e sênior. O sistema está em modo 100% Offline."},
             {"role": "user", "content": f"Contexto:\n{safe_context}\n\nTarefa:\n{safe_prompt}"}
         ]
         
         payload = {
             "model": active_model,
             "messages": messages,
-            "temperature": 0.2, # Mais focado e menos aleatório para hardware local
-            "max_tokens": 2048 # Limite seguro para evitar lentidão extrema
+            "temperature": 0.2,
+            "max_tokens": 2048
         }
 
         try:
+            # Timeout estendido para 120s para compensar lentidão caso o Windows use Swap (SSD) por falta de RAM
             async with aiohttp.ClientSession() as session:
-                logger.debug(f"Processando localmente via {self.lm_studio_url}...")
-                async with session.post(self.lm_studio_url, json=payload, timeout=45) as response:
+                logger.debug(f"Processando localmente (Timeout: 120s) via {self.lm_studio_url}...")
+                async with session.post(self.lm_studio_url, json=payload, timeout=120) as response:
                     if response.status == 200:
                         data = await response.json()
                         reply = data['choices'][0]['message']['content']
-                        logger.success("Cérebro Local respondeu offline.")
+                        logger.success("Cérebro Local respondeu (Processamento High-Load concluído).")
                         return reply
                     else:
-                        return "Erro técnico: O servidor local (LM Studio) não respondeu corretamente."
+                        return f"Erro técnico: O servidor local retornou status {response.status}."
         except Exception as e:
-            logger.error(f"Erro no Cérebro Local: {e}")
-            return "Aviso: Cérebro Offline. Certifique-se de que o LM Studio está rodando e o modelo carregado."
+            logger.error(f"Erro no Cérebro Local (Timeout ou RAM cheia): {e}")
+            return "Aviso: O processamento demorou demais ou a memória RAM está saturada. Tente fechar alguns programas e tente novamente."
 
     async def reason_local(self, prompt: str, context: str = "", model: str = "llama3"):
         return None
