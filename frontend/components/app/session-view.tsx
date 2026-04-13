@@ -41,8 +41,8 @@ const BOTTOM_VIEW_MOTION_PROPS = {
 
 const SHIMMER_MOTION_PROPS = {
   variants: {
-    visible: { opacity: 1, transition: { ease: 'easeIn', duration: 0.5, delay: 0.8 } },
-    hidden: { opacity: 0, transition: { ease: 'easeIn', duration: 0.5, delay: 0 } },
+    visible: { opacity: 1, transition: { ease: 'easeIn' as const, duration: 0.5, delay: 0.8 } },
+    hidden: { opacity: 0, transition: { ease: 'easeIn' as const, duration: 0.5, delay: 0 } },
   },
   initial: 'hidden',
   animate: 'visible',
