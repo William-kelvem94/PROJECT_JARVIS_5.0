@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-// import { useRoomContext } from '@livekit/components-react';
-// import { RoomEvent } from 'livekit-client';
 import { Terminal, Code, GitBranch, FileJson, Loader, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/shadcn/utils';
 import { LogHistoryModal } from './log-history-modal';
@@ -17,47 +15,34 @@ interface ActivityLog {
     timestamp: string;
 }
 
-export function ActiveConsole() {
-    // Comentado para futuramente migrar para o WebSocket nativo
-    // const room = useRoomContext();
+interface ActiveConsoleProps {
+    externalLogs?: any[]; // Logs vindos do WebSocket Nativo
+}
+
+export function ActiveConsole({ externalLogs = [] }: ActiveConsoleProps) {
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // TODO: Migrar o sistema de logs para o useJarvisVoice ou um Context local do WebSocket nativo
-    /*
+    // Converte mensagens do WebSocket em logs visuais do console
     useEffect(() => {
-        if (!room) return;
+        if (externalLogs.length === 0) return;
 
-        const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
-            if (topic === 'activity') {
-                try {
-                    const decoder = new TextDecoder();
-                    const json = JSON.parse(decoder.decode(payload));
-                    if (json.type === 'activity_log') {
-                        const newLog: ActivityLog = {
-                            id: Math.random().toString(36).substr(2, 9),
-                            title: json.title,
-                            detail: json.detail || "",
-                            log_type: json.log_type,
-                            status: json.status || "success",
-                            timestamp: new Date().toLocaleTimeString(),
-                        };
-                        setLogs(prev => {
-                            return [...prev.slice(-10), newLog];
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error parsing activity log:', e);
-                }
-            }
-        };
-
-        room.on(RoomEvent.DataReceived, handleData);
-        return () => {
-            room.off(RoomEvent.DataReceived, handleData);
-        };
-    }, [room]);
-    */
+        const latest = externalLogs[externalLogs.length - 1];
+        
+        // Se for um log de atividade (comando, edição, etc)
+        if (latest.type === 'activity_log' || latest.log_type) {
+            const newLog: ActivityLog = {
+                id: Math.random().toString(36).substr(2, 9),
+                title: latest.title || (latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis'),
+                detail: latest.detail || latest.text || "",
+                log_type: latest.log_type || 'info',
+                status: latest.status || "success",
+                timestamp: new Date().toLocaleTimeString(),
+            };
+            
+            setLogs(prev => [...prev.slice(-9), newLog]);
+        }
+    }, [externalLogs]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -97,7 +82,7 @@ export function ActiveConsole() {
                 <div className="bg-[#1da3b9]/10 p-2 flex items-center justify-between border-b border-[#1da3b9]/20">
                     <div className="flex items-center gap-2">
                         <Terminal className="size-3 text-[#1da3b9]" />
-                        <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest">Active Action Log</span>
+                        <span className="text-[9px] font-mono text-white/50 uppercase tracking-widest">Active Action Log (Offline)</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
