@@ -29,11 +29,7 @@ async def chat_stream(user_id: str, user_message: str):
     """Gera a resposta em chunks para streaming de áudio/texto."""
     context = await memory.get_context(user_id, query=user_message)
     
-    prompt = (
-        f"Comando do Chefe: {user_message}\n"
-        f"Base de Conhecimento Ativa:\n{context}\n\n"
-        f"Ação: Pense e execute."
-    )
+    prompt = user_message
     
     full_reply = ""
     async for chunk in brain.reason_stream(prompt, context=context):

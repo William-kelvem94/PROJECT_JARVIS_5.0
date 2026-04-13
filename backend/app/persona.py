@@ -21,6 +21,8 @@ class PersonaManager:
             logger.info("🎭 Persona 'WILL-JARVIS' ativada (Modo de Alta Fidelidade).")
             return (
                 "Você é o WILL-JARVIS, a inteligência central e assistente pessoal sênior. "
+                "Você opera em um ambiente Windows 11 totalmente OFF-LINE. "
+                "Você NÃO tem acesso à internet sob nenhuma circunstância. "
                 "Responda de forma técnica, direta e extremamente eficiente. "
                 "Você tem acesso total ao hardware (Windows) e ao Vault de conhecimento (Obsidian). "
                 "Sempre use Chain-of-Thought para problemas complexos. "
@@ -30,20 +32,29 @@ class PersonaManager:
         # Padrão para outros modelos local
         return (
             "Você é o JARVIS 5.0, um assistente técnico sênior e direto. "
-            "Resolva as tarefas de forma pragmática e 100% offline."
+            "Você opera em um ambiente Windows 11 totalmente OFF-LINE e NÃO tem acesso à internet. "
+            "Se o usuário enviar mensagens curtas, vagas ou apenas saudações, responda de forma breve e educada, sem criar planos complexos. "
+            "Sua base de conhecimento é limitada aos dados locais fornecidos no contexto. "
+            "Nunca prometa buscar algo online ou realizar tarefas fora do ambiente local."
         )
 
     def format_prompt(self, instruction: str, context: str = "", model_name: str = "") -> str:
         """
-        Formata opcionalmente o prompt para modelos específicos que não usam ChatML padrão.
-        (Útil para garantir que o Fine-Tuning Alpaca do novo cérebro seja respeitado).
+        Formata o prompt baseado no modelo. 
+        O novo cérebro Qwen treinado usa o formato Alpaca.
         """
-        if "WILL-JARVIS" in model_name.upper():
-            # Formato Alpaca usado no script de treino 02_fine_tune_student.py
+        is_fine_tuned = any(x in model_name.upper() for x in ["WILL-JARVIS", "QWEN", "TRAINED"])
+        
+        if is_fine_tuned:
+            # Formato Alpaca: Instrução -> Contexto -> Resposta
             return (
                 "Abaixo está uma instrução que descreve uma tarefa. Escreva uma resposta que complete adequadamente o pedido.\n\n"
-                f"### Instrução:\n{instruction}\n\nContexto:\n{context}\n\n### Resposta:\n"
+                f"### Instrução:\n{instruction}\n\n"
+                f"### Contexto Adicional:\n{context if context else 'Nenhum contexto adicional disponível.'}\n\n"
+                "### Resposta:\n"
             )
-        return instruction
+        
+        # Padrão ChatML / Genérico
+        return f"Contexto:\n{context}\n\nInstrução:\n{instruction}"
 
 persona = PersonaManager()

@@ -40,12 +40,15 @@ class EngineerBrain:
         """Processa a tarefa gerando chunks (Streaming)."""
         from .persona import persona
         active_model = await self.get_active_lmstudio_model()
+        # Obtém o prompt sistema e formata o conteúdo do usuário com base no modelo
         system_prompt = persona.get_system_prompt(active_model)
+        user_content = persona.format_prompt(prompt, context, active_model)
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Contexto:\n{context[:3500]}\n\nTarefa:\n{prompt[:3500]}"}
+            {"role": "user", "content": user_content[:7000]} # Limite de contexto para segurança de RAM
         ]
+        
         
         payload = {
             "model": active_model,
