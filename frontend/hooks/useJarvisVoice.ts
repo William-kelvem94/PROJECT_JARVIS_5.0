@@ -18,6 +18,35 @@ export function useJarvisVoice() {
     isMutedRef.current = isMuted;
   }, [isMuted]);
   
+  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const isPlayingRef = useRef(false);
+
+  const playNext = useCallback(async () => {
+    if (isPlayingRef.current || audioQueueRef.current.length === 0 || !audioContextRef.current) return;
+    
+    isPlayingRef.current = true;
+    const data = audioQueueRef.current.shift()!;
+    
+    try {
+      const audioBuffer = await audioContextRef.current.decodeAudioData(data);
+      const source = audioContextRef.current.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContextRef.current.destination);
+      
+      source.onended = () => {
+        isPlayingRef.current = false;
+        playNext(); // Toca o próximo da fila
+      };
+      
+      source.start();
+      setIsSpeaking(true);
+    } catch (e) {
+      console.error('Erro ao tocar áudio da fila:', e);
+      isPlayingRef.current = false;
+      playNext();
+    }
+  }, []);
+
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -51,15 +80,15 @@ export function useJarvisVoice() {
         globalIsConnecting = false;
         
         const source = audioContextRef.current!.createMediaStreamSource(stream);
-        const isSpeakingRef = { current: false };
+        const jarvisSpeakingSharedRef = { current: false };
         const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         
         source.connect(processor);
         processor.connect(audioContextRef.current!.destination);
         
         processor.onaudioprocess = (e) => {
-          // Se estiver mutado ou o Jarvis estiver falando, não envia o áudio capturado
-          if (ws.readyState === WebSocket.OPEN && !isSpeakingRef.current && !isMutedRef.current) {
+          // Se estiver mutado ou o Jarvis estiver falando (ou tocando áudio), não envia o áudio capturado
+          if (ws.readyState === WebSocket.OPEN && !jarvisSpeakingSharedRef.current && !isMutedRef.current && !isPlayingRef.current) {
             const inputData = e.inputBuffer.getChannelData(0);
             const pcm16 = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
@@ -72,31 +101,16 @@ export function useJarvisVoice() {
 
         (wsRef.current as any).processor = processor;
         (wsRef.current as any).source = source;
-        (wsRef.current as any).speakingRef = isSpeakingRef;
+        (wsRef.current as any).speakingRef = jarvisSpeakingSharedRef;
       };
       
       ws.onmessage = async (event) => {
         const speakingRef = (wsRef.current as any)?.speakingRef;
 
         if (event.data instanceof ArrayBuffer && audioContextRef.current) {
-          setIsSpeaking(true);
-          if (speakingRef) speakingRef.current = true;
-
-          try {
-            const audioBuffer = await audioContextRef.current.decodeAudioData(event.data);
-            const source = audioContextRef.current.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(audioContextRef.current.destination);
-            source.onended = () => {
-              setIsSpeaking(false);
-              setTimeout(() => { if (speakingRef) speakingRef.current = false; }, 400);
-            };
-            source.start();
-          } catch (e) {
-            console.error('Error decoding audio', e);
-            setIsSpeaking(false);
-            if (speakingRef) speakingRef.current = false;
-          }
+            // Em vez de tocar direto, coloca na fila
+            audioQueueRef.current.push(event.data);
+            playNext();
         } else if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
