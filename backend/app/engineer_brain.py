@@ -28,18 +28,19 @@ class EngineerBrain:
             pass
         return self.model
 
-    async def reason(self, prompt: str, context: str = ""):
-        """Processa a tarefa usando o Cérebro Local, com timeout estendido para troca de memória (swap)."""
-        logger.info(f"JARVIS [Núcleo High-Load] Analisando: {prompt[:50]}...")
+    async def reason(self, prompt: str, context: str = "", stream: bool = False):
+        """Processa a tarefa usando o Cérebro Local. Suporta streaming para latência zero."""
+        logger.info(f"JARVIS [Núcleo High-Load] Analisando (Stream={stream}): {prompt[:50]}...")
 
+        from .persona import persona
         active_model = await self.get_active_lmstudio_model()
+        system_prompt = persona.get_system_prompt(active_model)
 
-        # Truncamento cirúrgico para preservar os últimos MBs de RAM física
         safe_context = context[:3500] if context else ""
         safe_prompt = prompt[:3500]
         
         messages = [
-            {"role": "system", "content": "Você é o JARVIS 5.0. Responda de forma técnica, direta e sênior. O sistema está em modo 100% Offline."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Contexto:\n{safe_context}\n\nTarefa:\n{safe_prompt}"}
         ]
         
@@ -47,24 +48,51 @@ class EngineerBrain:
             "model": active_model,
             "messages": messages,
             "temperature": 0.2,
-            "max_tokens": 2048
+            "max_tokens": 2048,
+            "stream": stream
         }
 
         try:
-            # Timeout estendido para 120s para compensar lentidão caso o Windows use Swap (SSD) por falta de RAM
             async with aiohttp.ClientSession() as session:
-                logger.debug(f"Processando localmente (Timeout: 120s) via {self.lm_studio_url}...")
+                logger.debug(f"Processando localmente via {self.lm_studio_url}...")
                 async with session.post(self.lm_studio_url, json=payload, timeout=120) as response:
-                    if response.status == 200:
+                    if response.status != 200:
+                        error_msg = f"Erro técnico: O servidor local retornou status {response.status}."
+                        if stream:
+                            yield error_msg
+                            return
+                        return error_msg
+
+                    if stream:
+                        full_text = ""
+                        async for line in response.content:
+                            if line:
+                                line_str = line.decode('utf-8').strip()
+                                if line_str.startswith("data: "):
+                                    data_content = line_str[6:]
+                                    if data_content == "[DONE]":
+                                        break
+                                    try:
+                                        chunk = json.loads(data_content)
+                                        content = chunk['choices'][0]['delta'].get('content', '')
+                                        if content:
+                                            full_text += content
+                                            yield content
+                                    except Exception:
+                                        continue
+                        logger.success("Cérebro Local concluiu streaming.")
+                    else:
                         data = await response.json()
                         reply = data['choices'][0]['message']['content']
                         logger.success("Cérebro Local respondeu (Processamento High-Load concluído).")
                         return reply
-                    else:
-                        return f"Erro técnico: O servidor local retornou status {response.status}."
         except Exception as e:
-            logger.error(f"Erro no Cérebro Local (Timeout ou RAM cheia): {e}")
-            return "Aviso: O processamento demorou demais ou a memória RAM está saturada. Tente fechar alguns programas e tente novamente."
+            logger.error(f"Erro no Cérebro Local: {e}")
+            msg = "Aviso: O processamento falhou ou a memória RAM está saturada."
+            if stream:
+                yield msg
+            else:
+                return msg
 
     async def reason_local(self, prompt: str, context: str = "", model: str = "llama3"):
         return None
