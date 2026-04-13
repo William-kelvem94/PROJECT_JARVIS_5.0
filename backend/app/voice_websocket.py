@@ -9,6 +9,13 @@ from loguru import logger
 from .perception import voice_engine
 from .chat_pipeline import chat_reply
 
+HAS_EDGE_TTS = False
+try:
+    import edge_tts
+    HAS_EDGE_TTS = True
+except ImportError:
+    pass
+
 router = APIRouter()
 
 # Buffer state for the active WebSocket connection
@@ -123,6 +130,18 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     _active_voice_websocket = websocket
     
     logger.info("🎙️ Cliente WebSocket de Áudio conectado (Native Local Voice PCM).")
+    
+    # Cumprimento inicial (Greeting)
+    async def initial_greeting():
+        greeting = "Olá William! Sistema JARVIS 5.0 online e pronto para operar 100% offline."
+        try:
+            audio_bytes = await generate_speech_bytes(greeting)
+            if audio_bytes:
+                await websocket.send_bytes(audio_bytes)
+                await websocket.send_json({"type": "message", "role": "assistant", "text": greeting})
+        except: pass
+
+    asyncio.create_task(initial_greeting())
     audio_buffer = bytearray()
     
     is_speaking = False
