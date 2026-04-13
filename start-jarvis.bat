@@ -325,25 +325,13 @@ start "JARVIS Backend :8000" /d "%~dp0backend" cmd /k ^
 
 timeout /t 3 /nobreak >nul
 
-REM ── Agent Worker (LiveKit porta interna 8081)
+REM ── Jarvis Worker (Desativado: Substituido por WebSockets Nativos)
 echo.
 echo   ================= CARGA DO CEREBRO =================
-echo   [1] MODO DEUS    : Visao + Voz + Texto (PC Forte)
-echo   [2] MODO FOCO    : Microfone + Texto   (Notebook)
-echo   [3] MODO ECONOMIA: Apenas Texto        (Bateria)
+echo   [WEBSOCKET STREAM] Nova arquitetura ativada.
+echo   Microfone e Camera operam em 100%% Local Backend.
 echo   ====================================================
-choice /C 123 /M "Como o Jarvis deve iniciar hoje?"
-if !errorlevel! EQU 3 (
-    echo   [AVISO] Worker JARVIS ignorado! Rodando modo super-leve (API + UI).
-) else if !errorlevel! EQU 2 (
-    echo   [OK] Iniciando modo FOCO. Camera desativada para poupar CPU.
-    start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
-        "color 0D && title [Worker] JARVIS Agents && set JARVIS_DISABLE_CAMERA=true && call venv\Scripts\activate && python dev_watch_worker.py"
-) else (
-    echo   [OK] Iniciando modo DEUS. Todos os modulos de percepcao ativados!
-    start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
-        "color 0D && title [Worker] JARVIS Agents && call venv\Scripts\activate && python dev_watch_worker.py"
-)
+echo.
 
 timeout /t 3 /nobreak >nul
 
@@ -358,9 +346,8 @@ echo.
 echo  ================================================================
 echo   JARVIS 5.0 INICIADO - Aguarde ~20s para boot completo
 echo  ================================================================
-echo   API    ^>  http://localhost:8000/docs
-echo   UI     ^>  http://localhost:3000
-echo   Worker ^>  porta interna 8081
+echo   API / Socket ^>  http://localhost:8000/docs
+echo   UI Interface ^>  http://localhost:3000
 echo  ================================================================
 echo   Feche as janelas individuais para parar cada servico.
 echo   Feche ESTA janela somente apos todos os servicos estarem OK.

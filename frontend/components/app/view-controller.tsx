@@ -1,8 +1,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { useState, useEffect } from 'react';
-import { useSessionContext } from '@livekit/components-react';
+import { useState } from 'react';
 import type { AppConfig } from '@/app-config';
 import { SessionView } from '@/components/app/session-view';
 import { WelcomeView } from '@/components/app/welcome-view';
@@ -34,13 +33,7 @@ interface ViewControllerProps {
 }
 
 export function ViewController({ appConfig, onParticipantNameChange }: ViewControllerProps) {
-  const { isConnected, start } = useSessionContext();
   const [isActive, setIsActive] = useState(false);
-
-  // Ativa a sessão quando a conexão é estabelecida ou quando start é chamado
-  useEffect(() => {
-    if (isConnected) setIsActive(true);
-  }, [isConnected]);
 
   const handleStart = async (opts?: any) => {
     // Extract user_name from metadata if provided
@@ -55,7 +48,6 @@ export function ViewController({ appConfig, onParticipantNameChange }: ViewContr
       }
     }
     setIsActive(true);
-    await start(opts);
   };
 
   const handleDisconnect = () => {
@@ -65,7 +57,7 @@ export function ViewController({ appConfig, onParticipantNameChange }: ViewContr
   return (
     <AnimatePresence mode="wait">
       {/* Welcome view */}
-      {!isActive && !isConnected && (
+      {!isActive && (
         <MotionWelcomeView
           key="welcome"
           {...VIEW_MOTION_PROPS}
@@ -74,7 +66,7 @@ export function ViewController({ appConfig, onParticipantNameChange }: ViewContr
         />
       )}
       {/* Session view */}
-      {(isActive || isConnected) && (
+      {isActive && (
         <MotionSessionView
           key="session-view"
           {...VIEW_MOTION_PROPS}
