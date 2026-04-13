@@ -95,7 +95,7 @@ _whisper_model = None
 
 def _oww_list_available() -> list:
     """Return list of locally available .onnx wake word model paths."""
-    import os, openwakeword
+    import os, openwakeword # type: ignore
     pkg_dir = os.path.dirname(openwakeword.__file__)
     models_dir = os.path.join(pkg_dir, "resources", "models")
     if not os.path.isdir(models_dir):
@@ -155,14 +155,14 @@ def _get_encoder():
 def _get_whisper():
     global _whisper_model
     if _whisper_model is None and HAS_WHISPER:
-        try:
-            from faster_whisper import WhisperModel  # type: ignore
-            import torch
+            import faster_whisper  # type: ignore
+            import torch # type: ignore
             device = "cuda" if torch.cuda.is_available() else "cpu"
             compute_type = "float16" if device == "cuda" else "int8"
             
-            _whisper_model = WhisperModel("tiny", device=device, compute_type=compute_type)
-            logger.success(f"[VoiceEngine] faster-whisper tiny model loaded on {device.upper()}")
+            # O modelo 'base' resolve o problema de repetições infinitas do 'tiny'
+            _whisper_model = WhisperModel("base", device=device, compute_type=compute_type)
+            logger.success(f"[VoiceEngine] ✅ faster-whisper 'base' (Estável) carregado em {device.upper()}")
         except Exception as e:
             logger.error(f"[VoiceEngine] faster-whisper init failed: {e}")
     return _whisper_model
