@@ -36,7 +36,7 @@ async def chat_stream(user_id: str, user_message: str):
     )
     
     full_reply = ""
-    async for chunk in brain.reason(prompt, context=context, stream=True):
+    async for chunk in brain.reason_stream(prompt, context=context):
         full_reply += chunk
         yield chunk
         
