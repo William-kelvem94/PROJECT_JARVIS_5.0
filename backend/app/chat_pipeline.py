@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 from typing import Tuple
 
+from loguru import logger
 from .engineer_brain import brain
 from .mem0 import AsyncMemoryClient
 from .config import settings

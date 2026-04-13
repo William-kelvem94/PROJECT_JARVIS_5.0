@@ -12,9 +12,24 @@ class EngineerBrain:
     def __init__(self, model=None):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
         self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
-        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
-        self.model = model or os.getenv("LM_STUDIO_MODEL", "will-jarvis-1.5b")
+        self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234/v1/chat/completions")
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
+        self.model = model or os.getenv("LM_STUDIO_MODEL", "llama-3.2-3b-instruct")
+
+    async def get_active_lmstudio_model(self) -> str:
+        """Busca automaticamente qualquer modelo que esteja rodando agora mesmo no LM Studio."""
+        url = self.lm_studio_url.replace("/chat/completions", "/models")
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=2) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = data.get("data", [])
+                        if models:
+                            return models[0].get("id") # Retorna o nome do modelo carregado (ex: llama, qwen, misty)
+        except Exception:
+            pass
+        return self.model # Retorna o backup caso não consiga buscar
 
     async def reason(self, prompt: str, context: str = ""):
         """
@@ -22,14 +37,22 @@ class EngineerBrain:
         """
         logger.info(f"JARVIS [Núcleo] Analisando tarefa: {prompt[:50]}...")
 
+        # Descobre qual modelo o LM Studio tem hospedado na hora H
+        active_model = await self.get_active_lmstudio_model()
+
+        # Truncamento de segurança para evitar erro de 'n_keep > n_ctx' no LM Studio
+        # O LM Studio está configurado para 8192, mas o prompt está chegando em 11k+ devido a KBs/Memórias.
+        safe_context = context[:4000] if context else ""
+        safe_prompt = prompt[:4000]
+        
         # 1. TENTATIVA LOCAL: LM Studio (Onde o WILL-JARVIS mora)
         messages = [
             {"role": "system", "content": "Você é o núcleo de engenharia do JARVIS 5.0. Resolva o problema de forma técnica e sênior."},
-            {"role": "user", "content": f"Contexto:\n{context}\n\nTarefa:\n{prompt}"}
+            {"role": "user", "content": f"Contexto:\n{safe_context}\n\nTarefa:\n{safe_prompt}"}
         ]
         
         payload = {
-            "model": self.model,
+            "model": active_model,
             "messages": messages,
             "temperature": 0.3,
             "max_tokens": 4000
