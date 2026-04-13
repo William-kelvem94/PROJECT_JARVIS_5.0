@@ -327,14 +327,20 @@ timeout /t 3 /nobreak >nul
 
 REM ── Agent Worker (LiveKit porta interna 8081)
 echo.
-echo   [?] O JARVIS possui modulos de Visao Computacional e Reconhecimento de Voz.
-echo       Isso consome muita CPU caso voce esteja em um Notebook fraco sem placa de video.
-echo       Se for usar apenas o Bate-papo de TEXTO (LM Studio), escolha N.
-echo.
-choice /C SN /M "  Deseja OUVIR e VER o JARVIS (Inicia o LiveKit Worker)? [S = Computador Forte / N = Apenas Texto]"
-if !errorlevel! EQU 2 (
-    echo   [AVISO] Worker JARVIS ignorado para economizar CPU! Servidor local pronto para Texto.
+echo   ================= CARGA DO CEREBRO =================
+echo   [1] MODO DEUS    : Visao + Voz + Texto (PC Forte)
+echo   [2] MODO FOCO    : Microfone + Texto   (Notebook)
+echo   [3] MODO ECONOMIA: Apenas Texto        (Bateria)
+echo   ====================================================
+choice /C 123 /M "Como o Jarvis deve iniciar hoje?"
+if !errorlevel! EQU 3 (
+    echo   [AVISO] Worker JARVIS ignorado! Rodando modo super-leve (API + UI).
+) else if !errorlevel! EQU 2 (
+    echo   [OK] Iniciando modo FOCO. Camera desativada para poupar CPU.
+    start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
+        "color 0D && title [Worker] JARVIS Agents && set JARVIS_DISABLE_CAMERA=true && call venv\Scripts\activate && python dev_watch_worker.py"
 ) else (
+    echo   [OK] Iniciando modo DEUS. Todos os modulos de percepcao ativados!
     start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
         "color 0D && title [Worker] JARVIS Agents && call venv\Scripts\activate && python dev_watch_worker.py"
 )

@@ -304,13 +304,16 @@ class PerceptionManager:
             self._room = room
         self._running = True
 
-        # Camera thread
-        self._camera_thread = threading.Thread(
-            target=self._camera_loop,
-            daemon=True,
-            name="jarvis-perception-camera",
-        )
-        self._camera_thread.start()
+        # Camera thread (skip if disabled)
+        if os.environ.get("JARVIS_DISABLE_CAMERA", "false").lower() == "true":
+            logger.info("[PerceptionManager] 📷 Camera desativada por configuracao. Apenas Voz Ativa.")
+        else:
+            self._camera_thread = threading.Thread(
+                target=self._camera_loop,
+                daemon=True,
+                name="jarvis-perception-camera",
+            )
+            self._camera_thread.start()
 
         # Voice engine
         voice_engine.add_callback(self._on_voice_event)
