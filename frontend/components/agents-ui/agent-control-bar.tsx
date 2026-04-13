@@ -1,7 +1,7 @@
 'use client';
 
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
-import { Loader, MessageSquareTextIcon, Pin, SendHorizontal, Mic, MicOff, PhoneOff } from 'lucide-react';
+import { Loader, MessageSquareTextIcon, Pin, SendHorizontal, Mic, MicOff, PhoneOff, Monitor } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
@@ -74,6 +74,9 @@ export interface AgentControlBarProps {
   controls?: AgentControlBarControls;
   isConnected?: boolean;
   isChatOpen?: boolean;
+  isMuted?: boolean;
+  onMuteChange?: (muted: boolean) => void;
+  onScreenShare?: () => void;
   onDisconnect?: () => void;
   onIsChatOpenChange?: (open: boolean) => void;
   className?: string;
@@ -84,6 +87,9 @@ export function AgentControlBar({
   controls,
   isChatOpen = false,
   isConnected = false,
+  isMuted = false,
+  onMuteChange,
+  onScreenShare,
   onDisconnect,
   onIsChatOpenChange,
   className,
@@ -169,9 +175,26 @@ export function AgentControlBar({
             </button>
 
             {controls?.microphone !== false && (
-              <Toggle aria-label="Alternar microfone" pressed={isConnected} disabled={true}>
-                 <Mic className="size-4" />
+              <Toggle 
+                aria-label="Alternar microfone" 
+                pressed={!isMuted} 
+                onPressedChange={(state) => onMuteChange?.(!state)}
+                className={cn(isMuted && "text-red-400 bg-red-400/10")}
+              >
+                 {isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
               </Toggle>
+            )}
+
+            {controls?.screenShare !== false && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onScreenShare}
+                className="text-white/40 hover:text-[#1da3b9] hover:bg-[#1da3b9]/10 rounded-md"
+                title="Compartilhar Tela (Visão)"
+              >
+                <Monitor className="size-4" />
+              </Button>
             )}
 
             {controls?.chat !== false && (

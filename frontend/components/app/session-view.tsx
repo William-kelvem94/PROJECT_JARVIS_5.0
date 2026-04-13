@@ -60,7 +60,7 @@ export const SessionView = ({
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
   // Substitui LiveKit Hook pelo nosso Native WebSocket Hook
-  const { isConnected, isSpeaking, messages, connect, disconnect } = useJarvisVoice();
+  const { isConnected, isSpeaking, isMuted, setIsMuted, messages, connect, disconnect } = useJarvisVoice();
   const [chatOpen, setChatOpen] = useState(false);
   const vantaEffectRef = useRef<any>(null);
 
@@ -73,8 +73,8 @@ export const SessionView = ({
     leave: true,
     microphone: true,
     chat: appConfig.supportsChatInput,
-    camera: false, // Desativado via Local Voice
-    screenShare: false,
+    camera: false, 
+    screenShare: true, // Habilitado para visão opcional
   };
 
   const handleDisconnect = () => {
@@ -153,8 +153,11 @@ export const SessionView = ({
             controls={controls}
             isChatOpen={chatOpen}
             isConnected={isConnected}
+            isMuted={isMuted}
+            onMuteChange={setIsMuted}
             onDisconnect={handleDisconnect}
             onIsChatOpenChange={setChatOpen}
+            onScreenShare={() => console.log("Iniciando compartilhamento de tela (Vision Offline)...")}
           />
         </div>
       </MotionBottom>

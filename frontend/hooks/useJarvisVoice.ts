@@ -10,6 +10,14 @@ export function useJarvisVoice() {
   const [messages, setMessages] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   
+  const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
+
+  // Sincroniza ref para acesso dentro do closure do onaudioprocess
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+  
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -50,7 +58,8 @@ export function useJarvisVoice() {
         processor.connect(audioContextRef.current!.destination);
         
         processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN && !isSpeakingRef.current) {
+          // Se estiver mutado ou o Jarvis estiver falando, não envia o áudio capturado
+          if (ws.readyState === WebSocket.OPEN && !isSpeakingRef.current && !isMutedRef.current) {
             const inputData = e.inputBuffer.getChannelData(0);
             const pcm16 = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
@@ -150,6 +159,8 @@ export function useJarvisVoice() {
   return {
     isConnected,
     isSpeaking,
+    isMuted,
+    setIsMuted,
     messages,
     error,
     connect,
