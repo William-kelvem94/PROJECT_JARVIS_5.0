@@ -140,11 +140,15 @@ class UnifiedMemory:
         # Busca na KB (Markdown) - Prioriza a Global, mas olha a Interna também
         kb_context = await self._search_kb(query if query else "")
         
-        context_str = "\n".join([f"- {m}" for m in memories])
-        if kb_context:
-            context_str += "\n\n[Base de Conhecimento]:\n" + kb_context
+        context_str = ""
+        if memories:
+            context_str += "[MEMORIA LOCAL (FATOS RECENTES)]:\n"
+            context_str += "\n".join([f"- {m}" for m in memories])
             
-        return context_str if context_str else "Nenhum contexto prévio."
+        if kb_context:
+            context_str += "\n\n[CONHECIMENTO GLOBAL (OBSIDIAN)]:\n" + kb_context
+            
+        return context_str if context_str else "Nenhum contexto relevante encontrado."
 
     async def _search_kb(self, query: str) -> str:
         """Busca em ambos os vaults de markdown."""

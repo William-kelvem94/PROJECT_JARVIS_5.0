@@ -10,6 +10,17 @@ class PersonaManager:
         self.name = "WILL-JARVIS"
         self.version = "5.0-Offline"
         
+    def get_context(self, memories, kb_context):
+        context_str = ""
+        if memories:
+            context_str += "[MEMÓRIA LOCAL (FATOS RECENTES)]:\n"
+            context_str += "\n".join([f"- {m}" for m in memories])
+            
+        if kb_context:
+            context_str += "\n\n[CONHECIMENTO GLOBAL (OBSIDIAN)]:\n" + kb_context
+            
+        return context_str if context_str else "Nenhum contexto relevante encontrado."
+
     def get_system_prompt(self, model_name: str = "") -> str:
         """
         Retorna o system prompt ideal baseado no modelo ativo.
@@ -48,13 +59,20 @@ class PersonaManager:
         if is_fine_tuned:
             # Formato Alpaca: Instrução -> Contexto -> Resposta
             return (
-                "Abaixo está uma instrução que descreve uma tarefa. Escreva uma resposta que complete adequadamente o pedido.\n\n"
-                f"### Instrução:\n{instruction}\n\n"
-                f"### Contexto Adicional:\n{context if context else 'Nenhum contexto adicional disponível.'}\n\n"
+                "Você é o WILL-JARVIS. Abaixo está uma instrução e um contexto de sua memória. "
+                "Importante: Use a memória APENAS se for relevante para a instrução. "
+                "Se a instrução for simples/conversa fiada, ignore os dados técnicos da memória.\n\n"
+                "### Instrução:\n{instruction}\n\n"
+                "### Memória Ativa (Local + Obsidian):\n{context}\n\n"
                 "### Resposta:\n"
-            )
+            ).replace("{instruction}", instruction).replace("{context}", context if context else "Vazia")
         
         # Padrão ChatML / Genérico
-        return f"Contexto:\n{context}\n\nInstrução:\n{instruction}"
+        return (
+            "CONTEXTO DE MEMÓRIA (SÓ USE SE NECESSÁRIO):\n"
+            f"{context}\n\n"
+            "COMANDO DO CHEFE:\n"
+            f"{instruction}"
+        )
 
 persona = PersonaManager()
