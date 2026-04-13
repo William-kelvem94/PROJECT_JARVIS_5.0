@@ -41,8 +41,10 @@ logger.info(f"Gemini API Key configurada: {'Sim' if os.getenv('GOOGLE_API_KEY') 
 
 
 
-# Modelo gratuito com suporte a bidiGenerateContent (Gemini Live API)
-GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-latest"
+# Modelo com suporte a bidiGenerateContent (Gemini Live API)
+# Válido: "gemini-2.5-flash-native-audio-preview-12-2025" (Gemini API)
+#         "gemini-live-2.5-flash-native-audio" (VertexAI)
+GEMINI_LIVE_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
 
 class Assistant(Agent):
     def __init__(self, chat_ctx: Optional[ChatContext] = None):
