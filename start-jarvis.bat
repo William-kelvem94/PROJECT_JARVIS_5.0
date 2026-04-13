@@ -22,17 +22,17 @@ REM ═════════════════════════�
 echo  [1/8] Verificando Servidor de I.A Local (LM Studio)...
 netstat -aon 2>nul | findstr ":1234 " >nul
 if errorlevel 1 (
-    echo   [AVISO CRÍTICO] Servidor LM Studio NÃO DETECTADO na porta 1234.
+    echo   [AVISO CRITICO] Servidor LM Studio NAO DETECTADO na porta 1234.
     echo   -------------
-    echo   Para o JARVIS 100%% Local funcionar, o Cérebro precisa estar online:
+    echo   Para o JARVIS 100 por cento Local funcionar, o Cerebro precisa estar online:
     echo   1. Abra o LM Studio.
-    echo   2. Carregue o WILL-JARVIS.gguf na memória.
+    echo   2. Carregue o WILL-JARVIS.gguf na memoria.
     echo   3. Inicie o "Local Server" na aba da esquerda.
     echo   -------------
-    echo   Pressione qualquer tecla para continuar mesmo assim (Sem Nuvem, ele vai errar)...
-    pause >nul
+    echo   Pressione qualquer tecla para continuar mesmo assim sem IA Local ativa...
+    pause
 ) else (
-    echo  [OK] Cérebro WILL-JARVIS detectado na porta 1234!
+    echo  [OK] Cerebro WILL-JARVIS detectado na porta 1234!
 )
 echo.
 
