@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useJarvisVoice } from '@/hooks/useJarvisVoice';
+import { useJarvis } from '@/context/JarvisContext';
 import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { SessionDiagnostics } from './session-diagnostics';
 import type { AppConfig } from '@/app-config';
@@ -59,8 +59,9 @@ export const SessionView = ({
   onManualDisconnect,
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
-  // Substitui LiveKit Hook pelo nosso Native WebSocket Hook
-  const { isConnected, isSpeaking, isMuted, setIsMuted, messages, connect, disconnect } = useJarvisVoice();
+  // Agora usamos o Contexto Global do Jarvis
+  const { isConnected, isSpeaking, messages, connect, disconnect } = useJarvis();
+  const [isMuted, setIsMuted] = useState(false); // Mute controlado localmente por enquanto
   const [chatOpen, setChatOpen] = useState(false);
   const vantaEffectRef = useRef<any>(null);
 

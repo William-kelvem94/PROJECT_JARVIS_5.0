@@ -2,12 +2,9 @@
 
 import { type ComponentProps, useMemo } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { type LocalAudioTrack, type RemoteAudioTrack } from 'livekit-client';
 import {
   type AgentState,
-  type TrackReferenceOrPlaceholder,
-  useMultibandTrackVolume,
-} from '@livekit/components-react';
+} from '@/types/agent';
 import { useAgentAudioVisualizerRadialAnimator } from '@/hooks/agents-ui/use-agent-audio-visualizer-radial';
 import { cn } from '@/lib/shadcn/utils';
 
@@ -64,9 +61,9 @@ export interface AgentAudioVisualizerRadialProps {
    */
   barCount?: number;
   /**
-   * The audio track to visualize. Can be a local/remote audio track or a track reference.
+   * The audio volume level (0-1)
    */
-  audioTrack?: LocalAudioTrack | RemoteAudioTrack | TrackReferenceOrPlaceholder;
+  volume?: number;
   /**
    * Additional CSS class names to apply to the container.
    */
@@ -95,7 +92,7 @@ export function AgentAudioVisualizerRadial({
   state = 'connecting',
   radius,
   barCount,
-  audioTrack,
+  volume = 0,
   className,
   ...props
 }: AgentAudioVisualizerRadialProps &
@@ -114,11 +111,8 @@ export function AgentAudioVisualizerRadial({
     }
   }, [barCount, size]);
 
-  const volumeBands = useMultibandTrackVolume(audioTrack, {
-    bands: _barCount,
-    loPass: 100,
-    hiPass: 200,
-  });
+  // Na versão nativa simples, replicamos o volume para todas as bandas do círculo
+  const volumeBands = useMemo(() => new Array(_barCount).fill(volume), [volume, _barCount]);
 
   const sequencerInterval = useMemo(() => {
     switch (state) {
@@ -163,8 +157,8 @@ export function AgentAudioVisualizerRadial({
     sequencerInterval
   );
   const bands = useMemo(
-    () => (audioTrack ? volumeBands : new Array(_barCount).fill(0)),
-    [audioTrack, volumeBands, _barCount]
+    () => (state === 'speaking' ? volumeBands : new Array(_barCount).fill(0)),
+    [state, volumeBands, _barCount]
   );
 
   const dotSize = useMemo(() => {

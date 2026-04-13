@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/shadcn/utils';
+import { useJarvis } from '@/context/JarvisContext';
 
 interface AgentChatInputProps {
   chatOpen: boolean;
@@ -120,9 +121,10 @@ export function AgentControlBar({
     };
   }, [isChatOpen, isChatOpenUncontrolled, isLocked]);
 
+  const { sendMessage } = useJarvis();
+
   const handleSendMessage = async (message: string) => {
-     // TODO: Ligar ao Websocket Send. Por enquanto apenas log para não vazar contexto vazio.
-     console.log("Enviando via WebSocket Chat:", message);
+     sendMessage(message);
   };
 
   return (

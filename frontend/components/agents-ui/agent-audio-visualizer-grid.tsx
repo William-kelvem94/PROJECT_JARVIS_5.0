@@ -11,12 +11,9 @@ import React, {
   useMemo,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { LocalAudioTrack, RemoteAudioTrack } from 'livekit-client';
 import {
   type AgentState,
-  type TrackReferenceOrPlaceholder,
-  useMultibandTrackVolume,
-} from '@livekit/components-react';
+} from '@/types/agent';
 import {
   type Coordinate,
   useAgentAudioVisualizerGridAnimator,
@@ -199,9 +196,9 @@ export type AgentAudioVisualizerGridProps = GridOptions & {
    */
   state?: AgentState;
   /**
-   * The audio track to visualize. Can be a local/remote audio track or a track reference.
+   * The audio volume level (0-1)
    */
-  audioTrack?: LocalAudioTrack | RemoteAudioTrack | TrackReferenceOrPlaceholder;
+  volume?: number;
   /**
    * Additional CSS class names to apply to the container.
    */
@@ -240,7 +237,7 @@ export function AgentAudioVisualizerGrid({
   interval = 100,
   className,
   children,
-  audioTrack,
+  volume = 0,
   style,
   ...props
 }: AgentAudioVisualizerGridProps & ComponentProps<'div'>) {
@@ -252,11 +249,8 @@ export function AgentAudioVisualizerGrid({
     interval,
     radius
   );
-  const volumeBands = useMultibandTrackVolume(audioTrack, {
-    bands: columnCount,
-    loPass: 100,
-    hiPass: 200,
-  });
+  // Na versão nativa simples, usamos o volume agregado para todas as colunas
+  const volumeBands = useMemo(() => new Array(columnCount).fill(volume), [volume, columnCount]);
 
   if (children && Array.isArray(children)) {
     throw new Error('AgentAudioVisualizerGrid children must be a single element.');

@@ -6,6 +6,10 @@ from typing import Tuple
 from loguru import logger
 from .engineer_brain import brain
 from .unified_memory import memory
+from .system_tools import SystemTools
+import re
+
+tools = SystemTools()
 
 async def chat_reply(user_id: str, user_message: str) -> str:
     """Resposta síncrona (legado/padrão)."""
@@ -36,6 +40,23 @@ async def chat_stream(user_id: str, user_message: str):
         full_reply += chunk
         yield chunk
         
+    # Pós-processamento de Ferramentas (Tags [TOOL: function(args)])
+    tool_calls = re.findall(r"\[TOOL:\s*(.*?)\((.*?)\)\]", full_reply)
+    for func_name, args in tool_calls:
+        try:
+            logger.info(f"🛠️ Executando Ferramenta: {func_name}({args})")
+            # Tenta encontrar o método na classe tools
+            func = getattr(tools, func_name, None)
+            if func:
+                # Limpa aspas dos argumentos se existirem
+                clean_args = [a.strip().strip("'").strip('"') for a in args.split(",") if a.strip()]
+                if asyncio.iscoroutinefunction(func):
+                    await func(*clean_args)
+                else:
+                    func(*clean_args)
+        except Exception as e:
+            logger.error(f"Falha ao executar ferramenta {func_name}: {e}")
+
     # Ao final, salva na memória em background
     import asyncio
     asyncio.create_task(memory.add_memory(user_id, user_message, source="jarvis_voice"))

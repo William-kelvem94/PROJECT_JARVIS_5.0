@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { type AgentState, type ReceivedMessage } from '@livekit/components-react';
+import { type AgentState } from '@/types/agent';
+import { type Message as JarvisMessage } from '@/context/JarvisContext';
 import { AgentChatIndicator } from '@/components/agents-ui/agent-chat-indicator';
 import {
   Conversation,
@@ -22,7 +23,7 @@ export interface AgentChatTranscriptProps {
    * Array of messages to display in the transcript.
    * @defaultValue []
    */
-  messages?: ReceivedMessage[];
+  messages?: JarvisMessage[];
   /**
    * Additional CSS class names to apply to the conversation container.
    */
@@ -41,17 +42,13 @@ export function AgentChatTranscript({
   return (
     <Conversation className={className} {...props}>
       <ConversationContent tabIndex={undefined}>
-        {messages.map((receivedMessage) => {
-          const { id, timestamp, from, message } = receivedMessage;
-          const locale = navigator?.language ?? 'en-US';
-          const messageOrigin = from?.isLocal ? 'user' : 'assistant';
-          const time = new Date(timestamp);
-          const title = time.toLocaleTimeString(locale, { timeStyle: 'full' });
+        {messages.map((msg, idx) => {
+          const { role, content, timestamp } = msg;
 
           return (
-            <Message key={id} title={title} from={messageOrigin}>
+            <Message key={idx} title={timestamp} from={role}>
               <MessageContent tabIndex={undefined}>
-                <MessageResponse>{message}</MessageResponse>
+                <MessageResponse>{content}</MessageResponse>
               </MessageContent>
             </Message>
           );

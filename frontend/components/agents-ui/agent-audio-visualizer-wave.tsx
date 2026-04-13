@@ -3,8 +3,7 @@
 import { type ComponentProps, useMemo } from 'react';
 import { log } from '@/lib/logger';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { LocalAudioTrack, RemoteAudioTrack } from 'livekit-client';
-import { type AgentState, type TrackReferenceOrPlaceholder } from '@livekit/components-react';
+import { type AgentState } from '@/types/agent';
 import { ReactShaderToy } from '@/components/agents-ui/react-shader-toy';
 import { useAgentAudioVisualizerWave } from '@/hooks/agents-ui/use-agent-audio-visualizer-wave';
 import { cn } from '@/lib/shadcn/utils';
@@ -248,9 +247,9 @@ export interface AgentAudioVisualizerWaveProps {
    */
   blur?: number;
   /**
-   * The audio track to visualize. Can be a local/remote audio track or a track reference.
+   * The audio volume level (0-1)
    */
-  audioTrack?: LocalAudioTrack | RemoteAudioTrack | TrackReferenceOrPlaceholder;
+  volume?: number;
   /**
    * Additional CSS class names to apply to the container.
    */
@@ -303,7 +302,7 @@ export function AgentAudioVisualizerWave({
 
   const { speed, amplitude, frequency, opacity } = useAgentAudioVisualizerWave({
     state,
-    audioTrack,
+    volume,
   });
 
   return (
