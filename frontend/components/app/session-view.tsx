@@ -17,11 +17,11 @@ import dynamic from 'next/dynamic';
 import { ActiveConsole } from './active-console';
 
 const VantaOrb = dynamic(
-  () => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaOrb })),
+  () => import('@/components/app/vanta-engine').then((mod) => mod.VantaOrb as any),
   { ssr: false, loading: () => null }
 );
 const VantaController = dynamic(
-  () => import('@/components/app/vanta-engine').then(mod => ({ default: mod.VantaController })),
+  () => import('@/components/app/vanta-engine').then((mod) => mod.VantaController as any),
   { ssr: false, loading: () => null }
 );
 

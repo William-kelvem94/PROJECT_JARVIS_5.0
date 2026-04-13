@@ -9,15 +9,32 @@ export function useJarvisVoice() {
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const isConnectingRef = useRef(false);
 
   const connect = useCallback(async () => {
+    if (wsRef.current || isConnectingRef.current) return;
+    isConnectingRef.current = true;
+    
     try {
       // Solicita acesso ao microfone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Salva referência da stream precocemente para o disconnect
+      mediaRecorderRef.current = { stream } as any;
+
+      if (!isConnectingRef.current) {
+        // Componente desmontou durante o fallback do microfone
+        stream.getTracks().forEach(t => t.stop());
+        return;
+      }
+      
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       
       const wsUrl = process.env.NEXT_PUBLIC_VOICE_WEBSOCKET_URL || `ws://${window.location.hostname}:8000/ws/voice-stream`;
       const ws = new WebSocket(wsUrl);
+      
+      // Salva referência do socket precocemente
+      wsRef.current = ws;
       
       ws.binaryType = 'arraybuffer';
       
@@ -25,16 +42,20 @@ export function useJarvisVoice() {
         setIsConnected(true);
         setError(null);
         
-        // Inicia a gravação em PCM PCM nativo a 16kHz
+        // Inicia a gravação em PCM nativo a 16kHz
         const source = audioContextRef.current!.createMediaStreamSource(stream);
+        // Usamos uma Ref para o loop de áudio ter acesso imediato ao estado de fala (evita lag de state do React)
+        const isSpeakingRef = { current: false };
+
         const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         
         source.connect(processor);
-        processor.connect(audioContextRef.current!.destination); // Necessário para o evento onaudioprocess disparar no Chrome
+        processor.connect(audioContextRef.current!.destination);
         
         processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            const inputData = e.inputBuffer.getChannelData(0); // Float32Array PCM
+          // SE o Jarvis está falando (localmente ou sinalizado pelo servidor), NÃO mandamos áudio do mic
+          if (ws.readyState === WebSocket.OPEN && !isSpeakingRef.current) {
+            const inputData = e.inputBuffer.getChannelData(0);
             const pcm16 = new Int16Array(inputData.length);
             for (let i = 0; i < inputData.length; i++) {
               let s = Math.max(-1, Math.min(1, inputData[i]));
@@ -44,33 +65,43 @@ export function useJarvisVoice() {
           }
         };
 
-        // Salvar referência para desconectar depois
         (wsRef as any).processor = processor;
         (wsRef as any).source = source;
-        mediaRecorderRef.current = { stream } as any; // mock pra parar tracks depois
+        (wsRef as any).speakingRef = isSpeakingRef;
       };
       
       ws.onmessage = async (event) => {
-        // Recebe bytes PCM de volta do Python e toca!
+        const speakingRef = (wsRef as any).speakingRef;
+
         if (event.data instanceof ArrayBuffer && audioContextRef.current) {
           setIsSpeaking(true);
+          if (speakingRef) speakingRef.current = true;
+
           try {
             const audioBuffer = await audioContextRef.current.decodeAudioData(event.data);
             const source = audioContextRef.current.createBufferSource();
             source.buffer = audioBuffer;
             source.connect(audioContextRef.current.destination);
-            source.onended = () => setIsSpeaking(false);
+            source.onended = () => {
+              setIsSpeaking(false);
+              // Pequeno delay para o mic não abrir EXATAMENTE no fim do áudio (evita captar eco final)
+              setTimeout(() => { if (speakingRef) speakingRef.current = false; }, 400);
+            };
             source.start();
           } catch (e) {
-            console.error('Error decoding audio from server', e);
+            console.error('Error decoding audio', e);
             setIsSpeaking(false);
+            if (speakingRef) speakingRef.current = false;
           }
         } else if (typeof event.data === 'string') {
-          // Eventos ou JSON de texto/mensagens
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'message') {
               setMessages(prev => [...prev, data]);
+            } else if (data.type === 'jarvis_speaking') {
+              // Servidor avisando que começou/terminou de processar algo que resultará em fala
+              setIsSpeaking(data.state);
+              if (speakingRef) speakingRef.current = data.state;
             }
           } catch(e) {}
         }
@@ -92,12 +123,14 @@ export function useJarvisVoice() {
       wsRef.current = ws;
 
     } catch (err: any) {
+      isConnectingRef.current = false;
       setError(err.message || 'Falha ao acessar microfone.');
       setIsConnected(false);
     }
   }, []);
 
   const disconnect = useCallback(() => {
+    isConnectingRef.current = false;
     if (wsRef.current) {
       wsRef.current.close();
       if ((wsRef as any).processor) {
