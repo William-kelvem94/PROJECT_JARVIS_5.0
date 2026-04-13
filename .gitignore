@@ -32,3 +32,15 @@ dashboard/.env.local
 
 # Tasks
 TODO.md
+
+# Browser runtime cache data
+backend/data/browser_data/
+
+# Generated backend files
+backend/data/*.png
+
+# Generated frontend build/log files
+frontend/build-output.txt
+
+# Generated launcher runtime files
+launcher-run*.txt
