@@ -17,9 +17,29 @@ echo.
 cd /d "%~dp0"
 
 REM ════════════════════════════════════════════════════
-REM  [1/7] VERIFICAR .env
+REM  [1/8] PRE-FLIGHT (VERIFICAÇÕES LOCAIS)
 REM ════════════════════════════════════════════════════
-echo  [1/7] Verificando arquivo .env...
+echo  [1/8] Verificando Servidor de I.A Local (LM Studio)...
+netstat -aon 2>nul | findstr ":1234 " >nul
+if errorlevel 1 (
+    echo   [AVISO CRÍTICO] Servidor LM Studio NÃO DETECTADO na porta 1234.
+    echo   -------------
+    echo   Para o JARVIS 100%% Local funcionar, o Cérebro precisa estar online:
+    echo   1. Abra o LM Studio.
+    echo   2. Carregue o WILL-JARVIS.gguf na memória.
+    echo   3. Inicie o "Local Server" na aba da esquerda.
+    echo   -------------
+    echo   Pressione qualquer tecla para continuar mesmo assim (Sem Nuvem, ele vai errar)...
+    pause >nul
+) else (
+    echo  [OK] Cérebro WILL-JARVIS detectado na porta 1234!
+)
+echo.
+
+REM ════════════════════════════════════════════════════
+REM  [2/8] VERIFICAR .env
+REM ════════════════════════════════════════════════════
+echo  [2/8] Verificando arquivo .env...
 set "ENV_FILE="
 if exist ".env" set "ENV_FILE=.env"
 if not defined ENV_FILE if exist "env\.env" set "ENV_FILE=env\.env"
@@ -40,9 +60,9 @@ copy "%ENV_FILE%" "frontend\.env" >nul 2>&1
 echo.
 
 REM ════════════════════════════════════════════════════
-REM  [2/7] INSTALAR / LOCALIZAR UV
+REM  [3/8] INSTALAR / LOCALIZAR UV
 REM ════════════════════════════════════════════════════
-echo  [2/7] Verificando UV (gerenciador de Python)...
+echo  [3/8] Verificando UV (gerenciador de Python)...
 
 set "UV="
 REM Verifica UV no PATH
@@ -85,9 +105,9 @@ if defined UV (
 echo.
 
 REM ════════════════════════════════════════════════════
-REM  [3/7] LOCALIZAR / INSTALAR PYTHON 3.12
+REM  [4/8] LOCALIZAR / INSTALAR PYTHON 3.12
 REM ════════════════════════════════════════════════════
-echo  [3/7] Localizando Python 3.12...
+echo  [4/8] Localizando Python 3.12...
 
 set "PYTHON="
 
@@ -144,9 +164,9 @@ pause & exit /b 1
 echo.
 
 REM ════════════════════════════════════════════════════
-REM  [4/7] CONFIGURAR VENV DO BACKEND
+REM  [5/8] CONFIGURAR VENV DO BACKEND
 REM ════════════════════════════════════════════════════
-echo  [4/7] Configurando ambiente virtual do backend...
+echo  [5/8] Configurando ambiente virtual do backend...
 
 cd /d "%~dp0backend"
 
@@ -220,9 +240,9 @@ echo.
 cd /d "%~dp0"
 
 REM ════════════════════════════════════════════════════
-REM  [5/7] VERIFICAR NODE.JS E pnpm
+REM  [6/8] VERIFICAR NODE.JS E pnpm
 REM ════════════════════════════════════════════════════
-echo  [5/7] Verificando Node.js e pnpm...
+echo  [6/8] Verificando Node.js e pnpm...
 
 where node >nul 2>nul
 if errorlevel 1 (
@@ -252,9 +272,9 @@ echo  [OK] Gerenciador de pacotes: !PKG_MANAGER!
 echo.
 
 REM ════════════════════════════════════════════════════
-REM  [6/7] INSTALAR DEPENDENCIAS DO FRONTEND
+REM  [7/8] INSTALAR DEPENDENCIAS DO FRONTEND
 REM ════════════════════════════════════════════════════
-echo  [6/7] Instalando dependencias do frontend...
+echo  [7/8] Instalando dependencias do frontend...
 
 cd /d "%~dp0frontend"
 
@@ -283,9 +303,9 @@ echo.
 cd /d "%~dp0"
 
 REM ════════════════════════════════════════════════════
-REM  [7/7] INICIAR SERVICOS
+REM  [8/8] INICIAR SERVICOS
 REM ════════════════════════════════════════════════════
-echo  [7/7] Liberando portas e iniciando servicos...
+echo  [8/8] Liberando portas e iniciando servicos...
 
 REM Liberar portas
 for /f "tokens=5" %%a in ('netstat -aon 2^>nul ^| findstr ":8000 "') do (
