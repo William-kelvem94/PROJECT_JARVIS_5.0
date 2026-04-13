@@ -69,20 +69,25 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             try: await websocket.send_json({"type": "jarvis_speaking", "state": True})
             except: pass
 
+            is_first_chunk = True
             async for chunk in chat_stream("jarvis_user", text):
                 sentence_buffer += chunk
                 full_reply += chunk
                 
-                # Se detectarmos fim de frase, disparamos o áudio parcial
-                if any(p in chunk for p in (".", "!", "?", "\n")):
+                # Se detectarmos fim de frase ou se for o primeiro chunk e for longo o suficiente
+                should_trigger = any(p in chunk for p in (".", "!", "?", "\n", ":"))
+                if is_first_chunk and len(sentence_buffer) > 25:
+                    should_trigger = True
+                
+                if should_trigger:
                     sentence = sentence_buffer.strip()
-                    if len(sentence) > 5:
+                    if len(sentence) > 3:
+                        is_first_chunk = False
                         logger.debug(f"🔊 Streaming TTS: {sentence}")
                         audio_bytes = await generate_speech_bytes(sentence)
                         if audio_bytes:
                             try:
                                 await websocket.send_bytes(audio_bytes)
-                                # Enviamos o texto parcial para o frontend também
                                 await websocket.send_json({"type": "message_chunk", "role": "assistant", "text": sentence})
                             except: break
                         sentence_buffer = ""
@@ -102,10 +107,6 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             try:
                 # Envia a mensagem completa consolidada para o histórico do UI
                 await websocket.send_json({"type": "message", "role": "assistant", "text": full_reply})
-                
-                # Aguarda um pequeno delay para a reprodução do último chunk terminar
-                wait_time = max(1.0, len(sentence_buffer) / 10.0)
-                await asyncio.sleep(wait_time)
                 await websocket.send_json({"type": "jarvis_speaking", "state": False})
             except: pass
             
@@ -133,7 +134,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     
     # Cumprimento inicial (Greeting)
     async def initial_greeting():
-        greeting = "Olá William! Sistema JARVIS 5.0 online e pronto para operar 100% offline."
+        greeting = "Olá William! Sistema JARVIS 5.0 online."
         try:
             audio_bytes = await generate_speech_bytes(greeting)
             if audio_bytes:
@@ -173,8 +174,8 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                     silence_frames += len(chunk_arr)
                     audio_buffer.extend(data)
                     
-                    # Silêncio detectado (1.5 segundos de margem)
-                    if silence_frames > (1.5 * frames_per_sec):
+                    # Silêncio detectado (0.8 segundos de margem para resposta mais rápida)
+                    if silence_frames > (0.8 * frames_per_sec):
                         logger.info("🗣️ Fim de fala detectado!")
                         full_audio = np.frombuffer(audio_buffer, dtype=np.int16).copy()
                         
