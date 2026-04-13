@@ -53,3 +53,6 @@ faster-whisper
 
 # ── Perception: Audio Input
 sounddevice
+
+# ── Perception: Text-to-Speech Local
+edge-tts
