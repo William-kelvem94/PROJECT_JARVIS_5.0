@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useRoomContext } from '@livekit/components-react';
-import { RoomEvent } from 'livekit-client';
+// import { useRoomContext } from '@livekit/components-react';
+// import { RoomEvent } from 'livekit-client';
 import { Terminal, Code, GitBranch, FileJson, Loader, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/shadcn/utils';
 import { LogHistoryModal } from './log-history-modal';
@@ -18,10 +18,13 @@ interface ActivityLog {
 }
 
 export function ActiveConsole() {
-    const room = useRoomContext();
+    // Comentado para futuramente migrar para o WebSocket nativo
+    // const room = useRoomContext();
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // TODO: Migrar o sistema de logs para o useJarvisVoice ou um Context local do WebSocket nativo
+    /*
     useEffect(() => {
         if (!room) return;
 
@@ -40,8 +43,6 @@ export function ActiveConsole() {
                             timestamp: new Date().toLocaleTimeString(),
                         };
                         setLogs(prev => {
-                            // Se for um log de "Finished" ou "Complete" de uma ação anterior, podemos tentar agrupar?
-                            // Por enquanto, apenas limitamos o feed
                             return [...prev.slice(-10), newLog];
                         });
                     }
@@ -56,6 +57,7 @@ export function ActiveConsole() {
             room.off(RoomEvent.DataReceived, handleData);
         };
     }, [room]);
+    */
 
     useEffect(() => {
         if (scrollRef.current) {
