@@ -9,45 +9,25 @@ class EngineerBrain:
     Usa OpenRouter para tarefas complexas de codificação e arquitetura.
     """
     
-    def __init__(self, model="openrouter/free"):
+    def __init__(self, model=None):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.base_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.ollama_url = "http://localhost:11434/api/generate"
-        self.model = model
+        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
+        self.ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+        self.model = model or os.getenv("LM_STUDIO_MODEL", "will-jarvis-1.5b")
 
     async def reason(self, prompt: str, context: str = ""):
         """
-        Envia uma tarefa complexa para o modelo sênior via OpenRouter.
+        Tenta processar a tarefa usando IA Local (LM Studio/Ollama) antes de fugir para a nuvem.
         """
-        if not self.api_key:
-            logger.error("OPENROUTER_API_KEY não encontrada no .env")
-            return "Erro: Chave do OpenRouter não configurada."
+        logger.info(f"JARVIS [Núcleo] Analisando tarefa: {prompt[:50]}...")
 
-        logger.info(f"JARVIS consultando o Cérebro Engenheiro ({self.model})...")
-        
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/William-kelvem94/PROJECT_JARVIS_5.0",
-            "X-Title": "JARVIS 5.0",
-        }
-
+        # 1. TENTATIVA LOCAL: LM Studio (Onde o WILL-JARVIS mora)
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "Você é o núcleo de engenharia do JARVIS 5.0. Seu objetivo é resolver problemas complexos "
-                    "de software, arquitetura e automação. Forneça respostas técnicas precisas, "
-                    "código pronto para produção e diagnósticos detalhados. "
-                    "Seja direto, eficiente e mantenha o tom profissional e sênior."
-                )
-            },
-            {
-                "role": "user",
-                "content": f"Contexto do Projeto:\n{context}\n\nTarefa:\n{prompt}"
-            }
+            {"role": "system", "content": "Você é o núcleo de engenharia do JARVIS 5.0. Resolva o problema de forma técnica e sênior."},
+            {"role": "user", "content": f"Contexto:\n{context}\n\nTarefa:\n{prompt}"}
         ]
-
+        
         payload = {
             "model": self.model,
             "messages": messages,
@@ -57,19 +37,39 @@ class EngineerBrain:
 
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(self.base_url, headers=headers, json=payload) as response:
+                logger.debug(f"Tentando Cérebro Local (LM Studio) em {self.lm_studio_url}...")
+                async with session.post(self.lm_studio_url, json=payload, timeout=5) as response:
                     if response.status == 200:
                         data = await response.json()
                         reply = data['choices'][0]['message']['content']
-                        logger.success("Cérebro Engenheiro respondeu com sucesso.")
+                        logger.success("Cérebro Local (WILL-JARVIS) respondeu com sucesso!")
                         return reply
-                    else:
-                        error_text = await response.text()
-                        logger.error(f"Erro no OpenRouter: {response.status} - {error_text}")
-                        return f"Erro na consulta ao núcleo de engenharia: {response.status}"
+        except Exception:
+            logger.warning("LM Studio Offline. Tentando Ollama...")
+
+        # 2. TENTATIVA LOCAL: Ollama (Backup Local)
+        local_resp = await self.reason_local(prompt, context)
+        if local_resp:
+            return local_resp
+
+        # 3. ÚLTIMO RECURSO: OpenRouter (Nuvem)
+        if not self.api_key:
+            return "Erro: IA Local inacessível e sem chave de nuvem."
+
+        logger.warning("Usando Cloud (OpenRouter) como último recurso...")
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.openrouter_url, headers=headers, json=payload) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return data['choices'][0]['message']['content']
         except Exception as e:
-            logger.error(f"Falha na conexão com OpenRouter: {str(e)}")
-            return f"Falha técnica ao consultar o cérebro engenheiro: {str(e)}"
+            return f"Falha total no sistema de raciocínio: {str(e)}"
 
     async def reason_local(self, prompt: str, context: str = "", model: str = "llama3"):
         """
