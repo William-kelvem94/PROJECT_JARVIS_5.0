@@ -11,6 +11,7 @@ base_dir = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(base_dir))
 
 from . import routes
+from . import voice_websocket
 from .utils.dream_processor import dream_processor
 import asyncio
 from loguru import logger
@@ -39,6 +40,7 @@ app.add_middleware(
 )
 
 app.include_router(routes.router)
+app.include_router(voice_websocket.router)
 
 @app.get("/health") # type: ignore
 def health_check() -> Dict[str, Any]:
