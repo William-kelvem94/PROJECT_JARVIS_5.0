@@ -11,7 +11,7 @@ from .chat_pipeline import chat_reply
 
 HAS_EDGE_TTS = False
 try:
-    import edge_tts
+    import edge_tts # type: ignore
     HAS_EDGE_TTS = True
 except ImportError:
     pass
@@ -121,11 +121,12 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     
     await websocket.accept()
     
-    # Singleton: Se já existe uma conexão, fecha a antiga para evitar fantasmas
-    if _active_voice_websocket:
+    # Singleton: Se já existe uma conexão ATIVA e diferente, fecha a antiga
+    if _active_voice_websocket and _active_voice_websocket != websocket:
         try:
-            logger.info("♻️ Substituindo conexão WebSocket de voz antiga por uma nova.")
+            logger.info("♻️  Limpando conexão WebSocket anterior...")
             await _active_voice_websocket.close(code=1000)
+            await asyncio.sleep(0.2) # Delay para evitar race conditions no cleanup
         except: pass
         
     _active_voice_websocket = websocket
