@@ -145,7 +145,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                     silence_frames += len(chunk_arr)
                     audio_buffer.extend(data)
                     
-                    if silence_frames > (1.1 * frames_per_sec):
+                    if silence_frames > (1.6 * frames_per_sec):
                         logger.info("🗣️ Fim de fala detectado!")
                         full_audio = np.frombuffer(audio_buffer, dtype=np.int16).copy()
                         

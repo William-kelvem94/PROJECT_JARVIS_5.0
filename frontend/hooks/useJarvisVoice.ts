@@ -1,4 +1,6 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+// Variável global fora do hook para garantir SINGLETON absoluto, mesmo com React StrictMode
+let globalSocket: WebSocket | null = null;
+let globalIsConnecting = false;
 
 export function useJarvisVoice() {
   const [isConnected, setIsConnected] = useState(false);
@@ -9,11 +11,13 @@ export function useJarvisVoice() {
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const isConnectingRef = useRef(false);
-
+  
   const connect = useCallback(async () => {
-    if (wsRef.current || isConnectingRef.current) return;
-    isConnectingRef.current = true;
+    if (globalSocket || globalIsConnecting) {
+      console.log("🚫 [Jarvis] Conexão já existente ou em progresso. Ignorando duplicata.");
+      return;
+    }
+    globalIsConnecting = true;
     
     try {
       // Solicita acesso ao microfone
@@ -129,17 +133,15 @@ export function useJarvisVoice() {
     }
   }, []);
 
-  const disconnect = useCallback(() => {
-    isConnectingRef.current = false;
-    if (wsRef.current) {
-      wsRef.current.close();
-      if ((wsRef as any).processor) {
-        (wsRef as any).processor.disconnect();
+    globalIsConnecting = false;
+    if (globalSocket) {
+      globalSocket.close();
+      globalSocket = null;
+      if (wsRef.current) {
+        if ((wsRef.current as any).processor) (wsRef.current as any).processor.disconnect();
+        if ((wsRef.current as any).source) (wsRef.current as any).source.disconnect();
+        wsRef.current = null;
       }
-      if ((wsRef as any).source) {
-        (wsRef as any).source.disconnect();
-      }
-      wsRef.current = null;
     }
     if (mediaRecorderRef.current && (mediaRecorderRef.current as any).stream) {
       (mediaRecorderRef.current as any).stream.getTracks().forEach((t: any) => t.stop());

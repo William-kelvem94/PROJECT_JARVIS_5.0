@@ -84,10 +84,10 @@ export function EngineeringHUD() {
 
                     {/* Perception Module (The Mastery part) */}
                     <div className="mt-2 pt-4 border-t border-white/10 space-y-3">
-                         <span className="text-[8px] uppercase tracking-[0.3em] font-bold text-white/30">Intelligence Layer</span>
-                         
-                         {/* Face Identity */}
-                         <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
+                        <span className="text-[8px] uppercase tracking-[0.3em] font-bold text-white/30">Intelligence Layer</span>
+
+                        {/* Face Identity */}
+                        <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
                             <div className="flex items-center gap-2">
                                 <User className="size-3 text-white/50" />
                                 <span className="text-[9px] text-white/70 uppercase">Identify</span>
@@ -95,10 +95,10 @@ export function EngineeringHUD() {
                             <span className="text-[10px] font-mono jarvis-cyan-text font-bold uppercase tracking-tight">
                                 {data.face_identity || 'Unknown'}
                             </span>
-                         </div>
+                        </div>
 
-                         {/* Emotion */}
-                         <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
+                        {/* Emotion */}
+                        <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
                             <div className="flex items-center gap-2">
                                 <Fingerprint className="size-3 text-white/50" />
                                 <span className="text-[9px] text-white/70 uppercase">Affect</span>
@@ -106,10 +106,10 @@ export function EngineeringHUD() {
                             <span className="text-[10px] font-mono text-violet-400 font-bold uppercase">
                                 {data.face_emotion ? `${getEmotionEmoji(data.face_emotion)} ${data.face_emotion}` : 'Awaiting...'}
                             </span>
-                         </div>
+                        </div>
 
-                         {/* Neural State */}
-                         <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
+                        {/* Neural State */}
+                        <div className="flex items-center justify-between py-1 px-2 bg-white/5 rounded-lg border border-white/5">
                             <div className="flex items-center gap-2">
                                 <BrainCircuit className={cn("size-3", data.is_reasoning ? "text-violet-400 animate-pulse" : "text-white/30")} />
                                 <span className="text-[9px] text-white/70 uppercase">Neural</span>
@@ -117,7 +117,7 @@ export function EngineeringHUD() {
                             <span className={cn("text-[9px] font-bold px-2 rounded-sm", data.is_reasoning ? "bg-violet-500/20 text-violet-400" : "text-white/20")}>
                                 {data.is_reasoning ? "THINKING" : "IDLE"}
                             </span>
-                         </div>
+                        </div>
                     </div>
 
                     <div className="mt-1 pt-3 flex flex-col gap-1">
@@ -127,7 +127,7 @@ export function EngineeringHUD() {
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Decorative border */}
                 <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#1da3b9]/20 rounded-tr-2xl" />
                 <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-[#1da3b9]/10 rounded-bl-2xl" />
@@ -139,15 +139,15 @@ export function EngineeringHUD() {
 function StatRow({ icon, label, value, color = "bg-[#1da3b9]" }: { icon: React.ReactNode, label: string, value: number, color?: string }) {
     return (
         <div className="flex flex-col gap-1.5">
-<div className="flex justify-between items-center text-[10px]">
+            <div className="flex justify-between items-center text-[10px]">
                 <div className="flex items-center gap-2 text-white/40">
-{React.cloneElement(icon as React.ReactElement<any>, { className: 'size-3' })}
+                    {React.cloneElement(icon as React.ReactElement<any>, { className: 'size-3' })}
                     <span className="font-mono tracking-tighter">{label}</span>
                 </div>
                 <span className="text-white/80 font-mono font-bold">{value.toFixed(0)}%</span>
             </div>
             <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${value}%` }}
                     className={cn("h-full", color, "shadow-[0_0_8px_currentColor]")}

@@ -125,7 +125,7 @@ export const SessionView = ({
           </div>
         )}
 
-        <ActiveConsole />
+        <ActiveConsole externalLogs={messages} />
       </div>
 
       <div className="pointer-events-none flex-1" />
