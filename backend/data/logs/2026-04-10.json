@@ -118,5 +118,77 @@
     "log_type": "cmd",
     "status": "success",
     "timestamp": "2026-04-10T17:50:08.795519"
+  },
+  {
+    "type": "activity_log",
+    "title": "Listar Projeto",
+    "detail": "Caminho: .",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T18:19:34.062150"
+  },
+  {
+    "type": "activity_log",
+    "title": "Ler Arquivo",
+    "detail": "Arquivo: Correcao_VoiceEngine.txt",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T18:20:22.456303"
+  },
+  {
+    "type": "activity_log",
+    "title": "Ler Arquivo",
+    "detail": "Arquivo: app\\perception\\voice_engine.py",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T18:24:18.152435"
+  },
+  {
+    "type": "activity_log",
+    "title": "Ler Arquivo",
+    "detail": "Arquivo: app\\perception\\voice_engine.py",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T18:24:29.931113"
+  },
+  {
+    "type": "activity_log",
+    "title": "Code Change",
+    "detail": "Alterado: app\\perception\\voice_engine.py",
+    "log_type": "edit",
+    "status": "success",
+    "timestamp": "2026-04-10T18:24:48.563210"
+  },
+  {
+    "type": "activity_log",
+    "title": "Desktop Capture",
+    "detail": "Screenshot: desktop_20260410_182703.png",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T18:27:04.128923"
+  },
+  {
+    "type": "activity_log",
+    "title": "Listar Projeto",
+    "detail": "Caminho: .",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T18:31:39.039220"
+  },
+  {
+    "type": "activity_log",
+    "title": "Navegador",
+    "detail": "Acessando: https://mail.google.com",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T18:33:06.985677"
+  },
+  {
+    "type": "activity_log",
+    "title": "Screenshot",
+    "detail": "Captura salva: C:\\Users\\willi\\Documents\\GitHub\\PROJECT_JARVIS_5.0\\backend\\data\\screenshot_20260410_183317.png",
+    "log_type": "info",
+    "status": "success",
+    "timestamp": "2026-04-10T18:33:17.422135"
   }
 ]
