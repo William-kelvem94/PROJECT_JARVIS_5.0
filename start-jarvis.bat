@@ -326,8 +326,18 @@ start "JARVIS Backend :8000" /d "%~dp0backend" cmd /k ^
 timeout /t 3 /nobreak >nul
 
 REM ── Agent Worker (LiveKit porta interna 8081)
-start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
-    "color 0D && title [Worker] JARVIS Agents && call venv\Scripts\activate && python dev_watch_worker.py"
+echo.
+echo   [?] O JARVIS possui modulos de Visao Computacional e Reconhecimento de Voz.
+echo       Isso consome muita CPU caso voce esteja em um Notebook fraco sem placa de video.
+echo       Se for usar apenas o Bate-papo de TEXTO (LM Studio), escolha N.
+echo.
+choice /C SN /M "  Deseja OUVIR e VER o JARVIS (Inicia o LiveKit Worker)? [S = Computador Forte / N = Apenas Texto]"
+if !errorlevel! EQU 2 (
+    echo   [AVISO] Worker JARVIS ignorado para economizar CPU! Servidor local pronto para Texto.
+) else (
+    start "JARVIS Agent Worker" /d "%~dp0backend" cmd /k ^
+        "color 0D && title [Worker] JARVIS Agents && call venv\Scripts\activate && python dev_watch_worker.py"
+)
 
 timeout /t 3 /nobreak >nul
 

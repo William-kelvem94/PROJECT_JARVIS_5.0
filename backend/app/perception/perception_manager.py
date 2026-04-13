@@ -253,9 +253,11 @@ class PerceptionManager:
             if gesture.head_gesture:
                 logger.info(f"[Perception] 🫡 Head: {gesture.head_gesture}")
 
-            # ~10 FPS se houver alguém, ~2 FPS se estiver vazio (Economia de CPU)
-            idle_sleep = 0.5 if not face.present else 0.1
-            time.sleep(idle_sleep)
+            # Controle Dinamico de FPS (Para Notebooks nao travarem a CPU em 100%)
+            # Puxa 2 FPS por padrao, ou o configurado no .env
+            fps_limit = float(os.environ.get("JARVIS_PERCEPTION_FPS", "2.0"))
+            sleep_time = 1.0 / fps_limit
+            time.sleep(sleep_time)
 
         if cam:
             cam.release()
