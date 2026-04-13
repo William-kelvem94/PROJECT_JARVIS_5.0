@@ -52,14 +52,6 @@ async def chat_reply(user_id: str, user_message: str) -> str:
         f"Responda com um parágrafo direto, mencionando se precisar de mais detalhes."
     )
 
-    if getattr(settings, "openrouter_api_key", ""):
-        return await brain.reason(prompt, context=memory_context)
-
-    if getattr(settings, "google_api_key", ""):
-        # O cérebro engenheiro usa OPENROUTER_API_KEY, mas temos chave Gemini/Google.
-        return "Entendido, chefe. O endpoint de chat está funcionando, mas nenhuma chave OpenRouter foi configurada. Por favor, configure OPENROUTER_API_KEY para respostas completas de IA."
-
-    return (
-        f"Entendido, {user_id}. O chat está ativo, mas nenhum provedor de IA está configurado. "
-        f"Contexto disponível:\n{memory_context[:300]}"
-    )
+    # Cérebro WILL-JARVIS / Local Engine (Nuvem Desabilitada por Padrão)
+    logger.info("Encaminhando pipeline de chat para a Engenharia Local Inteligente.")
+    return await brain.reason(prompt, context=memory_context)
