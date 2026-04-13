@@ -1,7 +1,8 @@
 'use client';
 
 import { AnimatePresence, type HTMLMotionProps, motion } from 'motion/react';
-import { type ReceivedMessage, useAgent } from '@livekit/components-react';
+// import { type ReceivedMessage, useAgent } from '@livekit/components-react';
+type ReceivedMessage = any;
 import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcript';
 import { cn } from '@/lib/shadcn/utils';
 
@@ -41,7 +42,8 @@ export function ChatTranscript({
   className,
   ...props
 }: ChatTranscriptProps & Omit<HTMLMotionProps<'div'>, 'ref'>) {
-  const { state: agentState } = useAgent();
+  // const { state: agentState } = useAgent();
+  const agentState = 'idle'; // Mock para a versão nativa
 
   return (
     <div className="absolute top-0 bottom-[135px] flex w-full flex-col md:bottom-[170px]">

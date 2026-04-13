@@ -14,7 +14,7 @@ export function useJarvisVoice() {
     try {
       // Solicita acesso ao microfone
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       
       const wsUrl = process.env.NEXT_PUBLIC_VOICE_WEBSOCKET_URL || `ws://${window.location.hostname}:8000/ws/voice-stream`;
       const ws = new WebSocket(wsUrl);
@@ -25,18 +25,29 @@ export function useJarvisVoice() {
         setIsConnected(true);
         setError(null);
         
-        // Inicia a gravação em chunks locais
-        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-        mediaRecorderRef.current = recorder;
+        // Inicia a gravação em PCM PCM nativo a 16kHz
+        const source = audioContextRef.current!.createMediaStreamSource(stream);
+        const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         
-        recorder.ondataavailable = (e) => {
-          if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            ws.send(e.data);
+        source.connect(processor);
+        processor.connect(audioContextRef.current!.destination); // Necessário para o evento onaudioprocess disparar no Chrome
+        
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0); // Float32Array PCM
+            const pcm16 = new Int16Array(inputData.length);
+            for (let i = 0; i < inputData.length; i++) {
+              let s = Math.max(-1, Math.min(1, inputData[i]));
+              pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            }
+            ws.send(pcm16.buffer);
           }
         };
-        
-        // Dispara chunks a cada 250ms
-        recorder.start(250);
+
+        // Salvar referência para desconectar depois
+        (wsRef as any).processor = processor;
+        (wsRef as any).source = source;
+        mediaRecorderRef.current = { stream } as any; // mock pra parar tracks depois
       };
       
       ws.onmessage = async (event) => {
@@ -89,11 +100,16 @@ export function useJarvisVoice() {
   const disconnect = useCallback(() => {
     if (wsRef.current) {
       wsRef.current.close();
+      if ((wsRef as any).processor) {
+        (wsRef as any).processor.disconnect();
+      }
+      if ((wsRef as any).source) {
+        (wsRef as any).source.disconnect();
+      }
       wsRef.current = null;
     }
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+    if (mediaRecorderRef.current && (mediaRecorderRef.current as any).stream) {
+      (mediaRecorderRef.current as any).stream.getTracks().forEach((t: any) => t.stop());
     }
     if (audioContextRef.current) {
       audioContextRef.current.close();

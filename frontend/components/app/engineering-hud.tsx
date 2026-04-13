@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useRoomContext } from '@livekit/components-react';
-import { RoomEvent } from 'livekit-client';
+// import { useRoomContext } from '@livekit/components-react';
+// import { RoomEvent } from 'livekit-client';
 import { Cpu, HardDrive, Battery, Shield, Zap, User, Fingerprint, BrainCircuit } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/shadcn/utils';
@@ -24,38 +24,29 @@ interface TelemetryData {
 }
 
 export function EngineeringHUD() {
-    const room = useRoomContext();
+    // const room = useRoomContext();
     const [data, setData] = useState<TelemetryData | null>(null);
 
+    // TODO: Migrar para telemetria real vinda do Jarvis Native WebSocket
     useEffect(() => {
-        if (!room) return;
+        // Mock de telemetria para manter a UI viva enquanto o sistema offline é refinado
+        const interval = setInterval(() => {
+            setData({
+                type: 'telemetry_update',
+                cpu: 15 + Math.random() * 10,
+                ram: 42 + Math.random() * 5,
+                battery: 98,
+                gpu: 5 + Math.random() * 5,
+                model: 'Jarvis Native',
+                persona: 'Assistant',
+                face_emotion: 'Neutral',
+                face_identity: 'Commander',
+                is_reasoning: false
+            });
+        }, 3000);
 
-        const handleData = (payload: Uint8Array, participant: any, kind: any, topic?: string) => {
-            if (topic === 'telemetry') {
-                try {
-                    const decoder = new TextDecoder();
-                    const json = JSON.parse(decoder.decode(payload));
-                    if (json.type === 'telemetry_update') {
-                        setData(prev => ({ ...prev, ...json }));
-                    }
-                } catch (e) {
-                    console.error('Error parsing telemetry:', e);
-                }
-            } else if (topic === 'perception') {
-                 // Captura atualizações de percepção enviadas via DataChannel pelo perception_manager
-                 try {
-                    const decoder = new TextDecoder();
-                    const json = JSON.parse(decoder.decode(payload));
-                    setData(prev => ({ ...prev, ...json }));
-                } catch (e) { }
-            }
-        };
-
-        room.on(RoomEvent.DataReceived, handleData);
-        return () => {
-            room.off(RoomEvent.DataReceived, handleData);
-        };
-    }, [room]);
+        return () => clearInterval(interval);
+    }, []);
 
     if (!data) return null;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { useVoiceAssistant, useTrackVolume } from '@livekit/components-react';
+// import { useVoiceAssistant, useTrackVolume } from '@livekit/components-react';
 
 function hexNumToRgb(hex: number): [number, number, number] {
     return [(hex >> 16) & 0xff, (hex >> 8) & 0xff, hex & 0xff];
@@ -241,13 +241,19 @@ export const VantaController = ({
     vantaRef: React.MutableRefObject<any>;
     isConnected?: boolean;
 }) => {
-    const { audioTrack } = useVoiceAssistant();
-    const volume = useTrackVolume(audioTrack);
+    // Hooks do LiveKit removidos para evitar erro de contexto
+    // const { audioTrack } = useVoiceAssistant();
+    // const volume = useTrackVolume(audioTrack);
 
     useEffect(() => {
         if (!isConnected) return;
-        vantaRef.current?.setVolume(volume ?? 0);
-    }, [volume, vantaRef, isConnected]);
+        // Mock de volume pulsante quando conectado, ou fixo em 0.1
+        const interval = setInterval(() => {
+            vantaRef.current?.setVolume(0.05 + Math.random() * 0.05);
+        }, 100);
+        
+        return () => clearInterval(interval);
+    }, [vantaRef, isConnected]);
 
     return null;
 };
