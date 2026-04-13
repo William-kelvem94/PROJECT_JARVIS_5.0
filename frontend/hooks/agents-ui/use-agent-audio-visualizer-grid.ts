@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type AgentState } from '@livekit/components-react';
+import { type AgentState } from '@/types/agent';
 
 export interface Coordinate {
   x: number;

@@ -61,7 +61,6 @@ class PerceptionManager:
     def __init__(self):
         self._snapshot = PerceptionSnapshot()
         self._lock = threading.Lock()
-        self._room = None
         self._running = False
         self._camera_thread: Optional[threading.Thread] = None
         self._event_loop: Optional[asyncio.AbstractEventLoop] = None
@@ -118,7 +117,6 @@ class PerceptionManager:
 
         if updates:
             self._update(**updates)
-            self._async_publish()
 
     # ── Camera loop (background thread) ───────────────────────────────────────
 
@@ -265,43 +263,13 @@ class PerceptionManager:
 
     # ── Async LiveKit publish ──────────────────────────────────────────────────
 
-    def _async_publish(self):
-        """Fire-and-forget: publish current snapshot to LiveKit from any thread."""
-        if self._event_loop and not self._event_loop.is_closed():
-            asyncio.run_coroutine_threadsafe(
-                self._publish_once(), self._event_loop
-            )
 
-    async def _publish_once(self):
-        if not self._room:
-            return
-        try:
-            state = getattr(self._room, "connection_state", None)
-            if state == "connected":
-                await self._room.local_participant.publish_data(
-                    json.dumps(self.get_snapshot()),
-                    topic="perception",
-                )
-        except Exception as e:
-            logger.debug(f"[Perception] Publish error: {e}")
-
-    async def publish_loop(self):
-        """
-        Async task: publish perception state to LiveKit every 2 seconds.
-        Schedule with asyncio.create_task(perception_manager.publish_loop()).
-        """
-        self._event_loop = asyncio.get_running_loop()
-        while self._running:
-            await asyncio.sleep(2.0)
-            await self._publish_once()
 
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
-    def start(self, room=None):
+    def start(self):
         if self._running:
             return
-        if room:
-            self._room = room
         self._running = True
 
         # Camera thread (skip if disabled)

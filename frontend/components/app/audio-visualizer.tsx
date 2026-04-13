@@ -1,5 +1,5 @@
 import { type MotionProps, motion } from 'motion/react';
-import { useVoiceAssistant } from '@livekit/components-react';
+import { useJarvis } from '@/context/JarvisContext';
 import { AppConfig } from '@/app-config';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/shadcn/utils';
@@ -39,7 +39,10 @@ export function AudioVisualizer({
   ...props
 }: AudioVisualizerProps) {
   const { audioVisualizerType } = appConfig;
-  const { state, audioTrack } = useVoiceAssistant();
+  const { agentState, volume } = useJarvis();
+
+  // Mapeamento de volume: O Analyser retorna 0-255, normalizamos para 0-1
+  const normalizedVolume = volume / 255;
 
   switch (audioVisualizerType) {
     case 'aura': {
@@ -47,8 +50,8 @@ export function AudioVisualizer({
       return (
         <motion.div className={cn('size-[300px] md:size-[450px]', className)} {...props}>
           <AgentAudioVisualizerAura
-            state={state}
-            audioTrack={audioTrack}
+            state={agentState as any}
+            volume={normalizedVolume}
             color={audioVisualizerColor}
             colorShift={audioVisualizerAuraColorShift}
             className="w-full h-full"
@@ -61,8 +64,8 @@ export function AudioVisualizer({
       return (
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerWave
-            state={state}
-            audioTrack={audioTrack}
+            state={agentState as any}
+            volume={normalizedVolume}
             color={audioVisualizerColor}
             lineWidth={isChatOpen ? audioVisualizerWaveLineWidth * 2 : audioVisualizerWaveLineWidth}
             className="size-[300px] md:size-[450px]"
@@ -87,8 +90,8 @@ export function AudioVisualizer({
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerGrid
             size={size}
-            state={state}
-            audioTrack={audioTrack}
+            state={agentState as any}
+            volume={normalizedVolume}
             rowCount={audioVisualizerGridRowCount}
             columnCount={audioVisualizerGridColumnCount}
             radius={Math.round(
@@ -105,8 +108,8 @@ export function AudioVisualizer({
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerRadial
             size="xl"
-            state={state}
-            audioTrack={audioTrack}
+            state={agentState as any}
+            volume={normalizedVolume}
             radius={audioVisualizerRadialRadius}
             barCount={audioVisualizerRadialBarCount}
             className="size-[450px]"
@@ -143,8 +146,8 @@ export function AudioVisualizer({
         >
           <AgentAudioVisualizerBar
             size={size}
-            state={state}
-            audioTrack={audioTrack}
+            state={agentState as any}
+            volume={normalizedVolume}
             barCount={audioVisualizerBarCount}
             className="w-full h-full gap-2"
           />

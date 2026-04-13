@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { JarvisProvider } from '@/context/JarvisContext';
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
 import dynamic from 'next/dynamic';
@@ -12,7 +13,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
   const [participantName, setParticipantName] = useState<string>('user');
 
   return (
-    <>
+    <JarvisProvider>
       <main className="h-svh flex flex-col items-center justify-center p-8 overflow-hidden bg-black text-white">
         <div className="w-full max-w-2xl mx-auto flex flex-col items-center gap-8">
           <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
@@ -33,6 +34,6 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
           } as React.CSSProperties
         }
       />
-    </>
+    </JarvisProvider>
   );
 }

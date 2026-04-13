@@ -5,9 +5,12 @@ import numpy as np
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-# Importa as engines nativas que já existem no projeto
 from .perception import voice_engine
+from .perception.voice_engine import identify_speaker, _get_oww
+from .perception.perception_manager import perception_manager
 from .chat_pipeline import chat_reply
+import psutil
+import torch
 
 HAS_EDGE_TTS = False
 try:
@@ -52,11 +55,22 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             # 1. Transcrição (STT) - Síncrona (Off-thread)
             text = await asyncio.to_thread(transcribe_offline, audio_int16)
             
+            # 1.1 Injeta Percepção no Contexto
+            perception = perception_manager.get_snapshot()
+            
+            # Tenta identificar o falante pelo áudio atual (Biometria Vocal)
+            speaker_name, speaker_conf = await asyncio.to_thread(identify_speaker, audio_int16)
+            person = speaker_name or perception.get('face_identity') or "Usuário"
+            emotion = perception.get('face_emotion', 'neutral')
+            
+            # Enriquece a mensagem com o que o Jarvis "vê" e "ouve"
+            enriched_text = f"Contexto Sensorial -> Falante: {person} (Confiança: {speaker_conf}). Emoção: {emotion}. Mensagem: {text}"
+            
             if not text or len(text.strip()) < 2:
                 logger.info("❌ Transcrição irrelevante ou ruído.")
                 return
                 
-            logger.success(f"🗣️ Transcrição STT (Usuário): '{text}'")
+            logger.success(f"🗣️ Reconhecido: {person} | '{text}' [{emotion}]")
             try: await websocket.send_json({"type": "message", "role": "user", "text": text})
             except: pass
                 
@@ -70,7 +84,7 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             except: pass
 
             is_first_chunk = True
-            async for chunk in chat_stream("jarvis_user", text):
+            async for chunk in chat_stream("jarvis_user", enriched_text):
                 sentence_buffer += chunk
                 full_reply += chunk
                 
@@ -144,6 +158,30 @@ async def websocket_voice_endpoint(websocket: WebSocket):
         except: pass
 
     asyncio.create_task(initial_greeting())
+    
+    # Modelo Wake Word
+    oww = _get_oww()
+    
+    # Task de Telemetria (HUD)
+    async def telemetry_loop():
+        while _active_voice_websocket == websocket:
+            try:
+                percep = perception_manager.get_snapshot()
+                telemetry = {
+                    "type": "telemetry_update",
+                    "cpu": psutil.cpu_percent(),
+                    "ram": psutil.virtual_memory().percent,
+                    "gpu": 0, # Placeholder se não tiver GPUtil
+                    "face_emotion": percep.get("face_emotion"),
+                    "face_identity": percep.get("face_identity"),
+                    "is_reasoning": _global_processing_lock.locked(),
+                    "model": "WILL-JARVIS 5.0"
+                }
+                await websocket.send_json(telemetry)
+            except: break
+            await asyncio.sleep(2.0)
+
+    asyncio.create_task(telemetry_loop())
     audio_buffer = bytearray()
     
     is_speaking = False
@@ -160,6 +198,17 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                 continue
                 
             chunk_arr = np.frombuffer(data, dtype=np.int16)
+            
+            # Detecção de Wake Word (Hey Jarvis) no stream do browser
+            if oww:
+                chunk_float = chunk_arr.astype(np.float32) / 32768.0
+                # Só processa se o chunk for do tamanho esperado pelo oww (ou múltiplo)
+                if len(chunk_float) >= 1280: # Tamanho padrão do OpenWakeWord
+                   prediction = oww.predict(chunk_float)
+                   for model, score in prediction.items():
+                       if score > 0.45:
+                           logger.success(f"🎙️ Wake Word '{model}' detectada via Browser!")
+                           await websocket.send_json({"type": "wake_word_detected", "model": model})
             
             # Detecção de energia simplificada
             energy = np.abs(chunk_arr).mean()

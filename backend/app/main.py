@@ -13,6 +13,7 @@ sys.path.insert(0, str(base_dir))
 from . import routes
 from . import voice_websocket
 from .utils.dream_processor import dream_processor
+from .perception.perception_manager import perception_manager
 import asyncio
 from loguru import logger
 from typing import Dict, Any
@@ -26,8 +27,12 @@ _start_time = datetime.datetime.now()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("[Startup] JARVIS 5.0 iniciando...")
+    # Inicia Percepção Local
+    perception_manager.start()
     asyncio.create_task(dream_processor.dream_loop())
     yield
+    logger.info("[Shutdown] Finalizando serviços...")
+    perception_manager.stop()
 
 app = FastAPI(lifespan=lifespan)
 

@@ -7,12 +7,7 @@ import {
   useMotionValue,
   useMotionValueEvent,
 } from 'motion/react';
-import {
-  type AgentState,
-  type TrackReference,
-  type TrackReferenceOrPlaceholder,
-  useTrackVolume,
-} from '@livekit/components-react';
+import { type AgentState } from '@/types/agent';
 
 const DEFAULT_SPEED = 5;
 const DEFAULT_AMPLITUDE = 0.025;
@@ -37,7 +32,7 @@ function useAnimatedValue<T>(initialValue: T) {
 
 interface UseAgentAudioVisualizerWaveAnimatorArgs {
   state?: AgentState;
-  audioTrack?: LocalAudioTrack | RemoteAudioTrack | TrackReferenceOrPlaceholder;
+  volume?: number;
 }
 
 export function useAgentAudioVisualizerWave({
@@ -49,10 +44,8 @@ export function useAgentAudioVisualizerWave({
   const { value: frequency, animate: animateFrequency } = useAnimatedValue(DEFAULT_FREQUENCY);
   const { value: opacity, animate: animateOpacity } = useAnimatedValue(1.0);
 
-  const volume = useTrackVolume(audioTrack as TrackReference, {
-    fftSize: 512,
-    smoothingTimeConstant: 0.55,
-  });
+  // Volume injetado via parâmetro
+  const _volume = volume || 0;
 
   useEffect(() => {
     switch (state) {
@@ -96,10 +89,10 @@ export function useAgentAudioVisualizerWave({
 
   useEffect(() => {
     if (state === 'speaking') {
-      animateAmplitude(0.015 + 0.4 * volume, { duration: 0 });
-      animateFrequency(20 + 60 * volume, { duration: 0 });
+      animateAmplitude(0.015 + 0.4 * _volume, { duration: 0 });
+      animateFrequency(20 + 60 * _volume, { duration: 0 });
     }
-  }, [state, volume, animateAmplitude, animateFrequency]);
+  }, [state, _volume, animateAmplitude, animateFrequency]);
 
   return {
     speed,

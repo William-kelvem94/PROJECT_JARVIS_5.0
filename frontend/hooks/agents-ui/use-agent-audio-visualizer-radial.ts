@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { type AgentState } from '@livekit/components-react';
+import { type AgentState } from '@/types/agent';
 
 function findGcdLessThan(columns: number, max: number = columns): number {
   function gcd(a: number, b: number): number {
