@@ -30,6 +30,32 @@ async def lifespan(app: FastAPI):
     # Inicia Percepção Local
     perception_manager.start()
     asyncio.create_task(dream_processor.dream_loop())
+    
+    # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
+    async def hardware_telemetry():
+        while True:
+            try:
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory().percent
+                # Se a RAM estiver alta, avisa no log de atividade
+                status = "warning" if ram > 85 else "success"
+                detail = f"CPU: {cpu}% | RAM: {ram}%"
+                if ram > 85: detail += " [MODO ANTIGRAVIDADE ATIVO]"
+                
+                # Opcional: Enviar via sistema de log que já temos
+                from .utils.log_manager import log_manager
+                log_manager.save_log({
+                    "type": "telemetry",
+                    "cpu": cpu,
+                    "ram": ram,
+                    "status": status,
+                    "timestamp": datetime.datetime.now().isoformat()
+                })
+            except: pass
+            await asyncio.sleep(10) # Atualiza a cada 10s para não pesar
+
+    asyncio.create_task(hardware_telemetry())
+    
     yield
     logger.info("[Shutdown] Finalizando serviços...")
     perception_manager.stop()
