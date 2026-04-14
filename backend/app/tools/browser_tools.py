@@ -34,12 +34,20 @@ class BrowserTools(BaseTool):
     @agents.llm.function_tool(description="Realiza uma busca na web usando o navegador local (sem necessidade de API externa).")
     async def web_search_no_api(self, query: str):
         from ..browser_engine import browser_manager
+        from ..unified_memory import memory
         try:
             search_url = f"https://duckduckgo.com/html/?q={query.replace(' ', '+')}"
             await browser_manager.navigate(search_url)
             content = await browser_manager.get_page_content()
+            
+            # Log de atividade para o HUD
             asyncio.create_task(self._log_activity("Pesquisa", f"Buscando: {query}", "info"))
-            return content[:6000] # Retorna o texto da página de resultados para o Jarvis ler
+            
+            # Registro automático no aprendizado do Obsidian
+            insight = f"Pesquisa web realizada sobre: {query}. Resultados extraídos da fonte DuckDuckGo."
+            await memory.add_memory("jarvis_user", insight, category="aprendizado", source="web_search")
+            
+            return content[:6000]
         except Exception as e:
             return f"Falha na busca: {e}"
 
