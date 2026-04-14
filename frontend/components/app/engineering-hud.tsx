@@ -27,23 +27,30 @@ export function EngineeringHUD() {
     // const room = useRoomContext();
     const [data, setData] = useState<TelemetryData | null>(null);
 
-    // TODO: Migrar para telemetria real vinda do Jarvis Native WebSocket
+    // Conexão com a telemetria em tempo real do Backend
     useEffect(() => {
-        // Mock de telemetria para manter a UI viva enquanto o sistema offline é refinado
-        const interval = setInterval(() => {
-            setData({
-                type: 'telemetry_update',
-                cpu: 15 + Math.random() * 10,
-                ram: 42 + Math.random() * 5,
-                battery: 98,
-                gpu: 5 + Math.random() * 5,
-                model: 'Jarvis Native',
-                persona: 'Assistant',
-                face_emotion: 'Neutral',
-                face_identity: 'Commander',
-                is_reasoning: false
-            });
-        }, 3000);
+        const fetchStatus = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const health = await response.json();
+                
+                setData(prev => ({
+                    ...prev,
+                    type: 'telemetry_update',
+                    cpu: health.cpu,
+                    ram: health.ram,
+                    battery: prev?.battery || 99,
+                    model: 'Jarvis Native v5.3',
+                    persona: 'Engineer Core',
+                    is_reasoning: health.cpu > 50 // Inteligência visual: se CPU sobe, ele está 'pensando'
+                } as TelemetryData));
+            } catch (e) {
+                console.warn("HUD: Falha ao conectar com telemetria local.");
+            }
+        };
+
+        const interval = setInterval(fetchStatus, 5000); // Atualiza o HUD a cada 5 segundos
+        fetchStatus();
 
         return () => clearInterval(interval);
     }, []);
