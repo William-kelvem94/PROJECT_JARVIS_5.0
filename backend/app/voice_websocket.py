@@ -246,8 +246,23 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                     
                     # Silêncio detectado (0.8 segundos de margem para resposta mais rápida)
                     if silence_frames > (0.8 * frames_per_sec):
-                        logger.info("🗣️ Fim de fala detectado!")
-                        full_audio = np.frombuffer(audio_buffer, dtype=np.int16).copy()
+                        # Resampling simples: Se o áudio veio do browser (geralmente 48kHz), 
+                        # reduzimos para 16kHz (pegando 1 a cada 3 amostras)
+                        # Isso é vital para o Whisper entender o que você diz!
+                        full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
+                        
+                        # Se o buffer for muito grande para o tempo decorrido, 
+                        # é porque a taxa de amostragem está alta (ex: 48kHz)
+                        # Calculamos o pulo necessário para chegar em 16kHz
+                        # (Aproximadamente 3 se for 48kHz, ou 1 se já for 16kHz)
+                        sample_ratio = len(full_audio_raw) / (len(audio_buffer) / (frames_per_sec * 2)) # Estimativa
+                        step = max(1, int(len(full_audio_raw) / ( (len(full_audio_raw)/frames_per_sec) * 16000 ) ))
+                        
+                        if step > 1:
+                            logger.debug(f"🔄 Resampling áudio (Step: {step})")
+                            full_audio = full_audio_raw[::step].copy()
+                        else:
+                            full_audio = full_audio_raw.copy()
                         
                         audio_buffer = bytearray()
                         is_speaking = False
