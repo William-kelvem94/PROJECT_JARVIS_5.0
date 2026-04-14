@@ -245,7 +245,7 @@ def identify_speaker(audio_int16: np.ndarray) -> tuple:
 def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
     """Offline transcription via faster-whisper (Level C). Returns text or None."""
     whisper = _get_whisper()
-    if whisper is None or len(audio_int16) < SAMPLE_RATE:
+    if whisper is None or len(audio_int16) < 8000: # Aceita áudios a partir de 0.5s
         return None
     try:
         # Beam size 1 é o segredo para CPUs i3/Notebooks: 3x mais rápido!
