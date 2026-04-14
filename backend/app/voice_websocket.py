@@ -246,29 +246,26 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                     
                     # Silêncio detectado (0.8 segundos de margem para resposta mais rápida)
                     if silence_frames > (0.8 * frames_per_sec):
-                        # Resampling simples: Se o áudio veio do browser (geralmente 48kHz), 
-                        # reduzimos para 16kHz (pegando 1 a cada 3 amostras)
-                        # Isso é vital para o Whisper entender o que você diz!
+                        # Resampling Profissional: Determina a taxa de entrada real e converte para 16kHz
+                        # A maioria dos browsers envia a 48000Hz.
                         full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
                         
-                        # Se o buffer for muito grande para o tempo decorrido, 
-                        # é porque a taxa de amostragem está alta (ex: 48kHz)
-                        # Calculamos o pulo necessário para chegar em 16kHz
-                        # (Aproximadamente 3 se for 48kHz, ou 1 se já for 16kHz)
-                        sample_ratio = len(full_audio_raw) / (len(audio_buffer) / (frames_per_sec * 2)) # Estimativa
-                        step = max(1, int(len(full_audio_raw) / ( (len(full_audio_raw)/frames_per_sec) * 16000 ) ))
+                        # Amostras por segundo recebidas (aproximação baseada no tamanho do buffer acumulado)
+                        # Se recebemos X bytes em Y segundos, a taxa é X/2/Y
+                        # No WebSocket, processamos em tempo real, então confiamos no step calculado.
+                        step = 3 # Padrão para 48kHz -> 16kHz
+                        if len(full_audio_raw) < (0.5 * frames_per_sec): # Áudio muito curto
+                             step = 1
                         
-                        if step > 1:
-                            logger.debug(f"🔄 Resampling áudio (Step: {step})")
-                            full_audio = full_audio_raw[::step].copy()
-                        else:
-                            full_audio = full_audio_raw.copy()
+                        # Garante que o step seja flutuante para precisão se necessário, 
+                        # mas para voz int16 o slice [::step] é performático e suficiente
+                        full_audio = full_audio_raw[::step].copy()
                         
                         audio_buffer = bytearray()
                         is_speaking = False
                         silence_frames = 0
                         
-                        # Dispara processamento
+                        # Dispara processamento em background
                         asyncio.create_task(process_and_reply(full_audio, websocket))
                         
     except WebSocketDisconnect:

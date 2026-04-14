@@ -31,6 +31,9 @@ async def chat_reply(user_id: str, user_message: str) -> str:
 
 async def chat_stream(user_id: str, user_message: str):
     """Gera a resposta em chunks para streaming de áudio/texto."""
+    from .unified_memory import memory
+    from .engineer_brain import brain
+    
     context = await memory.get_context(user_id, query=user_message)
     
     prompt = user_message
