@@ -116,3 +116,14 @@ def save_vault_memory(req: VaultMemoryRequest):
     )
     return {"saved": True, "path": path}
 
+@router.get("/health")
+async def health_check():
+    """Telemetria oficial para o HUD de Engenharia."""
+    import psutil
+    return {
+        "status": "online",
+        "cpu": psutil.cpu_percent(),
+        "ram": psutil.virtual_memory().percent,
+        "is_ai_ready": True
+    }
+

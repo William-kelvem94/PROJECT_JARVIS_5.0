@@ -110,15 +110,17 @@ class EngineerBrain:
                     if stream:
                         async for line in response.content:
                             if line:
-                                line_str = line.decode('utf-8', errors='ignore').strip()
-                                if line_str.startswith("data: "):
-                                    data_content = line_str[6:]
-                                    if data_content == "[DONE]": break
-                                    try:
+                                try:
+                                    line_str = line.decode('utf-8', errors='ignore').strip()
+                                    if line_str.startswith("data: "):
+                                        data_content = line_str[6:].strip()
+                                        if data_content == "[DONE]": break
                                         chunk = json.loads(data_content)
-                                        content = chunk['choices'][0]['delta'].get('content', '')
-                                        if content: yield content
-                                    except: continue
+                                        if 'choices' in chunk and len(chunk['choices']) > 0:
+                                            content = chunk['choices'][0]['delta'].get('content', '')
+                                            if content: yield content
+                                except Exception:
+                                    continue
                     else:
                         data = await response.json()
                         yield data['choices'][0]['message']['content']

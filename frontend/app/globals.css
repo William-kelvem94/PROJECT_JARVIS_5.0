@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Inter", "Outfit", sans-serif;
+  --font-mono: "Fira Code", monospace;
+
+  --color-jarvis-cyan: #00f2ff;
+  --color-jarvis-violet: #7000ff;
+  --color-jarvis-bg: #020205;
+  --color-jarvis-card: rgba(10, 10, 20, 0.6);
+}
+
+:root {
+  --background: #020205;
+  --foreground: #ffffff;
+  --card: rgba(5, 5, 10, 0.8);
+  --card-foreground: #ffffff;
+  --popover: #05050a;
+  --popover-foreground: #ffffff;
+  --primary: #00f2ff;
+  --primary-foreground: #000000;
+  --secondary: #7000ff;
+  --secondary-foreground: #ffffff;
+  --muted: rgba(255, 255, 255, 0.1);
+  --muted-foreground: rgba(255, 255, 255, 0.5);
+  --accent: #00f2ff;
+  --accent-foreground: #000000;
+  --destructive: #ff0055;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: #00f2ff;
+  --radius: 1rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ESTILOS PREMIUM JARVIS NATIVE
+   ───────────────────────────────────────────────────────────────────────────── */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow: hidden; /* Foco no HUD */
+}
+
+.cyber-glass {
+  background: rgba(10, 10, 15, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+}
+
+.jarvis-glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+}
+
+.jarvis-glow-violet {
+  box-shadow: 0 0 15px rgba(112, 0, 255, 0.3);
+}
+
+.jarvis-text-gradient {
+  background: linear-gradient(90deg, #00f2ff, #7000ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-ring 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Scrollbar for Luxury */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 242, 255, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 255, 0.5);
+}
