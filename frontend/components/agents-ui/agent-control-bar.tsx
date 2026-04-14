@@ -1,7 +1,5 @@
-'use client';
-
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
-import { Loader, MessageSquareTextIcon, Pin, SendHorizontal, Mic, MicOff, PhoneOff, Monitor } from 'lucide-react';
+import { Loader, MessageSquareTextIcon, Pin, SendHorizontal, Mic, MicOff, PhoneOff, Monitor, Video, VideoOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
@@ -21,6 +19,7 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!message.trim()) return;
     try {
       setIsSending(true);
       await onSend(message);
@@ -46,6 +45,12 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
         disabled={!chatOpen}
         placeholder="Digite algo para o Jarvis Native..."
         onChange={(e) => setMessage(e.target.value)}
+        onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e as any);
+            }
+        }}
         className="field-sizing-content max-h-16 min-h-8 flex-1 py-2 [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed bg-transparent text-white"
       />
       <Button
@@ -53,7 +58,6 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
         type="submit"
         disabled={isDisabled}
         variant={isDisabled ? 'secondary' : 'default'}
-        title={isSending ? 'Enviando...' : 'Enviar'}
         className="self-end disabled:cursor-not-allowed"
       >
         {isSending ? <Loader className="animate-spin" /> : <SendHorizontal />}
@@ -73,12 +77,7 @@ export interface AgentControlBarControls {
 export interface AgentControlBarProps {
   variant?: 'default' | 'outline' | 'livekit';
   controls?: AgentControlBarControls;
-  isConnected?: boolean;
   isChatOpen?: boolean;
-  isMuted?: boolean;
-  onMuteChange?: (muted: boolean) => void;
-  onScreenShare?: () => void;
-  onDisconnect?: () => void;
   onIsChatOpenChange?: (open: boolean) => void;
   className?: string;
 }
@@ -87,11 +86,6 @@ export function AgentControlBar({
   variant = 'default',
   controls,
   isChatOpen = false,
-  isConnected = false,
-  isMuted = false,
-  onMuteChange,
-  onScreenShare,
-  onDisconnect,
   onIsChatOpenChange,
   className,
   ...props
@@ -101,6 +95,18 @@ export function AgentControlBar({
   const [isLocked, setIsLocked] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { 
+    isConnected, 
+    isMicEnabled, 
+    isCameraEnabled, 
+    isScreenSharing, 
+    toggleMic, 
+    toggleCamera, 
+    toggleScreenShare, 
+    disconnect,
+    sendMessage 
+  } = useJarvis();
+
   useEffect(() => {
     const handleMouseMove = () => {
       setIsVisible(true);
@@ -108,7 +114,7 @@ export function AgentControlBar({
       if (!isChatOpen && !isChatOpenUncontrolled && !isLocked) {
         hideTimeoutRef.current = setTimeout(() => {
           setIsVisible(false);
-        }, 3000);
+        }, 5000); // 5 seguntos de visibilidade
       }
     };
 
@@ -120,8 +126,6 @@ export function AgentControlBar({
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
   }, [isChatOpen, isChatOpenUncontrolled, isLocked]);
-
-  const { sendMessage } = useJarvis();
 
   const handleSendMessage = async (message: string) => {
      sendMessage(message);
@@ -164,14 +168,15 @@ export function AgentControlBar({
           />
         </motion.div>
 
-        <div className="flex gap-1">
-          <div className="flex grow gap-1 items-center">
+        <div className="flex gap-1 items-center">
+          <div className="flex grow gap-2 items-center">
             <button
               onClick={() => setIsLocked(!isLocked)}
               className={cn(
-                "p-2 rounded-full transition-all duration-300 mr-2",
+                "p-2 rounded-full transition-all duration-300 mr-1",
                 isLocked ? "text-[#43d9f0] bg-[#1da3b9]/20" : "text-white/40 hover:text-white/60 hover:bg-white/5"
               )}
+              title="Fixar Barra"
             >
               <Pin className="size-4" />
             </button>
@@ -179,11 +184,24 @@ export function AgentControlBar({
             {controls?.microphone !== false && (
               <Toggle 
                 aria-label="Alternar microfone" 
-                pressed={!isMuted} 
-                onPressedChange={(state) => onMuteChange?.(!state)}
-                className={cn(isMuted && "text-red-400 bg-red-400/10")}
+                pressed={isMicEnabled} 
+                onPressedChange={() => toggleMic()}
+                className={cn(!isMicEnabled && "text-red-400 bg-red-400/10")}
+                disabled={!isConnected}
               >
-                 {isMuted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                 {!isMicEnabled ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+              </Toggle>
+            )}
+
+            {controls?.camera !== false && (
+              <Toggle 
+                aria-label="Alternar câmera" 
+                pressed={isCameraEnabled} 
+                onPressedChange={() => toggleCamera()}
+                className={cn(isCameraEnabled ? "text-[#43d9f0] bg-[#1da3b9]/10" : "text-white/40")}
+                disabled={!isConnected}
+              >
+                 {!isCameraEnabled ? <VideoOff className="size-4" /> : <Video className="size-4" />}
               </Toggle>
             )}
 
@@ -191,9 +209,13 @@ export function AgentControlBar({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onScreenShare}
-                className="text-white/40 hover:text-[#1da3b9] hover:bg-[#1da3b9]/10 rounded-md"
-                title="Compartilhar Tela (Visão)"
+                onClick={() => toggleScreenShare()}
+                className={cn(
+                    "rounded-md",
+                    isScreenSharing ? "text-[#43d9f0] bg-[#1da3b9]/10" : "text-white/40 hover:text-[#1da3b9] hover:bg-[#1da3b9]/10"
+                )}
+                title="Compartilhar Tela"
+                disabled={!isConnected}
               >
                 <Monitor className="size-4" />
               </Button>
@@ -212,14 +234,16 @@ export function AgentControlBar({
             )}
           </div>
 
+          <div className="mx-2 h-6 w-[1px] bg-white/10" />
+
           {controls?.leave !== false && (
             <Button
-              onClick={onDisconnect}
+              onClick={() => disconnect()}
               disabled={!isConnected}
               variant="destructive"
-              className="rounded-full font-mono text-xs font-bold tracking-wider"
+              className="rounded-full font-mono text-xs font-bold tracking-wider px-6 h-9"
             >
-               ENCERRAR CHAMADA
+               ENCERRAR
             </Button>
           )}
         </div>
@@ -227,3 +251,4 @@ export function AgentControlBar({
     </motion.div>
   );
 }
+
