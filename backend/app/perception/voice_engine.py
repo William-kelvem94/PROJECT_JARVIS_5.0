@@ -33,7 +33,7 @@ from loguru import logger
 SAMPLE_RATE = 16_000          # Hz — required by all models
 CHUNK_DURATION = 0.5          # seconds per processing chunk
 CHUNK_SIZE = int(SAMPLE_RATE * CHUNK_DURATION)
-ANALYSIS_WINDOW = 5.0         # seconds of audio for Level B/C analysis
+ANALYSIS_WINDOW = 2.0         # Reduzido de 5s para 2s para resposta rápida
 ANALYSIS_CHUNKS = int(ANALYSIS_WINDOW / CHUNK_DURATION)
 
 VOICES_DIR = os.path.join(
@@ -154,18 +154,24 @@ def _get_encoder():
 
 def _get_whisper():
     global _whisper_model
+    import os
     if _whisper_model is None and HAS_WHISPER:
-            import faster_whisper  # type: ignore
-            import torch # type: ignore
+        try:
+            from faster_whisper import WhisperModel  # type: ignore
+            import torch  # type: ignore
+            # No i3 com 1050Ti lotada, forçamos o modelo mais leve possível
             device = "cuda" if torch.cuda.is_available() else "cpu"
             compute_type = "float16" if device == "cuda" else "int8"
             
-            # O modelo 'base' resolve o problema de repetições infinitas do 'tiny'
-            _whisper_model = WhisperModel("base", device=device, compute_type=compute_type)
-            logger.success(f"[VoiceEngine] ✅ faster-whisper 'base' (Estável) carregado em {device.upper()}")
+            # Mudando de 'base' para 'tiny' para não travar sua CPU
+            model_size = os.environ.get("JARVIS_WHISPER_MODEL", "tiny")
+            _whisper_model = WhisperModel(model_size, device=device, compute_type=compute_type)
+            logger.success(f"[VoiceEngine] ✅ faster-whisper '{model_size}' (Modo Veloz) carregado em {device.upper()}")
         except Exception as e:
             logger.error(f"[VoiceEngine] faster-whisper init failed: {e}")
     return _whisper_model
+
+
 
 
 # ── Enrolled voice embeddings (Level B) ───────────────────────────────────────
@@ -242,9 +248,16 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
     if whisper is None or len(audio_int16) < SAMPLE_RATE:
         return None
     try:
+        # Beam size 1 é o segredo para CPUs i3/Notebooks: 3x mais rápido!
         audio_float = audio_int16.astype(np.float32) / 32768.0
-        segments, _ = whisper.transcribe(audio_float, beam_size=3, language="pt")
+        segments, _ = whisper.transcribe(audio_float, beam_size=1, language="pt")
         text = " ".join(seg.text.strip() for seg in segments).strip()
+        
+        # Filtro de Alucinações
+        hallucinations = ["e o que eu vou fazer?", "e o que eu vou fazer..", "obrigado por assistir"]
+        if text.lower() in hallucinations or len(text) < 2:
+            return None
+            
         return text if text else None
     except Exception as e:
         logger.debug(f"[VoiceEngine] Offline STT error: {e}")
@@ -285,13 +298,15 @@ def _audio_loop():
     analysis_buffer: List[np.ndarray] = []
 
     def _sd_callback(indata, frames, time_info, status):
-        """Called by PortAudio thread — keep minimal, just enqueue."""
-        if status:
-            logger.debug(f"[VoiceEngine] Audio status: {status}")
-        chunk_int16 = (indata[:, 0] * 32767).astype(np.int16)
+        """Called by PortAudio thread — mantém o mais leve possível."""
         try:
+            if status:
+                # Se der overflow, apenas avisamos e continuamos, sem crashar
+                pass 
+            chunk_int16 = (indata[:, 0] * 32767).astype(np.int16)
             _chunk_q.put_nowait(chunk_int16)
-        except queue.Full:
+        except Exception:
+            pass
             pass  # drop silently under load
 
     try:

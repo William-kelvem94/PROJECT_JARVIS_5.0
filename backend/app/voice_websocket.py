@@ -55,6 +55,10 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             # 1. Transcrição (STT) - Síncrona (Off-thread)
             text = await asyncio.to_thread(transcribe_offline, audio_int16)
             
+            if text is None:
+                logger.debug("🔇 Nenhuma fala detectada no áudio.")
+                return
+
             # 1.1 Injeta Percepção no Contexto
             perception = perception_manager.get_snapshot()
             
@@ -66,8 +70,16 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             # Enriquece a mensagem com o que o Jarvis "vê" e "ouve"
             enriched_text = f"Contexto Sensorial -> Falante: {person} (Confiança: {speaker_conf}). Emoção: {emotion}. Mensagem: {text}"
             
-            if not text or len(text.strip()) < 2:
-                logger.info("❌ Transcrição irrelevante ou ruído.")
+            # Ignora se for vazio ou se for uma alucinação comum do Whisper em silêncio
+            hallucinations = ["e o que eu vou fazer?", "e o que eu vou fazer..", "obrigado por assistir"]
+            clean_text = text.strip().lower()
+
+            if not clean_text or any(h in clean_text for h in hallucinations):
+                logger.debug(f"🔇 Silêncio/Ruído ignorado: {text}")
+                return
+            
+            if len(clean_text) < 1: # Aceita qualquer coisa com pelo menos 1 letra
+                logger.info("❌ Transcrição muito curta.")
                 return
                 
             logger.success(f"🗣️ Reconhecido: {person} | '{text}' [{emotion}]")
@@ -197,23 +209,31 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                 audio_buffer = bytearray()
                 continue
                 
+            # Proteção: Garante que os bytes sejam múltiplos de 2 (int16)
+            if len(data) % 2 != 0:
+                data = data[:-1]
+                
             chunk_arr = np.frombuffer(data, dtype=np.int16)
             
             # Detecção de Wake Word (Hey Jarvis) no stream do browser
             if oww:
+                # O browser envia em 44.1k ou 48k. O OpenWakeWord quer 16k.
+                # Fazemos um subsampling simples (pega 1 a cada 3 amostras aprox)
+                # pcm_16k = chunk_arr[::3] 
                 chunk_float = chunk_arr.astype(np.float32) / 32768.0
+                
                 # Só processa se o chunk for do tamanho esperado pelo oww (ou múltiplo)
-                if len(chunk_float) >= 1280: # Tamanho padrão do OpenWakeWord
+                if len(chunk_float) >= 1280:
                    prediction = oww.predict(chunk_float)
                    for model, score in prediction.items():
                        if score > 0.45:
                            logger.success(f"🎙️ Wake Word '{model}' detectada via Browser!")
                            await websocket.send_json({"type": "wake_word_detected", "model": model})
             
-            # Detecção de energia simplificada
+            # Detecção de energia simplificada - Limiar reduzido para captar sussurros
             energy = np.abs(chunk_arr).mean()
             
-            if energy > 450: # Threshold ajustado 
+            if energy > 250: # Reduzido de 450 para 250 (mais sensível)
                 if not is_speaking:
                     is_speaking = True
                     logger.debug("🎙️ Capturando fala...")

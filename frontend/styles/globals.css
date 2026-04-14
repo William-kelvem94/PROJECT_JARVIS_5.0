@@ -166,4 +166,9 @@
     border-color: var(--jarvis-cyan);
     box-shadow: 0 0 15px var(--jarvis-glow);
   }
-}
+
+  /* Espelhamento Natural para Câmera */
+  .mirror {
+    transform: scaleX(-1);
+  }
+}

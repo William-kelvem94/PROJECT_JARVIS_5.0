@@ -60,10 +60,19 @@ export const SessionView = ({
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
   // Agora usamos o Contexto Global do Jarvis
-  const { isConnected, isSpeaking, messages, connect, disconnect } = useJarvis();
-  const [isMuted, setIsMuted] = useState(false); // Mute controlado localmente por enquanto
+  const { 
+    isConnected, 
+    isSpeaking, 
+    messages, 
+    connect, 
+    disconnect, 
+    isCameraEnabled,
+    localStream
+  } = useJarvis();
+  
   const [chatOpen, setChatOpen] = useState(false);
   const vantaEffectRef = useRef<any>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const { errors, clear: clearErrors } = useAgentErrors();
 
@@ -74,8 +83,8 @@ export const SessionView = ({
     leave: true,
     microphone: true,
     chat: appConfig.supportsChatInput,
-    camera: false, 
-    screenShare: true, // Habilitado para visão opcional
+    camera: true, 
+    screenShare: true,
   };
 
   const handleDisconnect = () => {
@@ -90,6 +99,13 @@ export const SessionView = ({
     }
   }, [isConnected, connect]);
 
+  // Sincroniza o stream com o elemento de vídeo de preview
+  React.useEffect(() => {
+    if (videoRef.current && isCameraEnabled && localStream) {
+        videoRef.current.srcObject = localStream;
+    }
+  }, [isCameraEnabled, localStream]);
+
   return (
     <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-black" {...props}>
       {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
@@ -97,6 +113,30 @@ export const SessionView = ({
       {isConnected && (
         <VantaController vantaRef={vantaEffectRef} isConnected={isConnected} />
       )}
+
+      {/* Preview da Câmera Local (Nativo) */}
+      <AnimatePresence>
+        {isCameraEnabled && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.5, x: 20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.5, x: 20 }}
+            className="absolute top-6 right-6 z-30 w-48 h-32 rounded-lg border border-[#1da3b9]/40 overflow-hidden shadow-lg shadow-[#1da3b9]/20"
+          >
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              muted 
+              playsInline 
+              className="w-full h-full object-cover mirror"
+            />
+            <div className="absolute bottom-1 left-2 flex items-center gap-1">
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-[9px] font-mono text-white/70">REC - LOCAL VISION</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         <div className="absolute inset-0 flex items-center justify-center">
@@ -114,16 +154,10 @@ export const SessionView = ({
             exit={{ opacity: 0, scale: 0.8 }}
             className="absolute z-20 top-[65%] flex flex-col items-center gap-4"
           >
-            <div className="relative px-6 py-2 bg-black/40 border border-violet-500/50 rounded-full backdrop-blur-xl">
-              <span className="text-[11px] font-bold text-violet-100 uppercase">Jarvis Falando...</span>
+            <div className="relative px-6 py-2 bg-black/40 border border-[#1da3b9]/50 rounded-full backdrop-blur-xl">
+              <span className="text-[11px] font-bold text-cyan-100 uppercase tracking-widest">Jarvis Responde...</span>
             </div>
           </motion.div>
-        )}
-
-        {isConnected && (
-          <div className="relative z-10 pointer-events-auto">
-            {/* TileLayout precisa ser refatorado futuramente para nao usar LiveKit se tiver chats nativos */}
-          </div>
         )}
 
         <ActiveConsole externalLogs={messages} />
@@ -153,15 +187,12 @@ export const SessionView = ({
             variant="livekit"
             controls={controls}
             isChatOpen={chatOpen}
-            isConnected={isConnected}
-            isMuted={isMuted}
-            onMuteChange={setIsMuted}
             onDisconnect={handleDisconnect}
             onIsChatOpenChange={setChatOpen}
-            onScreenShare={() => console.log("Iniciando compartilhamento de tela (Vision Offline)...")}
           />
         </div>
       </MotionBottom>
     </section>
   );
 };
+

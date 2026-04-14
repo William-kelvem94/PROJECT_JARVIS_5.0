@@ -13,6 +13,7 @@ import asyncio
 import json
 import time
 import threading
+import os
 import datetime
 from dataclasses import dataclass, asdict, field
 from typing import Optional, Callable, List
@@ -252,9 +253,13 @@ class PerceptionManager:
                 logger.info(f"[Perception] 🫡 Head: {gesture.head_gesture}")
 
             # Controle Dinamico de FPS (Para Notebooks nao travarem a CPU em 100%)
-            # Puxa 2 FPS por padrao, ou o configurado no .env
-            fps_limit = float(os.environ.get("JARVIS_PERCEPTION_FPS", "2.0"))
-            sleep_time = 1.0 / fps_limit
+            # Puxa 1.0 FPS por padrao (mais leve)
+            import os
+            try:
+                fps_limit = float(os.environ.get("JARVIS_PERCEPTION_FPS", "1.0"))
+                sleep_time = 1.0 / max(0.1, fps_limit)
+            except:
+                sleep_time = 1.0
             time.sleep(sleep_time)
 
         if cam:
@@ -268,11 +273,13 @@ class PerceptionManager:
     # ── Lifecycle ──────────────────────────────────────────────────────────────
 
     def start(self):
+        import os # Import local de segurança para evitar NameError em reloads
         if self._running:
             return
         self._running = True
 
         # Camera thread (skip if disabled)
+        # Se sua CPU/GPU estiver lenta, desative a camera no .env com JARVIS_DISABLE_CAMERA=true
         if os.environ.get("JARVIS_DISABLE_CAMERA", "false").lower() == "true":
             logger.info("[PerceptionManager] 📷 Camera desativada por configuracao. Apenas Voz Ativa.")
         else:
