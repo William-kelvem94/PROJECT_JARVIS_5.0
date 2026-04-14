@@ -5,84 +5,148 @@ import datetime
 from loguru import logger
 from ..local_memory import local_memory
 from ..engineer_brain import brain
+from .log_manager import log_manager
 
 class DreamProcessor:
     """
-    O 'Processador de Sonhos' do Jarvis.
-    Analisa logs de conversas passadas para extrair aprendizados, 
-    ajustar a personalidade e reforçar memórias importantes.
+    JARVIS Reflection Engine — O 'Eu Subconsciente' do Jarvis.
+    
+    Analisa os logs diários e interações para:
+    1. Extrair aprendizados técnicos e padrões de Will.
+    2. Gerar resumos contemplativos e reflexões sobre a evolução do sistema.
+    3. Persistir insights no Vault Obsidian (Segundo Cérebro).
     """
     
-    def __init__(self, logs_dir: str = "backend/data/logs"):
-        self.logs_dir = logs_dir
+    def __init__(self, data_dir: str = "backend/data"):
+        self.data_dir = data_dir
         self.is_dreaming = False
-    
-    async def capture_experiences(self) -> list:
-        """Lê os logs reais do sistema para análise."""
+
+    async def capture_experiences(self, date_str: str = None) -> list:
+        """Coleta logs de atividade e chat para análise."""
+        if not date_str:
+            date_str = datetime.date.today().isoformat()
+        
         experiences = []
         try:
-            # Busca logs de atividade reais salvos pelo log_manager
-            log_file = os.path.join(self.logs_dir, "activity.log")
-            if os.path.exists(log_file):
-                with open(log_file, "r", encoding="utf-8") as f:
-                    # Pega as últimas 50 linhas de atividade
-                    lines = f.readlines()
-                    experiences = [line.strip() for line in lines[-50:]]
+            # 1. Busca logs persistentes via LogManager
+            daily_logs = log_manager.get_logs_by_date(date_str)
+            for log in daily_logs:
+                msg = log.get("message", log.get("content", ""))
+                role = log.get("role", "system")
+                if msg:
+                    experiences.append(f"[{role.upper()}] {msg}")
+
+            # 2. Busca sessões da memória local (SQLite)
+            # (Adiciona contexto extra sobre o que foi salvo como 'fato')
+            stats = local_memory.get_stats("jarvis_user")
+            experiences.append(f"Resumo Memória: {stats['total_memories']} fatos totais.")
             
-            # Adiciona logs de conversação se existirem
-            chat_log = os.path.join(self.logs_dir, "chat_history.json")
-            if os.path.exists(chat_log):
-                with open(chat_log, "r", encoding="utf-8") as f:
-                    chats = json.load(f)
-                    experiences.extend([f"Conversa: {c['content']}" for c in chats[-10:]])
-            
-            return experiences
+            return experiences[-100:] # Limita aos últimos 100 eventos para não estourar contexto
         except Exception as e:
-            logger.error(f"[DreamProcessor] Erro ao capturar experiências reais: {e}")
+            logger.error(f"[Reflection] Erro ao capturar experiências: {e}")
             return []
 
-    async def reflect(self, experiences: list):
-        """Usa o Ollama local (ou OpenRouter se falhar) para refletir."""
+    async def reflect(self, experiences: list) -> dict:
+        """Processa as experiências usando o Núcleo Engenheiro para gerar insights."""
         if not experiences:
-            return
+            return {}
         
-        logger.info(f"[DreamProcessor] Iniciando reflexão autônoma sobre {len(experiences)} eventos...")
+        logger.info(f"[Reflection] Analisando {len(experiences)} eventos do dia...")
         context = "\n".join(experiences)
+        
         prompt = (
-            "Como o subconsciente do JARVIS, analise as atividades e conversas acima. "
-            "Identifique padrões de comportamento do usuário, erros recorrentes do sistema e preferências. "
-            "Gere uma lista de 3 fatos importantes para eu lembrar e evoluir. "
-            "Responda apenas com os fatos, de forma concisa."
+            "Como o subconsciente do JARVIS, realize uma AUTO-REFLEXÃO PROFUNDA sobre as atividades acima.\n\n"
+            "OBJETIVOS:\n"
+            "1. Identifique o que o Will aprendeu ou realizou de importante.\n"
+            "2. Detecte falhas minhas (Jarvis) ou do sistema que precisam de correção.\n"
+            "3. Extraia uma 'Reflexão Filosófica' curta sobre nossa evolução hoje.\n"
+            "4. Defina o 'Foco de Amanhã' baseado no que ficou pendente.\n\n"
+            "RESPONDA EM JSON (e nada mais) no formato:\n"
+            "{\n"
+            "  \"aprendizados\": [\"lista de strings\"],\n"
+            "  \"correcoes\": [\"lista de strings\"],\n"
+            "  \"reflexao\": \"string\",\n"
+            "  \"proximo_passo\": \"string\"\n"
+            "}"
         )
         
         try:
-            # Tenta usar Ollama local primeiro para 'Sonhos' (mais privado e grátis)
-            insights = await brain.reason_local(prompt, context)
-            if not insights:
-                # Fallback para OpenRouter se o usuário não tiver Ollama
-                insights = await brain.reason(prompt, context)
+            response = await brain.reason(prompt, context)
+            # Limpeza básica caso venha com markdown
+            if "```json" in response:
+                response = response.split("```json")[1].split("```")[0]
             
-            if insights:
-                logger.success(f"[DreamProcessor] Reflexão concluída com sucesso.")
+            insights = json.loads(response.strip())
             return insights
         except Exception as e:
-            logger.error(f"[DreamProcessor] Falha na reflexão: {e}")
-            return None
+            logger.error(f"[Reflection] Falha ao processar reflexão: {e}")
+            return {}
+
+    async def persist_reflection(self, insights: dict):
+        """Salva a reflexão no Vault Obsidian (Segundo Cérebro)."""
+        if not insights:
+            return
+
+        try:
+            from ..vault_memory import save_episodic, update_current_state, is_vault_available, save_learning
+            
+            if not is_vault_available():
+                logger.warning("[Reflection] Vault não disponível. Insight salvo apenas em log.")
+                return
+
+            date = datetime.date.today().isoformat()
+            
+            # 1. Salva Memória Episódica de Reflexão
+            content = f"### 🧠 Reflexão Subconsciente\n{insights.get('reflexao')}\n\n"
+            content += "#### 🎓 O que Will aprendeu/concluiu:\n"
+            content += "\n".join([f"- {a}" for a in insights.get("aprendizados", [])])
+            content += "\n\n#### 🔧 Necessidade de Evolução (Auto-correção):\n"
+            content += "\n".join([f"- {c}" for c in insights.get("correcoes", [])])
+            
+            save_episodic(
+                title=f"Auto-Reflexão — {date}",
+                content=content,
+                project="CORE_EVOLUTION",
+                keywords=["reflexao", "subconsciente", "aprendizado"],
+                importance="ALTA"
+            )
+
+            # 2. Registra aprendizados formais
+            for a in insights.get("aprendizados", []):
+                save_learning(a, category="pessoal")
+
+            # 3. Atualiza o Estado Atual com o próximo passo sugerido
+            update_current_state(
+                project="Auto-Evolução",
+                done="Ciclo de reflexão diária concluído.",
+                next_action=insights.get("proximo_passo", "Continuar desenvolvimento"),
+                notes=insights.get("reflexao")
+            )
+
+            logger.success("[Reflection] Reflexão diária persistida no Vault Obsidian.")
+        except Exception as e:
+            logger.error(f"[Reflection] Erro ao persistir insight: {e}")
 
     async def dream_loop(self):
-        """Loop de processamento em idle."""
+        """Loop de fundo: reflete a cada 24h ou quando acionado."""
         while True:
-            # Espera um longo tempo entre 'sonhos' ou checa atividade do sistema
-            await asyncio.sleep(3600) # Checa a cada hora
+            # Espera até o horário de reflexão (ex: 23:50)
+            now = datetime.datetime.now()
+            target_time = now.replace(hour=23, minute=50, second=0, microsecond=0)
             
-            # Condição de exemplo: só sonha de madrugada ou quando o PC está idle
-            now = datetime.datetime.now().hour
-            if now >= 0 and now <= 5: # Janela de sonho: 00h às 05h
-                experiences = await self.capture_experiences()
-                insights = await self.reflect(experiences)
-                if insights:
-                    # Salva os aprendizados na memória local
-                    local_memory.save_fact("Jarvis", f"Insight de Evolução: {insights}")
+            if now > target_time:
+                target_time += datetime.timedelta(days=1)
+            
+            wait_seconds = (target_time - now).total_seconds()
+            logger.info(f"[DreamProcessor] Próxima auto-reflexão agendada em {wait_seconds/3600:.1f} horas.")
+            
+            await asyncio.sleep(wait_seconds)
+            
+            experiences = await self.capture_experiences()
+            insights = await self.reflect(experiences)
+            if insights:
+                await self.persist_reflection(insights)
 
 # Singleton
 dream_processor = DreamProcessor()
+

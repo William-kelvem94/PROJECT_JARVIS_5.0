@@ -31,6 +31,18 @@ class BrowserTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
             
+    @agents.llm.function_tool(description="Realiza uma busca na web usando o navegador local (sem necessidade de API externa).")
+    async def web_search_no_api(self, query: str):
+        from ..browser_engine import browser_manager
+        try:
+            search_url = f"https://duckduckgo.com/html/?q={query.replace(' ', '+')}"
+            await browser_manager.navigate(search_url)
+            content = await browser_manager.get_page_content()
+            asyncio.create_task(self._log_activity("Pesquisa", f"Buscando: {query}", "info"))
+            return content[:6000] # Retorna o texto da página de resultados para o Jarvis ler
+        except Exception as e:
+            return f"Falha na busca: {e}"
+
     @agents.llm.function_tool(description="Clica em um elemento da página.")
     async def browser_click(self, selector: str = None, x: int = None, y: int = None):
         from ..browser_engine import browser_manager
