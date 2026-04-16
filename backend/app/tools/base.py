@@ -2,21 +2,17 @@ import datetime
 import json
 import asyncio
 from loguru import logger
-from typing import Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from livekit.rtc import Room
+from typing import Optional
 
 class BaseTool:
-    def __init__(self, room: Optional["Room"] = None):
-        self._room = room
+    def __init__(self):
         from ..utils.log_manager import log_manager
         from ..utils.workflow_engine import workflow_engine
         self._log_manager = log_manager
         self._workflow_engine = workflow_engine
 
     async def _log_activity(self, title: str, detail: str, log_type: str = "info", status: str = "success"):
-        """Envia o log para o frontend via LiveKit e salva no disco."""
+        """Salva o log de atividade no disco (o frontend consome via API/WebSocket)."""
         entry = {
             "type": "activity_log",
             "title": title,
@@ -26,15 +22,8 @@ class BaseTool:
             "timestamp": datetime.datetime.now().isoformat()
         }
         
-        # 1. Salva no disco
+        # Salva no disco
         self._log_manager.save_log(entry)
         
-        # 2. Envia para o frontend (Real-time) via LiveKit
-        if self._room and self._room.connection_state == "connected":
-            try:
-                await self._room.local_participant.publish_data(
-                    json.dumps(entry),
-                    topic="activity"
-                )
-            except Exception as e:
-                logger.error(f"Falha ao publicar log de atividade: {e}")
+        # TODO: Implementar broadcasting via WebSocket se necessário para real-time HUD updates
+        # logger.debug(f"Atividade registrada: {title} - {detail}")

@@ -1,9 +1,7 @@
 import asyncio
-from ..livekit_stub import agents
 from .base import BaseTool
 
 class BrowserTools(BaseTool):
-    @agents.llm.function_tool(description="Navega para uma URL no navegador autônomo.")
     async def browser_navigate(self, url: str):
         from ..browser_engine import browser_manager
         try:
@@ -13,7 +11,6 @@ class BrowserTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
 
-    @agents.llm.function_tool(description="Tira um screenshot do navegador.")
     async def browser_screenshot(self):
         from ..browser_engine import browser_manager
         try:
@@ -22,7 +19,6 @@ class BrowserTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
 
-    @agents.llm.function_tool(description="Extrai o texto da página atual.")
     async def browser_get_page_content(self):
         from ..browser_engine import browser_manager
         try:
@@ -31,7 +27,6 @@ class BrowserTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
             
-    @agents.llm.function_tool(description="Realiza uma busca na web usando o navegador local (sem necessidade de API externa).")
     async def web_search_no_api(self, query: str):
         from ..browser_engine import browser_manager
         from ..unified_memory import memory
@@ -51,7 +46,6 @@ class BrowserTools(BaseTool):
         except Exception as e:
             return f"Falha na busca: {e}"
 
-    @agents.llm.function_tool(description="Clica em um elemento da página.")
     async def browser_click(self, selector: str = None, x: int = None, y: int = None):
         from ..browser_engine import browser_manager
         return await browser_manager.click(selector=selector, x=x, y=y)

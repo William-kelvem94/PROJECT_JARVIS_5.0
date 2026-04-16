@@ -3,12 +3,10 @@ import psutil
 import json
 import os
 import asyncio
-from ..livekit_stub import agents
 from .base import BaseTool
 from loguru import logger
 
 class SystemOSTools(BaseTool):
-    @agents.llm.function_tool(description="Executa um comando no terminal do WINDOWS.")
     async def execute_command(self, command: str):
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
@@ -18,7 +16,6 @@ class SystemOSTools(BaseTool):
         except Exception as e:
             return f"Erro: {str(e)}"
 
-    @agents.llm.function_tool(description="Obtém estatísticas de hardware (CPU, RAM, Bateria).")
     async def get_system_stats(self):
         try:
             stats = {
@@ -30,7 +27,6 @@ class SystemOSTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
 
-    @agents.llm.function_tool(description="Abre um aplicativo no Windows pelo nome.")
     async def open_application(self, app_name: str):
         try:
             subprocess.Popen(app_name, shell=True)
@@ -39,7 +35,6 @@ class SystemOSTools(BaseTool):
         except Exception as e:
             return f"Erro: {e}"
             
-    @agents.llm.function_tool(description="Operações de Git (status, commit, push).")
     async def git_operation(self, action: str, message: str = ""):
         if action == "status":
             return await self.execute_command("git status")

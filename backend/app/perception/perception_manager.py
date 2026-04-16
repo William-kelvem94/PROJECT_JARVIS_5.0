@@ -5,7 +5,6 @@ Responsibilities:
   • Runs a camera capture loop in a background thread → feeds face_engine + gesture_engine.
   • Starts voice_engine (manages its own background thread + audio stream).
   • Maintains a shared PerceptionSnapshot (thread-safe read via get_snapshot()).
-  • Publishes perception events to the LiveKit room data channel (topic="perception").
   • Exposes a wake-word callback so the agent session can react immediately.
 """
 
@@ -60,6 +59,65 @@ class PerceptionSnapshot:
         return d
 
 
+# ── Vision Analysis Worker (Standalone for Windows compatibility) ──────────────
+
+def _vision_worker(input_queue: Queue, output_queue: Queue):
+    """
+    Process function for vision analysis. 
+    Standalone to avoid pickling 'self' (PerceptionManager) on Windows.
+    """
+    import pickle
+    import os
+    import gc
+    import torch
+    from loguru import logger
+    
+    # Imports locais para evitar circular dependency ou problemas de pickling
+    from .face_engine import analyze_frame as _face_analyze
+    from .gesture_engine import analyze_frame as _gesture_analyze
+
+    logger.info("[VisionProcess] Motor de visão iniciado em processo independente.")
+
+    while True:
+        try:
+            frame_bytes = input_queue.get()
+            if frame_bytes is None:  # Sentinel to stop
+                break
+            frame = pickle.loads(frame_bytes)
+
+            # Executa os motores de visão (Face + Gestos)
+            face = _face_analyze(frame)
+            gesture = _gesture_analyze(frame)
+
+            all_levels = list(set(face.active_levels + gesture.active_levels))
+
+            result = {
+                'face_present': face.present,
+                'face_count': face.count,
+                'face_emotion': face.emotion,
+                'face_emotion_score': face.emotion_score,
+                'face_identity': face.identity,
+                'face_identity_confidence': face.identity_confidence,
+                'hand_gesture': gesture.hand_gesture,
+                'hand_side': gesture.hand_side,
+                'head_gesture': gesture.head_gesture,
+                'pointing_direction': gesture.pointing_direction,
+                'pointing_xy': gesture.pointing_xy,
+                'active_levels': all_levels,
+            }
+            output_queue.put(result)
+
+            # Gerenciamento de Memória (Especialmente importante no processo de visão)
+            if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    
+        except Exception as e:
+            logger.error(f"[VisionProcess] Erro crítico no loop de visão: {e}")
+            output_queue.put({})  # Envia resultado vazio para não bloquear
+
+
 # ── Manager ────────────────────────────────────────────────────────────────────
 
 class PerceptionManager:
@@ -78,9 +136,6 @@ class PerceptionManager:
         self._vision_process: Optional[Process] = None
 
     # ── Configuration ──────────────────────────────────────────────────────────
-
-    def set_room(self, room):
-        self._room = room
 
     def on_wake_word(self, callback: Callable):
         """Register a (zero-arg) callable invoked when the wake word fires."""
@@ -102,45 +157,7 @@ class PerceptionManager:
         with self._lock:
             return self._snapshot.to_dict()
 
-    def _vision_analysis_process(self, input_queue: Queue, output_queue: Queue):
-        """Process function for vision analysis in separate process."""
-        import pickle
-        while True:
-            try:
-                frame_bytes = input_queue.get()
-                if frame_bytes is None:  # Sentinel to stop
-                    break
-                frame = pickle.loads(frame_bytes)
-
-                # Run engines
-                face: FaceResult = _face_analyze(frame)
-                gesture: GestureResult = _gesture_analyze(frame)
-
-                all_levels = list(set(face.active_levels + gesture.active_levels))
-
-                result = {
-                    'face_present': face.present,
-                    'face_count': face.count,
-                    'face_emotion': face.emotion,
-                    'face_emotion_score': face.emotion_score,
-                    'face_identity': face.identity,
-                    'face_identity_confidence': face.identity_confidence,
-                    'hand_gesture': gesture.hand_gesture,
-                    'hand_side': gesture.hand_side,
-                    'head_gesture': gesture.head_gesture,
-                    'pointing_direction': gesture.pointing_direction,
-                    'pointing_xy': gesture.pointing_xy,
-                    'active_levels': all_levels,
-                }
-                output_queue.put(result)
-                # Memory management
-                if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-            except Exception as e:
-                logger.error(f"[VisionProcess] Error: {e}")
-                output_queue.put({})  # Send empty result to avoid blocking
+    def _on_voice_event(self, result: VoiceResult):
         updates: dict = {}
 
         if result.wake_word_triggered:
@@ -154,8 +171,7 @@ class PerceptionManager:
 
         if result.speaker_identity:
             updates["speaker_identity"] = result.speaker_identity
-            logger.info(f"[Perception] 🗣️ Recognised speaker: {result.speaker_identity} "
-                        f"({result.speaker_confidence:.0%})")
+            logger.info(f"[Perception] 🗣️ Recognised speaker: {result.speaker_identity}")
 
         if result.offline_transcript:
             updates["offline_transcript"] = result.offline_transcript
@@ -322,7 +338,7 @@ class PerceptionManager:
         self._vision_input_queue = Queue()
         self._vision_output_queue = Queue()
         self._vision_process = Process(
-            target=self._vision_analysis_process,
+            target=_vision_worker,
             args=(self._vision_input_queue, self._vision_output_queue),
             daemon=True,
             name="jarvis-vision-analysis"
