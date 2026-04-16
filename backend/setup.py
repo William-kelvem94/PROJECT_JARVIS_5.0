@@ -59,10 +59,6 @@ def is_importable(module: str) -> bool:
 CORE_PACKAGES = [
     ("fastapi",           "fastapi"),
     ("uvicorn",           "uvicorn[standard]"),
-    ("livekit",           "livekit-agents"),
-    ("livekit.plugins.google",  "livekit-plugins-google"),
-    ("livekit.plugins.silero",  "livekit-plugins-silero"),
-    ("livekit.plugins.noise_cancellation", "livekit-plugins-noise-cancellation"),
     ("dotenv",            "python-dotenv"),
     ("psutil",            "psutil"),
     ("loguru",            "loguru"),
@@ -258,7 +254,6 @@ def validate_and_report():
         # (module, label, critical)
         ("fastapi",        "FastAPI backend",              True),
         ("uvicorn",        "Uvicorn ASGI server",          True),
-        ("livekit",        "LiveKit agent runtime",        True),
         ("dotenv",         "Env file loading",             True),
         ("psutil",         "System stats",                 False),
         ("playwright",     "Browser automation",           False),

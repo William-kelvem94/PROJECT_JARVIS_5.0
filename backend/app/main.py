@@ -11,6 +11,22 @@ from loguru import logger
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
+# AI Device and Thread Configuration
+import torch
+device_env = os.environ.get("JARVIS_AI_DEVICE", "auto")
+if device_env == "auto":
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+else:
+    device = device_env
+
+# Limit threads on CPU to prevent overheating
+if device == "cpu":
+    cpu_threads = int(os.environ.get("JARVIS_CPU_THREADS", "4"))
+    torch.set_num_threads(cpu_threads)
+    logger.info(f"[Main] CPU threads limited to {cpu_threads} for thermal management")
+
+logger.info(f"[Main] AI device: {device}")
+
 base_dir = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(base_dir))
 
@@ -92,7 +108,6 @@ def health_check() -> Dict[str, Any]:
 def status_check() -> Dict[str, Any]:
     return {
         "status": "ok",
-        "livekit": bool(os.getenv("LIVEKIT_URL") and os.getenv("LIVEKIT_API_KEY") and os.getenv("LIVEKIT_API_SECRET")),
         "gemini": bool(os.getenv("GOOGLE_API_KEY")),
         "timestamp": datetime.datetime.now().isoformat()
     }

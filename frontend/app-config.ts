@@ -24,12 +24,8 @@ export interface AppConfig {
   audioVisualizerGridRowCount?: number;
   audioVisualizerGridColumnCount?: number;
 
-  // LiveKit Cloud Sandbox configuration
-  sandboxId?: string;
-
   // optional toggle for vanta background (setting false will disable)
   enableVanta?: boolean;
-  debug?: boolean;
   // allow arbitrary extra fields (used by audio visualizer settings)
   [key: string]: any;
 }
@@ -60,8 +56,5 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   audioVisualizerGridRowCount: Number(process.env.NEXT_PUBLIC_AUDIO_GRID_ROWS ?? '9'),
   audioVisualizerGridColumnCount: Number(process.env.NEXT_PUBLIC_AUDIO_GRID_COLUMNS ?? '9'),
 
-  // LiveKit Cloud Sandbox configuration
-  sandboxId: undefined,
   enableVanta: process.env.NEXT_PUBLIC_ENABLE_VANTA !== 'false',
-  debug: process.env.NEXT_PUBLIC_LIVEKIT_DEBUG === 'true',
 };

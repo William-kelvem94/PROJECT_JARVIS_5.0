@@ -19,14 +19,6 @@ psutil
 torch
 torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# ── LiveKit AI Stack
-livekit-agents
-livekit-plugins-openai
-livekit-plugins-google
-livekit-plugins-deepgram
-livekit-plugins-silero
-livekit-plugins-noise-cancellation
-
 # ── Browser Automation
 playwright
 

@@ -75,7 +75,6 @@ export interface AgentControlBarControls {
 }
 
 export interface AgentControlBarProps {
-  variant?: 'default' | 'outline' | 'livekit';
   controls?: AgentControlBarControls;
   isChatOpen?: boolean;
   onIsChatOpenChange?: (open: boolean) => void;
@@ -83,7 +82,6 @@ export interface AgentControlBarProps {
 }
 
 export function AgentControlBar({
-  variant = 'default',
   controls,
   isChatOpen = false,
   onIsChatOpenChange,
@@ -147,8 +145,7 @@ export function AgentControlBar({
     >
       <div
         className={cn(
-          'backdrop-blur-xl bg-black/40 border-[#1da3b9]/20 flex flex-col border p-3 shadow-2xl shadow-[#1da3b9]/5',
-          variant === 'livekit' ? 'rounded-[31px]' : 'rounded-xl',
+          'backdrop-blur-xl bg-black/40 border-[#1da3b9]/20 flex flex-col border p-3 shadow-2xl shadow-[#1da3b9]/5 rounded-xl',
           className
         )}
         {...props}
@@ -164,7 +161,7 @@ export function AgentControlBar({
           <AgentChatInput
             chatOpen={isChatOpen || isChatOpenUncontrolled}
             onSend={handleSendMessage}
-            className={cn(variant === 'livekit' && '[&_button]:rounded-full')}
+            className="[&_button]:rounded-md"
           />
         </motion.div>
 

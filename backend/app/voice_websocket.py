@@ -2,8 +2,11 @@ import asyncio
 import io
 import wave
 import numpy as np
+import concurrent.futures
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
+import gc
+import torch
 
 from .perception import voice_engine
 from .perception.voice_engine import identify_speaker, _get_oww
@@ -20,6 +23,9 @@ except ImportError:
     pass
 
 router = APIRouter()
+
+# ProcessPoolExecutor for heavy voice processing
+_voice_executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 
 # Buffer state for the active WebSocket connection
 _active_voice_websocket = None
@@ -53,7 +59,8 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             from .chat_pipeline import chat_stream
             
             # 1. Transcrição (STT) - Síncrona (Off-thread)
-            text = await asyncio.to_thread(transcribe_offline, audio_int16)
+            loop = asyncio.get_event_loop()
+            text = await loop.run_in_executor(_voice_executor, voice_engine.transcribe_offline, audio_int16)
             
             if text is None:
                 logger.debug("🔇 Nenhuma fala detectada no áudio.")
@@ -63,7 +70,7 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
             perception = perception_manager.get_snapshot()
             
             # Tenta identificar o falante pelo áudio atual (Biometria Vocal)
-            speaker_name, speaker_conf = await asyncio.to_thread(identify_speaker, audio_int16)
+            speaker_name, speaker_conf = await loop.run_in_executor(_voice_executor, identify_speaker, audio_int16)
             person = speaker_name or perception.get('face_identity') or "Usuário"
             emotion = perception.get('face_emotion', 'neutral')
             
@@ -135,6 +142,12 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
                 await websocket.send_json({"type": "message", "role": "assistant", "text": full_reply})
                 await websocket.send_json({"type": "jarvis_speaking", "state": False})
             except: pass
+            
+            # Memory management
+            if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             
         except Exception as e:
             logger.error(f"Erro crítico no process_and_reply: {e}")

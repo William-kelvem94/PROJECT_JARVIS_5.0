@@ -175,7 +175,6 @@ export const SessionView = ({
       >
         <div className="cyber-glass p-2 rounded-2xl border-white/5">
           <AgentControlBar
-            variant="livekit"
             controls={{
                 leave: true,
                 microphone: true,

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { LocalAudioTrack, RemoteAudioTrack } from 'livekit-client';
 import {
   type AnimationPlaybackControlsWithThen,
   type ValueAnimationTransition,
