@@ -24,12 +24,3 @@ def test_chat_stub():
     assert "reply" in data
 
 
-def test_livekit_token(monkeypatch):
-    # supply dummy credentials so endpoint can generate a token
-    monkeypatch.setenv("LIVEKIT_API_KEY", "key123")
-    monkeypatch.setenv("LIVEKIT_API_SECRET", "secret456")
-    resp = client.get("/livekit-token")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "token" in data
-    assert isinstance(data["token"], str)

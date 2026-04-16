@@ -12,9 +12,6 @@ load_dotenv(base_dir / 'env' / '.env', override=True)
 class Settings(BaseSettings):
     # API Keys
     google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
-    livekit_url: str = Field(alias="LIVEKIT_URL")
-    livekit_api_key: str = Field(alias="LIVEKIT_API_KEY")
-    livekit_api_secret: str = Field(alias="LIVEKIT_API_SECRET")
     openrouter_api_key: str = Field(default="", alias="OPENROUTER_API_KEY")
 
     # Ports
@@ -43,7 +40,7 @@ class Settings(BaseSettings):
             return v
         return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or v
 
-    @field_validator("google_api_key", "livekit_url", "livekit_api_key", "livekit_api_secret")
+    @field_validator("google_api_key")
     @classmethod
     def validate_keys(cls, v):
         if not v or v.startswith("YOUR_"):
@@ -51,7 +48,4 @@ class Settings(BaseSettings):
         return v
 
 settings = Settings()
-
-# Next.js compat: Prefix for client-side
-NEXT_PUBLIC_LIVEKIT_URL = os.getenv("NEXT_PUBLIC_LIVEKIT_URL", os.getenv("LIVEKIT_URL", ""))
 

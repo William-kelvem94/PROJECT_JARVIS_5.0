@@ -159,8 +159,12 @@ def _get_whisper():
         try:
             from faster_whisper import WhisperModel  # type: ignore
             import torch  # type: ignore
-            # No i3 com 1050Ti lotada, forçamos o modelo mais leve possível
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # Device configuration
+            device_env = os.environ.get("JARVIS_AI_DEVICE", "auto")
+            if device_env == "auto":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            else:
+                device = device_env
             compute_type = "float16" if device == "cuda" else "int8"
             
             # Mudando de 'base' para 'tiny' para não travar sua CPU

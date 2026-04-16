@@ -3,18 +3,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=flat&logo=fastapi)](https://fastapi.tiangolo.com)
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=flat&logo=nextdotjs)](https://nextjs.org)
-[![LiveKit](https://img.shields.io/badge/LiveKit-6435F1?style=flat&logo=livekit)](https://livekit.io)
 
-**Project Jarvis 5.0** é um ecossistema de assistência inteligente de próxima geração, integrando processamento de linguagem natural avançado, visão computacional e interações em tempo real. Construído com uma arquitetura monorepo robusta, combina a performance do Python no backend com a fluidez do Next.js no frontend.
+**Project Jarvis 5.0** é um ecossistema de assistência inteligente de próxima geração, integrando processamento de linguagem natural avançado, visão computacional e interações em tempo real. Construído com uma arquitetura monorepo robusta, combina a performance do Python no backend com a fluidez do Next.js no frontend, operando de forma 100% nativa e local.
 
 ---
 
 ## ✨ Funcionalidades Principais
 
-- 🎙️ **Interação por Voz em Tempo Real**: Latência ultra-baixa usando LiveKit e WebSockets.
-- 🧠 **Inteligência Híbrida**: Integração dinâmica com modelos Google Gemini e OpenAI.
+- 🎙️ **Interação por Voz Local**: Latência ultra-baixa usando WebSockets nativos e processamento PCM local.
+- 🧠 **Cérebro Híbrido**: Integração dinâmica com LM Studio (Local AI) e Gemini Fallback.
 - 🖼️ **Visão Computacional**: Processamento e análise de imagens/vídeos em tempo real.
-- 📊 **Dashboard de Monitoramento**: Acompanhamento de recursos do sistema e status da IA.
+- 📊 **Dashboard de Monitoramento**: Acompanhamento de recursos do sistema e status da IA no HUD de Engenharia.
 - 🛠️ **Automação de Sistema**: Capacidade de executar comandos e gerenciar tarefas locais.
 
 ---
@@ -23,7 +22,8 @@
 
 ### Backend (Processamento & IA)
 - **FastAPI**: Gateway de API de alta performance.
-- **LiveKit Agents**: Orquestração de agentes de IA em tempo real.
+- **WebSocket**: Comunicação bidirecional para voz e telemetria.
+- **Faster-Whisper & Edge-TTS**: Motores locais de STT e TTS.
 - **Python-dotenv**: Gerenciamento seguro de configurações.
 - **Psutil & Loguru**: Monitoramento robusto e logging avançado.
 
@@ -31,7 +31,7 @@
 - **Next.js 15**: Framework React ultra-rápido.
 - **Tailwind CSS & Shadcn/UI**: Design moderno e responsivo.
 - **Framer Motion**: Micro-animações premium.
-- **LiveKit Components**: Integração nativa com fluxos de áudio e vídeo.
+- **Native Web Audio API**: Processamento de áudio diretamente no browser.
 
 ---
 
@@ -39,9 +39,9 @@
 
 ### Pré-requisitos
 - Node.js (v18+) e PNPM.
-- Python 3.10+.
-- Chave de API do Google Gemini / OpenAI.
-- Servidor LiveKit (Cloud ou Self-hosted).
+- Python 3.12+.
+- Chave de API do Google Gemini (opcional para fallback).
+- LM Studio rodando na rede local (opcional para 100% offline).
 
 ### Configuração de Ambiente
 
@@ -86,20 +86,31 @@
 
 ## 🚦 Execução
 
-Para facilitar o desenvolvimento, você pode usar os scripts integrados:
+Para facilitar o desenvolvimento, use o launcher oficial:
 
 - **Iniciar Tudo:** Execute `start-jarvis.bat` na raiz.
 - **Backend:** `cd backend && uvicorn app.main:app --reload`
 - **Frontend:** `cd frontend && pnpm dev`
 
-### 🚀 Teste Senior (100% Funcional)
+---
 
-1. `./start-jarvis.bat`
-2. **API**: http://localhost:8000/docs | /health | /status
-3. **Frontend**: http://localhost:3000 → Click "Start Audio" → "Jarvis, teste voz!"
-4. **Room**: "jarvis-room" (Gemini Live + visão/gestos)
+## 📂 Estrutura Fullstack Native
 
-**Monitor heartbeat**: `cd scripts && ./monitor-heartbeat.ps1`
+```text
+├── backend/app/main.py             # Entry point FastAPI
+├── backend/app/voice_websocket.py  # Motor de Voz WebSocket Local
+├── frontend/context/JarvisContext.tsx # Gerenciador de Estado UI
+└── start-jarvis.bat                # Launcher Auto-Suficiente
+```
+
+Para entender o fluxo completo de voz, visão, memória e IA, consulte `docs/ARCHITECTURE.md`.
+
+---
+
+## 📄 Licença
+MIT - [LICENSE](frontend/LICENSE)
+
+**Senior by William Kelvem + Antigravity AI**
 
 ## 🧪 Scripts úteis
 - `pnpm dev` — inicia o frontend em modo dev.

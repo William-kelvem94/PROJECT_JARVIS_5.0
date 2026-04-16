@@ -1,6 +1,6 @@
 import asyncio
 import os
-from livekit import agents
+from ..livekit_stub import agents
 from .base import BaseTool
 
 class MemoryTools(BaseTool):

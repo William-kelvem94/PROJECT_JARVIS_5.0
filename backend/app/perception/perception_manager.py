@@ -15,8 +15,12 @@ import time
 import threading
 import os
 import datetime
+import multiprocessing
+from multiprocessing import Queue, Process
 from dataclasses import dataclass, asdict, field
 from typing import Optional, Callable, List
+import gc
+import torch
 
 from loguru import logger
 
@@ -68,6 +72,10 @@ class PerceptionManager:
         self._wake_callbacks: List[Callable] = []
         self._gesture_callbacks: List[Callable] = []
         self._last_gesture = None
+        # Multiprocessing for vision analysis
+        self._vision_input_queue: Optional[Queue] = None
+        self._vision_output_queue: Optional[Queue] = None
+        self._vision_process: Optional[Process] = None
 
     # ── Configuration ──────────────────────────────────────────────────────────
 
@@ -94,9 +102,45 @@ class PerceptionManager:
         with self._lock:
             return self._snapshot.to_dict()
 
-    # ── Voice callback (called from voice engine thread) ───────────────────────
+    def _vision_analysis_process(self, input_queue: Queue, output_queue: Queue):
+        """Process function for vision analysis in separate process."""
+        import pickle
+        while True:
+            try:
+                frame_bytes = input_queue.get()
+                if frame_bytes is None:  # Sentinel to stop
+                    break
+                frame = pickle.loads(frame_bytes)
 
-    def _on_voice_event(self, result: VoiceResult):
+                # Run engines
+                face: FaceResult = _face_analyze(frame)
+                gesture: GestureResult = _gesture_analyze(frame)
+
+                all_levels = list(set(face.active_levels + gesture.active_levels))
+
+                result = {
+                    'face_present': face.present,
+                    'face_count': face.count,
+                    'face_emotion': face.emotion,
+                    'face_emotion_score': face.emotion_score,
+                    'face_identity': face.identity,
+                    'face_identity_confidence': face.identity_confidence,
+                    'hand_gesture': gesture.hand_gesture,
+                    'hand_side': gesture.hand_side,
+                    'head_gesture': gesture.head_gesture,
+                    'pointing_direction': gesture.pointing_direction,
+                    'pointing_xy': gesture.pointing_xy,
+                    'active_levels': all_levels,
+                }
+                output_queue.put(result)
+                # Memory management
+                if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
+                    gc.collect()
+                    if torch.cuda.is_available():
+                        torch.cuda.empty_cache()
+            except Exception as e:
+                logger.error(f"[VisionProcess] Error: {e}")
+                output_queue.put({})  # Send empty result to avoid blocking
         updates: dict = {}
 
         if result.wake_word_triggered:
@@ -207,50 +251,46 @@ class PerceptionManager:
                 time.sleep(1.0)
                 continue
 
-            # ── Run engines ───────────────────────────────────────────────────
-            face: FaceResult = _face_analyze(frame)
-            gesture: GestureResult = _gesture_analyze(frame)
+            # ── Send frame to vision process ─────────────────────────────────────
+            # Convert frame to bytes for multiprocessing
+            import pickle
+            frame_bytes = pickle.dumps(frame)
+            self._vision_input_queue.put(frame_bytes)
 
-            all_levels = list(set(face.active_levels + gesture.active_levels))
+            # ── Get result from vision process ─────────────────────────────────
+            if not self._vision_output_queue.empty():
+                result = self._vision_output_queue.get_nowait()
+                if result:
+                    self._update(**result)
 
-            self._update(
-                face_present=face.present,
-                face_count=face.count,
-                face_emotion=face.emotion,
-                face_emotion_score=face.emotion_score,
-                face_identity=face.identity,
-                face_identity_confidence=face.identity_confidence,
-                hand_gesture=gesture.hand_gesture,
-                hand_side=gesture.hand_side,
-                head_gesture=gesture.head_gesture,
-                pointing_direction=gesture.pointing_direction,
-                pointing_xy=gesture.pointing_xy,
-                active_levels=all_levels,
-            )
+                    # ── Proactive Gesture Trigger ────────────────────────────────────
+                    hand_gesture = result.get('hand_gesture')
+                    hand_side = result.get('hand_side')
+                    if hand_gesture and hand_gesture != self._last_gesture:
+                        if hand_gesture not in ("other", None):
+                            logger.info(f"[Perception] ⚡ Proactive Gesture Trigger: {hand_gesture}")
+                            for cb in self._gesture_callbacks:
+                                try:
+                                    cb(hand_gesture, hand_side)
+                                except Exception as e:
+                                    logger.warning(f"[Perception] Gesture callback error: {e}")
+                        self._last_gesture = hand_gesture
 
-            # ── Proactive Gesture Trigger ────────────────────────────────────
-            if gesture.hand_gesture and gesture.hand_gesture != self._last_gesture:
-                if gesture.hand_gesture not in ("other", None):
-                    logger.info(f"[Perception] ⚡ Proactive Gesture Trigger: {gesture.hand_gesture}")
-                    for cb in self._gesture_callbacks:
-                        try:
-                            cb(gesture.hand_gesture, gesture.hand_side)
-                        except Exception as e:
-                            logger.warning(f"[Perception] Gesture callback error: {e}")
-                self._last_gesture = gesture.hand_gesture
-
-            # Log interesting events
-            if face.identity:
-                logger.info(
-                    f"[Perception] 👤 Identity: {face.identity} "
-                    f"({face.identity_confidence:.0%})"
-                )
-            if face.present and face.emotion not in ("neutral", ""):
-                logger.debug(f"[Perception] 😐→ {face.emotion} ({face.emotion_score:.0%})")
-            if gesture.hand_gesture and gesture.hand_gesture not in ("other", None):
-                logger.info(f"[Perception] ✋ Gesture: {gesture.hand_gesture} ({gesture.hand_side})")
-            if gesture.head_gesture:
-                logger.info(f"[Perception] 🫡 Head: {gesture.head_gesture}")
+                    # Log interesting events
+                    if result.get('face_identity'):
+                        logger.info(
+                            f"[Perception] 👤 Identity: {result['face_identity']} "
+                            f"({result['face_identity_confidence']:.0%})"
+                        )
+                    if result.get('face_present') and result.get('face_emotion') not in ("neutral", ""):
+                        logger.debug(f"[Perception] 😐→ {result['face_emotion']} ({result['face_emotion_score']:.0%})")
+                    if hand_gesture and hand_gesture not in ("other", None):
+                        logger.info(f"[Perception] ✋ Gesture: {hand_gesture} ({hand_side})")
+                    if result.get('head_gesture'):
+                        logger.info(f"[Perception] 🫡 Head: {result['head_gesture']}")
+            else:
+                # If no result yet, skip update this frame
+                pass
 
             # Controle Dinamico de FPS (Para Notebooks nao travarem a CPU em 100%)
             # Puxa 1.0 FPS por padrao (mais leve)
@@ -278,6 +318,17 @@ class PerceptionManager:
             return
         self._running = True
 
+        # Initialize vision multiprocessing
+        self._vision_input_queue = Queue()
+        self._vision_output_queue = Queue()
+        self._vision_process = Process(
+            target=self._vision_analysis_process,
+            args=(self._vision_input_queue, self._vision_output_queue),
+            daemon=True,
+            name="jarvis-vision-analysis"
+        )
+        self._vision_process.start()
+
         # Camera thread (skip if disabled)
         # Se sua CPU/GPU estiver lenta, desative a camera no .env com JARVIS_DISABLE_CAMERA=true
         if os.environ.get("JARVIS_DISABLE_CAMERA", "false").lower() == "true":
@@ -301,6 +352,11 @@ class PerceptionManager:
         voice_engine.stop()
         if self._camera_thread:
             self._camera_thread.join(timeout=3.0)
+        # Stop vision process
+        if self._vision_input_queue:
+            self._vision_input_queue.put(None)  # Sentinel
+        if self._vision_process:
+            self._vision_process.join(timeout=3.0)
         logger.info("[PerceptionManager] Stopped")
 
     def capture_frame(self):

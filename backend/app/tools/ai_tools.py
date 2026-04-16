@@ -1,7 +1,7 @@
 import asyncio
 import os
 import subprocess
-from livekit import agents
+from ..livekit_stub import agents
 from .base import BaseTool
 from loguru import logger
 

@@ -3,7 +3,7 @@ import psutil
 import json
 import os
 import asyncio
-from livekit import agents
+from ..livekit_stub import agents
 from .base import BaseTool
 from loguru import logger
 

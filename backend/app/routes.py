@@ -31,25 +31,6 @@ async def memory_endpoint(user_name: str = "Chefe"):
     memories = await memory.get_all(user_id=user_name)
     return {"memories": memories}
 
-@router.get("/livekit-token")
-def livekit_token():
-    # generate a short-lived LiveKit access token for the frontend to join
-
-    from dotenv import load_dotenv
-    load_dotenv()
-    key = os.getenv("LIVEKIT_API_KEY")
-    secret = os.getenv("LIVEKIT_API_SECRET")
-    if not key or not secret:
-        raise HTTPException(status_code=500, detail="LiveKit credentials not configured")
-    # lazy import to avoid pulling SDK at module import time
-    from livekit.api import AccessToken, VideoGrants
-
-    access = AccessToken(key, secret)
-    access.with_identity("jarvis")
-    # build minimal video grants; room name can later come from request
-    vg = VideoGrants(room="jarvis-room", room_join=True)
-    access.with_grants(vg)
-    return {"token": access.to_jwt()}
 @router.get("/screenshots")
 async def list_screenshots():
     data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
