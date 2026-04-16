@@ -1,11 +1,9 @@
 import os
 import asyncio
-from ..livekit_stub import agents
 from .base import BaseTool
 from loguru import logger
 
 class FileTools(BaseTool):
-    @agents.llm.function_tool(description="Lista a estrutura de arquivos do COMPUTADOR ou de um diretório específico. Use caminhos absolutos para acessar qualquer pasta do sistema.")
     async def list_files(self, path: str = "."):
         try:
             items = os.listdir(path)
@@ -21,7 +19,6 @@ class FileTools(BaseTool):
         except Exception as e:
             return f"Erro: {str(e)}"
 
-    @agents.llm.function_tool(description="Lê o conteúdo de um arquivo específico.")
     async def read_file(self, file_path: str):
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -31,7 +28,6 @@ class FileTools(BaseTool):
         except Exception as e:
             return f"Erro ao ler arquivo: {str(e)}"
 
-    @agents.llm.function_tool(description="Escreve ou modifica o conteúdo de um arquivo.")
     async def write_file(self, file_path: str, content: str):
         try:
             os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
@@ -42,7 +38,6 @@ class FileTools(BaseTool):
         except Exception as e:
             return f"Erro ao escrever: {str(e)}"
 
-    @agents.llm.function_tool(description="Aplica uma mudança cirúrgica: substitui um trecho por outro.")
     async def apply_code_change(self, file_path: str, old_code: str, new_code: str):
         try:
             with open(file_path, "r", encoding="utf-8") as f:

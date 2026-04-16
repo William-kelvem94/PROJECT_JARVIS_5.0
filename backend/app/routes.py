@@ -99,12 +99,20 @@ def save_vault_memory(req: VaultMemoryRequest):
 
 @router.get("/health")
 async def health_check():
-    """Telemetria oficial para o HUD de Engenharia."""
+    """Telemetria oficial para o HUD de Engenharia, incluindo Percepção."""
     import psutil
+    from .perception.perception_manager import perception_manager
+    
+    # Pega o snapshot em tempo real do que o Jarvis está vendo/ouvindo
+    visao = perception_manager.get_snapshot()
+    
     return {
         "status": "online",
         "cpu": psutil.cpu_percent(),
         "ram": psutil.virtual_memory().percent,
-        "is_ai_ready": True
+        "is_ai_ready": True,
+        # Dados de Percepção para o HUD
+        "face_identity": visao.get("face_identity", "Unknown"),
+        "face_emotion": visao.get("face_emotion", "Awaiting..."),
+        "gesture": visao.get("hand_gesture", "None") or "None"
     }
-

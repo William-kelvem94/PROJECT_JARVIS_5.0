@@ -1,18 +1,15 @@
 import asyncio
 import os
 import subprocess
-from ..livekit_stub import agents
 from .base import BaseTool
 from loguru import logger
 
 class AITools(BaseTool):
-    @agents.llm.function_tool(description="Consulta o Cérebro de Engenharia Local para tarefas complexas.")
     async def think_with_engineer_brain(self, task: str):
         from ..engineer_brain import brain
         asyncio.create_task(self._log_activity("Cérebro", f"Analisando: {task[:50]}", "info"))
         return await brain.reason(task)
 
-    @agents.llm.function_tool(description="Modo God: Executa comando e auto-corrige código se falhar.")
     async def run_and_fix(self, command: str, target_file: str):
         attempt = 1
         max_attempts = 3
