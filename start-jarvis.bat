@@ -22,7 +22,7 @@ echo  [1/8] Verificando Roteamento Cognitivo Local (LM Studio)...
 netstat -aon 2>nul | findstr ":1234 " >nul
 if errorlevel 1 (
     echo   [AVISO] LM Studio nao detectado na porta 1234.
-    echo   [INFO] O JARVIS usara o motor de Cloud Fallback (API externa) por padrao.
+    echo   [INFO] O JARVIS usara o motor de Cloud Fallback (API externa^) por padrao.
 ) else (
     echo  [OK] Roteamento de Cerebro Local detectado e disponivel.
 )
@@ -36,11 +36,11 @@ set "HARDWARE_PROFILE=LAPTOP"
 wmic path win32_VideoController get name | findstr /i "NVIDIA" >nul
 if %errorlevel%==0 (
     set "HARDWARE_PROFILE=DESKTOP"
-    echo  [INFO] GPU NVIDIA Detectada (GTX 1050 Ti ou similar).
-    echo  [INFO] Perfil configurado para aceleracao de IA Local (CUDA).
+    echo  [INFO] GPU NVIDIA Detectada ^(GTX 1050 Ti ou similar^).
+    echo  [INFO] Perfil configurado para aceleracao de IA Local ^(CUDA^).
 ) else (
     echo  [INFO] GPU NVIDIA nao detectada.
-    echo  [INFO] Perfil configurado para Notebook (Processamento CPU Seguro / API Cloud).
+    echo  [INFO] Perfil configurado para Notebook ^(Processamento CPU Seguro / API Cloud^).
 )
 echo.
 
@@ -202,7 +202,7 @@ echo   Frontend: http://localhost:3000
 echo  ================================================================
 echo.
 echo   Pressione qualquer tecla para encerrar este launcher principal.
-echo   (Os servicos continuarao rodando em segundo plano nas janelas minimizadas).
+echo   ^(Os servicos continuarao rodando em segundo plano nas janelas minimizadas^).
 echo.
 pause
 exit
