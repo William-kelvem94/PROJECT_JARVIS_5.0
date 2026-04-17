@@ -1,8 +1,6 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { type AgentState } from '@/types/agent';
-import { type Message as JarvisMessage } from '@/context/JarvisContext';
 import { AgentChatIndicator } from '@/components/agents-ui/agent-chat-indicator';
 import {
   Conversation,
@@ -10,6 +8,8 @@ import {
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import { type Message as JarvisMessage } from '@/context/JarvisContext';
+import { type AgentState } from '@/types/agent';
 
 /**
  * Props for the AgentChatTranscript component.

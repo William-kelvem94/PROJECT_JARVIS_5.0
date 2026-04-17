@@ -1,7 +1,7 @@
 'use client';
 
-import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { AppConfig } from '@/app-config';
 import { SessionView } from '@/components/app/session-view';
 import { WelcomeView } from '@/components/app/welcome-view';
@@ -35,7 +35,7 @@ interface ViewControllerProps {
 export function ViewController({ appConfig, onParticipantNameChange }: ViewControllerProps) {
   const [isActive, setIsActive] = useState(false);
 
-  const handleStart = async (opts?: any) => {
+  const handleStart = async (opts?: { metadata?: string }) => {
     // Extract user_name from metadata if provided
     if (opts?.metadata && onParticipantNameChange) {
       try {
@@ -43,8 +43,8 @@ export function ViewController({ appConfig, onParticipantNameChange }: ViewContr
         if (metadata.user_name) {
           onParticipantNameChange(metadata.user_name);
         }
-      } catch (e) {
-        console.error('Erro ao processar metadata:', e);
+      } catch (error) {
+        console.error('Erro ao processar metadata:', error);
       }
     }
     setIsActive(true);

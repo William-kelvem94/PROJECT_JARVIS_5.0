@@ -1,10 +1,12 @@
 'use client';
 
 import { AnimatePresence, type HTMLMotionProps, motion } from 'motion/react';
-// import { type ReceivedMessage, useAgent } from '@livekit/components-react';
-type ReceivedMessage = any;
 import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcript';
 import { cn } from '@/lib/shadcn/utils';
+import type { Message } from '@/context/JarvisContext';
+
+// import { type ReceivedMessage, useAgent } from '@livekit/components-react';
+type ReceivedMessage = Message;
 
 const MotionContainer = motion.create('div');
 

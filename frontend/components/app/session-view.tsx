@@ -1,26 +1,32 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
-import { useJarvis } from '@/context/JarvisContext';
-import { useAgentErrors } from '@/hooks/useAgentErrors';
-import { SessionDiagnostics } from './session-diagnostics';
 import type { AppConfig } from '@/app-config';
 import {
   AgentControlBar,
   type AgentControlBarControls,
 } from '@/components/agents-ui/agent-control-bar';
+import { useJarvis } from '@/context/JarvisContext';
+import { useAgentErrors } from '@/hooks/useAgentErrors';
 import { cn } from '@/lib/shadcn/utils';
-import dynamic from 'next/dynamic';
 import { ActiveConsole } from './active-console';
 import { EngineeringHUD } from './engineering-hud';
+import { SessionDiagnostics } from './session-diagnostics';
 
 const VantaOrb = dynamic(
-  () => import('@/components/app/vanta-engine').then((mod) => mod.VantaOrb as any),
+  async () => {
+    const mod = await import('@/components/app/vanta-engine');
+    return mod.VantaOrb;
+  },
   { ssr: false, loading: () => null }
 );
 const VantaController = dynamic(
-  () => import('@/components/app/vanta-engine').then((mod) => mod.VantaController as any),
+  async () => {
+    const mod = await import('@/components/app/vanta-engine');
+    return mod.VantaController;
+  },
   { ssr: false, loading: () => null }
 );
 
@@ -34,18 +40,14 @@ export const SessionView = ({
   onManualDisconnect,
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
-  const { 
-    isConnected, 
-    isSpeaking, 
-    messages, 
-    connect, 
-    disconnect, 
-    isCameraEnabled,
-    localStream
-  } = useJarvis();
-  
+  const { isConnected, isSpeaking, messages, connect, disconnect, isCameraEnabled, localStream } =
+    useJarvis();
+
   const [chatOpen, setChatOpen] = useState(false);
-  const vantaEffectRef = useRef<any>(null);
+  const vantaEffectRef = useRef<{
+    setVolume: (volume: number) => void;
+    setColor: (color: number) => void;
+  } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const { errors, clear: clearErrors } = useAgentErrors();
@@ -56,7 +58,7 @@ export const SessionView = ({
   };
 
   // Cores dinâmicas baseadas no estado
-  const currentGlow = isSpeaking ? "rgba(112, 0, 255, 0.4)" : "rgba(0, 242, 255, 0.2)";
+  const currentGlow = isSpeaking ? 'rgba(112, 0, 255, 0.4)' : 'rgba(0, 242, 255, 0.2)';
 
   React.useEffect(() => {
     if (!isConnected) connect();
@@ -64,7 +66,7 @@ export const SessionView = ({
 
   React.useEffect(() => {
     if (videoRef.current && isCameraEnabled && localStream) {
-        videoRef.current.srcObject = localStream;
+      videoRef.current.srcObject = localStream;
     }
   }, [isCameraEnabled, localStream]);
 
@@ -72,17 +74,16 @@ export const SessionView = ({
     <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-[#020205]" {...props}>
       {/* Camada de Background Ambient Gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,25,1)_0%,rgba(2,2,5,1)_100%)]" />
-      
+
       {/* Sombras e Reflexos de Cockpit */}
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-jarvis-cyan/5 to-transparent pointer-events-none" />
+      <div className="from-jarvis-cyan/5 pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b to-transparent" />
 
       {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
 
       {isConnected && (
-        <VantaController 
-            // @ts-ignore - Componente dinâmico
-            vantaRef={vantaEffectRef} 
-            isConnected={isConnected} 
+        <VantaController
+          vantaRef={vantaEffectRef}
+          isConnected={isConnected}
         />
       )}
 
@@ -90,75 +91,78 @@ export const SessionView = ({
       <EngineeringHUD />
 
       {/* ── LADO ESQUERDO: Console de Atividade ─────────────────────────────── */}
-      <div className="absolute left-6 top-6 z-30 flex flex-col gap-4 max-w-sm pointer-events-none">
-        <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 mb-2"
+      <div className="pointer-events-none absolute top-6 left-6 z-30 flex max-w-sm flex-col gap-4">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-2 flex items-center gap-2"
         >
-            <div className="size-1.5 bg-jarvis-cyan rounded-full animate-pulse shadow-[0_0_8px_#00f2ff]" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/40">Real-time Stream</span>
+          <div className="bg-jarvis-cyan size-1.5 animate-pulse rounded-full shadow-[0_0_8px_#00f2ff]" />
+          <span className="text-[10px] font-bold tracking-[0.4em] text-white/40 uppercase">
+            Real-time Stream
+          </span>
         </motion.div>
         <ActiveConsole externalLogs={messages} />
       </div>
 
       {/* ── CENTRO: O Núcleo (Orb) ─────────────────────────────────────────── */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-         {/* Circulos decorativos rotativos (Aesthetics) */}
-         <motion.div 
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        {/* Circulos decorativos rotativos (Aesthetics) */}
+        <motion.div
           animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute size-[500px] border border-white/5 rounded-full"
-         />
-         <motion.div 
+          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+          className="absolute size-[500px] rounded-full border border-white/5"
+        />
+        <motion.div
           animate={{ rotate: -360 }}
-          transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-          className="absolute size-[700px] border border-white/[0.02] rounded-full"
-         />
+          transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+          className="absolute size-[700px] rounded-full border border-white/[0.02]"
+        />
 
         <div className="relative flex flex-col items-center">
-            <VantaOrb
-                // @ts-ignore - Componente dinâmico
-                isConnected={isConnected}
-                color={isSpeaking ? 0x7000ff : 0x1da3b9}
-                vantaRef={vantaEffectRef}
-            />
-            
-            <AnimatePresence>
-                {isSpeaking && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="mt-8 px-8 py-3 cyber-glass rounded-full text-jarvis-cyan text-[10px] font-bold uppercase tracking-[0.5em] animate-pulse"
-                    >
-                        Transmitting...
-                    </motion.div>
-                )}
-            </AnimatePresence>
+          <VantaOrb
+            isConnected={isConnected}
+            color={isSpeaking ? 0x7000ff : 0x1da3b9}
+            vantaRef={vantaEffectRef}
+          />
+
+          <AnimatePresence>
+            {isSpeaking && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="cyber-glass text-jarvis-cyan mt-8 animate-pulse rounded-full px-8 py-3 text-[10px] font-bold tracking-[0.5em] uppercase"
+              >
+                Transmitting...
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* ── CANTO SUPERIOR DIREITO: Vision Preview ──────────────────────────── */}
-       <AnimatePresence>
+      <AnimatePresence>
         {isCameraEnabled && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="absolute top-6 right-72 z-30 w-56 h-36 cyber-glass rounded-xl overflow-hidden border-jarvis-cyan/20"
+            className="cyber-glass border-jarvis-cyan/20 absolute top-6 right-72 z-30 h-36 w-56 overflow-hidden rounded-xl"
           >
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              muted 
-              playsInline 
-              className="w-full h-full object-cover grayscale brightness-125 opacity-70"
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              playsInline
+              className="h-full w-full object-cover opacity-70 brightness-125 grayscale"
             />
-            <div className="absolute inset-0 bg-blue-500/10 pointer-events-none" />
+            <div className="pointer-events-none absolute inset-0 bg-blue-500/10" />
             <div className="absolute top-2 left-2 flex items-center gap-1.5">
-                <div className="size-1 bg-red-500 rounded-full animate-pulse" />
-                <span className="text-[8px] font-mono text-white/50 tracking-tighter">CMD_VISION_ALPHA</span>
+              <div className="size-1 animate-pulse rounded-full bg-red-500" />
+              <span className="font-mono text-[8px] tracking-tighter text-white/50">
+                CMD_VISION_ALPHA
+              </span>
             </div>
           </motion.div>
         )}
@@ -173,14 +177,14 @@ export const SessionView = ({
         transition={{ delay: 1 }}
         className="relative z-40 mx-auto mb-8 w-full max-w-2xl px-4"
       >
-        <div className="cyber-glass p-2 rounded-2xl border-white/5">
+        <div className="cyber-glass rounded-2xl border-white/5 p-2">
           <AgentControlBar
             controls={{
-                leave: true,
-                microphone: true,
-                chat: appConfig.supportsChatInput,
-                camera: true, 
-                screenShare: true,
+              leave: true,
+              microphone: true,
+              chat: appConfig.supportsChatInput,
+              camera: true,
+              screenShare: true,
             }}
             isChatOpen={chatOpen}
             onIsChatOpenChange={setChatOpen}
@@ -190,4 +194,3 @@ export const SessionView = ({
     </section>
   );
 };
-

@@ -2,11 +2,9 @@
 
 import { type ComponentProps, useMemo } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import {
-  type AgentState,
-} from '@/types/agent';
 import { useAgentAudioVisualizerRadialAnimator } from '@/hooks/agents-ui/use-agent-audio-visualizer-radial';
 import { cn } from '@/lib/shadcn/utils';
+import { type AgentState } from '@/types/agent';
 
 export const AgentAudioVisualizerRadialVariants = cva(
   [

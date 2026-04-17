@@ -1,12 +1,12 @@
 'use client';
 
 import { type ComponentProps, useMemo } from 'react';
-import { log } from '@/lib/logger';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { type AgentState } from '@/types/agent';
 import { ReactShaderToy } from '@/components/agents-ui/react-shader-toy';
 import { useAgentAudioVisualizerWave } from '@/hooks/agents-ui/use-agent-audio-visualizer-wave';
+import { log } from '@/lib/logger';
 import { cn } from '@/lib/shadcn/utils';
+import { type AgentState } from '@/types/agent';
 
 const DEFAULT_COLOR = '#1FD5F9';
 
@@ -251,6 +251,10 @@ export interface AgentAudioVisualizerWaveProps {
    */
   volume?: number;
   /**
+   * The raw audio track, preserved for compatibility with livekit integration.
+   */
+  audioTrack?: MediaStreamTrack | null;
+  /**
    * Additional CSS class names to apply to the container.
    */
   className?: string;
@@ -280,6 +284,7 @@ export function AgentAudioVisualizerWave({
   color,
   lineWidth,
   blur,
+  volume,
   audioTrack,
   className,
   ref,
@@ -287,6 +292,8 @@ export function AgentAudioVisualizerWave({
 }: AgentAudioVisualizerWaveProps &
   ComponentProps<'div'> &
   VariantProps<typeof AgentAudioVisualizerWaveVariants>) {
+  void audioTrack;
+
   const _lineWidth = useMemo(() => {
     if (lineWidth !== undefined) {
       return lineWidth;

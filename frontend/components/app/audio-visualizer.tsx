@@ -1,28 +1,59 @@
-import { type MotionProps, motion } from 'motion/react';
-import { useJarvis } from '@/context/JarvisContext';
-import { AppConfig } from '@/app-config';
 import dynamic from 'next/dynamic';
+import { type MotionProps, motion } from 'motion/react';
+import type { ComponentProps } from 'react';
+import { AppConfig } from '@/app-config';
+import type { AgentAudioVisualizerAuraProps } from '@/components/agents-ui/agent-audio-visualizer-aura';
+import type { AgentAudioVisualizerBarProps } from '@/components/agents-ui/agent-audio-visualizer-bar';
+import type { AgentAudioVisualizerGridProps } from '@/components/agents-ui/agent-audio-visualizer-grid';
+import type { AgentAudioVisualizerRadialProps } from '@/components/agents-ui/agent-audio-visualizer-radial';
+import type { AgentAudioVisualizerWaveProps } from '@/components/agents-ui/agent-audio-visualizer-wave';
+import { useJarvis } from '@/context/JarvisContext';
 import { cn } from '@/lib/shadcn/utils';
 
 // Lazy imports — cada visualizador só carrega se for o tipo configurado
-const AgentAudioVisualizerAura = dynamic(
-  () => import('@/components/agents-ui/agent-audio-visualizer-aura').then(m => ({ default: m.AgentAudioVisualizerAura })),
+const AgentAudioVisualizerAura = dynamic<
+  AgentAudioVisualizerAuraProps & ComponentProps<'div'>
+>(
+  () =>
+    import('@/components/agents-ui/agent-audio-visualizer-aura').then((m) => ({
+      default: m.AgentAudioVisualizerAura,
+    })),
   { ssr: false }
 );
-const AgentAudioVisualizerBar = dynamic(
-  () => import('@/components/agents-ui/agent-audio-visualizer-bar').then(m => ({ default: m.AgentAudioVisualizerBar })),
+const AgentAudioVisualizerBar = dynamic<
+  AgentAudioVisualizerBarProps & ComponentProps<'div'>
+>(
+  () =>
+    import('@/components/agents-ui/agent-audio-visualizer-bar').then((m) => ({
+      default: m.AgentAudioVisualizerBar,
+    })),
   { ssr: false }
 );
-const AgentAudioVisualizerGrid = dynamic(
-  () => import('@/components/agents-ui/agent-audio-visualizer-grid').then(m => ({ default: m.AgentAudioVisualizerGrid })),
+const AgentAudioVisualizerGrid = dynamic<
+  AgentAudioVisualizerGridProps & ComponentProps<'div'>
+>(
+  () =>
+    import('@/components/agents-ui/agent-audio-visualizer-grid').then((m) => ({
+      default: m.AgentAudioVisualizerGrid,
+    })),
   { ssr: false }
 );
-const AgentAudioVisualizerRadial = dynamic(
-  () => import('@/components/agents-ui/agent-audio-visualizer-radial').then(m => ({ default: m.AgentAudioVisualizerRadial })),
+const AgentAudioVisualizerRadial = dynamic<
+  AgentAudioVisualizerRadialProps & ComponentProps<'div'>
+>(
+  () =>
+    import('@/components/agents-ui/agent-audio-visualizer-radial').then((m) => ({
+      default: m.AgentAudioVisualizerRadial,
+    })),
   { ssr: false }
 );
-const AgentAudioVisualizerWave = dynamic(
-  () => import('@/components/agents-ui/agent-audio-visualizer-wave').then(m => ({ default: m.AgentAudioVisualizerWave })),
+const AgentAudioVisualizerWave = dynamic<
+  AgentAudioVisualizerWaveProps & ComponentProps<'div'>
+>(
+  () =>
+    import('@/components/agents-ui/agent-audio-visualizer-wave').then((m) => ({
+      default: m.AgentAudioVisualizerWave,
+    })),
   { ssr: false }
 );
 
@@ -50,11 +81,11 @@ export function AudioVisualizer({
       return (
         <motion.div className={cn('size-[300px] md:size-[450px]', className)} {...props}>
           <AgentAudioVisualizerAura
-            state={agentState as any}
+            state={agentState}
             volume={normalizedVolume}
             color={audioVisualizerColor}
             colorShift={audioVisualizerAuraColorShift}
-            className="w-full h-full"
+            className="h-full w-full"
           />
         </motion.div>
       );
@@ -64,7 +95,7 @@ export function AudioVisualizer({
       return (
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerWave
-            state={agentState as any}
+            state={agentState}
             volume={normalizedVolume}
             color={audioVisualizerColor}
             lineWidth={isChatOpen ? audioVisualizerWaveLineWidth * 2 : audioVisualizerWaveLineWidth}
@@ -90,7 +121,7 @@ export function AudioVisualizer({
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerGrid
             size={size}
-            state={agentState as any}
+            state={agentState}
             volume={normalizedVolume}
             rowCount={audioVisualizerGridRowCount}
             columnCount={audioVisualizerGridColumnCount}
@@ -108,7 +139,7 @@ export function AudioVisualizer({
         <motion.div className={className} {...props}>
           <AgentAudioVisualizerRadial
             size="xl"
-            state={agentState as any}
+            state={agentState}
             volume={normalizedVolume}
             radius={audioVisualizerRadialRadius}
             barCount={audioVisualizerRadialBarCount}
@@ -146,10 +177,10 @@ export function AudioVisualizer({
         >
           <AgentAudioVisualizerBar
             size={size}
-            state={agentState as any}
+            state={agentState}
             volume={normalizedVolume}
             barCount={audioVisualizerBarCount}
-            className="w-full h-full gap-2"
+            className="h-full w-full gap-2"
           />
         </motion.div>
       );

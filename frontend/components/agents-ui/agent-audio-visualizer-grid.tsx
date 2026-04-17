@@ -12,13 +12,11 @@ import React, {
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import {
-  type AgentState,
-} from '@/types/agent';
-import {
   type Coordinate,
   useAgentAudioVisualizerGridAnimator,
 } from '@/hooks/agents-ui/use-agent-audio-visualizer-grid';
 import { cn } from '@/lib/shadcn/utils';
+import { type AgentState } from '@/types/agent';
 
 function cloneSingleChild(
   children: ReactNode | ReactNode[],

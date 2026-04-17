@@ -101,7 +101,7 @@ export function TileLayout({ chatOpen, appConfig }: TileLayoutProps) {
       <div className="relative mx-auto h-full max-w-2xl px-4 md:px-0">
         <ScreenshotGallery
           apiUrl={appConfig?.jarvisApiUrl}
-          className="absolute -right-32 top-0 hidden xl:block"
+          className="absolute top-0 -right-32 hidden xl:block"
         />
         <VisionPiP apiUrl={appConfig?.jarvisApiUrl} />
         <div className={cn(classNames.grid)}>
@@ -133,7 +133,7 @@ export function TileLayout({ chatOpen, appConfig }: TileLayoutProps) {
                     delay: animationDelay,
                   }}
                   className={cn(
-                    'bg-transparent aspect-square h-[90px] rounded-md border-none transition-none',
+                    'aspect-square h-[90px] rounded-md border-none bg-transparent transition-none',
                     chatOpen && 'drop-shadow-none'
                   )}
                 >
