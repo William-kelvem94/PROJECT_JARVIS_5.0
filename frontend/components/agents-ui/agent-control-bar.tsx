@@ -258,7 +258,7 @@ export function AgentControlBar({
             )}
           </div>
 
-          <div className="mx-2 h-6 w-[1px] bg-white/10" />
+          <div className="mx-2 h-6 w-px bg-white/10" />
 
           {controls?.leave !== false && (
             <Button

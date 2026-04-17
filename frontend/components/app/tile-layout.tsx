@@ -222,7 +222,7 @@ export function TileLayout({ chatOpen, appConfig }: TileLayoutProps) {
                     trackRef={cameraTrack || screenShareTrack}
                     width={(cameraTrack || screenShareTrack)?.publication.dimensions?.width ?? 0}
                     height={(cameraTrack || screenShareTrack)?.publication.dimensions?.height ?? 0}
-                    className="bg-muted aspect-square w-[90px] rounded-md object-cover"
+                    className="bg-muted aspect-square w-22.5 rounded-md object-cover"
                   />
                 </MotionContainer>
               )}

@@ -166,11 +166,11 @@ export function AudioVisualizer({
       return (
         <motion.div
           className={cn(
-            size === 'xl' && 'size-[450px]',
-            size === 'lg' && 'size-[450px]',
-            size === 'md' && 'size-[350px] md:size-[450px]',
-            size === 'sm' && 'size-[300px] md:size-[450px]',
-            size === 'icon' && 'size-[300px] md:size-[450px]',
+            size === 'xl' && 'size-112.5',
+            size === 'lg' && 'size-112.5',
+            size === 'md' && 'size-87.5 md:size-112.5',
+            size === 'sm' && 'size-75 md:size-112.5',
+            size === 'icon' && 'size-75 md:size-112.5',
             className
           )}
           {...props}
