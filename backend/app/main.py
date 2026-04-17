@@ -34,9 +34,6 @@ from . import routes
 from . import voice_websocket
 from .utils.dream_processor import dream_processor
 from .perception.perception_manager import perception_manager
-import asyncio
-from loguru import logger
-from typing import Dict, Any
 from contextlib import asynccontextmanager
 
 load_dotenv(base_dir / '.env')

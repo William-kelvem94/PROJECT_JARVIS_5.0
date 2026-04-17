@@ -89,7 +89,7 @@ export function VisionPiP({ apiUrl = 'http://localhost:8000' }: VisionPiPProps) 
             )}
 
             {/* Overlay Controls */}
-            <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="absolute inset-0 flex items-end bg-linear-to-t from-black/60 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-1 font-mono text-[8px] text-white/60">
                   <Globe className="size-2.5" />

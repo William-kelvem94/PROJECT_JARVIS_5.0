@@ -48,7 +48,7 @@ export function ChatTranscript({
   const agentState = 'idle'; // Mock para a versão nativa
 
   return (
-    <div className="absolute top-0 bottom-[135px] flex w-full flex-col md:bottom-[170px]">
+    <div className="absolute top-0 bottom-33.75 flex w-full flex-col md:bottom-42.5">
       <AnimatePresence>
         {!hidden && (
           <MotionContainer

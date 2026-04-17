@@ -88,7 +88,7 @@ export function LogHistoryModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -133,7 +133,7 @@ export function LogHistoryModal({
               </select>
             </div>
 
-            <div className="flex min-w-[200px] flex-1 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+            <div className="flex min-w-50 flex-1 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
               <Search className="size-4 text-white/30" />
               <input
                 type="text"
@@ -176,7 +176,7 @@ export function LogHistoryModal({
                   {filteredLogs.map((log, i) => (
                     <tr
                       key={i}
-                      className="group border-b border-white/5 transition-colors hover:bg-white/[0.02]"
+                      className="group border-b border-white/5 transition-colors hover:bg-white/2"
                     >
                       <td className="p-4 whitespace-nowrap">
                         <div

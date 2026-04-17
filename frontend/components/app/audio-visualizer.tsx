@@ -79,7 +79,7 @@ export function AudioVisualizer({
     case 'aura': {
       const { audioVisualizerColor, audioVisualizerAuraColorShift } = appConfig;
       return (
-        <motion.div className={cn('size-[300px] md:size-[450px]', className)} {...props}>
+        <motion.div className={cn('size-75 md:size-112.5', className)} {...props}>
           <AgentAudioVisualizerAura
             state={agentState}
             volume={normalizedVolume}
@@ -99,7 +99,7 @@ export function AudioVisualizer({
             volume={normalizedVolume}
             color={audioVisualizerColor}
             lineWidth={isChatOpen ? audioVisualizerWaveLineWidth * 2 : audioVisualizerWaveLineWidth}
-            className="size-[300px] md:size-[450px]"
+            className="size-75 md:size-112.5"
           />
         </motion.div>
       );
@@ -128,7 +128,7 @@ export function AudioVisualizer({
             radius={Math.round(
               Math.min(audioVisualizerGridRowCount, audioVisualizerGridColumnCount) / 4
             )}
-            className={cn('size-[350px] gap-0 p-8 md:size-[450px]')}
+            className={cn('size-87.5 gap-0 p-8 md:size-112.5')}
           />
         </motion.div>
       );
@@ -143,7 +143,7 @@ export function AudioVisualizer({
             volume={normalizedVolume}
             radius={audioVisualizerRadialRadius}
             barCount={audioVisualizerRadialBarCount}
-            className="size-[450px]"
+            className="size-112.5"
           />
         </motion.div>
       );

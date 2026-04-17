@@ -71,12 +71,12 @@ export const SessionView = ({
   }, [isCameraEnabled, localStream]);
 
   return (
-    <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-[#020205]" {...props}>
+    <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-jarvis-bg" {...props}>
       {/* Camada de Background Ambient Gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,25,1)_0%,rgba(2,2,5,1)_100%)]" />
 
       {/* Sombras e Reflexos de Cockpit */}
-      <div className="from-jarvis-cyan/5 pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b to-transparent" />
+      <div className="from-jarvis-cyan/5 pointer-events-none absolute inset-x-0 top-0 h-32 bg-linear-to-b to-transparent" />
 
       {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
 
@@ -111,12 +111,12 @@ export const SessionView = ({
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute size-[500px] rounded-full border border-white/5"
+          className="absolute size-125 rounded-full border border-white/5"
         />
         <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-          className="absolute size-[700px] rounded-full border border-white/[0.02]"
+          className="absolute size-175 rounded-full border border-white/2"
         />
 
         <div className="relative flex flex-col items-center">
