@@ -17,7 +17,7 @@ export interface AppConfig {
   // agent dispatch configuration
   agentName?: string;
   jarvisApiUrl?: string;
-  audioVisualizerType?: string;  // e.g. 'wave', 'bar', ...
+  audioVisualizerType?: string; // e.g. 'wave', 'bar', ...
   audioVisualizerColor?: string;
   audioVisualizerAuraColorShift?: number;
   audioVisualizerWaveLineWidth?: number;

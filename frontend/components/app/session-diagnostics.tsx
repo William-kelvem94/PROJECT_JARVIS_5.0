@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/shadcn/utils';
 import { log } from '@/lib/logger';
+import { cn } from '@/lib/shadcn/utils';
 
 interface SessionDiagnosticsProps {
   errors: string[];
@@ -17,14 +17,20 @@ function limitErrors(errors: string[]) {
 }
 
 // ...existing code...
-export const SessionDiagnostics = React.memo(function SessionDiagnostics({ errors, onClear }: SessionDiagnosticsProps) {
+export const SessionDiagnostics = React.memo(function SessionDiagnostics({
+  errors,
+  onClear,
+}: SessionDiagnosticsProps) {
   const limited = limitErrors(errors);
   const lastErrorRef = React.useRef<string | null>(null);
   const lastLogTimeRef = React.useRef<number>(0);
   React.useEffect(() => {
     if (limited.length > 0) {
       const now = Date.now();
-      if (lastErrorRef.current !== limited[limited.length - 1] || now - lastLogTimeRef.current > ERROR_THROTTLE_MS) {
+      if (
+        lastErrorRef.current !== limited[limited.length - 1] ||
+        now - lastLogTimeRef.current > ERROR_THROTTLE_MS
+      ) {
         log.error(limited[limited.length - 1]);
         lastErrorRef.current = limited[limited.length - 1];
         lastLogTimeRef.current = now;
@@ -59,7 +65,7 @@ export const SessionDiagnostics = React.memo(function SessionDiagnostics({ error
     >
       <div className="max-w-xl space-y-4 text-center">
         <h2 className="text-xl font-bold">Session diagnostics</h2>
-        <div className="text-left max-h-40 overflow-auto rounded bg-gray-900/50 p-2">
+        <div className="max-h-40 overflow-auto rounded bg-gray-900/50 p-2 text-left">
           <ul className="list-inside list-disc">
             {limited.map((err, idx) => (
               <li key={idx} className="wrap-break-word">
@@ -68,18 +74,14 @@ export const SessionDiagnostics = React.memo(function SessionDiagnostics({ error
             ))}
           </ul>
         </div>
-        <div className="flex gap-2 justify-center">
+        <div className="flex justify-center gap-2">
           <Button size="sm" onClick={copyToClipboard}>
             Copy details
           </Button>
           <Button size="sm" variant="secondary" onClick={onClear}>
             Dismiss
           </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => window.location.reload()}
-          >
+          <Button size="sm" variant="destructive" onClick={() => window.location.reload()}>
             Reload
           </Button>
         </div>

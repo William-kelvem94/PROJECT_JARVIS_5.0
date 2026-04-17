@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 export interface Message {
   role: 'user' | 'assistant';
@@ -36,7 +36,9 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   const [isMicEnabled, setIsMicEnabled] = useState(true);
   const [isCameraEnabled, setIsCameraEnabled] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [agentState, setAgentState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
+  const [agentState, setAgentState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>(
+    'idle'
+  );
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0);
@@ -66,12 +68,12 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
 
   const connect = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
-        video: false 
+        video: false,
       });
       setLocalStream(stream);
-      
+
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const analyser = audioContextRef.current.createAnalyser();
@@ -79,7 +81,8 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       source.connect(analyser);
       analyserRef.current = analyser;
 
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${window.location.hostname}:8000/ws/voice-stream`;
+      const wsUrl =
+        process.env.NEXT_PUBLIC_WS_URL || `ws://${window.location.hostname}:8000/ws/voice-stream`;
       const ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
 
@@ -87,7 +90,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         setIsConnected(true);
         setAgentState('idle');
         setError(null);
-        
+
         // Em vez de MediaRecorder, usamos ScriptProcessor para áudio BRUTO (PCM)
         const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         source.connect(processor);
@@ -99,7 +102,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             const pcmData = new Int16Array(inputData.length);
             // Conversão Float32 -> Int16
             for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
+              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7fff;
             }
             ws.send(pcmData.buffer);
           }
@@ -118,8 +121,8 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             playSource.connect(analyserRef.current!);
             playSource.connect(audioContextRef.current.destination);
             playSource.onended = () => {
-                setIsSpeaking(false);
-                setAgentState('idle');
+              setIsSpeaking(false);
+              setAgentState('idle');
             };
             playSource.start();
           } catch (e) {
@@ -129,15 +132,18 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'message') {
-              setMessages(prev => [...prev, {
-                role: data.role,
-                content: data.text,
-                timestamp: new Date().toLocaleTimeString()
-              }]);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: data.role,
+                  content: data.text,
+                  timestamp: new Date().toLocaleTimeString(),
+                },
+              ]);
             } else if (data.type === 'jarvis_speaking') {
-                setAgentState(data.state ? 'speaking' : 'idle');
+              setAgentState(data.state ? 'speaking' : 'idle');
             }
-          } catch(e) {}
+          } catch (e) {}
         }
       };
 
@@ -146,19 +152,18 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         setLocalStream(null);
       };
 
-      ws.onerror = () => setError("Conexão perdida com o Jarvis.");
+      ws.onerror = () => setError('Conexão perdida com o Jarvis.');
       wsRef.current = ws;
-
     } catch (err: any) {
-      setError(err.message || "Erro ao iniciar Jarvis.");
+      setError(err.message || 'Erro ao iniciar Jarvis.');
     }
   }, []);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) wsRef.current.close();
     if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
-    if (localStream) localStream.getTracks().forEach(t => t.stop());
-    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+    if (localStream) localStream.getTracks().forEach((t) => t.stop());
+    if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
     setIsConnected(false);
     setLocalStream(null);
     setScreenStream(null);
@@ -169,16 +174,16 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       const audioTrack = localStream.getAudioTracks()[0];
       audioTrack.enabled = !audioTrack.enabled;
       setIsMicEnabled(audioTrack.enabled);
-      logger_local("Microfone", audioTrack.enabled ? "Ativado" : "Mudo");
+      logger_local('Microfone', audioTrack.enabled ? 'Ativado' : 'Mudo');
     }
   }, [localStream]);
 
   const toggleCamera = useCallback(async () => {
     try {
       if (isCameraEnabled) {
-        localStream?.getVideoTracks().forEach(t => {
-            t.stop();
-            localStream.removeTrack(t);
+        localStream?.getVideoTracks().forEach((t) => {
+          t.stop();
+          localStream.removeTrack(t);
         });
         setIsCameraEnabled(false);
       } else {
@@ -188,14 +193,14 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         setIsCameraEnabled(true);
       }
     } catch (e) {
-      console.error("Erro ao acessar câmera:", e);
+      console.error('Erro ao acessar câmera:', e);
     }
   }, [isCameraEnabled, localStream]);
 
   const toggleScreenShare = useCallback(async () => {
     try {
       if (isScreenSharing) {
-        screenStream?.getTracks().forEach(t => t.stop());
+        screenStream?.getTracks().forEach((t) => t.stop());
         setScreenStream(null);
         setIsScreenSharing(false);
       } else {
@@ -203,23 +208,26 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         setScreenStream(displayStream);
         setIsScreenSharing(true);
         displayStream.getVideoTracks()[0].onended = () => {
-            setIsScreenSharing(false);
-            setScreenStream(null);
+          setIsScreenSharing(false);
+          setScreenStream(null);
         };
       }
     } catch (e) {
-      console.error("Erro ao compartilhar tela:", e);
+      console.error('Erro ao compartilhar tela:', e);
     }
   }, [isScreenSharing, screenStream]);
 
   const sendMessage = useCallback((text: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ type: 'text_message', text }));
-        setMessages(prev => [...prev, {
-            role: 'user',
-            content: text,
-            timestamp: new Date().toLocaleTimeString()
-        }]);
+      wsRef.current.send(JSON.stringify({ type: 'text_message', text }));
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'user',
+          content: text,
+          timestamp: new Date().toLocaleTimeString(),
+        },
+      ]);
     }
   }, []);
 
@@ -228,30 +236,31 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <JarvisContext.Provider value={{
-      isConnected,
-      isSpeaking,
-      isMicEnabled,
-      isCameraEnabled,
-      isScreenSharing,
-      agentState,
-      messages,
-      error,
-      volume,
-      localStream,
-      screenStream,
-      connect,
-      disconnect,
-      sendMessage,
-      toggleMic,
-      toggleCamera,
-      toggleScreenShare
-    }}>
+    <JarvisContext.Provider
+      value={{
+        isConnected,
+        isSpeaking,
+        isMicEnabled,
+        isCameraEnabled,
+        isScreenSharing,
+        agentState,
+        messages,
+        error,
+        volume,
+        localStream,
+        screenStream,
+        connect,
+        disconnect,
+        sendMessage,
+        toggleMic,
+        toggleCamera,
+        toggleScreenShare,
+      }}
+    >
       {children}
     </JarvisContext.Provider>
   );
 }
-
 
 export function useJarvis() {
   const context = useContext(JarvisContext);

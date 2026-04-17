@@ -32,12 +32,15 @@ function useAnimatedValue<T>(initialValue: T) {
 interface UseAgentAudioVisualizerWaveAnimatorArgs {
   state?: AgentState;
   volume?: number;
+  audioTrack?: MediaStreamTrack | null;
 }
 
 export function useAgentAudioVisualizerWave({
   state,
+  volume,
   audioTrack,
 }: UseAgentAudioVisualizerWaveAnimatorArgs) {
+  void audioTrack;
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
   const { value: amplitude, animate: animateAmplitude } = useAnimatedValue(DEFAULT_AMPLITUDE);
   const { value: frequency, animate: animateFrequency } = useAnimatedValue(DEFAULT_FREQUENCY);

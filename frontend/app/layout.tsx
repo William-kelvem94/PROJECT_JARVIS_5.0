@@ -5,8 +5,9 @@ import { ThemeProvider } from '@/components/app/theme-provider';
 import { ThemeToggle } from '@/components/app/theme-toggle';
 import { cn } from '@/lib/shadcn/utils';
 import { getAppConfig, getStyles } from '@/lib/utils';
-import '@/styles/globals.css'; // Tailwind + custom cyberpunk
+import '@/styles/globals.css';
 
+// Tailwind + custom cyberpunk
 
 const publicSans = Public_Sans({
   variable: '--font-public-sans',
@@ -61,25 +62,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       )}
     >
       <head>
-        {styles && (
-          <style
-            suppressHydrationWarning
-            dangerouslySetInnerHTML={{ __html: styles }}
-          />
-        )}
+        {styles && <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: styles }} />}
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
       </head>
       <body className="overflow-x-hidden bg-linear-to-br from-gray-950 via-black to-gray-900">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {children}
           <div className="group fixed bottom-4 left-1/2 z-50 mb-2 -translate-x-1/2">
-            <ThemeToggle className="translate-y-20 opacity-60 hover:opacity-100 transition-all delay-150 duration-300 group-hover:translate-y-0" />
+            <ThemeToggle className="translate-y-20 opacity-60 transition-all delay-150 duration-300 group-hover:translate-y-0 hover:opacity-100" />
           </div>
         </ThemeProvider>
       </body>

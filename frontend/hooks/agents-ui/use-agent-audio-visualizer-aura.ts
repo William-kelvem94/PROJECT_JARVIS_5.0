@@ -37,10 +37,7 @@ function useAnimatedValue<T>(initialValue: T) {
   return { value, motionValue, controls: controlsRef, animate: animateFn };
 }
 
-export function useAgentAudioVisualizerAura(
-  state: AgentState | undefined,
-  volume: number = 0
-) {
+export function useAgentAudioVisualizerAura(state: AgentState | undefined, volume: number = 0) {
   const [speed, setSpeed] = useState(DEFAULT_SPEED);
   const {
     value: scale,

@@ -1,12 +1,12 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "Inter", "Outfit", sans-serif;
-  --font-mono: "Fira Code", monospace;
+  --font-sans: 'Inter', 'Outfit', sans-serif;
+  --font-mono: 'Fira Code', monospace;
 
   --color-jarvis-cyan: #00f2ff;
   --color-jarvis-violet: #7000ff;
@@ -70,9 +70,18 @@ body {
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(0.95); opacity: 0.5; }
+  0% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.5;
+  }
 }
 
 .animate-pulse-slow {

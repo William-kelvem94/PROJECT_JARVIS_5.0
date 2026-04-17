@@ -2,10 +2,10 @@
 
 import React, { type ComponentProps, useMemo } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import { type AgentState } from '@/types/agent';
 import { ReactShaderToy } from '@/components/agents-ui/react-shader-toy';
 import { useAgentAudioVisualizerAura } from '@/hooks/agents-ui/use-agent-audio-visualizer-aura';
 import { cn } from '@/lib/shadcn/utils';
+import { type AgentState } from '@/types/agent';
 
 const DEFAULT_COLOR = '#1FD5F9';
 

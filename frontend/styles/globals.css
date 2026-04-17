@@ -128,15 +128,15 @@
     position: relative;
   }
 
-/* Orbe Animado Moderna Leve */
+  /* Orbe Animado Moderna Leve */
   body::before {
-    content: "";
+    content: '';
     position: fixed;
     top: 50%;
     left: 50%;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, rgba(29,163,185,0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(29, 163, 185, 0.1) 0%, transparent 70%);
     border-radius: 50%;
     transform: translate(-50%, -50%);
     animation: orbeFloat 20s ease-in-out infinite;
@@ -146,14 +146,21 @@
   }
 
   @keyframes orbeFloat {
-    0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-    33% { transform: translate(-50%, -48%) scale(1.05) rotate(120deg); }
-    66% { transform: translate(-52%, -50%) scale(0.95) rotate(240deg); }
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    33% {
+      transform: translate(-50%, -48%) scale(1.05) rotate(120deg);
+    }
+    66% {
+      transform: translate(-52%, -50%) scale(0.95) rotate(240deg);
+    }
   }
 
   /* Painel Glassmorphism Cyber Otimizado */
   .cyber-glass {
-    @apply backdrop-blur-sm bg-black/50 border-white/10 border shadow-md;
+    @apply border border-white/10 bg-black/50 shadow-md backdrop-blur-sm;
     box-shadow: 0 0 10px rgba(29, 163, 185, 0.03);
   }
 
@@ -171,4 +178,4 @@
   .mirror {
     transform: scaleX(-1);
   }
-}
+}

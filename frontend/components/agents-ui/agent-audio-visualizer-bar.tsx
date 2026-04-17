@@ -10,11 +10,9 @@ import React, {
   useMemo,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
-import {
-  type AgentState,
-} from '@/types/agent';
 import { useAgentAudioVisualizerBarAnimator } from '@/hooks/agents-ui/use-agent-audio-visualizer-bar';
 import { cn } from '@/lib/shadcn/utils';
+import { type AgentState } from '@/types/agent';
 
 function cloneSingleChild(
   children: ReactNode | ReactNode[],

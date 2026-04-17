@@ -1,10 +1,21 @@
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
-import { Loader, MessageSquareTextIcon, Pin, SendHorizontal, Mic, MicOff, PhoneOff, Monitor, Video, VideoOff } from 'lucide-react';
+import {
+  Loader,
+  MessageSquareTextIcon,
+  Mic,
+  MicOff,
+  Monitor,
+  PhoneOff,
+  Pin,
+  SendHorizontal,
+  Video,
+  VideoOff,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
-import { cn } from '@/lib/shadcn/utils';
 import { useJarvis } from '@/context/JarvisContext';
+import { cn } from '@/lib/shadcn/utils';
 
 interface AgentChatInputProps {
   chatOpen: boolean;
@@ -12,12 +23,14 @@ interface AgentChatInputProps {
   className?: string;
 }
 
-function AgentChatInput({ chatOpen, onSend = async () => { }, className }: AgentChatInputProps) {
+function AgentChatInput({ chatOpen, onSend = async () => {}, className }: AgentChatInputProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<string>('');
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
     e.preventDefault();
     if (!message.trim()) return;
     try {
@@ -37,7 +50,10 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
   }, [chatOpen]);
 
   return (
-    <form onSubmit={handleSubmit} className={cn('mb-3 flex grow items-end gap-2 rounded-md pl-1 text-sm', className)}>
+    <form
+      onSubmit={handleSubmit}
+      className={cn('mb-3 flex grow items-end gap-2 rounded-md pl-1 text-sm', className)}
+    >
       <textarea
         autoFocus
         ref={inputRef}
@@ -46,12 +62,12 @@ function AgentChatInput({ chatOpen, onSend = async () => { }, className }: Agent
         placeholder="Digite algo para o Jarvis Native..."
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e as any);
-            }
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+          }
         }}
-        className="field-sizing-content max-h-16 min-h-8 flex-1 py-2 [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed bg-transparent text-white"
+        className="field-sizing-content max-h-16 min-h-8 flex-1 bg-transparent py-2 text-white [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed"
       />
       <Button
         size="icon"
@@ -93,16 +109,16 @@ export function AgentControlBar({
   const [isLocked, setIsLocked] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { 
-    isConnected, 
-    isMicEnabled, 
-    isCameraEnabled, 
-    isScreenSharing, 
-    toggleMic, 
-    toggleCamera, 
-    toggleScreenShare, 
+  const {
+    isConnected,
+    isMicEnabled,
+    isCameraEnabled,
+    isScreenSharing,
+    toggleMic,
+    toggleCamera,
+    toggleScreenShare,
     disconnect,
-    sendMessage 
+    sendMessage,
   } = useJarvis();
 
   useEffect(() => {
@@ -126,7 +142,7 @@ export function AgentControlBar({
   }, [isChatOpen, isChatOpenUncontrolled, isLocked]);
 
   const handleSendMessage = async (message: string) => {
-     sendMessage(message);
+    sendMessage(message);
   };
 
   return (
@@ -134,10 +150,17 @@ export function AgentControlBar({
       initial={false}
       animate={{
         y: isVisible || isChatOpen || isChatOpenUncontrolled || isLocked ? 0 : 20,
-        opacity: isVisible || isChatOpen || isChatOpenUncontrolled || isLocked ? 1 : 0
+        opacity: isVisible || isChatOpen || isChatOpenUncontrolled || isLocked ? 1 : 0,
       }}
-      transition={{ duration: 0.4, ease: "easeInOut" }}
-      className={cn("relative mx-auto w-fit min-w-75 z-50", !isVisible && !isChatOpen && !isChatOpenUncontrolled && !isLocked && "pointer-events-none transition-all")}
+      transition={{ duration: 0.4, ease: 'easeInOut' }}
+      className={cn(
+        'relative z-50 mx-auto w-fit min-w-75',
+        !isVisible &&
+          !isChatOpen &&
+          !isChatOpenUncontrolled &&
+          !isLocked &&
+          'pointer-events-none transition-all'
+      )}
       onMouseEnter={() => {
         setIsVisible(true);
         if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
@@ -145,7 +168,7 @@ export function AgentControlBar({
     >
       <div
         className={cn(
-          'backdrop-blur-xl bg-black/40 border-[#1da3b9]/20 flex flex-col border p-3 shadow-2xl shadow-[#1da3b9]/5 rounded-xl',
+          'flex flex-col rounded-xl border border-[#1da3b9]/20 bg-black/40 p-3 shadow-2xl shadow-[#1da3b9]/5 backdrop-blur-xl',
           className
         )}
         {...props}
@@ -165,13 +188,15 @@ export function AgentControlBar({
           />
         </motion.div>
 
-        <div className="flex gap-1 items-center">
-          <div className="flex grow gap-2 items-center">
+        <div className="flex items-center gap-1">
+          <div className="flex grow items-center gap-2">
             <button
               onClick={() => setIsLocked(!isLocked)}
               className={cn(
-                "p-2 rounded-full transition-all duration-300 mr-1",
-                isLocked ? "text-[#43d9f0] bg-[#1da3b9]/20" : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                'mr-1 rounded-full p-2 transition-all duration-300',
+                isLocked
+                  ? 'bg-[#1da3b9]/20 text-[#43d9f0]'
+                  : 'text-white/40 hover:bg-white/5 hover:text-white/60'
               )}
               title="Fixar Barra"
             >
@@ -179,26 +204,26 @@ export function AgentControlBar({
             </button>
 
             {controls?.microphone !== false && (
-              <Toggle 
-                aria-label="Alternar microfone" 
-                pressed={isMicEnabled} 
+              <Toggle
+                aria-label="Alternar microfone"
+                pressed={isMicEnabled}
                 onPressedChange={() => toggleMic()}
-                className={cn(!isMicEnabled && "text-red-400 bg-red-400/10")}
+                className={cn(!isMicEnabled && 'bg-red-400/10 text-red-400')}
                 disabled={!isConnected}
               >
-                 {!isMicEnabled ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                {!isMicEnabled ? <MicOff className="size-4" /> : <Mic className="size-4" />}
               </Toggle>
             )}
 
             {controls?.camera !== false && (
-              <Toggle 
-                aria-label="Alternar câmera" 
-                pressed={isCameraEnabled} 
+              <Toggle
+                aria-label="Alternar câmera"
+                pressed={isCameraEnabled}
                 onPressedChange={() => toggleCamera()}
-                className={cn(isCameraEnabled ? "text-[#43d9f0] bg-[#1da3b9]/10" : "text-white/40")}
+                className={cn(isCameraEnabled ? 'bg-[#1da3b9]/10 text-[#43d9f0]' : 'text-white/40')}
                 disabled={!isConnected}
               >
-                 {!isCameraEnabled ? <VideoOff className="size-4" /> : <Video className="size-4" />}
+                {!isCameraEnabled ? <VideoOff className="size-4" /> : <Video className="size-4" />}
               </Toggle>
             )}
 
@@ -208,8 +233,10 @@ export function AgentControlBar({
                 size="icon"
                 onClick={() => toggleScreenShare()}
                 className={cn(
-                    "rounded-md",
-                    isScreenSharing ? "text-[#43d9f0] bg-[#1da3b9]/10" : "text-white/40 hover:text-[#1da3b9] hover:bg-[#1da3b9]/10"
+                  'rounded-md',
+                  isScreenSharing
+                    ? 'bg-[#1da3b9]/10 text-[#43d9f0]'
+                    : 'text-white/40 hover:bg-[#1da3b9]/10 hover:text-[#1da3b9]'
                 )}
                 title="Compartilhar Tela"
                 disabled={!isConnected}
@@ -238,9 +265,9 @@ export function AgentControlBar({
               onClick={() => disconnect()}
               disabled={!isConnected}
               variant="destructive"
-              className="rounded-full font-mono text-xs font-bold tracking-wider px-6 h-9"
+              className="h-9 rounded-full px-6 font-mono text-xs font-bold tracking-wider"
             >
-               ENCERRAR
+              ENCERRAR
             </Button>
           )}
         </div>
@@ -248,4 +275,3 @@ export function AgentControlBar({
     </motion.div>
   );
 }
-

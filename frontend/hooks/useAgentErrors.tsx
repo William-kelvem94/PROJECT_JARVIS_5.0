@@ -31,13 +31,13 @@ export function useAgentErrors() {
   const [errors, setErrors] = React.useState<string[]>([]);
 
   // TODO: Implementar ouvintes de erro vindos do useJarvisVoice se necessário futuramente.
-  
+
   return {
     errors,
     clear: () => setErrors([]),
     addError: (msg: string) => {
-      setErrors(prev => [...prev, msg]);
+      setErrors((prev) => [...prev, msg]);
       toastAlert({ title: 'Erro no Jarvis', description: msg });
-    }
+    },
   };
 }
