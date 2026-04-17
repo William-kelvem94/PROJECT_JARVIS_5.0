@@ -177,6 +177,12 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     
     logger.info("🎙️ Cliente WebSocket de Áudio conectado (Native Local Voice PCM).")
     
+    # Handshake inicial: solicita configuração do cliente (Bug #5)
+    await websocket.send_json({"type": "config_request", "fields": ["sample_rate"]})
+    
+    # 16k é o padrão interno do motor local
+    sample_rate_client = 48000 
+
     # Cumprimento inicial (Greeting)
     async def initial_greeting():
         percep = perception_manager.get_snapshot()
@@ -248,8 +254,8 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                        prediction = oww.predict(chunk_float)
                        for mw, score in prediction.items():
                            if score > 0.45:
-                               logger.success(f"🎙️ Wake Word '{mw}' detectada!")
-                               await websocket.send_json({"type": "wake_word_detected", "model": mw})
+                                logger.success(f"🎙️ Wake Word '{mw}' detectada!")
+                                await websocket.send_json({"type": "wake_word_detected", "model": mw})
                 
                 # Detecção de energia para VAD (Voice Activity Detection)
                 energy = np.abs(chunk_arr).mean()
@@ -268,14 +274,8 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                         if silence_frames > (0.8 * frames_per_sec):
                             full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
                             
-                            # Resampling dinâmico (Item 5 da análise)
-                            # Se o áudio veio em 48kHz, step = 3 para atingir 16kHz
-                            # Se veio em 44.1kHz, step seria ~2.75 (aproximamos para 3 ou sugerimos resampling real)
-                            # Aqui garantimos que o step seja calculado ou fixado em 1 se já estiver em 16k
-                            in_rate = 48000 # Default do browser na maioria dos casos
-                            out_rate = 16000
-                            step = max(1, int(in_rate / out_rate))
-                            
+                            # Resampling dinâmico baseado no handshake (Item 5 da análise)
+                            step = max(1, round(sample_rate_client / 16000))
                             full_audio = full_audio_raw[::step].copy()
                             
                             audio_buffer = bytearray()
@@ -285,12 +285,18 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                             # Dispara processamento em background
                             asyncio.create_task(process_and_reply(full_audio, websocket))
             
-            # 2. Tratamento de Comandos JSON (Texto)
+            # 2. Tratamento de Comandos JSON (Texto e Configuração)
             elif "text" in message:
                 try:
                     import json
                     command_data = json.loads(message["text"])
                     
+                    # Recebe configuracao do cliente (Bug #5)
+                    if command_data.get("type") == "config":
+                        sample_rate_client = command_data.get("sample_rate", 48000)
+                        logger.info(f"⚙️ Cliente configurado: Sample Rate = {sample_rate_client}Hz")
+                        continue
+
                     if command_data.get("type") == "text_message":
                         text_input = command_data.get("text")
                         if text_input:
