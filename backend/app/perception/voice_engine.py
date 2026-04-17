@@ -265,9 +265,9 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
             
         text = " ".join(full_text).strip()
         
-        # Filtro de Alucinações Hardcoded (Backup)
-        hallucinations = ["e o que eu vou fazer?", "e o que eu vou fazer..", "obrigado por assistir", "legendas", "assistir"]
-        if text.lower() in hallucinations or len(text) < 2:
+        # Filtro de Alucinações Inteligente (Item 15 da análise)
+        # Se após o filtro de no_speech_prob não sobrar nada relevante, descartamos.
+        if len(text) < 2:
             return None
             
         return text if text else None

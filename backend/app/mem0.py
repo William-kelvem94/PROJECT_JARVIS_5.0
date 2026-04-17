@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 from loguru import logger
 import json
 import os
+import asyncio
 
 # Hybrid memory: fast local SQLite (always available) + cloud Mem0 (when online)
 # Local memory stores extracted conversation facts; cloud stores LLM-summarized memories.
