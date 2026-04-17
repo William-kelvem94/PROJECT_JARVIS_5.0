@@ -187,7 +187,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
         user_name = percep.get("face_identity") or "Chefe"
         greeting = f"Olá {user_name}! Sistema JARVIS 5.0 online."
         try:
-            audio_bytes = await generate_speech_bytes(greeting, voice="pt-BR-FranciscaNeural")
+            audio_bytes = await generate_speech_bytes(greeting, voice="pt-BR-AntonioNeural")
             if audio_bytes:
                 await websocket.send_bytes(audio_bytes)
                 await websocket.send_json({"type": "message", "role": "assistant", "text": greeting})
