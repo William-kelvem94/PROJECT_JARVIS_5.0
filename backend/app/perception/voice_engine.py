@@ -258,16 +258,16 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
         
         full_text = []
         for seg in segments:
-            # Filtro Inteligente: Se a probabilidade de ser silêncio/ruído for alta, ignora o segmento.
-            if seg.no_speech_prob > 0.5:
+            # Auditando: No speech prob > 0.5 indica alta chance de alucinação por ruído (Bug #15)
+            if getattr(seg, "no_speech_prob", 0.0) > 0.5:
                 continue
             full_text.append(seg.text.strip())
             
         text = " ".join(full_text).strip()
         
-        # Filtro de Alucinações Inteligente (Item 15 da análise)
-        # Se após o filtro de no_speech_prob não sobrar nada relevante, descartamos.
-        if len(text) < 2:
+        # Filtro de fallback secundário
+        hallucinations = ["e o que eu vou fazer?", "obrigado por assistir", "legendas"]
+        if text.lower() in hallucinations or len(text) < 2:
             return None
             
         return text if text else None

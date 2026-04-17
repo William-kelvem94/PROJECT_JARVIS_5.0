@@ -65,9 +65,9 @@ class AsyncMemoryClient:
 
     async def get_all(self, user_id=None):
         """Returns merged memories: cloud first, then local (deduplicated by content)."""
-        import asyncio
         cloud_results = await asyncio.to_thread(self._cloud.get_all, user_id=user_id)
-        local_results = self._local.get_all(user_id=user_id, limit=50)
+        # I/O Local também deve ser em thread se for pesado
+        local_results = await asyncio.to_thread(self._local.get_all, user_id, 50)
 
         # Merge: cloud results take priority, add local ones not already present
         seen = {r.get("memory", "") for r in cloud_results}
@@ -80,12 +80,11 @@ class AsyncMemoryClient:
 
     async def search(self, query, filters=None):
         """Search cloud + local and merge results."""
-        import asyncio
         cloud_resp = await asyncio.to_thread(self._cloud.search, query, filters=filters)
         cloud_results = cloud_resp.get("results", []) if isinstance(cloud_resp, dict) else cloud_resp
 
         user_id = (filters or {}).get("user_id")
-        local_results = self._local.search(user_id, query, limit=20) if user_id else []
+        local_results = await asyncio.to_thread(self._local.search, user_id, query, 20) if user_id else []
 
         seen = {r.get("memory", "") for r in cloud_results}
         for loc in local_results:
@@ -97,12 +96,10 @@ class AsyncMemoryClient:
 
     async def add(self, messages, user_id=None):
         """Save to both cloud and local."""
-        import asyncio
-        # Cloud save (Async wrapper around sync file I/O)
+        # Ambos os sistemas de I/O em thread forçada (Bug #10)
         cloud_result = await asyncio.to_thread(self._cloud.add, messages, user_id=user_id)
-        # Local save (smart: filters system prompts, deduplicates)
         if user_id:
-            self._local.add_session(user_id, messages)
+            await asyncio.to_thread(self._local.add_session, user_id, messages)
         return cloud_result
 
     def get_local_stats(self, user_id: str) -> dict:
