@@ -14,9 +14,16 @@ class EngineerBrain:
     def __init__(self, model=None):
         self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234/v1/chat/completions")
         self.model = model or os.getenv("LM_STUDIO_MODEL", "llama-3.2-3b-instruct")
+        self._cached_model = None
+        self._last_model_check = 0
 
     async def get_active_lmstudio_model(self) -> str:
-        """Busca automaticamente o modelo ativo no LM Studio Local."""
+        """Busca automaticamente o modelo ativo no LM Studio Local com cache de 30s."""
+        import time
+        now = time.time()
+        if self._cached_model and (now - self._last_model_check < 30):
+            return self._cached_model
+
         url = self.lm_studio_url.replace("/chat/completions", "/models")
         try:
             async with aiohttp.ClientSession() as session:
@@ -27,9 +34,14 @@ class EngineerBrain:
                         if models:
                             active = models[0].get("id")
                             logger.info(f"🧠 Cérebro detectado no LM Studio: {active}")
+                            self._cached_model = active
+                            self._last_model_check = now
                             return active
         except Exception:
             logger.warning("⚠️ LM Studio não detectado ou porta 1234 fechada.")
+        
+        self._cached_model = self.model
+        self._last_model_check = now
         return self.model
 
     async def _get_safety_params(self):
@@ -132,8 +144,10 @@ class EngineerBrain:
             logger.error(f"Erro no Cérebro Local: {e}")
             yield "O processamento falhou. Verifique o console do LM Studio."
 
-    async def reason_local(self, prompt: str, context: str = "", model: str = "llama3"):
-        return None
+    async def reason_local(self, prompt: str, context: str = "", model: str = None):
+        """Versão simplificada para chamadas rápidas locais."""
+        if model: self.model = model
+        return await self.reason(prompt, context=context)
 
 # Singleton para uso no sistema
 brain = EngineerBrain()
