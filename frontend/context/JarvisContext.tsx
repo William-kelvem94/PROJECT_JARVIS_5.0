@@ -107,6 +107,12 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             ws.send(pcmData.buffer);
           }
         };
+        // Envia configuração real do hardware (Bug #5)
+        ws.send(JSON.stringify({
+          type: 'config',
+          sample_rate: audioContextRef.current?.sampleRate || 48000
+        }));
+
         (window as any)._audioProcessor = processor; // Evita Garbage Collection
       };
 

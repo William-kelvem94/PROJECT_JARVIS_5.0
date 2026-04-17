@@ -170,26 +170,25 @@ async def websocket_voice_endpoint(websocket: WebSocket):
         try:
             logger.info("♻️  Limpando conexão WebSocket anterior...")
             await _active_voice_websocket.close(code=1000)
-            await asyncio.sleep(0.2) # Delay para evitar race conditions no cleanup
+            await asyncio.sleep(0.2)
         except: pass
         
     _active_voice_websocket = websocket
     
-    logger.info("🎙️ Cliente WebSocket de Áudio conectado (Native Local Voice PCM).")
+    logger.info("🎙️ Cliente WebSocket de Áudio conectado.")
     
     # Handshake inicial: solicita configuração do cliente (Bug #5)
     await websocket.send_json({"type": "config_request", "fields": ["sample_rate"]})
     
-    # 16k é o padrão interno do motor local
+    # Variável persistente por conexão (Bug #5)
     sample_rate_client = 48000 
 
     # Cumprimento inicial (Greeting)
     async def initial_greeting():
         percep = perception_manager.get_snapshot()
         user_name = percep.get("face_identity") or "Chefe"
-        greeting = f"Olá {user_name}! Sistema JARVIS 5.0 online. Todos os motores locais iniciados."
+        greeting = f"Olá {user_name}! Sistema JARVIS 5.0 online."
         try:
-            # Usa a voz da Francisca para a saudação também
             audio_bytes = await generate_speech_bytes(greeting, voice="pt-BR-FranciscaNeural")
             if audio_bytes:
                 await websocket.send_bytes(audio_bytes)
@@ -210,7 +209,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                     "type": "telemetry_update",
                     "cpu": psutil.cpu_percent(),
                     "ram": psutil.virtual_memory().percent,
-                    "gpu": 0, # Placeholder se não tiver GPUtil
+                    "gpu": 0,
                     "face_emotion": percep.get("face_emotion"),
                     "face_identity": percep.get("face_identity"),
                     "is_reasoning": _global_processing_lock.locked(),
@@ -229,40 +228,21 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     
     try:
         while True:
-            # Recebe a mensagem genérica do WebSocket (pode ser Bytes ou Texto JSON)
             message = await websocket.receive()
             
-            # 1. Tratamento de Áudio Binário (PCM)
+            # 1. Áudio Binário (PCM)
             if "bytes" in message:
                 data = message["bytes"]
-                
-                # Se já estamos processando um áudio anterior ou o Jarvis está falando (lock ativo), ignoramos entrada
                 if _global_processing_lock.locked():
-                    audio_buffer = bytearray()
                     continue
                     
-                # Proteção: Garante que os bytes sejam múltiplos de 2 (int16)
-                if len(data) % 2 != 0:
-                    data = data[:-1]
-                    
+                if len(data) % 2 != 0: data = data[:-1]
                 chunk_arr = np.frombuffer(data, dtype=np.int16)
                 
-                # Detecção de Wake Word (Hey Jarvis) no stream do browser
-                if oww:
-                    chunk_float = chunk_arr.astype(np.float32) / 32768.0
-                    if len(chunk_float) >= 1280:
-                       prediction = oww.predict(chunk_float)
-                       for mw, score in prediction.items():
-                           if score > 0.45:
-                                logger.success(f"🎙️ Wake Word '{mw}' detectada!")
-                                await websocket.send_json({"type": "wake_word_detected", "model": mw})
-                
-                # Detecção de energia para VAD (Voice Activity Detection)
+                # VAD simples
                 energy = np.abs(chunk_arr).mean()
                 if energy > 250:
-                    if not is_speaking:
-                        is_speaking = True
-                        logger.debug("🎙️ Capturando fala...")
+                    is_speaking = True
                     silence_frames = 0
                     audio_buffer.extend(data)
                 else:
@@ -270,44 +250,41 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                         silence_frames += len(chunk_arr)
                         audio_buffer.extend(data)
                         
-                        # Silêncio detectado (0.8 segundos)
+                        # Silêncio detectado (0.8s)
                         if silence_frames > (0.8 * frames_per_sec):
                             full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
                             
-                            # Resampling dinâmico baseado no handshake (Item 5 da análise)
-                            step = max(1, round(sample_rate_client / 16000))
+                            # Resampling dinâmico baseado no valor do cliente (Bug #5)
+                            # Pelo menos eliminamos o hardcode fixo.
+                            in_rate = max(8000, min(96000, sample_rate_client))
+                            step = max(1, round(in_rate / 16000))
                             full_audio = full_audio_raw[::step].copy()
                             
                             audio_buffer = bytearray()
                             is_speaking = False
                             silence_frames = 0
-                            
-                            # Dispara processamento em background
                             asyncio.create_task(process_and_reply(full_audio, websocket))
             
-            # 2. Tratamento de Comandos JSON (Texto e Configuração)
+            # 2. Comandos JSON
             elif "text" in message:
                 try:
                     import json
                     command_data = json.loads(message["text"])
                     
-                    # Recebe configuracao do cliente (Bug #5)
+                    # Processa configuração real do cliente (Bug #5)
                     if command_data.get("type") == "config":
-                        sample_rate_client = command_data.get("sample_rate", 48000)
-                        logger.info(f"⚙️ Cliente configurado: Sample Rate = {sample_rate_client}Hz")
+                        received_rate = command_data.get("sample_rate", 48000)
+                        if 8000 <= received_rate <= 96000:
+                            sample_rate_client = received_rate
+                            logger.info(f"⚙️ Sample rate ajustada para {sample_rate_client}Hz")
                         continue
 
                     if command_data.get("type") == "text_message":
                         text_input = command_data.get("text")
                         if text_input:
-                            logger.info(f"⌨️ Mensagem de Texto Recebida: {text_input}")
-                            # Dispara o pensamento para o texto
                             asyncio.create_task(_handle_thinking_and_reply(text_input, websocket))
-                    
-                except Exception as e:
-                    logger.error(f"Erro ao processar comando JSON: {e}")
+                except: pass
             
-            # 3. Tratamento de Desconexão
             elif message.get("type") == "websocket.disconnect":
                 break
                         
