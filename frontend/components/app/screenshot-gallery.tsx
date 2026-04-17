@@ -80,7 +80,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed inset-4 z-[100] flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/80 p-6 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl md:inset-20"
+            className="fixed inset-4 z-100 flex flex-col gap-4 rounded-3xl border border-white/10 bg-black/80 p-6 shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl md:inset-20"
           >
             <div className="flex items-center justify-between border-b border-white/5 pb-4">
               <div className="flex items-center gap-3">

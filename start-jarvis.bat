@@ -90,9 +90,22 @@ where uv >nul 2>nul && set "UV=uv"
 if not defined UV if exist "%LOCALAPPDATA%\uv\bin\uv.exe" set "UV=%LOCALAPPDATA%\uv\bin\uv.exe"
 
 set "PYTHON="
+set "PYLAUNCHER="
 if defined UV (
     "!UV!" python install 3.12 --quiet
     for /f "usebackq delims=" %%i in (`"!UV!" python find 3.12 2^>nul`) do set "PYTHON=%%i"
+)
+
+if not defined PYTHON (
+    for /f "usebackq delims=" %%i in (`where py 2^>nul`) do (
+        set "_P=%%i"
+        echo "!_P!" | findstr /i "WindowsApps" >nul
+        if errorlevel 1 if not defined PYLAUNCHER set "PYLAUNCHER=!_P!"
+    )
+)
+
+if not defined PYTHON if defined PYLAUNCHER (
+    set "PYTHON=%PYLAUNCHER%"
 )
 
 if not defined PYTHON (
@@ -101,6 +114,10 @@ if not defined PYTHON (
         echo "!_P!" | findstr /i "WindowsApps" >nul
         if errorlevel 1 set "PYTHON=!_P!"
     )
+)
+
+if not defined PYTHON if exist "%~dp0backend\venv\Scripts\python.exe" (
+    set "PYTHON=%~dp0backend\venv\Scripts\python.exe"
 )
 
 if not defined PYTHON (
