@@ -4,9 +4,9 @@ import os
 import sys
 import datetime
 import psutil
+import asyncio
 from dotenv import load_dotenv
 from pathlib import Path
-import asyncio
 from loguru import logger
 from typing import Dict, Any
 from contextlib import asynccontextmanager
@@ -34,7 +34,6 @@ from . import routes
 from . import voice_websocket
 from .utils.dream_processor import dream_processor
 from .perception.perception_manager import perception_manager
-from contextlib import asynccontextmanager
 
 load_dotenv(base_dir / '.env')
 load_dotenv(base_dir / 'env' / '.env', override=False)
@@ -79,9 +78,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+# Configuração de CORS Segura para produção (Credentials requer origens específicas)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,17 +89,6 @@ app.add_middleware(
 
 app.include_router(routes.router)
 app.include_router(voice_websocket.router)
-
-@app.get("/health") # type: ignore
-def health_check() -> Dict[str, Any]:
-    uptime = int((datetime.datetime.now() - _start_time).total_seconds())
-    return {
-        "status": "ok",
-        "timestamp": datetime.datetime.now().isoformat(),
-        "uptime_seconds": uptime,
-        "cpu": psutil.cpu_percent(),
-        "ram": psutil.virtual_memory().percent
-    }
 
 @app.get("/status") # type: ignore
 def status_check() -> Dict[str, Any]:

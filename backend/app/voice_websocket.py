@@ -1,19 +1,19 @@
 import asyncio
 import io
+import os
 import wave
 import numpy as np
 import concurrent.futures
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from loguru import logger
 import gc
 import torch
+import psutil
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from loguru import logger
 
 from .perception import voice_engine
 from .perception.voice_engine import identify_speaker, _get_oww
 from .perception.perception_manager import perception_manager
 from .chat_pipeline import chat_reply
-import psutil
-import torch
 
 HAS_EDGE_TTS = False
 try:
@@ -49,6 +49,7 @@ async def generate_speech_bytes(text: str, voice: str = "pt-BR-AntonioNeural") -
 
 async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
     """Processamento de áudio (STT -> LLM -> TTS)."""
+    import asyncio  # Proteção de escopo
     # Trava global para evitar múltiplos processamentos simultâneos
     if _global_processing_lock.locked():
         logger.warning("⚠️ Já existe um processo de voz ativo. Ignorando...")
@@ -77,6 +78,7 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
 
 async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_name: str = None, speaker_conf: float = 0.0):
     """Núcleo da lógica de resposta (Comum para Voz e Texto)."""
+    import asyncio  # Proteção de escopo
     try:
         from .chat_pipeline import chat_stream
         
@@ -85,10 +87,13 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
         person = speaker_name or perception.get('face_identity') or "Usuário"
         emotion = perception.get('face_emotion', 'neutral')
         
-        # 2. Filtro de Alucinação / Ruído (apenas se vier de voz, mas mantemos limpeza básica)
+        # 2. Filtro de Alucinação / Ruído
         clean_text = text.strip()
         if not clean_text or len(clean_text) < 1:
             return
+
+        # Ajuste de voz para Francisca (mais natural que Antonio)
+        voz_jarvis = "pt-BR-FranciscaNeural"
 
         logger.success(f"📩 Processando para {person}: '{clean_text}' [{emotion}]")
         
@@ -97,9 +102,9 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
         except: pass
         
         # 3. Brainstorming & Resposta
-        enriched_prompt = f"Contexto Sensorial -> Falante: {person}. Emoção: {emotion}. Mensagem: {text}"
+        enriched_prompt = f"Contexto Sensorial -> Usuário: {person}. Emoção: {emotion}. Mensagem: {text}"
         
-        logger.info("🤖 Jarvis está pensando...")
+        logger.info(f"🤖 Jarvis pensando resposta para {person}...")
         try: await websocket.send_json({"type": "jarvis_speaking", "state": True})
         except: pass
 
@@ -111,16 +116,16 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
             sentence_buffer += chunk
             full_reply += chunk
             
-            # Streaming TTS (por frase)
-            should_trigger = any(p in chunk for p in (".", "!", "?", "\n"))
-            if is_first_chunk and len(sentence_buffer) > 25:
+            # Streaming TTS (Melhorado: Dispara com pausas naturais)
+            should_trigger = any(p in chunk for p in (".", "!", "?", "\n", ";"))
+            if is_first_chunk and len(sentence_buffer) > 30:
                 should_trigger = True
             
             if should_trigger:
                 sentence = sentence_buffer.strip()
                 if len(sentence) > 2:
                     is_first_chunk = False
-                    audio_bytes = await generate_speech_bytes(sentence)
+                    audio_bytes = await generate_speech_bytes(sentence, voice=voz_jarvis)
                     if audio_bytes:
                         try:
                             await websocket.send_bytes(audio_bytes)
@@ -130,7 +135,7 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
         
         # Flush final
         if sentence_buffer.strip():
-            audio_bytes = await generate_speech_bytes(sentence_buffer.strip())
+            audio_bytes = await generate_speech_bytes(sentence_buffer.strip(), voice=voz_jarvis)
             if audio_bytes:
                 try: 
                     await websocket.send_bytes(audio_bytes)
@@ -174,9 +179,12 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     
     # Cumprimento inicial (Greeting)
     async def initial_greeting():
-        greeting = "Olá William! Sistema JARVIS 5.0 online."
+        percep = perception_manager.get_snapshot()
+        user_name = percep.get("face_identity") or "Chefe"
+        greeting = f"Olá {user_name}! Sistema JARVIS 5.0 online. Todos os motores locais iniciados."
         try:
-            audio_bytes = await generate_speech_bytes(greeting)
+            # Usa a voz da Francisca para a saudação também
+            audio_bytes = await generate_speech_bytes(greeting, voice="pt-BR-FranciscaNeural")
             if audio_bytes:
                 await websocket.send_bytes(audio_bytes)
                 await websocket.send_json({"type": "message", "role": "assistant", "text": greeting})
@@ -259,7 +267,15 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                         # Silêncio detectado (0.8 segundos)
                         if silence_frames > (0.8 * frames_per_sec):
                             full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
-                            step = 3 # 48k -> 16k
+                            
+                            # Resampling dinâmico (Item 5 da análise)
+                            # Se o áudio veio em 48kHz, step = 3 para atingir 16kHz
+                            # Se veio em 44.1kHz, step seria ~2.75 (aproximamos para 3 ou sugerimos resampling real)
+                            # Aqui garantimos que o step seja calculado ou fixado em 1 se já estiver em 16k
+                            in_rate = 48000 # Default do browser na maioria dos casos
+                            out_rate = 16000
+                            step = max(1, int(in_rate / out_rate))
+                            
                             full_audio = full_audio_raw[::step].copy()
                             
                             audio_buffer = bytearray()

@@ -254,11 +254,19 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
     try:
         # Beam size 1 é o segredo para CPUs i3/Notebooks: 3x mais rápido!
         audio_float = audio_int16.astype(np.float32) / 32768.0
-        segments, _ = whisper.transcribe(audio_float, beam_size=1, language="pt")
-        text = " ".join(seg.text.strip() for seg in segments).strip()
+        segments, info = whisper.transcribe(audio_float, beam_size=1, language="pt")
         
-        # Filtro de Alucinações
-        hallucinations = ["e o que eu vou fazer?", "e o que eu vou fazer..", "obrigado por assistir"]
+        full_text = []
+        for seg in segments:
+            # Filtro Inteligente: Se a probabilidade de ser silêncio/ruído for alta, ignora o segmento.
+            if seg.no_speech_prob > 0.5:
+                continue
+            full_text.append(seg.text.strip())
+            
+        text = " ".join(full_text).strip()
+        
+        # Filtro de Alucinações Hardcoded (Backup)
+        hallucinations = ["e o que eu vou fazer?", "e o que eu vou fazer..", "obrigado por assistir", "legendas", "assistir"]
         if text.lower() in hallucinations or len(text) < 2:
             return None
             

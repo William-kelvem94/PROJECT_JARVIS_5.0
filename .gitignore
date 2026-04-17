@@ -41,6 +41,13 @@ backend/data/*.png
 
 # Generated frontend build/log files
 frontend/build-output.txt
+frontend/.next/
+frontend/next.config.js
+.next/
+
+# Python Temp/Debug
+backend/temp_*.py
+backend/Correcao_VoiceEngine.txt
 
 # Generated launcher/runtime files
 launcher-*.txt

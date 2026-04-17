@@ -111,11 +111,16 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       };
 
       ws.onmessage = async (event) => {
-        if (event.data instanceof ArrayBuffer && audioContextRef.current) {
+        // 1. Áudio Binário (MP3 do Jarvis)
+        if ((event.data instanceof ArrayBuffer || event.data instanceof Blob) && audioContextRef.current) {
+          const binaryData = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
+          
           setIsSpeaking(true);
           setAgentState('speaking');
+          
           try {
-            const audioBuffer = await audioContextRef.current.decodeAudioData(event.data);
+            // Web Audio API decode (suporta MP3)
+            const audioBuffer = await audioContextRef.current.decodeAudioData(binaryData);
             const playSource = audioContextRef.current.createBufferSource();
             playSource.buffer = audioBuffer;
             playSource.connect(analyserRef.current!);
@@ -126,22 +131,37 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             };
             playSource.start();
           } catch (e) {
-            console.error('Error decoding audio', e);
+            console.error('Falha ao decodificar áudio do Jarvis:', e);
+            // Fallback para Audio Element se o Web Audio falhar
+            try {
+                const blob = new Blob([binaryData], { type: 'audio/mp3' });
+                const url = URL.createObjectURL(blob);
+                const audio = new Audio(url);
+                await audio.play();
+            } catch(e2) {}
           }
-        } else if (typeof event.data === 'string') {
+        } 
+        // 2. Mensagens JSON (Texto, Telemetria, etc)
+        else if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === 'message') {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: data.role,
-                  content: data.text,
-                  timestamp: new Date().toLocaleTimeString(),
-                },
-              ]);
+            if (data.type === 'message' || data.type === 'message_chunk') {
+              // Se for chunk, anexamos à última mensagem se ela for do assistente
+              setMessages(prev => {
+                  const last = prev[prev.length - 1];
+                  if (data.type === 'message_chunk' && last && last.role === 'assistant') {
+                      return [...prev.slice(0, -1), { ...last, content: last.content + " " + data.text }];
+                  }
+                  return [...prev, {
+                    role: data.role || 'assistant',
+                    content: data.text,
+                    timestamp: new Date().toLocaleTimeString()
+                  }];
+              });
             } else if (data.type === 'jarvis_speaking') {
-              setAgentState(data.state ? 'speaking' : 'idle');
+                setAgentState(data.state ? 'speaking' : 'idle');
+            } else if (data.type === 'wake_word_detected') {
+                console.log("🎙️ Wake word detectada via hardware!");
             }
           } catch (e) {}
         }

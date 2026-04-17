@@ -1,5 +1,7 @@
 import os
 import json
+import asyncio
+import re
 from pathlib import Path
 from typing import Tuple
 
@@ -7,7 +9,6 @@ from loguru import logger
 from .engineer_brain import brain
 from .unified_memory import memory
 from .system_tools import SystemTools
-import re
 
 tools = SystemTools()
 
@@ -61,6 +62,5 @@ async def chat_stream(user_id: str, user_message: str):
             logger.error(f"Falha ao executar ferramenta {func_name}: {e}")
 
     # Ao final, salva na memória em background
-    import asyncio
     asyncio.create_task(memory.add_memory(user_id, user_message, source="jarvis_voice"))
     asyncio.create_task(memory.save_session(user_id, [], f"Conversa Técnica: {user_message[:25]}"))

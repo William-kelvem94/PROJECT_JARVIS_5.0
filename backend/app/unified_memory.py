@@ -8,11 +8,13 @@ from loguru import logger
 from .config import settings
 
 # --- CONFIGURAÇÃO ---
-# --- CONFIGURAÇÃO ---
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "jarvis_local.db")
 INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
-VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT", r"C:\Users\willi\Documents\GitHub\Will-obsidian") # Fallback para o path que você me passou
+VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT") 
 JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
+
+if not VAULT_ROOT:
+    logger.warning("[UnifiedMemory] JARVIS_VAULT_ROOT não definida. Vault Global (Obsidian) desativado.")
 
 class UnifiedMemory:
     """

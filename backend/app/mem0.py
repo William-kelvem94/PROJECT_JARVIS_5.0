@@ -64,7 +64,8 @@ class AsyncMemoryClient:
 
     async def get_all(self, user_id=None):
         """Returns merged memories: cloud first, then local (deduplicated by content)."""
-        cloud_results = self._cloud.get_all(user_id=user_id)
+        import asyncio
+        cloud_results = await asyncio.to_thread(self._cloud.get_all, user_id=user_id)
         local_results = self._local.get_all(user_id=user_id, limit=50)
 
         # Merge: cloud results take priority, add local ones not already present
@@ -78,7 +79,8 @@ class AsyncMemoryClient:
 
     async def search(self, query, filters=None):
         """Search cloud + local and merge results."""
-        cloud_resp = self._cloud.search(query, filters=filters)
+        import asyncio
+        cloud_resp = await asyncio.to_thread(self._cloud.search, query, filters=filters)
         cloud_results = cloud_resp.get("results", []) if isinstance(cloud_resp, dict) else cloud_resp
 
         user_id = (filters or {}).get("user_id")
@@ -94,8 +96,9 @@ class AsyncMemoryClient:
 
     async def add(self, messages, user_id=None):
         """Save to both cloud and local."""
-        # Cloud save
-        cloud_result = self._cloud.add(messages, user_id=user_id)
+        import asyncio
+        # Cloud save (Async wrapper around sync file I/O)
+        cloud_result = await asyncio.to_thread(self._cloud.add, messages, user_id=user_id)
         # Local save (smart: filters system prompts, deduplicates)
         if user_id:
             self._local.add_session(user_id, messages)
