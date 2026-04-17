@@ -110,40 +110,103 @@ class EngineerBrain:
         }
 
         try:
+            # 1. TENTA LM STUDIO LOCAL (Prioridade 1 - Offline First)
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self.lm_studio_url, 
                     json=payload, 
-                    timeout=aiohttp.ClientTimeout(total=safety["timeout"])
+                    timeout=aiohttp.ClientTimeout(total=5) # Timeout curto para falhar rápido e ir pro fallback
                 ) as response:
-                    if response.status != 200:
-                        yield f"Erro técnico ({response.status}) no servidor local LM Studio."
-                        return
+                    if response.status == 200:
+                        if stream:
+                            async for line in response.content:
+                                if line:
+                                    try:
+                                        line_str = line.decode('utf-8', errors='ignore').strip()
+                                        if line_str.startswith("data: "):
+                                            data_content = line_str[6:].strip()
+                                            if data_content == "[DONE]": break
+                                            chunk = json.loads(data_content)
+                                            if 'choices' in chunk and len(chunk['choices']) > 0:
+                                                content = chunk['choices'][0]['delta'].get('content', '')
+                                                if content: yield content
+                                    except: continue
+                            return # Sucesso local finaliza aqui
+                        else:
+                            data = await response.json()
+                            yield data['choices'][0]['message']['content']
+                            return
 
-                    if stream:
-                        async for line in response.content:
-                            if line:
-                                try:
-                                    line_str = line.decode('utf-8', errors='ignore').strip()
-                                    if line_str.startswith("data: "):
-                                        data_content = line_str[6:].strip()
-                                        if data_content == "[DONE]": break
-                                        chunk = json.loads(data_content)
-                                        if 'choices' in chunk and len(chunk['choices']) > 0:
-                                            content = chunk['choices'][0]['delta'].get('content', '')
-                                            if content: yield content
-                                except Exception:
-                                    continue
-                    else:
-                        data = await response.json()
-                        yield data['choices'][0]['message']['content']
-                        
-        except asyncio.TimeoutError:
-            logger.error(f"Cérebro Local: Timeout após {safety['timeout']}s (Modelo muito lento/pesado).")
-            yield f"O modelo demorou mais de {safety['timeout']}s para responder. O processo foi interrompido para evitar travamento do sistema."
         except Exception as e:
-            logger.error(f"Erro no Cérebro Local: {e}")
-            yield "O processamento falhou. Verifique o console do LM Studio."
+            logger.warning(f"⚠️ LM Studio Local Offline: {e}. Tentando Gemini...")
+
+        # 2. TENTA GEMINI (Prioridade 2)
+        gemini_key = os.getenv("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
+        if not gemini_key or gemini_key.startswith("AIza"): # Bloqueia se for a chave velha
+            logger.warning(f"❌ Gemini Key inválida ou antiga detectada: {gemini_key[:4]}...")
+        else:
+            try:
+                logger.info(f"☁️ Chamando API Gemini 1.5 Flash (Key: {gemini_key[:4]}...{gemini_key[-4:]})")
+                # Endpoint v1beta para suporte total a novos modelos e chaves AQ.
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                
+                # Formato de payload exato para Gemini v1beta
+                contents = []
+                for m in messages:
+                    # O Gemini Pro não aceita o role 'system' dentro de contents, deve ser 'user' ou 'model'
+                    role = "user" if m["role"] in ["user", "system"] else "model"
+                    contents.append({"role": role, "parts": [{"text": m["content"]}]})
+
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, json={"contents": contents}, timeout=12) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            if 'candidates' in data and len(data['candidates']) > 0:
+                                text = data['candidates'][0]['content']['parts'][0]['text']
+                                if text:
+                                    logger.success("✅ Resposta recebida via Gemini Cloud")
+                                    yield " [Modo Cloud] " + text
+                                    return
+                        else:
+                            error_body = await response.text()
+                            logger.error(f"❌ Gemini erro {response.status}: {error_body}")
+            except Exception as e:
+                logger.error(f"❌ Falha crítica no fallback Gemini: {e}")
+
+        # 3. TENTA OPENROUTER (Prioridade 3)
+        or_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+        if not or_key:
+            logger.warning("❌ OpenRouter API Key não encontrada no ambiente.")
+        else:
+            try:
+                logger.info(f"☁️ Chamando API OpenRouter (Key: {or_key[:4]}...{or_key[-4:]})...")
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {or_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": "google/gemini-flash-1.5",
+                            "messages": messages
+                        },
+                        timeout=15
+                    ) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            text = data['choices'][0]['message']['content']
+                            if text:
+                                logger.success("✅ Resposta recebida via OpenRouter")
+                                yield " [OpenRouter] " + text
+                                return
+                        else:
+                            error_body = await response.text()
+                            logger.error(f"❌ OpenRouter erro {response.status}: {error_body}")
+            except Exception as e:
+                 logger.error(f"❌ Falha crítica no OpenRouter: {e}")
+
+        yield "Sistemas offline. Verifique suas Chaves de API no arquivo .env ou a conexão com a internet."
 
     async def reason_local(self, prompt: str, context: str = "", model: str = None):
         """Versão simplificada para chamadas rápidas locais."""

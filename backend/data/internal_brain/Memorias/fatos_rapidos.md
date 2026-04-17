@@ -1,3 +1,13 @@
 
 - [2026-04-13T11:41:51.956607] (fact): Você está conseguindo meu dia.
 - [2026-04-13T11:45:57.049062] (fact): Vem, vem, vem, vem.
+- [2026-04-17T15:53:25.326750] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: oi
+- [2026-04-17T15:55:08.642658] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: use o gemini
+- [2026-04-17T16:00:46.422130] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: oi jarvis
+- [2026-04-17T16:03:08.900119] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: sad. Mensagem: Você tá vendo?
+- [2026-04-17T16:03:26.961845] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: e o cara que é chamando a gente está de novo, eu vou ensinver de falar com peco de este preche, e eu vou lá.
+- [2026-04-17T16:04:37.513159] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: POR
+- [2026-04-17T16:14:43.903211] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: O valorizador de uma malbração clicar e de acaso saber que ele está a dizer no almermo.
+- [2026-04-17T16:14:52.486204] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: Valeu.
+- [2026-04-17T16:15:52.108781] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: sad. Mensagem: oi
+- [2026-04-17T16:21:15.426108] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: Vocês vão sentir.

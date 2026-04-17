@@ -1,12 +1,18 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+from pathlib import Path
 import os
 import sys
+
+# 1. CARGA IMEDIATA DO AMBIENTE (Crucial para os imports subsequentes)
+base_dir = Path(__file__).resolve().parents[2]
+load_dotenv(base_dir / '.env')
+load_dotenv(base_dir / 'env' / '.env', override=False)
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import datetime
 import psutil
 import asyncio
-from dotenv import load_dotenv
-from pathlib import Path
 from loguru import logger
 from typing import Dict, Any
 from contextlib import asynccontextmanager
@@ -27,16 +33,12 @@ if device == "cpu":
 
 logger.info(f"[Main] AI device: {device}")
 
-base_dir = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(base_dir))
 
 from . import routes
 from . import voice_websocket
 from .utils.dream_processor import dream_processor
 from .perception.perception_manager import perception_manager
-
-load_dotenv(base_dir / '.env')
-load_dotenv(base_dir / 'env' / '.env', override=False)
 
 _start_time = datetime.datetime.now()
 
