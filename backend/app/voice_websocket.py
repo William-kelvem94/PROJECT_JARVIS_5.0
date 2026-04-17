@@ -49,7 +49,6 @@ async def generate_speech_bytes(text: str, voice: str = "pt-BR-AntonioNeural") -
 
 async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
     """Processamento de áudio (STT -> LLM -> TTS)."""
-    import asyncio  # Proteção de escopo
     # Trava global para evitar múltiplos processamentos simultâneos
     if _global_processing_lock.locked():
         logger.warning("⚠️ Já existe um processo de voz ativo. Ignorando...")
@@ -78,7 +77,6 @@ async def process_and_reply(audio_int16: np.ndarray, websocket: WebSocket):
 
 async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_name: str = None, speaker_conf: float = 0.0):
     """Núcleo da lógica de resposta (Comum para Voz e Texto)."""
-    import asyncio  # Proteção de escopo
     try:
         from .chat_pipeline import chat_stream
         
