@@ -15,12 +15,12 @@ class MemoryTools(BaseTool):
         return context
 
     async def save_vault_memory(self, title: str, content: str, project: str = ""):
-        from ..vault_memory import save_episodic
-        path = save_episodic(title=title, content=content, project=project)
+        from ..unified_memory import memory
+        path = await memory.save_episodic(title=title, content=content, project=project)
         asyncio.create_task(self._log_activity("Vault", f"Nota: {title}", "info"))
         return f"Salvo no vault: {os.path.basename(path)}"
         
     async def update_vault_state(self, project: str, done: str, next_action: str):
-        from ..vault_memory import update_current_state
-        update_current_state(project=project, done=done, next_action=next_action)
+        from ..unified_memory import memory
+        await memory.update_current_state(project=project, done=done, next_action=next_action)
         return "Estado atualizado no Vault."
