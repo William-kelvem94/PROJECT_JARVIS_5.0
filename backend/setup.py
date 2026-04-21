@@ -27,16 +27,16 @@ VENV_PYTHON = sys.executable
 PIP = [VENV_PYTHON, "-m", "pip", "install", "--quiet", "--upgrade"]
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
-def green(s):  return f"\033[92m{s}\033[0m"
-def yellow(s): return f"\033[93m{s}\033[0m"
-def red(s):    return f"\033[91m{s}\033[0m"
-def cyan(s):   return f"\033[96m{s}\033[0m"
-def bold(s):   return f"\033[1m{s}\033[0m"
+def green(s):  return s
+def yellow(s): return s
+def red(s):    return s
+def cyan(s):   return s
+def bold(s):   return s
 
-def ok(msg):   print(f"  {green('✅')} {msg}")
-def warn(msg): print(f"  {yellow('⚠️')}  {msg}")
-def fail(msg): print(f"  {red('❌')} {msg}")
-def info(msg): print(f"  {cyan('ℹ️')}  {msg}")
+def ok(msg):   print(f"  [OK] {msg}")
+def warn(msg): print(f"  [!]  {msg}")
+def fail(msg): print(f"  [X]  {msg}")
+def info(msg): print(f"  [i]  {msg}")
 
 
 # ── Install helper ─────────────────────────────────────────────────────────────
@@ -66,6 +66,13 @@ CORE_PACKAGES = [
     ("playwright",        "playwright"),
     ("mss",               "mss"),
     ("PIL",               "Pillow"),
+    ("llama_cpp",         "llama-cpp-python"),
+    ("watchfiles",        "watchfiles"),
+    ("requests",          "requests"),
+    ("pydantic_settings", "pydantic-settings"),
+    ("torch",             "torch"),
+    ("torchvision",       "torchvision"),
+    ("edge_tts",          "edge-tts"),
 ]
 
 # ── 2. Perception packages ─────────────────────────────────────────────────────
@@ -267,6 +274,10 @@ def validate_and_report():
         ("face_recognition","Identity recognition (A)",    False),
         ("mss",            "Desktop screenshot",           False),
         ("PIL",            "Image processing",             False),
+        ("watchfiles",     "File watching (Dev)",          False),
+        ("requests",       "HTTP Client",                  True),
+        ("pydantic_settings", "Settings management",       True),
+        ("edge_tts",       "Voice Synthesis (TTS)",        False),
     ]
 
     critical_ok = True
@@ -285,9 +296,12 @@ def validate_and_report():
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print(bold(cyan("\n╔══════════════════════════════════════════════════╗")))
-    print(bold(cyan(  "║       JARVIS 5.0 — Self-Configuration System     ║")))
-    print(bold(cyan(  "╚══════════════════════════════════════════════════╝")))
+    # Ensure UTF-8 output for Windows consoles if possible
+    if sys.platform == "win32":
+        try: os.system("chcp 65001 > nul")
+        except: pass
+
+    print(bold(cyan("\n[ JARVIS 5.0 - Self-Configuration System ]")))
     print(f"  Python {platform.python_version()} | {platform.system()} {platform.machine()}")
 
     core_ok    = install_core()

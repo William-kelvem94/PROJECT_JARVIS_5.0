@@ -110,7 +110,16 @@ class EngineerBrain:
         }
 
         try:
-            # 1. TENTA LM STUDIO LOCAL (Prioridade 1 - Offline First)
+            # 0. TENTA MOTOR NATIVO (Prioridade 0 - 100% Integrado)
+            from .native_brain import get_native_brain
+            native = get_native_brain()
+            if native:
+                logger.info("🧠 Usando Motor Nativo (GGUF)...")
+                async for chunk in native.generate(prompt, system_prompt=system_prompt, stream=stream):
+                    yield chunk
+                return # Sucesso absoluto finaliza aqui
+
+            # 1. TENTA LM STUDIO LOCAL (Prioridade 1 - Offline App)
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self.lm_studio_url, 

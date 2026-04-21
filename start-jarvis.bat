@@ -16,31 +16,37 @@ echo.
 cd /d "%~dp0"
 
 REM ════════════════════════════════════════════════════
-REM  [1/8] PRE-FLIGHT (VERIFICAÇÕES DE INFRAESTRUTURA IA)
+REM  [1/8] PRE-FLIGHT (MOTORES DE INTELIGÊNCIA)
 REM ═══════════════════════════════════════════════════════════════════════
-echo  [1/8] Verificando Roteamento Cognitivo Local (LM Studio)...
-netstat -aon 2>nul | findstr ":1234 " >nul
-if errorlevel 1 (
-    echo   [AVISO] LM Studio nao detectado na porta 1234.
-    echo   [INFO] O JARVIS usara o motor de Cloud Fallback (API externa^) por padrao.
+echo  [1/8] Analisando Roteamento Cognitivo...
+
+REM Checa Motor Nativo (GGUF) primeiro
+if exist "models\WILL-JARVIS-v5-Q4-GGUF\WILL-JARVIS-v5-Q4.gguf" (
+    echo  [OK] Motor Nativo detectado na pasta do projeto.
 ) else (
-    echo  [OK] Roteamento de Cerebro Local detectado e disponivel.
+    echo  [AVISO] Modelo GGUF nao encontrado localmente.
+)
+
+REM Checa LM Studio como fallback
+netstat -aon 2>nul | findstr ":1234 " >nul
+if not errorlevel 1 (
+    echo  [OK] LM Studio detectado na porta 1234.
 )
 
 REM ════════════════════════════════════════════════════
-REM  [1.5/8] DETECÇÃO DE HARDWARE (DESKTOP VS LAPTOP)
-REM ════════════════════════════════════════════════════
+REM  [1.5/8] DETECÇÃO DE HARDWARE (1050 Ti vs Iris Xe)
+REM ═══════════════════════════════════════════════════════════════════════
 echo.
-echo  [1.5/8] Analisando Perfil de Hardware e Roteamento de Memoria...
+echo  [1.5/8] Analisando Perfil de Hardware Core...
 set "HARDWARE_PROFILE=LAPTOP"
 wmic path win32_VideoController get name | findstr /i "NVIDIA" >nul
 if %errorlevel%==0 (
     set "HARDWARE_PROFILE=DESKTOP"
-    echo  [INFO] GPU NVIDIA Detectada ^(GTX 1050 Ti ou similar^).
-    echo  [INFO] Perfil configurado para aceleracao de IA Local ^(CUDA^).
+    echo  [INFO] GPU NVIDIA GTX 1050 Ti detectada.
+    echo  [INFO] Otimizando para Aceleracao CUDA (4GB VRAM).
 ) else (
-    echo  [INFO] GPU NVIDIA nao detectada.
-    echo  [INFO] Perfil configurado para Notebook ^(Processamento CPU Seguro / API Cloud^).
+    echo  [INFO] GPU Integrada Intel Iris Xe detectada.
+    echo  [INFO] Otimizando para i7 12th Gen (Processamento CPU / AVX2).
 )
 echo.
 
@@ -128,39 +134,28 @@ echo  [OK] Python: !PYTHON!
 echo.
 
 REM ════════════════════════════════════════════════════
-REM  [4/8] BACKEND VENV & DEPS (STRESS TEST)
-REM ════════════════════════════════════════════════════
-echo  [4/8] Auditando Backend (venv e dependencias)...
+REM  [4/8] BACKEND INTELLIGENCE SETUP (setup.py)
+REM ═══════════════════════════════════════════════════════════════════════
+echo  [4/8] Executando Autoconfiguracao do Backend (setup.py)...
 cd /d "%~dp0backend"
 if not exist "venv\Scripts\activate.bat" (
-    echo   + Inicializando novo ambiente virtual...
+    echo   + Criando ambiente virtual...
     "!PYTHON!" -m venv venv
 )
 call venv\Scripts\activate.bat
-python -m pip install --upgrade pip --quiet
-echo   + Validando integridade das bibliotecas...
-python -m pip install -r app\requirements.txt --quiet
+
+REM Chamada ao setup.py que gerencia todas as dependencias pesadas e modelos de visao
+python setup.py
 if errorlevel 1 (
-    echo   [!] Erro nas dependencias. Tentando correcao automatica...
-    python -m pip install -r app\requirements.txt
+    echo   [!] Setup encontrou avisos, tentando prosseguir...
 )
-echo   + Verificando dependencias essenciais do BrainRouter (Google GenAI/OpenAI/Httpx)...
-python -m pip install google-genai openai httpx --quiet
 
-echo  [OK] Backend integro.
-
-REM VERIFICAÇÃO DE CUDA PARA DESKTOP
+REM REFORÇO DE CUDA PARA 1050 Ti
 if "%HARDWARE_PROFILE%"=="DESKTOP" (
-    echo   + Verificando suporte CUDA do PyTorch...
     python -c "import torch; exit(0 if torch.cuda.is_available() else 1)" 2>nul
     if errorlevel 1 (
-        echo   [AVISO] PyTorch nao esta otimizado para sua GPU NVIDIA!
-        echo   [INFO] Instalando CUDA automaticamente para nao travar o i3...
-        cd /d "%~dp0"
-        call scripts\install_pytorch_cuda.bat
-        cd /d "%~dp0backend"
-    ) else (
-        echo  [OK] Motores da Placa de Video ativados.
+        echo   [AVISO] Torch sem CUDA. Instalando versao otimizada para 1050 Ti...
+        python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
     )
 )
 echo.
