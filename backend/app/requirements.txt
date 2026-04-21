@@ -18,6 +18,8 @@ aiohttp
 psutil
 torch
 torchvision --index-url https://download.pytorch.org/whl/cpu
+watchfiles
+edge-tts
 
 # ── Browser Automation
 playwright
