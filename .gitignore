@@ -51,3 +51,6 @@ backend/Correcao_VoiceEngine.txt
 
 # Generated launcher/runtime files
 launcher-*.txt
+
+# Models/Cerebro
+models/
