@@ -96,7 +96,7 @@ app.include_router(voice_websocket.router)
 def status_check() -> Dict[str, Any]:
     return {
         "status": "ok",
-        "gemini": bool(os.getenv("GOOGLE_API_KEY")),
+        "gemini": bool(os.getenv("GEMINI_API_KEY")),
         "timestamp": datetime.datetime.now().isoformat()
     }
 

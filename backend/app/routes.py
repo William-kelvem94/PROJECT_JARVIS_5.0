@@ -6,7 +6,7 @@ import glob
 import logging
 
 from .chat_pipeline import chat_reply
-from .mem0 import AsyncMemoryClient
+from .unified_memory import memory
 
 logger = logging.getLogger("uvicorn")
 
@@ -27,7 +27,6 @@ async def chat_endpoint(req: ChatRequest):
 
 @router.get("/memory")
 async def memory_endpoint(user_name: str = "Chefe"):
-    memory = AsyncMemoryClient()
     memories = await memory.get_all(user_id=user_name)
     return {"memories": memories}
 
@@ -72,8 +71,7 @@ async def get_logs(date: str):
 @router.get("/vault-stats")
 def vault_stats():
     """Retorna estatísticas do vault Obsidian (segundo cérebro do Jarvis)."""
-    from .vault_memory import get_vault_stats
-    return get_vault_stats()
+    return memory.get_stats()
 
 class VaultMemoryRequest(BaseModel):
     title: str
@@ -83,17 +81,18 @@ class VaultMemoryRequest(BaseModel):
     importance: str = "MEDIA"
 
 @router.post("/vault-memory")
-def save_vault_memory(req: VaultMemoryRequest):
-    """Salva uma memória episódica no vault Obsidian."""
-    from .vault_memory import save_episodic, is_vault_available
-    if not is_vault_available():
-        raise HTTPException(status_code=503, detail="Vault Obsidian não disponível.")
-    path = save_episodic(
+async def save_vault_memory(req: VaultMemoryRequest):
+    """Salva uma memória episódica no vault (Unified)."""
+    if not memory.is_vault_available():
+        # Avisa mas permite salvar se o cérebro interno estiver ok
+        logger.warning("Vault Obsidian não disponível, salvando apenas no cérebro interno.")
+        
+    path = await memory.save_episodic(
         title=req.title,
         content=req.content,
         project=req.project,
-        keywords=req.keywords,
         importance=req.importance,
+        keywords=req.keywords
     )
     return {"saved": True, "path": path}
 

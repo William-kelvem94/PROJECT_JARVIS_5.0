@@ -3,7 +3,7 @@ import json
 import asyncio
 import datetime
 from loguru import logger
-from ..local_memory import local_memory
+from ..unified_memory import memory
 from ..engineer_brain import brain
 from .log_manager import log_manager
 
@@ -37,11 +37,10 @@ class DreamProcessor:
                     experiences.append(f"[{role.upper()}] {msg}")
 
             # 2. Busca sessões da memória local (SQLite)
-            # (Adiciona contexto extra sobre o que foi salvo como 'fato')
-            stats = local_memory.get_stats("jarvis_user")
-            experiences.append(f"Resumo Memória: {stats['total_memories']} fatos totais.")
+            stats = memory.get_stats()
+            experiences.append(f"Resumo Memória: {stats.get('sqlite_facts', 0)} fatos totais.")
             
-            return experiences[-100:] # Limita aos últimos 100 eventos para não estourar contexto
+            return experiences[-100:] 
         except Exception as e:
             logger.error(f"[Reflection] Erro ao capturar experiências: {e}")
             return []
@@ -88,12 +87,6 @@ class DreamProcessor:
             return
 
         try:
-            from ..vault_memory import save_episodic, update_current_state, is_vault_available, save_learning
-            
-            if not is_vault_available():
-                logger.warning("[Reflection] Vault não disponível. Insight salvo apenas em log.")
-                return
-
             date = datetime.date.today().isoformat()
             
             # 1. Salva Memória Episódica de Reflexão
@@ -103,7 +96,7 @@ class DreamProcessor:
             content += "\n\n#### 🔧 Necessidade de Evolução (Auto-correção):\n"
             content += "\n".join([f"- {c}" for c in insights.get("correcoes", [])])
             
-            save_episodic(
+            await memory.save_episodic(
                 title=f"Auto-Reflexão — {date}",
                 content=content,
                 project="CORE_EVOLUTION",
@@ -113,17 +106,17 @@ class DreamProcessor:
 
             # 2. Registra aprendizados formais
             for a in insights.get("aprendizados", []):
-                save_learning(a, category="pessoal")
+                await memory.save_learning(a, category="pessoal")
 
             # 3. Atualiza o Estado Atual com o próximo passo sugerido
-            update_current_state(
+            await memory.update_current_state(
                 project="Auto-Evolução",
                 done="Ciclo de reflexão diária concluído.",
                 next_action=insights.get("proximo_passo", "Continuar desenvolvimento"),
                 notes=insights.get("reflexao")
             )
 
-            logger.success("[Reflection] Reflexão diária persistida no Vault Obsidian.")
+            logger.success("[Reflection] Reflexão diária persistida no Vault Unificado.")
         except Exception as e:
             logger.error(f"[Reflection] Erro ao persistir insight: {e}")
 
