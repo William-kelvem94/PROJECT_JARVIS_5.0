@@ -39,9 +39,26 @@ REM ═════════════════════════�
 echo.
 echo  [1.5/8] Analisando Perfil de Hardware Core...
 set "HARDWARE_PROFILE=LAPTOP"
+set "GPU_DETECTED=0"
 
-echo  [INFO] GPU Integrada Intel Iris Xe detectada.
-echo  [INFO] Otimizando para i7 12th Gen (Processamento CPU / AVX2).
+where wmic >nul 2>nul
+if %errorlevel%==0 (
+    wmic path win32_VideoController get name | findstr /i "NVIDIA" >nul 2>nul
+    if %errorlevel%==0 set "GPU_DETECTED=1"
+) else (
+    powershell -NoProfile -Command "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | Select-String -Pattern 'NVIDIA' -SimpleMatch" >nul 2>nul
+    if %errorlevel%==0 set "GPU_DETECTED=1"
+)
+
+if %GPU_DETECTED%==1 (
+    set "HARDWARE_PROFILE=DESKTOP"
+    echo  [INFO] GPU NVIDIA detectada.
+    echo  [INFO] Otimizando para Aceleracao CUDA (4GB VRAM).
+) else (
+    echo  [INFO] GPU Integrada Intel Iris Xe detectada.
+    echo  [INFO] Otimizando para i7 12th Gen (Processamento CPU / AVX2).
+)
+echo.
 REM  [2/8] VERIFICAR AMBIENTE (.env INTELIGENTE)
 REM ════════════════════════════════════════════════════
 echo  [2/8] Validando configuracoes de ambiente e senhas de API...
