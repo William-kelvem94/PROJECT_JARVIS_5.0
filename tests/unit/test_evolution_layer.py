@@ -295,6 +295,75 @@ class TestSafeExecutor:
         invalid_file.write_text("def test(\n    invalid syntax\n")
         assert not executor._validate_change(invalid_file)
 
+    def test_patch_json(self):
+        """Test JSON patching and deep merge"""
+        executor = SafeExecutor()
+        json_file = Path(self.temp_dir) / "test.json"
+
+        # Initial state
+        initial_data = {"a": 1, "b": {"c": 2}}
+        with open(json_file, "w") as f:
+            json.dump(initial_data, f)
+
+        # Patch
+        patch = {"b": {"d": 3}, "e": 4}
+        executor._patch_json(json_file, patch)
+
+        # Verify
+        with open(json_file, "r") as f:
+            result = json.load(f)
+
+        assert result["a"] == 1
+        assert result["b"]["c"] == 2
+        assert result["b"]["d"] == 3
+        assert result["e"] == 4
+
+    def test_patch_env(self):
+        """Test .env patching"""
+        executor = SafeExecutor()
+        env_file = Path(self.temp_dir) / ".env"
+
+        # Initial state
+        env_file.write_text("KEY1=VALUE1\nKEY2=VALUE2\n")
+
+        # Patch with dict
+        executor._patch_env(env_file, {"KEY2": "UPDATED", "KEY3": "NEW"})
+
+        # Verify
+        content = env_file.read_text()
+        assert "KEY1=VALUE1" in content
+        assert "KEY2=UPDATED" in content
+        assert "KEY3=NEW" in content
+
+    def test_patch_yaml_fallback(self):
+        """Test YAML patching fallback when PyYAML is missing"""
+        executor = SafeExecutor()
+        yaml_file = Path(self.temp_dir) / "test.yaml"
+
+        # Try to patch with string (should work even without PyYAML)
+        patch = "key: value\n"
+        executor._patch_yaml(yaml_file, patch)
+
+        assert yaml_file.read_text() == patch
+
+    def test_apply_config_change_routing(self):
+        """Test routing of config changes based on extension"""
+        executor = SafeExecutor()
+        json_file = Path(self.temp_dir) / "route.json"
+        json_file.write_text("{}")
+
+        action = {
+            "tipo": "configuracao",
+            "arquivo": str(json_file),
+            "codigo_corrigido": {"test": "ok"}
+        }
+
+        executor._apply_config_change(json_file, action)
+
+        with open(json_file, "r") as f:
+            result = json.load(f)
+        assert result["test"] == "ok"
+
 
 class TestEvolutionManager:
     """Tests for the Evolution Manager"""
