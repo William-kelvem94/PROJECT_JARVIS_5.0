@@ -20,7 +20,7 @@ except ImportError:
     YAML_AVAILABLE = False
 
 try:
-    from pydantic import BaseModel, ValidationError, Field
+    from pydantic import BaseModel, ValidationError
 
     PYDANTIC_AVAILABLE = True
 except ImportError:
@@ -33,9 +33,6 @@ except ImportError:
                 setattr(self, k, v)
 
     class ValidationError(Exception):
-        pass
-
-    class Field:
         pass
 
 
