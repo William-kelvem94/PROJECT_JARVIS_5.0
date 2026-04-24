@@ -2,6 +2,9 @@
 TITLE JARVIS 5.0 - LUXURY ENGINEERING EDITION
 SETLOCAL EnableDelayedExpansion
 
+:: Garante que o script rode sempre da pasta onde ele esta, independente de como foi iniciado
+cd /d "%~dp0"
+
 :: ======================================================================
 :: CONFIGURAÇÃO DE MAESTRIA DE HARDWARE
 :: ======================================================================
@@ -50,11 +53,21 @@ if %ERRORLEVEL% NEQ 0 (
 :: 1. Backend (IA Core) - Prioridade ALTA
 echo [BACKEND] Iniciando Jarvis Core com Prioridade Alta...
 cd backend
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Pasta 'backend' nao encontrada. Verifique a estrutura do projeto.
+    pause
+    exit /b
+)
 if not exist .venv (
     echo [SYSTEM] Criando Ambiente Virtual...
     python -m venv .venv
     call .venv\Scripts\activate
     pip install -r requirements.txt
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERRO] Falha ao instalar dependencias Python.
+        pause
+        exit /b
+    )
 ) else (
     call .venv\Scripts\activate
 )
@@ -68,6 +81,11 @@ cd ..
 :: 2. Frontend (Cockpit) - Otimização de RAM
 echo [FRONTEND] Iniciando Cockpit UI (Luxury Engineering)...
 cd frontend
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] Pasta 'frontend' nao encontrada. Verifique a estrutura do projeto.
+    pause
+    exit /b
+)
 if not exist node_modules (
     echo [SYSTEM] Instalando dependencias do Frontend (isso pode demorar)...
     npm install
