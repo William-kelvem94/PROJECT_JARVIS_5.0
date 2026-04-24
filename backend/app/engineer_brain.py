@@ -77,7 +77,7 @@ class EngineerBrain:
 
     async def reason_stream(self, prompt: str, context: str = "", stream: bool = True):
         """Processa a tarefa gerando chunks (Streaming)."""
-        from persona import persona
+        from .persona import persona
         active_model = await self.get_active_lmstudio_model()
         safety = await self._get_safety_params()
         
@@ -111,7 +111,7 @@ class EngineerBrain:
 
         try:
             # 0. TENTA MOTOR NATIVO (Prioridade 0 - 100% Integrado)
-            from native_brain import get_native_brain
+            from .native_brain import get_native_brain
             native = get_native_brain()
             if native:
                 logger.info("🧠 Usando Motor Nativo (GGUF)...")
