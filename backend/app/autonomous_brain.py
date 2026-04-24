@@ -35,11 +35,18 @@ class AutonomousBrain:
                             "message": health_report
                         })
 
-                # 2. MONITORAMENTO DE AGENDA & TAREFAS (Obsidian)
+                # 2. MONITORAMENTO DE AGENDA & TAREFAS (Obsidian + GraphRAG)
                 if second_brain.active_todos:
-                    # Logica proativa: Se houver muitas tarefas ou algo urgente
                     logger.info(f"[Autônomo] Analisando {len(second_brain.active_todos)} tarefas do Obsidian...")
-                    # Futuramente: Injetar analise de LLM proativa aqui
+                    
+                    # Usa o Grafo para entender se as tarefas estão relacionadas a projetos ativos
+                    try:
+                        from .utils.obsidian_graph import obsidian_graph
+                        for todo in second_brain.active_todos[:3]:
+                            related = obsidian_graph.query_related(todo)
+                            if related:
+                                logger.info(f"[Autônomo] Insight: A tarefa '{todo}' está ligada a: {', '.join(related)}")
+                    except: pass
                 
                 await asyncio.sleep(self._check_interval)
             except Exception as e:

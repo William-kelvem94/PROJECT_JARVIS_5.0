@@ -6,13 +6,6 @@ import asyncio
 from loguru import logger
 from .utils.learning_manager import learning_manager
 
-class EngineerBrain:
-    """
-    O 'Núcleo de Raciocínio Engenheiro' do JARVIS.
-    100% OFFLINE - Otimizado para hardware de alta performance com limite de RAM (Book2 360).
-    Inclui 'Modo Antigravidade' para evitar travamentos do sistema.
-    """
-    
 from .config import settings
 
 class EngineerBrain:

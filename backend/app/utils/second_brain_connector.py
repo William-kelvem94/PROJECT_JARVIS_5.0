@@ -46,7 +46,12 @@ class SecondBrainConnector:
         logger.info(f"📝 Mudança detectada no Obsidian: {os.path.basename(path)}")
         if "TODO.md" in path:
             self.refresh_todos()
-        # Aqui podemos adicionar lógica para reindexar áreas específicas
+        
+        # Atualiza o Grafo Neural em tempo real
+        try:
+            from .obsidian_graph import obsidian_graph
+            obsidian_graph.update_node(path)
+        except: pass
 
     def refresh_todos(self):
         """Extrai tarefas pendentes do TODO.md."""
@@ -74,12 +79,20 @@ class SecondBrainConnector:
 
     def get_context_for_prompt(self, query: str = ""):
         """Busca contexto relevante para injetar no cérebro do Jarvis."""
-        # Implementação básica: retorna tarefas e status de projetos
         context = "[CONTEXTO DO SEGUNDO CÉREBRO (OBSIDIAN)]\n"
-        if self.active_todos:
-            context += f"Tarefas Pendentes: {', '.join(self.active_todos[:5])}...\n"
         
-        # Busca por área (ex: se o prompt falar de 'projeto', olha na pasta Projetos/)
+        # 1. Tarefas
+        if self.active_todos:
+            context += f"Tarefas Pendentes: {', '.join(self.active_todos[:3])}\n"
+        
+        # 2. Relações Neurais (GraphRAG)
+        try:
+            from .obsidian_graph import obsidian_graph
+            related = obsidian_graph.query_related(query)
+            if related:
+                context += f"Notas Relacionadas a '{query}': {', '.join(related[:5])}\n"
+        except: pass
+        
         return context
 
 # Singleton
