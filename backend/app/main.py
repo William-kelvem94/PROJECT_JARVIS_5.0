@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     
     # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
     async def hardware_telemetry():
-        from utils.db_manager import db_manager
+        from .utils.db_manager import db_manager
         while True:
             try:
                 cpu = psutil.cpu_percent()
