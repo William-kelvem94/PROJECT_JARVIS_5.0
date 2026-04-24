@@ -43,12 +43,13 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo [CHECK] pnpm...
-pnpm -v >nul 2>&1
+call pnpm -v >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [SYS] Instalando pnpm globalmente...
-    npm install -g pnpm
+    call npm install -g pnpm
     if %ERRORLEVEL% NEQ 0 goto :fim_erro
 )
+echo [DEBUG] pnpm errorlevel=%ERRORLEVEL%
 echo [INFO] Pre-requisitos OK.
 
 :: ============================================================
@@ -58,13 +59,16 @@ if not exist ".venv\Scripts\activate.bat" (
     echo [SYS] Criando ambiente virtual Python na raiz...
     python -m venv .venv
     if %ERRORLEVEL% NEQ 0 goto :fim_erro
-    call ".venv\Scripts\activate.bat"
-    echo [SYS] Instalando dependencias Python...
-    pip install -r "backend\app\requirements.txt"
-    if %ERRORLEVEL% NEQ 0 goto :fim_erro
-) else (
-    call ".venv\Scripts\activate.bat"
 )
+
+call ".venv\Scripts\activate.bat"
+if %ERRORLEVEL% NEQ 0 goto :fim_erro
+
+echo [SYS] Atualizando pip e instalando dependencias Python...
+python -m pip install --upgrade pip setuptools wheel >nul 2>&1
+if %ERRORLEVEL% NEQ 0 goto :fim_erro
+python -m pip install -r "backend\app\requirements.txt"
+if %ERRORLEVEL% NEQ 0 goto :fim_erro
 
 :: ============================================================
 :: BACKEND
@@ -76,7 +80,9 @@ echo [BACK] Iniciando backend na porta 8000...
 SET "VENV_ACT=%ROOT%.venv\Scripts\activate.bat"
 SET "BACK_DIR=%ROOT%backend"
 SET PYTHONOPTIMIZE=1
-start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call %VENV_ACT% && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info"
+echo [DEBUG] BACK_DIR=%BACK_DIR%
+echo [DEBUG] VENV_ACT=%VENV_ACT%
+start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info"
 
 :: ============================================================
 :: FRONTEND
@@ -85,14 +91,14 @@ echo [FRONT] Verificando dependencias frontend...
 if not exist "frontend\node_modules" (
     echo [SYS] Instalando node_modules com pnpm...
     pushd frontend
-    pnpm install
+    call pnpm install
     popd
 )
 
 echo [FRONT] Iniciando frontend na porta 3000...
 SET "NODE_OPTIONS=--max-old-space-size=2048"
 SET "FRONT_DIR=%ROOT%frontend"
-start "JARVIS_FRONTEND" /D "%FRONT_DIR%" cmd /k "pnpm run dev"
+start "JARVIS_FRONTEND" /D "%FRONT_DIR%" cmd /k "call pnpm run dev"
 
 :: ============================================================
 :: CONCLUIDO

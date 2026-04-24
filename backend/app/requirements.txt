@@ -23,16 +23,22 @@ edge-tts
 
 # ── Browser Automation
 playwright
+watchdog
 
 # ── Screen / GPU monitoring
 GPUtil
 mss
 Pillow
+pyautogui
+onnxruntime
 
 # ── Perception: Face
 mediapipe
 opencv-python
 numpy
+
+# ── Perception: Object detection (YOLOv8)
+ultralytics
 
 # ── Perception: Voice - Wake Word
 openwakeword

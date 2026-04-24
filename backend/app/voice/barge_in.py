@@ -15,10 +15,15 @@ class BargeInManager:
     def __init__(self, model_path=None):
         self.model_path = model_path or os.path.expanduser("~/.jarvis/models/silero_vad.onnx")
         self.session = None
+        self.enabled = False
         self.is_listening = False
         self._stop_event = threading.Event()
         self.interrupt_callback = None
-        self._initialize_model()
+        try:
+            self._initialize_model()
+            self.enabled = True
+        except Exception as e:
+            logger.warning(f"[BargeIn] Barge-in desativado — falha ao carregar Silero VAD: {e}")
 
     def _initialize_model(self):
         """Inicializa a sessão ONNX do Silero VAD."""
@@ -26,8 +31,23 @@ class BargeInManager:
             logger.info("📥 Baixando modelo Silero VAD (ONNX)...")
             os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
             import urllib.request
-            url = "https://github.com/snakers4/silero-vad/raw/master/files/silero_vad.onnx"
-            urllib.request.urlretrieve(url, self.model_path)
+            # Tenta URLs conhecidas do silero-vad (a estrutura do repo mudou em v5)
+            urls = [
+                "https://github.com/snakers4/silero-vad/raw/refs/heads/master/src/silero_vad/data/silero_vad.onnx",
+                "https://github.com/snakers4/silero-vad/raw/v5.1/src/silero_vad/data/silero_vad.onnx",
+                "https://github.com/snakers4/silero-vad/raw/master/files/silero_vad.onnx",
+            ]
+            downloaded = False
+            for url in urls:
+                try:
+                    urllib.request.urlretrieve(url, self.model_path)
+                    downloaded = True
+                    logger.info(f"✅ Silero VAD baixado de: {url}")
+                    break
+                except Exception:
+                    continue
+            if not downloaded:
+                raise RuntimeError("Não foi possível baixar o modelo Silero VAD de nenhuma URL conhecida.")
         
         # Carrega com provedor CPU para garantir compatibilidade multi-hardware (Book2/Desktop)
         self.session = ort.InferenceSession(self.model_path, providers=['CPUExecutionProvider'])
@@ -35,7 +55,7 @@ class BargeInManager:
 
     def start_vad_listener(self, callback):
         """Inicia a escuta em thread separada."""
-        if self.is_listening: return
+        if not self.enabled or self.is_listening: return
         self.is_listening = True
         self.interrupt_callback = callback
         self._stop_event.clear()
