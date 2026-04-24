@@ -8,10 +8,9 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
-from .config import settings
+from .utils.db_manager import db_manager
 
 # --- CONFIGURAÇÃO ---
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "jarvis_local.db")
 INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
 VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT") 
 JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
@@ -26,43 +25,13 @@ class UnifiedMemory:
     Atua como substituto único para mem0.py e vault_memory.py.
     """
 
-    def __init__(self, db_path: str = DB_PATH):
-        self.db_path = db_path
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    def __init__(self):
         os.makedirs(INTERNAL_BRAIN_DIR, exist_ok=True)
-        self._init_db()
         self._ensure_vault_dirs()
 
     def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        return conn
+        return db_manager.get_connection()
 
-    def _init_db(self):
-        with self._conn() as conn:
-            conn.executescript("""
-                CREATE TABLE IF NOT EXISTS memories (
-                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id     TEXT    NOT NULL,
-                    category    TEXT    NOT NULL DEFAULT 'fact',
-                    content     TEXT    NOT NULL,
-                    source      TEXT    DEFAULT 'conversation',
-                    created_at  TEXT    NOT NULL,
-                    updated_at  TEXT    NOT NULL,
-                    access_count INTEGER DEFAULT 0
-                );
-                CREATE INDEX IF NOT EXISTS idx_user ON memories(user_id);
-                
-                CREATE TABLE IF NOT EXISTS sessions (
-                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id       TEXT NOT NULL,
-                    summary       TEXT,
-                    msg_count     INTEGER DEFAULT 0,
-                    created_at    TEXT NOT NULL
-                );
-            """)
-        logger.info(f"[UnifiedMemory] Banco SQLite e Cérebro Interno operacional.")
 
     def _ensure_vault_dirs(self):
         subs = [

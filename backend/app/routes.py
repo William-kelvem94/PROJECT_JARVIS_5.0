@@ -32,12 +32,14 @@ async def memory_endpoint(user_name: str = "Chefe"):
 
 @router.get("/screenshots")
 async def list_screenshots():
-    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    # Caminho absoluto para evitar erros de diretório relativo
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    data_dir = os.path.join(base_dir, "backend", "data")
+    
     if not os.path.exists(data_dir):
         return {"screenshots": []}
     
     files = glob.glob(os.path.join(data_dir, "*.png"))
-    # Ordenar por data de modificação (mais recentes primeiro) e limitar a 20
     files.sort(key=os.path.getmtime, reverse=True)
     recent_files = files[:20]
     
@@ -45,7 +47,8 @@ async def list_screenshots():
 
 @router.api_route("/screenshots/{filename}", methods=["GET", "HEAD"])
 async def get_screenshot(filename: str):
-    data_dir = os.path.join(os.path.dirname(__file__), "..", "data")
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    data_dir = os.path.join(base_dir, "backend", "data")
     file_path = os.path.join(data_dir, filename)
     
     if not os.path.exists(file_path):

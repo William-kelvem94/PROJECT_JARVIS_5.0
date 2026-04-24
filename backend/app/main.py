@@ -35,10 +35,10 @@ logger.info(f"[Main] AI device: {device}")
 
 sys.path.insert(0, str(base_dir))
 
-from . import routes
-from . import voice_websocket
-from .utils.dream_processor import dream_processor
-from .perception.perception_manager import perception_manager
+import routes
+import voice_websocket
+from utils.dream_processor import dream_processor
+from perception.perception_manager import perception_manager
 
 _start_time = datetime.datetime.now()
 
@@ -51,26 +51,28 @@ async def lifespan(app: FastAPI):
     
     # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
     async def hardware_telemetry():
+        from utils.db_manager import db_manager
         while True:
             try:
                 cpu = psutil.cpu_percent()
                 ram = psutil.virtual_memory().percent
-                # Se a RAM estiver alta, avisa no log de atividade
                 status = "warning" if ram > 85 else "success"
-                detail = f"CPU: {cpu}% | RAM: {ram}%"
-                if ram > 85: detail += " [MODO ANTIGRAVIDADE ATIVO]"
                 
-                # Opcional: Enviar via sistema de log que já temos
-                from .utils.log_manager import log_manager
-                log_manager.save_log({
-                    "type": "telemetry",
-                    "cpu": cpu,
-                    "ram": ram,
-                    "status": status,
-                    "timestamp": datetime.datetime.now().isoformat()
-                })
-            except: pass
-            await asyncio.sleep(10) # Atualiza a cada 10s para não pesar
+                # Salva no SQLite em vez de JSONL para telemetria (muito mais eficiente para dados ruidosos)
+                with db_manager.get_connection() as conn:
+                    conn.execute(
+                        "INSERT INTO telemetry (cpu_usage, ram_usage, status, timestamp) VALUES (?, ?, ?, ?)",
+                        (cpu, ram, status, datetime.datetime.now().isoformat())
+                    )
+                
+                # Opcional: Manter apenas os últimos 1000 registros para não crescer infinitamente
+                if datetime.datetime.now().minute % 10 == 0: # Limpa a cada 10 min
+                     with db_manager.get_connection() as conn:
+                        conn.execute("DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 1000)")
+                        
+            except Exception as e:
+                logger.error(f"[Telemetry] Erro: {e}")
+            await asyncio.sleep(15) # Aumentado para 15s para poupar recursos
 
     asyncio.create_task(hardware_telemetry())
     
@@ -80,10 +82,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Configuração de CORS Segura para produção (Credentials requer origens específicas)
+# Configuração de CORS Dinâmica
+from config.settings import settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[settings.frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

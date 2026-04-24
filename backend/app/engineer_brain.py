@@ -12,9 +12,12 @@ class EngineerBrain:
     Inclui 'Modo Antigravidade' para evitar travamentos do sistema.
     """
     
+from .config import settings
+
+class EngineerBrain:
     def __init__(self, model=None):
-        self.lm_studio_url = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234/v1/chat/completions")
-        self.model = model or os.getenv("LM_STUDIO_MODEL", "llama-3.2-3b-instruct")
+        self.lm_studio_url = settings.LM_STUDIO_URL
+        self.model = model or settings.DEFAULT_MODEL
         self._cached_model = None
         self._last_model_check = 0
 
@@ -80,7 +83,7 @@ class EngineerBrain:
 
     async def reason_stream(self, prompt: str, context: str = "", stream: bool = True):
         """Processa a tarefa gerando chunks (Streaming)."""
-        from .persona import persona
+        from persona import persona
         active_model = await self.get_active_lmstudio_model()
         safety = await self._get_safety_params()
         
@@ -111,7 +114,7 @@ class EngineerBrain:
 
         try:
             # 0. TENTA MOTOR NATIVO (Prioridade 0 - 100% Integrado)
-            from .native_brain import get_native_brain
+            from native_brain import get_native_brain
             native = get_native_brain()
             if native:
                 logger.info("🧠 Usando Motor Nativo (GGUF)...")
@@ -124,7 +127,7 @@ class EngineerBrain:
                 async with session.post(
                     self.lm_studio_url, 
                     json=payload, 
-                    timeout=aiohttp.ClientTimeout(total=5) # Timeout curto para falhar rápido e ir pro fallback
+                    timeout=aiohttp.ClientTimeout(total=settings.LM_STUDIO_TIMEOUT)
                 ) as response:
                     if response.status == 200:
                         if stream:
@@ -150,24 +153,26 @@ class EngineerBrain:
             logger.warning(f"⚠️ LM Studio Local Offline: {e}. Tentando Gemini...")
 
         # 2. TENTA GEMINI (Prioridade 2)
-        gemini_key = os.getenv("GEMINI_API_KEY", "").strip().replace('"', '').replace("'", "")
-        if not gemini_key or gemini_key.startswith("AIza"): # Bloqueia se for a chave velha
-            logger.warning(f"❌ Gemini Key inválida ou antiga detectada: {gemini_key[:4]}...")
+        gemini_key = settings.GEMINI_API_KEY
+        if not gemini_key:
+            logger.warning("❌ Gemini Key não configurada.")
         else:
             try:
-                logger.info(f"☁️ Chamando API Gemini 1.5 Flash (Key: {gemini_key[:4]}...{gemini_key[-4:]})")
-                # Endpoint v1beta para suporte total a novos modelos e chaves AQ.
+                logger.info(f"☁️ Chamando API Gemini 1.5 Flash (Key: {gemini_key[:4]}...)")
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
                 
-                # Formato de payload exato para Gemini v1beta
-                contents = []
-                for m in messages:
-                    # O Gemini Pro não aceita o role 'system' dentro de contents, deve ser 'user' ou 'model'
-                    role = "user" if m["role"] in ["user", "system"] else "model"
-                    contents.append({"role": role, "parts": [{"text": m["content"]}]})
+                # Gemini Pro requer 'system_instruction' separado para v1beta
+                payload = {
+                    "system_instruction": {"parts": [{"text": system_prompt}]},
+                    "contents": [{"role": "user", "parts": [{"text": user_content[:safety["safety_context_limit"]]}]}],
+                    "generationConfig": {
+                        "temperature": safety["temperature"],
+                        "maxOutputTokens": safety["max_tokens"]
+                    }
+                }
 
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(url, json={"contents": contents}, timeout=12) as response:
+                    async with session.post(url, json=payload, timeout=12) as response:
                         if response.status == 200:
                             data = await response.json()
                             if 'candidates' in data and len(data['candidates']) > 0:
@@ -183,7 +188,7 @@ class EngineerBrain:
                 logger.error(f"❌ Falha crítica no fallback Gemini: {e}")
 
         # 3. TENTA OPENROUTER (Prioridade 3)
-        or_key = os.getenv("OPENROUTER_API_KEY", "").strip()
+        or_key = settings.OPENROUTER_API_KEY
         if not or_key:
             logger.warning("❌ OpenRouter API Key não encontrada no ambiente.")
         else:

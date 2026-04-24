@@ -14,6 +14,7 @@ from .perception import voice_engine
 from .perception.voice_engine import identify_speaker, _get_oww
 from .perception.perception_manager import perception_manager
 from .chat_pipeline import chat_reply
+from .config import settings
 
 HAS_EDGE_TTS = False
 try:
@@ -31,8 +32,9 @@ _voice_executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 _active_voice_websocket = None
 _global_processing_lock = asyncio.Lock()
 
-async def generate_speech_bytes(text: str, voice: str = "pt-BR-AntonioNeural") -> bytes:
+async def generate_speech_bytes(text: str, voice: str = None) -> bytes:
     """Gera o áudio a partir do texto usando edge-tts e retorna os bytes do MP3."""
+    target_voice = voice or settings.TTS_VOICE
     if not HAS_EDGE_TTS:
         logger.warning("edge-tts não está instalado. Falha ao gerar áudio.")
         return b""
@@ -147,7 +149,7 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
         except: pass
         
         # GC
-        if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
+        if settings.ENABLE_GC:
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -242,26 +244,32 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                 if energy > 250:
                     is_speaking = True
                     silence_frames = 0
-                    audio_buffer.extend(data)
+                    # Limite de segurança: não permite que o buffer cresça mais que 10 segundos
+                    if len(audio_buffer) < (10 * frames_per_sec * 2):
+                        audio_buffer.extend(data)
                 else:
                     if is_speaking:
                         silence_frames += len(chunk_arr)
                         audio_buffer.extend(data)
                         
-                        # Silêncio detectado (0.8s)
-                        if silence_frames > (0.8 * frames_per_sec):
-                            full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
-                            
-                            # Resampling dinâmico baseado no valor do cliente (Bug #5)
-                            # Pelo menos eliminamos o hardcode fixo.
-                            in_rate = max(8000, min(96000, sample_rate_client))
-                            step = max(1, round(in_rate / 16000))
-                            full_audio = full_audio_raw[::step].copy()
+                        # Silêncio detectado (0.8s) ou Buffer muito grande (Emergency Flush)
+                        if silence_frames > (0.8 * frames_per_sec) or len(audio_buffer) > (8 * frames_per_sec * 2):
+                            if len(audio_buffer) > 1600: # Mínimo de 0.1s de áudio
+                                full_audio_raw = np.frombuffer(audio_buffer, dtype=np.int16)
+                                in_rate = max(8000, min(96000, sample_rate_client))
+                                step = max(1, round(in_rate / 16000))
+                                full_audio = full_audio_raw[::step].copy()
+                                asyncio.create_task(process_and_reply(full_audio, websocket))
+                                del full_audio_raw
+                                del full_audio
                             
                             audio_buffer = bytearray()
                             is_speaking = False
                             silence_frames = 0
-                            asyncio.create_task(process_and_reply(full_audio, websocket))
+                            
+                            # Limpeza explícita
+                            del full_audio_raw
+                            del full_audio
             
             # 2. Comandos JSON
             elif "text" in message:
@@ -293,5 +301,8 @@ async def websocket_voice_endpoint(websocket: WebSocket):
     finally:
         if _active_voice_websocket == websocket:
             _active_voice_websocket = None
+        # Limpa o buffer ao desconectar
+        audio_buffer = bytearray()
+        gc.collect()
 
 

@@ -33,7 +33,7 @@ interface ActivityLog {
 export function LogHistoryModal({
   isOpen,
   onClose,
-  apiUrl = 'http://localhost:8000',
+  apiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000',
 }: LogHistoryModalProps) {
   const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');

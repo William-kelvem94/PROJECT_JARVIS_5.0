@@ -316,10 +316,12 @@ def _audio_loop():
                 # Se der overflow, apenas avisamos e continuamos, sem crashar
                 pass 
             chunk_int16 = (indata[:, 0] * 32767).astype(np.int16)
-            _chunk_q.put_nowait(chunk_int16)
+            
+            # Limite de segurança: Se a fila estiver muito cheia, descarta para não vazar RAM
+            if _chunk_q.qsize() < 100: 
+                _chunk_q.put_nowait(chunk_int16)
         except Exception:
             pass
-            pass  # drop silently under load
 
     try:
         import sounddevice as sd
@@ -346,30 +348,22 @@ def _audio_loop():
                         # openwakeword expects float32 normalized to [-1.0, 1.0]
                         chunk_float = chunk.astype(np.float32) / 32768.0
                         pred = oww.predict(chunk_float)
-                        for model_name, scores in pred.items():
-                            score = 0.0
+                        for model_name, score_data in pred.items():
+                            # openwakeword v0.6+ retorna dict ou array. Precisamos do float bruto.
                             try:
-                                if isinstance(scores, (int, float)):
-                                    score = float(scores)
+                                if isinstance(score_data, (int, float)):
+                                    score = float(score_data)
+                                elif isinstance(score_data, dict):
+                                    score = max(score_data.values()) if score_data else 0.0
+                                elif hasattr(score_data, "__iter__"):
+                                    score = max(score_data) if len(score_data) > 0 else 0.0
                                 else:
-                                    # Robustly handle dicts and iterables
-                                    values = []
-                                    if isinstance(scores, dict):
-                                        values = scores.values()
-                                    elif hasattr(scores, '__iter__'):
-                                        values = list(scores)
-                                    
-                                    nums = [float(v) for v in values if isinstance(v, (int, float))]
-                                    score = max(nums) if nums else 0.0
-                            except Exception as e:
-                                logger.debug(f"[VoiceEngine] Score parsing error: {e}")
-                                continue
-                            
-                            if score > 0.5:
-                                logger.success(
-                                    f"[VoiceEngine] 🎙️ Wake word '{model_name}' "
-                                    f"score={score:.2f}"
-                                )
+                                    score = 0.0
+                            except:
+                                score = 0.0
+
+                            if score > 0.45: # Limiar um pouco mais sensível
+                                logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' detectada (score={score:.2f})")
                                 _fire(VoiceResult(wake_word_triggered=True, active_levels=["A"]))
                     except Exception as e:
                         logger.debug(f"[VoiceEngine] Wake word check: {e}")
@@ -399,6 +393,12 @@ def _audio_loop():
 
                     if result.active_levels:
                         _fire(result)
+                    
+                    # Limpeza explícita para o GC
+                    del segment
+                    import gc
+                    if time.time() % 60 < 1: # Limpeza leve a cada minuto
+                        gc.collect()
 
     except Exception as e:
         logger.error(f"[VoiceEngine] Audio loop crashed: {e}")

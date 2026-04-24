@@ -16,6 +16,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/shadcn/utils';
+import { AppConfig } from '@/app-config';
 
 interface TelemetryData {
   type: string;
@@ -32,7 +33,7 @@ interface TelemetryData {
   is_reasoning?: boolean;
 }
 
-export function EngineeringHUD() {
+export function EngineeringHUD({ appConfig }: { appConfig: AppConfig }) {
   // const room = useRoomContext();
   const [data, setData] = useState<TelemetryData | null>(null);
 
@@ -40,7 +41,7 @@ export function EngineeringHUD() {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch('http://localhost:8000/health');
+        const response = await fetch(`${appConfig.jarvisApiUrl}/health`);
         const health = await response.json();
 
         setData(

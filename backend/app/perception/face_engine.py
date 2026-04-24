@@ -98,7 +98,7 @@ def _get_mp_models():
         return None
     model_path = os.path.join(MODELS_DIR, "face_landmarker.task")
     if not os.path.exists(model_path):
-        logger.warning(f"[FaceEngine] face_landmarker.task not found — run setup.py to download")
+        logger.warning(f"[FaceEngine] face_landmarker.task not found em {model_path} — verifique a instalação.")
         _mp_init_failed = True
         return None
     try:
@@ -154,9 +154,15 @@ def _avg_y(lm, indices):
 
 
 def _dist(lm, a, b):
-    dx = lm[a].x - lm[b].x
-    dy = lm[a].y - lm[b].y
-    return (dx * dx + dy * dy) ** 0.5
+    # Uso de NumPy para performance em distâncias
+    try:
+        pa = np.array([lm[a].x, lm[a].y])
+        pb = np.array([lm[b].x, lm[b].y])
+        return np.linalg.norm(pa - pb)
+    except:
+        dx = lm[a].x - lm[b].x
+        dy = lm[a].y - lm[b].y
+        return (dx * dx + dy * dy) ** 0.5
 
 
 def _estimate_emotion_from_landmarks(landmarks) -> tuple[str, float]:

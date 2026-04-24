@@ -48,18 +48,24 @@ class LogManager:
         file_path_json = os.path.join(self.base_dir, f"{date_str}.json")
         
         logs = []
-        # Tenta JSONL primeiro (padrão novo)
-        if os.path.exists(file_path_jsonl):
-            with open(file_path_jsonl, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        logs.append(json.loads(line))
-            return logs
-        
-        # Fallback para JSON antigo
-        if os.path.exists(file_path_json):
-            with open(file_path_json, "r", encoding="utf-8") as f:
-                return json.load(f)
+        try:
+            # Tenta JSONL primeiro (padrão novo)
+            if os.path.exists(file_path_jsonl):
+                with open(file_path_jsonl, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if line.strip():
+                            try:
+                                logs.append(json.loads(line))
+                            except: continue
+                return logs
+            
+            # Fallback para JSON antigo
+            if os.path.exists(file_path_json):
+                with open(file_path_json, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        except Exception as e:
+            logger.error(f"Erro ao ler logs de {date_str}: {e}")
+            
         return []
 
 log_manager = LogManager.get_instance()

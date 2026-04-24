@@ -66,6 +66,16 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(animationId);
   }, [isConnected]);
 
+  const disconnect = useCallback(() => {
+    if (wsRef.current) wsRef.current.close();
+    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
+    if (localStream) localStream.getTracks().forEach((t) => t.stop());
+    if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
+    setIsConnected(false);
+    setLocalStream(null);
+    setScreenStream(null);
+  }, [localStream, screenStream]);
+
   const connect = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -125,24 +135,30 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
           setAgentState('speaking');
           
           try {
-            // Web Audio API decode (suporta MP3)
-            const audioBuffer = await audioContextRef.current.decodeAudioData(binaryData);
-            const playSource = audioContextRef.current.createBufferSource();
-            playSource.buffer = audioBuffer;
-            playSource.connect(analyserRef.current!);
-            playSource.connect(audioContextRef.current.destination);
-            playSource.onended = () => {
-              setIsSpeaking(false);
-              setAgentState('idle');
-            };
-            playSource.start();
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+              // Web Audio API decode (suporta MP3)
+              const audioBuffer = await audioContextRef.current.decodeAudioData(binaryData);
+              const playSource = audioContextRef.current.createBufferSource();
+              playSource.buffer = audioBuffer;
+              playSource.connect(analyserRef.current!);
+              playSource.connect(audioContextRef.current.destination);
+              playSource.onended = () => {
+                setIsSpeaking(false);
+                setAgentState('idle');
+              };
+              playSource.start();
+            }
           } catch (e) {
             console.error('Falha ao decodificar áudio do Jarvis:', e);
-            // Fallback para Audio Element se o Web Audio falhar
+            // Fallback para Audio Element se o Web Audio falhar ou estiver fechado
             try {
                 const blob = new Blob([binaryData], { type: 'audio/mp3' });
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
+                audio.onended = () => {
+                    setIsSpeaking(false);
+                    setAgentState('idle');
+                };
                 await audio.play();
             } catch(e2) {}
           }
@@ -183,17 +199,18 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       setError(err.message || 'Erro ao iniciar Jarvis.');
     }
-  }, []);
+  }, [disconnect]); // Agora disconnect está definido antes
 
-  const disconnect = useCallback(() => {
-    if (wsRef.current) wsRef.current.close();
-    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
-    if (localStream) localStream.getTracks().forEach((t) => t.stop());
-    if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
-    setIsConnected(false);
-    setLocalStream(null);
-    setScreenStream(null);
-  }, [localStream, screenStream]);
+  // Cleanup automático ao destruir o componente
+  useEffect(() => {
+    return () => {
+      disconnect();
+      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close();
+      }
+    };
+  }, [disconnect]);
+
 
   const toggleMic = useCallback(() => {
     if (localStream) {
