@@ -1,0 +1,50 @@
+# Environments
+.env
+.env.*
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+src/core/__pycache__/
+config/__pycache__/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/perception/__pycache__/
+backend/app/tools/__pycache__/
+backend/app/utils/__pycache__/
+backend/tests/__pycache__/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Databases
+*.db
+*.sqlite3
+*.db-shm
+*.db-wal
+backend/data/jarvis_local.db*
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+*.jsonl
+backend/data/logs/
+
+# Debugging and Temporary files
+debug/
+backend/data/browser_data/
+launcher-run2.txt
+launcher-try2.txt
