@@ -25,8 +25,10 @@ from loguru import logger
 
 from .face_engine import analyze_frame as _face_analyze, FaceResult
 from .gesture_engine import analyze_frame as _gesture_analyze, GestureResult
+from .object_engine import object_engine as _object_engine
 from . import voice_engine
 from .voice_engine import VoiceResult
+from .config import settings
 
 # ── Shared snapshot ────────────────────────────────────────────────────────────
 
@@ -49,6 +51,8 @@ class PerceptionSnapshot:
     wake_word_triggered: bool = False
     speaker_identity: Optional[str] = None
     offline_transcript: Optional[str] = None
+    # Spatial
+    detected_objects: List[dict] = field(default_factory=list)
     # Meta
     active_levels: List[str] = field(default_factory=list)
     timestamp: str = ""
@@ -85,9 +89,10 @@ def _vision_worker(input_queue: Queue, output_queue: Queue):
                 break
             frame = pickle.loads(frame_bytes)
 
-            # Executa os motores de visão (Face + Gestos)
+            # Executa os motores de visão (Face + Gestos + Objetos)
             face = _face_analyze(frame)
             gesture = _gesture_analyze(frame)
+            objects = _object_engine.analyze_frame(frame)
 
             all_levels = list(set(face.active_levels + gesture.active_levels))
 
@@ -103,6 +108,7 @@ def _vision_worker(input_queue: Queue, output_queue: Queue):
                 'head_gesture': gesture.head_gesture,
                 'pointing_direction': gesture.pointing_direction,
                 'pointing_xy': gesture.pointing_xy,
+                "detected_objects": objects,
                 'active_levels': all_levels,
             }
             output_queue.put(result)
@@ -111,7 +117,7 @@ def _vision_worker(input_queue: Queue, output_queue: Queue):
             del frame
             del frame_bytes
             
-            if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
+            if settings.ENABLE_GC:
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -316,14 +322,10 @@ class PerceptionManager:
                 # If no result yet, skip update this frame
                 pass
 
-            # Controle Dinamico de FPS (Para Notebooks nao travarem a CPU em 100%)
-            # Puxa 1.0 FPS por padrao (mais leve)
-            import os
-            try:
-                fps_limit = float(os.environ.get("JARVIS_PERCEPTION_FPS", "1.0"))
-                sleep_time = 1.0 / max(0.1, fps_limit)
-            except:
-                sleep_time = 1.0
+            # Controle Dinamico de FPS (Maestria de Hardware)
+            # Desktop (GPU) -> FPS maior | Book2 (CPU) -> FPS balanceado
+            fps_limit = 2.0 if settings.DEVICE_TYPE == "cuda" else 1.0
+            sleep_time = 1.0 / fps_limit
             time.sleep(sleep_time)
 
         if cam:
