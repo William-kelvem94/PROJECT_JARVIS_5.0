@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import psutil
 import threading
 import uvicorn
+from loguru import logger
 from .perception.perception_manager import perception_manager
 from .utils.learning_manager import learning_manager
 from .utils.second_brain_connector import second_brain
