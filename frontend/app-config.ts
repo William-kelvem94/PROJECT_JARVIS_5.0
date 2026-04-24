@@ -40,9 +40,9 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   supportsScreenShare: true,
   isPreConnectBufferEnabled: true,
 
-  logo: '/lk-logo.svg',
+  logo: '/jarvis-logo.svg',
   accent: '#002cf2',
-  logoDark: '/lk-logo-dark.svg',
+  logoDark: '/jarvis-logo-dark.svg',
   accentDark: '#1fd5f9',
   startButtonText: 'Iniciar Chamada',
 
