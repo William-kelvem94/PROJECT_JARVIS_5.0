@@ -94,6 +94,7 @@ export interface AgentControlBarProps {
   controls?: AgentControlBarControls;
   isChatOpen?: boolean;
   onIsChatOpenChange?: (open: boolean) => void;
+  onLeave?: () => void;
   className?: string;
 }
 
@@ -101,6 +102,7 @@ export function AgentControlBar({
   controls,
   isChatOpen = false,
   onIsChatOpenChange,
+  onLeave,
   className,
   ...props
 }: AgentControlBarProps & ComponentProps<'div'>) {
@@ -114,6 +116,7 @@ export function AgentControlBar({
     isMicEnabled,
     isCameraEnabled,
     isScreenSharing,
+    localStream,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
@@ -209,7 +212,7 @@ export function AgentControlBar({
                 pressed={isMicEnabled}
                 onPressedChange={() => toggleMic()}
                 className={cn(!isMicEnabled && 'bg-red-400/10 text-red-400')}
-                disabled={!isConnected}
+                disabled={!localStream}
               >
                 {!isMicEnabled ? <MicOff className="size-4" /> : <Mic className="size-4" />}
               </Toggle>
@@ -221,7 +224,6 @@ export function AgentControlBar({
                 pressed={isCameraEnabled}
                 onPressedChange={() => toggleCamera()}
                 className={cn(isCameraEnabled ? 'bg-[#1da3b9]/10 text-[#43d9f0]' : 'text-white/40')}
-                disabled={!isConnected}
               >
                 {!isCameraEnabled ? <VideoOff className="size-4" /> : <Video className="size-4" />}
               </Toggle>
@@ -239,7 +241,6 @@ export function AgentControlBar({
                     : 'text-white/40 hover:bg-[#1da3b9]/10 hover:text-[#1da3b9]'
                 )}
                 title="Compartilhar Tela"
-                disabled={!isConnected}
               >
                 <Monitor className="size-4" />
               </Button>
@@ -262,8 +263,7 @@ export function AgentControlBar({
 
           {controls?.leave !== false && (
             <Button
-              onClick={() => disconnect()}
-              disabled={!isConnected}
+              onClick={() => { onLeave ? onLeave() : disconnect(); }}
               variant="destructive"
               className="h-9 rounded-full px-6 font-mono text-xs font-bold tracking-wider"
             >
