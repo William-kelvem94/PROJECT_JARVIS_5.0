@@ -76,6 +76,9 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(hardware_telemetry())
     
+    # Inicia o Modo Autônomo (Background Thinking)
+    asyncio.create_task(autonomous_brain.start_background_thinking())
+    
     yield
     logger.info("[Shutdown] Finalizando serviços...")
     perception_manager.stop()

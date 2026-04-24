@@ -4,6 +4,7 @@ import json
 import psutil
 import asyncio
 from loguru import logger
+from .utils.learning_manager import learning_manager
 
 class EngineerBrain:
     """
@@ -96,6 +97,9 @@ class EngineerBrain:
             "você deve informar que não possui esse dado localmente. "
             "Você tem permissão para sugerir o uso de 'browser_navigate' para buscar o fato na internet caso necessário."
         )
+        
+        # Injeção de Persona Evolutiva
+        system_prompt += learning_manager.get_persona_instructions()
 
         user_content = persona.format_prompt(prompt, context, active_model)
 
@@ -145,8 +149,9 @@ class EngineerBrain:
                                     except: continue
                             return # Sucesso local finaliza aqui
                         else:
-                            data = await response.json()
                             yield data['choices'][0]['message']['content']
+                            # Aprende com a interação (Sync)
+                            learning_manager.learn_from_interaction(prompt, data['choices'][0]['message']['content'])
                             return
 
         except Exception as e:
