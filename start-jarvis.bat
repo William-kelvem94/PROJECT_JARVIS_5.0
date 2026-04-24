@@ -5,6 +5,9 @@ SETLOCAL EnableDelayedExpansion
 :: Garante que o script rode sempre da pasta onde ele esta, independente de como foi iniciado
 cd /d "%~dp0"
 
+:: Salva o caminho raiz em variavel para uso seguro dentro de strings com espacos
+SET "PROJ_ROOT=%~dp0"
+
 :: ======================================================================
 :: CONFIGURAÇÃO DE MAESTRIA DE HARDWARE
 :: ======================================================================
@@ -38,12 +41,22 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b
 )
 
-:: Verifica Node.js
+:: Verifica Node.js e pnpm
 node -v >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [ERRO] Node.js nao encontrado. Necessario para o Cockpit (Frontend).
     pause
     exit /b
+)
+pnpm -v >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [SYSTEM] pnpm nao encontrado. Instalando globalmente...
+    npm install -g pnpm
+    if %ERRORLEVEL% NEQ 0 (
+        echo [ERRO] Falha ao instalar pnpm. Execute manualmente: npm install -g pnpm
+        pause
+        exit /b
+    )
 )
 
 :: ======================================================================
@@ -81,7 +94,9 @@ if not exist .venv (
 
 :: Seta flags de performance para o Windows
 SET PYTHONOPTIMIZE=1
-start "JARVIS_BACKEND" /high cmd /k "cd /d "%~dp0backend" && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info"
+:: /D define o diretorio de trabalho da nova janela sem precisar de cd dentro da string
+:: A ativacao do venv e feita explicitamente pois cada 'start' abre um processo limpo sem herdar o venv
+start "JARVIS_BACKEND" /D "%PROJ_ROOT%backend" /HIGH cmd /k "call "%PROJ_ROOT%.venv\Scripts\activate.bat" && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level info"
 
 :: 2. Frontend (Cockpit) - Otimização de RAM
 echo [FRONTEND] Iniciando Cockpit UI (Luxury Engineering)...
@@ -95,13 +110,13 @@ if not exist frontend (
 if not exist frontend\node_modules (
     echo [SYSTEM] Instalando dependencias do Frontend (isso pode demorar)...
     cd frontend
-    npm install
+    pnpm install
     cd ..
 )
 
 :: Limita o uso de memória do Node para 2GB (Ideal para 16GB total com IA)
 SET NODE_OPTIONS=--max-old-space-size=2048
-start "JARVIS_FRONTEND" cmd /k "cd /d "%~dp0frontend" && npm run dev"
+start "JARVIS_FRONTEND" /D "%PROJ_ROOT%frontend" cmd /k "pnpm run dev"
 
 echo ======================================================================
 echo [SUCESSO] JARVIS 5.0 esta decolando!
