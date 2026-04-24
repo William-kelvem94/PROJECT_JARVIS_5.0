@@ -9,8 +9,9 @@ class LearningManager:
     Aprende padrões de uso, preferências do usuário e evolui a persona do assistente.
     """
     
-    def __init__(self, data_path: str = "backend/data/persona_evolution.json"):
-        self.data_path = data_path
+    def __init__(self, data_path: str = None):
+        from ..config import settings
+        self.data_path = data_path or os.path.join(settings.BASE_DIR, "backend", "data", "persona_evolution.json")
         self.profile = {
             "user_name": "William",
             "personality_traits": {

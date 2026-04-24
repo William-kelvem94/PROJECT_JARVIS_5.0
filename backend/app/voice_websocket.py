@@ -14,6 +14,7 @@ from .perception import voice_engine
 from .perception.voice_engine import identify_speaker, _get_oww
 from .perception.perception_manager import perception_manager
 from .chat_pipeline import chat_reply
+from .voice.barge_in import barge_in
 from .config import settings
 
 HAS_EDGE_TTS = False
@@ -111,8 +112,15 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
         sentence_buffer = ""
         full_reply = ""
         is_first_chunk = True
+        interrupted = False
+
+        def on_user_interruption():
+            nonlocal interrupted
+            interrupted = True
+            logger.warning("🎤 [Barge-in] Interrupção confirmada!")
 
         async for chunk in chat_stream("jarvis_user", enriched_prompt):
+            if interrupted: break
             sentence_buffer += chunk
             full_reply += chunk
             
@@ -128,13 +136,18 @@ async def _handle_thinking_and_reply(text: str, websocket: WebSocket, speaker_na
                     audio_bytes = await generate_speech_bytes(sentence, voice=voz_jarvis)
                     if audio_bytes:
                         try:
+                            # Ativa VAD durante o streaming de voz
+                            barge_in.start_vad_listener(on_user_interruption)
                             await websocket.send_bytes(audio_bytes)
                             await websocket.send_json({"type": "message_chunk", "role": "assistant", "text": sentence})
                         except: break
+                        finally:
+                            if not interrupted:
+                                barge_in.stop_vad_listener()
                     sentence_buffer = ""
         
-        # Flush final
-        if sentence_buffer.strip():
+        # Flush final (Apenas se não foi interrompido)
+        if sentence_buffer.strip() and not interrupted:
             audio_bytes = await generate_speech_bytes(sentence_buffer.strip(), voice=voz_jarvis)
             if audio_bytes:
                 try: 

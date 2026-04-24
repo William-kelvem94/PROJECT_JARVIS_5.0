@@ -17,37 +17,25 @@ from loguru import logger
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
-# AI Device and Thread Configuration
-import torch
-device_env = os.environ.get("JARVIS_AI_DEVICE", "auto")
-if device_env == "auto":
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-else:
-    device = device_env
+sys.path.insert(0, str(base_dir / "backend" / "app"))
 
-# Limit threads on CPU to prevent overheating
-if device == "cpu":
-    cpu_threads = int(os.environ.get("JARVIS_CPU_THREADS", "4"))
-    torch.set_num_threads(cpu_threads)
-    logger.info(f"[Main] CPU threads limited to {cpu_threads} for thermal management")
-
-logger.info(f"[Main] AI device: {device}")
-
-sys.path.insert(0, str(base_dir))
-
+from .config import settings
 import routes
 import voice_websocket
-from utils.dream_processor import dream_processor
-from perception.perception_manager import perception_manager
+from .perception.perception_manager import perception_manager
+from .autonomous_brain import autonomous_brain
+from .telemetry_server import start_telemetry_server
+from .utils.second_brain_connector import second_brain
+from .utils.obsidian_graph import ObsidianGraph
 
 _start_time = datetime.datetime.now()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("[Startup] JARVIS 5.0 iniciando...")
+    logger.info("[Startup] JARVIS 5.0 iniciando...")
     # Inicia Percepção Local
     perception_manager.start()
-    asyncio.create_task(dream_processor.dream_loop())
     
     # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
     async def hardware_telemetry():
@@ -78,6 +66,13 @@ async def lifespan(app: FastAPI):
     
     # Inicia o Modo Autônomo (Background Thinking)
     asyncio.create_task(autonomous_brain.start_background_thinking())
+
+    # Inicia Dashboard de Telemetria (Porta 8001)
+    start_telemetry_server()
+    
+    # Constrói o Grafo do Obsidian inicial
+    obsidian_graph = ObsidianGraph(second_brain.vault_path)
+    asyncio.create_task(asyncio.to_thread(obsidian_graph.build_graph))
     
     yield
     logger.info("[Shutdown] Finalizando serviços...")
@@ -86,10 +81,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Configuração de CORS Dinâmica
-from config.settings import settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.frontend_url, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
