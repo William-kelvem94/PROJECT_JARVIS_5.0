@@ -108,6 +108,9 @@ def _vision_worker(input_queue: Queue, output_queue: Queue):
             output_queue.put(result)
 
             # Gerenciamento de Memória (Especialmente importante no processo de visão)
+            del frame
+            del frame_bytes
+            
             if os.environ.get("JARVIS_ENABLE_GC", "true").lower() == "true":
                 gc.collect()
                 if torch.cuda.is_available():
@@ -269,9 +272,14 @@ class PerceptionManager:
 
             # ── Send frame to vision process ─────────────────────────────────────
             # Convert frame to bytes for multiprocessing
-            import pickle
-            frame_bytes = pickle.dumps(frame)
-            self._vision_input_queue.put(frame_bytes)
+            # Verifica se a fila já está cheia para evitar leak de memória se o processo de visão travar
+            if self._vision_input_queue.qsize() < 2:
+                import pickle
+                frame_bytes = pickle.dumps(frame)
+                self._vision_input_queue.put(frame_bytes)
+            
+            # Limpa frame local da thread para liberar RAM
+            del frame
 
             # ── Get result from vision process ─────────────────────────────────
             if not self._vision_output_queue.empty():
@@ -368,11 +376,17 @@ class PerceptionManager:
         voice_engine.stop()
         if self._camera_thread:
             self._camera_thread.join(timeout=3.0)
-        # Stop vision process
-        if self._vision_input_queue:
-            self._vision_input_queue.put(None)  # Sentinel
-        if self._vision_process:
-            self._vision_process.join(timeout=3.0)
+        
+        # Finalização robusta do processo de visão
+        try:
+            if self._vision_input_queue:
+                self._vision_input_queue.put(None)  # Sentinel
+            if self._vision_process:
+                self._vision_process.join(timeout=2.0)
+                if self._vision_process.is_alive():
+                    logger.warning("[PerceptionManager] Forçando encerramento do processo de visão...")
+                    self._vision_process.terminate()
+        except: pass
         logger.info("[PerceptionManager] Stopped")
 
     def capture_frame(self):

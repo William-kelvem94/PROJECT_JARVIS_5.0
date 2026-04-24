@@ -9,7 +9,9 @@ interface VisionPiPProps {
   apiUrl?: string;
 }
 
-export function VisionPiP({ apiUrl = 'http://localhost:8000' }: VisionPiPProps) {
+export function VisionPiP({ 
+  apiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000' 
+}: VisionPiPProps) {
   const [latestImage, setLatestImage] = useState<string>('');
   const [isOpen, setIsOpen] = useState(true);
   const [isPinned, setIsPinned] = useState(false);

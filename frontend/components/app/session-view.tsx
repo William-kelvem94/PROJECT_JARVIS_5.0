@@ -88,7 +88,7 @@ export const SessionView = ({
       )}
 
       {/* ── LADO DIREITO: Telemetria ────────────────────────────────────────── */}
-      <EngineeringHUD />
+      <EngineeringHUD appConfig={appConfig} />
 
       {/* ── LADO ESQUERDO: Console de Atividade ─────────────────────────────── */}
       <div className="pointer-events-none absolute top-6 left-6 z-30 flex max-w-sm flex-col gap-4">

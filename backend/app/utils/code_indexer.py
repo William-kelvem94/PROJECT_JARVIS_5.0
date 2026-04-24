@@ -9,7 +9,10 @@ class CodeMiner:
     Indexa o repositório local para permitir consultas semânticas profundas.
     """
     
-    def __init__(self, storage_dir: str = "backend/data/index"):
+    def __init__(self, storage_dir: str = None):
+        if storage_dir is None:
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            storage_dir = os.path.join(base_dir, "backend", "data", "index")
         self.storage_dir = storage_dir
         self.index = None
         os.makedirs(self.storage_dir, exist_ok=True)

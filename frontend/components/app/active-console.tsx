@@ -43,18 +43,19 @@ export function ActiveConsole({ externalLogs = [] }: ActiveConsoleProps) {
 
   // Converte mensagens do WebSocket em logs visuais do console
   useEffect(() => {
-    if (externalLogs.length === 0) return;
+    if (!externalLogs || externalLogs.length === 0) return;
 
     const latest = externalLogs[externalLogs.length - 1];
+    if (!latest) return;
 
     // Se for um log de atividade (comando, edição, etc)
     if (latest.type === 'activity_log' || latest.log_type) {
       const newLog: ActivityLog = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         title: latest.title || (latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis'),
         detail: latest.detail || latest.text || '',
-        log_type: latest.log_type || 'info',
-        status: latest.status || 'success',
+        log_type: (latest.log_type as any) || 'info',
+        status: (latest.status as any) || 'success',
         timestamp: new Date().toLocaleTimeString(),
       };
 

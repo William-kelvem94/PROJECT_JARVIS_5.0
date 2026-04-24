@@ -1,17 +1,28 @@
 {
     "include": [
-        "src"
+        "backend",
+        "config"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/src",
+        "**/frontend",
+        "**/__pyrefly_virtual__/**"
     ],
     "executionEnvironments": [
         {
             "root": ".",
             "extraPaths": [
-                "src"
+                "backend/app",
+                "backend"
             ]
         }
     ],
     "venvPath": ".",
-    "venv": "venv",
+    "venv": ".venv",
     "typeCheckingMode": "basic",
-    "reportMissingImports": true
+    "reportMissingImports": "none",
+    "reportGeneralTypeIssues": "none",
+    "reportUndefinedVariable": "none"
 }

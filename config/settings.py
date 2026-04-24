@@ -22,7 +22,8 @@ class Settings(BaseSettings):
 
     # Knowledge Base Paths
     jarvis_kb_path: str = Field(default="", alias="JARVIS_KB_PATH")
-    jarvis_vault_root: str = Field(default="", alias="JARVIS_VAULT_ROOT")
+    jarvis_api_url: str = Field(default="http://localhost:8000", alias="JARVIS_API_URL")
+  jarvis_vault_root: str = Field(default="", alias="JARVIS_VAULT_ROOT")
 
     # Toggles
     debug_mode: bool = Field(default=False, alias="DEBUG_MODE")
