@@ -17,11 +17,12 @@ from loguru import logger
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
-sys.path.insert(0, str(base_dir / "backend" / "app"))
+# O uvicorn deve rodar este aplicativo como pacote app.main.
+# Removendo a insercao manual de sys.path para evitar importacao de módulos como top-level.
 
 from .config import settings
-import routes
-import voice_websocket
+from . import routes
+from . import voice_websocket
 from .perception.perception_manager import perception_manager
 from .autonomous_brain import autonomous_brain
 from .telemetry_server import start_telemetry_server

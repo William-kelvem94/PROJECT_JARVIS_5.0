@@ -28,7 +28,7 @@ from .gesture_engine import analyze_frame as _gesture_analyze, GestureResult
 from .object_engine import object_engine as _object_engine
 from . import voice_engine
 from .voice_engine import VoiceResult
-from .config import settings
+from ..config import settings
 
 # ── Shared snapshot ────────────────────────────────────────────────────────────
 

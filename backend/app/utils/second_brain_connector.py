@@ -22,7 +22,7 @@ class SecondBrainConnector:
     
     def __init__(self, vault_path: str = None):
         # Tenta detectar o caminho do Obsidian
-        self.vault_path = vault_path or os.getenv("OBSIDIAN_VAULT_PATH", "c:/Users/willi/Documents/Obsidian/Will-obsidian")
+        self.vault_path = vault_path or os.getenv("OBSIDIAN_VAULT_PATH", "C:/Users/willi/Documents/GitHub/Will-obsidian")
         self.todo_file = os.path.join(self.vault_path, "TODO.md")
         self.active_todos = []
         self._last_index_time = 0

@@ -1,9 +1,19 @@
 import cv2
 import torch
 import numpy as np
-from ultralytics import YOLO
 from loguru import logger
 from ..config import settings
+
+# ── Capability detection ───────────────────────────────────────────────────────
+HAS_ULTRALYTICS = False
+try:
+    from ultralytics import YOLO  # type: ignore
+    HAS_ULTRALYTICS = True
+    logger.info("[ObjectEngine] ✅ YOLOv8 (ultralytics) disponível")
+except ImportError:
+    logger.warning("[ObjectEngine] ultralytics não instalado — detecção de objetos desativada. "
+                   "Instale com: pip install ultralytics")
+
 
 class ObjectEngine:
     """
@@ -14,8 +24,11 @@ class ObjectEngine:
     def __init__(self):
         self.model_path = "yolov8n.pt" # O Ultralytics baixa automaticamente se não existir
         self.model = None
-        self.enabled = True
-        self._initialize_model()
+        self.enabled = HAS_ULTRALYTICS
+        if HAS_ULTRALYTICS:
+            self._initialize_model()
+        else:
+            logger.warning("[ObjectEngine] Rodando sem detecção de objetos (ultralytics ausente)")
 
     def _initialize_model(self):
         try:
@@ -25,7 +38,7 @@ class ObjectEngine:
             )
             
             logger.info(f"👁️ Iniciando Visão Espacial YOLOv8 em {device.upper()}...")
-            self.model = YOLO(self.model_path)
+            self.model = YOLO(self.model_path)  # noqa: F821 — guarded by HAS_ULTRALYTICS
             self.model.to(device)
             
             # Classes de interesse (COCO dataset)
