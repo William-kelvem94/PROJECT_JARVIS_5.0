@@ -26,8 +26,8 @@ except ImportError:
 
 router = APIRouter()
 
-# ProcessPoolExecutor for heavy voice processing
-_voice_executor = concurrent.futures.ProcessPoolExecutor(max_workers=2)
+# ThreadPoolExecutor for voice processing (shares loaded Whisper model with main process)
+_voice_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 # Buffer state for the active WebSocket connection
 _active_voice_websocket = None
@@ -254,7 +254,7 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                 
                 # VAD simples
                 energy = np.abs(chunk_arr).mean()
-                if energy > 250:
+                if energy > 100:
                     is_speaking = True
                     silence_frames = 0
                     # Limite de segurança: não permite que o buffer cresça mais que 10 segundos
@@ -273,16 +273,10 @@ async def websocket_voice_endpoint(websocket: WebSocket):
                                 step = max(1, round(in_rate / 16000))
                                 full_audio = full_audio_raw[::step].copy()
                                 asyncio.create_task(process_and_reply(full_audio, websocket))
-                                del full_audio_raw
-                                del full_audio
                             
                             audio_buffer = bytearray()
                             is_speaking = False
                             silence_frames = 0
-                            
-                            # Limpeza explícita
-                            del full_audio_raw
-                            del full_audio
             
             # 2. Comandos JSON
             elif "text" in message:
