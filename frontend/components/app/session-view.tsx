@@ -61,8 +61,9 @@ export const SessionView = ({
   const currentGlow = isSpeaking ? 'rgba(112, 0, 255, 0.4)' : 'rgba(0, 242, 255, 0.2)';
 
   React.useEffect(() => {
-    if (!isConnected) connect();
-  }, [isConnected, connect]);
+    connect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Conecta apenas uma vez ao montar a sessão
 
   React.useEffect(() => {
     if (videoRef.current && isCameraEnabled && localStream) {
@@ -188,6 +189,7 @@ export const SessionView = ({
             }}
             isChatOpen={chatOpen}
             onIsChatOpenChange={setChatOpen}
+            onLeave={handleDisconnect}
           />
         </div>
       </motion.div>
