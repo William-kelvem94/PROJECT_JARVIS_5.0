@@ -15,6 +15,55 @@ class EngineerBrain:
         self._cached_model = None
         self._last_model_check = 0
 
+    async def _pick_gemini_model(self, session: aiohttp.ClientSession, gemini_key: str) -> str:
+        """
+        Resolve um modelo Gemini válido para generateContent.
+        Tenta modelos preferidos primeiro e, se necessário, faz listagem dinâmica.
+        """
+        preferred = [
+            settings.GEMINI_MODEL,
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash-latest",
+        ]
+        seen = set()
+        ordered = []
+        for item in preferred:
+            if item and item not in seen:
+                seen.add(item)
+                ordered.append(item)
+
+        for model in ordered:
+            test_url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+                f"?key={gemini_key}"
+            )
+            test_payload = {
+                "contents": [{"role": "user", "parts": [{"text": "ping"}]}],
+                "generationConfig": {"maxOutputTokens": 1},
+            }
+            try:
+                async with session.post(test_url, json=test_payload, timeout=8) as response:
+                    if response.status in (200, 400):
+                        return model
+            except Exception:
+                continue
+
+        try:
+            list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}"
+            async with session.get(list_url, timeout=8) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    for m in data.get("models", []):
+                        name = m.get("name", "")
+                        methods = m.get("supportedGenerationMethods", [])
+                        if "generateContent" in methods and name.startswith("models/"):
+                            return name.split("/", 1)[1]
+        except Exception:
+            pass
+
+        return settings.GEMINI_MODEL
+
     async def get_active_lmstudio_model(self) -> str:
         """Busca automaticamente o modelo ativo no LM Studio Local com cache de 30s."""
         import time
@@ -156,20 +205,26 @@ class EngineerBrain:
             logger.warning("❌ Gemini Key não configurada.")
         else:
             try:
-                logger.info(f"☁️ Chamando API Gemini 1.5 Flash (Key: {gemini_key[:4]}...)")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                
-                # Gemini Pro requer 'system_instruction' separado para v1beta
-                payload = {
-                    "system_instruction": {"parts": [{"text": system_prompt}]},
-                    "contents": [{"role": "user", "parts": [{"text": user_content[:safety["safety_context_limit"]]}]}],
-                    "generationConfig": {
-                        "temperature": safety["temperature"],
-                        "maxOutputTokens": safety["max_tokens"]
-                    }
-                }
-
                 async with aiohttp.ClientSession() as session:
+                    gemini_model = await self._pick_gemini_model(session, gemini_key)
+                    logger.info(f"☁️ Chamando API Gemini ({gemini_model})")
+                    url = (
+                        f"https://generativelanguage.googleapis.com/v1beta/models/"
+                        f"{gemini_model}:generateContent?key={gemini_key}"
+                    )
+
+                    # Gemini Pro requer 'system_instruction' separado para v1beta
+                    payload = {
+                        "system_instruction": {"parts": [{"text": system_prompt}]},
+                        "contents": [
+                            {"role": "user", "parts": [{"text": user_content[:safety["safety_context_limit"]]}]}
+                        ],
+                        "generationConfig": {
+                            "temperature": safety["temperature"],
+                            "maxOutputTokens": safety["max_tokens"]
+                        }
+                    }
+
                     async with session.post(url, json=payload, timeout=12) as response:
                         if response.status == 200:
                             data = await response.json()
@@ -192,29 +247,36 @@ class EngineerBrain:
         else:
             try:
                 logger.info(f"☁️ Chamando API OpenRouter (Key: {or_key[:4]}...{or_key[-4:]})...")
+                openrouter_candidates = [
+                    settings.OPENROUTER_MODEL,
+                    "google/gemini-2.5-flash",
+                    "google/gemini-2.0-flash-001",
+                    "google/gemini-flash-1.5",
+                ]
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        "https://openrouter.ai/api/v1/chat/completions",
-                        headers={
-                            "Authorization": f"Bearer {or_key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "model": "google/gemini-flash-1.5",
-                            "messages": messages
-                        },
-                        timeout=15
-                    ) as response:
-                        if response.status == 200:
-                            data = await response.json()
-                            text = data['choices'][0]['message']['content']
-                            if text:
-                                logger.success("✅ Resposta recebida via OpenRouter")
-                                yield " [OpenRouter] " + text
-                                return
-                        else:
-                            error_body = await response.text()
-                            logger.error(f"❌ OpenRouter erro {response.status}: {error_body}")
+                    for candidate in openrouter_candidates:
+                        async with session.post(
+                            "https://openrouter.ai/api/v1/chat/completions",
+                            headers={
+                                "Authorization": f"Bearer {or_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": candidate,
+                                "messages": messages
+                            },
+                            timeout=15
+                        ) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                text = data['choices'][0]['message']['content']
+                                if text:
+                                    logger.success(f"✅ Resposta recebida via OpenRouter ({candidate})")
+                                    yield " [OpenRouter] " + text
+                                    return
+                            else:
+                                error_body = await response.text()
+                                logger.warning(f"⚠️ OpenRouter {candidate} erro {response.status}: {error_body}")
             except Exception as e:
                  logger.error(f"❌ Falha crítica no OpenRouter: {e}")
 

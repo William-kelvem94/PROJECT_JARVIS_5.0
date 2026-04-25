@@ -2,6 +2,11 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
+type ExtendedWindow = Window & {
+  webkitAudioContext?: typeof AudioContext;
+  _audioProcessor?: ScriptProcessorNode;
+};
+
 export interface Message {
   role: 'user' | 'assistant';
   content: string;
@@ -22,7 +27,7 @@ interface JarvisContextType {
   screenStream: MediaStream | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string) => Promise<void>;
   toggleMic: () => void;
   toggleCamera: () => Promise<void>;
   toggleScreenShare: () => Promise<void>;
@@ -84,15 +89,22 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       });
       setLocalStream(stream);
 
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const win = window as ExtendedWindow;
+      const AudioContextCtor = window.AudioContext || win.webkitAudioContext;
+      if (!AudioContextCtor) {
+        throw new Error('Web Audio API não suportada neste navegador.');
+      }
+      audioContextRef.current = new AudioContextCtor();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       const analyser = audioContextRef.current.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
 
+      const defaultScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const wsUrl =
-        process.env.NEXT_PUBLIC_WS_URL || `ws://${window.location.hostname}:8000/ws/voice-stream`;
+        process.env.NEXT_PUBLIC_WS_URL ||
+        `${defaultScheme}://${window.location.hostname}:8000/ws/voice-stream`;
       const ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
 
@@ -118,22 +130,28 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
           }
         };
         // Envia configuração real do hardware (Bug #5)
-        ws.send(JSON.stringify({
-          type: 'config',
-          sample_rate: audioContextRef.current?.sampleRate || 48000
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'config',
+            sample_rate: audioContextRef.current?.sampleRate || 48000,
+          })
+        );
 
-        (window as any)._audioProcessor = processor; // Evita Garbage Collection
+        (window as ExtendedWindow)._audioProcessor = processor; // Evita Garbage Collection
       };
 
       ws.onmessage = async (event) => {
         // 1. Áudio Binário (MP3 do Jarvis)
-        if ((event.data instanceof ArrayBuffer || event.data instanceof Blob) && audioContextRef.current) {
-          const binaryData = event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
-          
+        if (
+          (event.data instanceof ArrayBuffer || event.data instanceof Blob) &&
+          audioContextRef.current
+        ) {
+          const binaryData =
+            event.data instanceof Blob ? await event.data.arrayBuffer() : event.data;
+
           setIsSpeaking(true);
           setAgentState('speaking');
-          
+
           try {
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
               // Web Audio API decode (suporta MP3)
@@ -152,40 +170,46 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             console.error('Falha ao decodificar áudio do Jarvis:', e);
             // Fallback para Audio Element se o Web Audio falhar ou estiver fechado
             try {
-                const blob = new Blob([binaryData], { type: 'audio/mp3' });
-                const url = URL.createObjectURL(blob);
-                const audio = new Audio(url);
-                audio.onended = () => {
-                    setIsSpeaking(false);
-                    setAgentState('idle');
-                };
-                await audio.play();
-            } catch(e2) {}
+              const blob = new Blob([binaryData], { type: 'audio/mp3' });
+              const url = URL.createObjectURL(blob);
+              const audio = new Audio(url);
+              audio.onended = () => {
+                setIsSpeaking(false);
+                setAgentState('idle');
+              };
+              await audio.play();
+            } catch {}
           }
-        } 
+        }
         // 2. Mensagens JSON (Texto, Telemetria, etc)
         else if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'message' || data.type === 'message_chunk') {
               // Se for chunk, anexamos à última mensagem se ela for do assistente
-              setMessages(prev => {
-                  const last = prev[prev.length - 1];
-                  if (data.type === 'message_chunk' && last && last.role === 'assistant') {
-                      return [...prev.slice(0, -1), { ...last, content: last.content + " " + data.text }];
-                  }
-                  return [...prev, {
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (data.type === 'message_chunk' && last && last.role === 'assistant') {
+                  return [
+                    ...prev.slice(0, -1),
+                    { ...last, content: last.content + ' ' + data.text },
+                  ];
+                }
+                return [
+                  ...prev,
+                  {
                     role: data.role || 'assistant',
                     content: data.text,
-                    timestamp: new Date().toLocaleTimeString()
-                  }];
+                    timestamp: new Date().toLocaleTimeString(),
+                  },
+                ];
               });
             } else if (data.type === 'jarvis_speaking') {
-                setAgentState(data.state ? 'speaking' : 'idle');
+              setAgentState(data.state ? 'speaking' : 'idle');
             } else if (data.type === 'wake_word_detected') {
-                console.log("🎙️ Wake word detectada via hardware!");
+              console.log('🎙️ Wake word detectada via hardware!');
             }
-          } catch (e) {}
+          } catch {}
         }
       };
 
@@ -196,10 +220,10 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
 
       ws.onerror = () => setError('Conexão perdida com o Jarvis.');
       wsRef.current = ws;
-    } catch (err: any) {
-      setError(err.message || 'Erro ao iniciar Jarvis.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao iniciar Jarvis.');
     }
-  }, [disconnect]); // Agora disconnect está definido antes
+  }, []); // Conecta sem recriar callback por estado externo
 
   // Cleanup automático ao destruir o componente
   useEffect(() => {
@@ -210,7 +234,6 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       }
     };
   }, [disconnect]);
-
 
   const toggleMic = useCallback(() => {
     if (localStream) {
@@ -260,18 +283,51 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isScreenSharing, screenStream]);
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
+    const userMessage = {
+      role: 'user' as const,
+      content: text,
+      timestamp: new Date().toLocaleTimeString(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: 'text_message', text }));
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'user',
-          content: text,
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
+      return;
     }
+
+    // Fallback HTTP para manter o chat funcional mesmo sem WS/áudio ativo.
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${apiBase}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text, user_name: 'jarvis_user' }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Falha HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data?.reply) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: data.reply,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+        ]);
+        setAgentState('idle');
+        setError(null);
+        return;
+      }
+    } catch (e) {
+      console.error('Falha no fallback de texto (/chat):', e);
+    }
+
+    setError('Jarvis offline no momento. Verifique backend e conexão WebSocket.');
   }, []);
 
   function logger_local(label: string, state: string) {

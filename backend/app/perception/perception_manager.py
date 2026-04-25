@@ -192,15 +192,20 @@ class PerceptionManager:
 
     def _find_camera(self, cv2_module) -> Optional[object]:
         """
-        Try camera indices from env var JARVIS_CAMERA_INDEX (default: auto-detect 0,1,2).
+        Try camera indices from env var JARVIS_CAMERA_INDEX.
+        Default behavior is strict local webcam (index 0 only) to avoid
+        accidental capture from virtual/external devices (e.g. Phone Link).
+        Set JARVIS_CAMERA_FALLBACK_SCAN=true to probe 1 and 2 when needed.
         Returns an open VideoCapture or None if no camera is available.
         """
         import os
         forced = os.getenv("JARVIS_CAMERA_INDEX", "auto")
+        fallback_scan = os.getenv("JARVIS_CAMERA_FALLBACK_SCAN", "false").lower() == "true"
+
         if forced.lstrip("-").isdigit():
             indices = [int(forced)]
         else:
-            indices = [0, 1, 2]
+            indices = [0] if not fallback_scan else [0, 1, 2]
 
         for idx in indices:
             try:
@@ -244,7 +249,7 @@ class PerceptionManager:
                     logger.warning(
                         "[Perception] Camera unavailable after multiple attempts. "
                         "This may be because the browser already has exclusive access. "
-                        "Set JARVIS_CAMERA_INDEX=1 (or 2) in .env to try another camera. "
+                        "Set JARVIS_CAMERA_INDEX in .env to choose a specific device (0, 1, 2...). "
                         "Face/Gesture perception disabled — Voice perception still active."
                     )
                     # Don't retry camera — just keep voice running

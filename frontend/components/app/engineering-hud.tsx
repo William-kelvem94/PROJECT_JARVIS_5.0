@@ -14,9 +14,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/shadcn/utils';
 import { AppConfig } from '@/app-config';
+import { cn } from '@/lib/shadcn/utils';
 
 interface TelemetryData {
   type: string;
@@ -54,10 +53,12 @@ export function EngineeringHUD({ appConfig }: { appConfig: AppConfig }) {
               battery: prev?.battery || 99,
               model: 'Jarvis Native v5.3',
               persona: 'Engineer Core',
+              face_identity: health.face_identity,
+              face_emotion: health.face_emotion,
               is_reasoning: health.cpu > 50, // Inteligência visual: se CPU sobe, ele está 'pensando'
             }) as TelemetryData
         );
-      } catch (e) {
+      } catch {
         console.warn('HUD: Falha ao conectar com telemetria local.');
       }
     };
@@ -66,7 +67,7 @@ export function EngineeringHUD({ appConfig }: { appConfig: AppConfig }) {
     fetchStatus();
 
     return () => clearInterval(interval);
-  }, []);
+  }, [appConfig.jarvisApiUrl]);
 
   if (!data) return null;
 
