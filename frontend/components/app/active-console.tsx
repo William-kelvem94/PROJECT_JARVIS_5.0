@@ -30,8 +30,13 @@ interface ExternalLog {
   text?: string;
   detail?: string;
   role?: 'user' | 'assistant' | string;
+  content?: string;
+  timestamp?: string;
   status?: 'pending' | 'success' | 'error';
 }
+
+type ActivityLogType = ActivityLog['log_type'];
+type ActivityStatus = ActivityLog['status'];
 
 interface ActiveConsoleProps {
   externalLogs?: ExternalLog[]; // Logs vindos do WebSocket Nativo
@@ -54,11 +59,25 @@ export function ActiveConsole({ externalLogs = [] }: ActiveConsoleProps) {
         id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         title: latest.title || (latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis'),
         detail: latest.detail || latest.text || '',
-        log_type: (latest.log_type as any) || 'info',
-        status: (latest.status as any) || 'success',
+        log_type: (latest.log_type as ActivityLogType) || 'info',
+        status: (latest.status as ActivityStatus) || 'success',
         timestamp: new Date().toLocaleTimeString(),
       };
 
+      setLogs((prev) => [...prev.slice(-9), newLog]);
+      return;
+    }
+
+    // Fallback: mensagens nativas do JarvisContext ({ role, content, timestamp })
+    if (latest.role && latest.content) {
+      const newLog: ActivityLog = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        title: latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis',
+        detail: latest.content,
+        log_type: 'info',
+        status: 'success',
+        timestamp: latest.timestamp || new Date().toLocaleTimeString(),
+      };
       setLogs((prev) => [...prev.slice(-9), newLog]);
     }
   }, [externalLogs]);

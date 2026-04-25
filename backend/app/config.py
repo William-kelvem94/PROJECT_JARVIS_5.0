@@ -34,7 +34,9 @@ class Settings(BaseSettings):
     
     # --- SEGURANÇA & CLOUD FALLBACK ---
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
     
     # --- FRONTEND ---
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")

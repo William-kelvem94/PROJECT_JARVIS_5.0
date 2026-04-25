@@ -4,14 +4,11 @@ import React, { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
 import type { AppConfig } from '@/app-config';
-import {
-  AgentControlBar,
-  type AgentControlBarControls,
-} from '@/components/agents-ui/agent-control-bar';
+import { AgentControlBar } from '@/components/agents-ui/agent-control-bar';
 import { useJarvis } from '@/context/JarvisContext';
 import { useAgentErrors } from '@/hooks/useAgentErrors';
-import { cn } from '@/lib/shadcn/utils';
 import { ActiveConsole } from './active-console';
+import { ChatTranscript } from './chat-transcript';
 import { EngineeringHUD } from './engineering-hud';
 import { SessionDiagnostics } from './session-diagnostics';
 
@@ -57,9 +54,6 @@ export const SessionView = ({
     disconnect();
   };
 
-  // Cores dinâmicas baseadas no estado
-  const currentGlow = isSpeaking ? 'rgba(112, 0, 255, 0.4)' : 'rgba(0, 242, 255, 0.2)';
-
   React.useEffect(() => {
     connect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -72,7 +66,7 @@ export const SessionView = ({
   }, [isCameraEnabled, localStream]);
 
   return (
-    <section className="relative flex h-svh w-svw flex-col overflow-hidden bg-jarvis-bg" {...props}>
+    <section className="bg-jarvis-bg relative flex h-svh w-svw flex-col overflow-hidden" {...props}>
       {/* Camada de Background Ambient Gradient */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,25,1)_0%,rgba(2,2,5,1)_100%)]" />
 
@@ -81,12 +75,7 @@ export const SessionView = ({
 
       {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
 
-      {isConnected && (
-        <VantaController
-          vantaRef={vantaEffectRef}
-          isConnected={isConnected}
-        />
-      )}
+      {isConnected && <VantaController vantaRef={vantaEffectRef} isConnected={isConnected} />}
 
       {/* ── LADO DIREITO: Telemetria ────────────────────────────────────────── */}
       <EngineeringHUD appConfig={appConfig} />
@@ -105,6 +94,9 @@ export const SessionView = ({
         </motion.div>
         <ActiveConsole externalLogs={messages} />
       </div>
+
+      {/* ── TRANSCRIÇÃO DE CHAT (mensagens WS) ──────────────────────────────── */}
+      <ChatTranscript hidden={!chatOpen} messages={messages} className="pointer-events-none z-20" />
 
       {/* ── CENTRO: O Núcleo (Orb) ─────────────────────────────────────────── */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

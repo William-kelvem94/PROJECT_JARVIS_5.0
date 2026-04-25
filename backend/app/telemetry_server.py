@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import psutil
 import threading
 import uvicorn
+import socket
 from loguru import logger
 from .perception.perception_manager import perception_manager
 from .utils.learning_manager import learning_manager
@@ -108,6 +109,19 @@ async def dashboard():
 
 def start_telemetry_server():
     """Inicia o dashboard em uma thread separada."""
-    thread = threading.Thread(target=lambda: uvicorn.run(app, host="0.0.0.0", port=8001, log_level="warning"), daemon=True)
+    # Evita quebrar o startup principal se a porta já estiver em uso.
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(0.3)
+        if sock.connect_ex(("127.0.0.1", 8001)) == 0:
+            logger.warning("⚠️ Telemetry dashboard já está ativo na porta 8001. Ignorando novo bind.")
+            return
+    finally:
+        sock.close()
+
+    thread = threading.Thread(
+        target=lambda: uvicorn.run(app, host="0.0.0.0", port=8001, log_level="warning"),
+        daemon=True
+    )
     thread.start()
     logger.info("🚀 Dashboard de Telemetria disponível em: http://localhost:8001")
