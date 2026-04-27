@@ -16,7 +16,7 @@ export function ConsolePanel({ logs }: ConsolePanelProps) {
   return (
     <div className="bg-black/60 backdrop-blur-md rounded-xl border border-white/10 p-4 h-64 overflow-y-auto font-mono text-xs">
       {logs.length === 0 ? (
-        <p className="text-white/30 italic">Aguardando logs do sistema...</p>
+        <p className="text-white/40 italic">Nenhum log de sistema ainda — o Jarvis está ouvindo.</p>
       ) : (
         logs.map((line, i) => (
           <div
