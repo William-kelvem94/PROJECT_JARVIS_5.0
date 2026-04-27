@@ -10,11 +10,13 @@ def test_health():
     resp = client.get("/health")
     assert resp.status_code == 200
     data = resp.json()
-    assert data["status"] == "ok"
-    assert "timestamp" in data
-    assert "cpu_percent" in data
-    assert "ram_percent" in data
-    assert "uptime_seconds" in data
+    assert data["status"] == "online"
+    assert "cpu" in data
+    assert "ram" in data
+    assert "is_ai_ready" in data
+    assert "face_identity" in data
+    assert "face_emotion" in data
+    assert "gesture" in data
 
 
 def test_chat_stub():
