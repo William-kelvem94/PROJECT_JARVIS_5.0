@@ -12,3 +12,5 @@
 - [2026-04-17T16:15:52.108781] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: sad. Mensagem: oi
 - [2026-04-17T16:21:15.426108] (fact): Contexto Sensorial -> Usuário: Usuário. Emoção: neutral. Mensagem: Vocês vão sentir.
 - [2026-04-25T10:06:02.952343] (fact): Teste de resposta curta
+- [2026-04-27T09:15:59.052738] (fact): oi
+- [2026-04-27T09:16:15.686380] (fact): responda por voz
