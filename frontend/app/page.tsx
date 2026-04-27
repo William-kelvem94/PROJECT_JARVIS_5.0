@@ -1,83 +1,46 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useJarvisData } from '@/hooks/use-jarvis-data';
 import { HudRing } from '@/components/cockpit/hud-ring';
 import { IdentityPill } from '@/components/cockpit/identity-pill';
 import { ConsolePanel } from '@/components/cockpit/console-panel';
 import { OrbCore } from '@/components/cockpit/orb-core';
 import { StatsStrip } from '@/components/cockpit/stats-strip';
 
-interface HealthData {
-  cpu: number;
-  ram: number;
-  face_identity: string;
-  face_emotion: string;
-}
-
 export default function Page() {
-  const [health, setHealth] = useState<HealthData>({
-    cpu: 0,
-    ram: 0,
-    face_identity: 'Unknown',
-    face_emotion: 'Neutro',
-  });
-  const [objects, setObjects] = useState<string[]>([]);
-  const [todos, setTodos] = useState(0);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [thinking, setThinking] = useState(false);
-
-  useEffect(() => {
-    const tick = async () => {
-      try {
-        const h = await fetch('http://127.0.0.1:8000/health').then((r) => r.json());
-        setHealth({
-          cpu: h.cpu ?? 0,
-          ram: h.ram ?? 0,
-          face_identity: h.face_identity || 'Unknown',
-          face_emotion: h.face_emotion || 'Neutro',
-        });
-        setThinking((h.cpu ?? 0) > 50);
-      } catch {
-        setHealth((current) => ({ ...current }));
-      }
-
-      try {
-        const t = await fetch('http://127.0.0.1:8001/api/status').then((r) => r.json());
-        setObjects(t?.perception?.detected_objects || []);
-        setTodos(t?.obsidian?.active_todos || 0);
-      } catch {
-        setObjects([]);
-        setTodos(0);
-      }
-
-      try {
-        const today = new Date().toISOString().slice(0, 10);
-        const l = await fetch(`http://127.0.0.1:8000/logs/${today}`).then((r) => r.json());
-        if (l?.logs) setLogs(l.logs);
-      } catch {
-        setLogs([]);
-      }
-    };
-
-    tick();
-    const intervalId = setInterval(tick, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
+  const { health, telemetry, logs, isThinking } = useJarvisData();
 
   return (
-    <main className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 gap-8">
-      <OrbCore thinking={thinking} />
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-black p-6 text-white">
+      <OrbCore thinking={isThinking} />
 
-      <div className="flex items-center gap-12 flex-wrap justify-center">
+      <div className="flex flex-wrap items-center justify-center gap-12">
         <HudRing value={health.cpu} label="CPU" color="#06b6d4" />
         <HudRing value={health.ram} label="RAM" color="#a855f7" />
-        <IdentityPill name={health.face_identity} emotion={health.face_emotion} />
+        <IdentityPill
+          name={health.face_identity}
+          emotion={health.face_emotion}
+        />
       </div>
 
-      <StatsStrip objects={objects} todos={todos} />
+      <StatsStrip
+        objects={telemetry?.perception?.detected_objects || []}
+        todos={telemetry?.obsidian?.active_todos || 0}
+      />
 
       <div className="w-full max-w-2xl">
         <ConsolePanel logs={logs} />
+      </div>
+
+      <div className="fixed bottom-4 right-4 flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 backdrop-blur">
+        <span
+          className={`h-2 w-2 rounded-full ${
+            health.is_ai_ready ? 'bg-green-400' : 'bg-red-400'
+          }`}
+        />
+        <span className="text-xs text-white/60">
+          {health.is_ai_ready ? 'IA Online' : 'IA Inicializando...'}
+        </span>
       </div>
     </main>
   );
