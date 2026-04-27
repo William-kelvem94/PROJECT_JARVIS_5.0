@@ -54,9 +54,11 @@ async def lifespan(app: FastAPI):
                         (cpu, ram, status, datetime.datetime.now().isoformat())
                     )
                 
-                # Opcional: Manter apenas os últimos 1000 registros para não crescer infinitamente
-                if datetime.datetime.now().minute % 10 == 0: # Limpa a cada 10 min
-                     with db_manager.get_connection() as conn:
+                # Mantém apenas os últimos 1000 registros — limpeza a cada 100 inserções
+                # para evitar acúmulo mesmo quando o loop roda em rajadas rápidas.
+                with db_manager.get_connection() as conn:
+                    count = conn.execute("SELECT COUNT(*) FROM telemetry").fetchone()[0]
+                    if count > 1100:
                         conn.execute("DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 1000)")
                         
             except Exception as e:
