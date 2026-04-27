@@ -7,10 +7,13 @@ import { IdentityPill } from '@/components/cockpit/identity-pill';
 import { ConsolePanel } from '@/components/cockpit/console-panel';
 import { OrbCore } from '@/components/cockpit/orb-core';
 import { StatsStrip } from '@/components/cockpit/stats-strip';
+import { TelemetryChart } from '@/components/cockpit/telemetry-chart';
+import { useTelemetryHistory } from '@/hooks/use-telemetry-history';
 
 export default function Page() {
   const { health, telemetry, logs, isThinking } = useJarvisData();
   const { t } = useI18n();
+  const { history } = useTelemetryHistory();
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-black p-6 text-white">
@@ -34,8 +37,11 @@ export default function Page() {
         }
       />
 
-      <div className="w-full max-w-2xl">
-        <ConsolePanel logs={logs} emptyText={t('cockpit.noLogs')} />
+      <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div>
+          <ConsolePanel logs={logs} emptyText={t('cockpit.noLogs')} />
+        </div>
+        <TelemetryChart history={history} />
       </div>
 
       <div className="fixed bottom-4 right-4 flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 backdrop-blur">

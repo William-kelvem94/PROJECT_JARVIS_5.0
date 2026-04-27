@@ -7,6 +7,8 @@ import logging
 
 from .chat_pipeline import chat_reply
 from .unified_memory import memory
+from .utils.db_manager import db_manager
+from .utils.note_writer import note_writer
 
 logger = logging.getLogger("uvicorn")
 
@@ -118,3 +120,20 @@ async def health_check():
         "face_emotion": visao.get("face_emotion", "Awaiting..."),
         "gesture": visao.get("hand_gesture", "None") or "None"
     }
+
+
+@router.get("/telemetry/history")
+async def telemetry_history(limit: int = 24):
+    history = db_manager.get_telemetry_history(limit=limit)
+    return {"history": history}
+
+
+class NoteRequest(BaseModel):
+    title: str
+    body: str
+
+
+@router.post("/notes")
+async def create_note_endpoint(req: NoteRequest):
+    note_path = note_writer.create_note(req.title, req.body)
+    return {"saved": True, "path": note_path}
