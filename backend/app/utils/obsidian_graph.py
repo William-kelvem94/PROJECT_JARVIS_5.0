@@ -86,4 +86,8 @@ class ObsidianGraph:
         except Exception:
             pass
 
-# Singleton (Instanciado via SecondBrainConnector para evitar circular import)
+
+def _get_default_vault_path() -> str:
+    return os.getenv('JARVIS_VAULT_ROOT') or os.getenv('OBSIDIAN_VAULT_PATH') or "C:/Users/willi/Documents/GitHub/Will-obsidian"
+
+obsidian_graph = ObsidianGraph(_get_default_vault_path())
