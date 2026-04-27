@@ -1,12 +1,7 @@
 'use client';
-
 import { useEffect, useRef } from 'react';
 
-interface ConsolePanelProps {
-  logs: string[];
-}
-
-export function ConsolePanel({ logs }: ConsolePanelProps) {
+export function ConsolePanel({ logs, emptyText }: { logs: string[]; emptyText?: string }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -14,18 +9,18 @@ export function ConsolePanel({ logs }: ConsolePanelProps) {
   }, [logs]);
 
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-black/60 backdrop-blur-sm p-4 h-52 overflow-y-auto font-mono text-xs text-green-400 leading-relaxed">
-      {logs.length === 0 ? (
-        <p className="text-white/30 italic">
-          Nenhum log de sistema ainda — o Jarvis está ouvindo.
-        </p>
-      ) : (
-        logs.map((line, i) => (
-          <div key={i} className="whitespace-pre-wrap break-all">
-            {line}
-          </div>
-        ))
+    <div className="h-64 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-4 font-mono text-xs backdrop-blur">
+      {logs.length === 0 && (
+        <div className="italic text-white/40">
+          {emptyText || 'Nenhum log de sistema ainda — o Jarvis está ouvindo.'}
+        </div>
       )}
+      {logs.map((line, i) => (
+        <div key={i} className="text-green-400/80 transition-colors hover:text-green-300">
+          <span className="text-cyan-500">{`> `}</span>
+          {line}
+        </div>
+      ))}
       <div ref={bottomRef} />
     </div>
   );

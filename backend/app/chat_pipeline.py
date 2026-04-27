@@ -29,7 +29,6 @@ async def chat_reply(user_id: str, user_message: str):
     if not full_reply:
         full_reply = "Não consegui formular uma resposta para isso agora."
 
-    # === CORREÇÃO: Aguardar tasks assíncronas antes de retornar ===
     try:
         await asyncio.gather(
             memory.add_memory(user_id, user_message, source="jarvis_chat"),
@@ -65,7 +64,6 @@ async def chat_stream(user_id: str, user_message: str):
 
     full_reply = "".join(chunks)
 
-    # === CORREÇÃO: Aguardar tasks assíncronas antes de finalizar ===
     try:
         await asyncio.gather(
             memory.add_memory(user_id, user_message, source="jarvis_voice"),

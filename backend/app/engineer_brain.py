@@ -212,6 +212,31 @@ class EngineerBrain:
         except Exception as e:
             logger.warning(f"⚠️ Motor Nativo falhou: {e}")
 
+        # ── Prioridade 0.5: Ollama (offline total) ─────────────────────────────
+        if settings.OLLAMA_ENABLED:
+            try:
+                session = _get_session()
+                url = f"{settings.OLLAMA_URL}/api/chat"
+                async with session.post(
+                    url,
+                    json={"model": settings.OLLAMA_MODEL, "messages": messages, "stream": True},
+                    timeout=aiohttp.ClientTimeout(total=settings.OLLAMA_TIMEOUT),
+                ) as resp:
+                    if resp.status == 200:
+                        async for line in resp.content:
+                            line_str = line.decode('utf-8', errors='ignore').strip()
+                            if line_str:
+                                try:
+                                    chunk = json.loads(line_str)
+                                    text = chunk.get('message', {}).get('content', '')
+                                    if text:
+                                        yield text
+                                except Exception:
+                                    continue
+                        return
+            except Exception as e:
+                logger.warning(f"Ollama offline: {e}")
+
         # ── Prioridade 1: LM Studio local ─────────────────────────────────────
         # Pula imediatamente se a última sondagem de /models falhou.
         if self._lmstudio_available:

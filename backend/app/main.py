@@ -1,107 +1,118 @@
-from dotenv import load_dotenv
-from pathlib import Path
-import os
+"""
+JARVIS 5.0 - Ponto de entrada principal do backend
+Inicializa todos os serviços: percepção, telemetria, segundo cérebro, loop autônomo.
+"""
+
 import sys
-
-# 1. CARGA IMEDIATA DO AMBIENTE (Crucial para os imports subsequentes)
-base_dir = Path(__file__).resolve().parents[2]
-load_dotenv(base_dir / '.env')
-load_dotenv(base_dir / 'env' / '.env', override=False)
-
+import os
+import asyncio
+import threading
+import psutil
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import datetime
-import psutil
-import asyncio
 from loguru import logger
-from typing import Dict, Any
-from contextlib import asynccontextmanager
 
-# O uvicorn deve rodar este aplicativo como pacote app.main.
-# Removendo a insercao manual de sys.path para evitar importacao de módulos como top-level.
+# Garantir que backend/app está no path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from .config import settings
-from . import routes
-from . import voice_websocket
-from .perception.perception_manager import perception_manager
-from .autonomous_brain import autonomous_brain
-from .telemetry_server import start_telemetry_server
-from .utils.second_brain_connector import second_brain
-from .utils.obsidian_graph import ObsidianGraph
+from app.routes import router
+from app.voice_websocket import voice_router
+from app.telemetry_server import start_telemetry_server
+from app.utils.second_brain_connector import second_brain
+from app.utils.obsidian_graph import obsidian_graph
+from app.utils.learning_manager import learning_manager
+from app.utils.db_manager import db_manager
+from app.autonomous_brain import autonomous_brain
+from app.perception.perception_manager import perception_manager
 
-_start_time = datetime.datetime.now()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Gerencia o ciclo de vida do servidor."""
     logger.info("[Startup] JARVIS 5.0 iniciando...")
-    logger.info("[Startup] JARVIS 5.0 iniciando...")
-    # Inicia Percepção Local
+
+    # Inicializar segundo cérebro e grafo
+    obsidian_graph.build_graph(str(second_brain.vault_path))
+    logger.info(f"[Startup] Grafo do Obsidian construído com {len(obsidian_graph.graph.nodes)} nós")
+
+    # Inicializar percepção
     perception_manager.start()
-    
-    # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
-    async def hardware_telemetry():
-        from .utils.db_manager import db_manager
-        while True:
-            try:
-                cpu = psutil.cpu_percent()
-                ram = psutil.virtual_memory().percent
-                status = "warning" if ram > 85 else "success"
-                
-                # Salva no SQLite em vez de JSONL para telemetria (muito mais eficiente para dados ruidosos)
-                with db_manager.get_connection() as conn:
-                    conn.execute(
-                        "INSERT INTO telemetry (cpu_usage, ram_usage, status, timestamp) VALUES (?, ?, ?, ?)",
-                        (cpu, ram, status, datetime.datetime.now().isoformat())
-                    )
-                
-                # Mantém apenas os últimos 500 registros para evitar crescimento descontrolado
-                with db_manager.get_connection() as conn:
-                    count = conn.execute("SELECT COUNT(*) FROM telemetry").fetchone()[0]
-                    if count > 600:
-                        conn.execute(
-                            "DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 500)"
-                        )
-                        conn.commit()
-                        logger.debug("[Telemetry] Limpeza de registros antigos concluída")
-            except Exception as e:
-                logger.error(f"[Telemetry] Erro: {e}")
-            await asyncio.sleep(15) # Aumentado para 15s para poupar recursos
+    logger.info("[Startup] Percepção iniciada")
 
-    asyncio.create_task(hardware_telemetry())
-    
-    # Inicia o Modo Autônomo (Background Thinking)
-    asyncio.create_task(autonomous_brain.start_background_thinking())
+    # Inicializar loop autônomo
+    threading.Thread(target=autonomous_brain.start_background_thinking, daemon=True).start()
 
-    # Inicia Dashboard de Telemetria (Porta 8001)
+    # Inicializar telemetria (porta 8001)
     start_telemetry_server()
-    
-    # Constrói o Grafo do Obsidian inicial
-    obsidian_graph = ObsidianGraph(second_brain.vault_path)
-    asyncio.create_task(asyncio.to_thread(obsidian_graph.build_graph))
-    
+
     yield
-    logger.info("[Shutdown] Finalizando serviços...")
+
+    # Shutdown
+    logger.info("[Shutdown] Encerrando JARVIS...")
     perception_manager.stop()
+    autonomous_brain.stop()
 
-app = FastAPI(lifespan=lifespan)
 
-# Configuração de CORS Dinâmica
+app = FastAPI(title="JARVIS 5.0", lifespan=lifespan)
+
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(routes.router)
-app.include_router(voice_websocket.router)
+# Rotas
+app.include_router(router)
+app.include_router(voice_router, prefix="/ws")
 
-@app.get("/status") # type: ignore
-def status_check() -> Dict[str, Any]:
-    return {
-        "status": "ok",
-        "gemini": bool(os.getenv("GEMINI_API_KEY")),
-        "timestamp": datetime.datetime.now().isoformat()
-    }
 
+# === Tarefa de fundo: Telemetria e limpeza do banco ===
+async def hardware_telemetry():
+    """Coleta métricas periódicas e limpa registros antigos."""
+    from app.utils.db_manager import db_manager
+
+    while True:
+        await asyncio.sleep(15)
+
+        try:
+            cpu = psutil.cpu_percent()
+            ram = psutil.virtual_memory().percent
+            db_manager.save_telemetry(cpu, ram)
+
+            # Limpeza a cada 2 minutos, mantém últimos 500 registros
+            now = __import__('datetime').datetime.now()
+            if now.minute % 2 == 0 and now.second < 20:
+                conn = db_manager._get_conn()
+                conn.execute(
+                    """
+                    DELETE FROM telemetry
+                    WHERE id NOT IN (
+                        SELECT id FROM telemetry ORDER BY id DESC LIMIT 500
+                    )
+                    """
+                )
+                conn.commit()
+                logger.debug("[Telemetria] Limpeza de registros antigos concluída")
+        except Exception as e:
+            logger.warning(f"[Telemetria] Erro na coleta: {e}")
+
+
+@app.on_event("startup")
+async def startup():
+    asyncio.create_task(hardware_telemetry())
+    logger.info("[Telemetria] Coleta de hardware iniciada")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )

@@ -1,74 +1,60 @@
+"""
+JARVIS 5.0 - Cérebro Autônomo (Loop de Pensamento Proativo)
+Monitora o sistema e o Obsidian em background com intervalo adaptativo.
+"""
+
 import asyncio
-import time
 import psutil
 from loguru import logger
-from .config import settings
-from .tools.system_executor import system_executor
-from .utils.second_brain_connector import second_brain
 
-# Intervalos adaptativos: ocioso vs sob carga
-_INTERVAL_IDLE = 60      # 1 min quando CPU/RAM baixos
-_INTERVAL_BUSY = 300     # 5 min quando sob carga
-_CPU_BUSY_THRESHOLD = 60 # % de CPU para considerar "ocupado"
 
 class AutonomousBrain:
-    """
-    O loop de pensamento em background (Proatividade).
-    O Jarvis agora 'acorda' sozinho para monitorar o ambiente e a agenda.
-    O intervalo é adaptativo: menor quando ocioso, maior quando sob carga.
-    """
-    
-    def __init__(self, websocket_manager=None):
-        self.ws_manager = websocket_manager
+    def __init__(self):
         self._running = False
-        self._last_system_check = 0
+        self._task = None
 
     def _adaptive_interval(self) -> int:
-        """Retorna intervalo em segundos baseado na carga atual do sistema."""
+        """Intervalo adaptativo baseado na carga do sistema."""
         try:
-            cpu = psutil.cpu_percent(interval=0.1)
+            cpu = psutil.cpu_percent(interval=1)
             ram = psutil.virtual_memory().percent
-            if cpu > _CPU_BUSY_THRESHOLD or ram > 80:
-                return _INTERVAL_BUSY
+            if cpu > 60 or ram > 80:
+                return 300  # 5 minutos sob carga
+            return 60  # 1 minuto ocioso
         except Exception:
-            pass
-        return _INTERVAL_IDLE
+            return 120  # fallback seguro
 
-    async def start_background_thinking(self, websocket=None):
-        """Inicia o loop proativo."""
-        if self._running: return
-        self._running = True
-        logger.info("🧠 JARVIS Iniciou Modo de Pensamento Autônomo.")
-        
+    async def _background_loop(self):
         while self._running:
             try:
                 interval = self._adaptive_interval()
-                logger.debug(f"[Autônomo] Próxima verificação em {interval}s.")
 
-                # 1. MONITORAMENTO DE SAÚDE
-                health_report = system_executor.system_status_report()
-                if "ALERTA" in health_report:
-                    logger.warning(f"[Autônomo] {health_report}")
-                    if websocket:
-                        await websocket.send_json({
-                            "type": "proactive_alert",
-                            "message": health_report
-                        })
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory().percent
+                logger.debug(f"[Autônomo] CPU: {cpu}%, RAM: {ram}%, Próximo ciclo: {interval}s")
 
-                # 2. MONITORAMENTO DE AGENDA & TAREFAS (Obsidian + GraphRAG)
-                if second_brain.active_todos:
-                    logger.info(f"[Autônomo] Analisando {len(second_brain.active_todos)} tarefas do Obsidian...")
-                    try:
-                        from .utils.obsidian_graph import obsidian_graph
-                        for todo in second_brain.active_todos[:3]:
-                            related = obsidian_graph.query_related(todo)
-                            if related:
-                                logger.info(f"[Autônomo] Insight: A tarefa '{todo}' está ligada a: {', '.join(related)}")
-                    except: pass
-                
+                if cpu > 90 or ram > 95:
+                    logger.warning("[Autônomo] ALERTA: O processador/memória está sob carga extrema.")
+
                 await asyncio.sleep(interval)
             except Exception as e:
-                logger.error(f"Erro no loop autônomo: {e}")
+                logger.error(f"[Autônomo] Erro no loop: {e}")
                 await asyncio.sleep(60)
+
+    def start_background_thinking(self):
+        """Inicia o loop de pensamento em background."""
+        self._running = True
+        self._task = asyncio.run(self._background_loop())
+        logger.info("JARVIS Iniciou Modo de Pensamento Autônomo (intervalo adaptativo).")
+
+    def stop(self):
+        """Para o loop autônomo."""
+        self._running = False
+        if self._task:
+            try:
+                self._task.cancel()
+            except Exception:
+                pass
+
 
 autonomous_brain = AutonomousBrain()
