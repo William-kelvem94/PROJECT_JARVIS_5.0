@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     config.watchOptions = {
       ...config.watchOptions,
       ignored:
-        /hiberfil\.sys|pagefile\.sys|swapfile\.sys|DumpStack\.log|node_modules[\\/]|\.git[\\/]|\.next[\\/]/,
+        /C:\\hiberfil\.sys|C:\\pagefile\.sys|C:\\swapfile\.sys|C:\\DumpStack\.log|node_modules[\\/]|\.git[\\/]|\.next[\\/]/,
     };
     return config;
   },

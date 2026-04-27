@@ -1,6 +1,6 @@
 @echo off
 TITLE JARVIS 5.0 - Cold Start Launcher
-SETLOCAL EnableExtensions EnableDelayedExpansion
+SETLOCAL EnableExtensions
 
 :: ============================================================
 :: BASE
