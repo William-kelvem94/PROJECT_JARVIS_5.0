@@ -17,8 +17,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 
 
-// Tailwind + custom cyberpunk
-
 const publicSans = Public_Sans({
   variable: '--font-public-sans',
   subsets: ['latin'],

@@ -63,33 +63,6 @@ export default function CockpitPage() {
   );
 }
 
-
-interface JarvisData {
-  cpu: number;
-  ram: number;
-  emotion: string;
-  face_label: string;
-  objects: string[];
-  todos: string[];
-  screenshot?: string;
-  logs: string[];
-  engine: string;
-  uptime: number;
-}
-
-const DEFAULT: JarvisData = {
-  cpu: 0,
-  ram: 0,
-  emotion: 'neutro',
-  face_label: 'Desconhecido',
-  objects: [],
-  todos: [],
-  logs: [],
-  engine: '--',
-  uptime: 0,
-};
-
-export default function Page() {
   const [data, setData] = useState<JarvisData>(DEFAULT);
   const [connected, setConnected] = useState(false);
 

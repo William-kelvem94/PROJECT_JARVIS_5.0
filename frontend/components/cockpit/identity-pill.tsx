@@ -23,7 +23,7 @@ export function IdentityPill({ name, emotion }: IdentityPillProps) {
     <div className="flex items-center gap-3 px-5 py-2 rounded-full border border-jarvis-cyan/30 bg-white/5 backdrop-blur-sm">
       <Icon className={`w-5 h-5 ${color}`} />
       <span className="text-sm font-medium tracking-wide">{name}</span>
-      <span className="text-xs text-white/40 uppercase tracking-widest">{emotion}</span>
+      <span className={`text-xs uppercase tracking-widest ${color}`}>{emotion}</span>
     </div>
   );
 }
