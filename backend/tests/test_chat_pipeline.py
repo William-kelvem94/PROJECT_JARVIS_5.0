@@ -21,7 +21,8 @@ class TestChatPipeline:
             mock_memory.save_session = AsyncMock()
 
             with patch('app.chat_pipeline.brain') as mock_brain:
-                mock_brain.reason_stream = AsyncMock(return_value=async_iter())
+                from unittest.mock import MagicMock
+                mock_brain.reason_stream = MagicMock(return_value=async_iter())
 
                 from app.chat_pipeline import chat_reply
                 result = await chat_reply("test_user", "Oi")

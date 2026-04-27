@@ -13,8 +13,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-# Garantir que backend/app está no path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Garantir que backend está no path para que o pacote app seja importável
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.routes import router
 from app.voice_websocket import router as voice_router

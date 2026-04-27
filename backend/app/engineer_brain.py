@@ -139,7 +139,7 @@ class EngineerBrain:
         
         # Em carga extrema, reduzimos a janela de contexto para proteger a estabilidade,
         # mas mantemos a temperatura baixa para garantir que ele continue 'inteligente' e técnico.
-        if ram_percent > 90:
+        if ram_percent >= 90:
             logger.warning(f"🚀 ALTA CARGA DETECTADA: RAM {ram_percent}%. Priorizando Contexto Crítico.")
             return {
                 "max_tokens": 1024,

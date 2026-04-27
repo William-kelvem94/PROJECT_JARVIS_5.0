@@ -17,10 +17,10 @@ class TestEngineerBrain:
     @pytest.mark.asyncio
     async def test_pick_gemini_model_returns_cached(self, brain):
         """Deve retornar modelo cacheado sem nova sondagem."""
-        from app.engineer_brain import _gemini_model_cache
+        import app.engineer_brain as engineer_brain
         import time
-        _gemini_model_cache["model"] = "gemini-2.0-flash"
-        _gemini_model_cache["ts"] = time.monotonic()
+        engineer_brain._gemini_model_cache = "gemini-2.0-flash"
+        engineer_brain._gemini_model_cache_ts = time.monotonic()
         result = await brain._pick_gemini_model()
         assert result == "gemini-2.0-flash"
 
