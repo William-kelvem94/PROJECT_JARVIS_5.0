@@ -4,10 +4,13 @@ import { useMemo } from 'react';
 import { JarvisTelemetryHistory } from '@/types';
 
 interface TelemetryChartProps {
-  history: JarvisTelemetryHistory[];
+  data: JarvisTelemetryHistory[];
+  width?: number;
+  height?: number;
 }
 
-export function TelemetryChart({ history }: TelemetryChartProps) {
+export function TelemetryChart({ data, width, height }: TelemetryChartProps) {
+  const history = data ?? [];
   const points = useMemo(
     () => history.map((item) => ({
       timestamp: new Date(item.timestamp).toLocaleTimeString(),
@@ -18,11 +21,18 @@ export function TelemetryChart({ history }: TelemetryChartProps) {
   );
 
   if (!history.length) {
-    return <div className="rounded-xl border border-slate-200/80 p-4 text-slate-500">No telemetry history available.</div>;
+    return (
+      <div className="rounded-xl border border-slate-200/80 p-4 text-slate-500" style={{ minHeight: height ?? 160 }}>
+        No telemetry history available.
+      </div>
+    );
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm">
+    <div
+      className="rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm"
+      style={{ minHeight: height ?? 180, width: width ? `${width}px` : '100%' }}
+    >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-900">Telemetry history</h2>
         <span className="text-xs text-slate-500">{points.length} samples</span>

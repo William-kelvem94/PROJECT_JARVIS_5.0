@@ -9,13 +9,13 @@ export function useTelemetryHistory(pollInterval = 8000) {
     let mounted = true;
     const fetchHistory = async () => {
       try {
-        const response = await fetch('/api/telemetry/history');
+        const response = await fetch('/telemetry/history');
         if (!response.ok) {
           throw new Error('Failed to load telemetry history.');
         }
         const data = await response.json();
         if (mounted) {
-          setHistory(data);
+          setHistory(Array.isArray(data?.history) ? data.history : []);
         }
       } catch (err) {
         if (mounted) {
