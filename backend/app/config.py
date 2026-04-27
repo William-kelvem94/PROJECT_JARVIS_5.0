@@ -5,10 +5,16 @@ Detecta automaticamente CPU/GPU e ajusta perfis de performance.
 
 import os
 import torch
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    model_config = ConfigDict(
+        extra="ignore",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
     # ── Hardware Detection ────────────────────────────────────
     DEVICE_TYPE: str = os.getenv("JARVIS_AI_DEVICE", "cpu")
     GPU_ENABLED: bool = False
@@ -33,12 +39,10 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
 
-    # ── Whisper / Audio ───────────────────────────────────────
+    # ── Data Paths ────────────────────────────────────────────
+    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "local-model")
     JARVIS_WHISPER_MODEL: str = os.getenv("JARVIS_WHISPER_MODEL", "base")
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

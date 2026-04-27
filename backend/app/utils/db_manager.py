@@ -42,6 +42,14 @@ class DBManager:
             )
             conn.commit()
 
+    def get_telemetry_history(self, limit: int = 24):
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT cpu_usage AS cpu, ram_usage AS memory, status, timestamp FROM telemetry ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [dict(row) for row in rows][::-1]
+
     def _init_db(self):
         """
         Inicializa as tabelas se não existirem.

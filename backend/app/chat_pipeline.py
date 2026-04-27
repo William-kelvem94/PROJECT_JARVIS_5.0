@@ -8,6 +8,18 @@ from loguru import logger
 from .engineer_brain import brain
 from .unified_memory import memory
 from .persona import persona
+from .utils.note_writer import note_writer
+
+
+async def _maybe_write_note(user_id: str, user_message: str, full_reply: str):
+    if not user_message or not full_reply:
+        return
+
+    action_text = user_message.lower()
+    if any(keyword in action_text for keyword in ["nota", "memória", "memo", "note", "summarize", "resuma"]):
+        title = f"JARVIS note - {user_id}"
+        body = f"User message: {user_message}\n\nAssistant reply:\n{full_reply}"
+        note_writer.create_note(title, body)
 
 
 async def chat_reply(user_id: str, user_message: str):
@@ -16,6 +28,9 @@ async def chat_reply(user_id: str, user_message: str):
     Não faz TTS – apenas a parte de raciocínio.
     """
     context = await memory.get_context(user_id, user_message)
+
+    if not user_message or not user_message.strip():
+        raise ValueError("A mensagem do usuário não pode ficar vazia.")
 
     full_reply = ""
     try:
@@ -38,6 +53,7 @@ async def chat_reply(user_id: str, user_message: str):
                 f"Chat: {user_message[:30]}",
             ),
         )
+        await _maybe_write_note(user_id, user_message, full_reply)
         logger.debug(f"Memória salva para {user_id}")
     except Exception as e:
         logger.warning(f"Falha ao salvar memória (não crítico): {e}")
@@ -72,6 +88,7 @@ async def chat_stream(user_id: str, user_message: str):
                 [{"role": "user", "content": user_message}, {"role": "assistant", "content": full_reply}],
                 f"Conversa: {user_message[:25]}",
             ),
+            _maybe_write_note(user_id, user_message, full_reply),
         )
     except Exception as e:
         logger.warning(f"Falha ao salvar sessão (não crítico): {e}")
