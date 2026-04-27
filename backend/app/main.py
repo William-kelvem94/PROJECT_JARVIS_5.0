@@ -54,13 +54,15 @@ async def lifespan(app: FastAPI):
                         (cpu, ram, status, datetime.datetime.now().isoformat())
                     )
                 
-                # Mantém apenas os últimos 1000 registros — limpeza a cada 100 inserções
-                # para evitar acúmulo mesmo quando o loop roda em rajadas rápidas.
+                # Mantém apenas os últimos 500 registros para evitar crescimento descontrolado
                 with db_manager.get_connection() as conn:
                     count = conn.execute("SELECT COUNT(*) FROM telemetry").fetchone()[0]
-                    if count > 1100:
-                        conn.execute("DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 1000)")
-                        
+                    if count > 600:
+                        conn.execute(
+                            "DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 500)"
+                        )
+                        conn.commit()
+                        logger.debug("[Telemetry] Limpeza de registros antigos concluída")
             except Exception as e:
                 logger.error(f"[Telemetry] Erro: {e}")
             await asyncio.sleep(15) # Aumentado para 15s para poupar recursos
