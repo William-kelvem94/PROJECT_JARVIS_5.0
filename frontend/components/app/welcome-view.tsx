@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { motion } from 'motion/react';
+import { Cpu, IdentificationCard, Play } from '@phosphor-icons/react';
 
 interface WelcomeViewProps {
   startButtonText: string;
@@ -8,273 +10,153 @@ interface WelcomeViewProps {
 export const WelcomeView = ({
   startButtonText,
   onStartCall,
-  ref,
-}: React.ComponentProps<'div'> & WelcomeViewProps) => {
+}: WelcomeViewProps) => {
   const [name, setName] = useState('');
-  const [tick, setTick] = useState(0);
 
-  // Pulso lento para animar os anéis
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 50);
-    return () => clearInterval(id);
-  }, []);
+  const handleStart = () => {
+    if (name.trim()) {
+      onStartCall({ metadata: JSON.stringify({ user_name: name }) });
+    }
+  };
 
   return (
-    <div ref={ref} className="relative flex flex-col items-center justify-center select-none">
+    <div className="relative flex flex-col items-center justify-center select-none overflow-hidden py-12">
       {/* ── Aura de fundo ──────────────────────────────────── */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div
-          style={{
-            width: 480,
-            height: 480,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(29,163,185,0.12) 0%, transparent 70%)',
-            animation: 'jarvis-glow-pulse 4s ease-in-out infinite',
-          }}
-        />
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ 
+          opacity: [0.4, 0.7, 0.4],
+          scale: [1, 1.1, 1],
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      >
+        <div className="size-[480px] rounded-full bg-[radial-gradient(circle,rgba(0,242,255,0.15)_0%,transparent_70%)]" />
+      </motion.div>
 
       {/* ── Anéis orbitais ─────────────────────────────────── */}
-      <div
-        className="relative flex items-center justify-center"
-        style={{ width: 280, height: 280 }}
-      >
-        {/* Anel externo – gira devagar */}
-        <div
-          style={{
-            position: 'absolute',
-            width: 260,
-            height: 260,
-            borderRadius: '50%',
-            border: '1px solid rgba(29,163,185,0.25)',
-            animation: 'jarvis-spin-slow 18s linear infinite',
-          }}
+      <div className="relative flex size-[320px] items-center justify-center">
+        {/* Anel externo */}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute size-[280px] rounded-full border border-jarvis-cyan/20"
         >
-          {/* marcador */}
-          <div
-            style={{
-              position: 'absolute',
-              top: -3,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: '#1da3b9',
-              boxShadow: '0 0 8px #1da3b9',
-            }}
-          />
-        </div>
+          <div className="absolute -top-1 left-1/2 size-2 -translate-x-1/2 rounded-full bg-jarvis-cyan shadow-[0_0_10px_#00f2ff]" />
+        </motion.div>
 
-        {/* Anel médio – gira no sentido oposto */}
-        <div
-          style={{
-            position: 'absolute',
-            width: 200,
-            height: 200,
-            borderRadius: '50%',
-            border: '1px solid rgba(29,163,185,0.18)',
-            animation: 'jarvis-spin-slow 12s linear infinite reverse',
-          }}
+        {/* Anel médio */}
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute size-[220px] rounded-full border border-jarvis-cyan/15"
         >
-          <div
-            style={{
-              position: 'absolute',
-              bottom: -3,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 5,
-              height: 5,
-              borderRadius: '50%',
-              background: 'rgba(29,163,185,0.8)',
-              boxShadow: '0 0 6px #1da3b9',
-            }}
-          />
-        </div>
+          <div className="absolute -bottom-1 left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-jarvis-cyan/60" />
+        </motion.div>
 
         {/* Anel interno */}
-        <div
-          style={{
-            position: 'absolute',
-            width: 148,
-            height: 148,
-            borderRadius: '50%',
-            border: '1px solid rgba(29,163,185,0.30)',
-            animation: 'jarvis-spin-slow 8s linear infinite',
-          }}
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          className="absolute size-[160px] rounded-full border border-jarvis-cyan/10"
         />
 
-        {/* ── Núcleo ─────────────────────────────────────────── */}
-        <div
-          style={{
-            position: 'relative',
-            width: 112,
-            height: 112,
-            borderRadius: '50%',
-            background:
-              'radial-gradient(circle at 36% 36%, rgba(29,163,185,0.22), rgba(13,148,136,0.10) 70%, transparent)',
-            border: '1.5px solid rgba(29,163,185,0.55)',
-            backdropFilter: 'blur(6px)',
-            boxShadow: '0 0 32px rgba(29,163,185,0.35), inset 0 0 20px rgba(29,163,185,0.10)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'jarvis-nucleus-pulse 3s ease-in-out infinite',
-          }}
+        {/* ── Núcleo (Core) ─────────────────────────────────── */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          className="relative flex size-32 items-center justify-center rounded-full border-2 border-jarvis-cyan/40 bg-radial-[at_35%_35%] from-jarvis-cyan/20 to-transparent backdrop-blur-md shadow-[0_0_40px_rgba(0,242,255,0.2),inset_0_0_20px_rgba(0,242,255,0.1)]"
         >
-          {/* Ícone J estilizado */}
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <circle cx="24" cy="24" r="23" stroke="rgba(29,163,185,0.35)" strokeWidth="1" />
-            <text
-              x="50%"
-              y="50%"
-              dominantBaseline="central"
-              textAnchor="middle"
-              fontFamily="'Courier New', monospace"
-              fontSize="22"
-              fontWeight="700"
-              fill="#1da3b9"
-              style={{ filter: 'drop-shadow(0 0 6px #1da3b9)' }}
-            >
-              J
-            </text>
-          </svg>
-        </div>
+          <div className="flex flex-col items-center">
+            <Cpu size={42} weight="duotone" className="text-jarvis-cyan drop-shadow-[0_0_8px_#00f2ff]" />
+          </div>
+        </motion.div>
       </div>
 
-      {/* ── Textos ─────────────────────────────────────────── */}
-      <div className="mt-6 flex flex-col items-center gap-1">
-        <h1
-          style={{
-            fontFamily: "'Courier New', monospace",
-            fontSize: '1.75rem',
-            fontWeight: 700,
-            letterSpacing: '0.35em',
-            textTransform: 'uppercase',
-            background: 'linear-gradient(135deg, #e0f7fa 0%, #1da3b9 50%, #80cbc4 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 10px rgba(29,163,185,0.5))',
-          }}
-        >
-          JARVIS
+      {/* ── Textos e Branding ──────────────────────────────── */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="mt-8 flex flex-col items-center gap-1"
+      >
+        <h1 className="jarvis-text-gradient font-mono text-3xl font-bold tracking-[0.4em] uppercase">
+          Jarvis
         </h1>
-        <p
-          style={{
-            color: 'rgba(255,255,255,0.36)',
-            fontSize: '0.65rem',
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            fontFamily: 'monospace',
-          }}
-        >
-          Neural Intelligence System · v5.0
+        <p className="font-mono text-[10px] tracking-[0.3em] text-white/30 uppercase">
+          Neural Command Interface · v5.0
         </p>
-      </div>
+      </motion.div>
 
       {/* ── Separador ──────────────────────────────────────── */}
-      <div
-        style={{
-          margin: '24px 0 20px',
-          width: 220,
-          height: 1,
-          background: 'linear-gradient(to right, transparent, rgba(29,163,185,0.5), transparent)',
-        }}
+      <motion.div 
+        initial={{ width: 0 }}
+        animate={{ width: 240 }}
+        transition={{ delay: 0.7, duration: 1 }}
+        className="my-8 h-px bg-linear-to-r from-transparent via-jarvis-cyan/40 to-transparent"
       />
 
-      {/* ── Inputs ─────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 280 }}>
-        <input
-          type="text"
-          autoComplete="off"
-          placeholder="IDENTIFICAR USUÁRIO"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) =>
-            e.key === 'Enter' &&
-            name.trim() &&
-            onStartCall({ metadata: JSON.stringify({ user_name: name }) })
-          }
-          style={{
-            width: '100%',
-            background: 'rgba(255,255,255,0.04)',
-            backdropFilter: 'blur(8px)',
-            border: `1px solid ${name.trim() ? 'rgba(29,163,185,0.6)' : 'rgba(255,255,255,0.12)'}`,
-            borderRadius: 12,
-            padding: '12px 16px',
-            fontSize: '0.78rem',
-            letterSpacing: '0.15em',
-            color: '#e0f7fa',
-            textAlign: 'center',
-            fontFamily: "'Courier New', monospace",
-            outline: 'none',
-            transition: 'border-color 0.2s, box-shadow 0.2s',
-            boxShadow: name.trim() ? '0 0 12px rgba(29,163,185,0.2)' : 'none',
-          }}
-        />
+      {/* ── Formulário de Acesso ────────────────────────────── */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="flex w-[300px] flex-col gap-4"
+      >
+        <div className="relative group">
+          <IdentificationCard className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-white/20 transition-colors group-focus-within:text-jarvis-cyan" />
+          <input
+            type="text"
+            autoComplete="off"
+            placeholder="IDENTIFICAR USUÁRIO"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-4 pr-4 pl-12 font-mono text-xs tracking-widest text-jarvis-cyan outline-none transition-all placeholder:text-white/10 focus:border-jarvis-cyan/50 focus:bg-white/[0.08] focus:ring-1 focus:ring-jarvis-cyan/20"
+          />
+        </div>
 
-        <button
+        <motion.button
+          whileHover={name.trim() ? { scale: 1.02 } : {}}
+          whileTap={name.trim() ? { scale: 0.98 } : {}}
           disabled={!name.trim()}
-          onClick={() => onStartCall({ metadata: JSON.stringify({ user_name: name }) })}
-          style={{
-            width: '100%',
-            height: 52,
-            borderRadius: 12,
-            border: '1px solid rgba(29,163,185,0.6)',
-            background: name.trim()
-              ? 'linear-gradient(135deg, rgba(29,163,185,0.90) 0%, rgba(13,148,136,0.85) 100%)'
-              : 'rgba(29,163,185,0.10)',
-            color: name.trim() ? '#ffffff' : 'rgba(255,255,255,0.25)',
-            fontFamily: "'Courier New', monospace",
-            fontSize: '0.75rem',
-            fontWeight: 700,
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            cursor: name.trim() ? 'pointer' : 'not-allowed',
-            transition: 'all 0.25s',
-            boxShadow: name.trim() ? '0 8px 28px rgba(29,163,185,0.35)' : 'none',
-          }}
-          onMouseEnter={(e) => {
-            if (name.trim())
-              (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                '0 12px 36px rgba(29,163,185,0.55)';
-          }}
-          onMouseLeave={(e) => {
-            if (name.trim())
-              (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                '0 8px 28px rgba(29,163,185,0.35)';
-          }}
+          onClick={handleStart}
+          className={`relative flex h-14 w-full items-center justify-center gap-3 overflow-hidden rounded-xl font-mono text-xs font-bold tracking-[0.2em] uppercase transition-all
+            ${name.trim() 
+              ? 'bg-jarvis-cyan text-black shadow-[0_0_20px_rgba(0,242,255,0.4)] hover:shadow-[0_0_30px_rgba(0,242,255,0.6)] cursor-pointer' 
+              : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5'
+            }`}
         >
-          {startButtonText || '▶  INICIAR SESSÃO'}
-        </button>
-      </div>
+          <Play weight="fill" className={name.trim() ? 'animate-pulse' : ''} />
+          {startButtonText || 'Acessar Sistema'}
+          
+          {name.trim() && (
+            <motion.div 
+              className="absolute inset-0 bg-white/20"
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              style={{ skewX: -20, width: '30%' }}
+            />
+          )}
+        </motion.button>
+      </motion.div>
 
       {/* ── Rodapé ─────────────────────────────────────────── */}
-      <p
-        style={{
-          marginTop: 28,
-          color: 'rgba(255,255,255,0.18)',
-          fontSize: '0.6rem',
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          fontFamily: 'monospace',
-        }}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5 }}
+        className="mt-10 flex flex-col items-center gap-2"
       >
-        Neural Link · Awaiting Authorization
-      </p>
-
-      {/* ── Keyframes globais (injetados inline) ───────────── */}
-      <style>{`
-        @keyframes jarvis-spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes jarvis-glow-pulse { 0%,100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
-        @keyframes jarvis-nucleus-pulse { 0%,100% { box-shadow: 0 0 32px rgba(29,163,185,0.35), inset 0 0 20px rgba(29,163,185,0.10); } 50% { box-shadow: 0 0 48px rgba(29,163,185,0.55), inset 0 0 28px rgba(29,163,185,0.18); } }
-      `}</style>
+        <div className="flex items-center gap-2">
+          <div className="size-1.5 animate-pulse rounded-full bg-jarvis-cyan shadow-[0_0_8px_#00f2ff]" />
+          <span className="font-mono text-[9px] tracking-widest text-white/20 uppercase">
+            Sistema Ativo · Aguardando Credenciais
+          </span>
+        </div>
+      </motion.div>
     </div>
   );
 };

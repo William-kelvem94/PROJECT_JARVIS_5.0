@@ -1,17 +1,19 @@
+'use client';
+
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
 import {
-  Loader,
-  MessageSquareTextIcon,
-  Mic,
-  MicOff,
+  ChatCircleText,
+  Microphone,
+  MicrophoneSlash,
   Monitor,
-  PhoneOff,
-  Pin,
-  SendHorizontal,
   Video,
-  VideoOff,
-} from 'lucide-react';
-import { motion } from 'motion/react';
+  VideoCameraSlash,
+  PaperPlaneRight,
+  PushPin,
+  CircleNotch,
+  Power,
+} from '@phosphor-icons/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { useJarvis } from '@/context/JarvisContext';
@@ -45,21 +47,21 @@ function AgentChatInput({ chatOpen, onSend = async () => {}, className }: AgentC
   const isDisabled = isSending || message.trim().length === 0;
 
   useEffect(() => {
-    if (chatOpen) return;
-    inputRef.current?.focus();
+    if (chatOpen) {
+      inputRef.current?.focus();
+    }
   }, [chatOpen]);
 
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn('mb-3 flex grow items-end gap-2 rounded-md pl-1 text-sm', className)}
+      className={cn('mb-4 flex grow items-end gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-2 transition-all focus-within:border-jarvis-cyan/30 focus-within:bg-white/[0.06]', className)}
     >
       <textarea
-        autoFocus
         ref={inputRef}
         value={message}
         disabled={!chatOpen}
-        placeholder="Digite algo para o Jarvis Native..."
+        placeholder="Transmitir comando de texto..."
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -67,16 +69,18 @@ function AgentChatInput({ chatOpen, onSend = async () => {}, className }: AgentC
             handleSubmit(e);
           }
         }}
-        className="field-sizing-content max-h-16 min-h-8 flex-1 bg-transparent py-2 text-white [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed"
+        className="field-sizing-content max-h-24 min-h-10 flex-1 bg-transparent px-3 py-2.5 font-mono text-xs tracking-wide text-white [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed placeholder:text-white/10"
       />
       <Button
         size="icon"
         type="submit"
         disabled={isDisabled}
-        variant={isDisabled ? 'secondary' : 'default'}
-        className="self-end disabled:cursor-not-allowed"
+        className={cn(
+          "size-10 shrink-0 rounded-lg transition-all",
+          isDisabled ? "bg-white/5 text-white/20" : "bg-jarvis-cyan text-black shadow-[0_0_15px_rgba(0,242,255,0.3)] hover:scale-105 active:scale-95"
+        )}
       >
-        {isSending ? <Loader className="animate-spin" /> : <SendHorizontal />}
+        {isSending ? <CircleNotch className="animate-spin size-5" /> : <PaperPlaneRight weight="fill" className="size-5" />}
       </Button>
     </form>
   );
@@ -112,7 +116,6 @@ export function AgentControlBar({
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
-    isConnected,
     isMicEnabled,
     isCameraEnabled,
     isScreenSharing,
@@ -131,7 +134,7 @@ export function AgentControlBar({
       if (!isChatOpen && !isChatOpenUncontrolled && !isLocked) {
         hideTimeoutRef.current = setTimeout(() => {
           setIsVisible(false);
-        }, 5000); // 5 seguntos de visibilidade
+        }, 5000);
       }
     };
 
@@ -157,12 +160,8 @@ export function AgentControlBar({
       }}
       transition={{ duration: 0.4, ease: 'easeInOut' }}
       className={cn(
-        'relative z-50 mx-auto w-fit min-w-75',
-        !isVisible &&
-          !isChatOpen &&
-          !isChatOpenUncontrolled &&
-          !isLocked &&
-          'pointer-events-none transition-all'
+        'relative z-50 mx-auto w-fit min-w-80',
+        !isVisible && !isChatOpen && !isChatOpenUncontrolled && !isLocked && 'pointer-events-none'
       )}
       onMouseEnter={() => {
         setIsVisible(true);
@@ -171,61 +170,68 @@ export function AgentControlBar({
     >
       <div
         className={cn(
-          'flex flex-col rounded-xl border border-[#1da3b9]/20 bg-black/40 p-3 shadow-2xl shadow-[#1da3b9]/5 backdrop-blur-xl',
+          'flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-4 shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-2xl',
           className
         )}
         {...props}
       >
-        <motion.div
-          animate={isChatOpen || isChatOpenUncontrolled ? 'visible' : 'hidden'}
-          variants={{
-            hidden: { height: 0, opacity: 0, marginBottom: 0 },
-            visible: { height: 'auto', opacity: 1, marginBottom: 12 },
-          }}
-          className="border-input/50 flex w-full items-start overflow-hidden border-b"
-        >
-          <AgentChatInput
-            chatOpen={isChatOpen || isChatOpenUncontrolled}
-            onSend={handleSendMessage}
-            className="[&_button]:rounded-md"
-          />
-        </motion.div>
+        <AnimatePresence>
+          {(isChatOpen || isChatOpenUncontrolled) && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <AgentChatInput
+                chatOpen={isChatOpen || isChatOpenUncontrolled}
+                onSend={handleSendMessage}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="flex items-center gap-1">
-          <div className="flex grow items-center gap-2">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsLocked(!isLocked)}
               className={cn(
-                'mr-1 rounded-full p-2 transition-all duration-300',
-                isLocked
-                  ? 'bg-[#1da3b9]/20 text-[#43d9f0]'
-                  : 'text-white/40 hover:bg-white/5 hover:text-white/60'
+                'group relative rounded-lg p-2.5 transition-all',
+                isLocked ? 'bg-jarvis-cyan/20 text-jarvis-cyan' : 'text-white/20 hover:bg-white/5 hover:text-white/40'
               )}
-              title="Fixar Barra"
+              title="Fixar Barra de Controle"
             >
-              <Pin className="size-4" />
+              <PushPin weight={isLocked ? "fill" : "regular"} className="size-4" />
+              {isLocked && <motion.div layoutId="active-dot" className="absolute top-1 right-1 size-1 rounded-full bg-jarvis-cyan shadow-[0_0_5px_#00f2ff]" />}
             </button>
+
+            <div className="mx-1 h-4 w-px bg-white/5" />
 
             {controls?.microphone !== false && (
               <Toggle
-                aria-label="Alternar microfone"
                 pressed={isMicEnabled}
                 onPressedChange={() => toggleMic()}
-                className={cn(!isMicEnabled && 'bg-red-400/10 text-red-400')}
                 disabled={!localStream}
+                className={cn(
+                  "size-10 rounded-lg transition-all",
+                  isMicEnabled ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-red-500 bg-red-500/10"
+                )}
               >
-                {!isMicEnabled ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                {isMicEnabled ? <Microphone weight="duotone" className="size-5" /> : <MicrophoneSlash weight="duotone" className="size-5" />}
               </Toggle>
             )}
 
             {controls?.camera !== false && (
               <Toggle
-                aria-label="Alternar câmera"
                 pressed={isCameraEnabled}
                 onPressedChange={() => toggleCamera()}
-                className={cn(isCameraEnabled ? 'bg-[#1da3b9]/10 text-[#43d9f0]' : 'text-white/40')}
+                className={cn(
+                  "size-10 rounded-lg transition-all",
+                  isCameraEnabled ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
+                )}
               >
-                {!isCameraEnabled ? <VideoOff className="size-4" /> : <Video className="size-4" />}
+                {isCameraEnabled ? <Video weight="duotone" className="size-5" /> : <VideoCameraSlash weight="duotone" className="size-5" />}
               </Toggle>
             )}
 
@@ -235,14 +241,11 @@ export function AgentControlBar({
                 size="icon"
                 onClick={() => toggleScreenShare()}
                 className={cn(
-                  'rounded-md',
-                  isScreenSharing
-                    ? 'bg-[#1da3b9]/10 text-[#43d9f0]'
-                    : 'text-white/40 hover:bg-[#1da3b9]/10 hover:text-[#1da3b9]'
+                  "size-10 rounded-lg transition-all",
+                  isScreenSharing ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
                 )}
-                title="Compartilhar Tela"
               >
-                <Monitor className="size-4" />
+                <Monitor weight="duotone" className="size-5" />
               </Button>
             )}
 
@@ -253,21 +256,23 @@ export function AgentControlBar({
                   if (!onIsChatOpenChange) setIsChatOpenUncontrolled(state);
                   else onIsChatOpenChange(state);
                 }}
+                className={cn(
+                  "size-10 rounded-lg transition-all",
+                  (isChatOpen || isChatOpenUncontrolled) ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
+                )}
               >
-                <MessageSquareTextIcon className="size-4" />
+                <ChatCircleText weight="duotone" className="size-5" />
               </Toggle>
             )}
           </div>
 
-          <div className="mx-2 h-6 w-px bg-white/10" />
-
           {controls?.leave !== false && (
             <Button
               onClick={() => { onLeave ? onLeave() : disconnect(); }}
-              variant="destructive"
-              className="h-9 rounded-full px-6 font-mono text-xs font-bold tracking-wider"
+              className="group relative flex h-10 items-center gap-2 overflow-hidden rounded-lg bg-red-500/10 px-5 font-mono text-[10px] font-black tracking-[0.2em] text-red-500 transition-all hover:bg-red-500 hover:text-white"
             >
-              ENCERRAR
+              <Power weight="bold" className="size-4" />
+              <span>TERMINAR</span>
             </Button>
           )}
         </div>
