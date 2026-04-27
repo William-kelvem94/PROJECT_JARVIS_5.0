@@ -1,11 +1,21 @@
-import { Public_Sans } from 'next/font/google';
-import localFont from 'next/font/local';
-import { headers } from 'next/headers';
-import { ThemeProvider } from '@/components/app/theme-provider';
-import { ThemeToggle } from '@/components/app/theme-toggle';
-import { cn } from '@/lib/shadcn/utils';
-import { getAppConfig, getStyles } from '@/lib/utils';
-import '@/styles/globals.css';
+import type { Metadata } from 'next';
+import '@/app/globals.css';
+
+export const metadata: Metadata = {
+  title: 'JARVIS 5.0',
+  description: 'Just A Rather Very Intelligent System',
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR" className="dark">
+      <body className="bg-black text-white antialiased min-h-screen">
+        {children}
+      </body>
+    </html>
+  );
+}
+
 
 // Tailwind + custom cyberpunk
 

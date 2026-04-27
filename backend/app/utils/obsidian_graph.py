@@ -26,13 +26,17 @@ class ObsidianGraph:
             self.graph.add_node(node_name, path=str(file_path))
             
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    links = self.link_pattern.findall(content)
-                    for link in links:
-                        # Limpa o link de aliases (ex: [[Nota|Alias]])
-                        target = link.split('|')[0].strip()
-                        self.graph.add_edge(node_name, target)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    with open(file_path, 'r', encoding='latin-1') as f:
+                        content = f.read()
+                links = self.link_pattern.findall(content)
+                for link in links:
+                    # Limpa o link de aliases (ex: [[Nota|Alias]])
+                    target = link.split('|')[0].strip()
+                    self.graph.add_edge(node_name, target)
             except Exception as e:
                 logger.error(f"Erro ao processar {file_path}: {e}")
         
@@ -68,13 +72,18 @@ class ObsidianGraph:
         # Adiciona novamente
         self.graph.add_node(node_name, path=str(file_path))
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                links = self.link_pattern.findall(content)
-                for link in links:
-                    target = link.split('|')[0].strip()
-                    self.graph.add_edge(node_name, target)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin-1') as f:
+                    content = f.read()
+            links = self.link_pattern.findall(content)
+            for link in links:
+                target = link.split('|')[0].strip()
+                self.graph.add_edge(node_name, target)
             logger.info(f"🕸️ Grafo atualizado: {node_name}")
-        except: pass
+        except Exception:
+            pass
 
 # Singleton (Instanciado via SecondBrainConnector para evitar circular import)
