@@ -17,7 +17,7 @@ from loguru import logger
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.routes import router
-from app.voice_websocket import voice_router
+from app.voice_websocket import router as voice_router
 from app.telemetry_server import start_telemetry_server
 from app.utils.second_brain_connector import second_brain
 from app.utils.obsidian_graph import obsidian_graph
