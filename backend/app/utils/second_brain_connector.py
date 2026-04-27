@@ -57,8 +57,12 @@ class SecondBrainConnector:
         """Extrai tarefas pendentes do TODO.md."""
         if not os.path.exists(self.todo_file): return
         try:
-            with open(self.todo_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            try:
+                with open(self.todo_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            except UnicodeDecodeError:
+                with open(self.todo_file, 'r', encoding='latin-1') as f:
+                    lines = f.readlines()
             
             new_todos = []
             for line in lines:

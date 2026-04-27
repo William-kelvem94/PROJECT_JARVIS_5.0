@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DEFAULT_MODEL: str = os.getenv("LM_STUDIO_MODEL", "llama-3.2-3b-instruct")
     AI_TEMPERATURE: float = 0.2
     MAX_TOKENS: int = 4096
-    LM_STUDIO_TIMEOUT: int = 15 # Aumentado para o i3 lidar com a carga
+    LM_STUDIO_TIMEOUT: int = 5  # Fallback rápido: se não responder em 5s, vai para Gemini
     
     # --- PERCEPÇÃO VISUAL ---
     # No Desktop (1050Ti), usamos GPU. No Book2, usamos CPU (OpenVINO/CPU)
