@@ -2,14 +2,16 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  AlertTriangle,
-  CheckCircle2,
+  Warning,
+  CheckCircle,
   Code,
-  FileJson,
+  FileJs,
   GitBranch,
-  Loader,
+  CircleNotch,
   Terminal,
-} from 'lucide-react';
+  Pulse,
+  Archive,
+} from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/shadcn/utils';
 import { LogHistoryModal } from './log-history-modal';
@@ -39,150 +41,161 @@ type ActivityLogType = ActivityLog['log_type'];
 type ActivityStatus = ActivityLog['status'];
 
 interface ActiveConsoleProps {
-  externalLogs?: ExternalLog[]; // Logs vindos do WebSocket Nativo
+  externalLogs?: ExternalLog[];
 }
 
 export function ActiveConsole({ externalLogs = [] }: ActiveConsoleProps) {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // Converte mensagens do WebSocket em logs visuais do console
   useEffect(() => {
     if (!externalLogs || externalLogs.length === 0) return;
 
     const latest = externalLogs[externalLogs.length - 1];
     if (!latest) return;
 
-    // Se for um log de atividade (comando, edição, etc)
     if (latest.type === 'activity_log' || latest.log_type) {
       const newLog: ActivityLog = {
-        id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        title: latest.title || (latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis'),
+        id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: latest.title || (latest.role === 'user' ? 'Input Usuário' : 'Processamento Jarvis'),
         detail: latest.detail || latest.text || '',
         log_type: (latest.log_type as ActivityLogType) || 'info',
         status: (latest.status as ActivityStatus) || 'success',
         timestamp: new Date().toLocaleTimeString(),
       };
 
-      setLogs((prev) => [...prev.slice(-9), newLog]);
+      setLogs((prev) => [...prev.slice(-14), newLog]);
       return;
     }
 
-    // Fallback: mensagens nativas do JarvisContext ({ role, content, timestamp })
     if (latest.role && latest.content) {
       const newLog: ActivityLog = {
-        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        title: latest.role === 'user' ? 'Input do Usuário' : 'Resposta Jarvis',
+        id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: latest.role === 'user' ? 'Comando Recebido' : 'Resposta Sistema',
         detail: latest.content,
         log_type: 'info',
         status: 'success',
         timestamp: latest.timestamp || new Date().toLocaleTimeString(),
       };
-      setLogs((prev) => [...prev.slice(-9), newLog]);
+      setLogs((prev) => [...prev.slice(-14), newLog]);
     }
   }, [externalLogs]);
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [logs]);
-
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   if (logs.length === 0) return null;
 
   const getLogIcon = (log: ActivityLog) => {
-    if (log.status === 'pending') return <Loader className="size-3 animate-spin text-yellow-400" />;
+    if (log.status === 'pending') return <CircleNotch className="size-3.5 animate-spin text-amber-400" />;
 
     switch (log.log_type) {
-      case 'cmd':
-        return <Terminal className="size-3 text-yellow-400" />;
-      case 'edit':
-        return <Code className="size-3 text-blue-400" />;
-      case 'git':
-        return <GitBranch className="size-3 text-orange-400" />;
-      case 'info':
-        return <FileJson className="size-3 animate-pulse text-cyan-400" />;
-      default:
-        return <FileJson className="size-3 text-emerald-400" />;
+      case 'cmd': return <Terminal weight="bold" className="size-3.5 text-amber-400" />;
+      case 'edit': return <Code weight="bold" className="size-3.5 text-blue-400" />;
+      case 'git': return <GitBranch weight="bold" className="size-3.5 text-orange-400" />;
+      default: return <Pulse weight="bold" className="size-3.5 text-jarvis-cyan" />;
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    if (status === 'success') return <CheckCircle2 className="size-2 text-emerald-500" />;
-    if (status === 'error') return <AlertTriangle className="size-2 text-red-500" />;
-    return null;
+  const getStatusColor = (status: string) => {
+    if (status === 'success') return 'text-green-500';
+    if (status === 'error') return 'text-red-500';
+    return 'text-amber-500';
   };
 
   return (
     <>
       <motion.div
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="cyber-glass fixed bottom-32 left-6 z-50 w-80 overflow-hidden rounded-xl border border-[#1da3b9]/20"
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className="cyber-glass fixed bottom-32 left-6 z-50 w-80 overflow-hidden rounded-xl border-jarvis-cyan/20 shadow-[0_0_20px_rgba(0,242,255,0.1)]"
       >
-        <div className="flex items-center justify-between border-b border-[#1da3b9]/20 bg-[#1da3b9]/10 p-2">
+        {/* Header Console */}
+        <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.03] px-3 py-2.5">
           <div className="flex items-center gap-2">
-            <Terminal className="size-3 text-[#1da3b9]" />
-            <span className="font-mono text-[9px] tracking-widest text-white/50 uppercase">
-              Active Action Log (Offline)
+            <div className="relative">
+              <Terminal weight="duotone" className="size-4 text-jarvis-cyan" />
+              <motion.div 
+                animate={{ opacity: [0, 1, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+                className="absolute -right-1 bottom-0 size-1 rounded-full bg-jarvis-cyan"
+              />
+            </div>
+            <span className="font-mono text-[9px] font-bold tracking-[0.2em] text-white/50 uppercase">
+              Terminal Output
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setIsHistoryOpen(true)}
-              className="rounded bg-white/5 p-1 transition-colors hover:bg-white/10"
-              title="Ver Histórico Completo"
+              className="group relative rounded-md bg-white/5 p-1.5 transition-all hover:bg-jarvis-cyan/20"
+              title="Histórico Completo"
             >
-              <FileJson className="size-3 text-[#1da3b9]" />
+              <Archive weight="duotone" className="size-3.5 text-jarvis-cyan/60 group-hover:text-jarvis-cyan" />
             </button>
-            <div className="size-1.5 rounded-full bg-emerald-500/50" />
-            <div className="size-1.5 animate-pulse rounded-full bg-[#1da3b9]/50" />
+            <div className="flex gap-1">
+              <div className="size-1 rounded-full bg-jarvis-cyan/40 animate-pulse" />
+              <div className="size-1 rounded-full bg-jarvis-cyan/20" />
+            </div>
           </div>
         </div>
 
+        {/* Content Area */}
         <div
           ref={scrollRef}
-          className="scrollbar-none max-h-56 space-y-3 overflow-y-auto p-3 font-mono text-[10px]"
+          className="scrollbar-none max-h-[320px] space-y-1.5 overflow-y-auto p-2 font-mono text-[10px]"
         >
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence initial={false} mode="popLayout">
             {logs.map((log) => (
               <motion.div
                 key={log.id}
-                initial={{ opacity: 0, x: -10, scale: 0.95 }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                  scale: 1,
-                  boxShadow: log.log_type === 'info' ? '0 0 15px rgba(34, 211, 238, 0.1)' : 'none',
-                }}
+                initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
+                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className={cn(
-                  'group ml-1 flex flex-col gap-1 border-l pl-2 transition-all duration-300',
-                  log.log_type === 'info'
-                    ? 'border-cyan-400/50 bg-cyan-400/5 py-1 ring-1 ring-cyan-400/20'
-                    : 'border-white/5 bg-white/0'
+                  'relative group flex flex-col gap-1 rounded-lg border border-white/0 px-2 py-1.5 transition-all hover:bg-white/[0.03]',
+                  log.status === 'error' ? 'bg-red-500/5 border-red-500/10' : '',
+                  log.log_type === 'cmd' ? 'bg-amber-500/5 border-amber-500/10' : ''
                 )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {getLogIcon(log)}
-                    <span className="font-bold tracking-tight text-white/90">{log.title}</span>
+                    <div className="shrink-0">{getLogIcon(log)}</div>
+                    <span className="font-bold tracking-tight text-white/80 line-clamp-1">{log.title}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(log.status)}
-                    <span className="text-[8px] text-white/20">[{log.timestamp}]</span>
-                  </div>
+                  <span className="shrink-0 text-[7px] text-white/20 tabular-nums">
+                    [{log.timestamp}]
+                  </span>
                 </div>
+                
                 {log.detail && (
-                  <div className="ml-5 rounded-sm bg-white/5 p-1 text-[9px] leading-relaxed break-all text-white/40">
-                    {log.detail}
+                  <div className="ml-5 mt-0.5 border-l border-white/5 pl-2 font-mono text-[9px] leading-relaxed text-white/40 group-hover:text-white/60 transition-colors">
+                    <div className="line-clamp-3 overflow-hidden text-ellipsis italic">
+                      {">"} {log.detail}
+                    </div>
                   </div>
                 )}
+
+                {/* Status Indicator Bar */}
+                <div className={cn(
+                  "absolute left-0 top-1 bottom-1 w-0.5 rounded-full",
+                  log.status === 'success' ? 'bg-green-500/40' : 
+                  log.status === 'error' ? 'bg-red-500/40' : 'bg-amber-500/40'
+                )} />
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
+
+        {/* Console Footer Decorator */}
+        <div className="flex h-1 bg-linear-to-r from-transparent via-jarvis-cyan/10 to-transparent" />
       </motion.div>
 
       <LogHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} />
