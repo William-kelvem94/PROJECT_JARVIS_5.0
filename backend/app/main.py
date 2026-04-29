@@ -33,8 +33,11 @@ async def lifespan(app: FastAPI):
     logger.info("[Startup] JARVIS 5.0 iniciando...")
 
     # Inicializar segundo cérebro e grafo
-    obsidian_graph.build_graph(str(second_brain.vault_path))
-    logger.info(f"[Startup] Grafo do Obsidian construído com {len(obsidian_graph.graph.nodes)} nós")
+    try:
+        obsidian_graph.build_graph()
+        logger.info(f"[Startup] Grafo do Obsidian construído com {len(obsidian_graph.graph.nodes)} nós")
+    except Exception as exc:
+        logger.warning(f"[Startup] Falha ao construir grafo do Obsidian: {exc}")
 
     # Inicializar percepção
     perception_manager.start()

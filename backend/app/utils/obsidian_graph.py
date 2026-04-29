@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 import re
 import networkx as nx
@@ -16,8 +17,11 @@ class ObsidianGraph:
         self.link_pattern = re.compile(r'\[\[(.*?)\]\]')
         logger.info(f"🕸️ Inicializando Grafo de Conhecimento: {vault_path}")
 
-    def build_graph(self):
+    def build_graph(self, vault_path: Optional[str] = None):
         """Escanear o vault e construir o grafo completo."""
+        if vault_path is not None:
+            self.vault_path = vault_path
+
         self.graph.clear()
         md_files = list(Path(self.vault_path).rglob("*.md"))
         
