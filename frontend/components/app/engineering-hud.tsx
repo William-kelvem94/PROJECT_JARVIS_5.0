@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-// import { useRoomContext } from '@livekit/components-react';
-// import { RoomEvent } from 'livekit-client';
 import {
   Battery,
   BrainCircuit,

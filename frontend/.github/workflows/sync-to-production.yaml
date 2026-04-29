@@ -5,12 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync:
+  noop:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: livekit-examples/sandbox-deploy-action@v1
-        with:
-          production_branch: 'sandbox-production'
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Placeholder job
+        run: echo "Workflow removed; no action is taken."

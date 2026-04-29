@@ -23,10 +23,8 @@ def test_config_validation():
     # Se o settings for o Mock (FakeSettings), este teste deve avisar
     if hasattr(settings, "__getattr__"):
         pytest.skip("Settings em modo Mock - Verifique seu arquivo .env")
-    
-    assert settings.livekit_url != ""
+
     assert settings.google_api_key != ""
-    assert "livekit.cloud" in settings.livekit_url or "localhost" in settings.livekit_url
 
 @pytest.mark.asyncio
 async def test_memory_system_stress():
@@ -53,16 +51,6 @@ async def test_memory_system_stress():
     # Recuperação e verificação
     memories = await memory.get_all(user_id=user_id)
     assert len(memories) >= 1
-
-def test_livekit_token_generation():
-    """Valida se o gateway de tokens LiveKit está gerando JWTs válidos."""
-    response = client.get("/livekit-token")
-    if response.status_code == 500:
-        pytest.skip("Credenciais LiveKit ausentes para teste de token.")
-        
-    assert response.status_code == 200
-    assert "token" in response.json()
-    assert len(response.json()["token"]) > 30
 
 def test_api_concurrency_stress():
     """Testa a capacidade da API FastAPI de lidar com múltiplas requisições de status."""
