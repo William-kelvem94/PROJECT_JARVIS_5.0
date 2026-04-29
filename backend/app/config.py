@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "local-model")
     JARVIS_WHISPER_MODEL: str = os.getenv("JARVIS_WHISPER_MODEL", "base")
+    ENABLE_GC: bool = os.getenv("ENABLE_GC", "false").lower() == "true"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

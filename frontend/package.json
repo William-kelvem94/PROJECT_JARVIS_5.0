@@ -13,8 +13,7 @@
     "format:check": "prettier --check .",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "shadcn:install": "pnpm dlx shadcn@latest add -y @agents-ui/agent-audio-visualizer-bar @agents-ui/agent-audio-visualizer-grid @agents-ui/agent-audio-visualizer-radial @agents-ui/agent-control-bar @agents-ui/agent-session-provider @agents-ui/agent-track-control @agents-ui/agent-track-toggle @agents-ui/agent-chat-transcript @agents-ui/agent-chat-indicator @agents-ui/start-audio-button @agents-ui/agent-audio-visualizer-aura @agents-ui/agent-audio-visualizer-wave && pnpm format"
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.8",
@@ -81,6 +80,7 @@
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.0",
     "ts-jest": "^29.0.0",
     "tw-animate-css": "^1.3.0",
     "typescript": "^5"

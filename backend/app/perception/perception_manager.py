@@ -117,7 +117,7 @@ def _vision_worker(input_queue: Queue, output_queue: Queue):
             del frame
             del frame_bytes
             
-            if settings.ENABLE_GC:
+            if getattr(settings, "ENABLE_GC", False):
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -337,7 +337,7 @@ class PerceptionManager:
             cam.release()
         logger.info("[Perception] Camera loop stopped")
 
-    # ── Async LiveKit publish ──────────────────────────────────────────────────
+    # ── Async publish logic placeholder ───────────────────────────────────────────
 
 
 

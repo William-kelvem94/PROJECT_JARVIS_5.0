@@ -25,7 +25,6 @@ function toastAlert(toast: ToastProps) {
 
 /**
  * Hook refatorado para o Jarvis Native.
- * Removeu dependências do LiveKit (useAgent, useSessionContext).
  */
 export function useAgentErrors() {
   const [errors, setErrors] = React.useState<string[]>([]);

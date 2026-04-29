@@ -251,7 +251,7 @@ export interface AgentAudioVisualizerWaveProps {
    */
   volume?: number;
   /**
-   * The raw audio track, preserved for compatibility with livekit integration.
+   * The raw audio track, preserved for compatibility with existing integrations.
    */
   audioTrack?: MediaStreamTrack | null;
   /**
