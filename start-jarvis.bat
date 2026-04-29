@@ -10,6 +10,7 @@ SET "ROOT=%~dp0"
 SET "BACK_DIR=%ROOT%backend"
 SET "FRONT_DIR=%ROOT%frontend"
 SET "VENV_ACT=%ROOT%.venv\Scripts\activate.bat"
+SET "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
 SET "PYTHONOPTIMIZE=1"
 SET "NODE_OPTIONS=--max-old-space-size=2048"
 
@@ -84,22 +85,22 @@ call "%VENV_ACT%"
 if %ERRORLEVEL% NEQ 0 goto :fim_erro
 
 echo [SYS] Atualizando pip/setuptools/wheel...
-python -m pip install --upgrade pip "setuptools<82" wheel
+"%PYTHON_EXE%" -m pip install --upgrade pip "setuptools<82" wheel
 if %ERRORLEVEL% NEQ 0 goto :fim_erro
 
 echo [SYS] Instalando dependencias Python...
-python -m pip install -r "backend\app\requirements.txt"
+"%PYTHON_EXE%" -m pip install -r "backend\app\requirements.txt"
 if %ERRORLEVEL% NEQ 0 goto :fim_erro
 
 echo [SYS] Validando Playwright (opcional, sem falhar bootstrap)...
-python -m playwright install chromium >nul 2>&1
+"%PYTHON_EXE%" -m playwright install chromium >nul 2>&1
 
 :: ============================================================
 :: FRONTEND DEPENDENCIAS
 :: ============================================================
 echo [SYS] Instalando/atualizando dependencias frontend...
 pushd "%FRONT_DIR%"
-call pnpm install
+echo Y| pnpm install
 if %ERRORLEVEL% NEQ 0 (
     popd
     goto :fim_erro
@@ -110,7 +111,7 @@ popd
 :: START BACKEND
 :: ============================================================
 echo [BACK] Iniciando backend na porta 8000...
-start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --log-level info"
+start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && "%PYTHON_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --log-level info"
 
 echo [BACK] Aguardando healthcheck do backend...
 call :wait_http "http://127.0.0.1:8000/health" 45
