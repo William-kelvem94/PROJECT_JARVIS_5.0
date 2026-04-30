@@ -11,7 +11,7 @@ class RoutesTest(unittest.TestCase):
     def test_health_endpoint(self):
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json().get("status"), "ok")
+        self.assertEqual(response.json().get("status"), "online")
 
     def test_chat_endpoint_fallback(self):
         response = self.client.post("/chat", json={"message": "Teste rápido", "user_name": "Chefe"})
