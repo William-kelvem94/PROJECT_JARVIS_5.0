@@ -29,58 +29,78 @@ async def voice_websocket(websocket: WebSocket):
         audio_buffer = bytearray()
         
         while True:
-            # Recebe qualquer mensagem (pode ser bytes de áudio ou texto de comando)
+            # Recebe qualquer mensagem do WebSocket
             message = await websocket.receive()
             
-            if "bytes" in message:
+            raw_bytes = message.get("bytes")
+            if raw_bytes:
                 # É um pacote de áudio do microfone
-                audio_buffer.extend(message["bytes"])
+                audio_buffer.extend(raw_bytes)
                 
-                # Trava de segurança (10s = ~320000 bytes). Se passar disso forçamos commit pra não vazar RAM
+                # Trava de segurança (10s = ~320000 bytes)
                 if len(audio_buffer) > 320000:
+                    logger.warning("⚠️ Limite de 10s atingido. Forçando corte de áudio.")
                     message["text"] = '{"type": "commit_audio"}'
                     
-            if "text" in message:
+            raw_text = message.get("text")
+            if raw_text:
                 # É um comando do frontend
                 import json
                 try:
-                    data = json.loads(message["text"])
-                    if data.get("type") == "commit_audio" and len(audio_buffer) > 0:
-                        logger.info("🎙️ Comando de parada recebido. Transcrevendo áudio...")
+                    data = json.loads(raw_text)
+                    if data.get("type") == "commit_audio":
+                        logger.info(f"🎙️ Comando de parada recebido! Buffer tem {len(audio_buffer)} bytes.")
                         
+                        if len(audio_buffer) < 8000:
+                            logger.warning("⚠️ Áudio muito curto descartado (menos de 0.5s)")
+                            await websocket.send_json({"type": "response_chunk", "text": " "})
+                            audio_buffer.clear()
+                            continue
+                            
                         transcription_data = bytes(audio_buffer)
                         audio_buffer.clear()
                         
-                        # Chama STT sem bloquear o event loop (importante para não travar o FastAPI)
+                        # --- GRAVAR EM ARQUIVO PARA DEBUG ---
+                        try:
+                            import wave
+                            with wave.open("debug_audio.wav", "wb") as wf:
+                                wf.setnchannels(1)
+                                wf.setsampwidth(2)
+                                wf.setframerate(16000)
+                                wf.writeframes(transcription_data)
+                            logger.info("💾 Áudio salvo em debug_audio.wav para inspeção.")
+                        except Exception as e:
+                            logger.error(f"Erro ao salvar debug_audio.wav: {e}")
+                        # -------------------------------------
+                        
+                        # Chama STT sem bloquear o event loop
                         loop = asyncio.get_event_loop()
                         from app.perception.voice_engine import transcribe_offline
                         audio_np = np.frombuffer(transcription_data, dtype=np.int16)
                         
-                        # Transcrição rodando em background thread!
+                        logger.info("🧠 Mandando áudio para o Whisper...")
                         text = await loop.run_in_executor(None, transcribe_offline, audio_np)
 
                         if text:
-                            logger.info(f"🗣️ Transcrição recebida: {text}")
+                            logger.success(f"🗣️ Transcrição recebida: '{text}'")
                             
-                            # 2. Processamento de Resposta (LLM Streaming)
+                            # Processamento de Resposta
                             full_response = ""
                             async for chunk in chat_stream("william", text):
                                 full_response += chunk
                                 await websocket.send_json({"type": "response_chunk", "text": chunk})
 
-                            # 3. Conversão para Fala (TTS)
+                            # Conversão para Fala (TTS)
                             audio_path = await tts_engine.speak(full_response)
                             if audio_path and os.path.exists(audio_path):
                                 with open(audio_path, "rb") as f:
-                                    # Envia o áudio completo como bytes após o texto
                                     await websocket.send_bytes(f.read())
-                                
-                                # Cleanup síncrono do arquivo enviado
                                 try: os.unlink(audio_path)
                                 except: pass
                         else:
-                            # Retorna ao modo idle se foi apenas ruído ou muito curto
+                            logger.warning("🚫 Whisper retornou vazio. (Alucinação rejeitada ou áudio ruim)")
                             await websocket.send_json({"type": "response_chunk", "text": " "})
+                            
                 except json.JSONDecodeError:
                     pass
 
