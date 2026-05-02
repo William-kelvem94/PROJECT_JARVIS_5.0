@@ -30,6 +30,26 @@ class DBManager:
         conn.execute("PRAGMA synchronous=NORMAL")
         return conn
 
+    def _get_conn(self) -> sqlite3.Connection:
+        return self.get_connection()
+
+    def save_telemetry(self, cpu_usage: float, ram_usage: float) -> None:
+        status = "warning" if ram_usage > 85 else "success"
+        with self.get_connection() as conn:
+            conn.execute(
+                "INSERT INTO telemetry (cpu_usage, ram_usage, status, timestamp) VALUES (?, ?, ?, ?)",
+                (cpu_usage, ram_usage, status, __import__('datetime').datetime.now().isoformat()),
+            )
+            conn.commit()
+
+    def get_telemetry_history(self, limit: int = 24):
+        with self.get_connection() as conn:
+            rows = conn.execute(
+                "SELECT cpu_usage AS cpu, ram_usage AS memory, status, timestamp FROM telemetry ORDER BY timestamp DESC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [dict(row) for row in rows][::-1]
+
     def _init_db(self):
         """
         Inicializa as tabelas se não existirem.

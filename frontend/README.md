@@ -1,9 +1,6 @@
 # Agent Starter for React
 
-This is a starter template for [LiveKit Agents](https://docs.livekit.io/agents) that provides a simple voice interface using [Agents UI](https://livekit.io/ui) components and [LiveKit JavaScript SDK](https://github.com/livekit/client-sdk-js). It supports [voice](https://docs.livekit.io/agents/start/voice-ai), [transcriptions](https://docs.livekit.io/agents/build/text/), and [virtual avatars](https://docs.livekit.io/agents/integrations/avatar).
-
-Also available for:
-[Android](https://github.com/livekit-examples/agent-starter-android) • [Flutter](https://github.com/livekit-examples/agent-starter-flutter) • [Swift](https://github.com/livekit-examples/agent-starter-swift) • [React Native](https://github.com/livekit-examples/agent-starter-react-native)
+This is a starter template for the Jarvis frontend, providing a polished voice-enabled interface with customizable UI controls and responsive layout components. It is built with Next.js, Tailwind CSS, and shadcn/ui primitives.
 
 <picture>
   <source srcset="./.github/assets/readme-hero-dark.webp" media="(prefers-color-scheme: dark)">
@@ -13,11 +10,10 @@ Also available for:
 
 ### Features:
 
-- Real-time voice interaction with LiveKit Agents
-- Camera video streaming support
+- Real-time voice interaction UI
+- Camera preview support
 - Screen sharing capabilities
 - Multiple audio visualizer styles (`bar`, `grid`, `radial`, `wave`, `aura`)
-- Virtual avatar integration
 - Light/dark theme switching with system preference detection
 - Customizable branding, colors, and UI text via configuration
 
@@ -25,7 +21,7 @@ This template is built with Next.js and is free for you to use or modify as you 
 
 ### Project structure
 
-This starter uses the [Agents UI](https://livekit.io/ui) components for core UI elements like media controls, audio visualizers, chat transcripts, and providing session data. Shadcn installs components into `components/` folder so you can customize them like any other local component.
+This starter uses local shadcn/ui components for UI elements like media controls, audio visualizers, chat transcripts, and session controls. Shadcn installs components into the `components/` folder so you can customize them like any other local component.
 
 ```
 agent-starter-react/
@@ -47,27 +43,27 @@ Business logic lives within the `components/app` folder. It's here where the app
 
 | File                  | Description                                                                                                                                           |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session-view.tsx`    | Initializes the application, and LiveKit session. Renders the view controller and session UI including chat transcript, media tiles, and control bar. |
-| `view-controller.tsx` | Manages the transitions between the welcome and session views based on the LiveKit session state.                                                     |
-| `welcome-view.tsx`    | Renders the welcome UI when the LiveKit session is not connected.                                                                                     |
+| `session-view.tsx`    | Initializes the application and renders the session UI including chat transcript, media tiles, and control bar. |
+| `view-controller.tsx` | Manages the transitions between the welcome and session views based on the current app state.                                                     |
+| `welcome-view.tsx`    | Renders the welcome UI when the session is not connected.                                                                                     |
 | `chat-transcript.tsx` | Manages the chat transcript transitions.                                                                                                              |
 | `tile-layout.tsx`     | Manages the layout and transition of media tiles in various application states.                                                                       |
 
 ### Component usage
 
-Most Agents UI components require access to a LiveKit session object for access to values like agent state or audio tracks. A Session object can be created from a [TokenSource](/reference/client-sdk-js/variables/TokenSource.html), and provided by wrapping the component in an [AgentSessionProvider](/reference/components/shadcn/component/agent-session-provider).
+Most UI components in this project are built with shadcn/ui and local React primitives. You can customize them directly in the `components/` directory.
 
 See [`components/app/app.tsx`](./components/app/app.tsx) for an example of how this is done in this app.
 
 ### Customizing components
 
-Agents UI components, like most Shadcn compopnents, take as many primitive attributes as possible. For example, the [AgentControlBar](/reference/components/shadcn/component/agent-control-bar/page.mdoc) component extends `HTMLAttributes<HTMLDivElement>`, so you can pass any props that a div supports. This makes it easy to extend the component with your own styles or functionality.
+Local UI components, like most Shadcn components, take as many primitive attributes as possible. For example, the `AgentControlBar` component extends `HTMLAttributes<HTMLDivElement>`, so you can pass any props that a div supports. This makes it easy to extend the component with your own styles or functionality.
 
-You can edit any Agents UI component's source code in the `components/agents-ui` directory. For style changes, we recommend passing in tailwind classes to override the default styles. Take a look at the source code to get a sense of how to override a component's default styles.
+You can edit any component's source code in the `components/agents-ui` directory. For style changes, we recommend passing in Tailwind classes to override the default styles. Take a look at the source code to get a sense of how to override a component's default styles.
 
 ### Updating components
 
-To update the Agents UI components to the latest publication, run the following command:
+To update available UI components, run the following command:
 
 ```bash
 pnpm shadcn:install
@@ -79,23 +75,13 @@ pnpm shadcn:install
 ### Installing components
 
 ```bash
-pnpm dlx shadcn@latest add @agents-ui/{component-name-a} @agents-ui/{component-name-b}
+pnpm dlx shadcn@latest add {component-name-a} {component-name-b}
 ```
 
 ## Getting started
 
 > [!TIP]
-> If you'd like to try this application without modification, you can deploy an instance in just a few clicks with [LiveKit Cloud Sandbox](https://cloud.livekit.io/projects/p_/sandbox/templates/agent-starter-react).
-
-[![Open on LiveKit](https://img.shields.io/badge/Open%20on%20LiveKit%20Cloud-002CF2?style=for-the-badge&logo=external-link)](https://cloud.livekit.io/projects/p_/sandbox/templates/agent-starter-react)
-
-Run the following command to automatically clone this template.
-
-```bash
-lk app create --template agent-starter-react
-```
-
-Then run the app with:
+Run the app with:
 
 ```bash
 pnpm install
@@ -104,7 +90,7 @@ pnpm dev
 
 And open http://localhost:3000 in your browser.
 
-You'll also need an agent to speak with. Try our starter agent for [Python](https://github.com/livekit-examples/agent-starter-python), [Node.js](https://github.com/livekit-examples/agent-starter-node), or [create your own from scratch](https://docs.livekit.io/agents/start/voice-ai/).
+This frontend is designed to work with a local Jarvis Native backend or any compatible voice agent integration.
 
 ## Configuration
 
@@ -114,9 +100,9 @@ This starter is designed to be flexible so you can adapt it to your specific age
 
 ```ts
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'LiveKit',
-  pageTitle: 'LiveKit Voice Agent',
-  pageDescription: 'A voice agent built with LiveKit',
+  companyName: 'Jarvis',
+  pageTitle: 'Jarvis Voice Assistant',
+  pageDescription: 'A voice assistant built with Jarvis Native',
 
   supportsChatInput: true,
   supportsVideoInput: true,
@@ -148,7 +134,7 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   // agent dispatch configuration
   agentName: undefined,
 
-  // LiveKit Cloud Sandbox configuration
+  // Optional sandbox configuration
   sandboxId: undefined,
 };
 ```
@@ -168,26 +154,12 @@ Set `audioVisualizerType` in [`app-config.ts`](./app-config.ts) to switch visual
 Use `audioVisualizerColor` to set a shared accent color across all visualizer modes.
 
 > [!NOTE]
-> The `sandboxId` is for the LiveKit Cloud Sandbox environment.
-> It is not used for local development.
+> The `sandboxId` is optional and is not required for local development.
 
 #### Environment Variables
 
-You'll also need to configure your LiveKit credentials in `.env.local` (copy `.env.example` if you don't have one):
-
-```env
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-LIVEKIT_URL=https://your-livekit-server-url
-
-# Agent dispatch (https://docs.livekit.io/agents/server/agent-dispatch)
-# Leave AGENT_NAME blank to enable automatic dispatch
-# Provide an agent name to enable explicit dispatch
-AGENT_NAME=
-```
-
-These are required for the voice agent functionality to work with your LiveKit project.
+Update your `.env.local` file with any backend and frontend API keys required by Jarvis Native. No external voice service credentials are required for the core frontend build.
 
 ## Contributing
 
-This template is open source and we welcome contributions! Please open a PR or issue through GitHub, and don't forget to join us in the [LiveKit Community Slack](https://livekit.io/join-slack)!
+This template is open source and we welcome contributions! Please open a PR or issue through GitHub.

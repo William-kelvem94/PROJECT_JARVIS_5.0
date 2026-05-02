@@ -1,3 +1,4 @@
+from typing import Optional
 import os
 import re
 import networkx as nx
@@ -16,8 +17,11 @@ class ObsidianGraph:
         self.link_pattern = re.compile(r'\[\[(.*?)\]\]')
         logger.info(f"🕸️ Inicializando Grafo de Conhecimento: {vault_path}")
 
-    def build_graph(self):
+    def build_graph(self, vault_path: Optional[str] = None):
         """Escanear o vault e construir o grafo completo."""
+        if vault_path is not None:
+            self.vault_path = vault_path
+
         self.graph.clear()
         md_files = list(Path(self.vault_path).rglob("*.md"))
         
@@ -26,13 +30,17 @@ class ObsidianGraph:
             self.graph.add_node(node_name, path=str(file_path))
             
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    links = self.link_pattern.findall(content)
-                    for link in links:
-                        # Limpa o link de aliases (ex: [[Nota|Alias]])
-                        target = link.split('|')[0].strip()
-                        self.graph.add_edge(node_name, target)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    with open(file_path, 'r', encoding='latin-1') as f:
+                        content = f.read()
+                links = self.link_pattern.findall(content)
+                for link in links:
+                    # Limpa o link de aliases (ex: [[Nota|Alias]])
+                    target = link.split('|')[0].strip()
+                    self.graph.add_edge(node_name, target)
             except Exception as e:
                 logger.error(f"Erro ao processar {file_path}: {e}")
         
@@ -68,13 +76,22 @@ class ObsidianGraph:
         # Adiciona novamente
         self.graph.add_node(node_name, path=str(file_path))
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-                links = self.link_pattern.findall(content)
-                for link in links:
-                    target = link.split('|')[0].strip()
-                    self.graph.add_edge(node_name, target)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            except UnicodeDecodeError:
+                with open(file_path, 'r', encoding='latin-1') as f:
+                    content = f.read()
+            links = self.link_pattern.findall(content)
+            for link in links:
+                target = link.split('|')[0].strip()
+                self.graph.add_edge(node_name, target)
             logger.info(f"🕸️ Grafo atualizado: {node_name}")
-        except: pass
+        except Exception:
+            pass
 
-# Singleton (Instanciado via SecondBrainConnector para evitar circular import)
+
+def _get_default_vault_path() -> str:
+    return os.getenv('JARVIS_VAULT_ROOT') or os.getenv('OBSIDIAN_VAULT_PATH') or "C:/Users/willi/Documents/GitHub/Will-obsidian"
+
+obsidian_graph = ObsidianGraph(_get_default_vault_path())

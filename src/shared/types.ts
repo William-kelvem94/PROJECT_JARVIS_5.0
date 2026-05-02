@@ -1,5 +1,5 @@
 // Shared TypeScript interfaces - JARVIS 5.0 Core Types
-// Usado por frontend/backend via LiveKit Data Channels
+// Usado por frontend/backend via data channels
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';

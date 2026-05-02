@@ -13,6 +13,13 @@ def test_health():
     assert data["status"] == "online"
     assert "cpu" in data
     assert "ram" in data
+<<<<<<< HEAD
+=======
+    assert "is_ai_ready" in data
+    assert "face_identity" in data
+    assert "face_emotion" in data
+    assert "gesture" in data
+>>>>>>> main
 
 
 def test_chat_stub():

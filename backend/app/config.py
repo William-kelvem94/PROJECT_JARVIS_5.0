@@ -1,8 +1,16 @@
+"""
+JARVIS 5.0 - Configuração Central com Maestria de Hardware
+Detecta automaticamente CPU/GPU e ajusta perfis de performance.
+"""
+
 import os
+import torch
+from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
-from pathlib import Path
+
 
 class Settings(BaseSettings):
+<<<<<<< HEAD
     # --- PROJETO ---
     PROJECT_NAME: str = "JARVIS 5.0"
     VERSION: str = "5.3-Engineering"
@@ -33,34 +41,73 @@ class Settings(BaseSettings):
     AGGRESSIVE_GC_THRESHOLD: float = 85.0 # Porcentagem de RAM
     
     # --- SEGURANÇA & CLOUD FALLBACK ---
+=======
+    model_config = ConfigDict(
+        extra="ignore",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
+    # ── Hardware Detection ────────────────────────────────────
+    DEVICE_TYPE: str = os.getenv("JARVIS_AI_DEVICE", "cpu")
+    GPU_ENABLED: bool = False
+    LOW_VRAM_MODE: bool = True
+
+    # ── LM Studio (local) ─────────────────────────────────────
+    LM_STUDIO_URL: str = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
+    LM_STUDIO_MODEL: str = os.getenv("LM_STUDIO_MODEL", "local-model")
+    LM_STUDIO_TIMEOUT: int = 5
+
+    # ── Ollama (offline total) ────────────────────────────────
+    OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+    OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    OLLAMA_TIMEOUT: int = 60
+    OLLAMA_ENABLED: bool = os.getenv("OLLAMA_ENABLED", "false").lower() == "true"
+
+    # ── Gemini ────────────────────────────────────────────────
+>>>>>>> main
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+    # ── OpenRouter ────────────────────────────────────────────
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
-    
-    # --- FRONTEND ---
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:3000")
-    TTS_VOICE: str = "pt-BR-FranciscaNeural"
-    
-    class Config:
-        env_file = ".env"
-        extra = "allow"
+
+    # ── Data Paths ────────────────────────────────────────────
+    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "local-model")
+    JARVIS_WHISPER_MODEL: str = os.getenv("JARVIS_WHISPER_MODEL", "base")
+    ENABLE_GC: bool = os.getenv("ENABLE_GC", "false").lower() == "true"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._detect_hardware()
+
+    def _detect_hardware(self):
+        """Auto-detecção de GPU e ajuste de perfil."""
+        env_device = os.getenv("JARVIS_AI_DEVICE")
+        if env_device:
+            self.DEVICE_TYPE = env_device.lower()
+            self.GPU_ENABLED = self.DEVICE_TYPE == "cuda"
+        elif torch.cuda.is_available():
+            self.DEVICE_TYPE = "cuda"
+            self.GPU_ENABLED = True
+        else:
+            self.DEVICE_TYPE = "cpu"
+            self.GPU_ENABLED = False
+
+        if self.GPU_ENABLED:
+            try:
+                vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+                self.LOW_VRAM_MODE = vram_gb < 5.0
+            except Exception:
+                self.LOW_VRAM_MODE = True
+        else:
+            self.LOW_VRAM_MODE = False
+
+        if self.GPU_ENABLED:
+            self.JARVIS_WHISPER_MODEL = os.getenv("JARVIS_WHISPER_MODEL", "tiny")
+        else:
+            self.JARVIS_WHISPER_MODEL = os.getenv("JARVIS_WHISPER_MODEL", "base")
+
 
 settings = Settings()
-
-# Lógica de Maestria de Hardware
-import torch
-if settings.DEVICE_TYPE == "auto":
-    if torch.cuda.is_available():
-        # Perfil Desktop (1050Ti)
-        vram = torch.cuda.get_device_properties(0).total_memory / (1024**3)
-        if vram < 5:
-             settings.LOW_VRAM_MODE = True
-             settings.STT_MODEL = "tiny" # Poupa VRAM para a visão
-        settings.DEVICE_TYPE = "cuda"
-        settings.VISION_DELEGATE = "GPU"
-    else:
-        # Perfil Book2 (i7)
-        settings.DEVICE_TYPE = "cpu"
-        settings.VISION_DELEGATE = "CPU"
-        settings.STT_MODEL = "base" # O i7 de 12th aguenta o modelo base com folga

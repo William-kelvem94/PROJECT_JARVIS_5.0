@@ -45,7 +45,9 @@ class Settings(BaseSettings):
     @classmethod
     def validate_keys(cls, v):
         if not v or v.startswith("YOUR_"):
-            raise ValueError(f"Chave inválida: {v}. Configure .env corretamente.")
+            # Apenas avisa mas não bloqueia o carregamento para não travar o sistema totalmente se o usuário ainda for configurar
+            print(f"AVISO: Chave API Google inválida ou não configurada: {v}")
+            return v
         return v
 
 settings = Settings()

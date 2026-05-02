@@ -13,7 +13,7 @@ Estas são as regras para manter a base de conhecimento do Jarvis organizada, co
 
 ## 1. Propósito da pasta
 - Esta pasta é a consciência do Jarvis e o seu segundo cérebro.
-- Não é o código do projeto; o código fica em `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`.
+- Não é o código do projeto; o código fica em `[PROJECT_ROOT]`.
 - Use esta pasta para conceitos, regras, persona, arquitetura e saber do assistente.
 - Mantenha `PROJECT_JARVIS_5.0-KnowledgeBase` como fonte canônica de verdade.
 
@@ -34,7 +34,7 @@ Estas são as regras para manter a base de conhecimento do Jarvis organizada, co
 
 ## 5. Sincronização com o código
 - `PROJECT_JARVIS_5.0-KnowledgeBase` = conhecimento/consciência.
-- `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0` = código e execução.
+- `[PROJECT_ROOT]` = código e execução.
 - Atualizações de arquitetura ou requisitos no código devem refletir na KB.
 
 ## 6. Uso pelo Jarvis

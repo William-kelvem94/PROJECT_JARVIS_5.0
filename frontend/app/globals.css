@@ -43,14 +43,23 @@
   --glass-reflection: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
 }
 
+html {
+  min-height: 100%;
+  background: var(--background);
+  color-scheme: dark;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    ESTILOS PREMIUM JARVIS NATIVE
    ───────────────────────────────────────────────────────────────────────────── */
 
 body {
+  min-height: 100vh;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+<<<<<<< HEAD
   overflow: hidden; /* Foco no HUD */
   position: relative;
 }
@@ -69,6 +78,9 @@ body::before {
   background-size: 100% 2px, 3px 100%;
   pointer-events: none;
   opacity: 0.15;
+=======
+  overflow-x: hidden;
+>>>>>>> main
 }
 
 .cyber-glass {
