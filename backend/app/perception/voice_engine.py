@@ -28,7 +28,7 @@ from typing import Optional, List, Callable
 
 import numpy as np
 from loguru import logger
-from voice.tts_engine import tts_engine
+from app.voice.tts_engine import tts_engine
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 SAMPLE_RATE = 16_000          # Hz — required by all models
