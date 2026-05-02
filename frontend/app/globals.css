@@ -4,69 +4,68 @@
 
 @layer base {
   :root {
-    --background: 0 0 5;
-    --foreground: 0 255 255;
     --jarvis-cyan: #00f2ff;
-    --jarvis-violet: #7000ff;
-    --jarvis-glow: rgba(0, 242, 255, 0.4);
+    --jarvis-cyan-rgb: 0, 242, 255;
+    --jarvis-red: #ff3e3e;
+    --jarvis-bg: #02040a;
   }
 }
 
 body {
-  background: #020205;
-  color: #ffffff;
+  background-color: var(--jarvis-bg);
+  color: white;
   overflow: hidden;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Background Holográfico */
-.hologram-grid {
-  background-image: 
-    linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
-  background-size: 50px 50px;
-  mask-image: radial-gradient(circle at center, black 40%, transparent 90%);
+/* Camada de Profundidade 3D (Background) */
+.perspective-container {
+  perspective: 1000px;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 70%),
+    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
 }
 
-.hologram-lines {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 242, 255, 0.03) 2px,
-    rgba(0, 242, 255, 0.03) 4px
+/* Padrão de Hexágono (FUI Classic) */
+.hexagon-grid {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cpath fill='%2300f2ff' fill-opacity='0.03' d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.89v12.22l11 6.35 11-6.35V17.89L14 11.54 3 17.89z'/%3E%3C/svg%3E");
+}
+
+/* Scanlines e Noise */
+.scanlines::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.1) 50%
+  ), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+  background-size: 100% 3px, 2px 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Painéis Angulares (Clip-path) */
+.fui-panel {
+  clip-path: polygon(
+    0 10px, 10px 0, 
+    calc(100% - 10px) 0, 100% 10px, 
+    100% calc(100% - 10px), calc(100% - 10px) 100%, 
+    10px 100%, 0 calc(100% - 10px)
   );
+  background: rgba(0, 242, 255, 0.03);
+  border: 1px solid rgba(0, 242, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
-/* Efeito de Vidro Cibernético */
-.cyber-glass {
-  background: rgba(10, 15, 25, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(0, 242, 255, 0.15);
-  box-shadow: 
-    0 0 20px rgba(0, 0, 0, 0.5),
-    inset 0 0 15px rgba(0, 242, 255, 0.05);
+.fui-border-glow {
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.1), inset 0 0 5px rgba(0, 242, 255, 0.1);
 }
 
-.neon-border-cyan {
-  border: 1px solid var(--jarvis-cyan);
-  box-shadow: 0 0 10px var(--jarvis-glow);
-}
-
-.text-glow-cyan {
-  text-shadow: 0 0 8px var(--jarvis-glow);
-}
-
-/* Animações de HUD */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-.scanline {
-  width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--jarvis-cyan), transparent);
-  opacity: 0.2;
-  animation: scanline 6s linear infinite;
+/* Efeito de Projeção de Luz */
+.light-projection {
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.5));
 }
