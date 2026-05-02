@@ -126,10 +126,10 @@ def check_secrets(source: str) -> list:
 # --- EXECUÇÃO PRINCIPAL ---
 
 if __name__ == "__main__":
-    print("🔍 Iniciando auditoria total do JARVIS...")
+    print("Iniciando auditoria total do JARVIS...")
     arquivos = listar_arquivos(PROJECT_ROOT)
     total = len(arquivos)
-    print(f"📂 {total} arquivos encontrados para auditar.\n")
+    print(f"Arquivos encontrados para auditar: {total}\n")
 
     resultados = []
     passaram = 0
@@ -192,29 +192,32 @@ if __name__ == "__main__":
         
         resultados.append((str(rel_path), status, "; ".join(problemas)))
         # Print progresso
-        print(f"  {status:7} | {rel_path}")
+        try:
+            print(f"  {status:7} | {rel_path}")
+        except UnicodeEncodeError:
+            print(f"  {status:7} | [PATH_ENCODING_ERROR]")
     
     # Gerar relatório Markdown
     report_path = PROJECT_ROOT / "audit_report.md"
     with open(report_path, 'w', encoding='utf-8') as r:
-        r.write("# Relatório de Auditoria – JARVIS v6.1\n\n")
+        r.write("# Relatorio de Auditoria - JARVIS v6.1\n\n")
         r.write(f"**Total de arquivos:** {total}\n")
-        r.write(f"**✅ Passaram:** {passaram}\n")
-        r.write(f"**❌ Falhas/Alertas:** {falharam}\n\n")
+        r.write(f"**Passaram:** {passaram}\n")
+        r.write(f"**Falhas/Alertas:** {falharam}\n\n")
         r.write("| Arquivo | Status | Problemas |\n")
         r.write("|---------|--------|----------|\n")
         for arq, st, prob in resultados:
             r.write(f"| {arq} | {st} | {prob} |\n")
         
         if falharam == 0:
-            r.write("\n## ✅ Status: PRONTO PARA TESTE PRÁTICO\n")
+            r.write("\n## Status: PRONTO PARA TESTE PRATICO\n")
         else:
-            r.write(f"\n## ⚠️ Status: REQUER CORREÇÕES ({falharam} arquivos com problemas)\n")
-            r.write("\n### Ações recomendadas:\n")
+            r.write(f"\n## Status: REQUER CORRECOES ({falharam} arquivos com problemas)\n")
+            r.write("\n### Acoes recomendadas:\n")
             for arq, st, prob in resultados:
                 if st in ("FALHOU", "ALERTA"):
                     r.write(f"- `{arq}`: {prob}\n")
     
-    print(f"\n📄 Relatório salvo em: {report_path}")
-    print(f"   ✅ Passaram: {passaram}")
-    print(f"   ❌ Falhas/Alertas: {falharam}")
+    print(f"\nRelatorio salvo em: {report_path}")
+    print(f"   Passaram: {passaram}")
+    print(f"   Falhas/Alertas: {falharam}")
