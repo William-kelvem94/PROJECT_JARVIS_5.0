@@ -1,151 +1,71 @@
-/* Tailwind CSS v4 Configuration */
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@plugin "tailwindcss-animate";
-
-@custom-variant dark (&:is(.dark *));
-
-@theme {
-  --font-sans: 'Inter', 'Outfit', sans-serif;
-  --font-mono: 'Space Grotesk', 'Fira Code', monospace;
-
-  --color-jarvis-cyan: #00f2ff;
-  --color-jarvis-violet: #7000ff;
-  --color-jarvis-bg: #020205;
-  --color-jarvis-card: rgba(10, 10, 20, 0.6);
-  --color-jarvis-border: rgba(255, 255, 255, 0.08);
+@layer base {
+  :root {
+    --background: 0 0 0;
+    --foreground: 0 255 255;
+    --jarvis-cyan: #00f0ff;
+    --jarvis-purple: #9d00ff;
+    --jarvis-glow: #00f0ff;
+  }
 }
-
-:root {
-  --background: #020205;
-  --foreground: #ffffff;
-  --card: rgba(5, 5, 10, 0.8);
-  --card-foreground: #ffffff;
-  --popover: #05050a;
-  --popover-foreground: #ffffff;
-  --primary: #00f2ff;
-  --primary-foreground: #000000;
-  --secondary: #7000ff;
-  --secondary-foreground: #ffffff;
-  --muted: rgba(255, 255, 255, 0.1);
-  --muted-foreground: rgba(255, 255, 255, 0.5);
-  --accent: #00f2ff;
-  --accent-foreground: #000000;
-  --destructive: #ff0055;
-  --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.05);
-  --ring: #00f2ff;
-  --radius: 1rem;
-  
-  --glass-bg: rgba(10, 10, 15, 0.4);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-reflection: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%, rgba(255,255,255,0.05) 100%);
-}
-
-html {
-  min-height: 100%;
-  background: var(--background);
-  color-scheme: dark;
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   ESTILOS PREMIUM JARVIS NATIVE
-   ───────────────────────────────────────────────────────────────────────────── */
 
 body {
-  min-height: 100vh;
-  margin: 0;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  overflow: hidden; /* Foco no HUD */
-  position: relative;
-}
-
-/* Efeito de Scanlines (HUD Clássico) */
-body::before {
-  content: " ";
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-  z-index: 9999;
-  background-size: 100% 2px, 3px 100%;
-  pointer-events: none;
-  opacity: 0.15;
-}
-
-.cyber-glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-  position: relative;
+  background: radial-gradient(circle at center, #0a0a2a 0%, #000000 70%);
+  color: rgb(var(--foreground));
+  font-family: 'Space Grotesk', system-ui, sans-serif;
   overflow: hidden;
+  position: relative;
 }
 
-.cyber-glass::after {
+.hud-container {
+  background: rgba(10, 10, 42, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 
+    0 0 60px -10px rgb(0 240 255),
+    inset 0 0 80px -30px rgb(157 0 255);
+}
+
+/* Scanlines + grid holográfico */
+.hud-container::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
+  width: 100%;
   height: 100%;
-  background: var(--glass-reflection);
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(0, 240, 255, 0.03) 50%
+  );
+  background-size: 100% 4px;
   pointer-events: none;
+  animation: scanline 4s linear infinite;
+  z-index: 1;
+  opacity: 0.15;
 }
 
-.jarvis-glow-cyan {
-  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3), inset 0 0 10px rgba(0, 242, 255, 0.1);
+@keyframes scanline {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100%; }
 }
 
-.jarvis-glow-violet {
-  box-shadow: 0 0 15px rgba(112, 0, 255, 0.3), inset 0 0 10px rgba(112, 0, 255, 0.1);
+/* Glow neon forte */
+.neon-text {
+  text-shadow: 
+    0 0 10px var(--jarvis-cyan),
+    0 0 20px var(--jarvis-cyan),
+    0 0 40px var(--jarvis-purple);
 }
 
-.jarvis-text-gradient {
-  background: linear-gradient(90deg, #00f2ff, #7000ff);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(0.95); opacity: 0.5; }
-}
-
-.animate-pulse-slow {
-  animation: pulse-ring 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* Custom Scrollbar for Luxury */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 242, 255, 0.2);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 242, 255, 0.5);
-}
-
-/* HUD Utility Classes */
-.hud-border-cyan {
-  border-left: 2px solid var(--color-jarvis-cyan);
-  background: linear-gradient(90deg, rgba(0, 242, 255, 0.05) 0%, transparent 100%);
-}
-
-.hud-border-violet {
-  border-left: 2px solid var(--color-jarvis-violet);
-  background: linear-gradient(90deg, rgba(112, 0, 255, 0.05) 0%, transparent 100%);
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
