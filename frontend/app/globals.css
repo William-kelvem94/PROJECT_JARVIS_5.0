@@ -1,92 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap');
+/* Tailwind CSS v4 Configuration */
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@plugin "tailwindcss-animate";
 
-:root {
-  --jarvis-cyan: #00f2ff;
-  --jarvis-glow: rgba(0, 242, 255, 0.5);
-  --bg-deep: #02040a;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-jarvis-cyan: #00f2ff;
+  --color-jarvis-purple: #7000ff;
+  --color-jarvis-red: #ff3333;
 }
 
 body {
-  background-color: var(--bg-deep);
-  color: #fff;
-  font-family: 'Share Tech Mono', monospace;
-  overflow: hidden;
+  background-color: #020205; /* Fundo abissal */
+  color: white;
   margin: 0;
-  height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-/* Fundo de Grade Cibernética */
-.hud-bg {
-  position: fixed;
-  inset: 0;
-  background: 
-    radial-gradient(circle at center, rgba(0, 242, 255, 0.05) 0%, transparent 70%),
-    linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
-  background-size: 100% 100%, 30px 30px, 30px 30px;
-  z-index: -1;
+/* Utilitário para as caixas de vidro (Glassmorphism sutil) */
+.glass-panel {
+  background: rgba(0, 30, 40, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 242, 255, 0.15);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Efeito de Scanlines HUD */
-.scanlines {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%,
-    rgba(0, 0, 0, 0.1) 50%
-  );
-  background-size: 100% 4px;
-  pointer-events: none;
-  z-index: 1000;
-  opacity: 0.3;
-}
-
-/* Widgets Flutuantes */
-.fui-widget {
-  background: rgba(0, 20, 30, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 242, 255, 0.2);
-  box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.05);
-  position: absolute;
-}
-
-.fui-header {
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.2em;
-  font-weight: 900;
-  color: var(--jarvis-cyan);
-  text-shadow: 0 0 10px var(--jarvis-glow);
-}
-
-/* Glow Central do Arc Reactor */
-.arc-glow {
-  filter: drop-shadow(0 0 20px var(--jarvis-cyan));
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-spin-slow {
-  animation: spin-slow 15s linear infinite;
-}
-
-@keyframes scan-v {
-  0% { top: -10%; }
-  100% { top: 110%; }
-}
-
-.v-scanner {
-  position: absolute;
-  width: 100%;
-  height: 2px;
-  background: var(--jarvis-cyan);
-  opacity: 0.3;
-  box-shadow: 0 0 10px var(--jarvis-cyan);
-  animation: scan-v 4s linear infinite;
+/* Fundo pontilhado cibernético muito sutil */
+.dot-matrix-bg {
+  background-image: radial-gradient(rgba(0, 242, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
 }

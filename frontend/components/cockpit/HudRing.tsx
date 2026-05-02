@@ -3,38 +3,35 @@ import { motion } from 'motion/react';
 
 export default function HudRing({ status }: { status: 'idle' | 'listening' | 'thinking' | 'speaking' }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none scale-75 lg:scale-100">
-      {/* Anel de Compasso Ultra-Fino */}
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      
+      {/* Anel Externo Fino */}
       <motion.div
-        className="absolute w-[500px] h-[500px] border border-cyan-500/10 rounded-full"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
+        className="w-64 h-64 border-[1px] border-cyan-500/30 rounded-full"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
       >
-        {[...Array(12)].map((_, i) => (
-          <div 
-            key={i}
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-3 bg-cyan-500/20"
-            style={{ transform: `rotate(${i * 30}deg) translateY(-250px)` }}
-          />
-        ))}
+        <div className="w-full h-full relative">
+            <div className="absolute top-0 left-1/2 w-[2px] h-3 bg-cyan-400" />
+            <div className="absolute bottom-0 left-1/2 w-[2px] h-3 bg-cyan-400" />
+            <div className="absolute left-0 top-1/2 w-3 h-[2px] bg-cyan-400" />
+            <div className="absolute right-0 top-1/2 w-3 h-[2px] bg-cyan-400" />
+        </div>
       </motion.div>
 
-      {/* Anel de Status Dinâmico */}
+      {/* Anel Interno Tracejado (Veloz) */}
       <motion.div
-        className="absolute w-[400px] h-[400px] border-t-2 border-b-2 border-cyan-400/30 rounded-full"
+        className="absolute w-56 h-56 border-t-2 border-r-2 border-cyan-400/50 rounded-full"
         animate={{ 
-          rotate: status === 'listening' ? 360 : 0,
-          scale: status === 'speaking' ? 1.1 : 1
+            rotate: status === 'listening' ? -360 : 360,
+            scale: status === 'speaking' ? 1.05 : 1
         }}
         transition={{ 
-          rotate: { duration: 2, repeat: Infinity, ease: 'linear' },
-          scale: { duration: 0.5 }
+            rotate: { duration: status === 'listening' ? 1 : 10, repeat: Infinity, ease: 'linear' },
+            scale: { duration: 0.3 }
         }}
       />
 
-      {/* Crosshair Central */}
-      <div className="absolute w-40 h-[1px] bg-cyan-500/10" />
-      <div className="absolute h-40 w-[1px] bg-cyan-500/10" />
     </div>
   );
 }
