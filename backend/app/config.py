@@ -5,78 +5,57 @@ Detecta automaticamente CPU/GPU e ajusta perfis de performance.
 
 import os
 import torch
+from pathlib import Path
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-<<<<<<< HEAD
-    # --- PROJETO ---
-    PROJECT_NAME: str = "JARVIS 5.0"
-    VERSION: str = "5.3-Engineering"
-    BASE_DIR: Path = Path(__file__).resolve().parents[2]
-    # --- HARDWARE ADAPTIVE (Book2 vs Desktop) ---
-    DEVICE_TYPE: str = "auto" # auto, cuda, cpu
-    LOW_VRAM_MODE: bool = True # Ativa se < 6GB VRAM (como a 1050Ti)
-    CPU_THREADS: int = os.cpu_count() or 4
-    
-    # --- IA & BRAIN ---
-    LM_STUDIO_URL: str = os.getenv("LM_STUDIO_URL", "http://127.0.0.1:1234/v1/chat/completions")
-    DEFAULT_MODEL: str = os.getenv("LM_STUDIO_MODEL", "llama-3.2-3b-instruct")
-    AI_TEMPERATURE: float = 0.2
-    MAX_TOKENS: int = 4096
-    LM_STUDIO_TIMEOUT: int = 5  # Fallback rápido: se não responder em 5s, vai para Gemini
-    
-    # --- PERCEPÇÃO VISUAL ---
-    # No Desktop (1050Ti), usamos GPU. No Book2, usamos CPU (OpenVINO/CPU)
-    VISION_DELEGATE: str = "CPU" # Será ajustado dinamicamente
-    
-    # --- PERCEPÇÃO DE VOZ ---
-    # No i3 (Desktop), usamos 'tiny' para não travar o sistema. No i7 (Book2), podemos usar 'base'.
-    STT_MODEL: str = os.getenv("JARVIS_WHISPER_MODEL", "tiny")
-    WHISPER_COMPUTE_TYPE: str = "int8" # Crucial para 16GB de RAM e SSD DRAM-less
-    
-    # --- MEMÓRIA & GC ---
-    ENABLE_GC: bool = True
-    AGGRESSIVE_GC_THRESHOLD: float = 85.0 # Porcentagem de RAM
-    
-    # --- SEGURANÇA & CLOUD FALLBACK ---
-=======
     model_config = ConfigDict(
         extra="ignore",
         env_file=".env",
         env_file_encoding="utf-8",
     )
-    # ── Hardware Detection ────────────────────────────────────
+
+    # --- PROJETO ---
+    PROJECT_NAME: str = "JARVIS 5.0"
+    VERSION: str = "5.3-Engineering"
+    BASE_DIR: Path = Path(__file__).resolve().parents[2]
+
+    # --- HARDWARE ADAPTIVE ---
     DEVICE_TYPE: str = os.getenv("JARVIS_AI_DEVICE", "cpu")
     GPU_ENABLED: bool = False
     LOW_VRAM_MODE: bool = True
-
-    # ── LM Studio (local) ─────────────────────────────────────
+    CPU_THREADS: int = os.cpu_count() or 4
+    
+    # --- IA & BRAIN ---
     LM_STUDIO_URL: str = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1/chat/completions")
     LM_STUDIO_MODEL: str = os.getenv("LM_STUDIO_MODEL", "local-model")
+    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "local-model")
     LM_STUDIO_TIMEOUT: int = 5
+    AI_TEMPERATURE: float = 0.2
+    MAX_TOKENS: int = 4096
 
-    # ── Ollama (offline total) ────────────────────────────────
+    # --- OLLAMA ---
     OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
     OLLAMA_TIMEOUT: int = 60
     OLLAMA_ENABLED: bool = os.getenv("OLLAMA_ENABLED", "false").lower() == "true"
 
-    # ── Gemini ────────────────────────────────────────────────
->>>>>>> main
+    # --- CLOUD FALLBACK (Gemini/OpenRouter) ---
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
-    # ── OpenRouter ────────────────────────────────────────────
     OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
     OPENROUTER_MODEL: str = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
-
-    # ── Data Paths ────────────────────────────────────────────
-    BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "local-model")
+    
+    # --- PERCEPÇÃO ---
+    VISION_DELEGATE: str = "CPU"
     JARVIS_WHISPER_MODEL: str = os.getenv("JARVIS_WHISPER_MODEL", "base")
+    WHISPER_COMPUTE_TYPE: str = "int8"
+    
+    # --- MEMÓRIA & GC ---
     ENABLE_GC: bool = os.getenv("ENABLE_GC", "false").lower() == "true"
+    AGGRESSIVE_GC_THRESHOLD: float = 85.0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
