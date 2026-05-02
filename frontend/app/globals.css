@@ -1,71 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Share+Tech+Mono&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --jarvis-cyan: #00f2ff;
-    --jarvis-cyan-rgb: 0, 242, 255;
-    --jarvis-red: #ff3e3e;
-    --jarvis-bg: #02040a;
-  }
+:root {
+  --jarvis-cyan: #00f2ff;
+  --jarvis-glow: rgba(0, 242, 255, 0.5);
+  --bg-deep: #02040a;
 }
 
 body {
-  background-color: var(--jarvis-bg);
-  color: white;
+  background-color: var(--bg-deep);
+  color: #fff;
+  font-family: 'Share Tech Mono', monospace;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
+  margin: 0;
+  height: 100vh;
 }
 
-/* Camada de Profundidade 3D (Background) */
-.perspective-container {
-  perspective: 1000px;
+/* Fundo de Grade Cibernética */
+.hud-bg {
+  position: fixed;
+  inset: 0;
   background: 
-    radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 70%),
+    radial-gradient(circle at center, rgba(0, 242, 255, 0.05) 0%, transparent 70%),
     linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-size: 100% 100%, 30px 30px, 30px 30px;
+  z-index: -1;
 }
 
-/* Padrão de Hexágono (FUI Classic) */
-.hexagon-grid {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='49' viewBox='0 0 28 49'%3E%3Cpath fill='%2300f2ff' fill-opacity='0.03' d='M13.99 9.25l13 7.5v15l-13 7.5L1 31.75v-15l12.99-7.5zM3 17.89v12.22l11 6.35 11-6.35V17.89L14 11.54 3 17.89z'/%3E%3C/svg%3E");
-}
-
-/* Scanlines e Noise */
-.scanlines::before {
-  content: "";
-  position: absolute;
+/* Efeito de Scanlines HUD */
+.scanlines {
+  position: fixed;
   inset: 0;
   background: linear-gradient(
     rgba(18, 16, 16, 0) 50%,
     rgba(0, 0, 0, 0.1) 50%
-  ), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-  background-size: 100% 3px, 2px 100%;
-  pointer-events: none;
-  z-index: 100;
-}
-
-/* Painéis Angulares (Clip-path) */
-.fui-panel {
-  clip-path: polygon(
-    0 10px, 10px 0, 
-    calc(100% - 10px) 0, 100% 10px, 
-    100% calc(100% - 10px), calc(100% - 10px) 100%, 
-    10px 100%, 0 calc(100% - 10px)
   );
-  background: rgba(0, 242, 255, 0.03);
-  border: 1px solid rgba(0, 242, 255, 0.1);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.3;
+}
+
+/* Widgets Flutuantes */
+.fui-widget {
+  background: rgba(0, 20, 30, 0.6);
   backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.05);
+  position: absolute;
 }
 
-.fui-border-glow {
-  box-shadow: 0 0 15px rgba(0, 242, 255, 0.1), inset 0 0 5px rgba(0, 242, 255, 0.1);
+.fui-header {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 0.2em;
+  font-weight: 900;
+  color: var(--jarvis-cyan);
+  text-shadow: 0 0 10px var(--jarvis-glow);
 }
 
-/* Efeito de Projeção de Luz */
-.light-projection {
-  mix-blend-mode: screen;
-  filter: drop-shadow(0 0 10px rgba(0, 242, 255, 0.5));
+/* Glow Central do Arc Reactor */
+.arc-glow {
+  filter: drop-shadow(0 0 20px var(--jarvis-cyan));
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 15s linear infinite;
+}
+
+@keyframes scan-v {
+  0% { top: -10%; }
+  100% { top: 110%; }
+}
+
+.v-scanner {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: var(--jarvis-cyan);
+  opacity: 0.3;
+  box-shadow: 0 0 10px var(--jarvis-cyan);
+  animation: scan-v 4s linear infinite;
 }
