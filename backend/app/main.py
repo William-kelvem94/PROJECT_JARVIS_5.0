@@ -39,9 +39,8 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning(f"[Startup] Falha ao construir grafo do Obsidian: {exc}")
 
-    # Inicializar percepção
-    perception_manager.start()
-    logger.info("[Startup] Percepção iniciada")
+    # Inicializar percepção (mapeada sob demanda pelo WebSocket)
+    logger.info("[Startup] Camada de Percepção pronta")
 
     # Inicializar loop autônomo
     threading.Thread(target=autonomous_brain.start_background_thinking, daemon=True).start()
@@ -53,7 +52,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("[Shutdown] Encerrando JARVIS...")
-    perception_manager.stop()
     autonomous_brain.stop()
 
 

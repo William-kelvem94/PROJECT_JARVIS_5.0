@@ -22,14 +22,8 @@ export default function Home() {
   }, [isListening, transcript, response]);
 
   return (
-    <main className="min-h-screen bg-black text-cyan-300 flex flex-col items-center justify-center overflow-hidden relative font-mono">
-      {/* Background Holográfico Profundo */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#0a1a2a_0%,#000000_100%)] opacity-80" />
-      
-      {/* Grade de fundo estilo Tron */}
-      <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] border-b border-slate-900/[0.06] opacity-20" />
-      
-      <div className="relative z-10 flex flex-col items-center">
+    <main className="min-h-screen flex flex-col items-center justify-center overflow-hidden relative">
+      <div className="relative z-10 flex flex-col items-center p-12 rounded-3xl hud-container backdrop-blur-2xl">
         {/* Container do HUD Central */}
         <div className="relative w-[400px] h-[400px] flex items-center justify-center cursor-pointer" onClick={startListening}>
           <HudRing status={status} />
