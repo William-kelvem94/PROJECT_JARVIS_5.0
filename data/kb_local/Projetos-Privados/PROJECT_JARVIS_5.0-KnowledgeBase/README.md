@@ -49,7 +49,7 @@ Esta pasta é a base de conhecimento dedicada do Jarvis. Ela contém cópias dos
 - Base de conhecimento do Jarvis:
   `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
 - Pasta real do projeto de código:
-  `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+  `[PROJECT_ROOT]`
 - Vault raiz de organização:
   `D:\OBSIDIAN\Will`
 
@@ -57,7 +57,7 @@ Esta pasta é a base de conhecimento dedicada do Jarvis. Ela contém cópias dos
 Se o Jarvis suportar variáveis de ambiente ou `.env`, configure:
 ```powershell
 $env:JARVIS_KB_PATH = 'D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase'
-$env:JARVIS_PROJECT_ROOT = 'C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0'
+$env:JARVIS_PROJECT_ROOT = '[PROJECT_ROOT]'
 $env:JARVIS_VAULT_ROOT = 'D:\OBSIDIAN\Will'
 ```
 

@@ -35,7 +35,7 @@ Esta nota define o segundo cérebro do Jarvis e como ele deve consumir todo o co
   11. `PROJECT_JARVIS_5.0-README/INDEX/CONFIG/RULES`
 
 ## Porque esta pasta importa
-- Ela é o segundo cérebro do Jarvis e deve estar alinhada com o código em `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`.
+- Ela é o segundo cérebro do Jarvis e deve estar alinhada com o código em `[PROJECT_ROOT]`.
 - O código local deve usar `JARVIS_KB_PATH` para carregar o conhecimento.
 - Qualquer duplicata fora desta pasta deve ser tratada como referência ou histórico, não como verdade principal.
 
@@ -54,5 +54,5 @@ Esta nota define o segundo cérebro do Jarvis e como ele deve consumir todo o co
 
 ## Nota para o código
 - `JARVIS_KB_PATH` deve apontar para `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
-- `JARVIS_PROJECT_ROOT` deve apontar para `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+- `JARVIS_PROJECT_ROOT` deve apontar para `[PROJECT_ROOT]`
 - O Jarvis deve carregar a pasta inteira como `secondBrain` antes de executar ações.

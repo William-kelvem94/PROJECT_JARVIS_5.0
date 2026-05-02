@@ -15,7 +15,7 @@ updated: 2026-04-09
 ### PROJECT_JARVIS_5.0
 - **Status:** Em desenvolvimento ativo
 - **Stack:** Python (FastAPI), LiveKit, Gemini, Next.js, Docker
-- **Onde:** `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+- **Onde:** `[PROJECT_ROOT]`
 - **KB:** `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
 - **Próximos passos:**
   - [ ] Memória persistente no vault Obsidian funcionando

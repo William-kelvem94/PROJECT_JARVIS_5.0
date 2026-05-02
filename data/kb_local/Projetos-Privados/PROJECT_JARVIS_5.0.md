@@ -54,14 +54,14 @@ Ecossistema Jarvis: voz real-time LiveKit, Gemini/OpenAI, visão face/gesture/vo
 
 ## Configuração do Jarvis
 - Base de conhecimento oficial: `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
-- Pasta real do projeto de código: `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+- Pasta real do projeto de código: `[PROJECT_ROOT]`
 - Vault raiz de organização: `D:\OBSIDIAN\Will`
 - Sugestão de variável de ambiente:
   - `JARVIS_KB_PATH=D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
-  - `JARVIS_PROJECT_ROOT=C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+  - `JARVIS_PROJECT_ROOT=[PROJECT_ROOT]`
   - `JARVIS_VAULT_ROOT=D:\OBSIDIAN\Will`
 
-> Nota: Esta pasta de Knowledge Base é a consciência do Jarvis. O código do projeto vive em `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`.
+> Nota: Esta pasta de Knowledge Base é a consciência do Jarvis. O código do projeto vive em `[PROJECT_ROOT]`.
 
 ## Status técnico
 - Backend: `backend/agents_worker.py`, `backend/app/main.py`.
