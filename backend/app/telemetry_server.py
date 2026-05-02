@@ -27,7 +27,7 @@ async def get_status():
             "face_emotion": percep.get("face_emotion"),
             "detected_objects": percep.get("detected_objects", [])
         },
-        "persona": learning_manager.profile["personality_traits"],
+        "persona": learning_manager.profile.get("personality_traits", {}),
         "obsidian": {
             "active_todos": len(second_brain.active_todos),
             "vault_path": second_brain.vault_path

@@ -1,5 +1,6 @@
 'use client';
 
+<<<<<<< HEAD
 import { Smile, Meh, Frown, User, Zap } from 'lucide-react';
 
 type EmotionKey = 'feliz' | 'surpreso' | 'neutro' | 'triste' | 'raiva';
@@ -18,6 +19,16 @@ const emotionColors: Record<EmotionKey, string> = {
   neutro: 'text-cyan-400',
   triste: 'text-blue-300',
   raiva: 'text-red-400',
+=======
+import { Smile, Zap, Meh, Frown, User } from 'lucide-react';
+
+const emotionMap: Record<string, { icon: React.ElementType; color: string }> = {
+  feliz:    { icon: Smile, color: 'text-yellow-400' },
+  surpreso: { icon: Zap,   color: 'text-jarvis-cyan' },
+  neutro:   { icon: Meh,   color: 'text-white/60' },
+  triste:   { icon: Frown, color: 'text-blue-400' },
+  raiva:    { icon: Frown, color: 'text-red-400' },
+>>>>>>> main
 };
 
 interface IdentityPillProps {
@@ -26,6 +37,7 @@ interface IdentityPillProps {
 }
 
 export function IdentityPill({ name, emotion }: IdentityPillProps) {
+<<<<<<< HEAD
   const key = emotion.toLowerCase() as EmotionKey;
   const Icon = emotionIcons[key] ?? User;
   const colorClass = emotionColors[key] ?? 'text-cyan-400';
@@ -37,6 +49,16 @@ export function IdentityPill({ name, emotion }: IdentityPillProps) {
       </div>
       <span className="text-sm font-medium text-white">{name}</span>
       <Icon className={`w-4 h-4 ${colorClass}`} />
+=======
+  const key = emotion.toLowerCase();
+  const { icon: Icon, color } = emotionMap[key] ?? { icon: User, color: 'text-white/60' };
+
+  return (
+    <div className="flex items-center gap-3 px-5 py-2 rounded-full border border-jarvis-cyan/30 bg-white/5 backdrop-blur-sm">
+      <Icon className={`w-5 h-5 ${color}`} />
+      <span className="text-sm font-medium tracking-wide">{name}</span>
+      <span className={`text-xs uppercase tracking-widest ${color}`}>{emotion}</span>
+>>>>>>> main
     </div>
   );
 }

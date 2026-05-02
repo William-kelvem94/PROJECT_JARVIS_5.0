@@ -8,11 +8,15 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
+from dotenv import load_dotenv
 from .utils.db_manager import db_manager
 
 # --- CONFIGURAÇÃO ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
-VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT") 
+VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT")
 JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
 
 if not VAULT_ROOT:

@@ -1,56 +1,60 @@
+"""
+JARVIS 5.0 - Cérebro Autônomo (Loop de Pensamento Proativo)
+Monitora o sistema e o Obsidian em background com intervalo adaptativo.
+"""
+
 import asyncio
-import time
+import psutil
 from loguru import logger
-from .config import settings
-from .tools.system_executor import system_executor
-from .utils.second_brain_connector import second_brain
+
 
 class AutonomousBrain:
-    """
-    O loop de pensamento em background (Proatividade).
-    O Jarvis agora 'acorda' sozinho para monitorar o ambiente e a agenda.
-    """
-    
-    def __init__(self, websocket_manager=None):
-        self.ws_manager = websocket_manager
+    def __init__(self):
         self._running = False
-        self._last_system_check = 0
-        self._check_interval = 600 # 10 Minutos
+        self._task = None
 
-    async def start_background_thinking(self, websocket=None):
-        """Inicia o loop proativo."""
-        if self._running: return
-        self._running = True
-        logger.info("🧠 JARVIS Iniciou Modo de Pensamento Autônomo.")
-        
+    def _adaptive_interval(self) -> int:
+        """Intervalo adaptativo baseado na carga do sistema."""
+        try:
+            cpu = psutil.cpu_percent(interval=1)
+            ram = psutil.virtual_memory().percent
+            if cpu > 60 or ram > 80:
+                return 300  # 5 minutos sob carga
+            return 60  # 1 minuto ocioso
+        except Exception:
+            return 120  # fallback seguro
+
+    async def _background_loop(self):
         while self._running:
             try:
-                # 1. MONITORAMENTO DE SAÚDE (A cada 10 min)
-                health_report = system_executor.system_status_report()
-                if "ALERTA" in health_report:
-                    logger.warning(f"[Autônomo] {health_report}")
-                    if websocket:
-                        await websocket.send_json({
-                            "type": "proactive_alert",
-                            "message": health_report
-                        })
+                interval = self._adaptive_interval()
 
-                # 2. MONITORAMENTO DE AGENDA & TAREFAS (Obsidian + GraphRAG)
-                if second_brain.active_todos:
-                    logger.info(f"[Autônomo] Analisando {len(second_brain.active_todos)} tarefas do Obsidian...")
-                    
-                    # Usa o Grafo para entender se as tarefas estão relacionadas a projetos ativos
-                    try:
-                        from .utils.obsidian_graph import obsidian_graph
-                        for todo in second_brain.active_todos[:3]:
-                            related = obsidian_graph.query_related(todo)
-                            if related:
-                                logger.info(f"[Autônomo] Insight: A tarefa '{todo}' está ligada a: {', '.join(related)}")
-                    except: pass
-                
-                await asyncio.sleep(self._check_interval)
+                cpu = psutil.cpu_percent()
+                ram = psutil.virtual_memory().percent
+                logger.debug(f"[Autônomo] CPU: {cpu}%, RAM: {ram}%, Próximo ciclo: {interval}s")
+
+                if cpu > 90 or ram > 95:
+                    logger.warning("[Autônomo] ALERTA: O processador/memória está sob carga extrema.")
+
+                await asyncio.sleep(interval)
             except Exception as e:
-                logger.error(f"Erro no loop autônomo: {e}")
+                logger.error(f"[Autônomo] Erro no loop: {e}")
                 await asyncio.sleep(60)
+
+    def start_background_thinking(self):
+        """Inicia o loop de pensamento em background."""
+        self._running = True
+        self._task = asyncio.run(self._background_loop())
+        logger.info("JARVIS Iniciou Modo de Pensamento Autônomo (intervalo adaptativo).")
+
+    def stop(self):
+        """Para o loop autônomo."""
+        self._running = False
+        if self._task:
+            try:
+                self._task.cancel()
+            except Exception:
+                pass
+
 
 autonomous_brain = AutonomousBrain()

@@ -38,7 +38,11 @@ class EngineerBrain:
     async def _pick_gemini_model(self) -> str:
         """
         Resolve um modelo Gemini válido para streamGenerateContent.
+<<<<<<< HEAD
         Resultado mantido em cache por 5 minutos — elimina o custo de sondagem por chamada.
+=======
+        Resultado mantido em cache por 5 minutos — elimina sondagem por chamada.
+>>>>>>> main
         """
         global _gemini_model_cache, _gemini_model_cache_ts
 
@@ -136,8 +140,15 @@ class EngineerBrain:
     async def _get_safety_params(self):
         """Monitora o hardware e retorna parâmetros para máxima inteligência vs estabilidade."""
         ram_percent = psutil.virtual_memory().percent
+<<<<<<< HEAD
 
         if ram_percent > 90:
+=======
+        
+        # Em carga extrema, reduzimos a janela de contexto para proteger a estabilidade,
+        # mas mantemos a temperatura baixa para garantir que ele continue 'inteligente' e técnico.
+        if ram_percent >= 90:
+>>>>>>> main
             logger.warning(f"🚀 ALTA CARGA DETECTADA: RAM {ram_percent}%. Priorizando Contexto Crítico.")
             return {
                 "max_tokens": 1024,
@@ -209,12 +220,46 @@ class EngineerBrain:
         except Exception as e:
             logger.warning(f"⚠️ Motor Nativo falhou: {e}")
 
+<<<<<<< HEAD
         # ── Prioridade 1: LM Studio local ─────────────────────────────────────
         # Pula imediatamente se a última sondagem de /models falhou.
         if self._lmstudio_available:
             try:
                 session = _get_session()
                 async with session.post(
+=======
+        # ── Prioridade 0.5: Ollama (offline total) ─────────────────────────────
+        if settings.OLLAMA_ENABLED:
+            try:
+                session = _get_session()
+                url = f"{settings.OLLAMA_URL}/api/chat"
+                async with session.post(
+                    url,
+                    json={"model": settings.OLLAMA_MODEL, "messages": messages, "stream": True},
+                    timeout=aiohttp.ClientTimeout(total=settings.OLLAMA_TIMEOUT),
+                ) as resp:
+                    if resp.status == 200:
+                        async for line in resp.content:
+                            line_str = line.decode('utf-8', errors='ignore').strip()
+                            if line_str:
+                                try:
+                                    chunk = json.loads(line_str)
+                                    text = chunk.get('message', {}).get('content', '')
+                                    if text:
+                                        yield text
+                                except Exception:
+                                    continue
+                        return
+            except Exception as e:
+                logger.warning(f"Ollama offline: {e}")
+
+        # ── Prioridade 1: LM Studio local ─────────────────────────────────────
+        # Pula imediatamente se a última sondagem de /models falhou.
+        if self._lmstudio_available:
+            try:
+                session = _get_session()
+                async with session.post(
+>>>>>>> main
                     self.lm_studio_url,
                     json=payload,
                     timeout=aiohttp.ClientTimeout(total=settings.LM_STUDIO_TIMEOUT),
@@ -239,7 +284,11 @@ class EngineerBrain:
                                     continue
                             return
                         else:
+<<<<<<< HEAD
                             # BUGFIX: response.json() era referenciado como `data` sem ser lido
+=======
+                            # BUGFIX: era referenciado como `data` sem ser lido
+>>>>>>> main
                             lms_data = await response.json()
                             text = lms_data["choices"][0]["message"]["content"]
                             learning_manager.learn_from_interaction(prompt, text)
@@ -321,7 +370,10 @@ class EngineerBrain:
         else:
             try:
                 logger.info(f"☁️ Chamando OpenRouter (Key: {or_key[:4]}...{or_key[-4:]})")
+<<<<<<< HEAD
                 # Deduplica candidatos mantendo ordem de preferência
+=======
+>>>>>>> main
                 seen_or: set[str] = set()
                 unique_candidates: list[str] = []
                 for c in [settings.OPENROUTER_MODEL, "google/gemini-2.5-flash", "google/gemini-2.0-flash-001", "google/gemini-flash-1.5"]:

@@ -21,7 +21,7 @@ updated: 2026-04-09
 ## 📁 Paths Importantes
 
 ```
-Projeto Jarvis: C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0
+Projeto Jarvis: [PROJECT_ROOT]
 Vault Obsidian: D:\OBSIDIAN\Will
 KB Jarvis:      D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase
 Segundo Cérebro:D:\OBSIDIAN\Will\JARVIS\

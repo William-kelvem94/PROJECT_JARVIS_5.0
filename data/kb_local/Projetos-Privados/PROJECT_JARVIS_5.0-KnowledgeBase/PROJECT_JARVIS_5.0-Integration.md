@@ -11,7 +11,7 @@ tags:
 
 # Jarvis Knowledge Base Integration
 
-Esta nota descreve como o Jarvis deve integrar a base de conhecimento localizada em `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase` com o código real do projeto em `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`.
+Esta nota descreve como o Jarvis deve integrar a base de conhecimento localizada em `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase` com o código real do projeto em `[PROJECT_ROOT]`.
 
 - Esta pasta é o segundo cérebro canônico do Jarvis.
 - Jarvis deve carregar cada arquivo `.md` dessa pasta como parte do seu conhecimento runtime.
@@ -25,7 +25,7 @@ Esta nota descreve como o Jarvis deve integrar a base de conhecimento localizada
 - `JARVIS_KB_PATH`: caminho para a base de conhecimento.
   - `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
 - `JARVIS_PROJECT_ROOT`: caminho para o código real do Jarvis.
-  - `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+  - `[PROJECT_ROOT]`
 - `JARVIS_VAULT_ROOT`: raiz do vault Obsidian.
   - `D:\OBSIDIAN\Will`
 
@@ -56,4 +56,4 @@ Esta nota descreve como o Jarvis deve integrar a base de conhecimento localizada
 ## Notas de implementação
 - O código de Jarvis não deve copiar a pasta inteira para dentro do repositório.
 - Em vez disso, use variáveis de ambiente para apontar o runtime ao caminho do KB.
-- O projeto `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0` deve carregar o conhecimento dinamicamente.
+- O projeto `[PROJECT_ROOT]` deve carregar o conhecimento dinamicamente.

@@ -5,7 +5,6 @@ import { AgentChatTranscript } from '@/components/agents-ui/agent-chat-transcrip
 import { cn } from '@/lib/shadcn/utils';
 import type { Message } from '@/context/JarvisContext';
 
-// import { type ReceivedMessage, useAgent } from '@livekit/components-react';
 type ReceivedMessage = Message;
 
 const MotionContainer = motion.create('div');

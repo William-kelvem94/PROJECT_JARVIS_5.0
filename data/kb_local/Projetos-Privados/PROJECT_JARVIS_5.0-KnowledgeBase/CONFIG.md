@@ -16,7 +16,7 @@ Este arquivo contém as instruções e variáveis de ambiente para configurar o 
 - Base de conhecimento do Jarvis:
   `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
 - Pasta real do projeto de código:
-  `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+  `[PROJECT_ROOT]`
 - Vault raiz de organização geral:
   `D:\OBSIDIAN\Will`
 
@@ -36,7 +36,7 @@ set JARVIS_VAULT_ROOT=D:\OBSIDIAN\Will
 ### Variáveis para `.env` (se o Jarvis usar arquivo de configuração)
 ```
 JARVIS_KB_PATH=D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase
-JARVIS_PROJECT_ROOT=C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0
+JARVIS_PROJECT_ROOT=[PROJECT_ROOT]
 JARVIS_VAULT_ROOT=D:\OBSIDIAN\Will
 ```
 

@@ -37,7 +37,7 @@ Este documento mapeia toda a base de conhecimento do Jarvis e mostra como cada p
 - `INDEX.md` é o guia de navegação detalhado para todos os arquivos.
 - `PROJECT_JARVIS_5.0-Map.md` resume todos os papéis e ligações entre documentos.
 - `CONFIG.md` fornece as variáveis de ambiente que conectam a KB ao runtime.
-- `PROJECT_JARVIS_5.0-Integration.md` explica o fluxo de integração entre esta pasta e `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`.
+- `PROJECT_JARVIS_5.0-Integration.md` explica o fluxo de integração entre esta pasta e `[PROJECT_ROOT]`.
 - `PROJECT_JARVIS_5.0-Knowledge.md` deve ser a fonte primária de informações consultadas pelas queries de Jarvis.
 - `PROJECT_JARVIS_5.0-Personality.md` informa o tom e o estilo de resposta do assistente.
 - `PROJECT_JARVIS_5.0-Architecture.md` e `PROJECT_JARVIS_5.0-Strategy.md` oferecem o contexto estrutural e de planejamento.
@@ -50,7 +50,7 @@ Este documento mapeia toda a base de conhecimento do Jarvis e mostra como cada p
 - Pasta da KB:
   - `D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase`
 - Projeto de código:
-  - `C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0`
+  - `[PROJECT_ROOT]`
 
 ### Responsabilidades
 - A KB contém conhecimento, regras, estratégia, persona e contexto.
