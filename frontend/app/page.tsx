@@ -1,91 +1,91 @@
 'use client';
+import { useState, useEffect } from 'react';
+import OrbCore from '@/components/cockpit/OrbCore';
+import HudRing from '@/components/cockpit/HudRing';
+import { useVoice } from '@/hooks/useVoice';
 
-import { useState } from 'react';
-import { useJarvisData } from '@/hooks/use-jarvis-data';
-import { useI18n } from '@/hooks/use-i18n';
-import { useTelemetryHistory } from '@/hooks/use-telemetry-history';
-import { HudRing } from '@/components/cockpit/hud-ring';
-import { IdentityPill } from '@/components/cockpit/identity-pill';
-import { ConsolePanel } from '@/components/cockpit/console-panel';
-import { OrbCore } from '@/components/cockpit/orb-core';
-import { StatsStrip } from '@/components/cockpit/stats-strip';
-import { TelemetryChart } from '@/components/cockpit/telemetry-chart';
+export default function Home() {
+  const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
+  const { isListening, transcript, response, speak, startListening } = useVoice();
 
-export default function Page() {
-  const { health, telemetry, logs, isThinking } = useJarvisData();
-  const { t } = useI18n();
-  const { history } = useTelemetryHistory(60);
-  const [showConsole, setShowConsole] = useState(false);
+  // Simulação de fluxo para demonstração
+  useEffect(() => {
+    if (isListening) {
+      setStatus('listening');
+    } else if (transcript && !response) {
+      setStatus('thinking');
+    } else if (response) {
+      setStatus('speaking');
+    } else {
+      setStatus('idle');
+    }
+  }, [isListening, transcript, response]);
 
   return (
-    <main className="min-h-screen bg-black text-white p-4 md:p-6 flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className={`h-3 w-3 rounded-full ${health.is_ai_ready ? 'bg-green-400' : 'bg-red-400'}`} />
-          <span className="text-sm text-white/60">
-            {health.is_ai_ready ? t('cockpit.iaOnline') : t('cockpit.iaStarting')}
-          </span>
+    <main className="min-h-screen bg-black text-cyan-300 flex flex-col items-center justify-center overflow-hidden relative font-mono">
+      {/* Background Holográfico Profundo */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#0a1a2a_0%,#000000_100%)] opacity-80" />
+      
+      {/* Grade de fundo estilo Tron */}
+      <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] border-b border-slate-900/[0.06] opacity-20" />
+      
+      <div className="relative z-10 flex flex-col items-center">
+        {/* Container do HUD Central */}
+        <div className="relative w-[400px] h-[400px] flex items-center justify-center cursor-pointer" onClick={startListening}>
+          <HudRing status={status} />
+          <OrbCore status={status} />
         </div>
-        <div className="text-sm text-white/40">
-          {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-        </div>
-      </header>
-
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <aside className="flex flex-col gap-4 lg:w-1/3">
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50 mb-4">Hardware</h2>
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-              <HudRing value={health.cpu} label={t('cockpit.cpu')} color="#06b6d4" />
-              <HudRing value={health.ram} label={t('cockpit.ram')} color="#a855f7" />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50 mb-4">Presença</h2>
-            <div className="flex justify-center">
-              <IdentityPill name={health.face_identity} emotion={health.face_emotion} />
-            </div>
-          </section>
-
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50 mb-4">Ambiente</h2>
-            <StatsStrip
-              objects={telemetry?.perception?.detected_objects || []}
-              todos={telemetry?.obsidian?.active_todos || 0}
-              noObjectsText={t('cockpit.noObjects')}
-              tasksText={(count: number) =>
-                t('cockpit.tasks', {
-                  count,
-                  plural: count !== 1 ? 's' : '',
-                })
-              }
-            />
-          </section>
-        </aside>
-
-        <section className="flex-1 rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-          <div className="flex flex-col items-center gap-8">
-            <OrbCore thinking={isThinking} />
-            <div className="w-full max-w-3xl">
-              <TelemetryChart data={history} width={640} height={180} />
+        
+        {/* Painel de Status e Texto */}
+        <div className="mt-16 max-w-2xl w-full px-6 space-y-6 text-center">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="flex items-center space-x-2">
+                <span className={`w-2 h-2 rounded-full animate-pulse ${
+                    status === 'listening' ? 'bg-green-400' : 
+                    status === 'thinking' ? 'bg-pink-500' : 
+                    status === 'speaking' ? 'bg-yellow-400' : 'bg-cyan-400'
+                }`} />
+                <h2 className="text-sm font-bold tracking-[0.3em] uppercase opacity-70">
+                    Sytem State: <span className="text-white">{status}</span>
+                </h2>
             </div>
           </div>
-        </section>
+
+          <div className="h-32 flex flex-col justify-center space-y-4">
+            {transcript && (
+              <div className="animate-in fade-in slide-in-from-bottom-4">
+                <p className="text-xs text-cyan-500/60 uppercase mb-1">User Input</p>
+                <p className="text-lg text-white font-medium italic">"{transcript}"</p>
+              </div>
+            )}
+            
+            {response && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <p className="text-xs text-emerald-500/60 uppercase mb-1">Jarvis Response</p>
+                <p className="text-xl text-emerald-400 font-bold tracking-tight">{response}</p>
+              </div>
+            )}
+
+            {!transcript && !response && (
+                <p className="text-sm text-cyan-400/40 animate-pulse uppercase tracking-widest">
+                    Aguardando comando de voz...
+                </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setShowConsole((state) => !state)}
-          className="mb-4 rounded-full bg-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/20"
-        >
-          {showConsole ? 'Ocultar terminal' : 'Exibir terminal'}
-        </button>
+      {/* Interface Periférica (HUD Estático) */}
+      <div className="absolute top-10 left-10 text-[10px] space-y-1 opacity-40">
+        <p>COCKPIT_V5.0</p>
+        <p>COORD: 23.5505 S, 46.6333 W</p>
+        <p>OS: PROJECT_JARVIS_6.1</p>
+      </div>
 
-        <div className={`overflow-hidden rounded-3xl border border-white/10 bg-white/5 transition-all duration-300 ${showConsole ? 'max-h-[420px] p-4' : 'max-h-0 p-0'}`}>
-          <ConsolePanel logs={logs} emptyText={t('cockpit.noLogs')} />
-        </div>
+      <div className="absolute bottom-10 right-10 text-[10px] space-y-1 opacity-40 text-right">
+        <p>POWER: STABLE</p>
+        <p>NETWORK: LOCAL_HOST_8000</p>
+        <p>LATENCY: 14MS</p>
       </div>
     </main>
   );
