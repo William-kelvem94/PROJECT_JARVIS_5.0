@@ -27,51 +27,62 @@ async def voice_websocket(websocket: WebSocket):
 
     try:
         audio_buffer = bytearray()
-        silence_chunks = 0
         
         while True:
-            # Recebe áudio binário do microfone (frontend) - pacotes de ~8KB
-            data = await websocket.receive_bytes() 
-            audio_buffer.extend(data)
+            # Recebe qualquer mensagem (pode ser bytes de áudio ou texto de comando)
+            message = await websocket.receive()
             
-            # VAD Simples (Cálculo de Volume/RMS do pacote recebido)
-            audio_np = np.frombuffer(data, dtype=np.int16)
-            rms = np.sqrt(np.mean(np.square(audio_np.astype(np.float32))))
-            
-            if rms < 300: # Limiar de silêncio
-                silence_chunks += 1
-            else:
-                silence_chunks = 0
+            if "bytes" in message:
+                # É um pacote de áudio do microfone
+                audio_buffer.extend(message["bytes"])
                 
-            # Se juntou pelo menos 1 seg de áudio (>32000 bytes) e a pessoa fez 1 segundo de silêncio (8 chunks)
-            # OU se o buffer estourar 10 segundos de fala (>320000 bytes) para não gargalar a RAM.
-            if (silence_chunks > 8 and len(audio_buffer) > 32000) or len(audio_buffer) > 320000:
-                # 1. Transcrição (STT) do bloco inteiro
-                transcription_data = bytes(audio_buffer)
-                audio_buffer.clear()
-                silence_chunks = 0
-                
-                text = await process_audio(transcription_data)
-
-                if text:
-                    logger.info(f"🗣️ Transcrição recebida: {text}")
+                # Trava de segurança (10s = ~320000 bytes). Se passar disso forçamos commit pra não vazar RAM
+                if len(audio_buffer) > 320000:
+                    message["text"] = '{"type": "commit_audio"}'
                     
-                    # 2. Processamento de Resposta (LLM Streaming)
-                    full_response = ""
-                    async for chunk in chat_stream("william", text):
-                        full_response += chunk
-                        await websocket.send_json({"type": "response_chunk", "text": chunk})
-
-                    # 3. Conversão para Fala (TTS)
-                    audio_path = await tts_engine.speak(full_response)
-                    if audio_path and os.path.exists(audio_path):
-                        with open(audio_path, "rb") as f:
-                            # Envia o áudio completo como bytes após o texto
-                            await websocket.send_bytes(f.read())
+            if "text" in message:
+                # É um comando do frontend
+                import json
+                try:
+                    data = json.loads(message["text"])
+                    if data.get("type") == "commit_audio" and len(audio_buffer) > 0:
+                        logger.info("🎙️ Comando de parada recebido. Transcrevendo áudio...")
                         
-                        # Cleanup síncrono do arquivo enviado
-                        try: os.unlink(audio_path)
-                        except: pass
+                        transcription_data = bytes(audio_buffer)
+                        audio_buffer.clear()
+                        
+                        # Chama STT sem bloquear o event loop (importante para não travar o FastAPI)
+                        loop = asyncio.get_event_loop()
+                        from app.perception.voice_engine import transcribe_offline
+                        audio_np = np.frombuffer(transcription_data, dtype=np.int16)
+                        
+                        # Transcrição rodando em background thread!
+                        text = await loop.run_in_executor(None, transcribe_offline, audio_np)
+
+                        if text:
+                            logger.info(f"🗣️ Transcrição recebida: {text}")
+                            
+                            # 2. Processamento de Resposta (LLM Streaming)
+                            full_response = ""
+                            async for chunk in chat_stream("william", text):
+                                full_response += chunk
+                                await websocket.send_json({"type": "response_chunk", "text": chunk})
+
+                            # 3. Conversão para Fala (TTS)
+                            audio_path = await tts_engine.speak(full_response)
+                            if audio_path and os.path.exists(audio_path):
+                                with open(audio_path, "rb") as f:
+                                    # Envia o áudio completo como bytes após o texto
+                                    await websocket.send_bytes(f.read())
+                                
+                                # Cleanup síncrono do arquivo enviado
+                                try: os.unlink(audio_path)
+                                except: pass
+                        else:
+                            # Retorna ao modo idle se foi apenas ruído ou muito curto
+                            await websocket.send_json({"type": "response_chunk", "text": " "})
+                except json.JSONDecodeError:
+                    pass
 
     except WebSocketDisconnect:
         logger.info("🔌 Cliente WebSocket de voz desconectado")

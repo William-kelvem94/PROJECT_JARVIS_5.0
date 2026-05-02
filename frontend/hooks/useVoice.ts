@@ -81,7 +81,6 @@ export function useVoice() {
       if (ctx.state === 'suspended') await ctx.resume();
 
       const source = ctx.createMediaStreamSource(stream);
-      // Processor para capturar chunks de áudio (formato PCM 16-bit esperado pelo backend)
       const processor = ctx.createScriptProcessor(4096, 1, 1);
       processorRef.current = processor;
 
@@ -91,7 +90,6 @@ export function useVoice() {
       processor.onaudioprocess = (e) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           const inputData = e.inputBuffer.getChannelData(0);
-          // Converte Float32 para Int16
           const pcmData = new Int16Array(inputData.length);
           for (let i = 0; i < inputData.length; i++) {
             pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
@@ -103,7 +101,7 @@ export function useVoice() {
       setIsListening(true);
       setStatus('listening');
       setResponse('');
-      setTranscript('Escutando...');
+      setTranscript('Gravando áudio...');
     } catch (err) {
       console.error("Erro ao acessar microfone:", err);
       setStatus('idle');
@@ -118,7 +116,22 @@ export function useVoice() {
         processorRef.current.disconnect();
       }
       setIsListening(false);
-      setStatus('idle');
+      
+      // Envia o comando pro backend transcrever tudo o que acumulou!
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "commit_audio" }));
+      }
+      
+      setStatus('thinking');
+      setTranscript('Processando no núcleo...');
+  };
+
+  const toggleListening = () => {
+      if (isListening) {
+          stopListening();
+      } else {
+          startListening();
+      }
   };
 
   useEffect(() => {
@@ -134,8 +147,7 @@ export function useVoice() {
     transcript, 
     response, 
     status, 
-    startListening, 
-    stopListening,
+    toggleListening, 
     connect 
   };
 }

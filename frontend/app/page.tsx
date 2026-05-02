@@ -8,7 +8,7 @@ import { Shield, Cpu, Database, Eye, MessageSquare } from 'lucide-react';
 
 export default function Home() {
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
-  const { isListening, transcript, response, startListening } = useVoice();
+  const { isListening, transcript, response, toggleListening } = useVoice();
 
   useEffect(() => {
     if (isListening) setStatus('listening');
@@ -74,8 +74,8 @@ export default function Home() {
         {/* COLUNA CENTRAL: O Núcleo (Orb) */}
         <div className="flex flex-col items-center justify-center relative">
           <div 
-            className="relative cursor-pointer group flex items-center justify-center"
-            onClick={startListening}
+            className="relative cursor-pointer group flex items-center justify-center transition-transform duration-300 hover:scale-105 active:scale-95"
+            onClick={toggleListening}
           >
             {/* Sombras de piso */}
             <div className="absolute -bottom-10 w-48 h-8 bg-[#00f2ff]/20 blur-xl rounded-full pointer-events-none" />
