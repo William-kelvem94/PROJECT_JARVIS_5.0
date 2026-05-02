@@ -1,94 +1,65 @@
-"""
-JARVIS 5.0 - Pipeline de Chat
-Gerencia o fluxo completo: entrada do usuário -> LLM -> TTS -> resposta
-"""
-
+import os
+import json
 import asyncio
+import re
+from pathlib import Path
+from typing import AsyncGenerator
 from loguru import logger
-from .engineer_brain import brain
-from .unified_memory import memory
-from .persona import persona
-from .utils.note_writer import note_writer
 
+from app.engineer_brain import brain
+from app.unified_memory import memory
+from app.system_tools import SystemTools
+from app.persona import persona
 
-async def _maybe_write_note(user_id: str, user_message: str, full_reply: str):
-    if not user_message or not full_reply:
-        return
+tools = SystemTools()
 
-    action_text = user_message.lower()
-    if any(keyword in action_text for keyword in ["nota", "memória", "memo", "note", "summarize", "resuma"]):
-        title = f"JARVIS note - {user_id}"
-        body = f"User message: {user_message}\n\nAssistant reply:\n{full_reply}"
-        note_writer.create_note(title, body)
+async def chat_reply(user_id: str, user_message: str) -> str:
+    """Resposta simples (legado)."""
+    context = await memory.get_context(user_id, query=user_message)
+    prompt = f"Usuario: {user_message}\n\nContexto: {context}"
+    reply = await brain.reason(prompt)
+    await memory.add_memory(user_id, user_message, source="user")
+    return reply
 
+async def chat_stream(user_id: str, user_message: str) -> AsyncGenerator[str, None]:
+    """Streaming completo com personalidade JARVIS + cumprimento."""
+    context = await memory.get_context(user_id, query=user_message)
+    
+    # Personalidade + Cumprimento automatico
+    persona_context = persona.get_system_prompt()
+    
+    full_prompt = f"""
+{persona_context}
 
-async def chat_reply(user_id: str, user_message: str):
-    """
-    Processa uma mensagem e retorna a resposta textual.
-    Não faz TTS – apenas a parte de raciocínio.
-    """
-    context = await memory.get_context(user_id, user_message)
+Usuario: {user_message}
+Contexto sensorial e memoria: {context}
 
-    if not user_message or not user_message.strip():
-        raise ValueError("A mensagem do usuário não pode ficar vazia.")
+Responda como JARVIS 6.1: direto, sarcastico quando necessario, sempre educado e util.
+Comece com cumprimento se for a primeira mensagem do dia.
+"""
 
     full_reply = ""
-    try:
-        async for chunk in brain.reason_stream(user_message, context):
-            if isinstance(chunk, str) and not chunk.startswith("Erro"):
-                full_reply += chunk
-    except Exception as e:
-        logger.error(f"Erro no raciocínio: {e}")
-        full_reply = "Desculpe, meu cérebro está com dificuldades técnicas."
+    async for chunk in brain.reason_stream(full_prompt, context=context):
+        full_reply += chunk
+        yield chunk
 
-    if not full_reply:
-        full_reply = "Não consegui formular uma resposta para isso agora."
+    # Execucao de ferramentas automaticas
+    tool_calls = re.findall(r"\[TOOL:\s*(.*?)\((.*?)\)\]", full_reply)
+    for func_name, args_str in tool_calls:
+        try:
+            func = getattr(tools, func_name, None)
+            if func:
+                clean_args = [a.strip().strip("'\"") for a in args_str.split(",") if a.strip()]
+                if asyncio.iscoroutinefunction(func):
+                    await func(*clean_args)
+                else:
+                    func(*clean_args)
+        except Exception as e:
+            logger.error(f"Erro na ferramenta {func_name}: {e}")
 
-    try:
-        await asyncio.gather(
-            memory.add_memory(user_id, user_message, source="jarvis_chat"),
-            memory.save_session(
-                user_id,
-                [{"role": "user", "content": user_message}, {"role": "assistant", "content": full_reply}],
-                f"Chat: {user_message[:30]}",
-            ),
-        )
-        await _maybe_write_note(user_id, user_message, full_reply)
-        logger.debug(f"Memória salva para {user_id}")
-    except Exception as e:
-        logger.warning(f"Falha ao salvar memória (não crítico): {e}")
-
-    return full_reply
-
-
-async def chat_stream(user_id: str, user_message: str):
-    """
-    Versão streaming: retorna chunks de texto conforme o LLM gera,
-    ideal para WebSocket ou SSE.
-    """
-    context = await memory.get_context(user_id, user_message)
-    chunks = []
-
-    try:
-        async for chunk in brain.reason_stream(user_message, context):
-            if isinstance(chunk, str):
-                chunks.append(chunk)
-                yield chunk
-    except Exception as e:
-        logger.error(f"Erro no streaming: {e}")
-        yield "Desculpe, ocorreu um erro no processamento."
-
-    full_reply = "".join(chunks)
-
-    try:
-        await asyncio.gather(
-            memory.add_memory(user_id, user_message, source="jarvis_voice"),
-            memory.save_session(
-                user_id,
-                [{"role": "user", "content": user_message}, {"role": "assistant", "content": full_reply}],
-                f"Conversa: {user_message[:25]}",
-            ),
-            _maybe_write_note(user_id, user_message, full_reply),
-        )
-    except Exception as e:
-        logger.warning(f"Falha ao salvar sessão (não crítico): {e}")
+    # Salva tudo na memoria
+    asyncio.create_task(memory.add_memory(user_id, user_message, source="user"))
+    asyncio.create_task(memory.save_session(user_id, [
+        {"role": "user", "content": user_message},
+        {"role": "assistant", "content": full_reply}
+    ], f"Conversa: {user_message[:30]}"))
