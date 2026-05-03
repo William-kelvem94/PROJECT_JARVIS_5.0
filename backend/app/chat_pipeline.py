@@ -1,49 +1,47 @@
-import os
-import json
 import asyncio
 import re
-from pathlib import Path
-from typing import AsyncGenerator
 from loguru import logger
-
-from app.engineer_brain import brain
-from app.unified_memory import memory
-from app.system_tools import SystemTools
-from app.persona import persona
+from .engineer_brain import brain
+from .unified_memory import memory
+from .persona import persona
+from .system_tools import SystemTools
 
 tools = SystemTools()
 
 async def chat_reply(user_id: str, user_message: str) -> str:
-    """Resposta simples (legado)."""
+    """Resposta simples (síncrona para a API)."""
     context = await memory.get_context(user_id, query=user_message)
-    prompt = f"Usuario: {user_message}\n\nContexto: {context}"
-    reply = await brain.reason(prompt)
+    persona_context = persona.get_system_prompt()
+    full_prompt = f"{persona_context}\nUsuário: {user_message}\nContexto: {context}"
+    
+    reply = await brain.reason(full_prompt)
+    
+    # Salva na memória
     await memory.add_memory(user_id, user_message, source="user")
+    await memory.add_memory(user_id, reply, source="jarvis")
+    
     return reply
 
-async def chat_stream(user_id: str, user_message: str) -> AsyncGenerator[str, None]:
-    """Streaming completo com personalidade JARVIS + cumprimento."""
+async def chat_stream(user_id: str, user_message: str):
+    """Pipeline de chat com streaming, memória e execução de ferramentas."""
     context = await memory.get_context(user_id, query=user_message)
-    
-    # Personalidade + Cumprimento automatico
     persona_context = persona.get_system_prompt()
     
-    full_prompt = f"""
-{persona_context}
-
-Usuario: {user_message}
-Contexto sensorial e memoria: {context}
-
-Responda como JARVIS 6.1: direto, sarcastico quando necessario, sempre educado e util.
-Comece com cumprimento se for a primeira mensagem do dia.
-"""
-
+    # Injeção de personalidade e diretrizes
+    system_prompt = f"{persona_context}\nResponda de forma natural, técnica e extremamente eficiente como o JARVIS 5.0."
+    
+    full_prompt = f"Contexto Sensorial/Memória: {context}\nUsuário: {user_message}"
+    
     full_reply = ""
-    async for chunk in brain.reason_stream(full_prompt, context=context):
+    async for chunk in brain.reason_stream(full_prompt, context=system_prompt):
         full_reply += chunk
         yield chunk
 
-    # Execucao de ferramentas automaticas
+    # Salva na memória unificada
+    await memory.add_memory(user_id, user_message, source="user")
+    await memory.add_memory(user_id, full_reply, source="jarvis")
+
+    # Execução de ferramentas automáticas (TOOL:func(args))
     tool_calls = re.findall(r"\[TOOL:\s*(.*?)\((.*?)\)\]", full_reply)
     for func_name, args_str in tool_calls:
         try:
@@ -54,12 +52,6 @@ Comece com cumprimento se for a primeira mensagem do dia.
                     await func(*clean_args)
                 else:
                     func(*clean_args)
+                logger.info(f"🛠️ Ferramenta executada: {func_name}")
         except Exception as e:
             logger.error(f"Erro na ferramenta {func_name}: {e}")
-
-    # Salva tudo na memoria
-    asyncio.create_task(memory.add_memory(user_id, user_message, source="user"))
-    asyncio.create_task(memory.save_session(user_id, [
-        {"role": "user", "content": user_message},
-        {"role": "assistant", "content": full_reply}
-    ], f"Conversa: {user_message[:30]}"))
