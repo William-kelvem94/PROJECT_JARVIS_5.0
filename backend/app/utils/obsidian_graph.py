@@ -92,12 +92,17 @@ class ObsidianGraph:
 
 
 def _get_default_vault_path() -> str:
-    # Prioridade: Env -> data/kb_local relativo à raiz do projeto
+    # 1. Prioridade Máxima: Variáveis de Ambiente
     env_path = os.getenv('JARVIS_VAULT_ROOT') or os.getenv('OBSIDIAN_VAULT_PATH') or os.getenv("JARVIS_KB_PATH")
-    if env_path:
+    if env_path and os.path.exists(env_path):
         return env_path
         
-    # Fallback: d:\DOCUMENTOS\GitHub\PROJECT_JARVIS_5.0\data\kb_local (baseado na estrutura do projeto)
+    # 2. Prioridade: Caminho conhecido no Windows (Will-obsidian)
+    user_vault = "C:/Users/willi/Documents/GitHub/Will-obsidian"
+    if os.path.exists(user_vault):
+        return user_vault
+
+    # 3. Fallback: data/kb_local relativo à raiz do projeto
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     return os.path.join(base_dir, "data", "kb_local")
 
