@@ -235,37 +235,49 @@ updated: {date} {hora}
         return context_str if context_str else "Nenhum contexto relevante encontrado."
 
     async def _search_kb(self, query: str) -> str:
-        """Busca semântica simples em ambos os vaults de markdown."""
+        """Busca semântica aprimorada em ambos os vaults de markdown."""
         sources = [INTERNAL_BRAIN_DIR]
         if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
             sources.append(JARVIS_VAULT_DIR)
             
         all_files = []
         for src in sources:
-            all_files.extend(glob.glob(os.path.join(src, "**/*.md"), recursive=True))
+            all_files.extend(glob.glob(os.path.join(src, "**", "*.md"), recursive=True))
         
-        unique_files = {os.path.basename(f): f for f in all_files}.values()
+        # Remove duplicatas baseadas no nome do arquivo
+        unique_files = {os.path.basename(f): f for f in all_files}
         
-        files = []
-        if query:
-            words = query.lower().split()
-            for f in list(unique_files)[:50]:
-                try:
-                    t = Path(f).read_text(encoding='utf-8', errors='ignore').lower()
-                    if any(w in t for w in words): files.append(f)
-                except: continue
-            files = files[:3]
-        else:
-            files = sorted(unique_files, key=os.path.getmtime, reverse=True)[:3]
-            
         results = []
-        for f in files:
-            try:
-                c = Path(f).read_text(encoding="utf-8", errors='ignore')
-                clean = re.sub(r'#+\s+', '', c)[:500]
-                results.append(f"[{os.path.basename(f)}]: {clean}")
-            except: continue
-        return "\n".join(results)
+        if not query:
+            # Se não houver query, pega as 3 notas mais recentes
+            latest = sorted(unique_files.values(), key=os.path.getmtime, reverse=True)[:3]
+            for f in latest:
+                try:
+                    c = Path(f).read_text(encoding="utf-8", errors='ignore')
+                    results.append(f"[{os.path.basename(f)}]: {c[:500]}")
+                except: continue
+        else:
+            # Busca por relevância (contagem de palavras encontradas)
+            query_words = set(re.findall(r'\w+', query.lower()))
+            matches = []
+            
+            for f_path in unique_files.values():
+                try:
+                    content = Path(f_path).read_text(encoding='utf-8', errors='ignore').lower()
+                    score = sum(1 for word in query_words if word in content)
+                    if score > 0:
+                        matches.append((score, f_path))
+                except: continue
+            
+            # Ordena por score e pega os 3 melhores
+            matches.sort(key=lambda x: x[0], reverse=True)
+            for score, f_path in matches[:3]:
+                try:
+                    c = Path(f_path).read_text(encoding="utf-8", errors='ignore')
+                    results.append(f"[{os.path.basename(f_path)}]: {c[:700]}")
+                except: continue
+                
+        return "\n\n".join(results)
 
     def is_vault_available(self) -> bool:
         return JARVIS_VAULT_DIR is not None and os.path.isdir(JARVIS_VAULT_DIR)
