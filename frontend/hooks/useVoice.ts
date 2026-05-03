@@ -8,9 +8,6 @@ export function useVoice() {
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
 
   const wsRef = useRef<WebSocket | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -18,119 +15,54 @@ export function useVoice() {
     const ws = new WebSocket('ws://localhost:8000/ws/voice');
     wsRef.current = ws;
     
-    ws.onmessage = async (event) => {
-      if (event.data instanceof Blob) {
-        setStatus('speaking');
-        const arrayBuffer = await event.data.arrayBuffer();
-        playAudio(arrayBuffer);
-      } else {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'response_chunk') {
-            setResponse(prev => prev + data.text);
-            setStatus('thinking');
-          }
-        } catch (e) {
-          console.error("Erro ao processar mensagem WS:", e);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'status_update') {
+            setStatus(data.status);
+            if (data.status === 'listening') {
+                setIsListening(true);
+                setTranscript('Escutando...');
+                setResponse('');
+            } else if (data.status === 'idle') {
+                setIsListening(false);
+            }
+            
+            if (data.transcript) setTranscript(data.transcript);
+            if (data.response) setResponse(data.response);
         }
+        else if (data.type === 'response_chunk') {
+            setResponse(prev => prev + data.text);
+        }
+      } catch (e) {
+        console.error("Erro ao processar mensagem WS:", e);
       }
     };
 
     ws.onopen = () => {
-      console.log('🎙️ WebSocket de voz conectado');
+      console.log('🎙️ HUD Sincronizado com o Backend');
       setStatus('idle');
     };
     
     ws.onclose = () => {
-        console.log('🔌 WebSocket de voz desconectado');
+        console.log('🔌 HUD Desconectado do Backend');
         setStatus('idle');
+        setIsListening(false);
         // Tenta reconectar após 3 segundos
         setTimeout(connect, 3000);
     };
   }, []);
 
-  const playAudio = async (arrayBuffer: ArrayBuffer) => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    const ctx = audioContextRef.current;
-    if (ctx.state === 'suspended') await ctx.resume();
-    
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(ctx.destination);
-    source.onended = () => {
-        // Só volta para idle se não estiver escutando novamente
-        setStatus(prev => prev === 'speaking' ? 'idle' : prev);
-    };
-    source.start();
-  };
-
-  const startListening = async () => {
-    try {
-      if (wsRef.current?.readyState !== WebSocket.OPEN) connect();
-      
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = stream;
-      
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      }
-      const ctx = audioContextRef.current;
-      if (ctx.state === 'suspended') await ctx.resume();
-
-      const source = ctx.createMediaStreamSource(stream);
-      const processor = ctx.createScriptProcessor(4096, 1, 1);
-      processorRef.current = processor;
-
-      source.connect(processor);
-      processor.connect(ctx.destination);
-
-      processor.onaudioprocess = (e) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const pcmData = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7FFF;
-          }
-          wsRef.current.send(pcmData.buffer);
-        }
-      };
-
-      setIsListening(true);
-      setStatus('listening');
-      setResponse('');
-      setTranscript('Gravando áudio...');
-    } catch (err) {
-      console.error("Erro ao acessar microfone:", err);
-      setStatus('idle');
-    }
-  };
-
-  const stopListening = () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      if (processorRef.current) {
-        processorRef.current.disconnect();
-      }
-      setIsListening(false);
-      
-      // Envia o comando pro backend transcrever tudo o que acumulou!
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "commit_audio" }));
-      }
-      
-      setStatus('thinking');
-      setTranscript('Processando no núcleo...');
-  };
-
   const toggleListening = () => {
-      if (isListening) {
-          stopListening();
+      // Como o backend controla o áudio agora, o clique apenas força o backend a escutar
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+          if (!isListening) {
+              wsRef.current.send(JSON.stringify({ type: "manual_trigger" }));
+              // O status vai mudar pra 'listening' assim que o backend confirmar
+          }
       } else {
-          startListening();
+          connect();
       }
   };
 
@@ -138,7 +70,6 @@ export function useVoice() {
     connect();
     return () => {
         wsRef.current?.close();
-        stopListening();
     };
   }, [connect]);
 
