@@ -312,23 +312,24 @@ _audio_thread: Optional[threading.Thread] = None
 _chunk_q: queue.Queue = queue.Queue(maxsize=200)
 
 
+_active_listening = False
+_silence_counter = 0
+_voice_buffer = []
+
 def _audio_loop():
     """Background thread: opens audio input and processes chunks."""
+    global _active_listening, _silence_counter, _voice_buffer
     if not HAS_SOUNDDEVICE:
         return
 
     oww = _get_oww()
-    analysis_buffer: List[np.ndarray] = []
-
+    
     def _sd_callback(indata, frames, time_info, status):
         """Called by PortAudio thread — mantém o mais leve possível."""
         try:
             if status:
-                # Se der overflow, apenas avisamos e continuamos, sem crashar
                 pass 
             chunk_int16 = (indata[:, 0] * 32767).astype(np.int16)
-            
-            # Limite de segurança: Se a fila estiver muito cheia, descarta para não vazar RAM
             if _chunk_q.qsize() < 100: 
                 _chunk_q.put_nowait(chunk_int16)
         except Exception:
@@ -351,69 +352,102 @@ def _audio_loop():
                 except queue.Empty:
                     continue
 
-                analysis_buffer.append(chunk)
-
-                # ── Level A: Wake word ─────────────────────────────────────
-                if oww is not None:
-                    try:
-                        # openwakeword expects float32 normalized to [-1.0, 1.0]
-                        chunk_float = chunk.astype(np.float32) / 32768.0
-                        pred = oww.predict(chunk_float)
-                        for model_name, score_data in pred.items():
-                            # openwakeword v0.6+ retorna dict ou array. Precisamos do float bruto.
-                            try:
-                                if isinstance(score_data, (int, float)):
-                                    score = float(score_data)
-                                elif isinstance(score_data, dict):
-                                    score = max(score_data.values()) if score_data else 0.0
-                                elif hasattr(score_data, "__iter__"):
-                                    score = max(score_data) if len(score_data) > 0 else 0.0
-                                else:
-                                    score = 0.0
-                            except:
-                                score = 0.0
-
-                            if score > 0.45: # Limiar um pouco mais sensível
-                                logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' detectada (score={score:.2f})")
-                                _fire(VoiceResult(wake_word_triggered=True, active_levels=["A"]))
-                    except Exception as e:
-                        logger.debug(f"[VoiceEngine] Wake word check: {e}")
-
-                # ── Level B + C: Periodic buffer analysis ─────────────────
-                if len(analysis_buffer) >= ANALYSIS_CHUNKS:
-                    segment = np.concatenate(analysis_buffer)
-                    analysis_buffer.clear()
-
-                    result = VoiceResult()
-
-                    # Level B: Speaker ID
-                    if HAS_SPEAKER_ID and _enrolled_voices:
-                        name, conf = identify_speaker(segment)
-                        if name:
-                            result.speaker_identity = name
-                            result.speaker_confidence = conf
-                            result.active_levels.append("B")
-
-                    # Level C: Offline STT
-                    if HAS_WHISPER:
-                        text = transcribe_offline(segment)
-                        if text:
-                            result.offline_transcript = text
-                            result.active_levels.append("C")
-                            logger.info(f"[VoiceEngine] 📝 Offline STT: {text}")
-
-                    if result.active_levels:
-                        _fire(result)
+                # ── Modo de Escuta Ativa (Pós Wake Word ou PTT) ──────────────
+                if _active_listening:
+                    _voice_buffer.append(chunk)
                     
-                    # Limpeza explícita para o GC
-                    del segment
-                    import gc
-                    if time.time() % 60 < 1: # Limpeza leve a cada minuto
-                        gc.collect()
+                    # VAD Simples (Energia do Áudio)
+                    energy = np.abs(chunk).mean()
+                    if energy < 300:  # Threshold de silêncio
+                        _silence_counter += 1
+                    else:
+                        _silence_counter = 0
+                        
+                    # 6 chunks de silêncio = 1.5 segundos. Mínimo 4 chunks = 1 segundo
+                    if len(_voice_buffer) > 4 and _silence_counter > 6:
+                        segment = np.concatenate(_voice_buffer)
+                        _active_listening = False
+                        
+                        _notify_hud("thinking")
+                        
+                        text = transcribe_offline(segment) if HAS_WHISPER else ""
+                        if text and len(text.strip()) > 2:
+                            logger.success(f"[VoiceEngine] 📝 Comando Ouvido: {text}")
+                            threading.Thread(target=_process_command_sync, args=(text,), daemon=True).start()
+                        else:
+                            _notify_hud("idle")
+
+                # ── Modo de Espera (Aguardando Wake Word) ────────────────────
+                else:
+                    if oww is not None:
+                        try:
+                            chunk_float = chunk.astype(np.float32) / 32768.0
+                            pred = oww.predict(chunk_float)
+                            for model_name, score_data in pred.items():
+                                try:
+                                    if isinstance(score_data, (int, float)): score = float(score_data)
+                                    elif isinstance(score_data, dict): score = max(score_data.values()) if score_data else 0.0
+                                    elif hasattr(score_data, "__iter__"): score = max(score_data) if len(score_data) > 0 else 0.0
+                                    else: score = 0.0
+                                except: score = 0.0
+
+                                if score > 0.45:
+                                    logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' detectada")
+                                    _active_listening = True
+                                    _silence_counter = 0
+                                    _voice_buffer = []
+                                    _notify_hud("listening")
+                        except Exception as e:
+                            logger.debug(f"[VoiceEngine] Wake word check: {e}")
 
     except Exception as e:
         logger.error(f"[VoiceEngine] Audio loop crashed: {e}")
 
+def _notify_hud(status: str, transcript: str = "", response: str = ""):
+    """Envia status para o HUD de forma segura para não travar a thread de áudio."""
+    try:
+        from app.voice_websocket import broadcast_state
+        # Cria um novo event loop temporário para rodar a corrotina
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(broadcast_state(status, transcript, response))
+        loop.close()
+    except Exception as e:
+        pass
+
+def _process_command_sync(text: str):
+    """Executa o chat_pipeline e tts localmente."""
+    try:
+        from app.chat_pipeline import chat_stream
+        from app.voice.tts_engine import tts_engine
+        
+        _notify_hud("thinking", transcript=text)
+        
+        async def run_chat():
+            full_reply = ""
+            async for chunk in chat_stream("Chefe", text):
+                full_reply += chunk
+                from app.voice_websocket import broadcast_chunk
+                await broadcast_chunk(chunk)
+                
+            _notify_hud("speaking", response=full_reply)
+            # Toca o áudio nas caixas locais
+            await tts_engine.speak(full_reply, play_local=True)
+            _notify_hud("idle")
+
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(run_chat())
+        loop.close()
+    except Exception as e:
+        logger.error(f"[VoiceEngine] Falha ao processar comando: {e}")
+        _notify_hud("idle")
+
+def force_listen():
+    """Gatilho manual acionado pelo HUD."""
+    global _active_listening, _silence_counter, _voice_buffer
+    _active_listening = True
+    _silence_counter = 0
+    _voice_buffer = []
+    _notify_hud("listening")
 
 def start(custom_models: List[str] = None):
     """Start the voice engine background thread."""
