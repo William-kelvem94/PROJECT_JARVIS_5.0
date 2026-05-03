@@ -39,14 +39,37 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning(f"[Startup] Falha ao construir grafo do Obsidian: {exc}")
 
-    # Inicializar percepção (mapeada sob demanda pelo WebSocket)
+    # Inicializar Percepção e Voice Engine (Wake Word)
+    try:
+        from app.perception import voice_engine
+        from app.voice_websocket import external_trigger
+        
+        # Busca palavras customizadas no Obsidian
+        custom_words = learning_manager.get_custom_wake_words()
+        
+        # Configura o que acontece quando "Hey Jarvis" ou customizada é ouvida localmente (Mic do PC)
+        def on_voice_event(result):
+            if result.wake_word_triggered:
+                asyncio.create_task(external_trigger())
+        
+        voice_engine.add_callback(on_voice_event)
+        voice_engine.start(custom_models=custom_words)
+        logger.info("[Startup] Voice Engine (Wake Word) ativo via microfone local")
+    except Exception as e:
+        logger.warning(f"[Startup] Falha ao iniciar Voice Engine: {e}")
+
     logger.info("[Startup] Camada de Percepção pronta")
 
     # Inicializar loop autônomo
-    threading.Thread(target=autonomous_brain.start_background_thinking, daemon=True).start()
+    threading.Thread(target=autonomous_brain.start_background_thinking, daemon=True, name="AutonomousBrainThread").start()
 
     # Inicializar telemetria (porta 8001)
     start_telemetry_server()
+    
+    # Alerta de Hardware
+    mem = psutil.virtual_memory().percent
+    if mem > 90:
+        logger.warning(f"⚠️ Memória RAM crítica ({mem}%). O processamento de voz pode atrasar.")
 
     yield
 

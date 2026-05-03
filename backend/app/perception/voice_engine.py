@@ -108,33 +108,36 @@ def _oww_list_available() -> list:
     ]
 
 
-def _get_oww():
+def _get_oww(custom_models: List[str] = None):
     global _oww_model
     if _oww_model is None and HAS_WAKE_WORD:
         try:
             from openwakeword.model import Model  # type: ignore
 
-            # 1. Try the "hey_jarvis" model specifically
+            # 1. Carrega os modelos padrão + os customizados se fornecidos
+            models_to_load = ["hey_jarvis_v0.1"]
+            if custom_models:
+                models_to_load.extend(custom_models)
+
             try:
-                _oww_model = Model(wakeword_models=["hey_jarvis_v0.1"], inference_framework="onnx")
-                logger.success("[VoiceEngine] ✅ Wake word 'hey_jarvis_v0.1' loaded")
+                _oww_model = Model(wakeword_models=models_to_load, inference_framework="onnx")
+                logger.success(f"[VoiceEngine] ✅ Wake words carregadas: {models_to_load}")
                 return _oww_model
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[VoiceEngine] Erro ao carregar modelos específicos: {e}. Tentando fallback...")
 
             # 2. Try any available .onnx wake word model found locally
             available = _oww_list_available()
             if available:
                 _oww_model = Model(wakeword_models=available, inference_framework="onnx")
                 names = [os.path.basename(p) for p in available]
-                logger.success(f"[VoiceEngine] ✅ Wake word models loaded: {names}")
+                logger.success(f"[VoiceEngine] ✅ Wake word models carregados (Auto): {names}")
                 return _oww_model
 
             # 3. No models found — disable wake word gracefully
             logger.warning(
                 "[VoiceEngine] No wake word models found locally. "
-                "Run: python -c \"import openwakeword; openwakeword.utils.download_models()\" "
-                "to download them. Wake word disabled."
+                "Wake word disabled."
             )
         except Exception as e:
             logger.error(f"[VoiceEngine] openwakeword init failed: {e}")
@@ -405,14 +408,21 @@ def _audio_loop():
         logger.error(f"[VoiceEngine] Audio loop crashed: {e}")
 
 
-def start():
+def start(custom_models: List[str] = None):
     """Start the voice engine background thread."""
     global _running, _audio_thread
     if _running:
         return
+    
+    # Se não houver custom_models via argumento, tenta carregar do ambiente
+    if not custom_models:
+        env_models = os.environ.get("JARVIS_CUSTOM_WAKE_WORDS")
+        if env_models:
+            custom_models = [m.strip() for m in env_models.split(",") if m.strip()]
+
     # Eagerly initialise so models are ready before audio starts
     _ensure_voices()
-    _get_oww()
+    _get_oww(custom_models)
     _running = True
     _audio_thread = threading.Thread(
         target=_audio_loop, daemon=True, name="jarvis-voice-engine"
