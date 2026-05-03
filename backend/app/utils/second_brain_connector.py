@@ -21,8 +21,16 @@ class SecondBrainConnector:
     """
     
     def __init__(self, vault_path: str = None):
-        # Tenta detectar o caminho do Obsidian: Prioridade para argumento -> Env -> Fallback Relativo
-        self.vault_path = vault_path or os.getenv("JARVIS_KB_PATH") or os.getenv("OBSIDIAN_VAULT_PATH") or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "kb_local")
+        # 1. Prioridade: Argumento ou Env
+        v_path = vault_path or os.getenv("JARVIS_KB_PATH") or os.getenv("OBSIDIAN_VAULT_PATH")
+        if v_path and os.path.exists(v_path):
+            self.vault_path = v_path
+        # 2. Prioridade: Caminho conhecido no Windows
+        elif os.path.exists("C:/Users/willi/Documents/GitHub/Will-obsidian"):
+            self.vault_path = "C:/Users/willi/Documents/GitHub/Will-obsidian"
+        # 3. Fallback: Relativo ao projeto
+        else:
+            self.vault_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "kb_local")
         self.todo_file = os.path.join(self.vault_path, "TODO.md")
         self.active_todos = []
         self._last_index_time = 0

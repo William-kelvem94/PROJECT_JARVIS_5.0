@@ -39,4 +39,12 @@ class PersonaManager:
             "Responda em Portugues Brasileiro (PT-BR) de forma natural."
         )
 
+    def format_prompt(self, prompt: str, context: str = "", model: str = "") -> str:
+        """Formata a mensagem do usuário com contexto."""
+        formatted = ""
+        if context:
+            formatted += f"[CONTEXTO/MEMÓRIA]:\n{context}\n\n"
+        formatted += f"[PERGUNTA DO USUÁRIO]:\n{prompt}"
+        return formatted
+
 persona = PersonaManager()

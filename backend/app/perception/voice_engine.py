@@ -124,7 +124,14 @@ def _get_oww(custom_models: List[str] = None):
                 logger.success(f"[VoiceEngine] ✅ Wake words carregadas: {models_to_load}")
                 return _oww_model
             except Exception as e:
-                logger.warning(f"[VoiceEngine] Erro ao carregar modelos específicos: {e}. Tentando fallback...")
+                logger.warning(f"[VoiceEngine] Erro ao carregar modelos específicos: {e}. Tentando baixar modelos padrão...")
+                try:
+                    import openwakeword
+                    openwakeword.utils.download_models()
+                    _oww_model = Model(wakeword_models=models_to_load, inference_framework="onnx")
+                    return _oww_model
+                except:
+                    pass
 
             # 2. Try any available .onnx wake word model found locally
             available = _oww_list_available()

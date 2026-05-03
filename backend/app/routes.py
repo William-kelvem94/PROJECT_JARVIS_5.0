@@ -5,7 +5,7 @@ import os
 import glob
 import logging
 
-from .chat_pipeline import chat_reply
+from .chat_pipeline import chat_stream
 from .unified_memory import memory
 from .utils.db_manager import db_manager
 from .utils.note_writer import note_writer
@@ -23,9 +23,12 @@ class ChatResponse(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
-    reply = await chat_reply(user_id=req.user_name, user_message=req.message)
+    full_reply = ""
+    async for chunk in chat_stream(user_id=req.user_name, user_message=req.message):
+        full_reply += chunk
+    
     logger.info(f"Chat API processado para {req.user_name}.")
-    return {"reply": reply}
+    return {"reply": full_reply}
 
 @router.get("/memory")
 async def memory_endpoint(user_name: str = "Chefe"):

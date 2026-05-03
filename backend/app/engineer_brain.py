@@ -171,7 +171,7 @@ class EngineerBrain:
         active_model = await self.get_active_lmstudio_model()
         safety = await self._get_safety_params()
 
-        system_prompt = persona.get_system_prompt(active_model)
+        system_prompt = persona.get_system_prompt()
 
         # Injeção Anti-Alucinação Reforçada
         system_prompt += (
