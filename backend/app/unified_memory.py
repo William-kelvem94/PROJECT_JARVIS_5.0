@@ -124,7 +124,7 @@ class UnifiedMemory:
 
         tags_str = ", ".join(["jarvis", "memoria", "episodica"] + keywords)
 
-        body = f\"\"\"---
+        body = f"""---
 title: "{title}"
 date: "{date}"
 hora: "{hora}"
@@ -140,7 +140,7 @@ projeto: "{project}"
 
 ---
 *Salvo via UnifiedMemory em: {date} {hora}*
-\"\"\"
+"""
         await self._write_to_both_async(rel_path, body, append=False)
         return rel_path
 
