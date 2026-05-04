@@ -428,7 +428,7 @@ def _process_command_sync(text: str):
                 full_reply += chunk
                 from app.voice_websocket import broadcast_chunk
                 await broadcast_chunk(chunk)
-                
+
             _notify_hud("speaking", response=full_reply)
             # Toca o áudio nas caixas locais
             await tts_engine.speak(full_reply, play_local=True)

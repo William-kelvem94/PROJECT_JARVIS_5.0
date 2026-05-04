@@ -240,6 +240,7 @@ class EngineerBrain:
         if self._lmstudio_available:
             try:
                 session = _get_session()
+                logger.info(f"🧠 Tentando resposta via LM Studio ({self.model})...")
                 async with session.post(
                     self.lm_studio_url,
                     json=payload,
@@ -265,7 +266,6 @@ class EngineerBrain:
                                     continue
                             return
                         else:
-                            # BUGFIX: response.json() era referenciado como `data` sem ser lido
                             lms_data = await response.json()
                             text = lms_data["choices"][0]["message"]["content"]
                             learning_manager.learn_from_interaction(prompt, text)
