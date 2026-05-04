@@ -62,6 +62,7 @@ if %ERRORLEVEL% NEQ 0 goto :fim_erro
 if "%FORCE_UPDATE%"=="1" (
     echo [SYS] Atualizando dependências Python...
     "%PYTHON_EXE%" -m pip install --upgrade pip "setuptools<82" wheel
+    if %ERRORLEVEL% NEQ 0 goto :fim_erro
     "%PYTHON_EXE%" -m pip install -r "%BACK_DIR%\app\requirements.txt"
     if %ERRORLEVEL% NEQ 0 goto :fim_erro
 ) else (
@@ -83,14 +84,14 @@ if not exist "%FRONT_DIR%\node_modules" (
     call pnpm install
     set "CMD_ERROR=%ERRORLEVEL%"
     popd
-    if %CMD_ERROR% NEQ 0 goto :fim_erro
+    if "%CMD_ERROR%" NEQ "0" goto :fim_erro
 ) else if "%FORCE_UPDATE%"=="1" (
     echo [SYS] Atualizando dependências frontend...
     pushd "%FRONT_DIR%"
     call pnpm install
     set "CMD_ERROR=%ERRORLEVEL%"
     popd
-    if %CMD_ERROR% NEQ 0 goto :fim_erro
+    if "%CMD_ERROR%" NEQ "0" goto :fim_erro
 ) else (
     echo [SYS] Dependências Frontend validadas (Fast Boot).
 )
@@ -99,7 +100,7 @@ if not exist "%FRONT_DIR%\node_modules" (
 :: EXECUÇÃO DO CORE (BACKEND)
 :: ============================================================
 echo [BACK] Lançando Core do JARVIS na porta %BACKEND_PORT%...
-start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && ""%PYTHON_EXE%"" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
+start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call \"%VENV_ACT%\" && \"%PYTHON_EXE%\" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
 
 echo [BACK] Aguardando sincronização do sistema...
 call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 30
@@ -152,27 +153,28 @@ exit /b 0
 :detect_hardware
 echo [JARVIS] Calibrando hardware...
 nvidia-smi >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo [HW] GPU NVIDIA detectada - Modo CUDA Ativo
-    SET "JARVIS_AI_DEVICE=cuda"
-    SET "JARVIS_WHISPER_MODEL=tiny"
-) else (
+if %ERRORLEVEL% NEQ 0 (
     echo [HW] Modo CPU Ativo
     SET "JARVIS_AI_DEVICE=cpu"
     SET "JARVIS_WHISPER_MODEL=base"
+) else (
+    echo [HW] GPU NVIDIA detectada - Modo CUDA Ativo
+    SET "JARVIS_AI_DEVICE=cuda"
+    SET "JARVIS_WHISPER_MODEL=tiny"
 )
 exit /b 0
 
 :kill_port
 set "PORT=%~1"
-for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING"') do (
+set "TMP_PORT_FILE=%TEMP%\jarvis_port_%PORT%.txt"
+netstat -ano | findstr /C:":%PORT%" > "%TMP_PORT_FILE%" 2>nul
+for /f "tokens=5" %%P in (%TMP_PORT_FILE%) do (
     if not "%%P"=="0" (
         echo [CLEAN] Encerrando PID %%P na porta %PORT%...
         taskkill /PID %%P /F >nul 2>&1
     )
 )
-exit /b 0
-
+if exist "%TMP_PORT_FILE%" del /f /q "%TMP_PORT_FILE%" >nul 2>&1
 :wait_http
 set "URL=%~1"
 set "MAX_TRIES=%~2"
@@ -191,7 +193,7 @@ set "MAX_TRIES=%~2"
 set /a TRY=0
 :wait_port_loop
 set /a TRY+=1
-netstat -ano | findstr /R /C:":%PORT% .*LISTENING" >nul 2>&1
+netstat -ano | findstr /C:":%PORT%" >nul 2>&1
 if %ERRORLEVEL% EQU 0 exit /b 0
 if %TRY% GEQ %MAX_TRIES% exit /b 1
 ping -n 1 127.0.0.1 >nul
