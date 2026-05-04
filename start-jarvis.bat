@@ -14,36 +14,20 @@ SET "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
 SET "PYTHONOPTIMIZE=1"
 SET "NODE_OPTIONS=--max-old-space-size=2048"
 
-:: Carregar portas do .env se existir, caso contrário usa defaults
 SET "BACKEND_PORT=8000"
 SET "FRONTEND_PORT=3000"
-if exist "%ROOT%.env" (
-    for /f "tokens=2 delims==" %%v in ('findstr "BACKEND_PORT FRONTEND_PORT" "%ROOT%.env"') do (
-        if "%%v"=="BACKEND_PORT" SET "BACKEND_PORT=%%v"
-        if "%%v"=="FRONTEND_PORT" SET "FRONTEND_PORT=%%v"
-    )
-)
+call :load_env_ports
 
 echo [JARVIS] Iniciando Smart Boot...
 
 :: Verificar se o usuário pediu atualização forçada
-set "FORCE_UPDATE=0"
-if "%~1"=="--update" set "FORCE_UPDATE=1"
+SET "FORCE_UPDATE=0"
+if "%~1"=="--update" SET "FORCE_UPDATE=1"
 
 :: ============================================================
 :: HARDWARE & OPTIMIZAÇÃO
 :: ============================================================
-echo [JARVIS] Calibrando hardware...
-nvidia-smi >nul 2>&1
-if %ERRORLEVEL% EQU 0 (
-    echo [HW] GPU NVIDIA detectada - Modo CUDA Ativo
-    SET "JARVIS_AI_DEVICE=cuda"
-    SET "JARVIS_WHISPER_MODEL=tiny"
-) else (
-    echo [HW] Modo CPU Ativo
-    SET "JARVIS_AI_DEVICE=cpu"
-    SET "JARVIS_WHISPER_MODEL=base"
-)
+call :detect_hardware
 
 :: ============================================================
 :: LIMPEZA DE PORTAS (PREVENTIVA)
@@ -57,20 +41,20 @@ call :kill_port 8001
 :: ============================================================
 :: SMART CHECK: PYTHON & DEPENDÊNCIAS
 :: ============================================================
-if not exist ".venv\Scripts\activate.bat" (
+if not exist "%ROOT%.venv\Scripts\activate.bat" (
     echo [SYS] Primeira execução: Criando ambiente virtual...
-    python -m venv .venv
+    python -m venv "%ROOT%.venv"
     if %ERRORLEVEL% NEQ 0 goto :fim_erro
 )
 
 call "%VENV_ACT%"
 if %ERRORLEVEL% NEQ 0 goto :fim_erro
 
-:: Só instala dependências se a pasta .venv for nova ou --update for passado
 if "%FORCE_UPDATE%"=="1" (
     echo [SYS] Atualizando dependências Python...
     "%PYTHON_EXE%" -m pip install --upgrade pip "setuptools<82" wheel
-    "%PYTHON_EXE%" -m pip install -r "backend\app\requirements.txt"
+    "%PYTHON_EXE%" -m pip install -r "%BACK_DIR%\app\requirements.txt"
+    if %ERRORLEVEL% NEQ 0 goto :fim_erro
 ) else (
     echo [SYS] Ambiente Python validado (Fast Boot).
 )
@@ -78,16 +62,26 @@ if "%FORCE_UPDATE%"=="1" (
 :: ============================================================
 :: SMART CHECK: FRONTEND
 :: ============================================================
+where pnpm >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [ERRO] pnpm nao encontrado. Instale pnpm e execute novamente.
+    goto :fim_erro
+)
+
 if not exist "%FRONT_DIR%\node_modules" (
     echo [SYS] Primeira execução: Instalando dependências frontend...
     pushd "%FRONT_DIR%"
     call pnpm install
+    set "CMD_ERROR=%ERRORLEVEL%"
     popd
+    if %CMD_ERROR% NEQ 0 goto :fim_erro
 ) else if "%FORCE_UPDATE%"=="1" (
     echo [SYS] Atualizando dependências frontend...
     pushd "%FRONT_DIR%"
     call pnpm install
+    set "CMD_ERROR=%ERRORLEVEL%"
     popd
+    if %CMD_ERROR% NEQ 0 goto :fim_erro
 ) else (
     echo [SYS] Dependências Frontend validadas (Fast Boot).
 )
@@ -96,7 +90,7 @@ if not exist "%FRONT_DIR%\node_modules" (
 :: EXECUÇÃO DO CORE (BACKEND)
 :: ============================================================
 echo [BACK] Lançando Core do JARVIS na porta %BACKEND_PORT%...
-start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && "%PYTHON_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
+start "JARVIS_BACKEND" /D "%BACK_DIR%" /HIGH cmd /k "call ""%VENV_ACT%"" && ""%PYTHON_EXE%"" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
 
 echo [BACK] Aguardando sincronização do sistema...
 call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 30
@@ -132,9 +126,34 @@ echo Pressione qualquer tecla para fechar este launcher...
 pause >nul
 exit /b 0
 
+goto :EOF
+
 :: ============================================================
 :: FUNÇÕES DE SUPORTE
 :: ============================================================
+:load_env_ports
+if exist "%ROOT%.env" (
+    for /f "usebackq tokens=1,2 delims==" %%A in (`findstr /R /C:"^BACKEND_PORT=" /C:"^FRONTEND_PORT=" "%ROOT%.env"`) do (
+        if /I "%%A"=="BACKEND_PORT" SET "BACKEND_PORT=%%B"
+        if /I "%%A"=="FRONTEND_PORT" SET "FRONTEND_PORT=%%B"
+    )
+)
+exit /b 0
+
+:detect_hardware
+echo [JARVIS] Calibrando hardware...
+nvidia-smi >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [HW] GPU NVIDIA detectada - Modo CUDA Ativo
+    SET "JARVIS_AI_DEVICE=cuda"
+    SET "JARVIS_WHISPER_MODEL=tiny"
+) else (
+    echo [HW] Modo CPU Ativo
+    SET "JARVIS_AI_DEVICE=cpu"
+    SET "JARVIS_WHISPER_MODEL=base"
+)
+exit /b 0
+
 :kill_port
 set "PORT=%~1"
 for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING"') do (
