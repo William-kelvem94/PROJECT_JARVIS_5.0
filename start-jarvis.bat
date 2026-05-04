@@ -24,6 +24,15 @@ echo [JARVIS] Iniciando Smart Boot...
 SET "FORCE_UPDATE=0"
 if "%~1"=="--update" SET "FORCE_UPDATE=1"
 
+if not exist "%BACK_DIR%" (
+    echo [ERRO] Diretório de backend não encontrado: "%BACK_DIR%"
+    goto :fim_erro
+)
+if not exist "%FRONT_DIR%" (
+    echo [ERRO] Diretório de frontend não encontrado: "%FRONT_DIR%"
+    goto :fim_erro
+)
+
 :: ============================================================
 :: HARDWARE & OPTIMIZAÇÃO
 :: ============================================================
@@ -64,7 +73,7 @@ if "%FORCE_UPDATE%"=="1" (
 :: ============================================================
 where pnpm >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
-    echo [ERRO] pnpm nao encontrado. Instale pnpm e execute novamente.
+    echo [ERRO] pnpm não encontrado. Instale pnpm e execute novamente.
     goto :fim_erro
 )
 
@@ -103,8 +112,8 @@ echo [BACK] Sistema Estável.
 :: ============================================================
 :: EXECUÇÃO DA UI (FRONTEND)
 :: ============================================================
-echo [FRONT] Lançando Interface Holográfica na porta %FRONTEND_PORT%...
-start "JARVIS_FRONTEND" cmd /k "set PORT=%FRONTEND_PORT% && pnpm --dir ""%FRONT_DIR%"" run dev"
+echo [FRONT] Lançando interface holográfica na porta %FRONTEND_PORT%...
+start "JARVIS_FRONTEND" /D "%FRONT_DIR%" cmd /k "set PORT=%FRONTEND_PORT% && pnpm run dev"
 
 echo [FRONT] Sincronizando UI...
 call :wait_port %FRONTEND_PORT% 60
