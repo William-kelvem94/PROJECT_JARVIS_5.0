@@ -191,7 +191,7 @@ projeto: "{project}"
         hora = datetime.datetime.now().strftime("%H:%M")
         rel_path = "Contexto-Atual/Estado.md"
 
-        body = f\"\"\"---
+        body = f"""---
 title: "Estado Atual — Jarvis"
 updated: {date} {hora}
 ---
@@ -205,7 +205,7 @@ updated: {date} {hora}
 
 ## 📝 Notas
 {notes}
-\"\"\"
+"""
         await self._write_to_both_async(rel_path, body, append=False)
         return rel_path
 
