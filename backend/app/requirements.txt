@@ -56,6 +56,12 @@ chromadb
 sentence-transformers
 faiss-cpu
 
+# ── Sistema OS (controle de volume, brilho, tela)
+pycaw
+screen-brightness-control
+screeninfo
+comtypes
+
 # ── PyTorch (CPU por padrão; GPU via script de setup)
 torch
 torchvision --index-url https://download.pytorch.org/whl/cpu

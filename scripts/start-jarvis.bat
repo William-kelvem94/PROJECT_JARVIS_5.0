@@ -5,8 +5,8 @@ SETLOCAL EnableExtensions EnableDelayedExpansion
 :: ============================================================
 :: CONFIGURAÇÕES BASE
 :: ============================================================
-cd /d "%~dp0"
-SET "ROOT=%~dp0"
+cd /d "%~dp0.."
+SET "ROOT=%~dp0..\"
 SET "BACK_DIR=%ROOT%backend"
 SET "FRONT_DIR=%ROOT%frontend"
 SET "VENV_DIR=%ROOT%.venv"
