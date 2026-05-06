@@ -1,4 +1,5 @@
 import os
+import asyncio
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -46,7 +47,6 @@ async def lifespan(app: FastAPI):
     logger.info(f"Initial Psyche State: {initial_state}")
 
     # 3. Schedule Dream Cycle, Gap Analysis and Resource Governor
-    import asyncio
     asyncio.create_task(run_psyche_cycles())
     asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
 
