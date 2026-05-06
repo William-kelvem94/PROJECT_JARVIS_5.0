@@ -19,7 +19,10 @@ sentinel_parser = SentinelParser()
 security_core = SentinelSecurity()
 system_key = security_core.derive_system_key()
 # BlackBox initialization with derived key
-blackbox = BlackBox(db_path="D:/DOCUMENTOS/GitHub/PROJECT_JARVIS_5.0/backend/data/blackbox.db", encryption_key=system_key)
+blackbox = BlackBox(
+    db_path=os.path.join(os.path.dirname(__file__), "..", "data", "blackbox.db"),
+    encryption_key=system_key
+)
 security_core.blackbox = blackbox
 
 router = APIRouter()

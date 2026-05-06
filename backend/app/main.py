@@ -7,6 +7,9 @@ from loguru import logger
 from .chat_pipeline import chat_stream, chat_reply
 from .autonomous_brain import AutonomousBrain
 from .system_control import system_control_matrix
+from .routes import router as main_router
+from .system_bridge import router as system_bridge_router
+from .voice_websocket import router as voice_router
 from .security.sentinel_core import SentinelSecurity
 from .security.sentinel_parser import SentinelParser
 from .psyche.device_awareness import DeviceAwareness
@@ -50,7 +53,7 @@ async def lifespan(app: FastAPI):
     yield
 
     logger.info("Shutting down JARVIS 5.0 Omega Core...")
-    autonomous_brain.stop_background_thinking()
+    autonomous_brain.stop()
 
 async def run_psyche_cycles():
     """Background loop for subconscious processing."""
@@ -79,6 +82,10 @@ async def handle_governor_action(action: str, state: str):
     pass
 
 app = FastAPI(lifespan=lifespan)
+
+app.include_router(main_router)
+app.include_router(system_bridge_router)
+app.include_router(voice_router)
 
 @app.get("/health")
 async def health():
