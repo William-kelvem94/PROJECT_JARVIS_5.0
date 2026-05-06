@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
 from dotenv import load_dotenv
+import chromadb
+from sentence_transformers import SentenceTransformer
+
 from .utils.db_manager import db_manager
 
 # --- CONFIGURAÇÃO ---
@@ -16,6 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
+CHROMA_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "chroma_db")
 VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT")
 JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
 
@@ -24,13 +28,23 @@ if not VAULT_ROOT:
 
 class UnifiedMemory:
     """
-    O Cérebro de Memória Unificado do JARVIS 5.0.
-    Consolida SQLite (fatos rápidos), Cérebro Interno (Markdown local) e Obsidian (Vault Global).
+    O Cérebro de Memória Unificado do JARVIS 5.0 com Semantic RAG.
+    Consolida SQLite (fatos), Markdown (estrutura) e ChromaDB (Busca Semântica).
     """
 
     def __init__(self):
         os.makedirs(INTERNAL_BRAIN_DIR, exist_ok=True)
+        os.makedirs(CHROMA_DB_DIR, exist_ok=True)
         self._ensure_vault_dirs()
+
+        # Initialize Embedding Model
+        logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        # Initialize ChromaDB Persistent Client
+        self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+        self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
+        logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
 
     def _conn(self) -> sqlite3.Connection:
         return db_manager.get_connection()
@@ -75,10 +89,27 @@ class UnifiedMemory:
 
         await asyncio.to_thread(sync_write)
 
+    async def _index_semantic_memory(self, content: str, metadata: Dict[str, Any]):
+        """Vetoriza e armazena a memória no ChromaDB."""
+        def sync_index():
+            try:
+                embedding = self.model.encode(content).tolist()
+                # Generate a unique ID based on content hash or timestamp
+                mem_id = f"{metadata.get('user_id', 'default')}_{datetime.datetime.now().timestamp()}"
+                self.collection.add(
+                    embeddings=[embedding],
+                    documents=[content],
+                    metadatas=[metadata],
+                    ids=[mem_id]
+                )
+            except Exception as e:
+                logger.error(f"Erro ao indexar memória semântica: {e}")
+
+        await asyncio.to_thread(sync_index)
+
     async def add_memory(self, user_id: str, content: str, category: str = "fact", source: str = "conversation"):
         now = datetime.datetime.now().isoformat()
 
-        # SQLite é rápido, mas podemos envolver em to_thread se o DB crescer muito
         with self._conn() as conn:
             existing = conn.execute(
                 "SELECT id FROM memories WHERE user_id = ? AND content = ?", (user_id, content)
@@ -93,10 +124,13 @@ class UnifiedMemory:
                 (user_id, category, content, source, now, now)
             )
 
+        # Semantic Indexing Hook
+        await self._index_semantic_memory(content, {"user_id": user_id, "category": category, "source": source})
+
         memo_entry = f"\n- [{now}] ({category}): {content}"
         await self._write_to_both_async("Memorias/fatos_rapidos.md", memo_entry, append=True)
 
-        logger.debug(f"[UnifiedMemory] Fato sincronizado: {content[:50]}...")
+        logger.debug(f"[UnifiedMemory] Fato sincronizado e vetorizado: {content[:50]}...")
         return True
 
     async def save_session(self, user_id: str, messages: list, summary: str):
@@ -109,6 +143,9 @@ class UnifiedMemory:
                 "INSERT INTO sessions (user_id, summary, msg_count, created_at) VALUES (?,?,?,?)",
                 (user_id, summary, len(messages), now)
             )
+
+        # Vectorize the session summary
+        await self._index_semantic_memory(f"Session Summary: {summary}", {"user_id": user_id, "category": "session_summary"})
 
         entry = f"\n### Sessão — {hora_str}\n- **Resumo:** {summary}\n"
         await self._write_to_both_async(f"Memorias/Diario/{date_str}.md", entry, append=True)
@@ -142,6 +179,10 @@ projeto: "{project}"
 *Salvo via UnifiedMemory em: {date} {hora}*
 """
         await self._write_to_both_async(rel_path, body, append=False)
+
+        # Vectorize episodic memory
+        await self._index_semantic_memory(f"{title}: {content}", {"category": "episodic", "project": project, "importance": importance})
+
         return rel_path
 
     async def append_diary(self, summary: str, facts_saved: int = 0) -> str:
@@ -163,13 +204,12 @@ projeto: "{project}"
             path_local = os.path.join(INTERNAL_BRAIN_DIR, rel_path)
             if not os.path.exists(path_local):
                 header = "# 🎓 Índice de Aprendizado\n\n| Data | Categoria | Fato |\n|---|---|---|\n"
-                # Nota: _write_to_both_async é async, então fazemos a lógica síncrona aqui
-                # e chamamos a escrita via helper síncrono interno ou to_thread.
-                # Para simplificar, usamos a lógica de escrita direta no thread.
                 self._sync_write_helper(rel_path, header, append=False)
             self._sync_write_helper(rel_path, entry, append=True)
 
         await asyncio.to_thread(check_and_write)
+        # Vectorize learning fact
+        await self._index_semantic_memory(fact, {"category": "learning", "learning_category": category})
         return True
 
     def _sync_write_helper(self, rel_path: str, content: str, append: bool = False):
@@ -191,7 +231,7 @@ projeto: "{project}"
         hora = datetime.datetime.now().strftime("%H:%M")
         rel_path = "Contexto-Atual/Estado.md"
 
-        body = f\"\"\"---
+        body = f"""---
 title: "Estado Atual — Jarvis"
 updated: {date} {hora}
 ---
@@ -205,7 +245,7 @@ updated: {date} {hora}
 
 ## 📝 Notas
 {notes}
-\"\"\"
+"""
         await self._write_to_both_async(rel_path, body, append=False)
         return rel_path
 
@@ -218,6 +258,7 @@ updated: {date} {hora}
             return [dict(r) for r in rows]
 
     async def get_context(self, user_id: str, query: str = None, limit: int = 15) -> str:
+        # 1. Get recent facts from SQLite
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT content FROM memories WHERE user_id = ? ORDER BY access_count DESC, updated_at DESC LIMIT ?",
@@ -225,55 +266,40 @@ updated: {date} {hora}
             ).fetchall()
             memories = [r["content"] for r in rows]
 
-        kb_context = await self._search_kb(query if query else "")
+        # 2. Semantic Search in ChromaDB
+        semantic_context = await self._search_semantic(query, user_id)
 
         context_str = ""
         if memories:
             context_str += "[MEMORIA LOCAL (FATOS RECENTES)]:\n"
             context_str += "\n".join([f"- {m}" for m in memories])
 
-        if kb_context:
-            context_str += "\n\n[CONHECIMENTO GLOBAL (OBSIDIAN)]:\n" + kb_context
+        if semantic_context:
+            context_str += "\n\n[CONHECIMENTO SEMÂNTICO (VETORIZADO)]:\n" + semantic_context
 
         return context_str if context_str else "Nenhum contexto relevante encontrado."
 
-    async def _search_kb(self, query: str) -> str:
+    async def _search_semantic(self, query: str, user_id: str) -> str:
+        if not query:
+            return ""
+
         def sync_search():
-            sources = [INTERNAL_BRAIN_DIR]
-            if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
-                sources.append(JARVIS_VAULT_DIR)
+            try:
+                query_embedding = self.model.encode(query).tolist()
+                results = self.collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=5,
+                    where={"user_id": user_id} if user_id != "Chefe" else None
+                )
 
-            all_files = []
-            for src in sources:
-                all_files.extend(glob.glob(os.path.join(src, "**", "*.md"), recursive=True))
+                documents = results.get("documents", [[]])[0]
+                if not documents:
+                    return ""
 
-            unique_files = {os.path.basename(f): f for f in all_files}
-            results = []
-            if not query:
-                latest = sorted(unique_files.values(), key=os.path.getmtime, reverse=True)[:3]
-                for f in latest:
-                    try:
-                        c = Path(f).read_text(encoding="utf-8", errors='ignore')
-                        results.append(f"[{os.path.basename(f)}]: {c[:500]}")
-                    except: continue
-            else:
-                query_words = set(re.findall(r'\w+', query.lower()))
-                matches = []
-                for f_path in unique_files.values():
-                    try:
-                        content = Path(f_path).read_text(encoding='utf-8', errors='ignore').lower()
-                        score = sum(1 for word in query_words if word in content)
-                        if score > 0:
-                            matches.append((score, f_path))
-                    except: continue
-
-                matches.sort(key=lambda x: x[0], reverse=True)
-                for score, f_path in matches[:3]:
-                    try:
-                        c = Path(f_path).read_text(encoding="utf-8", errors='ignore')
-                        results.append(f"[{os.path.basename(f_path)}]: {c[:700]}")
-                    except: continue
-            return "\n\n".join(results)
+                return "\n".join([f"- {doc}" for doc in documents])
+            except Exception as e:
+                logger.error(f"Erro na busca semântica: {e}")
+                return ""
 
         return await asyncio.to_thread(sync_search)
 
@@ -295,6 +321,12 @@ updated: {date} {hora}
         with self._conn() as conn:
             row = conn.execute("SELECT COUNT(*) as count FROM memories").fetchone()
             stats["sqlite_facts"] = row["count"]
+
+        # Add ChromaDB stats
+        try:
+            stats["semantic_memories"] = self.collection.count()
+        except:
+            stats["semantic_memories"] = 0
 
         return stats
 

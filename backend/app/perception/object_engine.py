@@ -1,6 +1,7 @@
 import cv2
 import torch
 import numpy as np
+import os
 from loguru import logger
 from ..config import settings
 
@@ -36,15 +37,22 @@ class ObjectEngine:
             device = settings.DEVICE_TYPE if settings.DEVICE_TYPE != "auto" else (
                 "cuda" if torch.cuda.is_available() else "cpu"
             )
-            
+
             logger.info(f"👁️ Iniciando Visão Espacial YOLOv8 em {device.upper()}...")
-            self.model = YOLO(self.model_path)  # noqa: F821 — guarded by HAS_ULTRALYTICS
-            self.model.to(device)
-            
+
+            # Hardware Acceleration: Load .engine (TensorRT) if available, else .pt
+            engine_path = self.model_path.replace(".pt", ".engine")
+            if os.path.exists(engine_path) and device == "cuda":
+                logger.info(f"[ObjectEngine] 🚀 Loading TensorRT engine: {engine_path}")
+                self.model = YOLO(engine_path, task="detect")
+            else:
+                self.model = YOLO(self.model_path)  # noqa: F821 — guarded by HAS_ULTRALYTICS
+                self.model.to(device)
+
             # Classes de interesse (COCO dataset)
             # 62: tv, 63: laptop, 64: mouse, 65: remote, 66: keyboard, 67: cell phone, 73: book, 41: cup
-            self.target_classes = [41, 63, 64, 66, 67, 73] 
-            
+            self.target_classes = [41, 63, 64, 66, 67, 73]
+
         except Exception as e:
             logger.error(f"Falha ao iniciar YOLOv8: {e}")
             self.enabled = False

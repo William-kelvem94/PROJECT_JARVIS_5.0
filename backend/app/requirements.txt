@@ -1,10 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # JARVIS 5.0 - Backend Requirements
-#
-# IMPORTANTE: 'resemblyzer' foi removido daqui intencionalmente.
-# Ele e instalado com --no-deps no start-jarvis.bat para evitar que o pip
-# tente compilar 'webrtcvad' do zero (requer C++ Build Tools no Windows).
-# O 'webrtcvad-wheels' e pre-instalado antes e satisfaz o import corretamente.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Core API
@@ -16,10 +11,7 @@ requests
 loguru
 aiohttp
 psutil
-torch
-torchvision --index-url https://download.pytorch.org/whl/cpu
 watchfiles
-edge-tts
 
 # ── Browser Automation
 playwright
@@ -44,9 +36,10 @@ ultralytics
 openwakeword
 
 # ── Perception: Voice - Speaker ID
-# resemblyzer e instalado via --no-deps no launcher (ver start-jarvis.bat)
-# webrtcvad-wheels e instalado antes como substituto ao webrtcvad nativo
+# webrtcvad-wheels deve ser instalado ANTES do resemblyzer no Windows
+# (substitui o webrtcvad nativo que requer compilação C++)
 webrtcvad-wheels
+resemblyzer
 
 # ── Perception: Voice - Transcricao Offline
 faster-whisper
@@ -54,5 +47,15 @@ faster-whisper
 # ── Perception: Audio Input
 sounddevice
 
-# ── Perception: Text-to-Speech Local
+# ── Perception: Text-to-Speech
 edge-tts
+pygame
+
+# ── Vector Store & Embeddings (RAG)
+chromadb
+sentence-transformers
+faiss-cpu
+
+# ── PyTorch (CPU por padrão; GPU via script de setup)
+torch
+torchvision --index-url https://download.pytorch.org/whl/cpu

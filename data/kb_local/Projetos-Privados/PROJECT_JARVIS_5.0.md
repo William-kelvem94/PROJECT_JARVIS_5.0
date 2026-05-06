@@ -17,9 +17,9 @@ tags:
 
 # PROJECT_JARVIS_5.0 [[../Projetos.md|Projetos]] [[GitHub-Completo]]
 
-**Private Clone | FastAPI/Next.js/LiveKit | Atualizado 16h ago**
+**Private Clone | FastAPI/Next.js | Atualizado 16h ago**
 
-Ecossistema Jarvis: voz real-time LiveKit, Gemini/OpenAI, visão face/gesture/voice (MediaPipe), browser Playwright autonomy, dashboard monitoring.
+Ecossistema Jarvis: voz real-time, Gemini/OpenAI, visão face/gesture/voice (MediaPipe), browser Playwright autonomy, dashboard monitoring.
 
 **Estrutura**:
 - `backend/` (agents_worker.py, app/main.py)
@@ -32,7 +32,7 @@ Ecossistema Jarvis: voz real-time LiveKit, Gemini/OpenAI, visão face/gesture/vo
 - O clone contém o monorepo de Jarvis completo, dividido entre backend, frontend, agentes e scripts de deploy.
 - O ponto de partida atual é o `start-jarvis.bat`, mas é preciso documentar e versionar os comandos de desenvolvimento individuais.
 - O foco imediato deve ser:
-  - validar o fluxo de voz com LiveKit e Piper;
+  - validar o fluxo de voz e TTS;
   - testar os serviços de visão com MediaPipe/YOLOv8;
   - estabilizar a orquestração de agentes via gRPC ou outro middleware.
 
@@ -67,13 +67,13 @@ Ecossistema Jarvis: voz real-time LiveKit, Gemini/OpenAI, visão face/gesture/vo
 - Backend: `backend/agents_worker.py`, `backend/app/main.py`.
 - Frontend: `frontend/` com Next.js shadcn e interfaces de agente.
 - Orquestração: scripts em `docker/`, monitor-heartbeat e `start-jarvis.bat`.
-- Dependências principais: LiveKit, Playwright, MediaPipe, modelos LLM, Node.js/React.
+- Dependências principais: Playwright, MediaPipe, modelos LLM, Node.js/React.
 
 ## Roadmap de implementação
 1. Documentar o conjunto de serviços e seus papéis.
 2. Criar um diagrama simples de fluxos de voz, visão e agentes.
 3. Estabelecer os scripts de desenvolvimento para cada serviço.
-4. Validar integração básica de backend + LiveKit + frontend.
+4. Validar integração básica de backend + frontend.
 5. Definir prova de conceito de visão leve e automação do browser.
 
 ## Riscos de execução
@@ -86,4 +86,4 @@ Ecossistema Jarvis: voz real-time LiveKit, Gemini/OpenAI, visão face/gesture/vo
 - Criar uma checklist de setup local para novo desenvolvedor.
 - Registrar o estado atual do modelo de voz e do modelo de visão.
 
-**Links**: [[GitHub-Completo]] #livekit #mediapipe #fastapi
+**Links**: [[GitHub-Completo]] #mediapipe #fastapi

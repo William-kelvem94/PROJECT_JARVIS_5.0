@@ -3,14 +3,24 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 import glob
-import logging
 
+from .security.sentinel_parser import SentinelParser
+from .security.sentinel_core import SentinelSecurity
+from .security.blackbox import BlackBox
 from .chat_pipeline import chat_stream
 from .unified_memory import memory
 from .utils.db_manager import db_manager
 from .utils.note_writer import note_writer
+from loguru import logger
 
-logger = logging.getLogger("uvicorn")
+# Global Security Instances
+sentinel_parser = SentinelParser()
+# Derive key from HWID -> Argon2id -> SHA256
+security_core = SentinelSecurity()
+system_key = security_core.derive_system_key()
+# BlackBox initialization with derived key
+blackbox = BlackBox(db_path="D:/DOCUMENTOS/GitHub/PROJECT_JARVIS_5.0/backend/data/blackbox.db", encryption_key=system_key)
+security_core.blackbox = blackbox
 
 router = APIRouter()
 
@@ -23,10 +33,16 @@ class ChatResponse(BaseModel):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
+    # --- SENTINEL REAL-TIME INTERCEPTION ---
+    # Validates the user message before it reaches the LLM pipeline to prevent prompt injection/destructive commands
+    if not await security_core.validate_llm_command(req.message, sentinel_parser):
+        raise HTTPException(status_code=403, detail="Sentinel Blocked: Destructive or unauthorized command detected.")
+    # --------------------------------------
+
     full_reply = ""
     async for chunk in chat_stream(user_id=req.user_name, user_message=req.message):
         full_reply += chunk
-    
+
     logger.info(f"Chat API processado para {req.user_name}.")
     return {"reply": full_reply}
 

@@ -1,142 +1,92 @@
-"""
-JARVIS 5.0 - Ponto de entrada principal do backend
-Inicializa todos os serviços: percepção, telemetria, segundo cérebro, loop autônomo.
-"""
-
-import sys
-import os
-import asyncio
-import threading
-import psutil
-from contextlib import asynccontextmanager
+import uvicorn
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from loguru import logger
 
-# Garantir que backend está no path para que o pacote app seja importável
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from .chat_pipeline import chat_stream, chat_reply
+from .autonomous_brain import AutonomousBrain
+from .system_control import system_control_matrix
+from .security.sentinel_core import SentinelSecurity
+from .security.sentinel_parser import SentinelParser
+from .psyche.device_awareness import DeviceAwareness
+from .psyche.dream_cycle import DreamCycle
+from .psyche.gap_analyzer import GapAnalyzer
 
-from app.routes import router
-from app.voice_websocket import router as voice_router
-from app.telemetry_server import start_telemetry_server
-from app.utils.second_brain_connector import second_brain
-from app.utils.obsidian_graph import obsidian_graph
-from app.utils.learning_manager import learning_manager
-from app.utils.db_manager import db_manager
-from app.autonomous_brain import autonomous_brain
-from app.perception.perception_manager import perception_manager
+# --- Omega Protocol Singletons ---
+# Security
+sentinel_parser = SentinelParser()
+sentinel = SentinelSecurity()
 
+# Psyche/Brain
+device_awareness = DeviceAwareness()
+dream_cycle = DreamCycle(
+    logs_path="logs/interactions.log",
+    obsidian_kb_path="D:/DOCUMENTOS/GitHub/PROJECT_JARVIS_5.0/data/kb_local/JARVIS/KnowledgeBase",
+    holodeck_queue_path="data/holodeck_queue.txt"
+)
+gap_analyzer = GapAnalyzer()
+autonomous_brain = AutonomousBrain()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Gerencia o ciclo de vida do servidor."""
-    logger.info("[Startup] JARVIS 5.0 iniciando...")
+    logger.info("Initializing JARVIS 5.0 Omega Core...")
 
-    # Inicializar segundo cérebro e grafo
-    try:
-        obsidian_graph.build_graph()
-        logger.info(f"[Startup] Grafo do Obsidian construído com {len(obsidian_graph.graph.nodes)} nós")
-    except Exception as exc:
-        logger.warning(f"[Startup] Falha ao construir grafo do Obsidian: {exc}")
+    # 1. Start Autonomous Thinking Loop
+    autonomous_brain.start_background_thinking()
 
-    # Inicializar Percepção e Voice Engine (Wake Word)
-    try:
-        from app.perception import voice_engine
-        from app.voice_websocket import external_trigger
-        
-        # Busca palavras customizadas no Obsidian
-        custom_words = learning_manager.get_custom_wake_words()
-        
-        # Configura o que acontece quando "Hey Jarvis" ou customizada é ouvida localmente (Mic do PC)
-        def on_voice_event(result):
-            if result.wake_word_triggered:
-                asyncio.create_task(external_trigger())
-        
-        voice_engine.add_callback(on_voice_event)
-        voice_engine.start(custom_models=custom_words)
-        logger.info("[Startup] Voice Engine (Wake Word) ativo via microfone local")
-    except Exception as e:
-        logger.warning(f"[Startup] Falha ao iniciar Voice Engine: {e}")
+    # 2. Initialize Psyche Awareness
+    initial_state = device_awareness.get_system_state()
+    logger.info(f"Initial Psyche State: {initial_state}")
 
-    logger.info("[Startup] Camada de Percepção pronta")
-
-    # Inicializar loop autônomo
-    threading.Thread(target=autonomous_brain.start_background_thinking, daemon=True, name="AutonomousBrainThread").start()
-
-    # Inicializar telemetria (porta 8001)
-    start_telemetry_server()
-    
-    # Alerta de Hardware
-    mem = psutil.virtual_memory().percent
-    if mem > 90:
-        logger.warning(f"⚠️ Memória RAM crítica ({mem}%). O processamento de voz pode atrasar.")
+    # 3. Schedule Dream Cycle, Gap Analysis and Resource Governor
+    import asyncio
+    asyncio.create_task(run_psyche_cycles())
+    asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
 
     yield
 
-    # Shutdown
-    logger.info("[Shutdown] Encerrando JARVIS...")
-    autonomous_brain.stop()
+    logger.info("Shutting down JARVIS 5.0 Omega Core...")
+    autonomous_brain.stop_background_thinking()
 
-
-app = FastAPI(title="JARVIS 5.0", lifespan=lifespan)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Rotas
-app.include_router(router)
-app.include_router(voice_router, prefix="/ws")
-
-
-# === Tarefa de fundo: Telemetria e limpeza do banco ===
-async def hardware_telemetry():
-    """Coleta métricas periódicas e limpa registros antigos."""
-    from app.utils.db_manager import db_manager
-
+async def run_psyche_cycles():
+    """Background loop for subconscious processing."""
     while True:
-        await asyncio.sleep(15)
-
         try:
-            cpu = psutil.cpu_percent()
-            ram = psutil.virtual_memory().percent
-            db_manager.save_telemetry(cpu, ram)
+            # Dream Cycle: Evolution of Knowledge Base
+            dream_cycle.process_dreams()
 
-            # Limpeza a cada 2 minutos, mantém últimos 500 registros
-            now = __import__('datetime').datetime.now()
-            if now.minute % 2 == 0 and now.second < 20:
-                conn = db_manager._get_conn()
-                conn.execute(
-                    """
-                    DELETE FROM telemetry
-                    WHERE id NOT IN (
-                        SELECT id FROM telemetry ORDER BY id DESC LIMIT 500
-                    )
-                    """
-                )
-                conn.commit()
-                logger.debug("[Telemetria] Limpeza de registros antigos concluída")
+            # Gap Analysis: Detecting missing info (triggered by brain/logs)
+            logger.debug("Psyche heartbeat: DreamCycle and GapAnalyzer active.")
+
+            await asyncio.sleep(3600) # Run every hour
         except Exception as e:
-            logger.warning(f"[Telemetria] Erro na coleta: {e}")
+            logger.error(f"Error in psyche background cycles: {e}")
+            await asyncio.sleep(60)
 
+async def handle_governor_action(action: str, state: str):
+    """Callback for the Resource Governor to adapt JARVIS's operational mode."""
+    logger.info(f"Adapting system behavior: {action} due to {state} state.")
+    # Here we would integrate with the SmartRouter or ModelManager
+    # Example:
+    # if action == "MIGRATE_TO_LIGHTWEIGHT_API":
+    #     smart_router.set_mode("eco")
+    # elif action == "MAX_LOCAL_PERFORMANCE":
+    #     smart_router.set_mode("performance")
+    pass
 
-@app.on_event("startup")
-async def startup():
-    asyncio.create_task(hardware_telemetry())
-    logger.info("[Telemetria] Coleta de hardware iniciada")
+app = FastAPI(lifespan=lifespan)
 
+@app.get("/health")
+async def health():
+    return {"status": "online", "psyche_state": device_awareness.get_system_state()}
+
+@app.post("/chat")
+async def chat(user_id: str, message: str):
+    return await chat_reply(user_id, message)
+
+@app.get("/chat/stream")
+async def chat_streaming(user_id: str, message: str):
+    return await chat_stream(user_id, message)
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info",
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000)
