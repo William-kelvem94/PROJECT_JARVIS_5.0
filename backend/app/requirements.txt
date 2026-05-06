@@ -49,7 +49,7 @@ sounddevice
 
 # ── Perception: Text-to-Speech
 edge-tts
-pygame
+# pygame  # opcional: playback local de audio (nao suporta Python 3.14+)
 
 # ── Vector Store & Embeddings (RAG)
 chromadb

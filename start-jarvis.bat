@@ -194,8 +194,8 @@ start "JARVIS_BACKEND" /D "%BACK_DIR%" cmd /k ^
      echo [BACK] Iniciando uvicorn na porta %BACKEND_PORT%... && ^
      ""%PYTHON_EXE%"" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
 
-echo [BACK] Aguardando backend responder em /health (max 45s)...
-call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 45
+echo [BACK] Aguardando backend responder em /health (max 90s)...
+call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 90
 if !ERRORLEVEL! NEQ 0 (
     echo.
     echo [ERRO] Backend nao respondeu em 45 segundos.
