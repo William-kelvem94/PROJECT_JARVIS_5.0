@@ -1,3 +1,4 @@
+import os
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -21,7 +22,10 @@ sentinel = SentinelSecurity()
 device_awareness = DeviceAwareness()
 dream_cycle = DreamCycle(
     logs_path="logs/interactions.log",
-    obsidian_kb_path="D:/DOCUMENTOS/GitHub/PROJECT_JARVIS_5.0/data/kb_local/JARVIS/KnowledgeBase",
+    obsidian_kb_path=os.environ.get(
+        "JARVIS_KB_PATH",
+        os.path.join(os.path.dirname(__file__), "..", "..", "data", "kb_local", "JARVIS", "KnowledgeBase")
+    ),
     holodeck_queue_path="data/holodeck_queue.txt"
 )
 gap_analyzer = GapAnalyzer()

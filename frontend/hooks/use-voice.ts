@@ -12,7 +12,10 @@ export function useVoice() {
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket('ws://localhost:8000/ws/voice');
+    const scheme = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `${scheme}://${host}:8000/ws/voice`;
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
