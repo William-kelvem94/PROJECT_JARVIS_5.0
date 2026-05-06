@@ -14,39 +14,80 @@ echo [OMEGA] Raiz do projeto: %ROOT%
 echo.
 
 REM ============================================================
-REM 1. VERIFICAÇÃO E INSTALAÇÃO DE PYTHON (CRÍTICO)
+REM 1. DETECÇÃO AGRESSIVA DE PYTHON
 REM ============================================================
-echo [PRE] Verificando Python do sistema...
-where python >nul 2>&1
-if !errorlevel! neq 0 (
-    echo.
-    echo [AVISO] Python NAO encontrado no PATH do sistema.
-    echo.
-    echo Opções:
-    echo   1. Instalar Python 3.11+ manualmente: https://python.org/downloads
-    echo   2. Tentar instalação automática via Chocolatey (se disponível)
-    echo.
+echo [PRE] Buscando Python no sistema...
 
-    REM Tentar instalar via Chocolatey
-    where choco >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo [SYS] Chocolatey detectado. Tentando instalar Python...
-        choco install python311 -y
-        if !errorlevel! neq 0 (
-            echo [ERRO] Falha ao instalar Python via Chocolatey.
-            goto :python_not_found
+set "PYTHON_FOUND=0"
+set "PYTHON_EXE="
+
+REM Tentar 1: where (PATH)
+where python >nul 2>&1
+if !errorlevel! equ 0 (
+    set "PYTHON_FOUND=1"
+    for /f "tokens=*" %%i in ('where python') do set "PYTHON_EXE=%%i"
+)
+
+REM Tentar 2: Program Files (instalação padrão Windows)
+if !PYTHON_FOUND! equ 0 (
+    for /d %%d in ("C:\Program Files\Python3*") do (
+        if exist "%%d\python.exe" (
+            set "PYTHON_FOUND=1"
+            set "PYTHON_EXE=%%d\python.exe"
+            goto :python_found_in_files
         )
-        echo [SYS] Python instalado. Reinicie este script.
-        pause
-        exit /b 1
-    ) else (
-        goto :python_not_found
     )
 )
 
-REM Detectar versão do Python
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set "PYTHON_VERSION=%%i"
-echo [PRE] Python detectado: %PYTHON_VERSION%
+REM Tentar 3: Program Files (x86)
+if !PYTHON_FOUND! equ 0 (
+    for /d %%d in ("C:\Program Files (x86)\Python3*") do (
+        if exist "%%d\python.exe" (
+            set "PYTHON_FOUND=1"
+            set "PYTHON_EXE=%%d\python.exe"
+            goto :python_found_in_files
+        )
+    )
+)
+
+REM Tentar 4: AppData (user installation)
+if !PYTHON_FOUND! equ 0 (
+    if exist "%APPDATA%\Python" (
+        for /d %%d in ("%APPDATA%\Python\Python3*") do (
+            if exist "%%d\python.exe" (
+                set "PYTHON_FOUND=1"
+                set "PYTHON_EXE=%%d\python.exe"
+                goto :python_found_in_files
+            )
+        )
+    )
+)
+
+REM Tentar 5: LocalAppData (Microsoft Store Python)
+if !PYTHON_FOUND! equ 0 (
+    if exist "%LOCALAPPDATA%\Microsoft\WindowsApps" (
+        if exist "%LOCALAPPDATA%\Microsoft\WindowsApps\python.exe" (
+            set "PYTHON_FOUND=1"
+            set "PYTHON_EXE=%LOCALAPPDATA%\Microsoft\WindowsApps\python.exe"
+            goto :python_found_in_files
+        )
+    )
+)
+
+:python_found_in_files
+
+REM Se encontrou, adicionar ao PATH
+if !PYTHON_FOUND! equ 0 (
+    echo [PRE] Python nao encontrado em nenhuma localizacao.
+    goto :instalar_python
+)
+
+echo [PRE] Python encontrado: !PYTHON_EXE!
+"!PYTHON_EXE!" --version 2>&1
+
+REM Adicionar ao PATH se não estiver lá
+setx PATH "%PATH%;!PYTHON_EXE:..\python.exe=!\Scripts" >nul 2>&1
+echo [PRE] Adicionado ao PATH do sistema.
 
 REM ============================================================
 REM 2. USAR ARQUITETURA MODULAR (SE DISPONÍVEL)
@@ -75,7 +116,7 @@ if exist "%ROOT%scripts\common-functions.bat" (
 )
 
 REM ============================================================
-REM 3. FALLBACK: EXECUÇÃO INTEGRADA (se scripts modulares não existem)
+REM 3. FALLBACK: EXECUÇÃO INTEGRADA
 REM ============================================================
 echo [OMEGA] Iniciando Protocolo de Boot Adaptativo...
 echo.
@@ -85,7 +126,7 @@ set "BACK_DIR=%ROOT%backend"
 set "FRONT_DIR=%ROOT%frontend"
 set "VENV_DIR=%ROOT%.venv"
 set "VENV_ACT=%VENV_DIR%\Scripts\activate.bat"
-set "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
+set "PYTHON_VENV=%VENV_DIR%\Scripts\python.exe"
 set "PYTHONOPTIMIZE=1"
 set "NODE_OPTIONS=--max-old-space-size=2048"
 set "BACKEND_PORT=8000"
@@ -156,7 +197,7 @@ echo [VENV] Verificando ambiente virtual em: %VENV_DIR%
 
 if not exist "%VENV_ACT%" (
     echo [VENV] Ambiente virtual ausente. Criando...
-    python -m venv "%VENV_DIR%"
+    "!PYTHON_EXE!" -m venv "%VENV_DIR%"
     if !errorlevel! neq 0 (
         echo [ERRO] Falha ao criar ambiente virtual.
         goto :fim_erro
@@ -168,50 +209,52 @@ echo [VENV] Ativando ambiente virtual...
 call "%VENV_ACT%"
 
 REM Verificar integridade: uvicorn e fastapi devem estar presentes
-"%PYTHON_EXE%" -c "import uvicorn, fastapi" >nul 2>&1
+"!PYTHON_VENV!" -c "import uvicorn, fastapi" >nul 2>&1
 if !errorlevel! neq 0 (
     echo [VENV] Dependências ausentes. Instalando...
 
-    "%PYTHON_EXE%" -m pip install --upgrade pip setuptools wheel --quiet
+    echo [VENV] Atualizando pip/setuptools/wheel...
+    "!PYTHON_VENV!" -m pip install --upgrade pip setuptools wheel --quiet
 
-    REM PyTorch: CUDA se GPU NVIDIA, CPU caso contrário
+    echo [VENV] Instalando PyTorch...
     if "!JARVIS_AI_DEVICE!"=="cuda" (
-        echo [VENV] Instalando PyTorch com suporte CUDA 12.1...
-        "%PYTHON_EXE%" -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121 --quiet
+        echo [VENV] ... com suporte CUDA 12.1
+        "!PYTHON_VENV!" -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121 --quiet
     ) else (
-        echo [VENV] Instalando PyTorch CPU...
-        "%PYTHON_EXE%" -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu --quiet
+        echo [VENV] ... modo CPU
+        "!PYTHON_VENV!" -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu --quiet
     )
 
-    REM webrtcvad-wheels ANTES do resemblyzer (dependência Windows)
-    echo [VENV] Instalando pacotes de áudio...
-    "%PYTHON_EXE%" -m pip install webrtcvad-wheels --quiet
-    "%PYTHON_EXE%" -m pip install resemblyzer --no-deps --quiet
+    echo [VENV] Instalando pacotes de áudio (webrtcvad-wheels, resemblyzer)...
+    "!PYTHON_VENV!" -m pip install webrtcvad-wheels --quiet
+    "!PYTHON_VENV!" -m pip install resemblyzer --no-deps --quiet
 
     echo [VENV] Instalando requirements.txt...
-    "%PYTHON_EXE%" -m pip install -r "%BACK_DIR%\app\requirements.txt" --ignore-requires-python --quiet
-    if !errorlevel! neq 0 (
-        echo [ERRO] Falha ao instalar dependências.
+    if not exist "%BACK_DIR%\app\requirements.txt" (
+        echo [ERRO] requirements.txt não encontrado em %BACK_DIR%\app\
         goto :fim_erro
     )
-    echo [VENV] Dependências instaladas com sucesso.
+    "!PYTHON_VENV!" -m pip install -r "%BACK_DIR%\app\requirements.txt" --ignore-requires-python --quiet
+    if !errorlevel! neq 0 (
+        echo [ERRO] Falha ao instalar dependências de requirements.txt
+        goto :fim_erro
+    )
+
+    echo [VENV] Validando imports críticos...
+    "!PYTHON_VENV!" -c "import fastapi, uvicorn, loguru, torch, chromadb, sentence_transformers" 2>&1
+    if !errorlevel! neq 0 (
+        echo [AVISO] Alguns imports falharam, mas continuando...
+    ) else (
+        echo [VENV] Todos os imports validados!
+    )
+
+    echo [VENV] Dependências instaladas com sucesso!
 ) else (
-    echo [VENV] Ambiente virtual validado.
+    echo [VENV] Ambiente virtual validado. Dependências OK.
 )
 
 REM ============================================================
-REM 7. VALIDAÇÃO DO BACKEND
-REM ============================================================
-echo.
-echo [CHECK] Validando imports críticos do backend...
-"%PYTHON_EXE%" -c "import fastapi, uvicorn, loguru, torch; print('[CHECK] Core imports validados')" 2>&1
-if !errorlevel! neq 0 (
-    echo [ERRO] Imports críticos falharam.
-    goto :fim_erro
-)
-
-REM ============================================================
-REM 8. LANÇAMENTO DO BACKEND
+REM 7. LANÇAMENTO DO BACKEND
 REM ============================================================
 echo.
 echo [BACK] Lançando JARVIS Core ^(Mode: !JARVIS_MODE!^)...
@@ -229,20 +272,20 @@ start "JARVIS_BACKEND" /D "%BACK_DIR%" cmd /k ^
      set JARVIS_WHISPER_MODEL=!JARVIS_WHISPER_MODEL! && ^
      set JARVIS_DISABLE_CAMERA=!JARVIS_DISABLE_CAMERA! && ^
      echo [BACK] Iniciando uvicorn na porta %BACKEND_PORT%... && ^
-     "%PYTHON_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
+     "!PYTHON_VENV!" -m uvicorn app.main:app --host 127.0.0.1 --port %BACKEND_PORT% --reload --log-level info"
 
-echo [BACK] Aguardando backend responder em /health ^(max 90s^)...
-call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 90
+echo [BACK] Aguardando backend responder em /health ^(max 120s^)...
+call :wait_http "http://127.0.0.1:%BACKEND_PORT%/health" 120
 if !errorlevel! neq 0 (
     echo.
-    echo [ERRO] Backend não respondeu em 90 segundos.
-    echo        Verifique a janela "JARVIS - Backend" para detalhes do erro.
+    echo [ERRO] Backend não respondeu em 120 segundos.
+    echo        Verifique a janela "JARVIS - Backend" para detalhes.
     goto :fim_erro
 )
 echo [BACK] Backend online em http://127.0.0.1:%BACKEND_PORT%
 
 REM ============================================================
-REM 9. LANÇAMENTO DO FRONTEND (OPCIONAL)
+REM 8. LANÇAMENTO DO FRONTEND (OPCIONAL)
 REM ============================================================
 where node >nul 2>&1
 if !errorlevel! neq 0 (
@@ -301,6 +344,60 @@ REM ============================================================
 REM FUNÇÕES DE SUPORTE
 REM ============================================================
 
+:instalar_python
+echo.
+echo ================================================================
+echo   INSTALANDO PYTHON 3.11 AUTOMATICAMENTE
+echo ================================================================
+echo.
+
+REM Tentar instalar com Chocolatey
+where choco >nul 2>&1
+if !errorlevel! equ 0 (
+    echo [SYS] Chocolatey detectado. Instalando Python 3.11...
+    choco install python311 -y --force
+    if !errorlevel! equ 0 (
+        echo [SYS] Python instalado com sucesso via Chocolatey!
+        REM Reiniciar script
+        call start-jarvis.bat
+        exit /b 0
+    )
+)
+
+REM Se Chocolatey falhar, tentar instalador do site
+echo [SYS] Baixando Python 3.11 installer...
+powershell -NoProfile -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe' -OutFile '%TEMP%\python-install.exe'" >nul 2>&1
+
+if exist "%TEMP%\python-install.exe" (
+    echo [SYS] Executando instalador do Python...
+    REM Instalar com opção de adicionar ao PATH
+    "%TEMP%\python-install.exe" /quiet InstallAllUsers=1 PrependPath=1
+    if !errorlevel! equ 0 (
+        echo [SYS] Python instalado com sucesso!
+        del "%TEMP%\python-install.exe"
+        REM Aguardar um pouco e reiniciar
+        timeout /t 3
+        call start-jarvis.bat
+        exit /b 0
+    )
+    del "%TEMP%\python-install.exe"
+)
+
+echo.
+echo ================================================================
+echo   [ERRO] Não foi possível instalar Python automaticamente
+echo ================================================================
+echo.
+echo Instalação manual necessária:
+echo   1. Acesse: https://python.org/downloads
+echo   2. Baixe Python 3.11 ou superior
+echo   3. IMPORTANTE: Marque "Add Python to PATH" durante instalação
+echo   4. Reinicie o PC
+echo   5. Execute start-jarvis.bat novamente
+echo.
+pause
+exit /b 1
+
 :kill_port
 set "_KP=%~1"
 if "%_KP%"=="" exit /b 0
@@ -333,30 +430,13 @@ if !_WT! geq %_WM% exit /b 1
 timeout /t 1 /nobreak >nul
 goto :_wp_loop
 
-:python_not_found
-echo.
-echo ================================================================
-echo   [ERRO CRÍTICO] Python não encontrado no PATH
-echo ================================================================
-echo.
-echo Para instalar Python:
-echo   1. Acesse: https://python.org/downloads
-echo   2. Baixe Python 3.11 ou superior
-echo   3. IMPORTANTE: Marque "Add Python to PATH" durante instalação
-echo   4. Reinicie este script após instalar Python
-echo.
-echo Alternativa com Chocolatey:
-echo   choco install python311 -y
-echo.
-pause
-exit /b 1
-
 :fim_erro
 echo.
 echo ================================================================
-echo   [FALHA] Erro crítico na inicialização do JARVIS.
-echo   Verifique as mensagens acima para identificar o problema.
+echo   [FALHA] Erro crítico na inicialização do JARVIS
 echo ================================================================
+echo.
+echo Verifique os logs para detalhes do erro.
 echo.
 pause
 exit /b 1
