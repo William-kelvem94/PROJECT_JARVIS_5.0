@@ -5,7 +5,7 @@ import json
 import psutil
 import asyncio
 from loguru import logger
-from .utils.learning_manager import learning_manager
+from .smart_router import router
 
 from .config import settings
 
@@ -166,10 +166,8 @@ class EngineerBrain:
         return full_reply if full_reply else "O cérebro não conseguiu processar esta requisição ou o servidor local caiu."
 
     async def reason_stream(self, prompt: str, context: str = "", stream: bool = True):
-        """Processa a tarefa gerando chunks (Streaming)."""
+        """Processa a tarefa gerando chunks (Streaming) via SmartRouter."""
         from .persona import persona
-        active_model = await self.get_active_lmstudio_model()
-        safety = await self._get_safety_params()
 
         system_prompt = persona.get_system_prompt()
 
@@ -183,228 +181,11 @@ class EngineerBrain:
         # Injeção de Persona Evolutiva
         system_prompt += learning_manager.get_persona_instructions()
 
-        user_content = persona.format_prompt(prompt, context, active_model)
+        user_content = persona.format_prompt(prompt, context, "Hybrid-Router")
 
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_content[:safety["safety_context_limit"]]}
-        ]
-
-        payload = {
-            "model": active_model,
-            "messages": messages,
-            "temperature": safety["temperature"],
-            "max_tokens": safety["max_tokens"],
-            "stream": stream,
-        }
-
-        # ── Prioridade 0: Motor Nativo (GGUF local via llama-cpp) ─────────────
-        try:
-            from .native_brain import get_native_brain
-            native = get_native_brain()
-            if native:
-                logger.info("🧠 Usando Motor Nativo (GGUF)...")
-                async for chunk in native.generate(prompt, system_prompt=system_prompt, stream=stream):
-                    yield chunk
-                return
-        except Exception as e:
-            logger.warning(f"⚠️ Motor Nativo falhou: {e}")
-
-        # ── Prioridade 0.5: Ollama (offline total) ─────────────────────────────
-        if getattr(settings, 'OLLAMA_ENABLED', False):
-            try:
-                session = _get_session()
-                url = f"{getattr(settings, 'OLLAMA_URL', 'http://localhost:11434')}/api/chat"
-                async with session.post(
-                    url,
-                    json={"model": getattr(settings, 'OLLAMA_MODEL', 'llama3'), "messages": messages, "stream": True},
-                    timeout=aiohttp.ClientTimeout(total=getattr(settings, 'OLLAMA_TIMEOUT', 30)),
-                ) as resp:
-                    if resp.status == 200:
-                        async for line in resp.content:
-                            line_str = line.decode('utf-8', errors='ignore').strip()
-                            if line_str:
-                                try:
-                                    chunk = json.loads(line_str)
-                                    text = chunk.get('message', {}).get('content', '')
-                                    if text:
-                                        yield text
-                                except Exception:
-                                    continue
-                        return
-            except Exception as e:
-                logger.warning(f"Ollama offline: {e}")
-
-        # ── Prioridade 1: LM Studio local ─────────────────────────────────────
-        # Pula imediatamente se a última sondagem de /models falhou.
-        if self._lmstudio_available:
-            try:
-                session = _get_session()
-                logger.info(f"🧠 Tentando resposta via LM Studio ({self.model})...")
-                async with session.post(
-                    self.lm_studio_url,
-                    json=payload,
-                    timeout=aiohttp.ClientTimeout(total=settings.LM_STUDIO_TIMEOUT),
-                ) as response:
-                    if response.status == 200:
-                        if stream:
-                            async for line in response.content:
-                                if not line:
-                                    continue
-                                try:
-                                    line_str = line.decode("utf-8", errors="ignore").strip()
-                                    if line_str.startswith("data: "):
-                                        data_content = line_str[6:].strip()
-                                        if data_content == "[DONE]":
-                                            break
-                                        chunk_data = json.loads(data_content)
-                                        if chunk_data.get("choices"):
-                                            content = chunk_data["choices"][0]["delta"].get("content", "")
-                                            if content:
-                                                yield content
-                                except Exception:
-                                    continue
-                            return
-                        else:
-                            lms_data = await response.json()
-                            text = lms_data["choices"][0]["message"]["content"]
-                            learning_manager.learn_from_interaction(prompt, text)
-                            yield text
-                            return
-                    else:
-                        logger.warning(f"⚠️ LM Studio retornou status {response.status}. Tentando Gemini...")
-            except Exception as e:
-                logger.warning(f"⚠️ LM Studio falhou durante geração: {e}. Tentando Gemini...")
-        else:
-            logger.info("⏭️ LM Studio indisponível (probe falhou). Indo direto para Gemini...")
-
-        # ── Prioridade 2: Gemini via streamGenerateContent (SSE real) ─────────
-        gemini_key = settings.GEMINI_API_KEY
-        if not gemini_key:
-            logger.warning("❌ Gemini Key não configurada.")
-        else:
-            try:
-                gemini_model = await self._pick_gemini_model()
-                logger.info(f"☁️ Chamando Gemini streaming ({gemini_model})")
-                url = (
-                    f"https://generativelanguage.googleapis.com/v1beta/models/"
-                    f"{gemini_model}:streamGenerateContent?alt=sse&key={gemini_key}"
-                )
-                gemini_payload = {
-                    "system_instruction": {"parts": [{"text": system_prompt}]},
-                    "contents": [
-                        {"role": "user", "parts": [{"text": user_content[:safety["safety_context_limit"]]}]}
-                    ],
-                    "generationConfig": {
-                        "temperature": safety["temperature"],
-                        "maxOutputTokens": safety["max_tokens"],
-                    },
-                }
-
-                session = _get_session()
-                has_content = False
-                async with session.post(
-                    url, json=gemini_payload, timeout=aiohttp.ClientTimeout(total=60)
-                ) as response:
-                    if response.status == 200:
-                        async for raw_line in response.content:
-                            line_str = raw_line.decode("utf-8", errors="ignore").strip()
-                            if not line_str.startswith("data: "):
-                                continue
-                            data_str = line_str[6:].strip()
-                            if not data_str or data_str == "[DONE]":
-                                continue
-                            try:
-                                chunk_data = json.loads(data_str)
-                                candidates = chunk_data.get("candidates", [])
-                                if candidates:
-                                    parts = candidates[0].get("content", {}).get("parts", [])
-                                    for part in parts:
-                                        text = part.get("text", "")
-                                        if text:
-                                            if not has_content:
-                                                yield " [Modo Cloud] "
-                                                has_content = True
-                                            yield text
-                            except Exception:
-                                continue
-                        if has_content:
-                            logger.success("✅ Resposta recebida via Gemini (streaming)")
-                            return
-                    else:
-                        error_body = await response.text()
-                        logger.error(f"❌ Gemini erro {response.status}: {error_body}")
-                        # Invalida cache para forçar nova sondagem na próxima chamada
-                        global _gemini_model_cache_ts
-                        _gemini_model_cache_ts = 0.0
-            except Exception as e:
-                logger.error(f"❌ Falha crítica no fallback Gemini: {e}")
-
-        # ── Prioridade 3: OpenRouter via streaming SSE ─────────────────────────
-        or_key = settings.OPENROUTER_API_KEY
-        if not or_key:
-            logger.warning("❌ OpenRouter API Key não encontrada no ambiente.")
-        else:
-            try:
-                logger.info(f"☁️ Chamando OpenRouter (Key: {or_key[:4]}...{or_key[-4:]})")
-                # Deduplica candidatos mantendo ordem de preferência
-                seen_or: set[str] = set()
-                unique_candidates: list[str] = []
-                for c in [settings.OPENROUTER_MODEL, "google/gemini-2.5-flash", "google/gemini-2.0-flash-001", "google/gemini-flash-1.5"]:
-                    if c and c not in seen_or:
-                        seen_or.add(c)
-                        unique_candidates.append(c)
-
-                session = _get_session()
-                for candidate in unique_candidates:
-                    try:
-                        async with session.post(
-                            "https://openrouter.ai/api/v1/chat/completions",
-                            headers={
-                                "Authorization": f"Bearer {or_key}",
-                                "Content-Type": "application/json",
-                                "X-Title": "JARVIS 5.0",
-                            },
-                            json={
-                                "model": candidate,
-                                "messages": messages,
-                                "stream": True,
-                            },
-                            timeout=aiohttp.ClientTimeout(total=60),
-                        ) as response:
-                            if response.status == 200:
-                                has_or_content = False
-                                async for raw_line in response.content:
-                                    line_str = raw_line.decode("utf-8", errors="ignore").strip()
-                                    if not line_str.startswith("data: "):
-                                        continue
-                                    data_str = line_str[6:].strip()
-                                    if not data_str or data_str == "[DONE]":
-                                        continue
-                                    try:
-                                        chunk_data = json.loads(data_str)
-                                        if chunk_data.get("choices"):
-                                            content = chunk_data["choices"][0].get("delta", {}).get("content", "")
-                                            if content:
-                                                if not has_or_content:
-                                                    yield " [OpenRouter] "
-                                                    has_or_content = True
-                                                yield content
-                                    except Exception:
-                                        continue
-                                if has_or_content:
-                                    logger.success(f"✅ Resposta recebida via OpenRouter ({candidate})")
-                                    return
-                            else:
-                                error_body = await response.text()
-                                logger.warning(f"⚠️ OpenRouter {candidate} erro {response.status}: {error_body}")
-                    except Exception as e:
-                        logger.warning(f"⚠️ OpenRouter {candidate} falhou: {e}")
-                        continue
-            except Exception as e:
-                logger.error(f"❌ Falha crítica no OpenRouter: {e}")
-
-        yield "Sistemas offline. Verifique suas Chaves de API no arquivo .env ou a conexão com a internet."
+        # Delegação para o SmartRouter
+        async for chunk in router.reason_stream(user_content, system_prompt):
+            yield chunk
 
     async def reason_local(self, prompt: str, context: str = "", model: str = None):
         """Versão simplificada para chamadas rápidas locais."""

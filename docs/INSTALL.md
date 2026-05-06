@@ -29,7 +29,7 @@ Este guia leva você do zero até um Jarvis funcional em sua máquina Windows.
    ```powershell
    copy env\.env.example env\.env
    ```
-2. Preencha as chaves de API dentro de `env\.env` (GEMINI, LIVEKIT, etc.).
+2. Preencha as chaves de API dentro de `env\.env` (GEMINI, etc.).
 3. Para que o frontend/Next consiga ler as variáveis do lado do servidor, copie o arquivo
    raiz para `frontend/.env.local` ou exporte as mesmas variáveis no ambiente. Por exemplo:
    ```powershell
@@ -142,7 +142,7 @@ start-jarvis.bat` diretamente.
 
 ## 8. Próximos passos de desenvolvimento
 
-- Implemente rotas reais (`/chat`, `/memory`, `/livekit-token`).
+- Implemente rotas reais (`/chat`, `/memory`).
 - Consuma essas rotas no frontend (`frontend/app/api` ou diretamente com `fetch`).
 - Substitua o stub de memória (`mem0.py`) pelo cliente real.
 - Atualize `integration-plan.md` conforme evoluir.
