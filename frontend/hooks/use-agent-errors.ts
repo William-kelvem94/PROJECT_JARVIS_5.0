@@ -12,13 +12,14 @@ function toastAlert(toast: ToastProps) {
   const { title, description } = toast;
 
   return sonnerToast.custom(
-    (id) => (
-      <Alert onClick={() => sonnerToast.dismiss(id)} className="bg-accent w-full md:w-91">
-        <WarningIcon weight="bold" />
-        <AlertTitle>{title}</AlertTitle>
-        {description && <AlertDescription>{description}</AlertDescription>}
-      </Alert>
-    ),
+    (id) =>
+      React.createElement(
+        Alert,
+        { onClick: () => sonnerToast.dismiss(id), className: 'bg-accent w-full md:w-91' },
+        React.createElement(WarningIcon, { weight: 'bold' }),
+        React.createElement(AlertTitle, null, title),
+        description ? React.createElement(AlertDescription, null, description) : null
+      ),
     { duration: 10_000 }
   );
 }

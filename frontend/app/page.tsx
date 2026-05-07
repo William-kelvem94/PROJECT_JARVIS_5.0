@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import OrbCore from '@/components/cockpit/OrbCore';
 import HudRing from '@/components/cockpit/HudRing';
-import { useVoice } from '@/hooks/useVoice';
+import { useVoice } from '@/hooks/use-voice';
 import { motion, AnimatePresence } from 'motion/react';
 import { Shield, Cpu, Database, Eye, MessageSquare } from 'lucide-react';
 

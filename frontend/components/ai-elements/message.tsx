@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { HTMLAttributes } from 'react';
+import { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/shadcn/utils';
 
 interface MessageProps extends HTMLAttributes<HTMLDivElement> {
   from: 'user' | 'assistant';
-  text: string;
+  text?: string;
+  children?: ReactNode;
   senderType?: 'local' | 'cloud';
   timestamp?: string;
 }
@@ -18,11 +19,9 @@ const Typewriter = ({ text, speed = 20 }: { text: string; speed?: number }) => {
   useEffect(() => {
     if (currentIndex < text.length) {
       const timeout = setTimeout(() => {
-        {
-          setDisplayedText((prev) => prev + text[currentIndex]);
-          setCurrentIndex((prev) => prev + 1);
-        },
-        speed);
+        setDisplayedText((prev) => prev + text[currentIndex]);
+        setCurrentIndex((prev) => prev + 1);
+      }, speed);
       return () => clearTimeout(timeout);
     }
   }, [currentIndex, text, speed]);
@@ -30,7 +29,7 @@ const Typewriter = ({ text, speed = 20 }: { text: string; speed?: number }) => {
   return <span>{displayedText}</span>;
 };
 
-export const Message = ({ className, from, text, senderType = 'local', timestamp, ...props }: MessageProps) => {
+export const Message = ({ className, from, text, children, senderType = 'local', timestamp, ...props }: MessageProps) => {
   const isUser = from === 'user';
   const isLocal = senderType === 'local';
 
@@ -64,14 +63,14 @@ export const Message = ({ className, from, text, senderType = 'local', timestamp
         )}
 
         <div className="relative z-10 leading-relaxed">
-          {!isUser ? (
+          {children ?? (!isUser ? (
             <>
-              <Typewriter text={text} />
+              <Typewriter text={text ?? ''} />
               <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse" />
             </>
           ) : (
             text
-          )}
+          ))}
         </div>
 
         {!isUser && (
@@ -95,6 +94,12 @@ export const MessageContent = ({ children, className, ...props }: MessageContent
     )}
     {...props}
   >
+    {children}
+  </div>
+);
+
+export const MessageResponse = ({ children, className, ...props }: MessageContentProps) => (
+  <div className={cn('whitespace-pre-wrap break-words', className)} {...props}>
     {children}
   </div>
 );

@@ -33,7 +33,7 @@ O Jarvis 5.0 é um monorepo híbrido com dois principais subsistemas:
 - A KB de Obsidian é carregada via `JARVIS_KB_PATH` e injetada no prompt do agente quando disponível.
 
 ## Configuração de ambiente
-- `.env` e `env/.env` armazenam chaves e paths.
+- `.env` na raiz armazena chaves e paths; `env/.env` pode sobrescrever localmente.
 - `config/settings.py` carrega as variáveis e valida chaves obrigatórias.
 - Variáveis principais:
   - `GEMINI_API_KEY` / `GOOGLE_API_KEY`
@@ -42,7 +42,7 @@ O Jarvis 5.0 é um monorepo híbrido com dois principais subsistemas:
   - `JARVIS_VAULT_ROOT`
 
 ## Good practices
-- Use `docker-compose.yml` para rodar backend e frontend em containers locais.
+- Use `docker-compose.yml` na raiz para rodar backend e frontend em containers locais.
 - Mantenha o vault Obsidian acessível e atualize `JARVIS_KB_PATH` quando alterar a base de conhecimento.
 - Prefira rodar `python -m unittest discover -s backend/app/tests` para validar backend.
 

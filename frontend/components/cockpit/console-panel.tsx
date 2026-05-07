@@ -6,7 +6,7 @@ export function ConsolePanel({ logs, emptyText }: { logs: string[]; emptyText?: 
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [logs]);
 
   return (

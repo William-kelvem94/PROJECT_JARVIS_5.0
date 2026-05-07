@@ -7,6 +7,26 @@ from .persona import persona
 from .system_tools import SystemTools
 
 tools = SystemTools()
+ALLOWED_TOOL_NAMES = {
+    "browser_navigate",
+    "browser_screenshot",
+    "browser_get_page_content",
+    "browser_click",
+    "web_search_no_api",
+    "list_files",
+    "read_file",
+    "write_file",
+    "apply_code_change",
+    "execute_command",
+    "get_system_stats",
+    "set_system_volume",
+    "set_system_brightness",
+    "capture_screens",
+    "open_application",
+    "git_operation",
+    "think_with_engineer_brain",
+    "run_and_fix",
+}
 
 async def chat_reply(user_id: str, user_message: str) -> str:
     """Resposta simples (síncrona para a API)."""
@@ -66,6 +86,9 @@ async def chat_stream(user_id: str, user_message: str):
 async def execute_tool_async(func_name: str, args_str: str):
     """Helper para execução assíncrona de ferramentas disparadas via stream."""
     try:
+        if func_name not in ALLOWED_TOOL_NAMES:
+            logger.warning(f"🛠️ Ferramenta bloqueada por allowlist: {func_name}")
+            return
         func = getattr(tools, func_name, None)
         if func:
             clean_args = [a.strip().strip("'\"") for a in args_str.split(",") if a.strip()]

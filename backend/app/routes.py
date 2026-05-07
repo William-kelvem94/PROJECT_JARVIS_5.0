@@ -3,6 +3,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import os
 import glob
+from pathlib import Path
 
 from .security.sentinel_parser import SentinelParser
 from .security.sentinel_core import SentinelSecurity
@@ -26,6 +27,14 @@ blackbox = BlackBox(
 security_core.blackbox = blackbox
 
 router = APIRouter()
+SCREENSHOT_DIR = Path(__file__).resolve().parents[2] / "data"
+
+
+def _safe_screenshot_path(filename: str) -> Path:
+    candidate = (SCREENSHOT_DIR / Path(filename).name).resolve(strict=False)
+    if candidate.parent != SCREENSHOT_DIR.resolve():
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    return candidate
 
 class ChatRequest(BaseModel):
     message: str
@@ -56,14 +65,10 @@ async def memory_endpoint(user_name: str = "Chefe"):
 
 @router.get("/screenshots")
 async def list_screenshots():
-    # Caminho absoluto para evitar erros de diretório relativo
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    data_dir = os.path.join(base_dir, "backend", "data")
-    
-    if not os.path.exists(data_dir):
+    if not SCREENSHOT_DIR.exists():
         return {"screenshots": []}
     
-    files = glob.glob(os.path.join(data_dir, "*.png"))
+    files = glob.glob(str(SCREENSHOT_DIR / "*.png"))
     files.sort(key=os.path.getmtime, reverse=True)
     recent_files = files[:20]
     
@@ -71,11 +76,9 @@ async def list_screenshots():
 
 @router.api_route("/screenshots/{filename}", methods=["GET", "HEAD"])
 async def get_screenshot(filename: str):
-    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    data_dir = os.path.join(base_dir, "backend", "data")
-    file_path = os.path.join(data_dir, filename)
+    file_path = _safe_screenshot_path(filename)
     
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         raise HTTPException(status_code=404, detail="Screenshot not found")
         
     return FileResponse(

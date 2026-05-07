@@ -71,6 +71,29 @@ git clone https://github.com/William-kelvem94/PROJECT_JARVIS_5.0.git
 cd PROJECT_JARVIS_5.0
 ```
 
+### Fluxo oficial de boot
+
+1. Leia `JARVIS_STARTUP.md` para o fluxo canônico de inicialização.
+2. Execute `start-jarvis.bat` na raiz do repositório.
+3. Use `docs/INSTALL.md` só como guia de instalação manual / frontend / backend isolados.
+4. Para Docker, use o `docker-compose.yml` da raiz.
+
+> `PROJECT_JARVIS_5.0` é o nome oficial do repositório. Qualquer alias local do workspace é apenas um atalho de navegação.
+
+### Referências de ambiente
+
+- `.env` na raiz: configuração principal carregada pelo backend.
+- `env/.env`: override local opcional, quando existir.
+- `frontend/.env.example`: variáveis específicas do frontend.
+
+### Pastas históricas / de pesquisa
+
+- `OMEGA_RESEARCH/`
+- `PROJECT_SOPHISTICATION/`
+- `FUTURE_IMPLEMENTATIONS/`
+
+Essas pastas são referência histórica; não fazem parte do fluxo canônico de execução.
+
 ### Executar
 
 **Windows:** Duplo clique em `start-jarvis.bat`

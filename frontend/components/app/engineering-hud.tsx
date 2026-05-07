@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   BatteryHigh,
   Brain,
@@ -13,7 +13,7 @@ import {
   Pulse,
 } from '@phosphor-icons/react';
 import { AnimatePresence, motion } from 'motion/react';
-import { AppConfig } from '@/app-config';
+import { useJarvisData } from '@/hooks/use-jarvis-data';
 import { cn } from '@/lib/shadcn/utils';
 
 interface TelemetryData {
@@ -30,51 +30,19 @@ interface TelemetryData {
   is_reasoning?: boolean;
 }
 
-export function EngineeringHUD({ appConfig }: { appConfig: AppConfig }) {
-  const [data, setData] = useState<TelemetryData | null>(null);
-
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const response = await fetch(`${appConfig.jarvisApiUrl}/health`);
-        const health = await response.json();
-
-        setData(
-          (prev) =>
-            ({
-              ...prev,
-              type: 'telemetry_update',
-              cpu: health.cpu,
-              ram: health.ram,
-              battery: prev?.battery || 99,
-              model: 'Jarvis Native v5.3',
-              persona: 'Engineer Core',
-              face_identity: health.face_identity,
-              face_emotion: health.face_emotion,
-              is_reasoning: health.cpu > 50,
-            }) as TelemetryData
-        );
-      } catch {
-        // Fallback para demonstração se o backend estiver offline
-        setData((prev) => prev || {
-          type: 'telemetry_update',
-          cpu: 12,
-          ram: 45,
-          battery: 99,
-          model: 'Jarvis Offline Mode',
-          persona: 'Emergency Core',
-          face_identity: 'Unauthorized',
-          face_emotion: 'Neutral',
-          is_reasoning: false
-        });
-      }
-    };
-
-    const interval = setInterval(fetchStatus, 5000);
-    fetchStatus();
-
-    return () => clearInterval(interval);
-  }, [appConfig.jarvisApiUrl]);
+export function EngineeringHUD() {
+  const { health } = useJarvisData();
+  const data: TelemetryData = {
+    type: 'telemetry_update',
+    cpu: health.cpu,
+    ram: health.ram,
+    battery: 99,
+    model: 'Jarvis Native v5.3',
+    persona: 'Engineer Core',
+    face_identity: health.face_identity,
+    face_emotion: health.face_emotion,
+    is_reasoning: health.cpu > 50,
+  };
 
   if (!data) return null;
 

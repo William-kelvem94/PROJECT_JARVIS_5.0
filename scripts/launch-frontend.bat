@@ -9,7 +9,7 @@ REM Frontend é OPCIONAL - não bloqueia se falhar
 REM ============================================================================
 
 if not defined ROOT (
-    echo [WARN] ROOT nao definida. Use start.bat
+    echo [WARN] ROOT nao definida. Use start-jarvis.bat
     exit /b 0
 )
 
@@ -52,7 +52,11 @@ echo [INFO] PORT: %PORT% >> "%LOG_FILE%"
 
 REM Iniciar frontend em nova janela
 echo [INFO] Iniciando frontend em http://127.0.0.1:%PORT% >> "%LOG_FILE%"
-start "JARVIS_FRONTEND" cmd /k "%PKG_MANAGER% dev --host 127.0.0.1"
+if "%PKG_MANAGER%"=="pnpm" (
+    start "JARVIS_FRONTEND" cmd /k "pnpm dev --host 127.0.0.1"
+) else (
+    start "JARVIS_FRONTEND" cmd /k "npm run dev -- --host 127.0.0.1"
+)
 
 REM Aguardar port (máximo 60 segundos)
 call :wait_port 127.0.0.1 %PORT% 60

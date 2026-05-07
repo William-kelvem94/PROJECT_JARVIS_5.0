@@ -1,5 +1,7 @@
 # Agent Starter for React
 
+> README do frontend isolado. Para boot do projeto inteiro, use `start-jarvis.bat` e `JARVIS_STARTUP.md`.
+
 This is a starter template for the Jarvis frontend, providing a polished voice-enabled interface with customizable UI controls and responsive layout components. It is built with Next.js, Tailwind CSS, and shadcn/ui primitives.
 
 <picture>
