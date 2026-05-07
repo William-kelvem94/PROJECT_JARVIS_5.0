@@ -8,9 +8,20 @@ export function useVoice() {
   const [status, setStatus] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>('idle');
 
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
 
   const connect = useCallback(() => {
+    if (!mountedRef.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    clearReconnectTimer();
 
     const scheme = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
@@ -49,11 +60,15 @@ export function useVoice() {
     };
 
     ws.onclose = () => {
+        if (!mountedRef.current) return;
         console.log('🔌 HUD Desconectado do Backend');
         setStatus('idle');
         setIsListening(false);
-        // Tenta reconectar após 3 segundos
-        setTimeout(connect, 3000);
+        // Tenta reconectar após 3 segundos, sem acumular timers
+        clearReconnectTimer();
+        reconnectTimerRef.current = setTimeout(() => {
+          connect();
+        }, 3000);
     };
   }, []);
 
@@ -72,6 +87,8 @@ export function useVoice() {
   useEffect(() => {
     connect();
     return () => {
+        mountedRef.current = false;
+        clearReconnectTimer();
         wsRef.current?.close();
     };
   }, [connect]);

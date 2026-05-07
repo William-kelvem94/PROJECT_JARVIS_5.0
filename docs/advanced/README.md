@@ -1,6 +1,9 @@
 # JARVIS 5.0 — Documentação Avançada
 
-Features avançadas e pesquisa em andamento.
+Features avançadas e pesquisa histórica/referencial.
+
+> Os materiais desta pasta apontam para pesquisa e documentação histórica.
+> As pastas `OMEGA_RESEARCH/`, `PROJECT_SOPHISTICATION/` e `FUTURE_IMPLEMENTATIONS/` devem ser tratadas como arquivos/referência, não como fluxo runtime.
 
 | Documento | Conteúdo |
 |-----------|----------|

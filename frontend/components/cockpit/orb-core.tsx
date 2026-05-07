@@ -73,7 +73,7 @@ export default function OrbCore({ status = 'idle' }: { status: Status }) {
         }}
         animate={{
             scale: currentAnim.core.scale,
-            x: currentAnim.core.x || 0,
+            x: 'x' in currentAnim.core ? currentAnim.core.x : 0,
             rotate: currentAnim.rotate
         }}
         transition={{

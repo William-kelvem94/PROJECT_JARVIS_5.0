@@ -1,8 +1,14 @@
 # JARVIS 5.0 - Sistema de Inicialização
 
+> Projeto original: `PROJECT_JARVIS_5.0`
+>
+> `start-jarvis.bat` na raiz é o ponto de entrada oficial.
+> Qualquer alias criado no workspace é apenas atalho local de navegação e não altera o nome do repositório.
+> Para containers, o compose oficial é `docker-compose.yml` na raiz.
+
 ## ⚡ Quick Start
 
-### Opção 1: Iniciar JARVIS (Recomendado)
+### Opção oficial
 ```batch
 start-jarvis.bat
 ```
@@ -35,7 +41,7 @@ Ou clique duas vezes em `start-jarvis.bat` na raiz do projeto.
 ```
 PROJECT_JARVIS_5.0/
 ├── start-jarvis.bat          ← EXECUTAR ESTE ARQUIVO (entry point)
-├── start.bat                 ← Alias alternativo
+├── start.bat                 ← Alias legado
 ├── scripts/
 │   ├── common-functions.bat  ← Funções compartilhadas
 │   ├── check-prerequisites.bat
@@ -56,6 +62,8 @@ PROJECT_JARVIS_5.0/
 ├── .venv/                    ← Virtual environment (criado automaticamente)
 └── logs/                     ← Logs de boot (criado automaticamente)
 ```
+
+> Observação: os scripts usam a raiz do projeto derivada automaticamente do próprio arquivo; não é preciso editar caminhos locais.
 
 ---
 
@@ -113,6 +121,14 @@ Quando disponível, usa a estrutura modular:
 
 ### 3. **Fallback Integrado**
 Se scripts modulares não existirem, usa lógica integrada no `start-jarvis.bat`.
+
+---
+
+## 🐳 Docker canônico
+
+- Arquivo oficial: `docker-compose.yml` na raiz
+- Arquivo `docker/docker-compose.yml`: referência histórica/alternativa, não é o entrypoint principal
+- Variáveis: `.env` na raiz, com `env/.env` apenas como override local opcional
 
 ---
 
@@ -204,7 +220,7 @@ Liberar porta 3000:
 
 ## 📝 Variáveis de Ambiente
 
-Customizáveis via arquivo `.env` na raiz:
+Customizáveis via arquivo `.env` na raiz do projeto:
 
 ```env
 # Portas (padrão: 8000, 3000)

@@ -8,7 +8,7 @@ REM Inicializa backend FastAPI/Uvicorn com health check
 REM ============================================================================
 
 if not defined ROOT (
-    echo [ERROR] ROOT nao definida. Use start.bat
+    echo [ERROR] ROOT nao definida. Use start-jarvis.bat
     exit /b 1
 )
 
@@ -35,21 +35,20 @@ if errorlevel 1 (
 )
 
 REM Ativar venv
-if not exist "..\..\.venv\Scripts\activate.bat" (
-    echo [ERROR] venv nao encontrado: ..\.venv\Scripts\activate.bat >> "%LOG_FILE%"
+if not exist "%ROOT%.venv\Scripts\activate.bat" (
+    echo [ERROR] venv nao encontrado: %ROOT%.venv\Scripts\activate.bat >> "%LOG_FILE%"
     exit /b 1
 )
 
-call "..\.venv\Scripts\activate.bat"
+call "%ROOT%.venv\Scripts\activate.bat"
 if errorlevel 1 (
     echo [ERROR] Falha ao ativar venv >> "%LOG_FILE%"
     exit /b 1
 )
 
-REM Detectar Python
-for /f "tokens=*" %%i in ('where python') do set PYTHON_EXE=%%i
-if not defined PYTHON_EXE (
-    echo [ERROR] Python nao encontrado no PATH >> "%LOG_FILE%"
+set "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
+if not exist "%PYTHON_EXE%" (
+    echo [ERROR] Python do venv nao encontrado: %PYTHON_EXE% >> "%LOG_FILE%"
     exit /b 1
 )
 

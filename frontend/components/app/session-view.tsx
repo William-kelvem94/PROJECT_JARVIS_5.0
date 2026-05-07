@@ -81,7 +81,7 @@ export const SessionView = ({
       {isConnected && <VantaController vantaRef={vantaEffectRef} isConnected={isConnected} />}
 
       {/* ── LADO DIREITO: Telemetria ────────────────────────────────────────── */}
-      <EngineeringHUD appConfig={appConfig} />
+      <EngineeringHUD />
 
       {/* ── LADO ESQUERDO: Console de Atividade ─────────────────────────────── */}
       <div className="pointer-events-none absolute top-8 left-8 z-30 flex max-w-sm flex-col gap-6">

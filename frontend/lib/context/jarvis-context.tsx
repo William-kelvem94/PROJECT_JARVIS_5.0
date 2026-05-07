@@ -53,9 +53,17 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
 
   // Loop de animação para o volume (Visualizadores)
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     let animationId: number;
     const updateVolume = () => {
@@ -72,8 +80,26 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   }, [isConnected]);
 
   const disconnect = useCallback(() => {
-    if (wsRef.current) wsRef.current.close();
-    if (mediaRecorderRef.current) mediaRecorderRef.current.stop();
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    if (wsRef.current) {
+      wsRef.current.onclose = null;
+      wsRef.current.onmessage = null;
+      wsRef.current.onerror = null;
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current.onaudioprocess = null;
+      processorRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => undefined);
+      audioContextRef.current = null;
+    }
     if (localStream) localStream.getTracks().forEach((t) => t.stop());
     if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
     setIsConnected(false);
@@ -117,6 +143,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
         source.connect(processor);
         processor.connect(audioContextRef.current!.destination);
+        processorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -214,6 +241,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       };
 
       ws.onclose = () => {
+        if (!mountedRef.current) return;
         setIsConnected(false);
         setLocalStream(null);
       };
@@ -229,9 +257,6 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     return () => {
       disconnect();
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
     };
   }, [disconnect]);
 

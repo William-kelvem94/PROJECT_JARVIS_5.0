@@ -1,0 +1,110 @@
+JARVIS Audit Report — branch WILL-JARVIS
+
+Scope
+- Read-only audit of /home/willi/.openclaw/workspace/jarvis_repo
+- Branch confirmed: WILL-JARVIS
+
+Executive summary
+- The repo is a hybrid monorepo: Next.js frontend + FastAPI backend.
+- Main risk areas: sensitive data committed, unauthenticated local-control endpoints, broken tests, duplicated routes, and docs/runtime drift.
+- Overall state: partially functional, but not stable enough to trust without cleanup.
+
+Architecture overview
+- frontend/: Next.js 15 / React
+- backend/: FastAPI, LLM routing, memory, perception, voice
+- config/: central settings
+- docs/: architecture/install/reorg docs
+- scripts/: startup/install/ops scripts
+
+Observed flow
+UI -> HTTP/WebSocket -> backend -> router/memory/perception/voice -> telemetry/state back to UI
+
+Critical findings
+1) Sensitive data is versioned
+- Evidence: data/kb_local/**, backend/data/**, data/memories.json, backend/data/jarvis_local.db, logs, notes
+- Impact: private history/context and local paths exposed
+- Severity: Critical
+
+2) Local-control endpoints lack visible auth
+- Evidence: backend/app/routes.py, backend/app/system_bridge.py
+- Paths: /memory, /logs, /logs/{date}, /screenshots, /screenshots/{filename}, /vault-memory, /system/volume, /system/brightness, /system/screenshot, /system/status
+- Impact: if reachable beyond localhost, this becomes data/control exposure
+- Severity: Critical
+
+High findings
+3) shell=True command execution
+- Evidence: backend/app/tools/system_executor.py, backend/app/tools/ai_tools.py
+- Impact: fragile command safety boundary
+- Severity: High
+
+4) Secrets pulled from env
+- Evidence: backend/app/config.py reads GEMINI_API_KEY, OPENROUTER_API_KEY, etc.
+- Impact: strong operational risk if .env/logs leak
+- Severity: High
+
+5) Voice WebSocket mismatch
+- Evidence: frontend/.env.example and frontend/lib/context/jarvis-context.tsx use ws://.../ws/voice-stream; backend exposes /ws/voice
+- Impact: default voice connection breaks
+- Severity: High
+
+Medium findings
+6) Merge conflict in tests
+- Evidence: backend/tests/test_routes.py has <<<<<<< HEAD / ======= / >>>>>>> main
+- Impact: SyntaxError, test collection breaks
+- Severity: Medium/High
+
+7) Inconsistent import layout in tests
+- Evidence: mixed backend.app... and app...
+- Impact: brittle execution depending on sys.path
+- Severity: Medium
+
+8) Duplicate /chat and inconsistent /health contracts
+- Evidence: backend/app/main.py and backend/app/routes.py both define /chat; /health output differs from tests
+- Impact: ambiguous behavior and failing assertions
+- Severity: Medium
+
+9) Frontend HUD state can stick on speaking
+- Evidence: frontend/app/page.tsx keeps speaking state while response exists
+- Impact: UI can appear stuck after first answer
+- Severity: Medium
+
+10) Polling is aggressive
+- Evidence: frontend/hooks/use-jarvis-data.ts polls /health, /api/status, /logs/{date} every 5s without visibility gating
+- Impact: unnecessary load/noise
+- Severity: Medium
+
+Docs / ops findings
+11) Docs and scripts disagree on boot flow
+- Evidence: README.md, JARVIS_STARTUP.md, docs/INSTALL.md, scripts/launch-backend.bat, scripts/run-backend.sh
+- Impact: easy to follow the wrong setup path
+- Severity: Medium
+
+12) Backend launch script path looks wrong
+- Evidence: scripts/launch-backend.bat checks ..\..\.venv\Scripts\activate.bat after cd backend
+- Impact: startup may fail even with a valid venv
+- Severity: Medium
+
+13) Shell scripts use inconsistent module paths
+- Evidence: scripts/run-backend.sh uses backend.app.main:app while code exposes app.main:app
+- Impact: operational fragility
+- Severity: Medium
+
+Recommended priorities
+P1
+- Remove merge conflict in backend/tests/test_routes.py
+- Fix import-path inconsistencies in tests
+- Consolidate /chat and /health into one contract
+- Fix voice WS route mismatch
+
+P2
+- Remove committed sensitive data / local DB / browser artifacts
+- Add auth/guardrails to local-control endpoints
+- Review shell=True usage and narrow command execution
+
+P3
+- Align docs and scripts with actual boot flow
+- Reduce aggressive polling in the frontend
+- Normalize naming/versioning across the repo
+
+File saved
+- /home/willi/.openclaw/workspace/jarvis_repo/JARVIS_AUDIT_REPORT_WILL-JARVIS.txt

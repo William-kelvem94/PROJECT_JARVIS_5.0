@@ -5,9 +5,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from loguru import logger
 
-from .chat_pipeline import chat_stream, chat_reply
 from .autonomous_brain import AutonomousBrain
-from .system_control import system_control_matrix
 from .routes import router as main_router
 from .system_bridge import router as system_bridge_router
 from .voice_websocket import router as voice_router
@@ -86,18 +84,6 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(main_router)
 app.include_router(system_bridge_router)
 app.include_router(voice_router)
-
-@app.get("/health")
-async def health():
-    return {"status": "online", "psyche_state": device_awareness.get_system_state()}
-
-@app.post("/chat")
-async def chat(user_id: str, message: str):
-    return await chat_reply(user_id, message)
-
-@app.get("/chat/stream")
-async def chat_streaming(user_id: str, message: str):
-    return await chat_stream(user_id, message)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
