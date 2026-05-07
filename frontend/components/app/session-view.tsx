@@ -66,16 +66,16 @@ export const SessionView = ({
   }, [isCameraEnabled, localStream]);
 
   return (
-    <section className="bg-jarvis-bg relative flex h-svh w-svw flex-col overflow-hidden" {...props}>
+    <section className="bg-jarvis-bg relative flex min-h-screen w-full flex-col overflow-hidden" {...props}>
       {/* Background Layers */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,35,1)_0%,rgba(2,2,8,1)_100%)]" />
 
       {/* HUD Grid Overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-size-[40px_40px] opacity-20" />
 
       {/* Decorative Cockpit Borders */}
       <div
-        className="pointer-events-none absolute inset-0 z-10 border-[30px] border-black/20"
+        className="pointer-events-none absolute inset-0 z-10 border-30 border-black/20"
         style={{
           clipPath:
             'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 5% 5%, 5% 95%, 95% 95%, 95% 5%, 5% 5%)',
@@ -126,12 +126,12 @@ export const SessionView = ({
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-            className="border-jarvis-cyan/5 absolute size-[550px] rounded-full border border-dashed"
+            className="border-jarvis-cyan/5 absolute size-137.5 rounded-full border border-dashed"
           />
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
-            className="absolute size-[700px] rounded-full border border-white/2"
+            className="absolute size-175 rounded-full border border-white/2"
           />
 
           {/* Target Reticle */}

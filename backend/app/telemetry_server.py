@@ -127,9 +127,15 @@ def start_telemetry_server():
     finally:
         sock.close()
 
-    thread = threading.Thread(
-        target=lambda: uvicorn.run(app, host="0.0.0.0", port=8001, log_level="warning"),
-        daemon=True
-    )
+    def _run_server() -> None:
+        uvicorn.run(
+            app,
+            host="127.0.0.1",
+            port=8001,
+            log_level="warning",
+            access_log=False,
+        )
+
+    thread = threading.Thread(target=_run_server, daemon=True)
     thread.start()
     logger.info("🚀 Dashboard de Telemetria disponível em: http://localhost:8001")

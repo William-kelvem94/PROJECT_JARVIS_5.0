@@ -9,6 +9,8 @@ from loguru import logger
 from .autonomous_brain import AutonomousBrain
 from .api import start_telemetry_server
 from .kb_loader import load_kb
+from .perception import perception_manager
+from .perception.voice_engine import add_callback as add_voice_callback, start as start_voice_engine
 from .routes import router as main_router
 from .system_bridge import router as system_bridge_router
 from .voice_websocket import router as voice_router
@@ -17,6 +19,8 @@ from .security.sentinel_parser import SentinelParser
 from .psyche.device_awareness import DeviceAwareness
 from .psyche.dream_cycle import DreamCycle
 from .psyche.gap_analyzer import GapAnalyzer
+from .multi_agent_analysis import start_multi_agent_analysis, stop_multi_agent_analysis, get_orchestrator
+from .auto_restart import enable_auto_restart, disable_auto_restart
 
 # --- Omega Protocol Singletons ---
 # Security
@@ -40,6 +44,23 @@ autonomous_brain = AutonomousBrain()
 async def lifespan(app: FastAPI):
     logger.info("Initializing JARVIS 5.0 Omega Core...")
 
+    try:
+        add_voice_callback(perception_manager._on_voice_event)
+    except Exception as e:
+        logger.warning(f"Falha ao registrar callback de voz: {e}")
+
+    try:
+        start_voice_engine()
+    except Exception as e:
+        logger.warning(f"Falha ao iniciar o Voice Engine: {e}")
+
+    # Start Telemetry Dashboard
+    try:
+        start_telemetry_server()
+        logger.info("Telemetry Dashboard started successfully on port 8001")
+    except Exception as e:
+        logger.warning(f"Não foi possível iniciar o Telemetry Dashboard: {e}")
+
     # 1. Start Autonomous Thinking Loop
     autonomous_brain.start_background_thinking()
 
@@ -52,10 +73,42 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(run_psyche_cycles())
     asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
 
+    # 4. Start Multi-Agent Analysis System
+    try:
+        start_multi_agent_analysis()
+        logger.info("Multi-Agent Analysis System started successfully")
+        
+        # Register Auto-Fix Agents
+        from .autofix_agents import register_autofix_agents
+        register_autofix_agents()
+        logger.info("Auto-Fix Agents registered successfully")
+    except Exception as e:
+        logger.warning(f"Failed to start Multi-Agent Analysis: {e}")
+
+    # 5. Enable Auto-Restart on Improvements (if enabled via env var)
+    if os.getenv("JARVIS_AUTO_RESTART", "0") == "1":
+        try:
+            enable_auto_restart()
+            logger.info("Auto-Restart System enabled")
+        except Exception as e:
+            logger.warning(f"Failed to enable Auto-Restart: {e}")
+
     yield
 
     logger.info("Shutting down JARVIS 5.0 Omega Core...")
     autonomous_brain.stop()
+    
+    # Stop Multi-Agent Analysis
+    try:
+        stop_multi_agent_analysis()
+    except Exception as e:
+        logger.warning(f"Error stopping Multi-Agent Analysis: {e}")
+    
+    # Disable Auto-Restart
+    try:
+        disable_auto_restart()
+    except Exception as e:
+        logger.warning(f"Error disabling Auto-Restart: {e}")
 
 async def run_psyche_cycles():
     """Background loop for subconscious processing."""
@@ -91,13 +144,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-async def _start_telemetry_dashboard():
-    try:
-        start_telemetry_server()
-    except Exception as e:
-        logger.warning(f"Não foi possível iniciar o Telemetry Dashboard automaticamente: {e}")
 
 app.include_router(main_router)
 app.include_router(system_bridge_router)

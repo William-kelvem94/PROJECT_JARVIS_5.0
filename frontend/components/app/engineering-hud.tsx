@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   UserFocus,
 } from '@phosphor-icons/react';
-import { useJarvisData } from '@/hooks/use-jarvis-data';
+import { useHealthData } from '@/hooks/use-jarvis-data';
 import { cn } from '@/lib/shadcn/utils';
 
 interface TelemetryData {
@@ -31,7 +31,7 @@ interface TelemetryData {
 }
 
 export function EngineeringHUD() {
-  const { health } = useJarvisData();
+  const { health } = useHealthData();
   const data: TelemetryData = {
     type: 'telemetry_update',
     cpu: health.cpu,
@@ -82,7 +82,7 @@ export function EngineeringHUD() {
                 <span className="font-mono text-[10px] font-bold tracking-[0.2em] text-white/90 uppercase">
                   OS Core 5.0
                 </span>
-                <span className="text-jarvis-cyan/50 font-mono text-[7px] tracking-[0.1em] uppercase">
+                <span className="text-jarvis-cyan/50 font-mono text-[7px] tracking-widest uppercase">
                   Secure Link Active
                 </span>
               </div>
@@ -187,8 +187,8 @@ function HudInfoBox({
   return (
     <div
       className={cn(
-        'flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] px-3 py-2 transition-all',
-        active ? 'border-white/10 bg-white/[0.05]' : 'opacity-50'
+        'flex items-center justify-between rounded-lg border border-white/5 bg-white/3 px-3 py-2 transition-all',
+        active ? 'border-white/10 bg-white/5' : 'opacity-50'
       )}
     >
       <div className="flex items-center gap-2.5">
