@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import psutil
@@ -11,6 +12,13 @@ from .utils.learning_manager import learning_manager
 from .utils.second_brain_connector import second_brain
 
 app = FastAPI(title="JARVIS Telemetry Dashboard")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/api/status")
 async def get_status():

@@ -2,10 +2,12 @@ import os
 import asyncio
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from loguru import logger
 
 from .autonomous_brain import AutonomousBrain
+from .api import start_telemetry_server
 from .kb_loader import load_kb
 from .routes import router as main_router
 from .system_bridge import router as system_bridge_router
@@ -82,6 +84,20 @@ async def handle_governor_action(action: str, state: str):
     pass
 
 app = FastAPI(lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+async def _start_telemetry_dashboard():
+    try:
+        start_telemetry_server()
+    except Exception as e:
+        logger.warning(f"Não foi possível iniciar o Telemetry Dashboard automaticamente: {e}")
 
 app.include_router(main_router)
 app.include_router(system_bridge_router)
