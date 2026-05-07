@@ -17,7 +17,7 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
 
   return (
     <JarvisProvider>
-      <main className="flex h-svh flex-col items-center justify-center overflow-hidden bg-black p-8 text-white">
+      <main className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black p-8 text-white">
         <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
           <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
         </div>

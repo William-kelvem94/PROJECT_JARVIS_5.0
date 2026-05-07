@@ -78,6 +78,35 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo [SETUP] Installing pygame for local TTS playback (REQUIRED)...
+"%PYTHON_EXE%" -m pip install pygame >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] pygame install failed. This is REQUIRED for TTS. See %LOG_FILE%
+  exit /b 1
+)
+
+echo [SETUP] Installing deepfilternet for noise suppression (REQUIRED)...
+"%PYTHON_EXE%" -m pip install deepfilternet >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] deepfilternet install failed. This is REQUIRED for voice processing. See %LOG_FILE%
+  exit /b 1
+)
+
+echo [SETUP] Installing face_recognition with hardware-adapted prebuilt wheels (REQUIRED)...
+echo [INFO] Attempting to install dlib prebuilt wheel for Windows...
+"%PYTHON_EXE%" -m pip install https://github.com/z-mahmud22/Dlib_Windows_Python3.x/raw/main/dlib-19.24.1-cp311-cp311-win_amd64.whl >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [WARN] Prebuilt dlib wheel failed, trying cmake build...
+  "%PYTHON_EXE%" -m pip install cmake >> "%LOG_FILE%" 2>&1
+  "%PYTHON_EXE%" -m pip install dlib >> "%LOG_FILE%" 2>&1
+)
+
+"%PYTHON_EXE%" -m pip install face_recognition >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] face_recognition install failed. Face identity Level A is REQUIRED. See %LOG_FILE%
+  exit /b 1
+)
+
 echo [SETUP] Installing resemblyzer with Windows-safe VAD wheel...
 "%PYTHON_EXE%" -m pip install webrtcvad-wheels >> "%LOG_FILE%" 2>&1
 "%PYTHON_EXE%" -m pip install resemblyzer --no-deps >> "%LOG_FILE%" 2>&1

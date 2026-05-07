@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentType, ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Activity,
   Brain,
@@ -36,6 +37,15 @@ import { JarvisProvider, useJarvis } from '@/context/JarvisContext';
 import { type TelemetryData, useJarvisData } from '@/hooks/use-jarvis-data';
 import { jarvisApi } from '@/lib/jarvis-endpoints';
 import { cn } from '@/lib/shadcn/utils';
+
+// Dynamic import with fallback
+const CapabilitiesStatusGrid = dynamic(
+  () => import('@/components/app/capabilities-status-grid').then(mod => ({ default: mod.CapabilitiesStatusGrid })),
+  {
+    loading: () => <div className="text-white/60 animate-pulse p-4">Carregando capabilities...</div>,
+    ssr: false
+  }
+);
 
 type MemoryItem = {
   id?: string;
@@ -237,11 +247,11 @@ function JarvisCockpit() {
   };
 
   return (
-    <main className="min-h-svh overflow-x-hidden bg-[#080a0f] text-slate-100">
+    <main className="min-h-screen overflow-x-hidden bg-jarvis-bg text-slate-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.08),transparent_28%),linear-gradient(180deg,#080a0f_0%,#0f1117_52%,#080a0f_100%)]" />
-      <div className="pointer-events-none fixed inset-0 [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:48px_48px] opacity-[0.07]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] bg-size-[48px_48px] opacity-[0.07]" />
 
-      <div className="relative mx-auto flex min-h-svh w-full max-w-[1680px] flex-col px-4 py-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-420 flex-col px-4 py-4 sm:px-6 lg:px-8">
         <header className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div className="grid size-12 place-items-center rounded-lg border border-cyan-300/30 bg-cyan-300/10">
@@ -284,7 +294,7 @@ function JarvisCockpit() {
             />
             <button
               onClick={() => projectData.refresh()}
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-slate-200 transition hover:border-cyan-200/30 hover:bg-cyan-200/10"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/4 px-3 text-xs font-medium text-slate-200 transition hover:border-cyan-200/30 hover:bg-cyan-200/10"
               title="Atualizar dados"
             >
               <RefreshCcw className={cn('size-4', projectData.isLoading && 'animate-spin')} />
@@ -326,11 +336,7 @@ function JarvisCockpit() {
               <PerceptionPanel telemetry={telemetry} activeObjects={activeObjects} />
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-3">
-              {capabilityGroups.map((group) => (
-                <CapabilityCard key={group.title} {...group} />
-              ))}
-            </div>
+            <CapabilitiesStatusGrid />
           </section>
 
           <aside className="grid content-start gap-4">
@@ -454,7 +460,7 @@ function HeaderMetric({
   tone: string;
 }) {
   return (
-    <div className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3">
+    <div className="flex h-10 items-center gap-2 rounded-lg border border-white/10 bg-white/4 px-3">
       <Icon className={cn('size-4', tone)} />
       <span className="text-[11px] text-slate-500 uppercase">{label}</span>
       <span className="text-sm font-semibold text-white tabular-nums">{value}</span>
@@ -499,7 +505,7 @@ function Panel({
   return (
     <section
       className={cn(
-        'rounded-xl border border-white/10 bg-white/[0.045] p-4 shadow-xl shadow-black/20 backdrop-blur-md',
+        'rounded-xl border border-white/10 bg-white/4.5 p-4 shadow-xl shadow-black/20 backdrop-blur-md',
         className
       )}
     >
@@ -624,7 +630,7 @@ function ModulePanel() {
             className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2"
           >
             <span className="text-sm text-slate-300">{item.label}</span>
-            <span className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[11px] text-slate-400 uppercase">
+            <span className="rounded-full bg-white/8 px-2 py-0.5 text-[11px] text-slate-400 uppercase">
               {item.state}
             </span>
           </div>
@@ -711,7 +717,7 @@ function CommandCenter({
                       'max-w-[88%] rounded-lg px-3 py-2 text-sm',
                       message.role === 'user'
                         ? 'ml-auto bg-cyan-300/[0.12] text-cyan-50'
-                        : 'bg-white/[0.08] text-slate-100'
+                        : 'bg-white/8 text-slate-100'
                     )}
                   >
                     <div className="mb-1 text-[10px] text-slate-500 uppercase">
@@ -737,7 +743,7 @@ function CommandCenter({
                 }}
                 rows={2}
                 placeholder="Ex: resumir logs de hoje, salvar memoria, analisar capturas..."
-                className="min-h-12 flex-1 resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+                className="min-h-12 flex-1 resize-none rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-sm text-white transition outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
               />
               <button
                 onClick={onSend}
@@ -936,7 +942,7 @@ function CapabilityCard({
   items: string[];
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+    <div className="rounded-xl border border-white/10 bg-white/4 p-4">
       <div className="mb-3 flex items-center gap-2">
         <Icon className={cn('size-4', tone)} />
         <h3 className="text-sm font-semibold text-white">{title}</h3>
@@ -1071,7 +1077,7 @@ function KnowledgeCapturePanel({
                 onMemoryDraftChange({ ...memoryDraft, title: event.target.value })
               }
               placeholder="Titulo da memoria"
-              className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+              className="h-9 w-full rounded-lg border border-white/10 bg-white/4 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
             />
             <textarea
               value={memoryDraft.content}
@@ -1080,7 +1086,7 @@ function KnowledgeCapturePanel({
               }
               rows={4}
               placeholder="O que o Jarvis deve lembrar?"
-              className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+              className="w-full resize-none rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
             />
             <div className="grid gap-2 sm:grid-cols-2">
               <input
@@ -1089,14 +1095,14 @@ function KnowledgeCapturePanel({
                   onMemoryDraftChange({ ...memoryDraft, project: event.target.value })
                 }
                 placeholder="Projeto"
-                className="h-9 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+                className="h-9 rounded-lg border border-white/10 bg-white/4 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
               />
               <select
                 value={memoryDraft.importance}
                 onChange={(event) =>
                   onMemoryDraftChange({ ...memoryDraft, importance: event.target.value })
                 }
-                className="h-9 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none focus:border-cyan-200/40"
+                className="h-9 rounded-lg border border-white/10 bg-white/4 px-3 text-sm text-white outline-none focus:border-cyan-200/40"
               >
                 <option value="BAIXA">Baixa</option>
                 <option value="MEDIA">Media</option>
@@ -1110,7 +1116,7 @@ function KnowledgeCapturePanel({
                 onMemoryDraftChange({ ...memoryDraft, keywords: event.target.value })
               }
               placeholder="keywords, separadas, por virgula"
-              className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+              className="h-9 w-full rounded-lg border border-white/10 bg-white/4 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
             />
             <button
               onClick={onSaveMemory}
@@ -1130,19 +1136,19 @@ function KnowledgeCapturePanel({
               value={noteDraft.title}
               onChange={(event) => onNoteDraftChange({ ...noteDraft, title: event.target.value })}
               placeholder="Titulo da nota"
-              className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+              className="h-9 w-full rounded-lg border border-white/10 bg-white/4 px-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
             />
             <textarea
               value={noteDraft.body}
               onChange={(event) => onNoteDraftChange({ ...noteDraft, body: event.target.value })}
               rows={3}
               placeholder="Conteudo para /notes"
-              className="w-full resize-none rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
+              className="w-full resize-none rounded-lg border border-white/10 bg-white/4 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-200/40"
             />
             <button
               onClick={onSaveNote}
               disabled={isSaving}
-              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.06] text-sm font-semibold text-slate-100 transition hover:border-emerald-200/30 hover:bg-emerald-200/10 disabled:text-slate-500"
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/6 text-sm font-semibold text-slate-100 transition hover:border-emerald-200/30 hover:bg-emerald-200/10 disabled:text-slate-500"
             >
               <FileText className="size-4" />
               Criar nota

@@ -35,6 +35,13 @@ librosa
 faster-whisper
 sounddevice
 edge-tts
+pygame
+deepfilternet  # Noise suppression for voice processing
+
+# Perception: face (Level A - Identity)
+# Note: face_recognition requires dlib which needs cmake on Windows
+# See setup-venv.bat for prebuilt wheel installation
+face_recognition
 
 # Vector store & embeddings
 chromadb

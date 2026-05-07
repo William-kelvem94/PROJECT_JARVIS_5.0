@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { jarvisApi, telemetryApi } from '@/lib/jarvis-endpoints';
 
 export interface HealthData {
@@ -34,6 +34,12 @@ export interface JarvisData {
   isThinking: boolean;
 }
 
+export interface HealthOnlyData {
+  health: HealthData;
+  logs: LogsData;
+  isThinking: boolean;
+}
+
 const DEFAULT_HEALTH: HealthData = {
   cpu: 0,
   ram: 0,
@@ -43,9 +49,8 @@ const DEFAULT_HEALTH: HealthData = {
   is_ai_ready: false,
 };
 
-export function useJarvisData(): JarvisData {
+function useSharedHealthLogic() {
   const [health, setHealth] = useState<HealthData>(DEFAULT_HEALTH);
-  const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
   const [logs, setLogs] = useState<LogsData>({ logs: [] });
   const [isThinking, setIsThinking] = useState(false);
 
@@ -69,17 +74,6 @@ export function useJarvisData(): JarvisData {
       }
     };
 
-    const fetchTelemetry = async () => {
-      try {
-        const res = await fetch(telemetryApi('/api/status'));
-        if (!res.ok) return;
-        const data = await res.json();
-        setTelemetry(data);
-      } catch {
-        // servidor de telemetria offline
-      }
-    };
-
     const fetchLogs = async () => {
       const today = new Date().toISOString().slice(0, 10);
       try {
@@ -95,17 +89,65 @@ export function useJarvisData(): JarvisData {
     };
 
     fetchHealth();
-    fetchTelemetry();
     fetchLogs();
 
     const interval = setInterval(() => {
       fetchHealth();
-      fetchTelemetry();
       fetchLogs();
     }, 5000);
 
     return () => clearInterval(interval);
   }, []);
 
+  return { health, logs, isThinking };
+}
+
+export function useJarvisData(): JarvisData {
+  const { health, logs, isThinking } = useSharedHealthLogic();
+  const [telemetry, setTelemetry] = useState<TelemetryData | null>(null);
+  const telemetryRetryTimer = useRef<number | null>(null);
+  const telemetryDisabled = useRef(false);
+
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      if (telemetryDisabled.current) return;
+      try {
+        const res = await fetch(telemetryApi('/status'));
+        if (!res.ok) {
+          throw new Error('Telemetry proxy unavailable');
+        }
+        const data = await res.json();
+        setTelemetry(data);
+        telemetryDisabled.current = false;
+      } catch {
+        telemetryDisabled.current = true;
+        if (telemetryRetryTimer.current === null) {
+          telemetryRetryTimer.current = window.setTimeout(() => {
+            telemetryDisabled.current = false;
+            fetchTelemetry();
+            telemetryRetryTimer.current = null;
+          }, 30000);
+        }
+      }
+    };
+
+    fetchTelemetry();
+
+    const interval = setInterval(() => {
+      fetchTelemetry();
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      if (telemetryRetryTimer.current !== null) {
+        window.clearTimeout(telemetryRetryTimer.current);
+      }
+    };
+  }, []);
+
   return { health, telemetry, logs, isThinking };
+}
+
+export function useHealthData(): HealthOnlyData {
+  return useSharedHealthLogic();
 }

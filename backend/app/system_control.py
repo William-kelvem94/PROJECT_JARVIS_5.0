@@ -19,16 +19,52 @@ class SystemControlMatrix:
 
     def __init__(self):
         logger.info("Initializing SystemControlMatrix core...")
-        # Initialize pycaw devices once to avoid repeated overhead
+        # Initialize pycaw devices with multiple fallback methods
+        self.volume_control = None
+        
+        # Method 1: Standard pycaw initialization
         try:
-            self.devices = AudioUtilities.GetSpeakers()
-            self.interface = self.devices.Activate(
+            devices = AudioUtilities.GetSpeakers()
+            if devices is None:
+                raise RuntimeError("No audio devices found")
+            
+            interface = devices.Activate(
                 IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            self.volume_control = cast(self.interface, POINTER(IAudioEndpointVolume))
-            logger.info("Audio control interface initialized successfully.")
+            self.volume_control = cast(interface, POINTER(IAudioEndpointVolume))
+            logger.info("Audio control interface initialized successfully (Method 1).")
+        
+        except AttributeError as e:
+            # Method 2: Try without cast
+            logger.warning(f"Method 1 failed ({e}), trying Method 2...")
+            try:
+                devices = AudioUtilities.GetSpeakers()
+                if devices:
+                    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                    self.volume_control = interface
+                    logger.info("Audio control initialized via Method 2 (no cast).")
+            except Exception as e2:
+                logger.error(f"Method 2 failed: {e2}")
+        
         except Exception as e:
-            logger.error(f"Failed to initialize Audio Control: {e}")
-            self.volume_control = None
+            # Method 3: Try alternative pycaw API
+            logger.warning(f"Standard initialization failed ({e}), trying Method 3...")
+            try:
+                from pycaw.api.audioclient import IAudioClient
+                from pycaw.api.endpointvolume import IAudioEndpointVolume as IAudioEndpointVolumeAPI
+                
+                devices = AudioUtilities.GetSpeakers()
+                if devices and hasattr(devices, 'QueryInterface'):
+                    self.volume_control = devices.QueryInterface(IAudioEndpointVolumeAPI)
+                    logger.info("Audio control initialized via Method 3 (QueryInterface).")
+                else:
+                    raise RuntimeError("QueryInterface not available")
+            
+            except Exception as e3:
+                # Method 4: Complete fallback - disable audio control
+                logger.error(f"Method 3 failed: {e3}")
+                logger.warning("All audio initialization methods failed. Audio control will be disabled.")
+                logger.info("This is not critical - system will continue without volume control.")
+                self.volume_control = None
 
     def set_volume(self, level: float):
         """
