@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const JARVIS_API_URL = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000';
-const TELEMETRY_URL = process.env.NEXT_PUBLIC_TELEMETRY_URL || 'http://localhost:8001';
+import { jarvisApi, telemetryApi } from '@/lib/jarvis-endpoints';
 
 export interface HealthData {
   cpu: number;
@@ -54,7 +52,7 @@ export function useJarvisData(): JarvisData {
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const res = await fetch(`${JARVIS_API_URL}/health`);
+        const res = await fetch(jarvisApi('/health'));
         if (!res.ok) return;
         const data = await res.json();
         setHealth({
@@ -73,7 +71,7 @@ export function useJarvisData(): JarvisData {
 
     const fetchTelemetry = async () => {
       try {
-        const res = await fetch(`${TELEMETRY_URL}/api/status`);
+        const res = await fetch(telemetryApi('/api/status'));
         if (!res.ok) return;
         const data = await res.json();
         setTelemetry(data);
@@ -85,7 +83,7 @@ export function useJarvisData(): JarvisData {
     const fetchLogs = async () => {
       const today = new Date().toISOString().slice(0, 10);
       try {
-        const res = await fetch(`${JARVIS_API_URL}/logs/${today}`);
+        const res = await fetch(jarvisApi(`/logs/${today}`));
         if (!res.ok) return;
         const data = await res.json();
         if (Array.isArray(data.logs)) {

@@ -21,11 +21,13 @@ class SecondBrainConnector:
     """
     
     def __init__(self, vault_path: str = None):
-        # 1. Prioridade: Argumento ou Env
-        v_path = vault_path or os.getenv("JARVIS_KB_PATH") or os.getenv("OBSIDIAN_VAULT_PATH")
+        # 1. Prioridade: vault inteiro. JARVIS_KB_PATH é só subárvore de ingestão.
+        v_path = vault_path or os.getenv("JARVIS_VAULT_ROOT") or os.getenv("OBSIDIAN_VAULT_PATH")
         if v_path and os.path.exists(v_path):
             self.vault_path = v_path
         # 2. Prioridade: Caminho conhecido no Windows
+        elif os.path.exists(r"D:\DOCUMENTOS\GitHub\Will-obsidian"):
+            self.vault_path = r"D:\DOCUMENTOS\GitHub\Will-obsidian"
         elif os.path.exists("C:/Users/willi/Documents/GitHub/Will-obsidian"):
             self.vault_path = "C:/Users/willi/Documents/GitHub/Will-obsidian"
         # 3. Fallback: Relativo ao projeto

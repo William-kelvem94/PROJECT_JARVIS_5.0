@@ -4,10 +4,14 @@ Detecta automaticamente CPU/GPU e ajusta perfis de performance.
 """
 
 import os
-import torch
 from pathlib import Path
 from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 
 class Settings(BaseSettings):
@@ -54,6 +58,9 @@ class Settings(BaseSettings):
     WHISPER_COMPUTE_TYPE: str = "int8"
     
     # --- MEMÓRIA & GC ---
+    JARVIS_VAULT_ROOT: str = os.getenv("JARVIS_VAULT_ROOT", r"D:\DOCUMENTOS\GitHub\Will-obsidian")
+    JARVIS_KB_PATH: str = os.getenv("JARVIS_KB_PATH", os.path.join(JARVIS_VAULT_ROOT, "JARVIS"))
+    OBSIDIAN_VAULT_PATH: str = os.getenv("OBSIDIAN_VAULT_PATH", JARVIS_VAULT_ROOT)
     ENABLE_GC: bool = os.getenv("ENABLE_GC", "false").lower() == "true"
     AGGRESSIVE_GC_THRESHOLD: float = 85.0
 
@@ -67,7 +74,7 @@ class Settings(BaseSettings):
         if env_device:
             self.DEVICE_TYPE = env_device.lower()
             self.GPU_ENABLED = self.DEVICE_TYPE == "cuda"
-        elif torch.cuda.is_available():
+        elif torch is not None and torch.cuda.is_available():
             self.DEVICE_TYPE = "cuda"
             self.GPU_ENABLED = True
         else:
@@ -76,6 +83,8 @@ class Settings(BaseSettings):
 
         if self.GPU_ENABLED:
             try:
+                if torch is None:
+                    raise RuntimeError("torch is not installed")
                 vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
                 self.LOW_VRAM_MODE = vram_gb < 5.0
             except Exception:

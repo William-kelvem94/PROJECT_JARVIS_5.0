@@ -1,147 +1,103 @@
 @echo off
-SETLOCAL EnableExtensions EnableDelayedExpansion
+setlocal EnableExtensions EnableDelayedExpansion
+chcp 65001 >nul
 
-REM ============================================================
-REM JARVIS 5.0 - Virtual Environment Setup Script
-REM Setup and configure Python virtual environment with dependencies
-REM ============================================================
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+set "VENV_DIR=%ROOT%.venv"
+set "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
+set "LOG_DIR=%ROOT%logs"
+set "LOG_FILE=%LOG_DIR%\venv-setup.log"
+set "REQ_DIR=%ROOT%backend\app"
+set "REQ_BASE=%REQ_DIR%\requirements-base.txt"
+set "REQ_CPU=%REQ_DIR%\requirements-torch-cpu.txt"
+set "REQ_CUDA=%REQ_DIR%\requirements-torch-cu118.txt"
 
-REM ─────────────────────────────────────────────────────────────
-REM 1. INITIALIZATION & PATH SETUP
-REM ─────────────────────────────────────────────────────────────
-cd /d "%~dp0.."
-SET "ROOT=%~dp0..\"
-SET "VENV_DIR=%ROOT%.venv"
-SET "VENV_ACT=%VENV_DIR%\Scripts\activate.bat"
-SET "PYTHON_EXE=%VENV_DIR%\Scripts\python.exe"
-SET "LOG_DIR=%ROOT%logs"
-SET "LOG_FILE=%LOG_DIR%\venv-setup.log"
-SET "BACK_DIR=%ROOT%backend"
-SET "REQ_FILE=%BACK_DIR%\app\requirements.txt"
-
-REM Create logs directory if it doesn't exist
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%"
+echo [%date% %time%] Starting JARVIS venv setup > "%LOG_FILE%"
 
-REM Initialize log file
-echo [%date% %time%] Starting JARVIS 5.0 venv setup... > "%LOG_FILE%"
-echo Root directory: %ROOT% >> "%LOG_FILE%"
+if not defined JARVIS_SYSTEM_PYTHON (
+  call "%ROOT%scripts\check-prerequisites.bat"
+  if errorlevel 1 exit /b 1
+)
 
-REM ─────────────────────────────────────────────────────────────
-REM 2. VENV CREATION (if not exists)
-REM ─────────────────────────────────────────────────────────────
-if exist "%VENV_ACT%" (
-    echo [INFO] Virtual environment already exists at %VENV_DIR%
-    echo [INFO] Virtual environment already exists at %VENV_DIR% >> "%LOG_FILE%"
+if not defined JARVIS_TORCH_PROFILE set "JARVIS_TORCH_PROFILE=cpu"
+if not defined JARVIS_AI_DEVICE set "JARVIS_AI_DEVICE=cpu"
+
+if "%JARVIS_FORCE_RECREATE_VENV%"=="1" (
+  if exist "%VENV_DIR%" (
+    for /f "tokens=1-3 delims=/ " %%a in ("%date%") do set "DATE_STAMP=%%c%%b%%a"
+    set "BROKEN_DIR=%ROOT%.venv.broken-!DATE_STAMP!-%time::=%"
+    set "BROKEN_DIR=!BROKEN_DIR: =0!"
+    echo [VENV] Renaming existing venv to !BROKEN_DIR!
+    move "%VENV_DIR%" "!BROKEN_DIR!" >> "%LOG_FILE%" 2>&1
+  )
+)
+
+if exist "%PYTHON_EXE%" (
+  "%PYTHON_EXE%" --version >> "%LOG_FILE%" 2>&1
+  if errorlevel 1 (
+    echo [VENV] Existing venv is broken. Recreate with JARVIS_FORCE_RECREATE_VENV=1.
+    exit /b 1
+  )
 ) else (
-    echo [SETUP] Creating virtual environment...
-    echo [SETUP] Creating virtual environment... >> "%LOG_FILE%"
-    python -m venv "%VENV_DIR%" >> "%LOG_FILE%" 2>&1
-    if !ERRORLEVEL! NEQ 0 (
-        echo [ERROR] Failed to create virtual environment
-        echo [ERROR] Failed to create virtual environment >> "%LOG_FILE%"
-        exit /b 1
-    )
-)
-
-REM ─────────────────────────────────────────────────────────────
-REM 3. ACTIVATE VENV
-REM ─────────────────────────────────────────────────────────────
-echo [SETUP] Activating virtual environment...
-call "%VENV_ACT%"
-if !ERRORLEVEL! NEQ 0 (
-    echo [ERROR] Failed to activate virtual environment
-    echo [ERROR] Failed to activate virtual environment >> "%LOG_FILE%"
+  echo [VENV] Creating .venv with %JARVIS_SYSTEM_PYTHON%
+  "%JARVIS_SYSTEM_PYTHON%" -m venv "%VENV_DIR%" >> "%LOG_FILE%" 2>&1
+  if errorlevel 1 (
+    echo [ERROR] Failed to create .venv. See %LOG_FILE%
     exit /b 1
+  )
 )
 
-REM ─────────────────────────────────────────────────────────────
-REM 4. UPGRADE PIP, SETUPTOOLS, WHEEL
-REM ─────────────────────────────────────────────────────────────
-echo [SETUP] Upgrading pip, setuptools, wheel...
-%PYTHON_EXE% -m pip install --upgrade pip setuptools wheel --quiet >> "%LOG_FILE%" 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    echo [WARNING] Failed to upgrade pip tools. Continuing...
-    echo [WARNING] Failed to upgrade pip tools >> "%LOG_FILE%"
+if not exist "%PYTHON_EXE%" (
+  echo [ERROR] Python from .venv not found: %PYTHON_EXE%
+  exit /b 1
 )
 
-REM ─────────────────────────────────────────────────────────────
-REM 5. INSTALL WEBRTCVAD-WHEELS (Windows dependency for resemblyzer)
-REM ─────────────────────────────────────────────────────────────
-echo [SETUP] Installing webrtcvad-wheels (Windows compatibility)...
-%PYTHON_EXE% -m pip install webrtcvad-wheels --quiet >> "%LOG_FILE%" 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    echo [WARNING] Failed to install webrtcvad-wheels
-    echo [WARNING] Failed to install webrtcvad-wheels >> "%LOG_FILE%"
-)
+echo [SETUP] Upgrading pip tools...
+"%PYTHON_EXE%" -m pip install --upgrade pip setuptools wheel >> "%LOG_FILE%" 2>&1
+if errorlevel 1 exit /b 1
 
-REM ─────────────────────────────────────────────────────────────
-REM 6. INSTALL RESEMBLYZER (no-deps to avoid C++ compilation)
-REM ─────────────────────────────────────────────────────────────
-echo [SETUP] Installing resemblyzer (--no-deps)...
-%PYTHON_EXE% -m pip install resemblyzer --no-deps --quiet >> "%LOG_FILE%" 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    echo [WARNING] Failed to install resemblyzer
-    echo [WARNING] Failed to install resemblyzer >> "%LOG_FILE%"
-)
-
-REM ─────────────────────────────────────────────────────────────
-REM 7. INSTALL PYTORCH (based on JARVIS_AI_DEVICE)
-REM ─────────────────────────────────────────────────────────────
-if not defined JARVIS_AI_DEVICE (
-    SET "JARVIS_AI_DEVICE=cpu"
-)
-
-if "!JARVIS_AI_DEVICE!"=="cuda" (
-    echo [SETUP] Installing PyTorch with CUDA 12.1 support...
-    %PYTHON_EXE% -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121 --quiet >> "%LOG_FILE%" 2>&1
-) else if "!JARVIS_AI_DEVICE!"=="openvino" (
-    echo [SETUP] Installing PyTorch CPU (OpenVINO fallback)...
-    %PYTHON_EXE% -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu --quiet >> "%LOG_FILE%" 2>&1
+if /I "%JARVIS_TORCH_PROFILE%"=="cu118" (
+  set "REQ_TORCH=%REQ_CUDA%"
 ) else (
-    echo [SETUP] Installing PyTorch CPU...
-    %PYTHON_EXE% -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu --quiet >> "%LOG_FILE%" 2>&1
+  set "REQ_TORCH=%REQ_CPU%"
 )
 
-if !ERRORLEVEL! NEQ 0 (
-    echo [ERROR] Failed to install PyTorch
-    echo [ERROR] Failed to install PyTorch >> "%LOG_FILE%"
-    exit /b 1
+echo [SETUP] Installing PyTorch profile: %JARVIS_TORCH_PROFILE%
+"%PYTHON_EXE%" -m pip install -r "%REQ_TORCH%" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] PyTorch install failed. See %LOG_FILE%
+  exit /b 1
 )
 
-REM ─────────────────────────────────────────────────────────────
-REM 8. INSTALL REQUIREMENTS.TXT
-REM ─────────────────────────────────────────────────────────────
-if not exist "%REQ_FILE%" (
-    echo [ERROR] Requirements file not found: %REQ_FILE%
-    echo [ERROR] Requirements file not found: %REQ_FILE% >> "%LOG_FILE%"
-    exit /b 1
+echo [SETUP] Installing backend base dependencies...
+"%PYTHON_EXE%" -m pip install -r "%REQ_BASE%" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] Backend requirements install failed. See %LOG_FILE%
+  exit /b 1
 )
 
-echo [SETUP] Installing requirements from %REQ_FILE%...
-%PYTHON_EXE% -m pip install -r "%REQ_FILE%" --ignore-requires-python --quiet >> "%LOG_FILE%" 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    echo [ERROR] Failed to install requirements
-    echo [ERROR] Failed to install requirements >> "%LOG_FILE%"
-    exit /b 1
+echo [SETUP] Installing resemblyzer with Windows-safe VAD wheel...
+"%PYTHON_EXE%" -m pip install webrtcvad-wheels >> "%LOG_FILE%" 2>&1
+"%PYTHON_EXE%" -m pip install resemblyzer --no-deps >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [WARN] resemblyzer install failed. Speaker ID will be disabled. See %LOG_FILE%
 )
 
-REM ─────────────────────────────────────────────────────────────
-REM 9. VALIDATION - Test critical imports
-REM ─────────────────────────────────────────────────────────────
-echo [SETUP] Validating critical imports...
-%PYTHON_EXE% -c "import fastapi, uvicorn, torch; print('Validation OK')" >> "%LOG_FILE%" 2>&1
-if !ERRORLEVEL! NEQ 0 (
-    echo [ERROR] Validation failed - critical imports missing
-    echo [ERROR] Validation failed - critical imports missing >> "%LOG_FILE%"
-    exit /b 1
+echo [SETUP] Validating imports...
+"%PYTHON_EXE%" -c "import fastapi, uvicorn, torch, chromadb; print('core-ok', torch.__version__)" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [ERROR] Core validation failed. See %LOG_FILE%
+  exit /b 1
 )
 
-REM ─────────────────────────────────────────────────────────────
-REM 10. SUCCESS
-REM ─────────────────────────────────────────────────────────────
-echo [OK] Virtual environment setup completed successfully!
-echo [OK] Virtual environment setup completed successfully! >> "%LOG_FILE%"
-echo [INFO] Device: !JARVIS_AI_DEVICE! >> "%LOG_FILE%"
-echo [INFO] Setup completed at %date% %time% >> "%LOG_FILE%"
+"%PYTHON_EXE%" -c "import webrtcvad; import resemblyzer; print('voice-id-ok')" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+  echo [WARN] Speaker ID validation failed, continuing without blocking startup.
+)
 
+echo [OK] Virtual environment ready.
+echo [INFO] Python: %PYTHON_EXE%
+echo [INFO] Device: %JARVIS_AI_DEVICE% / Torch: %JARVIS_TORCH_PROFILE%
 exit /b 0

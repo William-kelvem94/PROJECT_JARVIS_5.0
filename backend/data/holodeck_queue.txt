@@ -1,4 +1,0 @@
-[2026-05-06T10:07:57.589181] TASK: Validate Refine integration logic between Psyche and Core-API
-[2026-05-06T10:07:57.593451] TASK: Validate Update documentation on Playwright trigger conditions
-[2026-05-06T10:11:25.705144] TASK: Validate Refine integration logic between Psyche and Core-API
-[2026-05-06T10:11:25.709381] TASK: Validate Update documentation on Playwright trigger conditions

@@ -21,11 +21,10 @@ class TestChatPipeline:
             mock_memory.save_session = AsyncMock()
 
             with patch('app.chat_pipeline.brain') as mock_brain:
-                from unittest.mock import MagicMock
-                mock_brain.reason_stream = MagicMock(return_value=async_iter())
+                mock_brain.reason = AsyncMock(return_value="Olá")
 
                 from app.chat_pipeline import chat_reply
                 result = await chat_reply("test_user", "Oi")
                 assert result == "Olá"
-                mock_memory.add_memory.assert_called_once()
+                assert mock_memory.add_memory.call_count == 2
                 mock_memory.save_session.assert_called_once()

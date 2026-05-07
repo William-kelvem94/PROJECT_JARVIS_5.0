@@ -1,6 +1,6 @@
+import type { ComponentProps } from 'react';
 import dynamic from 'next/dynamic';
 import { type MotionProps, motion } from 'motion/react';
-import type { ComponentProps } from 'react';
 import { AppConfig } from '@/app-config';
 import type { AgentAudioVisualizerAuraProps } from '@/components/agents-ui/agent-audio-visualizer-aura';
 import type { AgentAudioVisualizerBarProps } from '@/components/agents-ui/agent-audio-visualizer-bar';
@@ -11,45 +11,35 @@ import { useJarvis } from '@/context/JarvisContext';
 import { cn } from '@/lib/shadcn/utils';
 
 // Lazy imports — cada visualizador só carrega se for o tipo configurado
-const AgentAudioVisualizerAura = dynamic<
-  AgentAudioVisualizerAuraProps & ComponentProps<'div'>
->(
+const AgentAudioVisualizerAura = dynamic<AgentAudioVisualizerAuraProps & ComponentProps<'div'>>(
   () =>
     import('@/components/agents-ui/agent-audio-visualizer-aura').then((m) => ({
       default: m.AgentAudioVisualizerAura,
     })),
   { ssr: false }
 );
-const AgentAudioVisualizerBar = dynamic<
-  AgentAudioVisualizerBarProps & ComponentProps<'div'>
->(
+const AgentAudioVisualizerBar = dynamic<AgentAudioVisualizerBarProps & ComponentProps<'div'>>(
   () =>
     import('@/components/agents-ui/agent-audio-visualizer-bar').then((m) => ({
       default: m.AgentAudioVisualizerBar,
     })),
   { ssr: false }
 );
-const AgentAudioVisualizerGrid = dynamic<
-  AgentAudioVisualizerGridProps & ComponentProps<'div'>
->(
+const AgentAudioVisualizerGrid = dynamic<AgentAudioVisualizerGridProps & ComponentProps<'div'>>(
   () =>
     import('@/components/agents-ui/agent-audio-visualizer-grid').then((m) => ({
       default: m.AgentAudioVisualizerGrid,
     })),
   { ssr: false }
 );
-const AgentAudioVisualizerRadial = dynamic<
-  AgentAudioVisualizerRadialProps & ComponentProps<'div'>
->(
+const AgentAudioVisualizerRadial = dynamic<AgentAudioVisualizerRadialProps & ComponentProps<'div'>>(
   () =>
     import('@/components/agents-ui/agent-audio-visualizer-radial').then((m) => ({
       default: m.AgentAudioVisualizerRadial,
     })),
   { ssr: false }
 );
-const AgentAudioVisualizerWave = dynamic<
-  AgentAudioVisualizerWaveProps & ComponentProps<'div'>
->(
+const AgentAudioVisualizerWave = dynamic<AgentAudioVisualizerWaveProps & ComponentProps<'div'>>(
   () =>
     import('@/components/agents-ui/agent-audio-visualizer-wave').then((m) => ({
       default: m.AgentAudioVisualizerWave,

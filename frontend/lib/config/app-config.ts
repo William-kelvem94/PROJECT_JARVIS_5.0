@@ -23,11 +23,14 @@ export interface AppConfig {
   audioVisualizerWaveLineWidth?: number;
   audioVisualizerGridRowCount?: number;
   audioVisualizerGridColumnCount?: number;
+  audioVisualizerRadialBarCount?: number;
+  audioVisualizerRadialRadius?: number;
+  audioVisualizerBarCount?: number;
 
   // optional toggle for vanta background (setting false will disable)
   enableVanta?: boolean;
   // allow arbitrary extra fields (used by audio visualizer settings)
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
@@ -55,6 +58,9 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   audioVisualizerWaveLineWidth: Number(process.env.NEXT_PUBLIC_AUDIO_WAVE_WIDTH ?? '3'),
   audioVisualizerGridRowCount: Number(process.env.NEXT_PUBLIC_AUDIO_GRID_ROWS ?? '9'),
   audioVisualizerGridColumnCount: Number(process.env.NEXT_PUBLIC_AUDIO_GRID_COLUMNS ?? '9'),
+  audioVisualizerRadialBarCount: Number(process.env.NEXT_PUBLIC_AUDIO_RADIAL_BARS ?? '25'),
+  audioVisualizerRadialRadius: Number(process.env.NEXT_PUBLIC_AUDIO_RADIAL_RADIUS ?? '12'),
+  audioVisualizerBarCount: Number(process.env.NEXT_PUBLIC_AUDIO_BAR_COUNT ?? '5'),
 
   enableVanta: process.env.NEXT_PUBLIC_ENABLE_VANTA !== 'false',
 };

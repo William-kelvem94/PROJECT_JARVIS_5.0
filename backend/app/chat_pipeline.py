@@ -30,6 +30,9 @@ ALLOWED_TOOL_NAMES = {
 
 async def chat_reply(user_id: str, user_message: str) -> str:
     """Resposta simples (síncrona para a API)."""
+    if not user_message.strip():
+        raise ValueError("user_message cannot be empty")
+
     context = await memory.get_context(user_id, query=user_message)
     persona_context = persona.get_system_prompt()
     full_prompt = f"{persona_context}\nUsuário: {user_message}\nContexto: {context}"
@@ -39,6 +42,14 @@ async def chat_reply(user_id: str, user_message: str) -> str:
     # Salva na memória
     await memory.add_memory(user_id, user_message, source="user")
     await memory.add_memory(user_id, reply, source="jarvis")
+    await memory.save_session(
+        user_id,
+        [
+            {"role": "user", "content": user_message},
+            {"role": "jarvis", "content": reply},
+        ],
+        summary=reply[:500],
+    )
 
     # Voz: Fala a resposta localmente
     from .voice.tts_engine import tts_engine
@@ -48,6 +59,9 @@ async def chat_reply(user_id: str, user_message: str) -> str:
 
 async def chat_stream(user_id: str, user_message: str):
     """Pipeline de chat com streaming, memória e execução de ferramentas em tempo real."""
+    if not user_message.strip():
+        raise ValueError("user_message cannot be empty")
+
     context = await memory.get_context(user_id, query=user_message)
     persona_context = persona.get_system_prompt()
 
