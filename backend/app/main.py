@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from loguru import logger
 
 from .autonomous_brain import AutonomousBrain
+from .kb_loader import load_kb
 from .routes import router as main_router
 from .system_bridge import router as system_bridge_router
 from .voice_websocket import router as voice_router
@@ -26,7 +27,7 @@ dream_cycle = DreamCycle(
     logs_path="logs/interactions.log",
     obsidian_kb_path=os.environ.get(
         "JARVIS_KB_PATH",
-        os.path.join(os.path.dirname(__file__), "..", "..", "data", "kb_local", "JARVIS", "KnowledgeBase")
+        os.path.join(os.environ.get("JARVIS_VAULT_ROOT", r"D:\DOCUMENTOS\GitHub\Will-obsidian"), "JARVIS")
     ),
     holodeck_queue_path="data/holodeck_queue.txt"
 )
@@ -44,7 +45,8 @@ async def lifespan(app: FastAPI):
     initial_state = device_awareness.get_system_state()
     logger.info(f"Initial Psyche State: {initial_state}")
 
-    # 3. Schedule Dream Cycle, Gap Analysis and Resource Governor
+    # 3. Schedule KB sync, Dream Cycle, Gap Analysis and Resource Governor
+    asyncio.create_task(load_kb())
     asyncio.create_task(run_psyche_cycles())
     asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
 

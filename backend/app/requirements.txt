@@ -1,67 +1,8 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# JARVIS 5.0 - Backend Requirements
-# ─────────────────────────────────────────────────────────────────────────────
+# Default CPU install used by CI and simple pip workflows.
+# The Windows launcher installs a hardware-specific torch profile first.
 
-# ── Core API
-fastapi
-uvicorn[standard]
-pydantic-settings
-python-dotenv
-requests
-loguru
-aiohttp
-psutil
-watchfiles
+-r requirements-torch-cpu.txt
+-r requirements-base.txt
 
-# ── Browser Automation
-playwright
-watchdog
-
-# ── Screen / GPU monitoring
-GPUtil
-mss
-Pillow
-pyautogui
-onnxruntime
-
-# ── Perception: Face
-mediapipe
-opencv-python
-numpy
-
-# ── Perception: Object detection (YOLOv8)
-ultralytics
-
-# ── Perception: Voice - Wake Word
-openwakeword
-
-# ── Perception: Voice - Speaker ID
-# webrtcvad-wheels deve ser instalado ANTES do resemblyzer no Windows
-# (substitui o webrtcvad nativo que requer compilação C++)
-webrtcvad-wheels
-resemblyzer
-
-# ── Perception: Voice - Transcricao Offline
-faster-whisper
-
-# ── Perception: Audio Input
-sounddevice
-
-# ── Perception: Text-to-Speech
-edge-tts
-# pygame  # opcional: playback local de audio (nao suporta Python 3.14+)
-
-# ── Vector Store & Embeddings (RAG)
-chromadb
-sentence-transformers
-faiss-cpu
-
-# ── Sistema OS (controle de volume, brilho, tela)
-pycaw
-screen-brightness-control
-screeninfo
-comtypes
-
-# ── PyTorch (CPU por padrão; GPU via script de setup)
-torch
-torchvision --index-url https://download.pytorch.org/whl/cpu
+# resemblyzer is installed by scripts/setup-venv.bat with --no-deps after
+# webrtcvad-wheels is present, avoiding native webrtcvad compilation on Windows.

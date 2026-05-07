@@ -262,11 +262,12 @@ export const VantaOrb = ({
       stateRef.current.frame = requestAnimationFrame(draw);
     };
 
-    stateRef.current.frame = requestAnimationFrame(draw);
+    const state = stateRef.current;
+    state.frame = requestAnimationFrame(draw);
 
     return () => {
-      stateRef.current.active = false;
-      cancelAnimationFrame(stateRef.current.frame);
+      state.active = false;
+      cancelAnimationFrame(state.frame);
       ctx.clearRect(0, 0, SIZE, SIZE);
     };
   }, [isConnected]);

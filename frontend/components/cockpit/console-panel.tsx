@@ -12,7 +12,7 @@ export function ConsolePanel({ logs, emptyText }: { logs: string[]; emptyText?: 
   return (
     <div className="h-64 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-4 font-mono text-xs backdrop-blur">
       {logs.length === 0 && (
-        <div className="italic text-white/40">
+        <div className="text-white/40 italic">
           {emptyText || 'Nenhum log de sistema ainda — o Jarvis está ouvindo.'}
         </div>
       )}

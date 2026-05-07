@@ -1,1 +1,1 @@
-export * from './fui-panel';
+export { default } from './fui-panel';

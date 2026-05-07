@@ -1,8 +1,9 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 
 interface Messages {
-  [key: string]: any;
+  [key: string]: string | Messages;
 }
 
 const LOCALE_MAP: Record<string, () => Promise<Messages>> = {
@@ -27,9 +28,9 @@ export function useI18n() {
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
-    let value: any = messages;
+    let value: string | Messages | undefined = messages;
     for (const k of keys) {
-      value = value?.[k];
+      value = typeof value === 'object' ? value[k] : undefined;
     }
     if (typeof value !== 'string') return key;
     if (params) {

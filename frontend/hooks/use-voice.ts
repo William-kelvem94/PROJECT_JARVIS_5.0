@@ -1,5 +1,6 @@
 'use client';
-import { useState, useCallback, useRef, useEffect } from 'react';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useVoice() {
   const [isListening, setIsListening] = useState(false);
@@ -23,7 +24,8 @@ export function useVoice() {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
     clearReconnectTimer();
 
-    const scheme = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const scheme =
+      typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || `${scheme}://${host}:8000/ws/voice`;
     const ws = new WebSocket(wsUrl);
@@ -34,23 +36,22 @@ export function useVoice() {
         const data = JSON.parse(event.data);
 
         if (data.type === 'status_update') {
-            setStatus(data.status);
-            if (data.status === 'listening') {
-                setIsListening(true);
-                setTranscript('Escutando...');
-                setResponse('');
-            } else if (data.status === 'idle') {
-                setIsListening(false);
-            }
+          setStatus(data.status);
+          if (data.status === 'listening') {
+            setIsListening(true);
+            setTranscript('Escutando...');
+            setResponse('');
+          } else if (data.status === 'idle') {
+            setIsListening(false);
+          }
 
-            if (data.transcript) setTranscript(data.transcript);
-            if (data.response) setResponse(data.response);
-        }
-        else if (data.type === 'response_chunk') {
-            setResponse(prev => prev + data.text);
+          if (data.transcript) setTranscript(data.transcript);
+          if (data.response) setResponse(data.response);
+        } else if (data.type === 'response_chunk') {
+          setResponse((prev) => prev + data.text);
         }
       } catch (e) {
-        console.error("Erro ao processar mensagem WS:", e);
+        console.error('Erro ao processar mensagem WS:', e);
       }
     };
 
@@ -60,36 +61,36 @@ export function useVoice() {
     };
 
     ws.onclose = () => {
-        if (!mountedRef.current) return;
-        console.log('🔌 HUD Desconectado do Backend');
-        setStatus('idle');
-        setIsListening(false);
-        // Tenta reconectar após 3 segundos, sem acumular timers
-        clearReconnectTimer();
-        reconnectTimerRef.current = setTimeout(() => {
-          connect();
-        }, 3000);
+      if (!mountedRef.current) return;
+      console.log('🔌 HUD Desconectado do Backend');
+      setStatus('idle');
+      setIsListening(false);
+      // Tenta reconectar após 3 segundos, sem acumular timers
+      clearReconnectTimer();
+      reconnectTimerRef.current = setTimeout(() => {
+        connect();
+      }, 3000);
     };
   }, []);
 
   const toggleListening = () => {
-      // Como o backend controla o áudio agora, o clique apenas força o backend a escutar
-      if (wsRef.current?.readyState === WebSocket.OPEN) {
-          if (!isListening) {
-              wsRef.current.send(JSON.stringify({ type: "manual_trigger" }));
-              // O status vai mudar pra 'listening' assim que o backend confirmar
-          }
-      } else {
-          connect();
+    // Como o backend controla o áudio agora, o clique apenas força o backend a escutar
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      if (!isListening) {
+        wsRef.current.send(JSON.stringify({ type: 'manual_trigger' }));
+        // O status vai mudar pra 'listening' assim que o backend confirmar
       }
+    } else {
+      connect();
+    }
   };
 
   useEffect(() => {
     connect();
     return () => {
-        mountedRef.current = false;
-        clearReconnectTimer();
-        wsRef.current?.close();
+      mountedRef.current = false;
+      clearReconnectTimer();
+      wsRef.current?.close();
     };
   }, [connect]);
 
@@ -99,6 +100,6 @@ export function useVoice() {
     response,
     status,
     toggleListening,
-    connect
+    connect,
   };
 }

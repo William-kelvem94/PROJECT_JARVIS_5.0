@@ -13,7 +13,7 @@ const ViewController = dynamic(
 );
 
 export function App({ appConfig }: { appConfig: AppConfig }) {
-  const [participantName, setParticipantName] = useState<string>('user');
+  const [, setParticipantName] = useState<string>('user');
 
   return (
     <JarvisProvider>

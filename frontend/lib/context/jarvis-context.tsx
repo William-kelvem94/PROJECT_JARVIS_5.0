@@ -1,10 +1,10 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { jarvisApi } from '@/lib/jarvis-endpoints';
 
 type ExtendedWindow = Window & {
   webkitAudioContext?: typeof AudioContext;
-  _audioProcessor?: ScriptProcessorNode;
 };
 
 export interface Message {
@@ -130,7 +130,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       const defaultScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const wsUrl =
         process.env.NEXT_PUBLIC_WS_URL ||
-        `${defaultScheme}://${window.location.hostname}:8000/ws/voice-stream`;
+        `${defaultScheme}://${window.location.hostname}:8000/ws/voice`;
       const ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
 
@@ -140,31 +140,6 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         setError(null);
 
         // Em vez de MediaRecorder, usamos ScriptProcessor para áudio BRUTO (PCM)
-        const processor = audioContextRef.current!.createScriptProcessor(4096, 1, 1);
-        source.connect(processor);
-        processor.connect(audioContextRef.current!.destination);
-        processorRef.current = processor;
-
-        processor.onaudioprocess = (e) => {
-          if (ws.readyState === WebSocket.OPEN) {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const pcmData = new Int16Array(inputData.length);
-            // Conversão Float32 -> Int16
-            for (let i = 0; i < inputData.length; i++) {
-              pcmData[i] = Math.max(-1, Math.min(1, inputData[i])) * 0x7fff;
-            }
-            ws.send(pcmData.buffer);
-          }
-        };
-        // Envia configuração real do hardware (Bug #5)
-        ws.send(
-          JSON.stringify({
-            type: 'config',
-            sample_rate: audioContextRef.current?.sampleRate || 48000,
-          })
-        );
-
-        (window as ExtendedWindow)._audioProcessor = processor; // Evita Garbage Collection
       };
 
       ws.onmessage = async (event) => {
@@ -212,7 +187,48 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         else if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
-            if (data.type === 'message' || data.type === 'message_chunk') {
+            if (data.type === 'status_update') {
+              setAgentState(data.status ?? 'idle');
+              setIsSpeaking(data.status === 'speaking');
+              if (data.response) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: 'assistant',
+                    content: data.response,
+                    timestamp: new Date().toLocaleTimeString(),
+                  },
+                ]);
+              }
+              if (data.transcript) {
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: 'user',
+                    content: data.transcript,
+                    timestamp: new Date().toLocaleTimeString(),
+                  },
+                ]);
+              }
+            } else if (data.type === 'response_chunk') {
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.role === 'assistant') {
+                  return [
+                    ...prev.slice(0, -1),
+                    { ...last, content: `${last.content}${data.text ?? ''}` },
+                  ];
+                }
+                return [
+                  ...prev,
+                  {
+                    role: 'assistant',
+                    content: data.text ?? '',
+                    timestamp: new Date().toLocaleTimeString(),
+                  },
+                ];
+              });
+            } else if (data.type === 'message' || data.type === 'message_chunk') {
               // Se for chunk, anexamos à última mensagem se ela for do assistente
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
@@ -233,8 +249,6 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
               });
             } else if (data.type === 'jarvis_speaking') {
               setAgentState(data.state ? 'speaking' : 'idle');
-            } else if (data.type === 'wake_word_detected') {
-              console.log('🎙️ Wake word detectada via hardware!');
             }
           } catch {}
         }
@@ -316,15 +330,9 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'text_message', text }));
-      return;
-    }
-
     // Fallback HTTP para manter o chat funcional mesmo sem WS/áudio ativo.
     try {
-      const apiBase = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000';
-      const res = await fetch(`${apiBase}/chat`, {
+      const res = await fetch(jarvisApi('/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, user_name: 'jarvis_user' }),

@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
-import { Crosshair, Eye, Broadcast, Aperture } from '@phosphor-icons/react';
+import { Aperture, Broadcast, Crosshair, Eye } from '@phosphor-icons/react';
 import type { AppConfig } from '@/app-config';
 import { AgentControlBar } from '@/components/agents-ui/agent-control-bar';
 import { useJarvis } from '@/context/JarvisContext';
@@ -57,7 +57,7 @@ export const SessionView = ({
 
   React.useEffect(() => {
     connect();
-  }, []);
+  }, [connect]);
 
   React.useEffect(() => {
     if (videoRef.current && isCameraEnabled && localStream) {
@@ -69,13 +69,19 @@ export const SessionView = ({
     <section className="bg-jarvis-bg relative flex h-svh w-svw flex-col overflow-hidden" {...props}>
       {/* Background Layers */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,35,1)_0%,rgba(2,2,8,1)_100%)]" />
-      
+
       {/* HUD Grid Overlay */}
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] opacity-20" />
 
       {/* Decorative Cockpit Borders */}
-      <div className="pointer-events-none absolute inset-0 z-10 border-[30px] border-black/20" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 5% 5%, 5% 95%, 95% 95%, 95% 5%, 5% 5%)' }} />
-      
+      <div
+        className="pointer-events-none absolute inset-0 z-10 border-[30px] border-black/20"
+        style={{
+          clipPath:
+            'polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 5% 5%, 5% 95%, 95% 95%, 95% 5%, 5% 5%)',
+        }}
+      />
+
       {/* UI Elements */}
       {errors.length > 0 && <SessionDiagnostics errors={errors} onClear={clearErrors} />}
       {isConnected && <VantaController vantaRef={vantaEffectRef} isConnected={isConnected} />}
@@ -92,17 +98,17 @@ export const SessionView = ({
         >
           <div className="relative">
             <Broadcast className="text-jarvis-cyan size-5" />
-            <motion.div 
+            <motion.div
               animate={{ scale: [1, 2], opacity: [1, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute inset-0 rounded-full bg-jarvis-cyan/40"
+              className="bg-jarvis-cyan/40 absolute inset-0 rounded-full"
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] font-black tracking-[0.4em] text-white/90 uppercase font-mono">
+            <span className="font-mono text-[10px] font-black tracking-[0.4em] text-white/90 uppercase">
               Neural Stream
             </span>
-            <span className="text-[7px] font-bold tracking-[0.2em] text-jarvis-cyan/40 uppercase font-mono">
+            <span className="text-jarvis-cyan/40 font-mono text-[7px] font-bold tracking-[0.2em] uppercase">
               Buffer Status: Optimal
             </span>
           </div>
@@ -120,16 +126,16 @@ export const SessionView = ({
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
-            className="absolute size-[550px] rounded-full border border-jarvis-cyan/5 border-dashed"
+            className="border-jarvis-cyan/5 absolute size-[550px] rounded-full border border-dashed"
           />
           <motion.div
             animate={{ rotate: -360 }}
             transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
             className="absolute size-[700px] rounded-full border border-white/2"
           />
-          
+
           {/* Target Reticle */}
-          <motion.div 
+          <motion.div
             animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ duration: 2, repeat: Infinity }}
             className="absolute flex items-center justify-center"
@@ -150,12 +156,12 @@ export const SessionView = ({
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                  className="cyber-glass mt-12 flex items-center gap-3 rounded-full border-jarvis-violet/30 px-10 py-4 ring-1 ring-jarvis-violet/20"
+                  className="cyber-glass border-jarvis-violet/30 ring-jarvis-violet/20 mt-12 flex items-center gap-3 rounded-full px-10 py-4 ring-1"
                 >
-                  <motion.div 
+                  <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 0.5, repeat: Infinity }}
-                    className="size-2 rounded-full bg-jarvis-violet shadow-[0_0_12px_#7000ff]"
+                    className="bg-jarvis-violet size-2 rounded-full shadow-[0_0_12px_#7000ff]"
                   />
                   <span className="text-jarvis-violet font-mono text-[11px] font-black tracking-[0.6em] uppercase drop-shadow-[0_0_8px_#7000ff]">
                     Transmitting
@@ -181,27 +187,29 @@ export const SessionView = ({
               autoPlay
               muted
               playsInline
-              className="h-full w-full object-cover opacity-80 brightness-110 grayscale contrast-125"
+              className="h-full w-full object-cover opacity-80 brightness-110 contrast-125 grayscale"
             />
             {/* Scanline and Tint on video */}
-            <div className="pointer-events-none absolute inset-0 bg-jarvis-cyan/10" />
-            
+            <div className="bg-jarvis-cyan/10 pointer-events-none absolute inset-0" />
+
             {/* Vision HUD Elements */}
-            <div className="absolute inset-4 flex flex-col justify-between pointer-events-none">
-              <div className="flex justify-between items-start">
+            <div className="pointer-events-none absolute inset-4 flex flex-col justify-between">
+              <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2 rounded-md bg-black/60 px-2 py-1 backdrop-blur-md">
-                  <Aperture className="size-3 text-red-500 animate-spin-slow" />
-                  <span className="font-mono text-[8px] font-bold text-red-500/80 tracking-widest">REC_MODE</span>
+                  <Aperture className="animate-spin-slow size-3 text-red-500" />
+                  <span className="font-mono text-[8px] font-bold tracking-widest text-red-500/80">
+                    REC_MODE
+                  </span>
                 </div>
-                <Eye className="size-4 text-jarvis-cyan/50" />
+                <Eye className="text-jarvis-cyan/50 size-4" />
               </div>
-              
-              <div className="flex justify-between items-end">
+
+              <div className="flex items-end justify-between">
                 <div className="flex flex-col gap-0.5">
                   <span className="font-mono text-[7px] text-white/40">FRM_RT: 60.00</span>
                   <span className="font-mono text-[7px] text-white/40">RES: 1080P_RAW</span>
                 </div>
-                <div className="h-6 w-6 border-b-2 border-r-2 border-jarvis-cyan/40" />
+                <div className="border-jarvis-cyan/40 h-6 w-6 border-r-2 border-b-2" />
               </div>
             </div>
           </motion.div>
@@ -214,7 +222,7 @@ export const SessionView = ({
       <motion.div
         initial={{ y: 80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 1, type: "spring", damping: 20 }}
+        transition={{ delay: 1, type: 'spring', damping: 20 }}
         className="relative z-40 mx-auto mb-10 w-full max-w-3xl px-6"
       >
         <div className="cyber-glass rounded-3xl border-white/10 bg-black/60 p-3 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
@@ -234,8 +242,8 @@ export const SessionView = ({
       </motion.div>
 
       {/* Decorative Side Elements (Branding) */}
-      <div className="pointer-events-none absolute bottom-8 left-8 flex flex-col gap-1 z-30">
-        <span className="font-mono text-[8px] font-bold text-white/10 tracking-[0.5em] uppercase">
+      <div className="pointer-events-none absolute bottom-8 left-8 z-30 flex flex-col gap-1">
+        <span className="font-mono text-[8px] font-bold tracking-[0.5em] text-white/10 uppercase">
           Neural Interface System
         </span>
         <div className="h-px w-24 bg-white/5" />

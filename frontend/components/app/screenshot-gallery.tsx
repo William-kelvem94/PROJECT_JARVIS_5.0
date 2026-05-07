@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Camera, ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/shadcn/utils';
@@ -13,10 +13,9 @@ interface ScreenshotGalleryProps {
 export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps) {
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const fetchScreenshots = async () => {
+  const fetchScreenshots = useCallback(async () => {
     try {
       const baseUrl = apiUrl || window.location.origin;
       const res = await fetch(`${baseUrl}/screenshots`);
@@ -27,13 +26,13 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
     } catch (e) {
       console.error('Error fetching screenshots:', e);
     }
-  };
+  }, [apiUrl]);
 
   useEffect(() => {
     fetchScreenshots();
     const interval = setInterval(fetchScreenshots, 30000); // Polling cada 30s para performance
     return () => clearInterval(interval);
-  }, [apiUrl]);
+  }, [fetchScreenshots]);
 
   if (screenshots.length === 0) return null;
 
@@ -53,6 +52,8 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
             onClick={() => setIsExpanded(true)}
           >
             <div className="absolute inset-0 bg-[#1da3b9]/5 transition-colors group-hover:bg-[#1da3b9]/10" />
+            {/* Runtime screenshots come from the local backend and are not known to Next image config. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={screenshotUrl}
               alt="Latest view"
@@ -103,6 +104,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
             </div>
 
             <div className="group relative flex-1 overflow-hidden rounded-2xl border border-white/5 bg-zinc-900/50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={screenshotUrl}
                 alt="Expanded view"
@@ -141,8 +143,10 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
                       : 'border-transparent opacity-40 hover:opacity-100'
                   )}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`${apiUrl || window.location.origin}/screenshots/${s}`}
+                    alt={`Screenshot ${i + 1}`}
                     className="h-full w-full object-cover"
                   />
                 </button>

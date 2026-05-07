@@ -20,7 +20,7 @@ function hexToRgb(hexColor: string) {
 
       return color;
     }
-  } catch (error) {
+  } catch {
     log.error(
       `Invalid hex color '${hexColor}'.\nFalling back to default color '${DEFAULT_COLOR}'.`
     );
@@ -322,6 +322,7 @@ export function AgentAudioVisualizerWave({
       frequency={frequency}
       lineWidth={_lineWidth}
       blur={blur}
+      mix={opacity}
       className={cn(
         AgentAudioVisualizerWaveVariants({ size }),
         'mask-[linear-gradient(90deg,transparent_0%,black_20%,black_80%,transparent_100%)]',

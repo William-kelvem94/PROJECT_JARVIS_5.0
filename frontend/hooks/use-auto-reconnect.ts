@@ -1,7 +1,17 @@
 import { useEffect, useRef } from 'react';
 import { log } from '@/lib/logger';
 
-export function useAutoReconnect(session: any) {
+interface ReconnectableRoom {
+  on?: (event: 'disconnected', handler: () => void | Promise<void>) => void;
+  off?: (event: 'disconnected', handler: () => void | Promise<void>) => void;
+}
+
+interface AutoReconnectSession {
+  room?: ReconnectableRoom | null;
+  connect?: () => Promise<void> | void;
+}
+
+export function useAutoReconnect(session: AutoReconnectSession) {
   const { room, connect } = session;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);

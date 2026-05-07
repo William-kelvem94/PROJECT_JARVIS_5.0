@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Eye, Globe, Pin, PinOff, RefreshCw } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/shadcn/utils';
@@ -12,18 +12,18 @@ interface VisionPiPProps {
 
 export function VisionPiP({
   apiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000',
-  detections = []
+  detections = [],
 }: VisionPiPProps) {
   const [latestImage, setLatestImage] = useState<string>('');
   const [isOpen, setIsOpen] = useState(true);
   const [isPinned, setIsPinned] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
 
-  const updateImage = () => {
+  const updateImage = useCallback(() => {
     const imageUrl = `${apiUrl}/screenshots/last_browser_state.png?t=${Date.now()}`;
     setLatestImage(imageUrl);
     setLastUpdate(new Date().toLocaleTimeString());
-  };
+  }, [apiUrl]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,7 +33,7 @@ export function VisionPiP({
     }, 12000);
     updateImage();
     return () => clearInterval(interval);
-  }, [apiUrl]);
+  }, [updateImage]);
 
   if (!latestImage) return null;
 
@@ -79,6 +79,8 @@ export function VisionPiP({
           {/* Viewport */}
           <div className="group relative aspect-video overflow-hidden bg-black">
             {latestImage ? (
+              // Runtime screenshot from the local backend; keep it as a plain img.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={latestImage}
                 alt="Jarvis View"
@@ -92,9 +94,9 @@ export function VisionPiP({
 
             {/* Holographic Scanning Line */}
             <div
-              className="absolute inset-x-0 h-0.5 bg-cyan-400/50 shadow-[0_0_10px_rgba(34,211,238,0.8)] z-10"
+              className="absolute inset-x-0 z-10 h-0.5 bg-cyan-400/50 shadow-[0_0_10px_rgba(34,211,238,0.8)]"
               style={{
-                animation: 'scan-line 3s linear infinite'
+                animation: 'scan-line 3s linear infinite',
               }}
             />
 
@@ -102,7 +104,7 @@ export function VisionPiP({
             {detections.map((det, i) => (
               <div
                 key={i}
-                className="absolute border-2 border-cyan-400 text-cyan-400 text-[10px] font-bold z-20"
+                className="absolute z-20 border-2 border-cyan-400 text-[10px] font-bold text-cyan-400"
                 style={{
                   left: `${det.box[0]}%`,
                   top: `${det.box[1]}%`,
@@ -110,14 +112,14 @@ export function VisionPiP({
                   height: `${det.box[3]}%`,
                 }}
               >
-                <span className="absolute -top-4 left-0 bg-cyan-400 text-black px-1 font-bold">
+                <span className="absolute -top-4 left-0 bg-cyan-400 px-1 font-bold text-black">
                   {det.label}
                 </span>
               </div>
             ))}
 
             {/* Overlay Controls */}
-            <div className="absolute inset-0 flex items-end bg-linear-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100 z-10">
+            <div className="absolute inset-0 z-10 flex items-end bg-linear-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-1 font-mono text-[8px] text-cyan-400/80">
                   <Globe className="size-2.5" />

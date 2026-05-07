@@ -6,6 +6,7 @@ import psutil
 import asyncio
 from loguru import logger
 from .smart_router import router
+from .utils.learning_manager import learning_manager
 
 from .config import settings
 
