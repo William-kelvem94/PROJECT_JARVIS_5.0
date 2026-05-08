@@ -38,12 +38,20 @@ if errorlevel 1 (
 )
 
 if not exist "%ROOT%.env" (
-  if exist "%ROOT%.env.example" copy "%ROOT%.env.example" "%ROOT%.env" >nul
+  if exist "%ROOT%.env.example" (
+    echo [CONFIG] Criando .env a partir de .env.example
+    copy "%ROOT%.env.example" "%ROOT%.env" >nul
+  ) else (
+    echo [ERRO] .env.example nao encontrado. Crie .env manualmente.
+    exit /b 1
+  )
 )
 
-if not defined JARVIS_VAULT_ROOT set "JARVIS_VAULT_ROOT=D:\DOCUMENTOS\GitHub\Will-obsidian"
-if not defined OBSIDIAN_VAULT_PATH set "OBSIDIAN_VAULT_PATH=%JARVIS_VAULT_ROOT%"
-if not defined JARVIS_KB_PATH set "JARVIS_KB_PATH=%JARVIS_VAULT_ROOT%\JARVIS"
+echo [CONFIG] Carregando variaveis de ambiente de .env
+for /f "usebackq tokens=1,* delims==" %%a in ("%ROOT%.env") do (
+  set "line=%%a"
+  if not "!line:~0,1!"=="#" if not "!line!"=="" set "%%a=%%b"
+)
 
 call "%ROOT%scripts\setup-venv.bat"
 if errorlevel 1 (

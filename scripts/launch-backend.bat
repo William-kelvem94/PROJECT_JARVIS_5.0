@@ -51,7 +51,7 @@ echo [OK] Backend online >> "%LOG_FILE%"
 exit /b 0
 
 :wait_http
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 set "HOST=%~1"
 set "PORT=%~2"
 set "ENDPOINT=%~3"
@@ -59,13 +59,13 @@ set "TIMEOUT=%~4"
 set /a ELAPSED=0
 
 :wait_http_loop
-if %ELAPSED% geq %TIMEOUT% (
+if !ELAPSED! geq !TIMEOUT! (
   endlocal
   exit /b 1
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -UseBasicParsing -Uri 'http://%HOST%:%PORT%%ENDPOINT%' -TimeoutSec 2 -ErrorAction Stop | Out-Null; exit 0 } catch { exit 1 }" >nul 2>nul
-if %errorlevel% equ 0 (
+if !errorlevel! equ 0 (
   endlocal
   exit /b 0
 )
