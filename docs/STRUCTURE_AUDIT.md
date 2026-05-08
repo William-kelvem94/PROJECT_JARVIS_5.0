@@ -1,52 +1,69 @@
-# JARVIS 5.0 — Structure Audit
+# JARVIS 5.0 Structure Audit
 
-## What I found
+## Current Classification
 
-### Clear redundancy / aliasing
-- `frontend/context/JarvisContext.tsx` is only a backward-compat re-export of `frontend/lib/context/jarvis-context.tsx`.
-- `frontend/hooks/useVoice` is imported by the app, but the actual implementation lives in `frontend/hooks/use-voice.ts`.
-  - Added a small compatibility shim so both paths work.
+### Canonical runtime
+- `backend/` - Python API/runtime.
+- `frontend/` - Next.js cockpit.
+- `scripts/` - launch, setup, diagnostics, and maintenance scripts.
+- `docker-compose.yml` - root compose entrypoint.
+- `docker/` - supporting Docker assets and alternate compose file.
 
-### Likely orphan / archive folders
-These look like historical or research material rather than runtime code:
-- `FUTURE_IMPLEMENTATIONS/`
-- `OMEGA_RESEARCH/`
-- `PROJECT_SOPHISTICATION/`
+### Runtime data and local assets
+- `.venv/` - active Python virtual environment.
+- `node_modules/` and `frontend/node_modules/` - local Node dependencies.
+- `data/` and `backend/data/` - runtime persistence and knowledge mirrors.
+- `backend/models/` - heavy ML models, including `yolov8n.pt`.
+- `logs/` - generated logs; only `.gitkeep` should be kept in Git.
 
-### Runtime folders that should stay distinct
-- `backend/` → Python API/runtime
-- `frontend/` → Next.js UI/runtime
-- `scripts/` → launch/diagnostic scripts
-- `tests/` and `backend/app/tests/` → keep test ownership explicit
-- `docs/` → user-facing documentation and architecture notes
-- `src/` → shared/core TypeScript/Python support code
+### Archive/reference
+- `docs/archive/research/FUTURE_IMPLEMENTATIONS/`
+- `docs/archive/research/OMEGA_RESEARCH/`
+- `docs/archive/research/PROJECT_SOPHISTICATION/`
 
-## Safe organization moves
+These are historical research/prototype folders and are not part of the active runtime.
 
-### 1) Normalize hook naming in frontend
-Keep implementation files in one convention and add thin shims only when imports already depend on the old path.
+## Cleanup Completed
 
-### 2) Keep research archives out of runtime paths
-If these folders are historical notes, mark them clearly as archive/reference so they don't look like active app code.
+- Removed stale root virtual environments:
+  - `.venv.broken-20260507012850/`
+  - `.venv.broken-official-20260507080330/`
+- Removed stale backend virtual environment:
+  - `backend/venv.broken-20260507012850/`
+- Removed generated caches and temporary folders:
+  - `.next/`
+  - `.pytest_cache/`
+  - `backend/.pytest_cache/`
+  - `backend/__pycache__/`
+  - `debug/`
+  - `temp_audio/`
+  - `backend/temp_audio/`
+  - `tools/installers/`
+- Moved research folders into `docs/archive/research/`.
+- Moved `yolov8n.pt` from the root into `backend/models/`.
 
-### 3) Reduce split test ownership where possible
-There are backend tests in both:
-- `backend/app/tests/`
-- `tests/`
+## Preventive Changes
 
-That can be confusing; if no import paths depend on it, prefer one canonical test home per runtime.
+- `scripts/setup-venv.bat` now removes old `.venv.broken-*` backups by default before recreating a venv.
+- Set `JARVIS_KEEP_BROKEN_VENVS=1` only when you intentionally want to preserve a broken environment for debugging.
+- Backend object detection now looks for `yolov8n.pt` in `backend/models/` or `JARVIS_MODELS_PATH`.
+- Root structure is documented in `docs/ROOT_STRUCTURE.md`.
 
-### 4) Clarify `docker/` vs root `docker-compose.yml`
-There are duplicate Docker entrypoints:
-- `docker-compose.yml`
-- `docker/docker-compose.yml`
+## Known Local Issue
 
-Treat the root file as canonical; keep the nested file as historical/reference only.
+- The active `.venv/` still exists but its `pyvenv.cfg` points to
+  `C:\Users\willi\AppData\Local\Programs\Python\Python311\python.exe`.
+- In this shell that base interpreter is unavailable, so `.venv\Scripts\python.exe` cannot start.
+- The environment was preserved because deleting it without a working Python runtime would make backend recovery harder.
+- Recommended recovery: install/restore Python 3.11, then recreate with `JARVIS_FORCE_RECREATE_VENV=1 start-jarvis.bat`.
 
-Prefer one canonical compose file and keep the other as a thin reference, if needed.
+## Remaining Intentional Root Files
 
-## Recommendation
-Best low-risk next step:
-1. Keep current code layout.
-2. Add compatibility shims for naming mismatches.
-3. Move/archive only clearly historical folders after confirming nothing imports them.
+The root now keeps only repository/tool metadata and launch shims:
+
+- Tool files: `.dockerignore`, `.env`, `.env.example`, `.flake8`, `.gitattributes`, `.gitignore`.
+- Workspace metadata: `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `pyrightconfig.json`.
+- Canonical project files: `README.md`, `LICENSE`, `docker-compose.yml`.
+- User-facing launch shims: `start-jarvis.bat`, `start.bat`.
+
+Quick guides, reports, audits, and utility scripts were moved into `docs/` and `scripts/`.

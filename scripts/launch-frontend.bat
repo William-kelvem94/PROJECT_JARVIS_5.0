@@ -36,9 +36,9 @@ if errorlevel 1 exit /b 0
 
 echo [FRONTEND] Starting http://127.0.0.1:%PORT%
 if "%PKG_MANAGER%"=="pnpm" (
-  start "JARVIS_FRONTEND" cmd /k "pnpm dev --hostname 127.0.0.1"
+  start "JARVIS_FRONTEND" /B cmd /c ""pnpm dev --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
 ) else (
-  start "JARVIS_FRONTEND" cmd /k "npm run dev -- --hostname 127.0.0.1"
+  start "JARVIS_FRONTEND" /B cmd /c ""npm run dev -- --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
 )
 
 popd

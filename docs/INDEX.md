@@ -10,10 +10,10 @@
 
 | Documento | Propósito | Tempo |
 |-----------|-----------|-------|
-| [AUTOFIX_README.md](../AUTOFIX_README.md) | Guia rápido de auto-correção | 3 min |
-| [HEALTH_SYSTEM_README.md](../HEALTH_SYSTEM_README.md) | Guia rápido de health checking | 3 min |
-| [CONNECTIVITY_README.md](../CONNECTIVITY_README.md) | Guia rápido de conectividade | 3 min |
-| [SUMMARY.md](../SUMMARY.md) | Sumário executivo de todas as melhorias | 5 min |
+| [docs/guides/AUTOFIX_README.md](guides/AUTOFIX_README.md) | Guia rápido de auto-correção | 3 min |
+| [docs/guides/HEALTH_SYSTEM_README.md](guides/HEALTH_SYSTEM_README.md) | Guia rápido de health checking | 3 min |
+| [docs/guides/CONNECTIVITY_README.md](guides/CONNECTIVITY_README.md) | Guia rápido de conectividade | 3 min |
+| [docs/reports/SUMMARY.md](reports/SUMMARY.md) | Sumário executivo de todas as melhorias | 5 min |
 
 ---
 
@@ -39,7 +39,7 @@
 | Documento | Descrição | Linhas |
 |-----------|-----------|--------|
 | [REALTIME_HEALTH_SYSTEM.md](./REALTIME_HEALTH_SYSTEM.md) | Sistema de monitoramento em tempo real | 900+ |
-| [HEALTH_SYSTEM_README.md](../HEALTH_SYSTEM_README.md) | Guia rápido | 300+ |
+| [docs/guides/HEALTH_SYSTEM_README.md](guides/HEALTH_SYSTEM_README.md) | Guia rápido | 300+ |
 
 **Componentes Monitorados**: 19
 - Núcleo Cognitivo (5): Chat, Voice, Brain, Holodeck, Faces
@@ -55,7 +55,7 @@
 | Documento | Descrição | Linhas |
 |-----------|-----------|--------|
 | [CONNECTIVITY_FIX.md](./CONNECTIVITY_FIX.md) | Análise e correção de erros de proxy | 700+ |
-| [CONNECTIVITY_README.md](../CONNECTIVITY_README.md) | Guia rápido | 200+ |
+| [docs/guides/CONNECTIVITY_README.md](guides/CONNECTIVITY_README.md) | Guia rápido | 200+ |
 
 **Problemas Resolvidos**:
 - ✅ Socket hang up (ECONNRESET)
@@ -70,7 +70,7 @@
 |-----------|-----------|--------|
 | [IMPROVEMENTS_2026-05-07.md](./IMPROVEMENTS_2026-05-07.md) | Guia completo de melhorias | 1000+ |
 | [SOLUTIONS_FOR_REPORTED_ISSUES.md](./SOLUTIONS_FOR_REPORTED_ISSUES.md) | Soluções para problemas específicos | 500+ |
-| [SUMMARY.md](../SUMMARY.md) | Sumário executivo | 400+ |
+| [docs/reports/SUMMARY.md](reports/SUMMARY.md) | Sumário executivo | 400+ |
 
 ---
 
@@ -78,10 +78,10 @@
 
 | Script | Propósito | Tempo |
 |--------|-----------|-------|
-| [test-autofix-agents.bat](../test-autofix-agents.bat) | Valida 14 agentes ativos | 2 min |
-| [test-health-system.bat](../test-health-system.bat) | Valida health checking | 2 min |
-| [test-connectivity.bat](../test-connectivity.bat) | Valida conectividade | 1 min |
-| [validate-improvements.bat](../validate-improvements.bat) | Validação geral | 3 min |
+| [scripts/test-autofix-agents.bat](../scripts/test-autofix-agents.bat) | Valida 14 agentes ativos | 2 min |
+| [scripts/test-health-system.bat](../scripts/test-health-system.bat) | Valida health checking | 2 min |
+| [scripts/test-connectivity.bat](../scripts/test-connectivity.bat) | Valida conectividade | 1 min |
+| [scripts/validate-improvements.bat](../scripts/validate-improvements.bat) | Validação geral | 3 min |
 
 ---
 
@@ -97,7 +97,7 @@ scripts\setup-venv.bat
 start-jarvis.bat
 
 # 3. Validar agentes
-test-autofix-agents.bat
+scripts/test-autofix-agents.bat
 
 # 4. Acessar frontend
 # http://localhost:3000
@@ -166,9 +166,9 @@ curl http://localhost:8000/agents/findings | jq '.findings[] | select(.title | c
 ### Usuário Final
 
 **Recomendado**:
-1. [AUTOFIX_README.md](../AUTOFIX_README.md) - Entender auto-correção
-2. [HEALTH_SYSTEM_README.md](../HEALTH_SYSTEM_README.md) - Ver status do sistema
-3. [SUMMARY.md](../SUMMARY.md) - Visão geral das melhorias
+1. [docs/guides/AUTOFIX_README.md](guides/AUTOFIX_README.md) - Entender auto-correção
+2. [docs/guides/HEALTH_SYSTEM_README.md](guides/HEALTH_SYSTEM_README.md) - Ver status do sistema
+3. [docs/reports/SUMMARY.md](reports/SUMMARY.md) - Visão geral das melhorias
 
 **Ações Comuns**:
 ```bash
@@ -207,8 +207,8 @@ python -m py_compile backend/app/*.py
 # Via VS Code: Ctrl+Shift+M
 
 # Testes
-test-autofix-agents.bat
-test-health-system.bat
+scripts/test-autofix-agents.bat
+scripts/test-health-system.bat
 ```
 
 ---
@@ -392,7 +392,7 @@ curl http://localhost:8000/agents/findings | jq '.findings[] | select(.title | c
 ### Documentação Oficial
 
 - 📖 Todos os documentos em: `docs/`
-- 📋 Sumário: [SUMMARY.md](../SUMMARY.md)
+- 📋 Sumário: [docs/reports/SUMMARY.md](reports/SUMMARY.md)
 - 🚀 Guias rápidos: `*_README.md`
 
 ### Comandos de Diagnóstico

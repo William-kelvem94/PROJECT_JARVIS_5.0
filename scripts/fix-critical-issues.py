@@ -333,7 +333,7 @@ async def main():
     
     print()
     print_status("Correções aplicadas com sucesso!", "OK")
-    print_status("Reinicie o backend: restart-jarvis.bat", "INFO")
+    print_status("Reinicie o backend: scripts/restart-jarvis.bat", "INFO")
     
     return 0
 

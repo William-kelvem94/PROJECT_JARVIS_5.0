@@ -10,7 +10,7 @@
 
 ```bash
 # Execute este comando
-fix-critical.bat
+scripts/fix-critical.bat
 ```
 
 **O que ele faz**:
@@ -254,7 +254,7 @@ if self.frame_counter % self.frame_skip != 0:
 
 ## 📋 CHECKLIST RÁPIDO
 
-- [ ] ✅ Script fix-critical.bat executado
+- [ ] ✅ Script scripts/fix-critical.bat executado
 - [ ] ✅ LM Studio ou Ollama rodando
 - [ ] ✅ Backend reiniciado
 - [ ] ✅ Dashboard acessível (http://localhost:3000)
@@ -292,7 +292,7 @@ if self.frame_counter % self.frame_skip != 0:
 
 ## 📚 DOCUMENTAÇÃO COMPLETA
 
-- 📄 [LAUDO_TECNICO_COMPLETO.md](LAUDO_TECNICO_COMPLETO.md) - Análise completa
+- 📄 [docs/audits/LAUDO_TECNICO_COMPLETO.md](../audits/LAUDO_TECNICO_COMPLETO.md) - Análise completa
 - 📄 [AUTOFIX_AGENTS.md](docs/AUTOFIX_AGENTS.md) - Agentes de auto-correção
 - 📄 [SOLUTIONS_FOR_REPORTED_ISSUES.md](docs/SOLUTIONS_FOR_REPORTED_ISSUES.md) - Troubleshooting
 - 📄 [jarvis_native_architecture.md](docs/jarvis_native_architecture.md) - Arquitetura de voz

@@ -154,7 +154,7 @@ def start_auto_restart_monitor(watch_paths: list = None):
 def create_restart_script():
     """Cria um script batch para reiniciar o JARVIS manualmente."""
     root_dir = Path(__file__).resolve().parents[2]
-    restart_script_path = root_dir / "restart-jarvis.bat"
+    restart_script_path = root_dir / "scripts" / "restart-jarvis.bat"
     
     script_content = """@echo off
 echo ========================================
@@ -173,6 +173,7 @@ timeout /t 3 /nobreak >nul
 
 echo.
 echo Starting JARVIS...
+cd /d "%~dp0.."
 call start-jarvis.bat
 
 echo.

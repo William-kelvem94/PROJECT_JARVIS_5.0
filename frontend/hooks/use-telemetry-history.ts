@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { jarvisApi } from '@/lib/jarvis-endpoints';
 import { JarvisTelemetryHistory } from '@/types';
 
 export function useTelemetryHistory(pollInterval = 8000) {
@@ -9,13 +10,14 @@ export function useTelemetryHistory(pollInterval = 8000) {
     let mounted = true;
     const fetchHistory = async () => {
       try {
-        const response = await fetch('/telemetry/history');
+        const response = await fetch(jarvisApi('/telemetry/history'));
         if (!response.ok) {
           throw new Error('Failed to load telemetry history.');
         }
         const data = await response.json();
         if (mounted) {
           setHistory(Array.isArray(data?.history) ? data.history : []);
+          setError(null);
         }
       } catch (err) {
         if (mounted) {

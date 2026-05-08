@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM JARVIS 5.0 - Diagnostic for Hardware Issues
 REM Verifica especificamente: voz, fala, audicao, visao (camera e tela)
 REM Data: 7 de maio de 2026
@@ -80,6 +84,6 @@ echo    .venv\Scripts\pip.exe install mss
 echo.
 echo Ver documentacao completa:
 echo - docs\SOLUTIONS_FOR_REPORTED_ISSUES.md
-echo - AUTOFIX_README.md
+echo - docs/guides/AUTOFIX_README.md
 echo.
 pause

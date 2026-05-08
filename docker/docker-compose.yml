@@ -2,32 +2,30 @@
 services:
   frontend:
     build:
-      context: ./frontend
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
     ports:
       - "3000:3000"
     env_file:
       - ../env/.env
-    volumes:
-      - ./frontend:/app
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 30s
       timeout: 10s
       retries: 3
 
   backend:
     build:
-      context: ./backend
+      context: ..
+      dockerfile: docker/backend/Dockerfile
     ports:
       - "8000:8000"
     env_file:
       - ../env/.env
-    volumes:
-      - ./backend:/app
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3).read()\""]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM ========================================================================
 REM JARVIS 5.0 - Teste de Conectividade dos Endpoints
 REM ========================================================================
@@ -14,7 +18,7 @@ echo ║     JARVIS 5.0 - Teste de Conectividade de Endpoints          ║
 echo ╚════════════════════════════════════════════════════════════════╝
 echo.
 
-set "PYTHON_EXE=.venv\Scripts\python.exe"
+set "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
 set "PASS=0"
 set "FAIL=0"
 
@@ -86,7 +90,7 @@ echo if failed ^> 0:
 echo     print^("AÇÕES RECOMENDADAS:"^)
 echo     print^("1. Verifique se o backend está rodando: python -m uvicorn app.main:app --reload"^)
 echo     print^("2. Verifique os logs em logs/"^)
-echo     print^("3. Execute validate-improvements.bat para verificar dependências"^)
+echo     print^("3. Execute scripts/validate-improvements.bat para verificar dependências"^)
 echo     sys.exit^(1^)
 echo else:
 echo     print^("✅ Todos os endpoints estão funcionando corretamente!"^)

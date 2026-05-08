@@ -36,5 +36,5 @@ result = holodeck.run_code(generated_code, timeout=30)
 - Aprovação manual para promoção ao core
 
 ## Referência
-- `OMEGA_RESEARCH/docs/protocol_89_v2.md` (seção Holodeck)
+- `docs/archive/research/OMEGA_RESEARCH/docs/protocol_89_v2.md` (seção Holodeck)
 - Implementação: `backend/app/security/holodeck.py`

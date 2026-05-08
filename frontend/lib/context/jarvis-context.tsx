@@ -38,7 +38,7 @@ const JarvisContext = createContext<JarvisContextType | undefined>(undefined);
 export function JarvisProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMicEnabled, setIsMicEnabled] = useState(true);
+  const [isMicEnabled, setIsMicEnabled] = useState(false);
   const [isCameraEnabled, setIsCameraEnabled] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [agentState, setAgentState] = useState<'idle' | 'listening' | 'thinking' | 'speaking'>(
@@ -51,13 +51,102 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  // Loop de animação para o volume (Visualizadores)
+  const setLocalMediaStream = useCallback((stream: MediaStream | null) => {
+    localStreamRef.current = stream;
+    setLocalStream(stream);
+    setIsMicEnabled(Boolean(stream?.getAudioTracks().some((track) => track.enabled)));
+    setIsCameraEnabled(Boolean(stream?.getVideoTracks().length));
+  }, []);
+
+  const setScreenMediaStream = useCallback((stream: MediaStream | null) => {
+    screenStreamRef.current = stream;
+    setScreenStream(stream);
+    setIsScreenSharing(Boolean(stream));
+  }, []);
+
+  const stopStream = useCallback((stream: MediaStream | null) => {
+    stream?.getTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
+  }, []);
+
+  const cleanupSession = useCallback(
+    ({ closeSocket = true }: { closeSocket?: boolean } = {}) => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+
+      const ws = wsRef.current;
+      if (ws) {
+        ws.onopen = null;
+        ws.onclose = null;
+        ws.onmessage = null;
+        ws.onerror = null;
+        if (
+          closeSocket &&
+          ws.readyState !== WebSocket.CLOSED &&
+          ws.readyState !== WebSocket.CLOSING
+        ) {
+          ws.close();
+        }
+        wsRef.current = null;
+      }
+
+      if (processorRef.current) {
+        processorRef.current.onaudioprocess = null;
+        processorRef.current.disconnect();
+        processorRef.current = null;
+      }
+
+      audioSourceRef.current?.disconnect();
+      audioSourceRef.current = null;
+      analyserRef.current?.disconnect();
+      analyserRef.current = null;
+
+      const audioContext = audioContextRef.current;
+      audioContextRef.current = null;
+      if (audioContext && audioContext.state !== 'closed') {
+        audioContext.close().catch(() => undefined);
+      }
+
+      stopStream(localStreamRef.current);
+      stopStream(screenStreamRef.current);
+      setLocalMediaStream(null);
+      setScreenMediaStream(null);
+      setIsConnected(false);
+      setIsSpeaking(false);
+      setAgentState('idle');
+      setVolume(0);
+    },
+    [setLocalMediaStream, setScreenMediaStream, stopStream]
+  );
+
+  const disconnect = useCallback(() => {
+    cleanupSession();
+  }, [cleanupSession]);
+
+  const handleConnectionClosed = useCallback(
+    (message?: string) => {
+      if (!mountedRef.current) return;
+      cleanupSession({ closeSocket: false });
+      if (message) {
+        setError(message);
+      }
+    },
+    [cleanupSession]
+  );
+
   useEffect(() => {
     return () => {
       mountedRef.current = false;
@@ -79,52 +168,30 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     return () => cancelAnimationFrame(animationId);
   }, [isConnected]);
 
-  const disconnect = useCallback(() => {
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
-    }
-    if (wsRef.current) {
-      wsRef.current.onclose = null;
-      wsRef.current.onmessage = null;
-      wsRef.current.onerror = null;
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current.onaudioprocess = null;
-      processorRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      audioContextRef.current.close().catch(() => undefined);
-      audioContextRef.current = null;
-    }
-    if (localStream) localStream.getTracks().forEach((t) => t.stop());
-    if (screenStream) screenStream.getTracks().forEach((t) => t.stop());
-    setIsConnected(false);
-    setLocalStream(null);
-    setScreenStream(null);
-  }, [localStream, screenStream]);
-
   const connect = useCallback(async () => {
+    cleanupSession();
+
+    let stream: MediaStream | null = null;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true },
         video: false,
       });
-      setLocalStream(stream);
+      setLocalMediaStream(stream);
 
       const win = window as ExtendedWindow;
       const AudioContextCtor = window.AudioContext || win.webkitAudioContext;
       if (!AudioContextCtor) {
-        throw new Error('Web Audio API não suportada neste navegador.');
+        throw new Error('Web Audio API nao suportada neste navegador.');
       }
-      audioContextRef.current = new AudioContextCtor();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      const analyser = audioContextRef.current.createAnalyser();
+
+      const audioContext = new AudioContextCtor();
+      audioContextRef.current = audioContext;
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
+      audioSourceRef.current = source;
       analyserRef.current = analyser;
 
       const defaultScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -133,17 +200,17 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
         `${defaultScheme}://${window.location.hostname}:8000/ws/voice`;
       const ws = new WebSocket(wsUrl);
       ws.binaryType = 'arraybuffer';
+      wsRef.current = ws;
 
       ws.onopen = () => {
         setIsConnected(true);
         setAgentState('idle');
         setError(null);
-
-        // Em vez de MediaRecorder, usamos ScriptProcessor para áudio BRUTO (PCM)
       };
 
       ws.onmessage = async (event) => {
-        // 1. Áudio Binário (MP3 do Jarvis)
+        // JSON is the active protocol for control/text. Binary is kept isolated for
+        // compatibility with existing audio responses.
         if (
           (event.data instanceof ArrayBuffer || event.data instanceof Blob) &&
           audioContextRef.current
@@ -156,11 +223,12 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
 
           try {
             if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-              // Web Audio API decode (suporta MP3)
               const audioBuffer = await audioContextRef.current.decodeAudioData(binaryData);
               const playSource = audioContextRef.current.createBufferSource();
               playSource.buffer = audioBuffer;
-              playSource.connect(analyserRef.current!);
+              if (analyserRef.current) {
+                playSource.connect(analyserRef.current);
+              }
               playSource.connect(audioContextRef.current.destination);
               playSource.onended = () => {
                 setIsSpeaking(false);
@@ -170,21 +238,19 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
             }
           } catch (e) {
             console.error('Falha ao decodificar áudio do Jarvis:', e);
-            // Fallback para Audio Element se o Web Audio falhar ou estiver fechado
             try {
               const blob = new Blob([binaryData], { type: 'audio/mp3' });
               const url = URL.createObjectURL(blob);
               const audio = new Audio(url);
               audio.onended = () => {
+                URL.revokeObjectURL(url);
                 setIsSpeaking(false);
                 setAgentState('idle');
               };
               await audio.play();
             } catch {}
           }
-        }
-        // 2. Mensagens JSON (Texto, Telemetria, etc)
-        else if (typeof event.data === 'string') {
+        } else if (typeof event.data === 'string') {
           try {
             const data = JSON.parse(event.data);
             if (data.type === 'status_update') {
@@ -229,45 +295,49 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
                 ];
               });
             } else if (data.type === 'message' || data.type === 'message_chunk') {
-              // Se for chunk, anexamos à última mensagem se ela for do assistente
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
                 if (data.type === 'message_chunk' && last && last.role === 'assistant') {
                   return [
                     ...prev.slice(0, -1),
-                    { ...last, content: last.content + ' ' + data.text },
+                    { ...last, content: `${last.content} ${data.text ?? ''}` },
                   ];
                 }
                 return [
                   ...prev,
                   {
                     role: data.role || 'assistant',
-                    content: data.text,
+                    content: data.text ?? '',
                     timestamp: new Date().toLocaleTimeString(),
                   },
                 ];
               });
             } else if (data.type === 'jarvis_speaking') {
               setAgentState(data.state ? 'speaking' : 'idle');
+              setIsSpeaking(Boolean(data.state));
             }
           } catch {}
         }
       };
 
       ws.onclose = () => {
-        if (!mountedRef.current) return;
-        setIsConnected(false);
-        setLocalStream(null);
+        handleConnectionClosed();
       };
 
-      ws.onerror = () => setError('Conexão perdida com o Jarvis.');
-      wsRef.current = ws;
+      ws.onerror = () => {
+        if (!mountedRef.current) return;
+        cleanupSession();
+        setError('Conexão perdida com o Jarvis.');
+      };
     } catch (err: unknown) {
+      if (stream && localStreamRef.current !== stream) {
+        stopStream(stream);
+      }
+      cleanupSession();
       setError(err instanceof Error ? err.message : 'Erro ao iniciar Jarvis.');
     }
-  }, []); // Conecta sem recriar callback por estado externo
+  }, [cleanupSession, handleConnectionClosed, setLocalMediaStream, stopStream]);
 
-  // Cleanup automático ao destruir o componente
   useEffect(() => {
     return () => {
       disconnect();
@@ -275,52 +345,76 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
   }, [disconnect]);
 
   const toggleMic = useCallback(() => {
-    if (localStream) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMicEnabled(audioTrack.enabled);
-      logger_local('Microfone', audioTrack.enabled ? 'Ativado' : 'Mudo');
+    const audioTrack = localStreamRef.current?.getAudioTracks()[0];
+    if (!audioTrack) {
+      setIsMicEnabled(false);
+      return;
     }
-  }, [localStream]);
+
+    audioTrack.enabled = !audioTrack.enabled;
+    setIsMicEnabled(audioTrack.enabled);
+    loggerLocal('Microfone', audioTrack.enabled ? 'Ativado' : 'Mudo');
+  }, []);
 
   const toggleCamera = useCallback(async () => {
     try {
+      const stream = localStreamRef.current;
       if (isCameraEnabled) {
-        localStream?.getVideoTracks().forEach((t) => {
-          t.stop();
-          localStream.removeTrack(t);
+        stream?.getVideoTracks().forEach((track) => {
+          track.stop();
+          stream.removeTrack(track);
         });
-        setIsCameraEnabled(false);
-      } else {
-        const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const videoTrack = videoStream.getVideoTracks()[0];
-        localStream?.addTrack(videoTrack);
-        setIsCameraEnabled(true);
+        setLocalMediaStream(stream);
+        return;
       }
+
+      if (!stream) {
+        setError('Conecte o Jarvis antes de ativar a câmera.');
+        setIsCameraEnabled(false);
+        return;
+      }
+
+      const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (localStreamRef.current !== stream) {
+        stopStream(videoStream);
+        return;
+      }
+
+      const videoTrack = videoStream.getVideoTracks()[0];
+      if (!videoTrack) {
+        stopStream(videoStream);
+        return;
+      }
+
+      stream.addTrack(videoTrack);
+      setLocalMediaStream(stream);
+      setError(null);
     } catch (e) {
       console.error('Erro ao acessar câmera:', e);
+      setIsCameraEnabled(false);
     }
-  }, [isCameraEnabled, localStream]);
+  }, [isCameraEnabled, setLocalMediaStream, stopStream]);
 
   const toggleScreenShare = useCallback(async () => {
     try {
       if (isScreenSharing) {
-        screenStream?.getTracks().forEach((t) => t.stop());
-        setScreenStream(null);
-        setIsScreenSharing(false);
-      } else {
-        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        setScreenStream(displayStream);
-        setIsScreenSharing(true);
-        displayStream.getVideoTracks()[0].onended = () => {
-          setIsScreenSharing(false);
-          setScreenStream(null);
+        stopStream(screenStreamRef.current);
+        setScreenMediaStream(null);
+        return;
+      }
+
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      setScreenMediaStream(displayStream);
+      const [displayTrack] = displayStream.getVideoTracks();
+      if (displayTrack) {
+        displayTrack.onended = () => {
+          setScreenMediaStream(null);
         };
       }
     } catch (e) {
       console.error('Erro ao compartilhar tela:', e);
     }
-  }, [isScreenSharing, screenStream]);
+  }, [isScreenSharing, setScreenMediaStream, stopStream]);
 
   const sendMessage = useCallback(async (text: string) => {
     const userMessage = {
@@ -330,7 +424,6 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Fallback HTTP para manter o chat funcional mesmo sem WS/áudio ativo.
     try {
       const res = await fetch(jarvisApi('/chat'), {
         method: 'POST',
@@ -363,7 +456,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
     setError('Jarvis offline no momento. Verifique backend e conexão WebSocket.');
   }, []);
 
-  function logger_local(label: string, state: string) {
+  function loggerLocal(label: string, state: string) {
     console.log(`[Jarvis UI] ${label}: ${state}`);
   }
 

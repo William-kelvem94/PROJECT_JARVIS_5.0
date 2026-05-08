@@ -113,7 +113,7 @@ class AutoFixAgent(BaseAgent):
         """Tenta instalar dependências faltando (com cautela)."""
         # Por segurança, apenas loga - não instala automaticamente
         logger.warning(f"[AutoFixAgent] Dependency missing detected: {finding.description}")
-        logger.warning("[AutoFixAgent] Auto-install disabled for safety. Run: validate-improvements.bat")
+        logger.warning("[AutoFixAgent] Auto-install disabled for safety. Run: scripts\\validate-improvements.bat")
         return None
 
 
@@ -256,7 +256,7 @@ class EndpointRecoveryAgent(BaseAgent):
                 severity=Severity.CRITICAL,
                 title=f"Endpoint Recovery Failed: {endpoint}",
                 description=f"Tentativas de recuperação excedidas ({attempts}/{self.max_recovery_attempts})",
-                recommendation="Reinicie o backend manualmente. Execute: restart-jarvis.bat",
+                recommendation="Reinicie o backend manualmente. Execute: scripts\\restart-jarvis.bat",
                 metrics={"endpoint": endpoint, "attempts": attempts}
             ))
             return

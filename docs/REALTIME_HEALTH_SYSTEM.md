@@ -551,7 +551,7 @@ npm run dev
 
 ## 📖 Documentação Relacionada
 
-- 📋 [SUMMARY.md](../SUMMARY.md) - Sumário executivo
+- 📋 [docs/reports/SUMMARY.md](reports/SUMMARY.md) - Sumário executivo
 - 🤖 [MULTI_AGENT_SYSTEM.md](./MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
 - 🌐 [CONNECTIVITY_FIX.md](./CONNECTIVITY_FIX.md) - Correção de proxy
 - 📝 [IMPROVEMENTS_2026-05-07.md](./IMPROVEMENTS_2026-05-07.md) - Todas as melhorias

@@ -974,8 +974,8 @@ else:
 | [SOLUTIONS_FOR_REPORTED_ISSUES.md](docs/SOLUTIONS_FOR_REPORTED_ISSUES.md) | Troubleshooting |
 | [jarvis_native_architecture.md](docs/jarvis_native_architecture.md) | Migração LiveKit → Native |
 | [LOCAL_ARCHITECTURE_V5.md](docs/LOCAL_ARCHITECTURE_V5.md) | Arquitetura offline |
-| [HARDWARE_FIX.md](HARDWARE_FIX.md) | Correção de hardware |
-| [diagnose-hardware.bat](diagnose-hardware.bat) | Script de diagnóstico |
+| [docs/guides/HARDWARE_FIX.md](../guides/HARDWARE_FIX.md) | Correção de hardware |
+| [scripts/diagnose-hardware.bat](../../scripts/diagnose-hardware.bat) | Script de diagnóstico |
 
 ---
 
@@ -1002,7 +1002,7 @@ ollama serve
 ollama pull llama3.2:3b
 
 # 4. Reiniciar backend
-restart-jarvis.bat
+scripts/restart-jarvis.bat
 
 # 5. Validar
 curl http://localhost:8000/system/capabilities

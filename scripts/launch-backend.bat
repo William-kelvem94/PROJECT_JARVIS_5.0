@@ -36,7 +36,7 @@ if not errorlevel 1 (
 )
 
 echo [BACKEND] Starting http://127.0.0.1:8000
-start "JARVIS_BACKEND" cmd /k ""%PYTHON_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --log-level info"
+start "JARVIS_BACKEND" /B cmd /c ""%PYTHON_EXE%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload --log-level info >> "%LOG_FILE%" 2>&1"
 
 popd
 call :wait_http 127.0.0.1 8000 /health 120

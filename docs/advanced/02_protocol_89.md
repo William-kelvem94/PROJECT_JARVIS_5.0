@@ -32,5 +32,5 @@ DANGEROUS_IMPORTS = ["os", "sys", "shutil", "subprocess", "socket", "pty"]
 ```
 
 ## Referência
-- `OMEGA_RESEARCH/docs/protocol_89_v2.md`
-- `PROJECT_SOPHISTICATION/docs/protocolo_seguranca_89.md`
+- `docs/archive/research/OMEGA_RESEARCH/docs/protocol_89_v2.md`
+- `docs/archive/research/PROJECT_SOPHISTICATION/docs/protocolo_seguranca_89.md`

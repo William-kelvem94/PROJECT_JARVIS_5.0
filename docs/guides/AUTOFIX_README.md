@@ -172,10 +172,10 @@ curl http://localhost:8000/agents/findings | grep -i "dependência"
 
 ## 📚 Documentação Completa
 
-- 📖 [AUTOFIX_AGENTS.md](./docs/AUTOFIX_AGENTS.md) - Documentação técnica completa
-- 🤖 [MULTI_AGENT_SYSTEM.md](./docs/MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
-- 🏥 [REALTIME_HEALTH_SYSTEM.md](./docs/REALTIME_HEALTH_SYSTEM.md) - Health checking
-- 📋 [SUMMARY.md](./SUMMARY.md) - Sumário de todas as melhorias
+- 📖 [AUTOFIX_AGENTS.md](../AUTOFIX_AGENTS.md) - Documentação técnica completa
+- 🤖 [MULTI_AGENT_SYSTEM.md](../MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
+- 🏥 [REALTIME_HEALTH_SYSTEM.md](../REALTIME_HEALTH_SYSTEM.md) - Health checking
+- 📋 [docs/reports/SUMMARY.md](../reports/SUMMARY.md) - Sumário de todas as melhorias
 
 ---
 

@@ -59,7 +59,7 @@ Sistema completo de monitoramento em tempo real que verifica automaticamente:
 
 ```batch
 # Validar implementação
-test-health-system.bat
+scripts/test-health-system.bat
 ```
 
 O script testa:
@@ -180,7 +180,7 @@ curl http://localhost:8000/agents/summary | jq '.total_agents'
 
 ```batch
 # Executar suite de testes
-test-health-system.bat
+scripts/test-health-system.bat
 ```
 
 **Resultado esperado**:
@@ -301,7 +301,7 @@ python -m uvicorn app.main:app --reload
 type logs\jarvis_*.log | findstr ERROR
 
 # 2. Validar dependências
-validate-improvements.bat
+scripts/validate-improvements.bat
 
 # 3. Testar imports manualmente
 python -c "from app.health_checker import get_health_checker; print('OK')"
@@ -324,9 +324,9 @@ type logs\jarvis_*.log | findstr "MultiAgent"
 
 ## 📚 Documentação Completa
 
-- 📖 [REALTIME_HEALTH_SYSTEM.md](./docs/REALTIME_HEALTH_SYSTEM.md) - Documentação técnica completa
-- 🤖 [MULTI_AGENT_SYSTEM.md](./docs/MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
-- 📋 [SUMMARY.md](./SUMMARY.md) - Sumário de todas as melhorias
+- 📖 [REALTIME_HEALTH_SYSTEM.md](../REALTIME_HEALTH_SYSTEM.md) - Documentação técnica completa
+- 🤖 [MULTI_AGENT_SYSTEM.md](../MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
+- 📋 [docs/reports/SUMMARY.md](../reports/SUMMARY.md) - Sumário de todas as melhorias
 
 ---
 

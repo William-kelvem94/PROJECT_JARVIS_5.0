@@ -45,8 +45,8 @@ Agente especializado que:
 
 ### 3. 📚 Documentação
 
-- ✅ [CONNECTIVITY_FIX.md](./docs/CONNECTIVITY_FIX.md) - Análise técnica completa
-- ✅ [test-connectivity.bat](./test-connectivity.bat) - Script de teste automático
+- ✅ [CONNECTIVITY_FIX.md](../CONNECTIVITY_FIX.md) - Análise técnica completa
+- ✅ [scripts/test-connectivity.bat](../../scripts/test-connectivity.bat) - Script de teste automático
 
 ---
 
@@ -56,7 +56,7 @@ Agente especializado que:
 
 ```batch
 # Executar script de teste
-test-connectivity.bat
+scripts/test-connectivity.bat
 ```
 
 O script testa automaticamente:
@@ -192,7 +192,7 @@ Mesmo quando componentes estão offline, o endpoint retorna:
 curl http://localhost:8000/health
 
 # 2. Testar endpoints manualmente
-test-connectivity.bat
+scripts/test-connectivity.bat
 
 # 3. Verificar logs
 type logs\jarvis_*.log | findstr ERROR
@@ -253,9 +253,9 @@ curl http://localhost:8000/agents/critical
 
 ## 📚 Documentação Relacionada
 
-- 📖 [Multi-Agent System](./docs/MULTI_AGENT_SYSTEM.md) - Documentação completa
-- 🔧 [Connectivity Fix](./docs/CONNECTIVITY_FIX.md) - Análise técnica detalhada
-- 📋 [Improvements 2026-05-07](./docs/IMPROVEMENTS_2026-05-07.md) - Todas as melhorias
+- 📖 [Multi-Agent System](../MULTI_AGENT_SYSTEM.md) - Documentação completa
+- 🔧 [Connectivity Fix](../CONNECTIVITY_FIX.md) - Análise técnica detalhada
+- 📋 [Improvements 2026-05-07](../IMPROVEMENTS_2026-05-07.md) - Todas as melhorias
 
 ---
 
@@ -265,10 +265,10 @@ Execute estes comandos para validar:
 
 ```batch
 # 1. Validar dependências
-validate-improvements.bat
+scripts/validate-improvements.bat
 
 # 2. Testar conectividade
-test-connectivity.bat
+scripts/test-connectivity.bat
 
 # 3. Verificar agentes
 curl http://localhost:8000/agents/summary

@@ -75,7 +75,7 @@ Medium findings
 
 Docs / ops findings
 11) Docs and scripts disagree on boot flow
-- Evidence: README.md, JARVIS_STARTUP.md, docs/INSTALL.md, scripts/launch-backend.bat, scripts/run-backend.sh
+- Evidence: README.md, docs/guides/JARVIS_STARTUP.md, docs/INSTALL.md, scripts/launch-backend.bat, scripts/run-backend.sh
 - Impact: easy to follow the wrong setup path
 - Severity: Medium
 

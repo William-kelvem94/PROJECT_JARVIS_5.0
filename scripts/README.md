@@ -3,6 +3,7 @@
 Diretório centralizado de scripts de automação, inicialização e diagnóstico.
 
 > O ponto de entrada oficial continua sendo `start-jarvis.bat` na raiz.
+> O usuario executa apenas esse arquivo; os demais scripts em `scripts\` sao internos e sao chamados automaticamente.
 > O arquivo `scripts/start-jarvis.bat` é suporte modular, não substitui o entry point principal.
 > Para Docker, o compose oficial é `docker-compose.yml` na raiz do repositório.
 

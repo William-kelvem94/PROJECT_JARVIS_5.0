@@ -36,7 +36,7 @@
 
 ```bash
 # Script automático
-diagnose-hardware.bat
+scripts/diagnose-hardware.bat
 
 # Verificar manualmente
 curl http://localhost:8000/system/hardware
@@ -259,7 +259,7 @@ curl http://localhost:8000/agents/findings
 .\.venv\Scripts\pip.exe install pygame sounddevice pycaw comtypes opencv-python mediapipe ultralytics mss pyautogui openwakeword dlib-prebuilt face_recognition
 
 # Diagnosticar
-diagnose-hardware.bat
+scripts/diagnose-hardware.bat
 
 # Ver status
 curl http://localhost:8000/system/hardware
@@ -268,16 +268,16 @@ curl http://localhost:8000/system/hardware
 curl http://localhost:8000/agents/findings | jq '.findings[] | select(.severity == "high" or .severity == "critical")'
 
 # Reiniciar backend
-restart-jarvis.bat
+scripts/restart-jarvis.bat
 ```
 
 ---
 
 ## 📚 Documentação
 
-- [AUTOFIX_AGENTS.md](./docs/AUTOFIX_AGENTS.md) - Agentes de auto-correção
-- [SOLUTIONS_FOR_REPORTED_ISSUES.md](./docs/SOLUTIONS_FOR_REPORTED_ISSUES.md) - Troubleshooting completo
-- [AUTOFIX_README.md](./AUTOFIX_README.md) - Guia rápido
+- [AUTOFIX_AGENTS.md](../AUTOFIX_AGENTS.md) - Agentes de auto-correção
+- [SOLUTIONS_FOR_REPORTED_ISSUES.md](../SOLUTIONS_FOR_REPORTED_ISSUES.md) - Troubleshooting completo
+- [docs/guides/AUTOFIX_README.md](../guides/AUTOFIX_README.md) - Guia rápido
 
 ---
 

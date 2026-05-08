@@ -1,7 +1,7 @@
 # Instruções de Instalação e Execução
 
 Este guia cobre instalação manual, execução separada e ambientes alternativos.
-Para boot normal, siga primeiro `JARVIS_STARTUP.md` e use `start-jarvis.bat`.
+Para boot normal, siga primeiro `docs/guides/JARVIS_STARTUP.md` e use `start-jarvis.bat`.
 
 ## 1. Pré-requisitos
 
@@ -27,7 +27,7 @@ Para boot normal, siga primeiro `JARVIS_STARTUP.md` e use `start-jarvis.bat`.
 Use apenas um destes caminhos:
 
 - `start-jarvis.bat` na raiz do repositório
-- `JARVIS_STARTUP.md` para o fluxo e troubleshooting
+- `docs/guides/JARVIS_STARTUP.md` para o fluxo e troubleshooting
 
 ## 4. Frontend isolado
 

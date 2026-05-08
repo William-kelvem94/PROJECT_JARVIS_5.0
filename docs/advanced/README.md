@@ -3,7 +3,7 @@
 Features avançadas e pesquisa histórica/referencial.
 
 > Os materiais desta pasta apontam para pesquisa e documentação histórica.
-> As pastas `OMEGA_RESEARCH/`, `PROJECT_SOPHISTICATION/` e `FUTURE_IMPLEMENTATIONS/` devem ser tratadas como arquivos/referência, não como fluxo runtime.
+> As pastas `docs/archive/research/OMEGA_RESEARCH/`, `docs/archive/research/PROJECT_SOPHISTICATION/` e `docs/archive/research/FUTURE_IMPLEMENTATIONS/` devem ser tratadas como arquivos/referência, não como fluxo runtime.
 
 | Documento | Conteúdo |
 |-----------|----------|

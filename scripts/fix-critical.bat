@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM ============================================================
 REM SCRIPT DE CORREÇÃO RÁPIDA - JARVIS 5.0
 REM Corrige problemas críticos de CPU/RAM e LLM offline
@@ -33,7 +37,7 @@ echo.
 
 REM Executar script Python de correção
 echo [INFO] Executando correções...
-python fix-critical-issues.py
+python "%SCRIPT_DIR%fix-critical-issues.py"
 
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -48,7 +52,7 @@ echo   CORREÇÕES APLICADAS COM SUCESSO!
 echo ============================================================
 echo.
 echo Próximos passos:
-echo   1. Reiniciar o backend: restart-jarvis.bat
+echo   1. Reiniciar o backend: scripts/restart-jarvis.bat
 echo   2. Verificar health: curl http://localhost:8000/system/capabilities
 echo   3. Monitorar CPU/RAM no dashboard
 echo.

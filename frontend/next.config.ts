@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next';
 
 const jarvisApiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000';
-const telemetryUrl = process.env.NEXT_PUBLIC_TELEMETRY_URL || 'http://localhost:8001';
+const telemetryProxyUrl = process.env.JARVIS_TELEMETRY_URL || 'http://localhost:8001';
 const standaloneOutput = process.env.NEXT_STANDALONE === '1';
 
 const nextConfig: NextConfig = {
@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/jarvis-telemetry/:path*',
-        destination: `${telemetryUrl}/:path*`,
+        destination: `${telemetryProxyUrl}/:path*`,
       },
     ];
   },

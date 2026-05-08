@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Camera, ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { jarvisApi } from '@/lib/jarvis-endpoints';
 import { cn } from '@/lib/shadcn/utils';
 
 interface ScreenshotGalleryProps {
@@ -17,8 +18,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
 
   const fetchScreenshots = useCallback(async () => {
     try {
-      const baseUrl = apiUrl || window.location.origin;
-      const res = await fetch(`${baseUrl}/screenshots`);
+      const res = await fetch(jarvisApi('/screenshots', apiUrl));
       const data = await res.json();
       if (data.screenshots && data.screenshots.length > 0) {
         setScreenshots(data.screenshots);
@@ -37,7 +37,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
   if (screenshots.length === 0) return null;
 
   const currentScreenshot = screenshots[selectedIndex];
-  const screenshotUrl = `${apiUrl || window.location.origin}/screenshots/${currentScreenshot}`;
+  const screenshotUrl = jarvisApi(`/screenshots/${currentScreenshot}`, apiUrl);
 
   return (
     <div className={cn('pointer-events-auto', className)}>
@@ -145,7 +145,7 @@ export function ScreenshotGallery({ apiUrl, className }: ScreenshotGalleryProps)
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${apiUrl || window.location.origin}/screenshots/${s}`}
+                    src={jarvisApi(`/screenshots/${s}`, apiUrl)}
                     alt={`Screenshot ${i + 1}`}
                     className="h-full w-full object-cover"
                   />
