@@ -36,9 +36,9 @@ if errorlevel 1 exit /b 0
 
 echo [FRONTEND] Starting http://127.0.0.1:%PORT%
 if "%PKG_MANAGER%"=="pnpm" (
-  start "JARVIS_FRONTEND" /B cmd /c ""pnpm dev --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
+  start "JARVIS_FRONTEND" /B cmd /c "pnpm dev --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
 ) else (
-  start "JARVIS_FRONTEND" /B cmd /c ""npm run dev -- --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
+  start "JARVIS_FRONTEND" /B cmd /c "npm run dev -- --hostname 127.0.0.1 >> "%LOG_FILE%" 2>&1"
 )
 
 popd
@@ -54,20 +54,20 @@ echo [OK] Frontend online >> "%LOG_FILE%"
 exit /b 0
 
 :wait_port
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 set "HOST=%~1"
 set "PORT=%~2"
 set "TIMEOUT=%~3"
 set /a ELAPSED=0
 
 :wait_port_loop
-if %ELAPSED% geq %TIMEOUT% (
+if !ELAPSED! geq !TIMEOUT! (
   endlocal
   exit /b 1
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $t = [Net.Sockets.TcpClient]::new(); $ok = $t.ConnectAsync('%HOST%', %PORT%).Wait(2000); $t.Close(); if ($ok) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>nul
-if %errorlevel% equ 0 (
+if !errorlevel! equ 0 (
   endlocal
   exit /b 0
 )

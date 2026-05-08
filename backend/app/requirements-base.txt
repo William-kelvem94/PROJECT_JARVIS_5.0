@@ -36,7 +36,7 @@ faster-whisper
 sounddevice
 edge-tts
 pygame
-deepfilternet  # Noise suppression for voice processing
+# deepfilternet  # Noise suppression for voice processing (requer Rust/Cargo - opcional)
 
 # Perception: face (Level A - Identity)
 # Note: face_recognition requires dlib which needs cmake on Windows
