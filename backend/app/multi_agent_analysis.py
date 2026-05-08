@@ -400,7 +400,7 @@ class CognitiveHealthAgent(BaseAgent):
                     severity=Severity.HIGH,
                     title="Componentes Cognitivos Offline",
                     description=f"{len(offline_components)} componente(s) do núcleo cognitivo não estão disponíveis: {', '.join(offline_components)}",
-                    recommendation="Verifique logs e dependências dos módulos cognitivos. Execute validate-improvements.bat",
+                    recommendation="Verifique logs e dependências dos módulos cognitivos. Execute scripts\\validate-improvements.bat",
                     metrics={"offline_count": len(offline_components), "components": offline_components}
                 ))
         except Exception as e:

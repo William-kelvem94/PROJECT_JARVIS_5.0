@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM ========================================================================
 REM JARVIS 5.0 - Sistema de Validação de Melhorias
 REM ========================================================================
@@ -14,7 +18,7 @@ echo ║     JARVIS 5.0 - Validação de Melhorias (2026-05-07)          ║
 echo ╚════════════════════════════════════════════════════════════════╝
 echo.
 
-set "ROOT=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
 set "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
 set "PASS=0"
 set "FAIL=0"
@@ -103,11 +107,11 @@ if exist "%ROOT%backend\app\auto_restart.py" (
     set /a FAIL+=1
 )
 
-if exist "%ROOT%restart-jarvis.bat" (
-    echo ✅ restart-jarvis.bat criado
+if exist "%ROOT%scripts/restart-jarvis.bat" (
+    echo ✅ scripts/restart-jarvis.bat criado
     set /a PASS+=1
 ) else (
-    echo ❌ restart-jarvis.bat NÃO encontrado
+    echo ❌ scripts/restart-jarvis.bat NÃO encontrado
     set /a FAIL+=1
 )
 

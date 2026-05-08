@@ -27,4 +27,4 @@ O `smart_router.py` decide qual modelo LLM usar baseado na complexidade da query
 - **Hardware state** → redireciona se GPU > 90%
 
 ## Referência
-- `PROJECT_SOPHISTICATION/docs/inteligencia_hibrida.md`
+- `docs/archive/research/PROJECT_SOPHISTICATION/docs/inteligencia_hibrida.md`

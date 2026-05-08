@@ -136,10 +136,24 @@ async def handle_governor_action(action: str, state: str):
     #     smart_router.set_mode("performance")
     pass
 
+def _get_cors_origins() -> list[str]:
+    raw_origins = os.getenv("CORS_ORIGINS")
+    if raw_origins:
+        return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").strip()
+    origins = [frontend_url] if frontend_url else []
+    if "http://localhost:3000" not in origins:
+        origins.append("http://localhost:3000")
+    if "http://127.0.0.1:3000" not in origins:
+        origins.append("http://127.0.0.1:3000")
+    return origins
+
+
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

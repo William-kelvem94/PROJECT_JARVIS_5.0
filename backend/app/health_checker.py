@@ -7,6 +7,7 @@ Verifica disponibilidade, funcionalidade e status de cada subsistema.
 
 import os
 import importlib
+from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
@@ -229,8 +230,11 @@ class HealthChecker:
         try:
             from ultralytics import YOLO
             import cv2
-            # Verificar se modelo existe
-            model_path = "yolov8n.pt"
+            # Verificar se modelo existe no diretório canônico de modelos.
+            models_dir = Path(
+                os.getenv("JARVIS_MODELS_PATH", Path(__file__).resolve().parents[1] / "models")
+            )
+            model_path = models_dir / "yolov8n.pt"
             if os.path.exists(model_path):
                 return ComponentHealth(
                     name="Objetos",

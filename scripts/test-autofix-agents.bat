@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM JARVIS 5.0 - Auto-Fix Agents Validation
 REM Verifica se os 4 agentes de auto-correção estão ativos e funcionais
 REM Data: 7 de maio de 2026
@@ -72,6 +76,6 @@ echo 5. Aguardar 5 minutos e verificar auto-fixes aplicados
 echo.
 echo Ver documentação completa:
 echo - docs\AUTOFIX_AGENTS.md
-echo - AUTOFIX_README.md
+echo - docs/guides/AUTOFIX_README.md
 echo.
 pause

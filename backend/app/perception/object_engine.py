@@ -2,6 +2,7 @@ import cv2
 import torch
 import numpy as np
 import os
+from pathlib import Path
 from loguru import logger
 from ..config import settings
 
@@ -23,7 +24,10 @@ class ObjectEngine:
     """
     
     def __init__(self):
-        self.model_path = "yolov8n.pt" # O Ultralytics baixa automaticamente se não existir
+        models_dir = Path(
+            os.getenv("JARVIS_MODELS_PATH", Path(__file__).resolve().parents[2] / "models")
+        )
+        self.model_path = str(models_dir / "yolov8n.pt")
         self.model = None
         self.enabled = HAS_ULTRALYTICS
         if HAS_ULTRALYTICS:

@@ -32,5 +32,5 @@ GET  /system/status        → Telemetria + consciência espacial
 | Sobrecarga | ≥85% | ≥90% | Prioriza críticos |
 
 ## Referência
-- `OMEGA_RESEARCH/docs/system_control.md`
-- `OMEGA_RESEARCH/docs/system_powers.md`
+- `docs/archive/research/OMEGA_RESEARCH/docs/system_control.md`
+- `docs/archive/research/OMEGA_RESEARCH/docs/system_powers.md`

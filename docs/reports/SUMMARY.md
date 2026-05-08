@@ -44,14 +44,14 @@
 - Criado `backend/app/auto_restart.py`
 - Monitora arquivos críticos (*.py, requirements, .env)
 - Cooldown de 5 segundos entre restarts
-- Criado `restart-jarvis.bat` para restart manual
+- Criado `scripts/restart-jarvis.bat` para restart manual
 
 ### 7. ✅ Correção de Erros de Proxy/Conectividade ⭐ NOVO
 - Corrigido endpoint `/telemetry/status` com error handling robusto
 - Adicionado endpoint alias `/telemetry/api/status`
 - Criado ConnectivityAgent para monitorar saúde das APIs
 - Sistema detecta e reporta problemas de conectividade automaticamente
-- Criado `test-connectivity.bat` para validação automática
+- Criado `scripts/test-connectivity.bat` para validação automática
 
 ### 8. ✅ Sistema de Health Checking em Tempo Real ⭐ NOVO
 - Criado `backend/app/health_checker.py` (800+ linhas)
@@ -66,7 +66,7 @@
 - Criado componente React `CapabilitiesStatusGrid`
 - Status em tempo real com atualização a cada 5s
 - Adicionado endpoints `/system/capabilities` e `/system/hardware`
-- Criado `test-health-system.bat` para validação
+- Criado `scripts/test-health-system.bat` para validação
 
 ### 9. ✅ Sistema de Auto-Correção (Auto-Fix Agents) ⭐ NOVO
 - Criado `backend/app/autofix_agents.py` (350+ linhas)
@@ -87,9 +87,9 @@
 - Criado `docs/CONNECTIVITY_FIX.md` (análise do problema de proxy)
 - Criado `docs/REALTIME_HEALTH_SYSTEM.md` (sistema de health checking)
 - Criado `docs/AUTOFIX_AGENTS.md` (agentes de auto-correção) ⭐ NOVO
-- Criado `CONNECTIVITY_README.md` (guia rápido)
-- Criado `HEALTH_SYSTEM_README.md` (guia rápido de health checking)
-- Criado `AUTOFIX_README.md` (guia rápido de auto-correção) ⭐ NOVO
+- Criado `docs/guides/CONNECTIVITY_README.md` (guia rápido)
+- Criado `docs/guides/HEALTH_SYSTEM_README.md` (guia rápido de health checking)
+- Criado `docs/guides/AUTOFIX_README.md` (guia rápido de auto-correção) ⭐ NOVO
 - Criado este sumário
 
 ---
@@ -125,10 +125,10 @@
 - ✅ `frontend/components/app/capabilities-status-grid.tsx` (230 linhas) ⭐ NOVO
 
 ### Scripts
-- ✅ `restart-jarvis.bat` (script de restart manual)
-- ✅ `test-connectivity.bat` (validação de conectividade)
-- ✅ `test-health-system.bat` (validação de health checking) ⭐ NOVO
-- ✅ `validate-improvements.bat` (validação geral)
+- ✅ `scripts/restart-jarvis.bat` (script de restart manual)
+- ✅ `scripts/test-connectivity.bat` (validação de conectividade)
+- ✅ `scripts/test-health-system.bat` (validação de health checking) ⭐ NOVO
+- ✅ `scripts/validate-improvements.bat` (validação geral)
 
 ### Documentação
 - ✅ `docs/IMPROVEMENTS_2026-05-07.md` (guia completo)
@@ -136,10 +136,10 @@
 - ✅ `docs/CONNECTIVITY_FIX.md` (análise do problema de proxy)
 - ✅ `docs/REALTIME_HEALTH_SYSTEM.md` (sistema de health checking) ⭐ NOVO
 - ✅ `docs/AUTOFIX_AGENTS.md` (agentes de auto-correção) ⭐ NOVO
-- ✅ `CONNECTIVITY_README.md` (guia rápido)
-- ✅ `HEALTH_SYSTEM_README.md` (guia rápido de health checking) ⭐ NOVO
-- ✅ `AUTOFIX_README.md` (guia rápido de auto-correção) ⭐ NOVO
-- ✅ `SUMMARY.md` (este arquivo)
+- ✅ `docs/guides/CONNECTIVITY_README.md` (guia rápido)
+- ✅ `docs/guides/HEALTH_SYSTEM_README.md` (guia rápido de health checking) ⭐ NOVO
+- ✅ `docs/guides/AUTOFIX_README.md` (guia rápido de auto-correção) ⭐ NOVO
+- ✅ `docs/reports/SUMMARY.md` (este arquivo)
 
 ---
 
@@ -235,13 +235,13 @@ setup-venv.bat
 ### 2. Validar Instalação
 ```batch
 # Validar todas as melhorias
-validate-improvements.bat
+scripts/validate-improvements.bat
 
 # Testar conectividade dos endpoints
-test-connectivity.bat
+scripts/test-connectivity.bat
 
 # Testar sistema de health checking ⭐ NOVO
-test-health-system.bat
+scripts/test-health-system.bat
 ```
 
 ### 3. Iniciar com Auto-Restart
@@ -280,7 +280,7 @@ API Docs:  http://localhost:8000/docs
 
 ### 5. Restart Manual
 ```batch
-restart-jarvis.bat
+scripts/restart-jarvis.bat
 ```
 
 ---
@@ -382,9 +382,9 @@ restart-jarvis.bat
 
 ## 📚 DOCUMENTAÇÃO
 
-- 📖 [Guia Completo de Melhorias](./docs/IMPROVEMENTS_2026-05-07.md)
-- 🤖 [Sistema Multi-Agente](./docs/MULTI_AGENT_SYSTEM.md)
-- 🔧 [Architecture](./docs/ARCHITECTURE.md)
+- 📖 [Guia Completo de Melhorias](../IMPROVEMENTS_2026-05-07.md)
+- 🤖 [Sistema Multi-Agente](../MULTI_AGENT_SYSTEM.md)
+- 🔧 [Architecture](../ARCHITECTURE.md)
 
 ---
 

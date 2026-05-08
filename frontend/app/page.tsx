@@ -7,7 +7,6 @@ import {
   Activity,
   Brain,
   Camera,
-  CheckCircle2,
   Cpu,
   Database,
   Eye,
@@ -18,7 +17,6 @@ import {
   ListTodo,
   MessageSquareText,
   Mic,
-  MonitorUp,
   Network,
   Power,
   Radar,
@@ -40,10 +38,15 @@ import { cn } from '@/lib/shadcn/utils';
 
 // Dynamic import with fallback
 const CapabilitiesStatusGrid = dynamic(
-  () => import('@/components/app/capabilities-status-grid').then(mod => ({ default: mod.CapabilitiesStatusGrid })),
+  () =>
+    import('@/components/app/capabilities-status-grid').then((mod) => ({
+      default: mod.CapabilitiesStatusGrid,
+    })),
   {
-    loading: () => <div className="text-white/60 animate-pulse p-4">Carregando capabilities...</div>,
-    ssr: false
+    loading: () => (
+      <div className="animate-pulse p-4 text-white/60">Carregando capabilities...</div>
+    ),
+    ssr: false,
   }
 );
 
@@ -88,39 +91,12 @@ type ProjectData = {
   lastUpdated: Date | null;
 };
 
-const capabilityGroups = [
-  {
-    title: 'Nucleo cognitivo',
-    icon: Brain,
-    tone: 'text-sky-300',
-    items: ['Smart router', 'Memoria unificada', 'Engineer brain', 'Persona adaptativa'],
-  },
-  {
-    title: 'Percepcao',
-    icon: Eye,
-    tone: 'text-emerald-300',
-    items: ['Face engine', 'Gestos', 'Objetos', 'Audio em tempo real'],
-  },
-  {
-    title: 'Sistema',
-    icon: MonitorUp,
-    tone: 'text-amber-300',
-    items: ['OS tools', 'Browser engine', 'Capturas', 'Execucao assistida'],
-  },
-  {
-    title: 'Seguranca',
-    icon: ShieldCheck,
-    tone: 'text-rose-300',
-    items: ['Sentinel parser', 'Blackbox', 'Holodeck', 'Biometric vault'],
-  },
-];
-
 const roadmap = [
   { label: 'Backend FastAPI', state: 'online' },
   { label: 'WebSocket de voz', state: 'manual' },
   { label: 'Telemetria 8001', state: 'sincroniza' },
   { label: 'Vault Obsidian', state: 'indexado' },
-  { label: 'Memoria episodica', state: 'gravavel' },
+  { label: 'Memória episódica', state: 'gravável' },
 ];
 
 export default function Home() {
@@ -181,7 +157,7 @@ function JarvisCockpit() {
 
   const saveVaultMemory = async () => {
     if (!memoryDraft.title.trim() || !memoryDraft.content.trim()) {
-      setSaveStatus({ type: 'error', message: 'Informe titulo e conteudo da memoria.' });
+      setSaveStatus({ type: 'error', message: 'Informe título e conteúdo da memória.' });
       return;
     }
 
@@ -207,7 +183,7 @@ function JarvisCockpit() {
       setMemoryDraft((prev) => ({ ...prev, title: '', content: '', keywords: '' }));
       setSaveStatus({
         type: 'success',
-        message: data.path ? `Memoria salva em ${data.path}` : 'Memoria salva no vault.',
+        message: data.path ? `Memória salva em ${data.path}` : 'Memória salva no vault.',
       });
       await projectData.refresh();
     } catch {
@@ -219,7 +195,7 @@ function JarvisCockpit() {
 
   const saveQuickNote = async () => {
     if (!noteDraft.title.trim() || !noteDraft.body.trim()) {
-      setSaveStatus({ type: 'error', message: 'Informe titulo e corpo da nota.' });
+      setSaveStatus({ type: 'error', message: 'Informe título e corpo da nota.' });
       return;
     }
 
@@ -247,7 +223,7 @@ function JarvisCockpit() {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-jarvis-bg text-slate-100">
+    <main className="bg-jarvis-bg min-h-screen overflow-x-hidden text-slate-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%),radial-gradient(circle_at_80%_20%,rgba(16,185,129,0.08),transparent_28%),linear-gradient(180deg,#080a0f_0%,#0f1117_52%,#080a0f_100%)]" />
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] bg-size-[48px_48px] opacity-[0.07]" />
 
@@ -536,7 +512,7 @@ function SystemPanel({
     <Panel title="Estado do sistema" icon={Activity}>
       <div className="grid gap-3">
         <Meter label="Processador" value={health.cpu} icon={Cpu} tone="bg-cyan-300" />
-        <Meter label="Memoria" value={health.ram} icon={HardDrive} tone="bg-emerald-300" />
+        <Meter label="Memória" value={health.ram} icon={HardDrive} tone="bg-emerald-300" />
         <Meter
           label="Threads ativas"
           value={Math.min((telemetry?.hardware.threads ?? 0) * 4, 100)}
@@ -770,8 +746,8 @@ function CommandCenter({
             icon={Activity}
             active={!error}
           />
-          <FocusSignal label="Memoria" value="consulta HTTP" icon={Database} active />
-          <FocusSignal label="Seguranca" value="Sentinel" icon={ShieldCheck} active />
+          <FocusSignal label="Memória" value="consulta HTTP" icon={Database} active />
+          <FocusSignal label="Segurança" value="Sentinel" icon={ShieldCheck} active />
         </div>
       </div>
     </Panel>
@@ -891,7 +867,7 @@ function PerceptionPanel({
   activeObjects: string[];
 }) {
   return (
-    <Panel title="Percepcao ao vivo" icon={Eye}>
+    <Panel title="Percepção ao vivo" icon={Eye}>
       <div className="grid gap-3 sm:grid-cols-2">
         <StateTile
           icon={Camera}
@@ -930,35 +906,6 @@ function PerceptionPanel({
   );
 }
 
-function CapabilityCard({
-  title,
-  icon: Icon,
-  tone,
-  items,
-}: {
-  title: string;
-  icon: ComponentType<{ className?: string }>;
-  tone: string;
-  items: string[];
-}) {
-  return (
-    <div className="rounded-xl border border-white/10 bg-white/4 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className={cn('size-4', tone)} />
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-      </div>
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div key={item} className="flex items-center gap-2 text-sm text-slate-400">
-            <CheckCircle2 className="size-3.5 text-slate-600" />
-            {item}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function BrainPanel({
   memories,
   vaultStats,
@@ -974,7 +921,7 @@ function BrainPanel({
       <div className="grid grid-cols-2 gap-2">
         <StateTile
           icon={FileText}
-          label="Memorias"
+          label="Memórias"
           value={String(memories.length)}
           active={memories.length > 0}
         />
@@ -994,16 +941,16 @@ function BrainPanel({
               className="rounded-lg border border-white/10 bg-black/20 p-3"
             >
               <div className="line-clamp-1 text-sm font-medium text-slate-200">
-                {memory.title || memory.memory || memory.text || 'Memoria registrada'}
+                {memory.title || memory.memory || memory.text || 'Memória registrada'}
               </div>
               <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
-                {memory.content || memory.text || memory.memory || 'Sem conteudo textual exposto.'}
+                {memory.content || memory.text || memory.memory || 'Sem conteúdo textual exposto.'}
               </div>
             </div>
           ))
         ) : (
           <div className="rounded-lg border border-white/10 bg-black/20 p-3 text-sm text-slate-500">
-            Memorias aparecem aqui quando o backend responder em `/memory`.
+            Memórias aparecem aqui quando o backend responder em `/memory`.
           </div>
         )}
       </div>
@@ -1065,7 +1012,7 @@ function KnowledgeCapturePanel({
         <div className="rounded-lg border border-white/10 bg-black/20 p-3">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold text-white">Memoria episodica</div>
+              <div className="text-sm font-semibold text-white">Memória episódica</div>
               <div className="text-xs text-slate-500">POST /vault-memory</div>
             </div>
             <Database className="size-4 text-cyan-200" />
@@ -1130,7 +1077,7 @@ function KnowledgeCapturePanel({
         </div>
 
         <div className="rounded-lg border border-white/10 bg-black/20 p-3">
-          <div className="mb-3 text-sm font-semibold text-white">Nota rapida</div>
+          <div className="mb-3 text-sm font-semibold text-white">Nota rápida</div>
           <div className="space-y-2">
             <input
               value={noteDraft.title}
@@ -1175,7 +1122,7 @@ function KnowledgeCapturePanel({
 
 function VisionPanel({ screenshot, objects }: { screenshot?: string; objects: string[] }) {
   return (
-    <Panel title="Visao e capturas" icon={Camera}>
+    <Panel title="Visão e capturas" icon={Camera}>
       <div className="aspect-video overflow-hidden rounded-lg border border-white/10 bg-black/30">
         {screenshot ? (
           // Backend screenshots are local runtime artifacts, so a plain img keeps them unconfigured and live.

@@ -386,12 +386,12 @@ curl http://localhost:8000/system/capabilities
 
 ## 📚 Documentação Relacionada
 
-- 📖 [AUTOFIX_AGENTS.md](./docs/AUTOFIX_AGENTS.md) - Documentação técnica completa
-- 📋 [AUTOFIX_README.md](./AUTOFIX_README.md) - Guia rápido
-- 🤖 [MULTI_AGENT_SYSTEM.md](./docs/MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
-- 🏥 [REALTIME_HEALTH_SYSTEM.md](./docs/REALTIME_HEALTH_SYSTEM.md) - Health checking
-- 🌐 [CONNECTIVITY_FIX.md](./docs/CONNECTIVITY_FIX.md) - Correção de proxy
-- 📋 [SUMMARY.md](./SUMMARY.md) - Sumário executivo
+- 📖 [AUTOFIX_AGENTS.md](AUTOFIX_AGENTS.md) - Documentação técnica completa
+- 📋 [docs/guides/AUTOFIX_README.md](guides/AUTOFIX_README.md) - Guia rápido
+- 🤖 [MULTI_AGENT_SYSTEM.md](MULTI_AGENT_SYSTEM.md) - Sistema multi-agente
+- 🏥 [REALTIME_HEALTH_SYSTEM.md](REALTIME_HEALTH_SYSTEM.md) - Health checking
+- 🌐 [CONNECTIVITY_FIX.md](CONNECTIVITY_FIX.md) - Correção de proxy
+- 📋 [docs/reports/SUMMARY.md](reports/SUMMARY.md) - Sumário executivo
 
 ---
 

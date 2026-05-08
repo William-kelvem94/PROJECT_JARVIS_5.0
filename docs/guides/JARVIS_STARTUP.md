@@ -2,7 +2,8 @@
 
 > Projeto original: `PROJECT_JARVIS_5.0`
 >
-> `start-jarvis.bat` na raiz é o ponto de entrada oficial.
+> `start-jarvis.bat` na raiz é o ponto de entrada oficial e o unico arquivo que o usuario precisa executar.
+> Ele chama automaticamente os scripts internos em `scripts\` para prerequisitos, hardware, venv, backend e frontend.
 > Qualquer alias criado no workspace é apenas atalho local de navegação e não altera o nome do repositório.
 > Para containers, o compose oficial é `docker-compose.yml` na raiz.
 
@@ -119,8 +120,8 @@ Quando disponível, usa a estrutura modular:
 - `launch-backend.bat` - Inicia FastAPI com health check
 - `launch-frontend.bat` - Inicia Next.js (opcional)
 
-### 3. **Fallback Integrado**
-Se scripts modulares não existirem, usa lógica integrada no `start-jarvis.bat`.
+### 3. **Entrada Oficial**
+O arquivo da raiz valida a estrutura modular interna antes de prosseguir.
 
 ---
 

@@ -12,17 +12,40 @@ export function useVoice() {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  const clearReconnectTimer = () => {
+  const clearReconnectTimer = useCallback(() => {
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
-  };
+  }, []);
+
+  const cleanupWebSocket = useCallback(
+    ({ closeSocket = true }: { closeSocket?: boolean } = {}) => {
+      clearReconnectTimer();
+
+      const ws = wsRef.current;
+      if (!ws) return;
+
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+      if (
+        closeSocket &&
+        ws.readyState !== WebSocket.CLOSED &&
+        ws.readyState !== WebSocket.CLOSING
+      ) {
+        ws.close();
+      }
+      wsRef.current = null;
+    },
+    [clearReconnectTimer]
+  );
 
   const connect = useCallback(() => {
     if (!mountedRef.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    clearReconnectTimer();
+    cleanupWebSocket();
 
     const scheme =
       typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -32,11 +55,15 @@ export function useVoice() {
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
+      if (typeof event.data !== 'string') {
+        return;
+      }
+
       try {
         const data = JSON.parse(event.data);
 
         if (data.type === 'status_update') {
-          setStatus(data.status);
+          setStatus(data.status ?? 'idle');
           if (data.status === 'listening') {
             setIsListening(true);
             setTranscript('Escutando...');
@@ -48,37 +75,45 @@ export function useVoice() {
           if (data.transcript) setTranscript(data.transcript);
           if (data.response) setResponse(data.response);
         } else if (data.type === 'response_chunk') {
-          setResponse((prev) => prev + data.text);
+          setResponse((prev) => prev + (data.text ?? ''));
         }
       } catch (e) {
-        console.error('Erro ao processar mensagem WS:', e);
+        console.error('Erro ao processar mensagem WS JSON:', e);
       }
     };
 
     ws.onopen = () => {
-      console.log('🎙️ HUD Sincronizado com o Backend');
+      console.log('HUD sincronizado com o backend via WebSocket JSON');
       setStatus('idle');
     };
 
     ws.onclose = () => {
       if (!mountedRef.current) return;
-      console.log('🔌 HUD Desconectado do Backend');
+      console.log('HUD desconectado do backend');
+      cleanupWebSocket({ closeSocket: false });
       setStatus('idle');
       setIsListening(false);
-      // Tenta reconectar após 3 segundos, sem acumular timers
+      // Reconnect after 3 seconds without accumulating timers.
       clearReconnectTimer();
       reconnectTimerRef.current = setTimeout(() => {
         connect();
       }, 3000);
     };
-  }, []);
+
+    ws.onerror = () => {
+      setStatus('idle');
+      setIsListening(false);
+      if (ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) {
+        ws.close();
+      }
+    };
+  }, [cleanupWebSocket, clearReconnectTimer]);
 
   const toggleListening = () => {
-    // Como o backend controla o áudio agora, o clique apenas força o backend a escutar
+    // The backend controls capture; the click only asks it to start listening.
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       if (!isListening) {
         wsRef.current.send(JSON.stringify({ type: 'manual_trigger' }));
-        // O status vai mudar pra 'listening' assim que o backend confirmar
       }
     } else {
       connect();
@@ -89,10 +124,9 @@ export function useVoice() {
     connect();
     return () => {
       mountedRef.current = false;
-      clearReconnectTimer();
-      wsRef.current?.close();
+      cleanupWebSocket();
     };
-  }, [connect]);
+  }, [cleanupWebSocket, connect]);
 
   return {
     isListening,

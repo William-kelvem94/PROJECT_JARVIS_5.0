@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Eye, Globe, Pin, PinOff, RefreshCw } from 'lucide-react';
+import { Eye, Globe, Pin, PinOff, RefreshCw, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { jarvisApi } from '@/lib/jarvis-endpoints';
 import { cn } from '@/lib/shadcn/utils';
 
 interface VisionPiPProps {
@@ -10,17 +11,14 @@ interface VisionPiPProps {
   detections?: Array<{ label: string; box: [number, number, number, number] }>;
 }
 
-export function VisionPiP({
-  apiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000',
-  detections = [],
-}: VisionPiPProps) {
+export function VisionPiP({ apiUrl, detections = [] }: VisionPiPProps) {
   const [latestImage, setLatestImage] = useState<string>('');
   const [isOpen, setIsOpen] = useState(true);
   const [isPinned, setIsPinned] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<string>('');
 
   const updateImage = useCallback(() => {
-    const imageUrl = `${apiUrl}/screenshots/last_browser_state.png?t=${Date.now()}`;
+    const imageUrl = jarvisApi(`/screenshots/last_browser_state.png?t=${Date.now()}`, apiUrl);
     setLatestImage(imageUrl);
     setLastUpdate(new Date().toLocaleTimeString());
   }, [apiUrl]);
@@ -70,8 +68,9 @@ export function VisionPiP({
               <button
                 onClick={() => setIsOpen(false)}
                 className="rounded p-1 text-white/30 transition-colors hover:bg-cyan-500/20 hover:text-white"
+                title="Fechar visão"
               >
-                <span className="text-[10px]">✕</span>
+                <X className="size-3" />
               </button>
             </div>
           </div>

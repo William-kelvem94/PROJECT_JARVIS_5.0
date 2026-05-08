@@ -184,7 +184,7 @@ console.log('Critical:', data.by_severity.critical);
 
 **Arquivos Criados**:
 - `backend/app/auto_restart.py`
-- `restart-jarvis.bat` (script manual)
+- `scripts/restart-jarvis.bat` (script manual)
 
 **Arquivos Modificados**:
 - `backend/app/main.py`
@@ -197,7 +197,7 @@ set JARVIS_AUTO_RESTART=1
 call start-jarvis.bat
 
 # Opção 2: Restart manual
-restart-jarvis.bat
+scripts/restart-jarvis.bat
 ```
 
 **Comportamento**:
@@ -239,7 +239,7 @@ http://localhost:8001
 
 ### 5. Testar Restart Manual
 ```batch
-restart-jarvis.bat
+scripts/restart-jarvis.bat
 ```
 
 ---

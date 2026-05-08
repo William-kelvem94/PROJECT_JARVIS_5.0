@@ -66,7 +66,10 @@ export const SessionView = ({
   }, [isCameraEnabled, localStream]);
 
   return (
-    <section className="bg-jarvis-bg relative flex min-h-screen w-full flex-col overflow-hidden" {...props}>
+    <section
+      className="bg-jarvis-bg relative flex min-h-screen w-full flex-col overflow-hidden"
+      {...props}
+    >
       {/* Background Layers */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(10,10,35,1)_0%,rgba(2,2,8,1)_100%)]" />
 

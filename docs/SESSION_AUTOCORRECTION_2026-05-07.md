@@ -146,7 +146,7 @@ async def lifespan(app: FastAPI):
    - Princípios de segurança
    - Roadmap futuro
 
-2. **AUTOFIX_README.md** (guia rápido)
+2. **docs/guides/AUTOFIX_README.md** (guia rápido)
    - Problemas resolvidos
    - Como usar endpoints
    - Checklist de validação
@@ -159,12 +159,12 @@ async def lifespan(app: FastAPI):
    - Status e próximos passos
    - Comandos para resolver
 
-4. **test-autofix-agents.bat**
+4. **scripts/test-autofix-agents.bat**
    - Script de validação
    - 10 testes automatizados
    - Verifica 14 agentes ativos
 
-5. **SUMMARY.md** (atualizado)
+5. **docs/reports/SUMMARY.md** (atualizado)
    - Total de agentes: 14
    - Nova seção de auto-correção
    - Bugs corrigidos atualizados
@@ -346,7 +346,7 @@ curl http://localhost:8000/agents/findings | jq '.findings[] | select(.title | c
 
 3. **Validar agentes ativos**:
    ```bash
-   test-autofix-agents.bat
+   scripts/test-autofix-agents.bat
    ```
 
 ### Curto Prazo (10-30 min)
@@ -386,11 +386,11 @@ curl http://localhost:8000/agents/findings | jq '.findings[] | select(.title | c
 
 | Documento | Propósito | Tamanho |
 |-----------|-----------|---------|
-| [AUTOFIX_AGENTS.md](./docs/AUTOFIX_AGENTS.md) | Documentação técnica completa | 800+ linhas |
-| [AUTOFIX_README.md](./AUTOFIX_README.md) | Guia rápido | 300+ linhas |
-| [SOLUTIONS_FOR_REPORTED_ISSUES.md](./docs/SOLUTIONS_FOR_REPORTED_ISSUES.md) | Soluções específicas | 500+ linhas |
-| [SUMMARY.md](./SUMMARY.md) | Sumário executivo atualizado | 400+ linhas |
-| [test-autofix-agents.bat](./test-autofix-agents.bat) | Script de validação | 100+ linhas |
+| [AUTOFIX_AGENTS.md](AUTOFIX_AGENTS.md) | Documentação técnica completa | 800+ linhas |
+| [docs/guides/AUTOFIX_README.md](guides/AUTOFIX_README.md) | Guia rápido | 300+ linhas |
+| [SOLUTIONS_FOR_REPORTED_ISSUES.md](SOLUTIONS_FOR_REPORTED_ISSUES.md) | Soluções específicas | 500+ linhas |
+| [docs/reports/SUMMARY.md](reports/SUMMARY.md) | Sumário executivo atualizado | 400+ linhas |
+| [scripts/test-autofix-agents.bat](./scripts/test-autofix-agents.bat) | Script de validação | 100+ linhas |
 
 ---
 

@@ -33,5 +33,5 @@ DEEP_DREAM → geração de melhorias para Holodeck
 ```
 
 ## Referência
-- Fonte original: `OMEGA_RESEARCH/docs/digital_psyche_v2.md`
-- Implementação: `PROJECT_SOPHISTICATION/docs/psique_digital.md`
+- Fonte original: `docs/archive/research/OMEGA_RESEARCH/docs/digital_psyche_v2.md`
+- Implementação: `docs/archive/research/PROJECT_SOPHISTICATION/docs/psique_digital.md`

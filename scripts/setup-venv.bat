@@ -23,6 +23,18 @@ if not defined JARVIS_SYSTEM_PYTHON (
 
 if not defined JARVIS_TORCH_PROFILE set "JARVIS_TORCH_PROFILE=cpu"
 if not defined JARVIS_AI_DEVICE set "JARVIS_AI_DEVICE=cpu"
+if not defined JARVIS_KEEP_BROKEN_VENVS set "JARVIS_KEEP_BROKEN_VENVS=0"
+
+if not "%JARVIS_KEEP_BROKEN_VENVS%"=="1" (
+  for /d %%D in ("%ROOT%.venv.broken-*") do (
+    echo [VENV] Removing old broken venv backup: %%~nxD
+    rmdir /s /q "%%~fD" >> "%LOG_FILE%" 2>&1
+  )
+  for /d %%D in ("%ROOT%backend\venv.broken-*") do (
+    echo [VENV] Removing old backend broken venv backup: %%~nxD
+    rmdir /s /q "%%~fD" >> "%LOG_FILE%" 2>&1
+  )
+)
 
 if "%JARVIS_FORCE_RECREATE_VENV%"=="1" (
   if exist "%VENV_DIR%" (

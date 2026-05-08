@@ -397,7 +397,7 @@ Failed to proxy http://localhost:8000/telemetry/status [Error: socket hang up] {
 {
   "title": "Endpoint Recovery Failed: /telemetry/status",
   "description": "Tentativas excedidas (3/3)",
-  "recommendation": "Reinicie o backend: restart-jarvis.bat",
+  "recommendation": "Reinicie o backend: scripts/restart-jarvis.bat",
   "metrics": {
     "recovery_attempted": 3
   }
@@ -489,7 +489,7 @@ curl http://localhost:8000/agents/findings | jq '.findings[] | select(.title | c
 
 ## 📖 Documentação Relacionada
 
-- 📋 [SUMMARY.md](../SUMMARY.md) - Sumário executivo
+- 📋 [docs/reports/SUMMARY.md](reports/SUMMARY.md) - Sumário executivo
 - 🤖 [MULTI_AGENT_SYSTEM.md](./MULTI_AGENT_SYSTEM.md) - Sistema multi-agente original
 - 🏥 [REALTIME_HEALTH_SYSTEM.md](./REALTIME_HEALTH_SYSTEM.md) - Health checking
 - 🌐 [CONNECTIVITY_FIX.md](./CONNECTIVITY_FIX.md) - Correção de proxy

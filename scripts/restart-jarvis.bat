@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM ========================================================================
 REM JARVIS 5.0 - Manual Restart Script
 REM ========================================================================
@@ -14,7 +18,7 @@ echo ║           JARVIS 5.0 - Sistema de Reinício Manual             ║
 echo ╚════════════════════════════════════════════════════════════════╝
 echo.
 
-set "ROOT=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
 
 echo [1/4] Parando processos do JARVIS...
 REM Para processos Python do backend

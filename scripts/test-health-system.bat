@@ -1,4 +1,8 @@
 @echo off
+setlocal EnableExtensions EnableDelayedExpansion
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
+cd /d "%ROOT%"
 REM ========================================================================
 REM JARVIS 5.0 - Teste do Sistema de Health Checking em Tempo Real
 REM ========================================================================
@@ -11,7 +15,7 @@ echo ║    JARVIS 5.0 - Teste de Health Checking em Tempo Real        ║
 echo ╚════════════════════════════════════════════════════════════════╝
 echo.
 
-set "PYTHON_EXE=.venv\Scripts\python.exe"
+set "PYTHON_EXE=%ROOT%.venv\Scripts\python.exe"
 
 if not exist "%PYTHON_EXE%" (
     echo ❌ Ambiente virtual não encontrado
