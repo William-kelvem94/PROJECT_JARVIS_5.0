@@ -54,7 +54,7 @@ async def test_dream_loop():
     print("\n--- [TESTE 3: DREAM LOOP / EVOLUÇÃO] ---")
     try:
         from app.utils.dream_processor import dream_processor
-        from app.local_memory import local_memory
+        from app.unified_memory import memory
         
         print("Simulando um ciclo de 'reflexão' imediato...")
         experiences = ["Hoje o usuário testou o sistema de visão", "Ele parecia feliz com o HUD"]
@@ -65,11 +65,11 @@ async def test_dream_loop():
         if insights:
             print(f"Insights Gerados: {insights[:100]}...")
             # Verifica se salvou na memória
-            memories = local_memory.search("Jarvis", "Insight", limit=1)
-            if memories:
-                print("✅ Sucesso: O Jarvis 'sonhou', refletiu e salvou o aprendizado na memória local.")
+            memories = await memory.get_context("Jarvis", "Insight", limit=1)
+            if memories and "Nenhum contexto relevante encontrado" not in memories:
+                print("✅ Sucesso: O Jarvis 'sonhou', refletiu e salvou o aprendizado na memória unificada.")
             else:
-                print("⚠️ Aviso: Insights gerados mas não encontrados na memória (verifique se local_memory está configurado).")
+                print("⚠️ Aviso: Insights gerados mas não encontrados na memória (verifique se unified_memory está configurado).")
         else:
             print("❌ Falha: O DreamProcessor não gerou insights.")
     except Exception as e:

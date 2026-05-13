@@ -122,6 +122,7 @@ class SmartRouter:
         # Implementação seguindo padrão aiohttp POST...
         # Se não configurado, lança exceção para trigger fallback
         raise NotImplementedError("NVIDIA endpoint not configured in settings")
+        yield ""
 
     async def _call_local(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
         model = await self._get_local_model()
