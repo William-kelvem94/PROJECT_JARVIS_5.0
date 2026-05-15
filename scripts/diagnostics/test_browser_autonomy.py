@@ -1,6 +1,8 @@
 import asyncio
+import pytest
 from backend.app.browser_engine import browser_manager
 
+@pytest.mark.asyncio
 async def test_browser():
     try:
         print("Iniciando teste de navegador...")
