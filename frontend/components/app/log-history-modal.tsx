@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { jarvisApi } from '@/lib/jarvis-endpoints';
 import { cn } from '@/lib/shadcn/utils';
 
 interface LogHistoryModalProps {
@@ -30,11 +31,7 @@ interface ActivityLog {
   timestamp: string;
 }
 
-export function LogHistoryModal({
-  isOpen,
-  onClose,
-  apiUrl = process.env.NEXT_PUBLIC_JARVIS_API_URL || 'http://localhost:8000',
-}: LogHistoryModalProps) {
+export function LogHistoryModal({ isOpen, onClose, apiUrl }: LogHistoryModalProps) {
   const [dates, setDates] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -43,11 +40,12 @@ export function LogHistoryModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetch(`${apiUrl}/logs`)
+      fetch(jarvisApi('/logs', apiUrl))
         .then((res) => res.json())
         .then((data) => {
-          setDates(data.dates);
-          if (data.dates.length > 0) setSelectedDate(data.dates[0]);
+          const nextDates = Array.isArray(data?.dates) ? data.dates : [];
+          setDates(nextDates);
+          if (nextDates.length > 0) setSelectedDate(nextDates[0]);
         });
     }
   }, [isOpen, apiUrl]);
@@ -55,10 +53,10 @@ export function LogHistoryModal({
   useEffect(() => {
     if (selectedDate) {
       setLoading(true);
-      fetch(`${apiUrl}/logs/${selectedDate}`)
+      fetch(jarvisApi(`/logs/${selectedDate}`, apiUrl))
         .then((res) => res.json())
         .then((data) => {
-          setLogs(data.logs);
+          setLogs(Array.isArray(data?.logs) ? data.logs : []);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -159,7 +157,7 @@ export function LogHistoryModal({
             {loading ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-white/20">
                 <div className="size-12 animate-spin rounded-full border-t-2 border-[#1da3b9]" />
-                <span className="text-xs tracking-widest uppercase">Acessing Archives...</span>
+                <span className="text-xs tracking-widest uppercase">Accessing Archives...</span>
               </div>
             ) : filteredLogs.length > 0 ? (
               <table className="w-full border-collapse text-left">

@@ -1,0 +1,61 @@
+# JARVIS 5.0 - Backend base dependencies for Windows/Python 3.11
+
+# Core API
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-dotenv
+requests
+loguru
+aiohttp
+psutil
+watchfiles
+
+# Browser automation
+playwright
+watchdog
+
+# Screen / GPU monitoring
+GPUtil
+mss
+Pillow
+pyautogui
+onnxruntime
+
+# Perception: face/object
+mediapipe
+opencv-python
+numpy
+ultralytics
+
+# Perception: voice
+openwakeword
+webrtcvad-wheels
+librosa
+faster-whisper
+sounddevice
+edge-tts
+pygame
+# deepfilternet  # Noise suppression for voice processing (requer Rust/Cargo - opcional)
+
+# Perception: face (Level A - Identity)
+# Note: face_recognition requires dlib which needs cmake on Windows
+# See setup-venv.bat for prebuilt wheel installation
+face_recognition
+
+# Vector store & embeddings
+chromadb
+sentence-transformers
+faiss-cpu
+
+# Windows OS integration
+pycaw
+screen-brightness-control
+screeninfo
+comtypes
+
+# Test/runtime utilities
+pytest
+pytest-asyncio
+pytest-mock
+httpx
