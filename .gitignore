@@ -8,6 +8,8 @@ ENV/
 env.bak/
 venv.bak/
 backend/venv/
+.venv.broken-*/
+backend/venv.broken-*/
 backend/.env
 frontend/.env
 frontend/.env.*
@@ -21,6 +23,9 @@ __pycache__/
 # Node
 node_modules/
 .next/
+coverage/
+frontend/coverage/
+frontend/tsconfig.tsbuildinfo
 dist/
 build/
 npm-debug.log*
@@ -59,6 +64,12 @@ backend/data/browser_data/
 *.jsonl
 backend/data/logs/
 **/logs/
+logs/
+
+# Obsidian local workspace state
+.obsidian/workspace.json
+.obsidian/graph.json
+.obsidian/core-plugins.json
 
 # VSCode & IDEs
 .vscode/
@@ -74,3 +85,35 @@ move_frontend.log
 project_analysis_report.json
 audit_report.md
 auditoria_jarvis.py
+
+# Gerados automaticamente — não commitar
+start-jarvis-result.txt
+audit_report.md
+project_analysis_report.json
+
+# Modelos ML pesados — usar Git LFS ou download dinâmico
+*.pt
+backend/models/
+
+# Temporários
+temp_audio/
+backend/temp_audio/
+tools/installers/
+
+# Local Obsidian/runtime mirrors
+data/kb_local/Will-Pessoal/
+data/kb_local/Projetos-Privados/
+data/kb_local/skills/
+data/kb_local/JARVIS/Memorias/
+data/kb_local/JARVIS/Aprendizado/
+data/kb_local/JARVIS/Decisoes/
+data/kb_local/JARVIS/Contexto-Atual/
+backend/data/internal_brain/Memorias/
+backend/data/internal_brain/Aprendizado/
+backend/data/persona_evolution.json
+backend/data/holodeck_queue.txt
+backend/data/memories.json
+data/memories.json
+data/recovery/
+data/window_positions.json
+data/captures/

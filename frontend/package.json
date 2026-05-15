@@ -8,12 +8,13 @@
     "build": "next build",
     "start": "next start",
     "clean": "rm -rf .next || rd /s /q .next",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit --incremental false",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "jest --passWithNoTests",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test": "jest --config jest.config.cjs --passWithNoTests",
+    "test:watch": "jest --config jest.config.cjs --watch",
+    "test:coverage": "jest --config jest.config.cjs --coverage"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.8",

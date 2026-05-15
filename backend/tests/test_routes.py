@@ -18,8 +18,10 @@ def test_health():
     assert "face_emotion" in data
     assert "gesture" in data
 
+
 def test_chat_stub():
     resp = client.post("/chat", json={"message": "hello"})
     assert resp.status_code == 200
     data = resp.json()
     assert "reply" in data
+

@@ -23,12 +23,15 @@ import time
 import queue
 import threading
 import collections
+import asyncio
 from dataclasses import dataclass, field
 from typing import Optional, List, Callable
 
 import numpy as np
 from loguru import logger
 from app.voice.tts_engine import tts_engine
+from app.security.biometric_vault import biometric_vault
+
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 SAMPLE_RATE = 16_000          # Hz — required by all models
@@ -50,6 +53,8 @@ class VoiceResult:
     speaker_confidence: float = 0.0        # Level B
     offline_transcript: Optional[str] = None  # Level C
     active_levels: List[str] = field(default_factory=list)
+    is_validated: bool = False             # Blindagem Sensorial: Voice Validation
+
 
 
 # ── Capability detection ───────────────────────────────────────────────────────
@@ -88,7 +93,28 @@ except ImportError:
     logger.warning("[VoiceEngine] Level C unavailable — install: pip install faster-whisper")
 
 
-# ── Lazy model instances ───────────────────────────────────────────────────────
+# ── Audio Processing (Sensory Shielding) ───────────────────────────────────────
+try:
+    import df.enhance as deepfilter  # type: ignore
+    HAS_DEEPFILTER = True
+    logger.info("[VoiceEngine] ✅ DeepFilterNet available for noise suppression")
+except ImportError:
+    HAS_DEEPFILTER = False
+    logger.warning("[VoiceEngine] DeepFilterNet not installed — noise suppression disabled. Install: pip install deepfilternet")
+
+def _apply_noise_suppression(audio_int16: np.ndarray) -> np.ndarray:
+    """Removes ambient noise and music using DeepFilterNet."""
+    if not HAS_DEEPFILTER:
+        return audio_int16
+    try:
+        # DeepFilterNet expects float32
+        audio_float = audio_int16.astype(np.float32) / 32768.0
+        enhanced = deepfilter.enhance(audio_float)
+        return (enhanced * 32767).astype(np.int16)
+    except Exception as e:
+        logger.debug(f"[VoiceEngine] Noise suppression failed: {e}")
+        return audio_int16
+
 _oww_model = None
 _voice_encoder = None
 _whisper_model = None
@@ -176,12 +202,22 @@ def _get_whisper():
                 device = "cuda" if torch.cuda.is_available() else "cpu"
             else:
                 device = device_env
-            compute_type = "float16" if device == "cuda" else "int8"
-            
+
+            # Hardware Optimization
+            if device == "cuda":
+                compute_type = "int8_float16" # Optimized for NVIDIA GPUs (Tensor cores)
+            elif device == "cpu":
+                # OpenVINO logic: faster-whisper supports 'int8' on CPU.
+                # If we wanted true OpenVINO, we'd use the openvino-whisper model,
+                # but for faster-whisper, int8 is the standard CPU optimization.
+                compute_type = "int8"
+            else:
+                compute_type = "float32"
+
             # Mudando de 'base' para 'tiny' para não travar sua CPU
             model_size = os.environ.get("JARVIS_WHISPER_MODEL", "tiny")
             _whisper_model = WhisperModel(model_size, device=device, compute_type=compute_type)
-            logger.success(f"[VoiceEngine] ✅ faster-whisper '{model_size}' (Modo Veloz) carregado em {device.upper()}")
+            logger.success(f"[VoiceEngine] ✅ faster-whisper '{model_size}' (Modo Veloz) carregado em {device.upper()} with {compute_type}")
         except Exception as e:
             logger.error(f"[VoiceEngine] faster-whisper init failed: {e}")
     return _whisper_model
@@ -222,11 +258,10 @@ def enroll_voice(name: str, audio_int16: np.ndarray) -> str:
         audio_float = audio_int16.astype(np.float32) / 32768.0
         wav = preprocess_wav(audio_float, source_sr=SAMPLE_RATE)
         embedding = encoder.embed_utterance(wav)
-        os.makedirs(VOICES_DIR, exist_ok=True)
-        path = os.path.join(VOICES_DIR, f"{name}.npy")
-        np.save(path, embedding)
+
+        biometric_vault.save_voice_print(name, embedding)
         _enrolled_voices[name] = embedding
-        logger.success(f"[VoiceEngine] ✅ Voice enrolled for '{name}' → {path}")
+        logger.success(f"[VoiceEngine] ✅ Voice enrolled for '{name}' via BiometricVault")
         return f"Voice enrolled for '{name}'."
     except Exception as e:
         logger.error(f"[VoiceEngine] Voice enrolment failed: {e}")
@@ -234,19 +269,22 @@ def enroll_voice(name: str, audio_int16: np.ndarray) -> str:
 
 
 def identify_speaker(audio_int16: np.ndarray) -> tuple:
-    """Returns (name, confidence) or (None, 0.0)."""
+    """Returns (name, confidence) or (None, 0.0). Uses BiometricVault."""
     _ensure_voices()
     encoder = _get_encoder()
     if encoder is None or not _enrolled_voices:
         return None, 0.0
     try:
         from resemblyzer import preprocess_wav  # type: ignore
-        audio_float = audio_int16.astype(np.float32) / 32768.0
+        # Sensory Shielding: Noise suppression before identification
+        audio_cleaned = _apply_noise_suppression(audio_int16)
+        audio_float = audio_cleaned.astype(np.float32) / 32768.0
         wav = preprocess_wav(audio_float, source_sr=SAMPLE_RATE)
         if len(wav) < SAMPLE_RATE:  # need at least 1 second
             return None, 0.0
         embedding = encoder.embed_utterance(wav)
-        best_name, best_sim = None, 0.65  # similarity threshold
+        _SPEAKER_THRESHOLD = float(os.environ.get("JARVIS_SPEAKER_THRESHOLD", "0.75"))
+        best_name, best_sim = None, _SPEAKER_THRESHOLD
         for name, ref_emb in _enrolled_voices.items():
             sim = float(np.dot(embedding, ref_emb))
             if sim > best_sim:
@@ -265,7 +303,8 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
     try:
         # Beam size 1 é o segredo para CPUs i3/Notebooks: 3x mais rápido!
         audio_float = audio_int16.astype(np.float32) / 32768.0
-        segments, info = whisper.transcribe(audio_float, beam_size=1, language="pt")
+        _lang = os.environ.get("JARVIS_WHISPER_LANG", "pt")
+        segments, info = whisper.transcribe(audio_float, beam_size=1, language=_lang)
         
         full_text = []
         for seg in segments:
@@ -277,8 +316,18 @@ def transcribe_offline(audio_int16: np.ndarray) -> Optional[str]:
         text = " ".join(full_text).strip()
         
         # Filtro de fallback secundário
-        hallucinations = ["e o que eu vou fazer?", "obrigado por assistir", "legendas"]
-        if text.lower() in hallucinations or len(text) < 2:
+        _HALLUCINATIONS = {
+            "e o que eu vou fazer?", "obrigado por assistir", "legendas",
+            "inscreva-se no canal", "curta e compartilhe", "transcrição automática",
+            "subtitles by", "legendas por", "thanks for watching",
+            "please subscribe", "like and subscribe", "não se esqueça",
+            "até a próxima", "caption by", "[música]", "[music]",
+        }
+        text_lower = text.lower().strip()
+        if (text_lower in _HALLUCINATIONS
+                or len(text_lower) < 3
+                or text_lower.startswith("[")
+                or all(c in ".,!? " for c in text_lower)):
             return None
             
         return text if text else None
@@ -307,6 +356,7 @@ def _fire(result: VoiceResult):
 # ── Background audio thread ────────────────────────────────────────────────────
 _running = False
 _audio_thread: Optional[threading.Thread] = None
+_command_semaphore = threading.Semaphore(3)  # máximo 3 threads simultâneas
 
 # Thread-safe queue for chunks coming from the sounddevice callback
 _chunk_q: queue.Queue = queue.Queue(maxsize=200)
@@ -315,10 +365,12 @@ _chunk_q: queue.Queue = queue.Queue(maxsize=200)
 _active_listening = False
 _silence_counter = 0
 _voice_buffer = []
+_noise_floor = 150.0  # baseline adaptativo de ruído ambiente
+_NOISE_FLOOR_ALPHA = 0.05  # fator de suavização exponencial
 
 def _audio_loop():
     """Background thread: opens audio input and processes chunks."""
-    global _active_listening, _silence_counter, _voice_buffer
+    global _active_listening, _silence_counter, _voice_buffer, _noise_floor
     if not HAS_SOUNDDEVICE:
         return
 
@@ -356,10 +408,14 @@ def _audio_loop():
                 if _active_listening:
                     _voice_buffer.append(chunk)
                     
-                    # VAD Simples (Energia do Áudio)
-                    energy = np.abs(chunk).mean()
-                    if energy < 300:  # Threshold de silêncio
+                    # VAD Adaptativo (Energia do Áudio)
+                    energy = float(np.abs(chunk).mean())
+                    # Threshold adaptativo: 2x o ruído de fundo estimado, mínimo 150
+                    _silence_threshold = max(150.0, _noise_floor * 2.0)
+                    if energy < _silence_threshold:
                         _silence_counter += 1
+                        # Atualiza noise floor apenas em silêncio (EMA)
+                        _noise_floor = _noise_floor * (1 - _NOISE_FLOOR_ALPHA) + energy * _NOISE_FLOOR_ALPHA
                     else:
                         _silence_counter = 0
                         
@@ -373,7 +429,10 @@ def _audio_loop():
                         text = transcribe_offline(segment) if HAS_WHISPER else ""
                         if text and len(text.strip()) > 2:
                             logger.success(f"[VoiceEngine] 📝 Comando Ouvido: {text}")
-                            threading.Thread(target=_process_command_sync, args=(text,), daemon=True).start()
+                            def _run_with_semaphore(t):
+                                with _command_semaphore:
+                                    _process_command_sync(t)
+                            threading.Thread(target=_run_with_semaphore, args=(text,), daemon=True).start()
                         else:
                             _notify_hud("idle")
 
@@ -381,7 +440,9 @@ def _audio_loop():
                 else:
                     if oww is not None:
                         try:
-                            chunk_float = chunk.astype(np.float32) / 32768.0
+                            # Sensory Shielding: Noise suppression before Wake Word detection
+                            chunk_cleaned = _apply_noise_suppression(chunk)
+                            chunk_float = chunk_cleaned.astype(np.float32) / 32768.0
                             pred = oww.predict(chunk_float)
                             for model_name, score_data in pred.items():
                                 try:
@@ -392,13 +453,22 @@ def _audio_loop():
                                 except: score = 0.0
 
                                 if score > 0.45:
-                                    logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' detectada")
-                                    _active_listening = True
-                                    _silence_counter = 0
-                                    _voice_buffer = []
-                                    _notify_hud("listening")
+                                    # Sensory Shielding: Validate Voice Print before activation
+                                    # Use the current buffer/chunk to check if it's the owner
+                                    # (In a real scenario, we'd use a slightly larger window)
+                                    speaker, conf = identify_speaker(chunk_cleaned)
+
+                                    if speaker:
+                                        logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' VALIDATED for {speaker}")
+                                        _active_listening = True
+                                        _silence_counter = 0
+                                        _voice_buffer = []
+                                        _notify_hud("listening")
+                                    else:
+                                        logger.warning(f"[VoiceEngine] ⚠️ Wake word '{model_name}' detected but VOICE UNVALIDATED. Blocking.")
                         except Exception as e:
                             logger.debug(f"[VoiceEngine] Wake word check: {e}")
+
 
     except Exception as e:
         logger.error(f"[VoiceEngine] Audio loop crashed: {e}")
@@ -419,10 +489,14 @@ def _process_command_sync(text: str):
     try:
         from app.chat_pipeline import chat_stream
         from app.voice.tts_engine import tts_engine
-        
+        from app.voice.barge_in import barge_in
+
         _notify_hud("thinking", transcript=text)
-        
+
         async def run_chat():
+            # Inicia a escuta de Barge-in enquanto o JARVIS processa/fala
+            barge_in.start_vad_listener(callback=tts_engine.stop_speaking)
+
             full_reply = ""
             async for chunk in chat_stream("Chefe", text):
                 full_reply += chunk
@@ -432,6 +506,8 @@ def _process_command_sync(text: str):
             _notify_hud("speaking", response=full_reply)
             # Toca o áudio nas caixas locais
             await tts_engine.speak(full_reply, play_local=True)
+
+            barge_in.stop_vad_listener()
             _notify_hud("idle")
 
         loop = asyncio.new_event_loop()
