@@ -1,11 +1,17 @@
-from typing import Any, Dict, List
-import chromadb
+from typing import Any, Dict
+
+try:
+    import chromadb
+except Exception:  # pragma: no cover - optional dependency
+    chromadb = None
 
 class UnifiedMemoryManager:
     def __init__(self):
         self.prompt_cache = {}
         self.short_term = []
         try:
+            if chromadb is None:
+                raise RuntimeError("chromadb is unavailable")
             self.client = chromadb.Client()
             self.interactions = self.client.create_collection(name="interactions", get_or_create=True)
         except Exception:
