@@ -98,6 +98,13 @@ backend/models/
 # Temporários
 temp_audio/
 backend/temp_audio/
+data/temp/
+**/temp/
+
+# Speech Models (Vosk, etc)
+models/speech/
+models/vosk-*
+**/vosk-model-*/
 tools/installers/
 
 # Local Obsidian/runtime mirrors
