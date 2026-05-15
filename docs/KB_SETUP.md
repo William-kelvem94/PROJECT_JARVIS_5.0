@@ -48,7 +48,7 @@ D:\OBSIDIAN\Will
 
 ## Configuração recomendada
 
-No arquivo `env/.env` ou `backend/.env`:
+No arquivo `.env` da raiz ou `env/.env` (override local):
 
 ```env
 JARVIS_KB_PATH=D:\OBSIDIAN\Will\Projetos\Privados\PROJECT_JARVIS_5.0-KnowledgeBase

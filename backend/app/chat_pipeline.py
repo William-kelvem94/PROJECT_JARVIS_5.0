@@ -7,9 +7,32 @@ from .persona import persona
 from .system_tools import SystemTools
 
 tools = SystemTools()
+ALLOWED_TOOL_NAMES = {
+    "browser_navigate",
+    "browser_screenshot",
+    "browser_get_page_content",
+    "browser_click",
+    "web_search_no_api",
+    "list_files",
+    "read_file",
+    "write_file",
+    "apply_code_change",
+    "execute_command",
+    "get_system_stats",
+    "set_system_volume",
+    "set_system_brightness",
+    "capture_screens",
+    "open_application",
+    "git_operation",
+    "think_with_engineer_brain",
+    "run_and_fix",
+}
 
 async def chat_reply(user_id: str, user_message: str) -> str:
     """Resposta simples (síncrona para a API)."""
+    if not user_message.strip():
+        raise ValueError("user_message cannot be empty")
+
     context = await memory.get_context(user_id, query=user_message)
     persona_context = persona.get_system_prompt()
     full_prompt = f"{persona_context}\nUsuário: {user_message}\nContexto: {context}"
@@ -19,6 +42,14 @@ async def chat_reply(user_id: str, user_message: str) -> str:
     # Salva na memória
     await memory.add_memory(user_id, user_message, source="user")
     await memory.add_memory(user_id, reply, source="jarvis")
+    await memory.save_session(
+        user_id,
+        [
+            {"role": "user", "content": user_message},
+            {"role": "jarvis", "content": reply},
+        ],
+        summary=reply[:500],
+    )
 
     # Voz: Fala a resposta localmente
     from .voice.tts_engine import tts_engine
@@ -28,6 +59,9 @@ async def chat_reply(user_id: str, user_message: str) -> str:
 
 async def chat_stream(user_id: str, user_message: str):
     """Pipeline de chat com streaming, memória e execução de ferramentas em tempo real."""
+    if not user_message.strip():
+        raise ValueError("user_message cannot be empty")
+
     context = await memory.get_context(user_id, query=user_message)
     persona_context = persona.get_system_prompt()
 
@@ -66,6 +100,9 @@ async def chat_stream(user_id: str, user_message: str):
 async def execute_tool_async(func_name: str, args_str: str):
     """Helper para execução assíncrona de ferramentas disparadas via stream."""
     try:
+        if func_name not in ALLOWED_TOOL_NAMES:
+            logger.warning(f"🛠️ Ferramenta bloqueada por allowlist: {func_name}")
+            return
         func = getattr(tools, func_name, None)
         if func:
             clean_args = [a.strip().strip("'\"") for a in args_str.split(",") if a.strip()]
