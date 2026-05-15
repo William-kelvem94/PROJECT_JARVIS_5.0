@@ -2,9 +2,22 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
-# Carregar .env
-load_dotenv(r'C:\Users\willi\Documents\GitHub\PROJECT_JARVIS_5.0\env\.env')
-api_key = os.getenv("GEMINI_API_KEY")
+from pathlib import Path
+
+# Encontrar a raiz do projeto (PROJECT_JARVIS_5.0)
+base_dir = Path(__file__).resolve().parents[2]
+env_path = base_dir / "env" / ".env"
+root_env_path = base_dir / ".env"
+
+# Tenta carregar do root ou da pasta env/
+if root_env_path.exists():
+    load_dotenv(root_env_path)
+elif env_path.exists():
+    load_dotenv(env_path)
+else:
+    load_dotenv() # Fallback para o diretório atual
+
+api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 client = genai.Client(api_key=api_key, http_options={'api_version': 'v1beta'})
 

@@ -21,8 +21,18 @@ class SecondBrainConnector:
     """
     
     def __init__(self, vault_path: str = None):
-        # Tenta detectar o caminho do Obsidian
-        self.vault_path = vault_path or os.getenv("OBSIDIAN_VAULT_PATH", "C:/Users/willi/Documents/GitHub/Will-obsidian")
+        # 1. Prioridade: vault inteiro. JARVIS_KB_PATH é só subárvore de ingestão.
+        v_path = vault_path or os.getenv("JARVIS_VAULT_ROOT") or os.getenv("OBSIDIAN_VAULT_PATH")
+        if v_path and os.path.exists(v_path):
+            self.vault_path = v_path
+        # 2. Prioridade: Caminho conhecido no Windows
+        elif os.path.exists(r"D:\DOCUMENTOS\GitHub\Will-obsidian"):
+            self.vault_path = r"D:\DOCUMENTOS\GitHub\Will-obsidian"
+        elif os.path.exists("C:/Users/willi/Documents/GitHub/Will-obsidian"):
+            self.vault_path = "C:/Users/willi/Documents/GitHub/Will-obsidian"
+        # 3. Fallback: Relativo ao projeto
+        else:
+            self.vault_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "kb_local")
         self.todo_file = os.path.join(self.vault_path, "TODO.md")
         self.active_todos = []
         self._last_index_time = 0
@@ -57,8 +67,12 @@ class SecondBrainConnector:
         """Extrai tarefas pendentes do TODO.md."""
         if not os.path.exists(self.todo_file): return
         try:
-            with open(self.todo_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            try:
+                with open(self.todo_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            except UnicodeDecodeError:
+                with open(self.todo_file, 'r', encoding='latin-1') as f:
+                    lines = f.readlines()
             
             new_todos = []
             for line in lines:

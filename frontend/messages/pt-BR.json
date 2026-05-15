@@ -1,0 +1,13 @@
+{
+  "cockpit": {
+    "title": "JARVIS 5.0",
+    "description": "Cockpit de Controle — Ecossistema de Inteligência Adaptativa",
+    "cpu": "CPU",
+    "ram": "RAM",
+    "noObjects": "Nenhum objeto",
+    "tasks": "{count} tarefa{plural}",
+    "iaOnline": "IA Online",
+    "iaStarting": "IA Inicializando...",
+    "noLogs": "Nenhum log de sistema ainda — o Jarvis está ouvindo."
+  }
+}

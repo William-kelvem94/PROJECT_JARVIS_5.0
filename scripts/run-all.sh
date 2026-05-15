@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# start backend and frontend in separate terminals (requires tmux or use two shells)
-echo "Starting backend..."
-bash scripts/run-backend.sh &
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "Starting frontend..."
-bash scripts/run-frontend.sh &
+bash "$ROOT/scripts/run-backend.sh" &
+BACKEND_PID=$!
 
-wait
+bash "$ROOT/scripts/run-frontend.sh" &
+FRONTEND_PID=$!
+
+wait "$BACKEND_PID" "$FRONTEND_PID"

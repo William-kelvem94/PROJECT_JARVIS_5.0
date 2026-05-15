@@ -32,8 +32,12 @@ class LearningManager:
         """Carrega o perfil persistido se existir."""
         if os.path.exists(self.data_path):
             try:
-                with open(self.data_path, 'r', encoding='utf-8') as f:
-                    self.profile.update(json.load(f))
+                try:
+                    with open(self.data_path, 'r', encoding='utf-8') as f:
+                        self.profile.update(json.load(f))
+                except UnicodeDecodeError:
+                    with open(self.data_path, 'r', encoding='latin-1') as f:
+                        self.profile.update(json.load(f))
                 logger.info("🧬 Perfil de Persona carregado e pronto para evoluir.")
             except Exception as e:
                 logger.error(f"Erro ao carregar persona: {e}")
@@ -81,15 +85,40 @@ class LearningManager:
             for root, dirs, files in os.walk(path):
                 for file in files:
                     if file.endswith(".md"):
-                        with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
-                            content = f.read().lower()
-                            if "preferência" in content or "gosto de" in content:
-                                self.profile["known_facts"].append(f"Fato de {file}: Contexto biográfico assimilado.")
+                        try:
+                            with open(os.path.join(root, file), 'r', encoding='utf-8') as f:
+                                content = f.read().lower()
+                        except UnicodeDecodeError:
+                            with open(os.path.join(root, file), 'r', encoding='latin-1') as f:
+                                content = f.read().lower()
+                        if "preferência" in content or "gosto de" in content:
+                            self.profile["known_facts"].append(f"Fato de {file}: Contexto biográfico assimilado.")
             
             self.profile["biography_synced"] = True
             self.save_profile()
         except Exception as e:
             logger.error(f"Erro na sincronização biográfica: {e}")
+
+    def get_custom_wake_words(self) -> list:
+        """Busca palavras-chave de ativação customizadas no Segundo Cérebro."""
+        custom_words = []
+        from .second_brain_connector import second_brain
+        path = os.path.join(second_brain.vault_path, "JARVIS", "Configuracoes.md")
+        
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # Busca por padrões como "WakeWords: word1, word2"
+                    match = __import__('re').search(r"WakeWords:\s*(.*)", content)
+                    if match:
+                        words = [w.strip() for w in match.group(1).split(",") if w.strip()]
+                        custom_words.extend(words)
+                        logger.info(f"🎙️ Palavras de ativação customizadas encontradas: {words}")
+            except Exception as e:
+                logger.error(f"Erro ao ler WakeWords do Obsidian: {e}")
+        
+        return custom_words
 
     def get_persona_instructions(self):
         """Gera as diretrizes de sistema baseadas na evolução da persona."""
