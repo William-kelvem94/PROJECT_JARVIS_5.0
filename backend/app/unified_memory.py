@@ -9,8 +9,14 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
 from dotenv import load_dotenv
-import chromadb
-from sentence_transformers import SentenceTransformer
+try:
+    import chromadb
+except Exception:
+    chromadb = None
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
 
 from .utils.db_manager import db_manager
 
@@ -38,13 +44,17 @@ class UnifiedMemory:
         self._ensure_vault_dirs()
 
         # Initialize Embedding Model
-        logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-
-        # Initialize ChromaDB Persistent Client
-        self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
-        self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
-        logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
+        self.model = None
+        self.chroma_client = None
+        self.collection = None
+        if chromadb is not None and SentenceTransformer is not None:
+            logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+            self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
+            logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
+        else:
+            logger.warning("[UnifiedMemory] ChromaDB/SentenceTransformer indisponíveis. Busca semântica desativada.")
 
     def _conn(self) -> sqlite3.Connection:
         return db_manager.get_connection()
@@ -91,6 +101,8 @@ class UnifiedMemory:
 
     async def _index_semantic_memory(self, content: str, metadata: Dict[str, Any]):
         """Vetoriza e armazena a memória no ChromaDB."""
+        if self.model is None or self.collection is None:
+            return
         def sync_index():
             try:
                 embedding = self.model.encode(content).tolist()
@@ -280,7 +292,7 @@ updated: {date} {hora}
         return context_str if context_str else "Nenhum contexto relevante encontrado."
 
     async def _search_semantic(self, query: str, user_id: str) -> str:
-        if not query:
+        if not query or self.model is None or self.collection is None:
             return ""
 
         def sync_search():
