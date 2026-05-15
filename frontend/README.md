@@ -1,5 +1,7 @@
 # Agent Starter for React
 
+> README do frontend isolado. Para boot do projeto inteiro, use `start-jarvis.bat` e `JARVIS_STARTUP.md`.
+
 This is a starter template for the Jarvis frontend, providing a polished voice-enabled interface with customizable UI controls and responsive layout components. It is built with Next.js, Tailwind CSS, and shadcn/ui primitives.
 
 <picture>
@@ -41,13 +43,13 @@ agent-starter-react/
 
 Business logic lives within the `components/app` folder. It's here where the application's state and behavior is managed and the various Shadcn UI components are composed together.
 
-| File                  | Description                                                                                                                                           |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File                  | Description                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `session-view.tsx`    | Initializes the application and renders the session UI including chat transcript, media tiles, and control bar. |
-| `view-controller.tsx` | Manages the transitions between the welcome and session views based on the current app state.                                                     |
-| `welcome-view.tsx`    | Renders the welcome UI when the session is not connected.                                                                                     |
-| `chat-transcript.tsx` | Manages the chat transcript transitions.                                                                                                              |
-| `tile-layout.tsx`     | Manages the layout and transition of media tiles in various application states.                                                                       |
+| `view-controller.tsx` | Manages the transitions between the welcome and session views based on the current app state.                   |
+| `welcome-view.tsx`    | Renders the welcome UI when the session is not connected.                                                       |
+| `chat-transcript.tsx` | Manages the chat transcript transitions.                                                                        |
+| `tile-layout.tsx`     | Manages the layout and transition of media tiles in various application states.                                 |
 
 ### Component usage
 
@@ -81,7 +83,7 @@ pnpm dlx shadcn@latest add {component-name-a} {component-name-b}
 ## Getting started
 
 > [!TIP]
-Run the app with:
+> Run the app with:
 
 ```bash
 pnpm install

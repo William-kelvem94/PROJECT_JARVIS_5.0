@@ -97,10 +97,10 @@ def _get_default_vault_path() -> str:
     if env_path and os.path.exists(env_path):
         return env_path
         
-    # 2. Prioridade: Caminho conhecido no Windows (Will-obsidian)
-    user_vault = "C:/Users/willi/Documents/GitHub/Will-obsidian"
-    if os.path.exists(user_vault):
-        return user_vault
+    # 2. Prioridade: Caminhos conhecidos no Windows (Will-obsidian)
+    for user_vault in (r"D:\DOCUMENTOS\GitHub\Will-obsidian", "C:/Users/willi/Documents/GitHub/Will-obsidian"):
+        if os.path.exists(user_vault):
+            return user_vault
 
     # 3. Fallback: data/kb_local relativo à raiz do projeto
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

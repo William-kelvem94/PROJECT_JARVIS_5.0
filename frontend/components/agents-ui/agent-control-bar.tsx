@@ -1,19 +1,19 @@
 'use client';
 
 import { type ComponentProps, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   ChatCircleText,
+  CircleNotch,
   Microphone,
   MicrophoneSlash,
   Monitor,
+  PaperPlaneRight,
+  Power,
+  PushPin,
   Video,
   VideoCameraSlash,
-  PaperPlaneRight,
-  PushPin,
-  CircleNotch,
-  Power,
 } from '@phosphor-icons/react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { useJarvis } from '@/context/JarvisContext';
@@ -55,7 +55,10 @@ function AgentChatInput({ chatOpen, onSend = async () => {}, className }: AgentC
   return (
     <form
       onSubmit={handleSubmit}
-      className={cn('mb-4 flex grow items-end gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-2 transition-all focus-within:border-jarvis-cyan/30 focus-within:bg-white/[0.06]', className)}
+      className={cn(
+        'focus-within:border-jarvis-cyan/30 mb-4 flex grow items-end gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-2 transition-all focus-within:bg-white/[0.06]',
+        className
+      )}
     >
       <textarea
         ref={inputRef}
@@ -69,18 +72,24 @@ function AgentChatInput({ chatOpen, onSend = async () => {}, className }: AgentC
             handleSubmit(e);
           }
         }}
-        className="field-sizing-content max-h-24 min-h-10 flex-1 bg-transparent px-3 py-2.5 font-mono text-xs tracking-wide text-white [scrollbar-width:thin] focus:outline-none disabled:cursor-not-allowed placeholder:text-white/10"
+        className="field-sizing-content max-h-24 min-h-10 flex-1 bg-transparent px-3 py-2.5 font-mono text-xs tracking-wide text-white [scrollbar-width:thin] placeholder:text-white/10 focus:outline-none disabled:cursor-not-allowed"
       />
       <Button
         size="icon"
         type="submit"
         disabled={isDisabled}
         className={cn(
-          "size-10 shrink-0 rounded-lg transition-all",
-          isDisabled ? "bg-white/5 text-white/20" : "bg-jarvis-cyan text-black shadow-[0_0_15px_rgba(0,242,255,0.3)] hover:scale-105 active:scale-95"
+          'size-10 shrink-0 rounded-lg transition-all',
+          isDisabled
+            ? 'bg-white/5 text-white/20'
+            : 'bg-jarvis-cyan text-black shadow-[0_0_15px_rgba(0,242,255,0.3)] hover:scale-105 active:scale-95'
         )}
       >
-        {isSending ? <CircleNotch className="animate-spin size-5" /> : <PaperPlaneRight weight="fill" className="size-5" />}
+        {isSending ? (
+          <CircleNotch className="size-5 animate-spin" />
+        ) : (
+          <PaperPlaneRight weight="fill" className="size-5" />
+        )}
       </Button>
     </form>
   );
@@ -198,12 +207,19 @@ export function AgentControlBar({
               onClick={() => setIsLocked(!isLocked)}
               className={cn(
                 'group relative rounded-lg p-2.5 transition-all',
-                isLocked ? 'bg-jarvis-cyan/20 text-jarvis-cyan' : 'text-white/20 hover:bg-white/5 hover:text-white/40'
+                isLocked
+                  ? 'bg-jarvis-cyan/20 text-jarvis-cyan'
+                  : 'text-white/20 hover:bg-white/5 hover:text-white/40'
               )}
               title="Fixar Barra de Controle"
             >
-              <PushPin weight={isLocked ? "fill" : "regular"} className="size-4" />
-              {isLocked && <motion.div layoutId="active-dot" className="absolute top-1 right-1 size-1 rounded-full bg-jarvis-cyan shadow-[0_0_5px_#00f2ff]" />}
+              <PushPin weight={isLocked ? 'fill' : 'regular'} className="size-4" />
+              {isLocked && (
+                <motion.div
+                  layoutId="active-dot"
+                  className="bg-jarvis-cyan absolute top-1 right-1 size-1 rounded-full shadow-[0_0_5px_#00f2ff]"
+                />
+              )}
             </button>
 
             <div className="mx-1 h-4 w-px bg-white/5" />
@@ -214,11 +230,15 @@ export function AgentControlBar({
                 onPressedChange={() => toggleMic()}
                 disabled={!localStream}
                 className={cn(
-                  "size-10 rounded-lg transition-all",
-                  isMicEnabled ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-red-500 bg-red-500/10"
+                  'size-10 rounded-lg transition-all',
+                  isMicEnabled ? 'text-jarvis-cyan bg-jarvis-cyan/10' : 'bg-red-500/10 text-red-500'
                 )}
               >
-                {isMicEnabled ? <Microphone weight="duotone" className="size-5" /> : <MicrophoneSlash weight="duotone" className="size-5" />}
+                {isMicEnabled ? (
+                  <Microphone weight="duotone" className="size-5" />
+                ) : (
+                  <MicrophoneSlash weight="duotone" className="size-5" />
+                )}
               </Toggle>
             )}
 
@@ -227,11 +247,17 @@ export function AgentControlBar({
                 pressed={isCameraEnabled}
                 onPressedChange={() => toggleCamera()}
                 className={cn(
-                  "size-10 rounded-lg transition-all",
-                  isCameraEnabled ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
+                  'size-10 rounded-lg transition-all',
+                  isCameraEnabled
+                    ? 'text-jarvis-cyan bg-jarvis-cyan/10'
+                    : 'text-white/20 hover:bg-white/5'
                 )}
               >
-                {isCameraEnabled ? <Video weight="duotone" className="size-5" /> : <VideoCameraSlash weight="duotone" className="size-5" />}
+                {isCameraEnabled ? (
+                  <Video weight="duotone" className="size-5" />
+                ) : (
+                  <VideoCameraSlash weight="duotone" className="size-5" />
+                )}
               </Toggle>
             )}
 
@@ -241,8 +267,10 @@ export function AgentControlBar({
                 size="icon"
                 onClick={() => toggleScreenShare()}
                 className={cn(
-                  "size-10 rounded-lg transition-all",
-                  isScreenSharing ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
+                  'size-10 rounded-lg transition-all',
+                  isScreenSharing
+                    ? 'text-jarvis-cyan bg-jarvis-cyan/10'
+                    : 'text-white/20 hover:bg-white/5'
                 )}
               >
                 <Monitor weight="duotone" className="size-5" />
@@ -257,8 +285,10 @@ export function AgentControlBar({
                   else onIsChatOpenChange(state);
                 }}
                 className={cn(
-                  "size-10 rounded-lg transition-all",
-                  (isChatOpen || isChatOpenUncontrolled) ? "text-jarvis-cyan bg-jarvis-cyan/10" : "text-white/20 hover:bg-white/5"
+                  'size-10 rounded-lg transition-all',
+                  isChatOpen || isChatOpenUncontrolled
+                    ? 'text-jarvis-cyan bg-jarvis-cyan/10'
+                    : 'text-white/20 hover:bg-white/5'
                 )}
               >
                 <ChatCircleText weight="duotone" className="size-5" />
@@ -268,7 +298,13 @@ export function AgentControlBar({
 
           {controls?.leave !== false && (
             <Button
-              onClick={() => { onLeave ? onLeave() : disconnect(); }}
+              onClick={() => {
+                if (onLeave) {
+                  onLeave();
+                  return;
+                }
+                disconnect();
+              }}
               className="group relative flex h-10 items-center gap-2 overflow-hidden rounded-lg bg-red-500/10 px-5 font-mono text-[10px] font-black tracking-[0.2em] text-red-500 transition-all hover:bg-red-500 hover:text-white"
             >
               <Power weight="bold" className="size-4" />

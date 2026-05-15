@@ -8,8 +8,8 @@ class PersonaManager:
     """
 
     def __init__(self):
-        self.name = "William"
-        self.version = "6.1-Offline"
+        self.name = "JARVIS"
+        self.version = "5.0-Offline"
 
     async def get_dynamic_greeting(self, user_name: str = "Chefe"):
         """Gera uma saudação baseada na hora do dia e contexto."""
@@ -33,7 +33,7 @@ class PersonaManager:
     def get_system_prompt(self) -> str:
         """System prompt para o LLM."""
         return (
-            "Voce e o WILL-JARVIS, a inteligencia central e assistente pessoal senior. "
+            "Voce e o JARVIS, a inteligencia central e assistente pessoal senior. "
             "Voce opera em um ambiente Windows 11 totalmente OFF-LINE e seguro. "
             "Responda de forma tecnica, elegante e extremamente eficiente. "
             "Responda em Portugues Brasileiro (PT-BR) de forma natural."

@@ -37,13 +37,15 @@ export function useInputControls({
   saveUserChoices = true,
   onDeviceError,
 }: UseInputControlsProps = {}): UseInputControlsReturn {
+  void saveUserChoices;
+
   const toggle = async () => {};
 
-  const handleAudioDeviceChange = useCallback((deviceId: string) => {
+  const handleAudioDeviceChange = useCallback(() => {
     // No local device persistence available in this build.
   }, []);
 
-  const handleVideoDeviceChange = useCallback((deviceId: string) => {
+  const handleVideoDeviceChange = useCallback(() => {
     // No local device persistence available in this build.
   }, []);
 

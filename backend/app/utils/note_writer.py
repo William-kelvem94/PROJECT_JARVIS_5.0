@@ -24,4 +24,8 @@ class NoteWriter:
             raise
 
 
-note_writer = NoteWriter(os.getenv("OBSIDIAN_VAULT_PATH", "C:/Users/willi/Documents/GitHub/Will-obsidian"))
+note_writer = NoteWriter(
+    os.getenv("JARVIS_VAULT_ROOT")
+    or os.getenv("OBSIDIAN_VAULT_PATH")
+    or r"D:\DOCUMENTOS\GitHub\Will-obsidian"
+)
