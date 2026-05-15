@@ -2,60 +2,39 @@
 
 import { motion } from 'motion/react';
 
-interface HudRingProps {
-  value: number;
-  label: string;
-  color: string;
-}
-
-export function HudRing({ value, label, color }: HudRingProps) {
-  const radius = 28;
-  const circumference = 2 * Math.PI * radius;
-  const clampedValue = Math.min(100, Math.max(0, value));
-  const offset = circumference - (clampedValue / 100) * circumference;
-
+export default function HudRing({
+  status,
+}: {
+  status: 'idle' | 'listening' | 'thinking' | 'speaking';
+}) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width="80" height="80" viewBox="0 0 80 80" aria-label={`${label}: ${clampedValue}%`}>
-        {/* Track */}
-        <circle
-          cx="40"
-          cy="40"
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.08)"
-          strokeWidth="4"
-        />
-        {/* Progress */}
-        <motion.circle
-          cx="40"
-          cy="40"
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
-          transform="rotate(-90 40 40)"
-          style={{ filter: `drop-shadow(0 0 4px ${color})` }}
-        />
-        {/* Label text */}
-        <text
-          x="40"
-          y="40"
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="white"
-          fontSize="12"
-          fontFamily="monospace"
-          fontWeight="600"
-        >
-          {clampedValue}%
-        </text>
-      </svg>
-      <span className="text-xs text-white/50 font-mono tracking-widest uppercase">{label}</span>
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+      {/* Anel Externo Fino */}
+      <motion.div
+        className="h-64 w-64 rounded-full border-[1px] border-cyan-500/30"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+      >
+        <div className="relative h-full w-full">
+          <div className="absolute top-0 left-1/2 h-3 w-[2px] bg-cyan-400" />
+          <div className="absolute bottom-0 left-1/2 h-3 w-[2px] bg-cyan-400" />
+          <div className="absolute top-1/2 left-0 h-[2px] w-3 bg-cyan-400" />
+          <div className="absolute top-1/2 right-0 h-[2px] w-3 bg-cyan-400" />
+        </div>
+      </motion.div>
+
+      {/* Anel Interno Tracejado (Veloz) */}
+      <motion.div
+        className="absolute h-56 w-56 rounded-full border-t-2 border-r-2 border-cyan-400/50"
+        animate={{
+          rotate: status === 'listening' ? -360 : 360,
+          scale: status === 'speaking' ? 1.05 : 1,
+        }}
+        transition={{
+          rotate: { duration: status === 'listening' ? 1 : 10, repeat: Infinity, ease: 'linear' },
+          scale: { duration: 0.3 },
+        }}
+      />
     </div>
   );
 }
