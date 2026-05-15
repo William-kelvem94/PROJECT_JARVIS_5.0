@@ -2,76 +2,101 @@
 
 import { motion } from 'motion/react';
 
-interface OrbCoreProps {
-  thinking: boolean;
-}
+type Status = 'idle' | 'listening' | 'thinking' | 'speaking';
 
-export function OrbCore({ thinking }: OrbCoreProps) {
+export default function OrbCore({ status = 'idle' }: { status: Status }) {
+  const colors = {
+    idle: '#00f2ff', // Ciano
+    listening: '#ffffff', // Branco Brilhante
+    thinking: '#7000ff', // Roxo
+    speaking: '#ffcc00', // Amarelo/Dourado
+  };
+
+  const activeColor = colors[status];
+
+  // Configurações de animação baseadas no estado cognitivo
+  const animations = {
+    idle: {
+      core: { scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] },
+      glow: { scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] },
+      rotate: 0,
+    },
+    listening: {
+      core: { scale: [1, 1.1, 1], x: [-1, 1, -1] },
+      glow: { scale: [1.2, 1.4, 1.2], opacity: [0.5, 0.8, 0.5] },
+      rotate: 0,
+    },
+    thinking: {
+      core: { scale: [1, 0.9, 1] },
+      glow: { scale: [1.1, 1.3, 1.1], opacity: [0.4, 0.7, 0.4] },
+      rotate: 360,
+    },
+    speaking: {
+      core: { scale: [1, 1.2, 1] },
+      glow: { scale: [1, 1.5, 1], opacity: [0.4, 0.9, 0.4] },
+      rotate: 0,
+    },
+  };
+
+  const currentAnim = animations[status];
+
   return (
-    <div className="relative w-48 h-48 flex items-center justify-center">
-      {/* Glow externo pulsante */}
+    <div className="relative flex h-64 w-64 items-center justify-center">
+      {/* Aura de Energia (Glow) */}
       <motion.div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background:
-            'radial-gradient(circle, rgba(0,242,255,0.18) 0%, rgba(112,0,255,0.08) 50%, transparent 70%)',
-        }}
-        animate={{
-          scale: thinking ? [1, 1.18, 1] : [1, 1.06, 1],
-          opacity: thinking ? [0.5, 0.9, 0.5] : [0.3, 0.55, 0.3],
-        }}
+        className="absolute h-full w-full rounded-full opacity-40 blur-3xl"
+        style={{ backgroundColor: activeColor }}
+        animate={currentAnim.glow}
         transition={{
-          duration: thinking ? 1.2 : 3.5,
+          duration: status === 'speaking' ? 0.3 : 2,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
       />
 
-      {/* Anel orbital externo */}
-      <motion.div
-        className="absolute w-44 h-44 rounded-full border border-cyan-500/20"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-      />
-
-      {/* Anel orbital interno */}
-      <motion.div
-        className="absolute w-36 h-36 rounded-full border border-violet-500/20"
-        animate={{ rotate: -360 }}
-        transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-      />
-
-      {/* Núcleo da esfera */}
-      <motion.div
-        className="relative w-32 h-32 rounded-full"
-        style={{
-          background:
-            'radial-gradient(circle at 35% 35%, rgba(0,242,255,0.5) 0%, rgba(112,0,255,0.35) 45%, rgba(0,0,0,0.95) 100%)',
-          boxShadow: thinking
-            ? '0 0 60px rgba(0,242,255,0.5), 0 0 30px rgba(112,0,255,0.3), inset 0 0 20px rgba(0,242,255,0.15)'
-            : '0 0 30px rgba(0,242,255,0.25), inset 0 0 15px rgba(0,242,255,0.08)',
-        }}
-        animate={{ scale: thinking ? [1, 1.04, 1] : 1 }}
-        transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        {/* Reflexo interno */}
-        <div
-          className="absolute top-3 left-4 w-8 h-5 rounded-full opacity-30"
-          style={{
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.6), transparent)',
-            transform: 'rotate(-30deg)',
-          }}
-        />
-      </motion.div>
-
-      {/* Indicador de estado */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+      {/* Anéis de Profundidade (Z-Axis) */}
+      {[...Array(3)].map((_, i) => (
         <motion.div
-          className="w-1.5 h-1.5 rounded-full bg-cyan-400"
-          animate={{ opacity: thinking ? [1, 0.2, 1] : 1 }}
-          transition={{ duration: 0.6, repeat: thinking ? Infinity : 0 }}
+          key={i}
+          className="absolute rounded-full border-[1px] opacity-20"
+          style={{
+            width: `${100 + i * 20}%`,
+            height: `${100 + i * 20}%`,
+            borderColor: activeColor,
+          }}
+          animate={{ rotate: i % 2 === 0 ? 360 : -360 }}
+          transition={{ duration: 10 + i * 5, repeat: Infinity, ease: 'linear' }}
         />
-      </div>
+      ))}
+
+      {/* O Núcleo Sólido */}
+      <motion.div
+        className="relative z-10 flex h-28 w-28 items-center justify-center rounded-full border-[2px] bg-black/60 backdrop-blur-md"
+        style={{
+          borderColor: activeColor,
+          boxShadow: `0 0 30px ${activeColor}44, inset 0 0 20px ${activeColor}44`,
+        }}
+        animate={{
+          scale: currentAnim.core.scale,
+          x: 'x' in currentAnim.core ? currentAnim.core.x : 0,
+          rotate: currentAnim.rotate,
+        }}
+        transition={{
+          scale: { duration: status === 'speaking' ? 0.2 : 2, repeat: Infinity, ease: 'easeInOut' },
+          x: { duration: 0.1, repeat: Infinity },
+          rotate: { duration: status === 'thinking' ? 2 : 20, repeat: Infinity, ease: 'linear' },
+        }}
+      >
+        <span
+          className="font-sans text-5xl font-bold tracking-tighter"
+          style={{
+            color: activeColor,
+            textShadow: `0 0 15px ${activeColor}`,
+          }}
+        >
+          J
+        </span>
+      </motion.div>
     </div>
   );
 }

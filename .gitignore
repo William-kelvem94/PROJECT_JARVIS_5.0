@@ -8,43 +8,112 @@ ENV/
 env.bak/
 venv.bak/
 backend/venv/
+.venv.broken-*/
+backend/venv.broken-*/
+backend/.env
+frontend/.env
+frontend/.env.*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-src/core/__pycache__/
-config/__pycache__/
-backend/__pycache__/
-backend/app/__pycache__/
-backend/app/perception/__pycache__/
-backend/app/tools/__pycache__/
-backend/app/utils/__pycache__/
-backend/tests/__pycache__/
+**/__pycache__/
 
 # Node
 node_modules/
+.next/
+coverage/
+frontend/coverage/
+frontend/tsconfig.tsbuildinfo
+dist/
+build/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Databases
+# Databases & Persistence
 *.db
-*.sqlite3
+*.db-journal
 *.db-shm
 *.db-wal
-backend/data/jarvis_local.db*
+*.sqlite3
+backend/data/*.db*
+backend/data/*.sqlite3*
+data/*.db*
 
-# VSCode
-.vscode/
+# Models (Heavy files)
+*.pt
+*.task
+*.bin
+*.onnx
+*.weights
+*.h5
+*.tflite
+backend/data/models/
+yolov8n.pt
+
+# Browser Data & Playwright
+backend/data/browser_data/
+.playwright_installed
+**/browser_data/
 
 # Logs
 *.log
 *.jsonl
 backend/data/logs/
+**/logs/
+logs/
+
+# Obsidian local workspace state
+.obsidian/workspace.json
+.obsidian/graph.json
+.obsidian/core-plugins.json
+
+# VSCode & IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Debugging and Temporary files
 debug/
-backend/data/browser_data/
 launcher-run2.txt
 launcher-try2.txt
+move_frontend.log
+project_analysis_report.json
+audit_report.md
+auditoria_jarvis.py
+
+# Gerados automaticamente — não commitar
+start-jarvis-result.txt
+audit_report.md
+project_analysis_report.json
+
+# Modelos ML pesados — usar Git LFS ou download dinâmico
+*.pt
+backend/models/
+
+# Temporários
+temp_audio/
+backend/temp_audio/
+tools/installers/
+
+# Local Obsidian/runtime mirrors
+data/kb_local/Will-Pessoal/
+data/kb_local/Projetos-Privados/
+data/kb_local/skills/
+data/kb_local/JARVIS/Memorias/
+data/kb_local/JARVIS/Aprendizado/
+data/kb_local/JARVIS/Decisoes/
+data/kb_local/JARVIS/Contexto-Atual/
+backend/data/internal_brain/Memorias/
+backend/data/internal_brain/Aprendizado/
+backend/data/persona_evolution.json
+backend/data/holodeck_queue.txt
+backend/data/memories.json
+data/memories.json
+data/recovery/
+data/window_positions.json
+data/captures/
