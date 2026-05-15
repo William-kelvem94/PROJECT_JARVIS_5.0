@@ -1,1 +1,1 @@
-declare module '*.css';
+export * from './types/css';

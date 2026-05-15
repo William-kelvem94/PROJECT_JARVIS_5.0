@@ -25,4 +25,3 @@ def test_chat_stub():
     data = resp.json()
     assert "reply" in data
 
-

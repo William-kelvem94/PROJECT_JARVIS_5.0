@@ -1,58 +1,8 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# JARVIS 5.0 - Backend Requirements
-#
-# IMPORTANTE: 'resemblyzer' foi removido daqui intencionalmente.
-# Ele e instalado com --no-deps no start-jarvis.bat para evitar que o pip
-# tente compilar 'webrtcvad' do zero (requer C++ Build Tools no Windows).
-# O 'webrtcvad-wheels' e pre-instalado antes e satisfaz o import corretamente.
-# ─────────────────────────────────────────────────────────────────────────────
+# Default CPU install used by CI and simple pip workflows.
+# The Windows launcher installs a hardware-specific torch profile first.
 
-# ── Core API
-fastapi
-uvicorn[standard]
-pydantic-settings
-python-dotenv
-requests
-loguru
-aiohttp
-psutil
-torch
-torchvision --index-url https://download.pytorch.org/whl/cpu
-watchfiles
-edge-tts
+-r requirements-torch-cpu.txt
+-r requirements-base.txt
 
-# ── Browser Automation
-playwright
-watchdog
-
-# ── Screen / GPU monitoring
-GPUtil
-mss
-Pillow
-pyautogui
-onnxruntime
-
-# ── Perception: Face
-mediapipe
-opencv-python
-numpy
-
-# ── Perception: Object detection (YOLOv8)
-ultralytics
-
-# ── Perception: Voice - Wake Word
-openwakeword
-
-# ── Perception: Voice - Speaker ID
-# resemblyzer e instalado via --no-deps no launcher (ver start-jarvis.bat)
-# webrtcvad-wheels e instalado antes como substituto ao webrtcvad nativo
-webrtcvad-wheels
-
-# ── Perception: Voice - Transcricao Offline
-faster-whisper
-
-# ── Perception: Audio Input
-sounddevice
-
-# ── Perception: Text-to-Speech Local
-edge-tts
+# resemblyzer is installed by scripts/setup-venv.bat with --no-deps after
+# webrtcvad-wheels is present, avoiding native webrtcvad compilation on Windows.

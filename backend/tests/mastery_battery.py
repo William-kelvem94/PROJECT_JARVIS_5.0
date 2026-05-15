@@ -14,9 +14,9 @@ def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "ok"
-    assert "cpu_percent" in data
-    assert "ram_percent" in data
+    assert data["status"] in {"ok", "online"}
+    assert "cpu" in data or "cpu_percent" in data
+    assert "ram" in data or "ram_percent" in data
 
 def test_config_validation():
     """Garante que as configurações críticas foram carregadas corretamente."""

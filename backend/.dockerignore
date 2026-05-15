@@ -1,0 +1,14 @@
+venv
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+data/browser_data
+data/*.db*
+data/*.sqlite3*
+data/models
+*.pt
+*.task
+logs
+temp_audio
