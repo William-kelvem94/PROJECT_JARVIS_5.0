@@ -1,8 +1,7 @@
-import logging
 from typing import List, Optional
+from loguru import logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Omega-Brain.GapAnalyzer")
+logger = logger.bind(module="GapAnalyzer")
 
 class GapAnalyzer:
     """

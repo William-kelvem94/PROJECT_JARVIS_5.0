@@ -1,9 +1,8 @@
 import os
 import datetime
-import logging
+from loguru import logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Omega-Brain.DreamCycle")
+logger = logger.bind(module="DreamCycle")
 
 class DreamCycle:
     """

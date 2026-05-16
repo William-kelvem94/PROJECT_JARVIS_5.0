@@ -194,13 +194,14 @@ class SystemHealthAgent(BaseAgent):
         try:
             # Verify perception manager is active
             from .perception import perception_manager
-            if not perception_manager:
+            snapshot = perception_manager.get_snapshot()
+            if not snapshot or not any(snapshot.get(k) for k in ("face_present", "hand_gesture", "wake_word_triggered")):
                 findings.append(Finding(
                     agent_type=self.agent_type,
-                    severity=Severity.HIGH,
-                    title="Perception Manager Not Active",
-                    description="The perception manager is not properly initialized",
-                    recommendation="Restart the perception subsystem or check for initialization errors."
+                    severity=Severity.LOW,
+                    title="Perception Manager Inactive",
+                    description="The perception manager is initialized but not receiving sensory input",
+                    recommendation="Check camera, microphone, and perception engine initialization."
                 ))
         except Exception as e:
             logger.debug(f"[SystemHealthAgent] Could not check perception manager: {e}")

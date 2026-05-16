@@ -5,13 +5,13 @@ JARVIS Perception Manager — Versao Refatorada (02/05/2026)
 import threading
 import datetime
 from dataclasses import dataclass, asdict, field
-from typing import Optional, Callable, List
+from typing import Optional, List
 from loguru import logger
 
-from app.perception.face_engine import analyze_frame as _face_analyze, FaceResult as _FaceResult
-from app.perception.gesture_engine import analyze_frame as _gesture_analyze
-from app.perception.object_engine import object_engine as _object_engine
-from app.perception.voice_engine import VoiceResult
+try:
+    from app.perception.voice_engine import VoiceResult
+except Exception:
+    VoiceResult = None
 
 @dataclass
 class PerceptionSnapshot:
@@ -35,14 +35,6 @@ class PerceptionManager:
     def __init__(self):
         self._snapshot = PerceptionSnapshot()
         self._lock = threading.Lock()
-        self._wake_callbacks: List[Callable] = []
-        self._gesture_callbacks: List[Callable] = []
-
-    def on_wake_word(self, callback: Callable):
-        self._wake_callbacks.append(callback)
-
-    def on_gesture(self, callback: Callable):
-        self._gesture_callbacks.append(callback)
 
     def _update(self, **kwargs):
         with self._lock:
@@ -54,19 +46,21 @@ class PerceptionManager:
         with self._lock:
             return self._snapshot.to_dict()
 
-    def _on_voice_event(self, result: VoiceResult):
+    def _on_voice_event(self, result):
+        if VoiceResult is None:
+            logger.warning("Voice engine not available, ignoring voice event")
+            return
+        if not isinstance(result, VoiceResult):
+            logger.warning(f"Invalid voice result type: {type(result)}")
+            return
+
         updates = {}
         if result.wake_word_triggered:
             # The Shield: Only trigger if voice is validated
             if result.is_validated:
                 updates["wake_word_triggered"] = True
                 updates["voice_validated"] = True
-                logger.success("🛡️ The Shield: Wake word and Voice VALIDATED!")
-                for cb in self._wake_callbacks:
-                    try:
-                        cb()
-                    except Exception as e:
-                        logger.warning(f"Wake callback error: {e}")
+                logger.success("The Shield: Wake word and Voice VALIDATED!")
             else:
                 logger.warning("🛡️ The Shield: Wake word detected but voice NOT validated. Ignoring.")
 

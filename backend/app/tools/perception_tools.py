@@ -13,6 +13,10 @@ class PerceptionTools(BaseTool):
     async def enroll_face(self, name: str):
         from ..perception import perception_manager
         from ..perception.face_engine import enroll_face as _enroll
-        frame = perception_manager.capture_frame()
+        try:
+            import pyautogui
+            frame = pyautogui.screenshot()
+        except Exception:
+            return "Câmera off."
         if frame is None: return "Câmera off."
         return _enroll(name, frame)

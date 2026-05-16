@@ -1,10 +1,11 @@
+import asyncio
 from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel
 from app.system_control import system_control_matrix
 from app.security.sentinel_parser import SentinelParser
-import logging
+from loguru import logger
 
-logger = logging.getLogger("JARVIS.SystemBridge")
+logger = logger.bind(module="SystemBridge")
 router = APIRouter(prefix="/system", tags=["SystemControl"])
 sentinel = SentinelParser()
 
@@ -22,7 +23,7 @@ async def set_system_volume(request: VolumeRequest):
         logger.warning(f"Sentinel blocked volume request: {cmd_str}")
         raise HTTPException(status_code=403, detail="Security Violation: Command blocked by Sentinel")
 
-    result = system_control_matrix.set_volume(request.level)
+    result = await asyncio.to_thread(system_control_matrix.set_volume, request.level)
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
     return result
@@ -35,7 +36,7 @@ async def set_system_brightness(request: BrightnessRequest):
         logger.warning(f"Sentinel blocked brightness request: {cmd_str}")
         raise HTTPException(status_code=403, detail="Security Violation: Command blocked by Sentinel")
 
-    result = system_control_matrix.set_brightness(request.level)
+    result = await asyncio.to_thread(system_control_matrix.set_brightness, request.level)
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
     return result
@@ -48,7 +49,7 @@ async def take_screenshot():
         logger.warning(f"Sentinel blocked screenshot request: {cmd_str}")
         raise HTTPException(status_code=403, detail="Security Violation: Command blocked by Sentinel")
 
-    result = system_control_matrix.capture_screens()
+    result = await asyncio.to_thread(system_control_matrix.capture_screens)
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
     return result
@@ -61,12 +62,12 @@ async def get_system_status():
         logger.warning(f"Sentinel blocked status request: {cmd_str}")
         raise HTTPException(status_code=403, detail="Security Violation: Command blocked by Sentinel")
 
-    result = system_control_matrix.get_hardware_status()
+    result = await asyncio.to_thread(system_control_matrix.get_hardware_status)
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result["message"])
 
     # Include spatial awareness in general status
-    spatial = system_control_matrix.get_spatial_awareness()
+    spatial = await asyncio.to_thread(system_control_matrix.get_spatial_awareness)
     result["data"]["spatial_awareness"] = spatial.get("monitors", [])
 
     return result

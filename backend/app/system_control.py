@@ -1,14 +1,27 @@
-import logging
 import psutil
-import pyautogui
-import screen_brightness_control as sbc
-from ctypes import cast, POINTER
-from comtypes import CLSCTX_ALL
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from screeninfo import get_monitors
+from loguru import logger
 
-# Configure logging for SystemControlMatrix
-logger = logging.getLogger("JARVIS.SystemControlMatrix")
+logger = logger.bind(module="SystemControlMatrix")
+try:
+    import pyautogui
+except Exception:
+    pyautogui = None
+try:
+    import screen_brightness_control as sbc
+except Exception:
+    sbc = None
+from ctypes import cast, POINTER
+try:
+    from comtypes import CLSCTX_ALL
+    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+except Exception:
+    CLSCTX_ALL = None
+    AudioUtilities = None
+    IAudioEndpointVolume = None
+try:
+    from screeninfo import get_monitors
+except Exception:
+    get_monitors = None
 
 class SystemControlMatrix:
     """
@@ -24,6 +37,8 @@ class SystemControlMatrix:
         
         # Method 1: Standard pycaw initialization
         try:
+            if AudioUtilities is None:
+                raise RuntimeError("pycaw not installed")
             devices = AudioUtilities.GetSpeakers()
             if devices is None:
                 raise RuntimeError("No audio devices found")
@@ -90,6 +105,9 @@ class SystemControlMatrix:
         :param level: Integer between 0 and 100
         """
         try:
+            if sbc is None:
+                return {"status": "error", "message": "screen_brightness_control not installed"}
+
             # Clamp value between 0 and 100
             clamped_level = max(0, min(100, level))
             sbc.set_brightness(clamped_level)
@@ -105,6 +123,11 @@ class SystemControlMatrix:
         Returns a list of paths to the captured images.
         """
         try:
+            if get_monitors is None:
+                return {"status": "error", "message": "screeninfo not installed"}
+            if pyautogui is None:
+                return {"status": "error", "message": "pyautogui not installed"}
+
             monitors = get_monitors()
             captured_files = []
 
@@ -121,6 +144,30 @@ class SystemControlMatrix:
         except Exception as e:
             logger.error(f"Error capturing screens: {e}")
             return {"status": "error", "message": str(e)}
+
+    def get_spatial_awareness(self):
+        """
+        Returns information about connected monitors.
+        """
+        try:
+            if get_monitors is None:
+                return {"status": "error", "message": "screeninfo not installed", "monitors": []}
+
+            monitors = get_monitors()
+            monitor_list = []
+            for i, m in enumerate(monitors):
+                monitor_list.append({
+                    "index": i,
+                    "x": m.x,
+                    "y": m.y,
+                    "width": m.width,
+                    "height": m.height,
+                    "is_primary": m.is_primary,
+                })
+            return {"status": "success", "monitors": monitor_list}
+        except Exception as e:
+            logger.error(f"Error retrieving spatial awareness: {e}")
+            return {"status": "error", "message": str(e), "monitors": []}
 
     def get_hardware_status(self):
         """
