@@ -25,7 +25,6 @@
 |-----------|-----------|--------|
 | [MULTI_AGENT_SYSTEM.md](./MULTI_AGENT_SYSTEM.md) | Sistema original de 10 agentes | 600+ |
 | [AUTOFIX_AGENTS.md](./AUTOFIX_AGENTS.md) | 4 agentes de auto-correção | 800+ |
-| [SESSION_AUTOCORRECTION_2026-05-07.md](./SESSION_AUTOCORRECTION_2026-05-07.md) | Log da sessão de implementação | 500+ |
 
 **Total de Agentes**: 14
 - 6 agentes base (Performance, Security, CodeQuality, UX, SystemHealth, Connectivity)
@@ -54,7 +53,6 @@
 
 | Documento | Descrição | Linhas |
 |-----------|-----------|--------|
-| [CONNECTIVITY_FIX.md](./CONNECTIVITY_FIX.md) | Análise e correção de erros de proxy | 700+ |
 | [docs/guides/CONNECTIVITY_README.md](guides/CONNECTIVITY_README.md) | Guia rápido | 200+ |
 
 **Problemas Resolvidos**:
@@ -68,8 +66,7 @@
 
 | Documento | Descrição | Linhas |
 |-----------|-----------|--------|
-| [IMPROVEMENTS_2026-05-07.md](./IMPROVEMENTS_2026-05-07.md) | Guia completo de melhorias | 1000+ |
-| [SOLUTIONS_FOR_REPORTED_ISSUES.md](./SOLUTIONS_FOR_REPORTED_ISSUES.md) | Soluções para problemas específicos | 500+ |
+| [_IMPROVEMENTS_2026-05-07.md](./_IMPROVEMENTS_2026-05-07.md) | Changelog completo de melhorias | 1000+ |
 | [docs/reports/SUMMARY.md](reports/SUMMARY.md) | Sumário executivo | 400+ |
 
 ---
@@ -216,9 +213,7 @@ scripts/test-health-system.bat
 ### DevOps / Operação
 
 **Recomendado**:
-1. [SOLUTIONS_FOR_REPORTED_ISSUES.md](./SOLUTIONS_FOR_REPORTED_ISSUES.md) - Troubleshooting
-2. [CONNECTIVITY_FIX.md](./CONNECTIVITY_FIX.md) - Problemas de rede
-3. [IMPROVEMENTS_2026-05-07.md](./IMPROVEMENTS_2026-05-07.md) - Changelog completo
+1. [_IMPROVEMENTS_2026-05-07.md](./_IMPROVEMENTS_2026-05-07.md) - Changelog completo
 
 **Monitoramento**:
 ```bash
@@ -262,7 +257,7 @@ curl http://localhost:8000/agents/summary | jq '.total_agents'
 curl http://localhost:8000/agents/summary | jq '.agents[] | .name'
 ```
 
-**Solução**: Ver [SOLUTIONS_FOR_REPORTED_ISSUES.md](./SOLUTIONS_FOR_REPORTED_ISSUES.md)
+**Solução**: Ver [AUTOFIX_AGENTS.md](./AUTOFIX_AGENTS.md) ou o [guia rápido](guides/AUTOFIX_README.md)
 
 ---
 
@@ -284,7 +279,7 @@ rmdir /s .next
 pnpm dev
 ```
 
-**Solução**: Ver seção "React Component Error" em [SOLUTIONS_FOR_REPORTED_ISSUES.md](./SOLUTIONS_FOR_REPORTED_ISSUES.md)
+**Solução**: Ver [AUTOFIX_AGENTS.md](./AUTOFIX_AGENTS.md) seção de auto-correção
 
 ---
 

@@ -1,1 +1,0 @@
-Shared code (TypeScript types, Python utilities) used by both frontend and backend.

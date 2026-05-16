@@ -67,7 +67,6 @@ HAS_WHISPER = False       # Level C
 try:
     import sounddevice as sd  # noqa: F401
     HAS_SOUNDDEVICE = True
-    logger.info("[VoiceEngine] ✅ sounddevice available")
 except ImportError:
     logger.warning("[VoiceEngine] sounddevice not installed — all voice levels disabled. "
                    "Install: pip install sounddevice")
@@ -75,21 +74,18 @@ except ImportError:
 try:
     import openwakeword  # type: ignore  # noqa: F401
     HAS_WAKE_WORD = True
-    logger.info("[VoiceEngine] ✅ Level A (openwakeword) available")
 except ImportError:
     logger.warning("[VoiceEngine] Level A unavailable — install: pip install openwakeword")
 
 try:
     from resemblyzer import VoiceEncoder, preprocess_wav  # type: ignore  # noqa: F401
     HAS_SPEAKER_ID = True
-    logger.info("[VoiceEngine] ✅ Level B (resemblyzer speaker ID) available")
 except ImportError:
     logger.warning("[VoiceEngine] Level B unavailable — install: pip install resemblyzer")
 
 try:
     import faster_whisper  # type: ignore  # noqa: F401
     HAS_WHISPER = True
-    logger.info("[VoiceEngine] ✅ Level C (faster-whisper offline STT) available")
 except ImportError:
     logger.warning("[VoiceEngine] Level C unavailable — install: pip install faster-whisper")
 
@@ -98,10 +94,12 @@ except ImportError:
 try:
     import df.enhance as deepfilter  # type: ignore
     HAS_DEEPFILTER = True
-    logger.info("[VoiceEngine] ✅ DeepFilterNet available for noise suppression")
 except ImportError:
     HAS_DEEPFILTER = False
     logger.warning("[VoiceEngine] DeepFilterNet not installed — noise suppression disabled. Install: pip install deepfilternet")
+
+avail = [k for k, v in [("sounddevice", HAS_SOUNDDEVICE), ("wake_word", HAS_WAKE_WORD), ("speaker_id", HAS_SPEAKER_ID), ("whisper", HAS_WHISPER), ("deepfilter", HAS_DEEPFILTER)] if v]
+logger.info(f"[VoiceEngine] Capabilities: {', '.join(avail)}")
 
 def _apply_noise_suppression(audio_int16: np.ndarray) -> np.ndarray:
     """Removes ambient noise and music using DeepFilterNet."""

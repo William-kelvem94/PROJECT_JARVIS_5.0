@@ -1,15 +1,15 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from src.core.intelligence.memory_manager import MemoryManagerAdapter
+from backend.app.legacy_adapter import MemoryManagerAdapter
 
 class TestMemoryManagerAdapter(unittest.TestCase):
-    @patch('src.core.intelligence.memory_manager.UnifiedMemoryManager')
+    @patch('backend.app.legacy_adapter.UnifiedMemoryManager')
     def test_init(self, mock_unified):
         manager = MemoryManagerAdapter()
         mock_unified.assert_called_once()
         self.assertIsNotNone(manager._manager)
 
-    @patch('src.core.intelligence.memory_manager.UnifiedMemoryManager')
+    @patch('backend.app.legacy_adapter.UnifiedMemoryManager')
     def test_get_stats(self, mock_unified):
         mock_instance = MagicMock()
         mock_instance.interactions = MagicMock()

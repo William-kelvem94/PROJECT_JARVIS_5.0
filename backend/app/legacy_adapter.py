@@ -1,16 +1,54 @@
 """
-Backward-compatible MemoryManager adapter.
+Backward-compatible adapter module for legacy imports.
 
-Legacy scripts/tests still import `src.core.intelligence.memory_manager`.
-Canonical implementation is `UnifiedMemoryManager` under `memory/unified_manager.py`.
+Replaces the old `src.core.intelligence.memory_manager` and
+`src.core.intelligence.memory.unified_manager` modules.
+Canonical implementation is `backend.app.unified_memory.UnifiedMemory`.
 """
 
 from typing import Any, Dict, List
 
-from src.core.intelligence.memory.unified_manager import UnifiedMemoryManager
+try:
+    import chromadb
+except Exception:
+    chromadb = None
+
+
+class UnifiedMemoryManager:
+    """Simple ChromaDB wrapper (legacy)."""
+    def __init__(self):
+        self.prompt_cache: Dict[str, Any] = {}
+        self.short_term: List[Any] = []
+        try:
+            if chromadb is None:
+                raise RuntimeError("chromadb is unavailable")
+            self.client = chromadb.Client()
+            self.interactions = self.client.create_collection(
+                name="interactions", get_or_create=True
+            )
+        except Exception:
+            self.interactions = None
+
+    def store_interaction(
+        self, command: str, response: str, metadata: Dict[str, Any]
+    ):
+        if self.interactions:
+            self.interactions.add(
+                documents=[f"User: {command}\nJARVIS: {response}"],
+                metadatas=[metadata],
+                ids=[str(hash(command + response))],
+            )
+
+    def get_context(self, query: str, n: int = 3) -> str:
+        if not self.interactions:
+            return ""
+        results = self.interactions.query(query_texts=[query], n_results=n)
+        docs = results.get("documents", [[]])[0]
+        return "\n".join(docs)
 
 
 class MemoryManagerAdapter:
+    """Backward-compatible adapter wrapping UnifiedMemoryManager."""
     def __init__(self):
         self._manager = UnifiedMemoryManager()
 
@@ -58,4 +96,4 @@ class MemoryManagerAdapter:
 
 memory_manager = MemoryManagerAdapter()
 
-__all__ = ["MemoryManagerAdapter", "memory_manager"]
+__all__ = ["UnifiedMemoryManager", "MemoryManagerAdapter", "memory_manager"]
