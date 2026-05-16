@@ -11,7 +11,7 @@ async def mock_llm_stream(*_, **__):
 
 
 @pytest.mark.asyncio
-async def test_full_voice_llm_tts_pipeline(monkeypatch):
+async def test_full_voice_llm_tts_pipeline(monkeypatch, test_message):
     monkeypatch.setattr(
         brain,
         "reason_stream",
@@ -20,8 +20,8 @@ async def test_full_voice_llm_tts_pipeline(monkeypatch):
 
     response = []
     async for chunk in chat_pipeline.chat_stream(
-        user_id="TestUser",
-        user_message="Hello",
+        user_id=test_message["user_name"],
+        user_message=test_message["message"],
     ):
         response.append(chunk)
 
@@ -29,9 +29,9 @@ async def test_full_voice_llm_tts_pipeline(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_chat_reply_with_error_on_empty_message(monkeypatch):
+async def test_chat_reply_with_error_on_empty_message(monkeypatch, test_message):
     with pytest.raises(Exception):
         await chat_pipeline.chat_reply(
-            user_id="TestUser",
+            user_id=test_message["user_name"],
             user_message="",
         )

@@ -25,3 +25,17 @@ def test_chat_stub():
     data = resp.json()
     assert "reply" in data
 
+
+def test_chat_endpoint_fallback():
+    resp = client.post("/chat", json={"message": "Teste rápido", "user_name": "Chefe"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "reply" in data
+    assert isinstance(data["reply"], str)
+
+
+def test_memory_endpoint():
+    resp = client.get("/memory")
+    assert resp.status_code == 200
+    assert isinstance(resp.json().get("memories"), list)
+

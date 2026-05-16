@@ -20,3 +20,19 @@ def mock_settings():
         "JARVIS_WHISPER_MODEL": "tiny",
         "OBSIDIAN_VAULT_PATH": os.path.join(os.path.dirname(__file__), "..", "data", "test_vault"),
     }
+
+@pytest.fixture
+def test_user_id():
+    return "test_user"
+
+@pytest.fixture
+def test_action_dict():
+    return {"descricao": "Test action", "tipo": "test"}
+
+@pytest.fixture
+def test_memory_content():
+    return "same content"
+
+@pytest.fixture
+def test_message():
+    return {"message": "hello", "user_name": "TestUser"}

@@ -128,16 +128,16 @@ async def run_psyche_cycles():
             logger.error(f"Error in psyche background cycles: {e}")
             await asyncio.sleep(60)
 
-async def handle_governor_action(action: str, state: str):
+async def handle_governor_action(action: str, state: str) -> None:
     """Callback for the Resource Governor to adapt JARVIS's operational mode."""
-    logger.info(f"Adapting system behavior: {action} due to {state} state.")
-    # Here we would integrate with the SmartRouter or ModelManager
-    # Example:
-    # if action == "MIGRATE_TO_LIGHTWEIGHT_API":
-    #     smart_router.set_mode("eco")
-    # elif action == "MAX_LOCAL_PERFORMANCE":
-    #     smart_router.set_mode("performance")
-    pass
+    from app.smart_router import router
+    logger.info(f"[GOVERNOR] Action received: {action} (state: {state})")
+    if action == "MIGRATE_TO_LIGHTWEIGHT_API":
+        await router.set_mode("eco")
+    elif action == "MAX_LOCAL_PERFORMANCE":
+        await router.set_mode("performance")
+    else:
+        logger.warning(f"[GOVERNOR] Unknown action: {action}")
 
 def _get_cors_origins() -> list[str]:
     raw_origins = os.getenv("CORS_ORIGINS")

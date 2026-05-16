@@ -30,7 +30,7 @@ function toastAlert(toast: ToastProps) {
 export function useAgentErrors() {
   const [errors, setErrors] = React.useState<string[]>([]);
 
-  // TODO: Implementar ouvintes de erro vindos do useJarvisVoice se necessário futuramente.
+  // Error listeners from useJarvisVoice can be added here if needed in the future
 
   return {
     errors,

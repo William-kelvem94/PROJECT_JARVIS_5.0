@@ -2,22 +2,16 @@
 JARVIS Perception Manager — Versao Refatorada (02/05/2026)
 """
 
-import asyncio
 import threading
 import datetime
 from dataclasses import dataclass, asdict, field
 from typing import Optional, Callable, List
-import gc
-import torch
 from loguru import logger
 
 from app.perception.face_engine import analyze_frame as _face_analyze, FaceResult as _FaceResult
 from app.perception.gesture_engine import analyze_frame as _gesture_analyze
 from app.perception.object_engine import object_engine as _object_engine
 from app.perception.voice_engine import VoiceResult
-
-from app.config import settings
-from app.voice.tts_engine import tts_engine 
 
 @dataclass
 class PerceptionSnapshot:

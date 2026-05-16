@@ -35,6 +35,12 @@
 │  │  Grafo com NetworkX e memórias relacionadas             │   │
 │  │  Leitura de memórias, TODOs, personas                  │   │
 │  └──────────────────────────────────────────────────────────┘   │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────────┐│
+│  │  Psyche (DreamCycle, GapAnalyzer, DeviceAwareness)      ││
+│  │  Multi-Agent Analysis, Auto-Restart                     ││
+│  │  Tools: FileTools, MemoryTools, BrowserTools, ...       ││
+│  └──────────────────────────────────────────────────────────┘│
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,8 +64,8 @@
 
 ### Pré-requisitos
 
-- Python 3.10+
-- Node.js 20+
+- Python 3.12+
+- Node.js 22+ (LTS)
 - pnpm (`npm install -g pnpm`)
 - Git
 - [LM Studio](https://lmstudio.ai/) (opcional, para modo offline total)
@@ -125,11 +131,23 @@ pnpm dev
 
 ---
 
+## 📚 Documentação
+
+- `docs/API_REFERENCE.md` — Documentação da API REST
+- `docs/TROUBLESHOOTING.md` — Guia de resolução de problemas
+- `docs/guides/JARVIS_STARTUP.md` — Fluxo canônico de inicialização
+
+---
+
 ## 🧪 Testes
 
 ```bash
+# Backend
 cd backend
-python -m pytest tests/ -v
+python -m pytest tests/ -v --tb=short
+
+# Full test suite (from repo root)
+python -m pytest backend/tests/ -v
 ```
 
 ---
@@ -156,7 +174,6 @@ python -m pytest tests/ -v
 
 ## 📋 Próximos Passos
 
-- [ ] Modo offline total (LLM local com Ollama)
 - [ ] Internacionalização (i18n)
 - [ ] Testes de integração com o frontend
 - [ ] Dashboard de telemetria avançada

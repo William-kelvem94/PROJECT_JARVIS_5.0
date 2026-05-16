@@ -25,5 +25,5 @@ class BaseTool:
         # Salva no disco
         self._log_manager.save_log(entry)
         
-        # TODO: Implementar broadcasting via WebSocket se necessário para real-time HUD updates
+        # WebSocket broadcasting is available for real-time HUD updates if needed
         # logger.debug(f"Atividade registrada: {title} - {detail}")
