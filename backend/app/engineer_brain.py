@@ -5,20 +5,11 @@ import json
 import psutil
 import asyncio
 from loguru import logger
+from .http_client import get_http_session
 from .smart_router import router
 from .utils.learning_manager import learning_manager
 
 from .config import settings
-
-# ── Singleton HTTP session ──────────────────────────────────────────────────────
-# Uma única ClientSession reutilizada por todas as chamadas (keep-alive, connection pool).
-_http_session: aiohttp.ClientSession | None = None
-
-def _get_session() -> aiohttp.ClientSession:
-    global _http_session
-    if _http_session is None or _http_session.closed:
-        _http_session = aiohttp.ClientSession()
-    return _http_session
 
 # ── Cache do modelo Gemini ──────────────────────────────────────────────────────
 # Evita sondagem cara (4 × 8 s) a cada chamada. TTL de 5 minutos.
@@ -61,7 +52,7 @@ class EngineerBrain:
                 seen.add(item)
                 ordered.append(item)
 
-        session = _get_session()
+        session = get_http_session()
         for model in ordered:
             test_url = (
                 f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
@@ -113,7 +104,7 @@ class EngineerBrain:
 
         url = self.lm_studio_url.replace("/chat/completions", "/models")
         try:
-            session = _get_session()
+            session = get_http_session()
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as response:
                 if response.status == 200:
                     data = await response.json()

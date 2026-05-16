@@ -1,28 +1,23 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { Terminal } from 'lucide-react';
+import { Panel } from '@/components/cockpit/panel';
 
-export function ConsolePanel({ logs, emptyText }: { logs: string[]; emptyText?: string }) {
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-  }, [logs]);
-
+export function ConsolePanel({ logs }: { logs: string[] }) {
   return (
-    <div className="h-64 overflow-y-auto rounded-xl border border-white/10 bg-black/60 p-4 font-mono text-xs backdrop-blur">
-      {logs.length === 0 && (
-        <div className="text-white/40 italic">
-          {emptyText || 'Nenhum log de sistema ainda — o Jarvis está ouvindo.'}
-        </div>
-      )}
-      {logs.map((line, i) => (
-        <div key={i} className="text-green-400/80 transition-colors hover:text-green-300">
-          <span className="text-cyan-500">{`> `}</span>
-          {line}
-        </div>
-      ))}
-      <div ref={bottomRef} />
-    </div>
+    <Panel title="Logs de hoje" icon={Terminal}>
+      <div className="max-h-72 space-y-2 overflow-y-auto rounded-lg border border-white/10 bg-[#06080d] p-3 font-mono text-xs">
+        {logs.length > 0 ? (
+          logs.map((line, index) => (
+            <div key={`${line}-${index}`} className="flex gap-2 text-slate-400">
+              <span className="text-cyan-300">{'>'}</span>
+              <span className="line-clamp-2">{line}</span>
+            </div>
+          ))
+        ) : (
+          <div className="text-slate-600">Sem logs carregados para hoje.</div>
+        )}
+      </div>
+    </Panel>
   );
 }

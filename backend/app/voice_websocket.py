@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import Lock
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
@@ -8,12 +9,14 @@ router = APIRouter()
 
 # Referência global para o WebSocket ativo para permitir interrupções e gatilhos externos
 _active_ws = None
+_ws_lock = Lock()
 
 @router.websocket("/ws/voice")
 async def voice_websocket(websocket: WebSocket):
     global _active_ws
     await websocket.accept()
-    _active_ws = websocket
+    async with _ws_lock:
+        _active_ws = websocket
     logger.success("🎙️ HUD Conectado (Apenas Telemetria)")
 
     # Cumprimento inicial pelo backend (Toca localmente, mas avisa o HUD para animar)
@@ -40,8 +43,9 @@ async def voice_websocket(websocket: WebSocket):
     except Exception as e:
         logger.error(f"Erro no WebSocket: {e}")
     finally:
-        if _active_ws == websocket:
-            _active_ws = None
+        async with _ws_lock:
+            if _active_ws == websocket:
+                _active_ws = None
 
 async def initial_greeting():
     """Saudação inicial ao conectar o HUD."""
@@ -62,19 +66,23 @@ async def broadcast_state(status: str, transcript: str = "", response: str = "")
     Informa o Frontend (HUD) do estado atual do Backend.
     status: 'idle', 'listening', 'thinking', 'speaking'
     """
-    if _active_ws:
+    async with _ws_lock:
+        ws = _active_ws
+    if ws:
         try:
             payload = {"type": "status_update", "status": status}
             if transcript: payload["transcript"] = transcript
             if response: payload["response"] = response
-            await _active_ws.send_json(payload)
+            await ws.send_json(payload)
         except Exception as e:
             logger.debug(f"Falha ao enviar telemetria: {e}")
 
 async def broadcast_chunk(chunk: str):
     """Envia pedaços da resposta para o HUD exibir em tempo real."""
-    if _active_ws:
+    async with _ws_lock:
+        ws = _active_ws
+    if ws:
         try:
-            await _active_ws.send_json({"type": "response_chunk", "text": chunk})
+            await ws.send_json({"type": "response_chunk", "text": chunk})
         except:
             pass

@@ -11,18 +11,10 @@ import aiohttp
 import psutil
 from typing import AsyncGenerator, List, Dict, Any, Optional
 from loguru import logger
+from .http_client import get_http_session
 
 from .config import settings
 from .utils.learning_manager import learning_manager
-
-# ── Singleton HTTP session ──────────────────────────────────────────────────────
-_http_session: aiohttp.ClientSession | None = None
-
-def _get_session() -> aiohttp.ClientSession:
-    global _http_session
-    if _http_session is None or _http_session.closed:
-        _http_session = aiohttp.ClientSession()
-    return _http_session
 
 # ── Gemini Model Cache ─────────────────────────────────────────────────────────
 _gemini_model_cache: str | None = None
@@ -59,7 +51,7 @@ class SmartRouter:
             return _gemini_model_cache
 
         preferred = [settings.GEMINI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash-latest"]
-        session = _get_session()
+        session = get_http_session()
         for model in preferred:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={settings.GEMINI_API_KEY}"
@@ -77,7 +69,7 @@ class SmartRouter:
 
         url = self.lm_studio_url.replace("/chat/completions", "/models")
         try:
-            session = _get_session()
+            session = get_http_session()
             async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
                 if resp.status == 200:
                     data = await resp.json()
@@ -97,7 +89,7 @@ class SmartRouter:
             "contents": [{"role": "user", "parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 4096}
         }
-        session = _get_session()
+        session = get_http_session()
         async with session.post(url, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
             if resp.status != 200:
                 raise Exception(f"Gemini API Error: {resp.status}")
@@ -127,7 +119,7 @@ class SmartRouter:
             "stream": stream,
             "max_tokens": 4096
         }
-        session = _get_session()
+        session = get_http_session()
         async with session.post(self.lm_studio_url, json=payload, timeout=aiohttp.ClientTimeout(total=settings.LM_STUDIO_TIMEOUT)) as resp:
             if resp.status != 200:
                 raise Exception(f"Local LLM Error: {resp.status}")
@@ -160,7 +152,7 @@ class SmartRouter:
             "stream": stream,
             "temperature": 0.2
         }
-        session = _get_session()
+        session = get_http_session()
         async with session.post(url, headers=headers, json=payload, timeout=aiohttp.ClientTimeout(total=30)) as resp:
             if resp.status != 200:
                 raise Exception(f"OpenRouter Error: {resp.status}")

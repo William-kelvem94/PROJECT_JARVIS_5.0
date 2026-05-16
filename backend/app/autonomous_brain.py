@@ -57,9 +57,9 @@ class AutonomousBrain:
             self._task = loop.create_task(self._background_loop())
             logger.info("Sincronizando Cérebro Autônomo com loop de eventos principal.")
         except RuntimeError:
-            # Fallback para quando não há loop rodando (inicialização manual ou testes)
-            logger.warning("Nenhum loop de eventos detectado. Iniciando loop síncrono de fallback.")
-            asyncio.run(self._background_loop())
+            logger.warning("Nenhum loop de eventos detectado. Criando novo loop.")
+            loop = asyncio.new_event_loop()
+            self._task = loop.create_task(self._background_loop())
 
     def stop(self):
         """Para o loop autônomo."""
