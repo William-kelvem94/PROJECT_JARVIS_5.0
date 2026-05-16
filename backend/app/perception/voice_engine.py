@@ -26,7 +26,8 @@ import collections
 import asyncio
 from dataclasses import dataclass, field
 from typing import Optional, List, Callable
-
+from concurrent.futures import ThreadPoolExecutor
+_command_executor = ThreadPoolExecutor(max_workers=4)
 import numpy as np
 from loguru import logger
 from app.voice.tts_engine import tts_engine
@@ -156,7 +157,7 @@ def _get_oww(custom_models: List[str] = None):
                     openwakeword.utils.download_models()
                     _oww_model = Model(wakeword_models=models_to_load, inference_framework="onnx")
                     return _oww_model
-                except:
+                except Exception:
                     pass
 
             # 2. Try any available .onnx wake word model found locally
@@ -360,6 +361,7 @@ _command_semaphore = threading.Semaphore(3)  # máximo 3 threads simultâneas
 
 # Thread-safe queue for chunks coming from the sounddevice callback
 _chunk_q: queue.Queue = queue.Queue(maxsize=200)
+_command_executor = ThreadPoolExecutor(max_workers=4)
 
 
 _active_listening = False
@@ -432,7 +434,7 @@ def _audio_loop():
                             def _run_with_semaphore(t):
                                 with _command_semaphore:
                                     _process_command_sync(t)
-                            threading.Thread(target=_run_with_semaphore, args=(text,), daemon=True).start()
+                            _command_executor.submit(_run_with_semaphore, text)
                         else:
                             _notify_hud("idle")
 
@@ -450,7 +452,7 @@ def _audio_loop():
                                     elif isinstance(score_data, dict): score = max(score_data.values()) if score_data else 0.0
                                     elif hasattr(score_data, "__iter__"): score = max(score_data) if len(score_data) > 0 else 0.0
                                     else: score = 0.0
-                                except: score = 0.0
+                                except Exception: score = 0.0
 
                                 if score > 0.45:
                                     # Sensory Shielding: Validate Voice Print before activation

@@ -60,7 +60,10 @@ class TTSEngine:
         """Interrompe fala imediatamente (Barge-in)."""
         self._stop_requested = True
         if HAS_PYGAME:
-            pygame.mixer.music.stop()
+            try:
+                pygame.mixer.music.stop()
+            except Exception as e:
+                logger.warning(f"[TTS] pygame stop error (expected if not started): {e}")
         logger.info("[TTS] 🛑 Fala interrompida por Barge-in.")
 
     # ── Backends de síntese ────────────────────────────────────────────────────

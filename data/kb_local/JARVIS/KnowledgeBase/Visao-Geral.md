@@ -11,10 +11,10 @@ tags:
 
 **Private Clone | FastAPI/Next.js | Atualizado 16h ago**
 
-Ecossistema Jarvis: voz real-time, Gemini/OpenAI, visão face/gesture/voice (MediaPipe), browser Playwright autonomy, dashboard monitoring.
+Ecossistema Jarvis: voz real-time (WebSocket nativo), LLMs (OpenAI/Ollama), visão face/gesture/voice (MediaPipe), browser Playwright autonomy, dashboard monitoring.
 
 **Estrutura**:
-- `backend/` (agents_worker.py, app/main.py)
+- `backend/` (app/main.py, app/multi_agent_analysis.py)
 - `frontend/` (Next.js shadcn Tailwind, agent-audio-visualizer)
 - `docker/`, scripts monitor-heartbeat.ps1, start-jarvis.bat
 
@@ -26,7 +26,7 @@ Ecossistema Jarvis: voz real-time, Gemini/OpenAI, visão face/gesture/voice (Med
 - O foco imediato deve ser:
   - validar o fluxo de voz e TTS;
   - testar os serviços de visão com MediaPipe/YOLOv8;
-  - estabilizar a orquestração de agentes via gRPC ou outro middleware.
+  - estabilizar a orquestração de agentes via middleware nativo.
 
 ## Base de conhecimento e arquitetura
 - [[PROJECT_JARVIS_5.0-Knowledge|Base de Conhecimento Jarvis]]
@@ -35,7 +35,7 @@ Ecossistema Jarvis: voz real-time, Gemini/OpenAI, visão face/gesture/voice (Med
 - [[PROJECT_JARVIS_5.0-Strategy|Estratégia Jarvis]]
 
 ## Status técnico
-- Backend: `backend/agents_worker.py`, `backend/app/main.py`.
+- Backend: `backend/app/main.py` (agents_worker.py removido).
 - Frontend: `frontend/` com Next.js shadcn e interfaces de agente.
 - Orquestração: scripts em `docker/`, monitor-heartbeat e `start-jarvis.bat`.
 - Dependências principais: Playwright, MediaPipe, modelos LLM, Node.js/React.
@@ -50,7 +50,7 @@ Ecossistema Jarvis: voz real-time, Gemini/OpenAI, visão face/gesture/voice (Med
 ## Riscos de execução
 - O workspace pode ficar pesado se todos os serviços forem executados juntos.
 - A automação via Playwright exige cuidado com foco de tela e estado do browser.
-- O uso de Gemini no backend aumenta custo e risco de dependência.
+- O uso de modelos externos (Gemini/OpenAI) no backend aumenta custo e risco de dependência.
 
 ## Próximos passos específicos
 - Extrair e documentar os comandos de `backend/`, `frontend/` e `docker/`.

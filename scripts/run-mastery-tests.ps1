@@ -9,13 +9,13 @@ Write-Host "   JARVIS 5.0 - MASTERY TEST BATTERY" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. Verifica ambiente
-if (!(Test-Path "$Root\backend\venv")) {
+if (!(Test-Path "$Root\.venv")) {
     Write-Host "[!] Backend venv não encontrado. Rodando setup inicial..." -ForegroundColor Yellow
     # Simula parte do setup necessário
 }
 
 # Ativa venv
-$VenvPath = "$Root\backend\venv\Scripts\Activate.ps1"
+$VenvPath = "$Root\.venv\Scripts\Activate.ps1"
 . $VenvPath
 
 Write-Host "`n[1/3] Verificando Integridade de Dependências..." -ForegroundColor Magenta

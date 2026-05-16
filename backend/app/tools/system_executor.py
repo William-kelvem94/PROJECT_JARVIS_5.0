@@ -70,7 +70,7 @@ class SystemExecutor:
 
         try:
             logger.info(f"💻 JARVIS executando comando: {command}")
-            subprocess.Popen(command, shell=True)  # noqa: S603 - validado pela whitelist acima
+            subprocess.Popen(command, shell=False)  # safer without shell
             return f"Comando '{command}' enviado ao terminal."
         except Exception as e:
             return f"Erro de execucao: {e}"

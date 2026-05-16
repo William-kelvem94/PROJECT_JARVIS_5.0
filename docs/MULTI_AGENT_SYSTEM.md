@@ -4,7 +4,7 @@ Sistema avançado de análise multi-agente que monitora continuamente diferentes
 
 ## 📋 Visão Geral
 
-O sistema Multi-Agent Analysis é composto por **5 agentes especializados** que trabalham de forma independente e contínua, cada um focado em um aspecto específico do sistema.
+O sistema Multi-Agent Analysis é composto por **14 agentes especializados (10 de análise + 4 auto-fix)** que trabalham de forma independente e contínua, cada um focado em um aspecto específico do sistema.
 
 ## 🎯 Agentes Disponíveis
 

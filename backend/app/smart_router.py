@@ -67,7 +67,7 @@ class SmartRouter:
                     if resp.status in (200, 400):
                         _gemini_model_cache, _gemini_model_cache_ts = model, now
                         return model
-            except: continue
+            except Exception: continue
         return settings.GEMINI_MODEL
 
     async def _get_local_model(self) -> str:
@@ -85,7 +85,7 @@ class SmartRouter:
                         model = data["data"][0]["id"]
                         self._cached_local_model, self._last_local_check, self._local_available = model, now, True
                         return model
-        except: pass
+        except Exception: pass
         self._local_available = False
         return self.default_local_model
 
@@ -113,16 +113,10 @@ class SmartRouter:
                             yield " [Gemini] "
                             first_chunk = False
                         yield text
-                    except: continue
+                    except Exception: continue
 
     async def _call_nvidia(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
-        # Simulação de endpoint NVIDIA (ajustar conforme spec real do provider)
-        # Aqui assume-se compatibilidade OpenAI API
-        logger.info("🚀 Tentando NVIDIA NIM/Secondary...")
-        # Implementação seguindo padrão aiohttp POST...
-        # Se não configurado, lança exceção para trigger fallback
         raise NotImplementedError("NVIDIA endpoint not configured in settings")
-        yield ""
 
     async def _call_local(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
         model = await self._get_local_model()
@@ -152,7 +146,7 @@ class SmartRouter:
                                     yield " [Local] "
                                     first_chunk = False
                                 yield text
-                        except: continue
+                        except Exception: continue
             else:
                 data = await resp.json()
                 yield data["choices"][0]["message"]["content"]
@@ -184,7 +178,7 @@ class SmartRouter:
                                 yield " [OpenRouter] "
                                 first_chunk = False
                             yield text
-                    except: continue
+                    except Exception: continue
 
     async def reason_stream(self, prompt: str, system_prompt: str) -> AsyncGenerator[str, None]:
         complexity = await self._detect_complexity(prompt)

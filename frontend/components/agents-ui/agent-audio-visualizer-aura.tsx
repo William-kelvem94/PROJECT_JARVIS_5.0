@@ -25,7 +25,7 @@ function hexToRgb(hexColor: string) {
     );
   }
 
-  return hexToRgb(DEFAULT_COLOR);
+  return [0.1216, 0.8353, 0.9765]; // fallback to #1FD5F9 in 0-1 range
 }
 
 const shaderSource = `

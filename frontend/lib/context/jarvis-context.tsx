@@ -336,7 +336,7 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       cleanupSession();
       setError(err instanceof Error ? err.message : 'Erro ao iniciar Jarvis.');
     }
-  }, [cleanupSession, handleConnectionClosed, setLocalMediaStream, stopStream]);
+  }, [cleanupSession, handleConnectionClosed, setLocalMediaStream, stopStream, setIsConnected, setAgentState, setError, setMessages, setVolume]);
 
   useEffect(() => {
     return () => {

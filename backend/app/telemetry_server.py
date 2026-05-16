@@ -7,10 +7,6 @@ import threading
 import uvicorn
 import socket
 from loguru import logger
-from .perception.perception_manager import perception_manager
-from .utils.learning_manager import learning_manager
-from .utils.second_brain_connector import second_brain
-
 app = FastAPI(title="JARVIS Telemetry Dashboard")
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +19,14 @@ app.add_middleware(
 @app.get("/api/status")
 async def get_status():
     """Retorna o estado interno completo do JARVIS."""
+    try:
+        from .perception.perception_manager import perception_manager
+        from .utils.learning_manager import learning_manager
+        from .utils.second_brain_connector import second_brain
+    except Exception as e:
+        logger.warning(f"Telemetry imports failed: {e}")
+        return {"error": "dependencies unavailable"}
+
     percep = perception_manager.get_snapshot()
     return {
         "hardware": {

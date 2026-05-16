@@ -20,7 +20,7 @@ Jarvis deve ser composto por camadas:
 
 ## 2. Camadas principais
 ### 2.1 Interface multimodal
-- Voz: LiveKit, Piper TTS.
+- Voz: WebSocket nativo, Piper TTS (substituiu LiveKit).
 - Visão: MediaPipe, YOLOv8, OCR.
 - Texto: chat, prompts, notas.
 - Browser/PC: Playwright, automações.
@@ -63,7 +63,7 @@ Jarvis deve ser composto por camadas:
 ## 5. Infraestrutura
 - Backend: FastAPI
 - Frontend: Next.js
-- Comunicação: LiveKit, WebSockets
+- Comunicação: WebSocket nativo (substituiu LiveKit)
 - Persistência: Postgres/SQLite, FAISS
 
 ## 6. Segurança

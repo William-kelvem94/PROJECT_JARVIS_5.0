@@ -87,8 +87,8 @@ class ObsidianGraph:
                 target = link.split('|')[0].strip()
                 self.graph.add_edge(node_name, target)
             logger.info(f"🕸️ Grafo atualizado: {node_name}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Obsidian graph update skipped: {e}")
 
 
 def _get_default_vault_path() -> str:

@@ -21,14 +21,16 @@ echo.
 for %%I in ("%SCRIPT_DIR%..") do set "ROOT=%%~fI\"
 
 echo [1/4] Parando processos do JARVIS...
-REM Para processos Python do backend
+REM Para processos Python do backend (filtra por diretório do projeto)
 for /f "tokens=2" %%i in ('tasklist /FI "IMAGENAME eq python.exe" /FO LIST ^| find "PID:"') do (
-    taskkill /F /PID %%i 2>nul
+    wmic process where "ProcessId=%%i" get CommandLine 2>nul | findstr /i "JARVIS" >nul 2>nul
+    if not errorlevel 1 taskkill /F /PID %%i 2>nul
 )
 
-REM Para processos Node do frontend
+REM Para processos Node do frontend (filtra por diretório do projeto)
 for /f "tokens=2" %%i in ('tasklist /FI "IMAGENAME eq node.exe" /FO LIST ^| find "PID:"') do (
-    taskkill /F /PID %%i 2>nul
+    wmic process where "ProcessId=%%i" get CommandLine 2>nul | findstr /i "JARVIS" >nul 2>nul
+    if not errorlevel 1 taskkill /F /PID %%i 2>nul
 )
 
 echo [2/4] Aguardando limpeza de recursos...

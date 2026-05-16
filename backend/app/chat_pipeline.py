@@ -72,7 +72,7 @@ async def chat_stream(user_id: str, user_message: str):
     buffer = ""
 
     # Regex para detectar [TOOL:func(args)]
-    tool_pattern = re.compile(r"\[TOOL:\s*(.*?)\((.*?)\)\]")
+    tool_pattern = re.compile(r"\[TOOL:\s*(.*?)\((.*?)\)\]", re.DOTALL)
 
     async for chunk in brain.reason_stream(full_prompt, context=system_prompt):
         full_reply += chunk

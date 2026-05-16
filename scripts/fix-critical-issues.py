@@ -199,11 +199,14 @@ def apply_cpu_throttling():
         await asyncio.sleep(interval)
 """
     
+    # Verificar se o padrão alvo existe antes de aplicar
+    target = "await asyncio.sleep(self.check_interval)"
+    if target not in content:
+        print_status(f"Padrão '{target}' não encontrado em {target_file}. Pulando patch.", "WARN")
+        return False
+
     # Inserir antes do primeiro asyncio.sleep
-    content = content.replace(
-        "await asyncio.sleep(self.check_interval)",
-        patch
-    )
+    content = content.replace(target, patch)
     
     # Salvar
     with open(target_file, 'w', encoding='utf-8') as f:

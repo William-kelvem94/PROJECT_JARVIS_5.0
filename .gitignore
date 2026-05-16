@@ -86,14 +86,6 @@ project_analysis_report.json
 audit_report.md
 auditoria_jarvis.py
 
-# Gerados automaticamente — não commitar
-start-jarvis-result.txt
-audit_report.md
-project_analysis_report.json
-
-# Modelos ML pesados — usar Git LFS ou download dinâmico
-*.pt
-backend/models/
 
 # Temporários
 temp_audio/

@@ -13,7 +13,7 @@ echo =========================================
 echo.
 
 echo [TEST 1] Verificando agentes ativos...
-curl -s http://localhost:8000/agents/summary | jq ".total_agents"
+powershell -Command "(Invoke-RestMethod http://localhost:8000/agents/summary).total_agents"
 if %ERRORLEVEL% NEQ 0 (
     echo [ERRO] Backend não está respondendo!
     echo Execute: start-jarvis.bat
@@ -24,27 +24,27 @@ echo Esperado: 14 agentes (10 análise + 4 auto-fix)
 echo.
 
 echo [TEST 2] Listando todos os agentes...
-curl -s http://localhost:8000/agents/summary | jq ".agents[] | select(.name | contains(\"Agent\")) | {name: .name, running: .running}"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/summary | Select-Object -ExpandProperty agents | Where-Object { $_.name -like '*Agent*' } | Select-Object name, running | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 3] Verificando agentes de auto-fix especificamente...
-curl -s http://localhost:8000/agents/summary | jq ".agents[] | select(.name | contains(\"Fix\") or contains(\"Dependency\") or contains(\"Recovery\") or contains(\"Repair\")) | {name: .name, type: .type, running: .running}"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/summary | Select-Object -ExpandProperty agents | Where-Object { $_.name -like '*Fix*' -or $_.name -like '*Dependency*' -or $_.name -like '*Recovery*' -or $_.name -like '*Repair*' } | Select-Object name, type, running | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 4] Verificando findings de auto-fix...
-curl -s http://localhost:8000/agents/findings | jq ".findings[] | select(.title | contains(\"Auto-Fix\") or contains(\"Dependência\") or contains(\"Socket\") or contains(\"Áudio\"))"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/findings | Select-Object -ExpandProperty findings | Where-Object { $_.title -like '*Auto-Fix*' -or $_.title -like '*Dependência*' -or $_.title -like '*Socket*' -or $_.title -like '*Áudio*' } | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 5] Verificando findings críticos...
-curl -s http://localhost:8000/agents/critical | jq ".critical_findings"
+powershell -Command "(Invoke-RestMethod http://localhost:8000/agents/critical).critical_findings"
 echo.
 
 echo [TEST 6] Verificando dependências faltando...
-curl -s http://localhost:8000/agents/findings | jq ".findings[] | select(.title | contains(\"Dependência\"))"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/findings | Select-Object -ExpandProperty findings | Where-Object { $_.title -like '*Dependência*' } | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 7] Verificando recovery de endpoints...
-curl -s http://localhost:8000/agents/findings | jq ".findings[] | select(.title | contains(\"Socket\") or contains(\"Endpoint\"))"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/findings | Select-Object -ExpandProperty findings | Where-Object { $_.title -like '*Socket*' -or $_.title -like '*Endpoint*' } | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 8] Testando endpoint /telemetry/status...
@@ -55,11 +55,11 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 
 echo [TEST 9] Verificando status de áudio...
-curl -s http://localhost:8000/agents/findings | jq ".findings[] | select(.title | contains(\"Áudio\") or contains(\"Audio\"))"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/findings | Select-Object -ExpandProperty findings | Where-Object { $_.title -like '*Áudio*' -or $_.title -like '*Audio*' } | ConvertTo-Json -Depth 3"
 echo.
 
 echo [TEST 10] Verificando health do sistema...
-curl -s http://localhost:8000/system/capabilities | jq ".summary"
+powershell -Command "(Invoke-RestMethod http://localhost:8000/system/capabilities).summary"
 echo.
 
 echo =========================================

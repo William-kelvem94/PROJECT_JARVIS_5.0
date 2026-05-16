@@ -6,6 +6,7 @@ import { WarningIcon } from '@phosphor-icons/react/dist/ssr';
 import type { AppConfig } from '@/app-config';
 import { Toaster } from '@/components/ui/sonner';
 import { JarvisProvider } from '@/context/JarvisContext';
+import { ErrorBoundary } from '@/components/app/error-boundary';
 
 const ViewController = dynamic(
   () => import('@/components/app/view-controller').then((mod) => ({ default: mod.ViewController })),
@@ -17,11 +18,13 @@ export function App({ appConfig }: { appConfig: AppConfig }) {
 
   return (
     <JarvisProvider>
-      <main className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black p-8 text-white">
-        <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
-          <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
-        </div>
-      </main>
+      <ErrorBoundary>
+        <main className="flex min-h-screen flex-col items-center justify-center overflow-hidden bg-black p-8 text-white">
+          <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-8">
+            <ViewController appConfig={appConfig} onParticipantNameChange={setParticipantName} />
+          </div>
+        </main>
+      </ErrorBoundary>
 
       <Toaster
         icons={{

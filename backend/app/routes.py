@@ -7,26 +7,12 @@ import glob
 import threading
 from pathlib import Path
 
-from .security.sentinel_parser import SentinelParser
-from .security.sentinel_core import SentinelSecurity
-from .security.blackbox import BlackBox
+from .dependencies import get_sentinel_parser, get_sentinel, get_blackbox
 from .chat_pipeline import chat_stream
 from .unified_memory import memory
 from .utils.db_manager import db_manager
 from .utils.note_writer import note_writer
 from loguru import logger
-
-# Global Security Instances
-sentinel_parser = SentinelParser()
-# Derive key from HWID -> Argon2id -> SHA256
-security_core = SentinelSecurity()
-system_key = security_core.derive_system_key()
-# BlackBox initialization with derived key
-blackbox = BlackBox(
-    db_path=os.path.join(os.path.dirname(__file__), "..", "data", "blackbox.db"),
-    encryption_key=system_key
-)
-security_core.blackbox = blackbox
 
 router = APIRouter()
 SCREENSHOT_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -49,7 +35,7 @@ class ChatResponse(BaseModel):
 async def chat_endpoint(req: ChatRequest):
     # --- SENTINEL REAL-TIME INTERCEPTION ---
     # Validates the user message before it reaches the LLM pipeline to prevent prompt injection/destructive commands
-    if not await security_core.validate_llm_command(req.message, sentinel_parser):
+    if not await get_sentinel().validate_llm_command(req.message, get_sentinel_parser()):
         raise HTTPException(status_code=403, detail="Sentinel Blocked: Destructive or unauthorized command detected.")
     # --------------------------------------
 

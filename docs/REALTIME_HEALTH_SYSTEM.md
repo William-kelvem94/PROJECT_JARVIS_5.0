@@ -2,11 +2,11 @@
 
 ## 📋 Visão Geral
 
-Sistema completo de monitoramento e análise de saúde de todos os componentes do JARVIS, com **status em tempo real** e **10 agentes especializados** para detecção automática de problemas.
+Sistema completo de monitoramento e análise de saúde de todos os componentes do JARVIS, com **status em tempo real** e **14 agentes especializados (10 de análise + 4 auto-fix)** para detecção automática de problemas.
 
 **Data**: 7 de maio de 2026  
 **Status**: ✅ IMPLEMENTADO  
-**Agentes**: 10 ativos (6 originais + 4 novos especializados)
+**Agentes**: 14 ativos (10 de análise + 4 auto-fix)
 
 ---
 
@@ -24,7 +24,7 @@ Sistema completo de monitoramento e análise de saúde de todos os componentes d
 - ✅ Verificação real de cada componente
 - ✅ Detecção automática de hardware
 - ✅ Visibilidade total do sistema
-- ✅ 10 agentes detectam e reportam problemas automaticamente
+- ✅ 14 agentes detectam e reportam problemas automaticamente
 
 ---
 
@@ -371,7 +371,7 @@ interface ComponentHealth {
 - ✅ **Extensível**: Fácil adicionar novos componentes
 
 ### Para Operação
-- ✅ **Monitoramento 24/7**: 10 agentes sempre ativos
+- ✅ **Monitoramento 24/7**: 14 agentes sempre ativos
 - ✅ **Alertas automáticos**: Findings críticos/high reportados
 - ✅ **Métricas centralizadas**: Health percentage do sistema
 - ✅ **Histórico**: Todos os findings são registrados
@@ -498,8 +498,8 @@ curl http://localhost:8000/system/capabilities
 curl http://localhost:8000/agents/summary
 
 # Deve mostrar:
-# - total_agents: 10
-# - agents_running: 10
+# - total_agents: 14
+# - agents_running: 14
 # - 4 novos agentes listados
 ```
 
@@ -529,7 +529,7 @@ npm run dev
 |---------|-------|-------|
 | Status | Estático | ✅ Tempo real (5s) |
 | Verificação | Manual | ✅ Automática |
-| Agentes | 6 | ✅ 10 especializados |
+| Agentes | 6 | ✅ 14 especializados (10 análise + 4 auto-fix) |
 | Hardware | Não detectado | ✅ Detectado (camera/mic/screen) |
 | Componentes | 0 | ✅ 19 monitorados |
 | Health % | N/A | ✅ 0-100% |
@@ -540,7 +540,7 @@ npm run dev
 ✅ **100% IMPLEMENTADO**
 
 - ✅ Health checker completo (19 componentes)
-- ✅ 10 agentes especializados
+- ✅ 14 agentes especializados
 - ✅ 2 novos endpoints
 - ✅ Frontend com status em tempo real
 - ✅ Detecção automática de hardware
@@ -561,5 +561,5 @@ npm run dev
 **Autor**: GitHub Copilot (Claude Sonnet 4.5)  
 **Data**: 7 de maio de 2026  
 **Versão**: JARVIS 5.0 Omega  
-**Agentes Ativos**: 10  
+**Agentes Ativos**: 14  
 **Componentes Monitorados**: 19

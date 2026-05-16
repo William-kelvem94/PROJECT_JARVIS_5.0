@@ -6,7 +6,6 @@
     "exclude": [
         "**/node_modules",
         "**/__pycache__",
-        "**/src",
         "**/frontend",
         "**/__pyrefly_virtual__/**"
     ],
@@ -22,7 +21,7 @@
     "venvPath": ".",
     "venv": ".venv",
     "typeCheckingMode": "basic",
-    "reportMissingImports": "none",
-    "reportGeneralTypeIssues": "none",
-    "reportUndefinedVariable": "none"
+    "reportMissingImports": "warning",
+    "reportGeneralTypeIssues": "warning",
+    "reportUndefinedVariable": "warning"
 }

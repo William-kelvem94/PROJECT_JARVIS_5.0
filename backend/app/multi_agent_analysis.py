@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from abc import ABC, abstractmethod
 from loguru import logger
 
 
@@ -54,7 +55,7 @@ class Finding:
     metrics: Dict[str, Any] = field(default_factory=dict)
 
 
-class BaseAgent:
+class BaseAgent(ABC):
     """Classe base para todos os agentes especializados."""
     
     def __init__(self, agent_type: AgentType, name: str, check_interval: int = 300):
@@ -66,9 +67,9 @@ class BaseAgent:
         self._task: Optional[asyncio.Task] = None
         logger.info(f"[MultiAgent] {self.name} initialized (check every {check_interval}s)")
     
+    @abstractmethod
     async def analyze(self) -> List[Finding]:
         """Método abstrato para análise. Deve ser implementado por cada agente."""
-        raise NotImplementedError("Subclasses must implement analyze()")
     
     async def run(self):
         """Loop principal do agente."""

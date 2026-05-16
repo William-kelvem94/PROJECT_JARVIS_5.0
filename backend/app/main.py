@@ -14,8 +14,7 @@ from .perception.voice_engine import add_callback as add_voice_callback, start a
 from .routes import router as main_router
 from .system_bridge import router as system_bridge_router
 from .voice_websocket import router as voice_router
-from .security.sentinel_core import SentinelSecurity
-from .security.sentinel_parser import SentinelParser
+from .dependencies import get_sentinel_parser, get_sentinel
 from .psyche.device_awareness import DeviceAwareness
 from .psyche.dream_cycle import DreamCycle
 from .psyche.gap_analyzer import GapAnalyzer
@@ -23,10 +22,6 @@ from .multi_agent_analysis import start_multi_agent_analysis, stop_multi_agent_a
 from .auto_restart import enable_auto_restart, disable_auto_restart
 
 # --- Omega Protocol Singletons ---
-# Security
-sentinel_parser = SentinelParser()
-sentinel = SentinelSecurity()
-
 # Psyche/Brain
 device_awareness = DeviceAwareness()
 dream_cycle = DreamCycle(

@@ -61,7 +61,7 @@ class SecondBrainConnector:
         try:
             from .obsidian_graph import obsidian_graph
             obsidian_graph.update_node(path)
-        except: pass
+        except Exception: pass
 
     def refresh_todos(self):
         """Extrai tarefas pendentes do TODO.md."""

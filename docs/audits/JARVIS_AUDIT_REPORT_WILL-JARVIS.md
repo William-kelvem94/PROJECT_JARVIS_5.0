@@ -65,4 +65,52 @@ UI → HTTP/WebSocket → backend → roteador LLM/memória/percepção/voz → 
 - Severidade: **Média**
 
 ### 9) HUD pode ficar preso em “speaking”
-- Evidência: `frontend/app/page.tsx` mantém `status === 
+- Evidência: `frontend/app/page.tsx` mantém `status === "speaking"` mesmo quando há resposta
+- Impacto: UI pode parecer travada após a primeira resposta
+- Severidade: Média
+
+### 10) Polling agressivo
+- Evidência: polling de `/health`, `/api/status`, `/logs/{date}` a cada 5s sem verificação de visibilidade
+- Impacto: carga/ruído desnecessário
+- Severidade: Média
+
+## Achados de documentação/operação
+
+### 11) Docs e scripts discordam sobre fluxo de inicialização
+- Evidência: `README.md`, `docs/guides/JARVIS_STARTUP.md`, `docs/INSTALL.md`, `scripts/launch-backend.bat`, `scripts/run-backend.sh`
+- Impacto: fácil seguir o caminho de setup errado
+- Severidade: Média
+
+### 12) Caminho do script de inicialização do backend parece errado
+- Evidência: `scripts/launch-backend.bat` verifica `..\..\.venv\Scripts\activate.bat` após `cd backend`
+- Impacto: inicialização pode falhar mesmo com venv válido
+- Severidade: Média
+
+### 13) Scripts shell usam caminhos de módulo inconsistentes
+- Evidência: `scripts/run-backend.sh` usa `backend.app.main:app` enquanto o código expõe `app.main:app`
+- Impacto: fragilidade operacional
+- Severidade: Média
+
+## Prioridades recomendadas
+
+### P1
+- Remover conflito de merge em `backend/tests/test_routes.py`
+- Corrigir inconsistências de import-path nos testes
+- Consolidar `/chat` e `/health` em um único contrato
+- Corrigir incompatibilidade de rota WS de voz
+
+### P2
+- Remover dados sensíveis versionados / DB local / artefatos de browser
+- Adicionar autenticação/proteções a endpoints de controle local
+- Revisar uso de `shell=True` e restringir execução de comandos
+
+### P3
+- Alinhar docs e scripts com o fluxo de inicialização real
+- Reduzir polling agressivo no frontend
+- Normalizar nomenclatura/versionamento no repositório
+
+**Arquivo salvo**: `/home/willi/.openclaw/workspace/jarvis_repo/JARVIS_AUDIT_REPORT_WILL-JARVIS.txt`
+
+---
+
+> **Nota**: Este arquivo estava truncado originalmente. O conteúdo completo foi restaurado a partir da versão `.txt`. 

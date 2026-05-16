@@ -26,7 +26,7 @@ Criar um assistente multimodal que combine voz em tempo real, visão de ambiente
 **Cenários**
 - ditado e comandos por voz com feedback visual.
 - reconhecimento de gestos/face para contexto de interação.
-- automação de browser e workflows com LiveKit e Playwright.
+- automação de browser e workflows com Playwright.
 
 ## Métricas de sucesso
 - Latência de voz < 1.5s em fluxo local.
@@ -36,21 +36,21 @@ Criar um assistente multimodal que combine voz em tempo real, visão de ambiente
 
 ## Hipóteses-chave
 - A multimodalidade é o diferencial competitivo do Jarvis.
-- LiveKit é a escolha certa para voz em tempo real neste MVP.
+- WebSocket nativo substituiu LiveKit para voz em tempo real.
 - É viável usar YOLOv8 nano para visão leve em hardware comum.
 - O browser automation pode ser confiável com Playwright e scripts robustos.
 
 ## Situação atual
-- Stack atual: FastAPI, Next.js, LiveKit, MediaPipe e Playwright.
+- Stack atual: FastAPI, Next.js, WebSocket nativo, MediaPipe e Playwright.
 - Problemas principais: dependência Gemini e falta de stack offline consolidado.
 - Gap técnico: não há claro pipeline de produção para agentes.
 
 ## Arquitetura estratégica
 - `backend/` = agentes, inferência LLM, integração de visão e voz.
 - `frontend/` = dashboard Next.js com visualização e controles.
-- `agents/` = workers gRPC, orchestrator e plan.
+- `agents/` = workers, orchestrator e plan.
 - `vision/` = MediaPipe, YOLOv8 e OCR de tela.
-- `audio/` = LiveKit, Piper TTS e voz em tempo real.
+- `audio/` = Piper TTS, WebSocket nativo e voz em tempo real.
 
 ## Roadmap estratégico
 ### Fase 1 — MVP offline multimodal (4 semanas)
@@ -61,7 +61,7 @@ Criar um assistente multimodal que combine voz em tempo real, visão de ambiente
 
 ### Fase 2 — Produção e agentes (8 semanas)
 - Preparar Docker Swarm local para múltiplos serviços.
-- Criar gRPC agents e integração com VSCode extension.
+- Criar agentes e integração com VSCode extension.
 - Padronizar monitoramento e estado de agentes.
 
 ### Fase 3 — Autonomia e workflows (16 semanas)
@@ -70,7 +70,7 @@ Criar um assistente multimodal que combine voz em tempo real, visão de ambiente
 - Testar workflows autônomos e devolutiva de status.
 
 ## Dependências e decisões
-- Voz: LiveKit vs Piper + stream local.
+- Voz: WebSocket nativo + Piper (LiveKit substituído).
 - Modelo: Gemini como fallback ou não?
 - Visão: MediaPipe + YOLOv8 vs modelo heavier.
 - Automação: Playwright no desktop vs browser headless.
@@ -91,9 +91,9 @@ Criar um assistente multimodal que combine voz em tempo real, visão de ambiente
 - 09/04/2026 10:56:14 — roadmap multimodal definido.
 
 ## Próximas ações imediatas
-- Confirmar o fluxo de voz em LiveKit e Piper.
+- Confirmar o fluxo de voz em WebSocket nativo e Piper.
 - Testar YOLOv8 nano em hardware alvo.
-- Definir arquitetura de agentes e gRPC.
+- Definir arquitetura de agentes e middleware.
 - Documentar cenário de uso e critério de aceitação.
 
 ## Referências

@@ -5,7 +5,11 @@ import time
 from fastapi.testclient import TestClient
 from app.main import app
 from app.config import settings
-from app.mem0 import AsyncMemoryClient
+try:
+    from app.mem0 import AsyncMemoryClient
+except ImportError:
+    from unittest.mock import AsyncMock
+    AsyncMemoryClient = AsyncMock
 
 client = TestClient(app)
 

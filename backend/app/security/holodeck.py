@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import tempfile
 import shutil
@@ -37,7 +38,7 @@ class Holodeck:
 
             # Execution with environment scrubbing
             result = subprocess.run(
-                ["python3", str(script_path)],
+                [sys.executable, str(script_path)],
                 cwd=str(overlay),
                 capture_output=True,
                 text=True,

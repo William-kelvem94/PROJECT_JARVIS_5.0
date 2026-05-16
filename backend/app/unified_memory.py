@@ -21,13 +21,12 @@ except Exception:
 from .utils.db_manager import db_manager
 
 # --- CONFIGURAÇÃO ---
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
-
-INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
-CHROMA_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "chroma_db")
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(BASE_DIR / ".env")
+INTERNAL_BRAIN_DIR = str(BASE_DIR / "data" / "internal_brain")
+CHROMA_DB_DIR = str(BASE_DIR / "data" / "chroma_db")
 VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT")
-JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
+JARVIS_VAULT_DIR = str(Path(VAULT_ROOT) / "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
 
 if not VAULT_ROOT:
     logger.warning("[UnifiedMemory] JARVIS_VAULT_ROOT não definida (ou inválida). Vault Global (Obsidian) desativado.")
@@ -43,16 +42,24 @@ class UnifiedMemory:
         os.makedirs(CHROMA_DB_DIR, exist_ok=True)
         self._ensure_vault_dirs()
 
-        # Initialize Embedding Model
+        # Lazy initialization for semantic search
         self.model = None
         self.chroma_client = None
         self.collection = None
+
+    def _init_semantic_search(self):
+        """Lazily initialize SentenceTransformer and ChromaDB on first use."""
+        if self.model is not None and self.chroma_client is not None:
+            return
         if chromadb is not None and SentenceTransformer is not None:
-            logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
-            self.model = SentenceTransformer('all-MiniLM-L6-v2')
-            self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
-            self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
-            logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
+            try:
+                logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
+                self.model = SentenceTransformer('all-MiniLM-L6-v2')
+                self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+                self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
+                logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
+            except Exception as e:
+                logger.warning(f"[UnifiedMemory] Falha ao inicializar busca semântica: {e}")
         else:
             logger.warning("[UnifiedMemory] ChromaDB/SentenceTransformer indisponíveis. Busca semântica desativada.")
 
@@ -101,6 +108,7 @@ class UnifiedMemory:
 
     async def _index_semantic_memory(self, content: str, metadata: Dict[str, Any]):
         """Vetoriza e armazena a memória no ChromaDB."""
+        self._init_semantic_search()
         if self.model is None or self.collection is None:
             return
         def sync_index():
@@ -292,6 +300,7 @@ updated: {date} {hora}
         return context_str if context_str else "Nenhum contexto relevante encontrado."
 
     async def _search_semantic(self, query: str, user_id: str) -> str:
+        self._init_semantic_search()
         if not query or self.model is None or self.collection is None:
             return ""
 
@@ -336,8 +345,9 @@ updated: {date} {hora}
 
         # Add ChromaDB stats
         try:
-            stats["semantic_memories"] = self.collection.count()
-        except:
+            self._init_semantic_search()
+            stats["semantic_memories"] = self.collection.count() if self.collection else 0
+        except Exception:
             stats["semantic_memories"] = 0
 
         return stats

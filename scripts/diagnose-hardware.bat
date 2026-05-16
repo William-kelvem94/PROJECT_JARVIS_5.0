@@ -46,11 +46,11 @@ echo [4/6] Testando dispositivos de audio...
 echo.
 
 echo [5/6] Verificando findings dos agentes...
-curl -s http://localhost:8000/agents/findings | jq ".findings[] | select(.title | contains(\"Camera\") or contains(\"Microfone\") or contains(\"Audio\") or contains(\"Tela\"))"
+powershell -Command "Invoke-RestMethod http://localhost:8000/agents/findings | Select-Object -ExpandProperty findings | Where-Object { $_.title -like '*Camera*' -or $_.title -like '*Microfone*' -or $_.title -like '*Audio*' -or $_.title -like '*Tela*' } | ConvertTo-Json -Depth 3"
 echo.
 
 echo [6/6] Verificando capabilities completo...
-curl -s http://localhost:8000/system/capabilities | jq "{camera: .capabilities.hardware.components[0], microphone: .capabilities.hardware.components[1], screen_mirror: .capabilities.hardware.components[2], audio: .capabilities.percepcao.components[3]}"
+powershell -Command "$c=Invoke-RestMethod http://localhost:8000/system/capabilities; @{camera=$c.capabilities.hardware.components[0]; microphone=$c.capabilities.hardware.components[1]; screen_mirror=$c.capabilities.hardware.components[2]; audio=$c.capabilities.percepcao.components[3]} | ConvertTo-Json -Depth 3"
 echo.
 
 echo =========================================

@@ -11,10 +11,10 @@ tags:
 
 Esta nota descreve as ferramentas principais do Jarvis e como cada uma contribui para o ecossistema do projeto.
 
-## 1. LiveKit
-- Comunicação de voz em tempo real.
+## 1. WebSocket Nativo (substituiu LiveKit)
+- Comunicação de voz em tempo real via WebSocket nativo.
 - Transporte de áudio bidirecional para front-end e backend.
-- Ideal para reuniões e interação instantânea.
+- Substituiu o LiveKit como camada de comunicação de voz.
 
 ## 2. Piper
 - Síntese de voz local (TTS).
@@ -44,7 +44,7 @@ Esta nota descreve as ferramentas principais do Jarvis e como cada uma contribui
 ## 7. Next.js
 - Interface web moderna para controle e visualização.
 - Permite dashboards e páginas interativas.
-- Combina com LiveKit para experiência multimodal.
+- Antigamente combinava com LiveKit; agora usa WebSocket nativo.
 
 ## 8. Modelos LLM
 - Responsável pela inteligência de linguagem.
