@@ -62,6 +62,14 @@ class SmartRouter:
             except Exception: continue
         return settings.GEMINI_MODEL
 
+    async def set_mode(self, mode: str) -> None:
+        """Define modo de operação do roteador (eco / performance)."""
+        logger.info(f"[SmartRouter] Modo alterado para: {mode}")
+        if mode == "eco":
+            self._local_available = False
+        elif mode == "performance":
+            self._local_available = True
+
     async def _get_local_model(self) -> str:
         now = time.monotonic()
         if self._cached_local_model and (now - self._last_local_check < 30):
@@ -82,6 +90,8 @@ class SmartRouter:
         return self.default_local_model
 
     async def _call_gemini(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
+        if not settings.GEMINI_API_KEY:
+            raise Exception("GEMINI_API_KEY não configurada")
         model = await self._resolve_gemini_model()
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent?alt=sse&key={settings.GEMINI_API_KEY}"
         payload = {
@@ -108,7 +118,7 @@ class SmartRouter:
                     except Exception: continue
 
     async def _call_nvidia(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
-        raise NotImplementedError("NVIDIA endpoint not configured in settings")
+        raise Exception("NVIDIA endpoint not configured — skipping")
 
     async def _call_local(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
         model = await self._get_local_model()
@@ -144,6 +154,8 @@ class SmartRouter:
                 yield data["choices"][0]["message"]["content"]
 
     async def _call_openrouter(self, prompt: str, system_prompt: str, stream: bool) -> AsyncGenerator[str, None]:
+        if not settings.OPENROUTER_API_KEY:
+            raise Exception("OPENROUTER_API_KEY não configurada")
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {"Authorization": f"Bearer {settings.OPENROUTER_API_KEY}", "X-Title": "JARVIS 5.0"}
         payload = {
@@ -183,7 +195,6 @@ class SmartRouter:
         if complexity == "deep":
             pipeline = [
                 ("Gemini", self._call_gemini),
-                ("NVIDIA", self._call_nvidia),
                 ("Local", self._call_local),
                 ("OpenRouter", self._call_openrouter),
             ]

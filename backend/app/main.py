@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from loguru import logger
 
 from .autonomous_brain import AutonomousBrain
-from .api import start_telemetry_server
+from .telemetry_server import start_telemetry_server
 from .kb_loader import load_kb
 from .perception import perception_manager
 from .perception.voice_engine import add_callback as add_voice_callback, start as start_voice_engine

@@ -45,10 +45,16 @@ class Settings(BaseSettings):
     @classmethod
     def validate_keys(cls, v):
         if not v or v.startswith("YOUR_"):
-            # Apenas avisa mas não bloqueia o carregamento para não travar o sistema totalmente se o usuário ainda for configurar
             print(f"AVISO: Chave API Google inválida ou não configurada: {v}")
             return v
         return v
+
+    @field_validator("openrouter_api_key", mode="before")
+    @classmethod
+    def fallback_openrouter_api_key(cls, v):
+        if v:
+            return v
+        return os.getenv("OPENROUTER_API_KEY") or v
 
 settings = Settings()
 

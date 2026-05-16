@@ -1,0 +1,5 @@
+# JARVIS 5.0 — Dependências do Backend
+# As dependências reais estão em backend/app/requirements.txt
+# Este arquivo redireciona para o requisito canônico.
+
+-f app/requirements.txt
