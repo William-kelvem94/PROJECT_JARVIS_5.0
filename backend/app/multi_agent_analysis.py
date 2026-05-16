@@ -15,6 +15,9 @@ Agentes Especializados:
 import asyncio
 import psutil
 import threading
+
+# Store background tasks to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
@@ -581,7 +584,9 @@ class MultiAgentOrchestrator:
         """Inicia todos os agentes registrados."""
         self.is_running = True
         for agent_type, agent in self.agents.items():
-            asyncio.create_task(agent.run())
+            task = asyncio.create_task(agent.run())
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
         logger.info("[MultiAgent] All agents started")
     
     def stop_all(self):

@@ -38,12 +38,32 @@ if errorlevel 1 (
 )
 
 if not exist "%ROOT%.env" (
-  if exist "%ROOT%.env.example" (
-    echo [CONFIG] Criando .env a partir de .env.example
-    copy "%ROOT%.env.example" "%ROOT%.env" >nul
+  if exist "%ROOT%frontend\.env.example" (
+    echo [CONFIG] .env nao encontrado. Copie frontend\.env.example para .env e preencha as chaves.
+    copy "%ROOT%frontend\.env.example" "%ROOT%.env" >nul
+    echo [CONFIG] .env criado a partir de frontend\.env.example
   ) else (
-    echo [ERRO] .env.example nao encontrado. Crie .env manualmente.
-    exit /b 1
+    echo [CONFIG] Criando .env minimalista...
+    (
+      echo # JARVIS 5.0 - Configuracao minima
+      echo # Veja frontend/.env.example para todas as opcoes
+      echo.
+      echo # Backend
+      echo BACKEND_PORT=8000
+      echo FRONTEND_URL=http://localhost:3000
+      echo.
+      echo # Google Gemini ^(opcional, mas recomendado^)
+      echo GOOGLE_API_KEY=sua_chave_aqui
+      echo GEMINI_API_KEY=sua_chave_aqui
+      echo.
+      echo # OpenRouter ^(opcional^)
+      echo OPENROUTER_API_KEY=
+      echo.
+      echo # Obsidian Vault ^(opcional^)
+      echo JARVIS_VAULT_ROOT=
+      echo JARVIS_KB_PATH=
+    ) > "%ROOT%.env"
+    echo [CONFIG] .env minimalista criado. Edite com suas chaves.
   )
 )
 

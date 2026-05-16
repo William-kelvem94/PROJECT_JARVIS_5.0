@@ -5,6 +5,9 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 from .voice.tts_engine import tts_engine
 
+# Store background tasks to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
+
 router = APIRouter()
 
 # Referência global para o WebSocket ativo para permitir interrupções e gatilhos externos
@@ -34,7 +37,9 @@ async def voice_websocket(websocket: WebSocket):
                     if data.get("type") == "manual_trigger":
                         # Clicou no Orb - Força o backend a escutar
                         from .perception.voice_engine import force_listen
-                        asyncio.create_task(force_listen())
+                        task = asyncio.create_task(force_listen())
+                        _background_tasks.add(task)
+                        task.add_done_callback(_background_tasks.discard)
                 except json.JSONDecodeError:
                     pass
 
@@ -53,7 +58,9 @@ async def initial_greeting():
     await broadcast_state("speaking", response=greeting)
     
     # Roda o TTS em background para não travar o loop do websocket
-    asyncio.create_task(tts_engine.speak(greeting, play_local=True))
+    task = asyncio.create_task(tts_engine.speak(greeting, play_local=True))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     
     # Simula o tempo da fala e volta pro idle
     await asyncio.sleep(4)

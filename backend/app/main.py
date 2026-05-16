@@ -21,6 +21,9 @@ from .psyche.gap_analyzer import GapAnalyzer
 from .multi_agent_analysis import start_multi_agent_analysis, stop_multi_agent_analysis, get_orchestrator
 from .auto_restart import enable_auto_restart, disable_auto_restart
 
+# Store background tasks to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
+
 # --- Omega Protocol Singletons ---
 # Psyche/Brain
 device_awareness = DeviceAwareness()
@@ -64,9 +67,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Initial Psyche State: {initial_state}")
 
     # 3. Schedule KB sync, Dream Cycle, Gap Analysis and Resource Governor
-    asyncio.create_task(load_kb())
-    asyncio.create_task(run_psyche_cycles())
-    asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
+    _background_tasks.add(asyncio.create_task(load_kb()))
+    _background_tasks.add(asyncio.create_task(run_psyche_cycles()))
+    _background_tasks.add(asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action)))
 
     # 4. Start Multi-Agent Analysis System
     try:
@@ -104,6 +107,11 @@ async def lifespan(app: FastAPI):
         disable_auto_restart()
     except Exception as e:
         logger.warning(f"Error disabling Auto-Restart: {e}")
+
+    # Cancel background tasks
+    for task in _background_tasks:
+        task.cancel()
+    _background_tasks.clear()
 
 async def run_psyche_cycles():
     """Background loop for subconscious processing."""

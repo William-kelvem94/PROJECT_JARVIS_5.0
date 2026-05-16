@@ -6,6 +6,9 @@ from .unified_memory import memory
 from .persona import persona
 from .system_tools import SystemTools
 
+# Store background tasks to prevent garbage collection
+_background_tasks: set[asyncio.Task] = set()
+
 tools = SystemTools()
 ALLOWED_TOOL_NAMES = {
     "browser_navigate",
@@ -53,7 +56,9 @@ async def chat_reply(user_id: str, user_message: str) -> str:
 
     # Voz: Fala a resposta localmente
     from .voice.tts_engine import tts_engine
-    asyncio.create_task(tts_engine.speak(reply, play_local=True))
+    task = asyncio.create_task(tts_engine.speak(reply, play_local=True))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return reply
 
@@ -83,7 +88,9 @@ async def chat_stream(user_id: str, user_message: str):
         if match:
             func_name, args_str = match.groups()
             # Dispara a ferramenta em background IMEDIATAMENTE sem travar o stream
-            asyncio.create_task(execute_tool_async(func_name, args_str))
+            task = asyncio.create_task(execute_tool_async(func_name, args_str))
+            _background_tasks.add(task)
+            task.add_done_callback(_background_tasks.discard)
             # Limpa o buffer após encontrar a ferramenta para evitar execuções duplicadas
             buffer = buffer[match.end():]
 
@@ -95,7 +102,9 @@ async def chat_stream(user_id: str, user_message: str):
 
     # Voz: Fala a resposta completa após o streaming
     from .voice.tts_engine import tts_engine
-    asyncio.create_task(tts_engine.speak(full_reply, play_local=True))
+    task = asyncio.create_task(tts_engine.speak(full_reply, play_local=True))
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 async def execute_tool_async(func_name: str, args_str: str):
     """Helper para execução assíncrona de ferramentas disparadas via stream."""
