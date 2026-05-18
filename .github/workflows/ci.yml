@@ -1,58 +1,75 @@
-name: CI
+name: JARVIS CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  backend-tests:
+    runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install frontend dependencies
-        run: |
-          cd frontend
-          npm install -g pnpm
-          pnpm install
-
-      - name: Lint frontend
-        run: |
-          cd frontend
-          pnpm lint || true
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('backend/app/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install backend dependencies
         run: |
-          python -m venv venv
-          . venv/bin/activate
+          python -m pip install --upgrade pip
           pip install -r backend/app/requirements.txt
-
-      - name: Lint backend (flake8)
-        run: |
-          . venv/bin/activate
-          pip install flake8
-          flake8 backend
+          pip install pytest pytest-asyncio pytest-mock
 
       - name: Run backend tests
         run: |
-          . venv/bin/activate
-          pip install pytest
-          pytest backend/tests
+          cd backend
+          python -m pytest tests/ -v --tb=short
+
+  frontend-lint:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pnpm\store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        run: pnpm --dir frontend run typecheck
 
       - name: Run frontend tests
-        run: |
-          cd frontend
-          pnpm test || true
+        run: pnpm --dir frontend run test -- --runInBand --coverage=false
+
+      - name: Run linter
+        run: pnpm --dir frontend run lint
+
+      - name: Build frontend
+        run: pnpm --dir frontend run build

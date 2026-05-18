@@ -1,0 +1,26 @@
+"""
+JARVIS 5.0 - API Module
+Fachada para routers FastAPI e servidores de suporte.
+
+Uso:
+    from app.api import system_bridge_router
+    from app.api import voice_router
+    from app.api import telemetry_app, start_telemetry_server
+    from app.api import broadcast_state, broadcast_chunk
+"""
+from ..system_bridge import router as system_bridge_router  # noqa: F401
+from ..voice_websocket import (                              # noqa: F401
+    router as voice_router,
+    broadcast_state,
+    broadcast_chunk,
+)
+from ..telemetry_server import (                             # noqa: F401
+    app as telemetry_app,
+    start_telemetry_server,
+)
+
+__all__ = [
+    "system_bridge_router",
+    "voice_router", "broadcast_state", "broadcast_chunk",
+    "telemetry_app", "start_telemetry_server",
+]

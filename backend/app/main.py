@@ -1,103 +1,167 @@
-from dotenv import load_dotenv
-from pathlib import Path
 import os
-import sys
-
-# 1. CARGA IMEDIATA DO AMBIENTE (Crucial para os imports subsequentes)
-base_dir = Path(__file__).resolve().parents[2]
-load_dotenv(base_dir / '.env')
-load_dotenv(base_dir / 'env' / '.env', override=False)
-
+import asyncio
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import datetime
-import psutil
-import asyncio
-from loguru import logger
-from typing import Dict, Any
 from contextlib import asynccontextmanager
+from loguru import logger
 
-# O uvicorn deve rodar este aplicativo como pacote app.main.
-# Removendo a insercao manual de sys.path para evitar importacao de módulos como top-level.
+from .autonomous_brain import AutonomousBrain
+from .api import start_telemetry_server
+from .kb_loader import load_kb
+from .perception import perception_manager
+from .perception.voice_engine import add_callback as add_voice_callback, start as start_voice_engine
+from .routes import router as main_router
+from .system_bridge import router as system_bridge_router
+from .voice_websocket import router as voice_router
+from .security.sentinel_core import SentinelSecurity
+from .security.sentinel_parser import SentinelParser
+from .psyche.device_awareness import DeviceAwareness
+from .psyche.dream_cycle import DreamCycle
+from .psyche.gap_analyzer import GapAnalyzer
+from .multi_agent_analysis import start_multi_agent_analysis, stop_multi_agent_analysis, get_orchestrator
+from .auto_restart import enable_auto_restart, disable_auto_restart
 
-from .config import settings
-from . import routes
-from . import voice_websocket
-from .perception.perception_manager import perception_manager
-from .autonomous_brain import autonomous_brain
-from .telemetry_server import start_telemetry_server
-from .utils.second_brain_connector import second_brain
-from .utils.obsidian_graph import ObsidianGraph
+# --- Omega Protocol Singletons ---
+# Security
+sentinel_parser = SentinelParser()
+sentinel = SentinelSecurity()
 
-_start_time = datetime.datetime.now()
+# Psyche/Brain
+device_awareness = DeviceAwareness()
+dream_cycle = DreamCycle(
+    logs_path="logs/interactions.log",
+    obsidian_kb_path=os.environ.get(
+        "JARVIS_KB_PATH",
+        os.path.join(os.environ.get("JARVIS_VAULT_ROOT", r"D:\DOCUMENTOS\GitHub\Will-obsidian"), "JARVIS")
+    ),
+    holodeck_queue_path="data/holodeck_queue.txt"
+)
+gap_analyzer = GapAnalyzer()
+autonomous_brain = AutonomousBrain()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("[Startup] JARVIS 5.0 iniciando...")
-    logger.info("[Startup] JARVIS 5.0 iniciando...")
-    # Inicia Percepção Local
-    perception_manager.start()
-    
-    # Tarefa de Telemetria (Heartbeat de Hardware para o HUD)
-    async def hardware_telemetry():
-        from .utils.db_manager import db_manager
-        while True:
-            try:
-                cpu = psutil.cpu_percent()
-                ram = psutil.virtual_memory().percent
-                status = "warning" if ram > 85 else "success"
-                
-                # Salva no SQLite em vez de JSONL para telemetria (muito mais eficiente para dados ruidosos)
-                with db_manager.get_connection() as conn:
-                    conn.execute(
-                        "INSERT INTO telemetry (cpu_usage, ram_usage, status, timestamp) VALUES (?, ?, ?, ?)",
-                        (cpu, ram, status, datetime.datetime.now().isoformat())
-                    )
-                
-                # Opcional: Manter apenas os últimos 1000 registros para não crescer infinitamente
-                if datetime.datetime.now().minute % 10 == 0: # Limpa a cada 10 min
-                     with db_manager.get_connection() as conn:
-                        conn.execute("DELETE FROM telemetry WHERE id NOT IN (SELECT id FROM telemetry ORDER BY id DESC LIMIT 1000)")
-                        
-            except Exception as e:
-                logger.error(f"[Telemetry] Erro: {e}")
-            await asyncio.sleep(15) # Aumentado para 15s para poupar recursos
+    logger.info("Initializing JARVIS 5.0 Omega Core...")
 
-    asyncio.create_task(hardware_telemetry())
-    
-    # Inicia o Modo Autônomo (Background Thinking)
-    asyncio.create_task(autonomous_brain.start_background_thinking())
+    try:
+        add_voice_callback(perception_manager._on_voice_event)
+    except Exception as e:
+        logger.warning(f"Falha ao registrar callback de voz: {e}")
 
-    # Inicia Dashboard de Telemetria (Porta 8001)
-    start_telemetry_server()
-    
-    # Constrói o Grafo do Obsidian inicial
-    obsidian_graph = ObsidianGraph(second_brain.vault_path)
-    asyncio.create_task(asyncio.to_thread(obsidian_graph.build_graph))
-    
+    try:
+        start_voice_engine()
+    except Exception as e:
+        logger.warning(f"Falha ao iniciar o Voice Engine: {e}")
+
+    # Start Telemetry Dashboard
+    try:
+        start_telemetry_server()
+        logger.info("Telemetry Dashboard started successfully on port 8001")
+    except Exception as e:
+        logger.warning(f"Não foi possível iniciar o Telemetry Dashboard: {e}")
+
+    # 1. Start Autonomous Thinking Loop
+    autonomous_brain.start_background_thinking()
+
+    # 2. Initialize Psyche Awareness
+    initial_state = device_awareness.get_system_state()
+    logger.info(f"Initial Psyche State: {initial_state}")
+
+    # 3. Schedule KB sync, Dream Cycle, Gap Analysis and Resource Governor
+    asyncio.create_task(load_kb())
+    asyncio.create_task(run_psyche_cycles())
+    asyncio.create_task(device_awareness.resource_governor_loop(callback_fn=handle_governor_action))
+
+    # 4. Start Multi-Agent Analysis System
+    try:
+        start_multi_agent_analysis()
+        logger.info("Multi-Agent Analysis System started successfully")
+        
+        # Register Auto-Fix Agents
+        from .autofix_agents import register_autofix_agents
+        register_autofix_agents()
+        logger.info("Auto-Fix Agents registered successfully")
+    except Exception as e:
+        logger.warning(f"Failed to start Multi-Agent Analysis: {e}")
+
+    # 5. Enable Auto-Restart on Improvements (if enabled via env var)
+    if os.getenv("JARVIS_AUTO_RESTART", "0") == "1":
+        try:
+            enable_auto_restart()
+            logger.info("Auto-Restart System enabled")
+        except Exception as e:
+            logger.warning(f"Failed to enable Auto-Restart: {e}")
+
     yield
-    logger.info("[Shutdown] Finalizando serviços...")
-    perception_manager.stop()
+
+    logger.info("Shutting down JARVIS 5.0 Omega Core...")
+    autonomous_brain.stop()
+    
+    # Stop Multi-Agent Analysis
+    try:
+        stop_multi_agent_analysis()
+    except Exception as e:
+        logger.warning(f"Error stopping Multi-Agent Analysis: {e}")
+    
+    # Disable Auto-Restart
+    try:
+        disable_auto_restart()
+    except Exception as e:
+        logger.warning(f"Error disabling Auto-Restart: {e}")
+
+async def run_psyche_cycles():
+    """Background loop for subconscious processing."""
+    while True:
+        try:
+            # Dream Cycle: Evolution of Knowledge Base
+            dream_cycle.process_dreams()
+
+            # Gap Analysis: Detecting missing info (triggered by brain/logs)
+            logger.debug("Psyche heartbeat: DreamCycle and GapAnalyzer active.")
+
+            await asyncio.sleep(3600) # Run every hour
+        except Exception as e:
+            logger.error(f"Error in psyche background cycles: {e}")
+            await asyncio.sleep(60)
+
+async def handle_governor_action(action: str, state: str):
+    """Callback for the Resource Governor to adapt JARVIS's operational mode."""
+    logger.info(f"Adapting system behavior: {action} due to {state} state.")
+    # Here we would integrate with the SmartRouter or ModelManager
+    # Example:
+    # if action == "MIGRATE_TO_LIGHTWEIGHT_API":
+    #     smart_router.set_mode("eco")
+    # elif action == "MAX_LOCAL_PERFORMANCE":
+    #     smart_router.set_mode("performance")
+    pass
+
+def _get_cors_origins() -> list[str]:
+    raw_origins = os.getenv("CORS_ORIGINS")
+    if raw_origins:
+        return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").strip()
+    origins = [frontend_url] if frontend_url else []
+    if "http://localhost:3000" not in origins:
+        origins.append("http://localhost:3000")
+    if "http://127.0.0.1:3000" not in origins:
+        origins.append("http://127.0.0.1:3000")
+    return origins
+
 
 app = FastAPI(lifespan=lifespan)
-
-# Configuração de CORS Dinâmica
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=_get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(routes.router)
-app.include_router(voice_websocket.router)
+app.include_router(main_router)
+app.include_router(system_bridge_router)
+app.include_router(voice_router)
 
-@app.get("/status") # type: ignore
-def status_check() -> Dict[str, Any]:
-    return {
-        "status": "ok",
-        "gemini": bool(os.getenv("GEMINI_API_KEY")),
-        "timestamp": datetime.datetime.now().isoformat()
-    }
-
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

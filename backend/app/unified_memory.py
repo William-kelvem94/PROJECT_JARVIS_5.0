@@ -8,11 +8,19 @@ import asyncio
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from loguru import logger
+from dotenv import load_dotenv
+import chromadb
+from sentence_transformers import SentenceTransformer
+
 from .utils.db_manager import db_manager
 
 # --- CONFIGURAÇÃO ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 INTERNAL_BRAIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "internal_brain")
-VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT") 
+CHROMA_DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "chroma_db")
+VAULT_ROOT = os.getenv("JARVIS_VAULT_ROOT")
 JARVIS_VAULT_DIR = os.path.join(VAULT_ROOT, "JARVIS") if VAULT_ROOT and os.path.isdir(VAULT_ROOT) else None
 
 if not VAULT_ROOT:
@@ -20,33 +28,39 @@ if not VAULT_ROOT:
 
 class UnifiedMemory:
     """
-    O Cérebro de Memória Unificado do JARVIS 5.0.
-    Consolida SQLite (fatos rápidos), Cérebro Interno (Markdown local) e Obsidian (Vault Global).
-    Atua como substituto único para mem0.py e vault_memory.py.
+    O Cérebro de Memória Unificado do JARVIS 5.0 com Semantic RAG.
+    Consolida SQLite (fatos), Markdown (estrutura) e ChromaDB (Busca Semântica).
     """
 
     def __init__(self):
         os.makedirs(INTERNAL_BRAIN_DIR, exist_ok=True)
+        os.makedirs(CHROMA_DB_DIR, exist_ok=True)
         self._ensure_vault_dirs()
+
+        # Initialize Embedding Model
+        logger.info("[UnifiedMemory] Carregando modelo de embeddings...")
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        # Initialize ChromaDB Persistent Client
+        self.chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+        self.collection = self.chroma_client.get_or_create_collection(name="jarvis_memories")
+        logger.info("[UnifiedMemory] Sistema de Memória Semântica inicializado.")
 
     def _conn(self) -> sqlite3.Connection:
         return db_manager.get_connection()
 
-
     def _ensure_vault_dirs(self):
         subs = [
-            "Memorias/Episodicas", 
-            "Memorias/Diario", 
-            "Aprendizado", 
+            "Memorias/Episodicas",
+            "Memorias/Diario",
+            "Aprendizado",
             "Decisoes",
-            "Contexto-Atual", 
+            "Contexto-Atual",
             "Sobre-Will"
         ]
-        # Garante estrutura no Cérebro Interno (Projeto)
         for sub in subs:
             os.makedirs(os.path.join(INTERNAL_BRAIN_DIR, sub), exist_ok=True)
-        
-        # Garante estrutura no Vault Global (Obsidian)
+
         if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
             for sub in subs:
                 os.makedirs(os.path.join(JARVIS_VAULT_DIR, sub), exist_ok=True)
@@ -57,16 +71,50 @@ class UnifiedMemory:
         text = re.sub(r'[\s_]+', '-', text)
         return text[:60]
 
-    # --- ESCRITA SINCRONIZADA ---
+    async def _write_to_both_async(self, rel_path: str, content: str, append: bool = False):
+        """Executa a escrita de arquivos em threads separadas para não bloquear o event loop."""
+        def sync_write():
+            paths = [os.path.join(INTERNAL_BRAIN_DIR, rel_path)]
+            if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
+                paths.append(os.path.join(JARVIS_VAULT_DIR, rel_path))
+
+            for p in paths:
+                try:
+                    os.makedirs(os.path.dirname(p), exist_ok=True)
+                    mode = 'a' if append else 'w'
+                    with open(p, mode, encoding='utf-8') as f:
+                        f.write(content)
+                except Exception as e:
+                    logger.error(f"Erro na sincronização de memória em {p}: {e}")
+
+        await asyncio.to_thread(sync_write)
+
+    async def _index_semantic_memory(self, content: str, metadata: Dict[str, Any]):
+        """Vetoriza e armazena a memória no ChromaDB."""
+        def sync_index():
+            try:
+                embedding = self.model.encode(content).tolist()
+                # Generate a unique ID based on content hash or timestamp
+                mem_id = f"{metadata.get('user_id', 'default')}_{datetime.datetime.now().timestamp()}"
+                self.collection.add(
+                    embeddings=[embedding],
+                    documents=[content],
+                    metadatas=[metadata],
+                    ids=[mem_id]
+                )
+            except Exception as e:
+                logger.error(f"Erro ao indexar memória semântica: {e}")
+
+        await asyncio.to_thread(sync_index)
 
     async def add_memory(self, user_id: str, content: str, category: str = "fact", source: str = "conversation"):
-        """Salva fato no SQLite e cria entrada em Markdown tanto no Interno quanto no Global."""
         now = datetime.datetime.now().isoformat()
+
         with self._conn() as conn:
             existing = conn.execute(
                 "SELECT id FROM memories WHERE user_id = ? AND content = ?", (user_id, content)
             ).fetchone()
-            
+
             if existing:
                 conn.execute("UPDATE memories SET updated_at=?, access_count=access_count+1 WHERE id=?", (now, existing["id"]))
                 return False
@@ -76,56 +124,43 @@ class UnifiedMemory:
                 (user_id, category, content, source, now, now)
             )
 
-        # Espelhamento em Markdown (Memo)
+        # Semantic Indexing Hook
+        await self._index_semantic_memory(content, {"user_id": user_id, "category": category, "source": source})
+
         memo_entry = f"\n- [{now}] ({category}): {content}"
-        self._write_to_both("Memorias/fatos_rapidos.md", memo_entry, append=True)
-        
-        logger.debug(f"[UnifiedMemory] Fato sincronizado: {content[:50]}...")
+        await self._write_to_both_async("Memorias/fatos_rapidos.md", memo_entry, append=True)
+
+        logger.debug(f"[UnifiedMemory] Fato sincronizado e vetorizado: {content[:50]}...")
         return True
 
-    def _write_to_both(self, rel_path: str, content: str, append: bool = False):
-        """Helper para escrever no cérebro interno e no global simultaneamente."""
-        paths = [os.path.join(INTERNAL_BRAIN_DIR, rel_path)]
-        if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
-            paths.append(os.path.join(JARVIS_VAULT_DIR, rel_path))
-            
-        for p in paths:
-            try:
-                os.makedirs(os.path.dirname(p), exist_ok=True)
-                mode = 'a' if append else 'w'
-                with open(p, mode, encoding='utf-8') as f:
-                    f.write(content)
-            except Exception as e:
-                logger.error(f"Erro na sincronização de memória em {p}: {e}")
-
     async def save_session(self, user_id: str, messages: list, summary: str):
-        """Salva resumo da sessão no SQLite e nos Diários (Interno + Global)."""
         now = datetime.datetime.now().isoformat()
         date_str = datetime.datetime.now().strftime("%Y-%m-%d")
         hora_str = datetime.datetime.now().strftime("%H:%M")
-        
+
         with self._conn() as conn:
             conn.execute(
                 "INSERT INTO sessions (user_id, summary, msg_count, created_at) VALUES (?,?,?,?)",
                 (user_id, summary, len(messages), now)
             )
 
-        # Diário Sincronizado
+        # Vectorize the session summary
+        await self._index_semantic_memory(f"Session Summary: {summary}", {"user_id": user_id, "category": "session_summary"})
+
         entry = f"\n### Sessão — {hora_str}\n- **Resumo:** {summary}\n"
-        self._write_to_both(f"Memorias/Diario/{date_str}.md", entry, append=True)
+        await self._write_to_both_async(f"Memorias/Diario/{date_str}.md", entry, append=True)
         logger.info(f"[UnifiedMemory] Sessão {date_str} sincronizada nos dois cérebros.")
 
     async def save_episodic(self, title: str, content: str, project: str = "", importance: str = "MEDIA", keywords: List[str] = []) -> str:
-        """Salva uma memória episódica formatada (estilo Obsidian) tanto local quanto global."""
         now_dt = datetime.datetime.now()
         date = now_dt.strftime("%Y-%m-%d")
         hora = now_dt.strftime("%H:%M")
         slug = self._slugify(title)
         filename = f"{date}-{slug}.md"
         rel_path = os.path.join("Memorias", "Episodicas", filename)
-        
+
         tags_str = ", ".join(["jarvis", "memoria", "episodica"] + keywords)
-        
+
         body = f"""---
 title: "{title}"
 date: "{date}"
@@ -143,42 +178,59 @@ projeto: "{project}"
 ---
 *Salvo via UnifiedMemory em: {date} {hora}*
 """
-        self._write_to_both(rel_path, body, append=False)
+        await self._write_to_both_async(rel_path, body, append=False)
+
+        # Vectorize episodic memory
+        await self._index_semantic_memory(f"{title}: {content}", {"category": "episodic", "project": project, "importance": importance})
+
         return rel_path
 
     async def append_diary(self, summary: str, facts_saved: int = 0) -> str:
-        """Acrescenta entrada ao diário diário."""
         now = datetime.datetime.now()
         date_str = now.strftime("%Y-%m-%d")
         hora_str = now.strftime("%H:%M")
         rel_path = f"Memorias/Diario/{date_str}.md"
-        
+
         entry = f"\n### Sessão — {hora_str}\n- **Resumo:** {summary}\n- **Fatos novos:** {facts_saved}\n"
-        self._write_to_both(rel_path, entry, append=True)
+        await self._write_to_both_async(rel_path, entry, append=True)
         return rel_path
 
     async def save_learning(self, fact: str, category: str = "tecnico") -> bool:
-        """Registra um aprendizado no índice de aprendizado."""
         date = datetime.datetime.now().strftime("%Y-%m-%d")
         rel_path = "Aprendizado/INDEX.md"
-        
         entry = f"| {date} | {category} | {fact[:120]} |\n"
-        
-        # Se o arquivo não existir, cria com cabeçalho
-        path_local = os.path.join(INTERNAL_BRAIN_DIR, rel_path)
-        if not os.path.exists(path_local):
-            header = "# 🎓 Índice de Aprendizado\n\n| Data | Categoria | Fato |\n|---|---|---|\n"
-            self._write_to_both(rel_path, header, append=False)
-            
-        self._write_to_both(rel_path, entry, append=True)
+
+        def check_and_write():
+            path_local = os.path.join(INTERNAL_BRAIN_DIR, rel_path)
+            if not os.path.exists(path_local):
+                header = "# 🎓 Índice de Aprendizado\n\n| Data | Categoria | Fato |\n|---|---|---|\n"
+                self._sync_write_helper(rel_path, header, append=False)
+            self._sync_write_helper(rel_path, entry, append=True)
+
+        await asyncio.to_thread(check_and_write)
+        # Vectorize learning fact
+        await self._index_semantic_memory(fact, {"category": "learning", "learning_category": category})
         return True
 
+    def _sync_write_helper(self, rel_path: str, content: str, append: bool = False):
+        """Versão síncrona para uso interno em threads."""
+        paths = [os.path.join(INTERNAL_BRAIN_DIR, rel_path)]
+        if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
+            paths.append(os.path.join(JARVIS_VAULT_DIR, rel_path))
+        for p in paths:
+            try:
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                mode = 'a' if append else 'w'
+                with open(p, mode, encoding='utf-8') as f:
+                    f.write(content)
+            except Exception as e:
+                logger.error(f"Erro na sincronização de memória em {p}: {e}")
+
     async def update_current_state(self, project: str, done: str, next_action: str, notes: str = ""):
-        """Atualiza o arquivo de estado atual do sistema."""
         date = datetime.datetime.now().strftime("%Y-%m-%d")
         hora = datetime.datetime.now().strftime("%H:%M")
         rel_path = "Contexto-Atual/Estado.md"
-        
+
         body = f"""---
 title: "Estado Atual — Jarvis"
 updated: {date} {hora}
@@ -194,23 +246,19 @@ updated: {date} {hora}
 ## 📝 Notas
 {notes}
 """
-        self._write_to_both(rel_path, body, append=False)
+        await self._write_to_both_async(rel_path, body, append=False)
         return rel_path
 
-    # --- LEITURA E BUSCA ---
-
     async def get_all(self, user_id: str = "Chefe") -> List[Dict[str, Any]]:
-        """Retorna todos os fatos do SQLite (compatível com o antigo mem0.py)."""
         with self._conn() as conn:
             rows = conn.execute(
-                "SELECT content as memory, updated_at FROM memories WHERE user_id = ? ORDER BY updated_at DESC", 
+                "SELECT content as memory, updated_at FROM memories WHERE user_id = ? ORDER BY updated_at DESC",
                 (user_id,)
             ).fetchall()
             return [dict(r) for r in rows]
 
     async def get_context(self, user_id: str, query: str = None, limit: int = 15) -> str:
-        """Busca o contexto unificado para injeção no prompt da IA."""
-        memories = []
+        # 1. Get recent facts from SQLite
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT content FROM memories WHERE user_id = ? ORDER BY access_count DESC, updated_at DESC LIMIT ?",
@@ -218,74 +266,68 @@ updated: {date} {hora}
             ).fetchall()
             memories = [r["content"] for r in rows]
 
-        kb_context = await self._search_kb(query if query else "")
-        
+        # 2. Semantic Search in ChromaDB
+        semantic_context = await self._search_semantic(query, user_id)
+
         context_str = ""
         if memories:
             context_str += "[MEMORIA LOCAL (FATOS RECENTES)]:\n"
             context_str += "\n".join([f"- {m}" for m in memories])
-            
-        if kb_context:
-            context_str += "\n\n[CONHECIMENTO GLOBAL (OBSIDIAN)]:\n" + kb_context
-            
+
+        if semantic_context:
+            context_str += "\n\n[CONHECIMENTO SEMÂNTICO (VETORIZADO)]:\n" + semantic_context
+
         return context_str if context_str else "Nenhum contexto relevante encontrado."
 
-    async def _search_kb(self, query: str) -> str:
-        """Busca semântica simples em ambos os vaults de markdown."""
-        sources = [INTERNAL_BRAIN_DIR]
-        if JARVIS_VAULT_DIR and os.path.isdir(JARVIS_VAULT_DIR):
-            sources.append(JARVIS_VAULT_DIR)
-            
-        all_files = []
-        for src in sources:
-            all_files.extend(glob.glob(os.path.join(src, "**/*.md"), recursive=True))
-        
-        unique_files = {os.path.basename(f): f for f in all_files}.values()
-        
-        files = []
-        if query:
-            words = query.lower().split()
-            for f in list(unique_files)[:50]:
-                try:
-                    t = Path(f).read_text(encoding='utf-8', errors='ignore').lower()
-                    if any(w in t for w in words): files.append(f)
-                except: continue
-            files = files[:3]
-        else:
-            files = sorted(unique_files, key=os.path.getmtime, reverse=True)[:3]
-            
-        results = []
-        for f in files:
+    async def _search_semantic(self, query: str, user_id: str) -> str:
+        if not query:
+            return ""
+
+        def sync_search():
             try:
-                c = Path(f).read_text(encoding="utf-8", errors='ignore')
-                clean = re.sub(r'#+\s+', '', c)[:500]
-                results.append(f"[{os.path.basename(f)}]: {clean}")
-            except: continue
-        return "\n".join(results)
+                query_embedding = self.model.encode(query).tolist()
+                results = self.collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=5,
+                    where={"user_id": user_id} if user_id != "Chefe" else None
+                )
+
+                documents = results.get("documents", [[]])[0]
+                if not documents:
+                    return ""
+
+                return "\n".join([f"- {doc}" for doc in documents])
+            except Exception as e:
+                logger.error(f"Erro na busca semântica: {e}")
+                return ""
+
+        return await asyncio.to_thread(sync_search)
 
     def is_vault_available(self) -> bool:
         return JARVIS_VAULT_DIR is not None and os.path.isdir(JARVIS_VAULT_DIR)
 
     def get_stats(self) -> dict:
-        """Retorna estatísticas rápidas do ecossistema de memória."""
         stats = {
             "available": self.is_vault_available(),
             "internal_brain_path": INTERNAL_BRAIN_DIR,
             "vault_path": JARVIS_VAULT_DIR
         }
-        
-        # Conta arquivos em subpastas
         subs = ["Memorias/Episodicas", "Memorias/Diario", "Aprendizado"]
         for sub in subs:
             path = os.path.join(INTERNAL_BRAIN_DIR, sub)
             files = glob.glob(os.path.join(path, "*.md"))
             stats[sub.split("/")[-1].lower()] = len(files)
-            
+
         with self._conn() as conn:
             row = conn.execute("SELECT COUNT(*) as count FROM memories").fetchone()
             stats["sqlite_facts"] = row["count"]
-            
+
+        # Add ChromaDB stats
+        try:
+            stats["semantic_memories"] = self.collection.count()
+        except:
+            stats["semantic_memories"] = 0
+
         return stats
 
-# Singleton global para o sistema
 memory = UnifiedMemory()
