@@ -6,10 +6,10 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.config import settings
 try:
-    from app.mem0 import AsyncMemoryClient
+    from app.unified_memory import memory as memory_client
 except ImportError:
     from unittest.mock import AsyncMock
-    AsyncMemoryClient = AsyncMock
+    memory_client = AsyncMock()
 
 client = TestClient(app)
 
@@ -33,7 +33,7 @@ def test_config_validation():
 @pytest.mark.asyncio
 async def test_memory_system_stress():
     """Teste de stress simulado no sistema de memória (Mem0)."""
-    memory = AsyncMemoryClient()
+    memory = memory_client
     user_id = f"test_user_{int(time.time())}"
     
     # Inserção rápida de múltiplos fatos
@@ -45,7 +45,7 @@ async def test_memory_system_stress():
         "O usuário prefere Next.js para o frontend."
     ]
     
-    tasks = [memory.add([{"role": "user", "content": f}], user_id=user_id) for f in facts]
+    tasks = [memory.add_memory(user_id=user_id, content=f) for f in facts]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     
     # Verifica se não houve falhas massivas
@@ -61,7 +61,7 @@ def test_api_concurrency_stress():
     import concurrent.futures
     
     def fetch_status():
-        return client.get("/status").status_code
+        return client.get("/health").status_code
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         futures = [executor.submit(fetch_status) for _ in range(50)]
