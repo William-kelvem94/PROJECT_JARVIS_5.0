@@ -361,6 +361,7 @@ _command_semaphore = threading.Semaphore(3)  # máximo 3 threads simultâneas
 _chunk_q: queue.Queue = queue.Queue(maxsize=200)
 _command_executor = ThreadPoolExecutor(max_workers=4)
 
+_main_loop: Optional[asyncio.AbstractEventLoop] = None
 
 _active_listening = False
 _silence_counter = 0
@@ -408,6 +409,9 @@ def _audio_loop():
                 if _active_listening:
                     _voice_buffer.append(chunk)
                     
+                    if len(_voice_buffer) > 30: # 15 seconds max to prevent OOM
+                        _voice_buffer.pop(0)
+
                     # VAD Adaptativo (Energia do Áudio)
                     energy = float(np.abs(chunk).mean())
                     # Threshold adaptativo: 2x o ruído de fundo estimado, mínimo 150
@@ -426,18 +430,24 @@ def _audio_loop():
                         
                         _notify_hud("thinking")
                         
-                        text = transcribe_offline(segment) if HAS_WHISPER else ""
-                        if text and len(text.strip()) > 2:
-                            logger.success(f"[VoiceEngine] 📝 Comando Ouvido: {text}")
-                            def _run_with_semaphore(t):
+                        def _stt_and_run(seg):
+                            text = transcribe_offline(seg) if HAS_WHISPER else ""
+                            if text and len(text.strip()) > 2:
+                                logger.success(f"[VoiceEngine] 📝 Comando Ouvido: {text}")
+                                _fire(VoiceResult(offline_transcript=text))
                                 with _command_semaphore:
-                                    _process_command_sync(t)
-                            _command_executor.submit(_run_with_semaphore, text)
-                        else:
-                            _notify_hud("idle")
+                                    _process_command_sync(text)
+                            else:
+                                _notify_hud("idle")
+
+                        _command_executor.submit(_stt_and_run, segment)
 
                 # ── Modo de Espera (Aguardando Wake Word) ────────────────────
                 else:
+                    _voice_buffer.append(chunk)
+                    if len(_voice_buffer) > 4: # keep 2 seconds
+                        _voice_buffer.pop(0)
+
                     if oww is not None:
                         try:
                             # Sensory Shielding: Noise suppression before Wake Word detection
@@ -453,13 +463,13 @@ def _audio_loop():
                                 except Exception: score = 0.0
 
                                 if score > 0.45:
-                                    # Sensory Shielding: Validate Voice Print before activation
-                                    # Use the current buffer/chunk to check if it's the owner
-                                    # (In a real scenario, we'd use a slightly larger window)
-                                    speaker, conf = identify_speaker(chunk_cleaned)
+                                    # Use accumulated buffer for speaker identification
+                                    concat_buffer = np.concatenate(_voice_buffer) if _voice_buffer else chunk_cleaned
+                                    speaker, conf = identify_speaker(concat_buffer)
 
                                     if speaker:
                                         logger.success(f"[VoiceEngine] 🎙️ Wake word '{model_name}' VALIDATED for {speaker}")
+                                        _fire(VoiceResult(wake_word_triggered=True, is_validated=True, speaker_identity=speaker))
                                         _active_listening = True
                                         _silence_counter = 0
                                         _voice_buffer = []
@@ -477,10 +487,8 @@ def _notify_hud(status: str, transcript: str = "", response: str = ""):
     """Envia status para o HUD de forma segura para não travar a thread de áudio."""
     try:
         from app.voice_websocket import broadcast_state
-        # Cria um novo event loop temporário para rodar a corrotina
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(broadcast_state(status, transcript, response))
-        loop.close()
+        if _main_loop and not _main_loop.is_closed():
+            asyncio.run_coroutine_threadsafe(broadcast_state(status, transcript, response), _main_loop)
     except Exception as e:
         pass
 
@@ -505,14 +513,16 @@ def _process_command_sync(text: str):
 
             _notify_hud("speaking", response=full_reply)
             # Toca o áudio nas caixas locais
-            await tts_engine.speak(full_reply, play_local=True)
+            audio_file = await tts_engine.speak(full_reply, play_local=True)
+            if audio_file:
+                from app.voice_websocket import broadcast_audio_file
+                await broadcast_audio_file(audio_file)
 
             barge_in.stop_vad_listener()
             _notify_hud("idle")
 
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(run_chat())
-        loop.close()
+        if _main_loop and not _main_loop.is_closed():
+            asyncio.run_coroutine_threadsafe(run_chat(), _main_loop)
     except Exception as e:
         logger.error(f"[VoiceEngine] Falha ao processar comando: {e}")
         _notify_hud("idle")
@@ -527,9 +537,14 @@ def force_listen():
 
 def start(custom_models: List[str] = None):
     """Start the voice engine background thread."""
-    global _running, _audio_thread
+    global _running, _audio_thread, _main_loop
     if _running:
         return
+
+    try:
+        _main_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        pass
     
     # Se não houver custom_models via argumento, tenta carregar do ambiente
     if not custom_models:
