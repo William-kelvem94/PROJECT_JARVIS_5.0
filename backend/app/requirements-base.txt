@@ -30,7 +30,6 @@ ultralytics
 
 # Perception: voice
 openwakeword
-webrtcvad-wheels
 faster-whisper
 sounddevice
 edge-tts
@@ -56,3 +55,4 @@ pytest
 pytest-asyncio
 pytest-mock
 httpx
+resemblyzer

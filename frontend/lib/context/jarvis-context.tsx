@@ -202,6 +202,25 @@ export function JarvisProvider({ children }: { children: React.ReactNode }) {
       ws.binaryType = 'arraybuffer';
       wsRef.current = ws;
 
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      processor.onaudioprocess = (e) => {
+        if (ws.readyState === WebSocket.OPEN && localStreamRef.current?.getAudioTracks()[0]?.enabled) {
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcm = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcm[i] = inputData[i] * 32767;
+          }
+          ws.send(pcm.buffer);
+        }
+      };
+
+      const dummyGainNode = audioContext.createGain();
+      dummyGainNode.gain.value = 0;
+      source.connect(processor);
+      processor.connect(dummyGainNode);
+      dummyGainNode.connect(audioContext.destination);
+      processorRef.current = processor;
+
       ws.onopen = () => {
         setIsConnected(true);
         setAgentState('idle');

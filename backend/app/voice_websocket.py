@@ -30,6 +30,7 @@ async def voice_websocket(websocket: WebSocket):
             # Recebe pacotes do frontend (Apenas comandos JSON agora)
             message = await websocket.receive()
             raw_text = message.get("text")
+            raw_bytes = message.get("bytes")
             
             if raw_text:
                 try:
@@ -41,6 +42,16 @@ async def voice_websocket(websocket: WebSocket):
                         _background_tasks.add(task)
                         task.add_done_callback(_background_tasks.discard)
                 except json.JSONDecodeError:
+                    pass
+            elif raw_bytes:
+                try:
+                    import numpy as np
+                    from .perception.voice_engine import _chunk_q
+
+                    chunk_int16 = np.frombuffer(raw_bytes, dtype=np.int16)
+                    if _chunk_q.qsize() < 100:
+                        _chunk_q.put_nowait(chunk_int16)
+                except Exception as e:
                     pass
 
     except WebSocketDisconnect:
@@ -93,3 +104,16 @@ async def broadcast_chunk(chunk: str):
             await ws.send_json({"type": "response_chunk", "text": chunk})
         except:
             pass
+
+async def broadcast_audio_file(filepath: str):
+    """Lê o arquivo de áudio gerado pelo TTS e envia os bytes (binário) para o WebSocket."""
+    async with _ws_lock:
+        ws = _active_ws
+    if ws and filepath:
+        try:
+            import aiofiles
+            async with aiofiles.open(filepath, mode="rb") as f:
+                data = await f.read()
+                await ws.send_bytes(data)
+        except Exception as e:
+            logger.debug(f"Falha ao enviar arquivo de áudio: {e}")
